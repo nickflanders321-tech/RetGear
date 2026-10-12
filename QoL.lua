@@ -248,7 +248,7 @@ end
 -- ---------------------------------------------------------------------------
 function RG.ShowWelcome()
   local f = CreateFrame("Frame", "RetGearWelcome", UIParent, "BackdropTemplate")
-  f:SetSize(460, 330); f:SetPoint("CENTER", 0, 60); f:SetFrameStrata("DIALOG")
+  f:SetSize(480, 420); f:SetPoint("CENTER", 0, 60); f:SetFrameStrata("DIALOG")
   backdrop(f, { 0.035, 0.035, 0.045, 0.98 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.9 })
   local glow = f:CreateTexture(nil, "BACKGROUND", nil, 1); glow:SetPoint("TOPLEFT", 1, -1); glow:SetPoint("TOPRIGHT", -1, -1); glow:SetHeight(120); glow:SetTexture(WHITE)
   if glow.SetGradient and CreateColor then glow:SetGradient("VERTICAL", CreateColor(GOLDC[1], GOLDC[2], GOLDC[3], 0), CreateColor(GOLDC[1], GOLDC[2], GOLDC[3], 0.15)) end
@@ -256,11 +256,15 @@ function RG.ShowWelcome()
   local t = f:CreateFontString(nil, "OVERLAY"); t:SetFont("Fonts\\MORPHEUS.TTF", 24, ""); t:SetPoint("TOP", crest, "BOTTOM", 0, -10); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
   t:SetText("Welcome, " .. (UnitName("player") or "Paladin") .. "!")
   local b = f:CreateFontString(nil, "OVERLAY"); b:SetFont("Fonts\\ARIALN.TTF", 14, ""); b:SetPoint("TOP", t, "BOTTOM", 0, -12); b:SetWidth(390); b:SetJustifyH("LEFT")
+  b:SetWidth(410)
   b:SetText(GOLD .. "RetGear|r walks you from level 1 to 60 as a Retribution Paladin.\n\n"
-    .. GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows your next steps. Tick them off or let RetGear do it.\n"
-    .. GOLD .. "•|r Item tooltips show a " .. GOLD .. "Ret score|r so you know what's an upgrade.\n"
-    .. GOLD .. "•|r Better gear pops up with an " .. GOLD .. "Equip|r button.\n"
-    .. GOLD .. "•|r Open the full guide any time with " .. GOLD .. "/rg|r or the minimap button.")
+    .. GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows your next steps and the most important reminders.\n"
+    .. GOLD .. "•|r Quests are " .. GOLD .. "accepted and turned in for you|r (hold Shift to pause), and the best reward is picked.\n"
+    .. GOLD .. "•|r The " .. GOLD .. "quest bar|r targets quest mobs and uses quest items in one click.\n"
+    .. GOLD .. "•|r Tooltips show a " .. GOLD .. "Ret score|r, and better gear pops up with an Equip button.\n"
+    .. GOLD .. "•|r Make " .. GOLD .. "camp|r for an hour of buffs. The DPS tab coaches you after fights.\n"
+    .. GOLD .. "•|r Items worth more on the AH get a " .. GOLD .. "gold coin|r and are never vendored.\n"
+    .. GOLD .. "•|r Everything else lives in " .. GOLD .. "/rg|r or the minimap button. Settings turns any of it off.")
   local function btn(label, x, fn, primary)
     local o = CreateFrame("Button", nil, f, "BackdropTemplate"); o:SetSize(150, 30); o:SetPoint("BOTTOM", x, 18)
     backdrop(o, primary and { GOLDC[1], GOLDC[2], GOLDC[3], 0.25 } or { 1, 1, 1, 0.05 }, { GOLDC[1], GOLDC[2], GOLDC[3], primary and 0.9 or 0.4 })

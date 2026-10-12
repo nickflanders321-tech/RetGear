@@ -233,7 +233,10 @@ local function finish()
   table.insert(db().fights, 1, saved)
   for i = #RG.db.fights, MAX_FIGHTS + 1, -1 do RG.db.fights[i] = nil end
   RG.lastFightAt = GetTime()
-  if RG.Opt("coachChat") then
+  -- Only speak up when it matters: dungeons, elites, long fights, or a big fix.
+  local big = f.tips[1] and f.dps > 0 and f.tips[1].lost / f.dps >= 0.15
+  local notable = f.instance or (f.class and f.class ~= "normal" and f.class ~= "minus" and f.class ~= "trivial") or f.dur >= 25 or big
+  if RG.Opt("coachChat") and notable then
     local best = RG.BestDPS()
     local msg = string.format("%s: %s%.0f DPS|r over %ds", f.target or "Fight", GOLD, f.dps, math.floor(f.dur))
     if best and best > f.dps then msg = msg .. GREY .. string.format(" (your best at this level %.0f)", best) .. "|r" end
@@ -319,7 +322,7 @@ function RG.Reminders()
     local last = db().fights[1]
     local t = last and last.tips and last.tips[1]
     if t and t.lost >= 1 then
-      out[#out + 1] = { string.format("%sLast fight %.0f DPS|r%s  ·  +%.0f: %s|r", GOLD, last.dps, GREY, t.lost, t.text), function() if RG.ShowTab then RG.ShowTab("dps") end end }
+      out[#out + 1] = { string.format("%sLast fight %.0f DPS|r%s  ·  +%.0f: %s|r", GOLD, last.dps, GREY, t.lost, t.text), function() if RG.ShowTab then RG.ShowTab("dps") end end, 6 }
     end
   end
   return out

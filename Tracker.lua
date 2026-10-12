@@ -207,8 +207,12 @@ function RG.RefreshTracker()
   -- reminders
   local rem = RG.Reminders and RG.Reminders() or {}
   if #rem > 0 then
+    -- most important first (lower number = more urgent; class buffs and seals are 3), top 5 only
+    for i, rr in ipairs(rem) do rr.i = i end
+    table.sort(rem, function(a, b) local pa, pb = a[3] or 3, b[3] or 3; if pa ~= pb then return pa < pb end return a.i < b.i end)
     n = n + 1; y = section(n, y, "Reminders")
-    for _, rr in ipairs(rem) do n = n + 1; y = item(n, y, rr[1], { onClick = rr[2] }) end
+    for i = 1, math.min(5, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2] }) end
+    if #rem > 5 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rem - 5) .. " more (turn reminders off in /rg settings)|r", { onClick = function() if RG.ShowTab then RG.ShowTab("settings") end end }) end
   end
   tr.body:SetHeight(math.max(10, y))
   tr:SetHeight(42 + y + 8)

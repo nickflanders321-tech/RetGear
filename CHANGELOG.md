@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.16.0 (quality pass)
+- Faster: window redraws are merged (looting used to rebuild it up to a dozen times), and bag-driven work (healing set, bank-alt list, coin marks) waits for the bag burst to finish.
+- Clearer tracker: reminders are ranked (urgent first: full bags, keep sitting, Blessing/Seal) and capped at 5, with a "+N more" line.
+- Quieter chat: the DPS coach only reports dungeon, elite and long fights, or fights with a big fix; quest mob alerts at most every 3 minutes per mob.
+- Settings grouped into Leveling and quests / Gear and combat / Professions, bags and gold / Interface. Tabs reordered so related ones sit together.
+- Welcome screen updated for everything RetGear does now; README rewritten as a guide with a tab-by-tab table.
+- Safer profession bars when the game hasn't reported a skill cap yet.
+
 ## v0.15.0
 Speed-leveling tools inspired by RestedXP:
 - Auto accept and turn in quests through gossip and quest greetings. Hold Shift to pause. Skips grey quests, quests that cost gold, and pauses itself when your quest log or bags are full.

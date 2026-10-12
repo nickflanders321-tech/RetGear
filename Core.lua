@@ -38,6 +38,15 @@ function RG.IsAlt()
   local m = RG.db and RG.db.main
   return m ~= nil and m ~= RG.PlayerKey()
 end
+-- Run fn once, `delay` seconds after the last call with this key (bursts of
+-- bag and quest events collapse into one piece of work).
+local debounced = {}
+function RG.Debounce(key, delay, fn)
+  if debounced[key] then debounced[key].fn = fn; return end
+  debounced[key] = { fn = fn }
+  C_Timer.After(delay, function() local d = debounced[key]; debounced[key] = nil; if d then d.fn() end end)
+end
+
 function RG.MainName()
   local m = RG.db and RG.db.main
   return m and m:match("^(.-)%-") or m

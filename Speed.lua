@@ -229,7 +229,7 @@ local function nameplate(unit)
   local name = UnitName(unit)
   local t = name and targetSet[name]
   if not t or UnitIsDead(unit) then return end
-  if lastAlert[name] and GetTime() - lastAlert[name] < 45 then return end
+  if lastAlert[name] and GetTime() - lastAlert[name] < 180 then return end
   lastAlert[name] = GetTime()
   RG.Print(GOLD .. "Quest mob nearby:|r " .. name .. GREY .. (t.have and t.need and string.format("  (%d/%d)", t.have, t.need) or "") .. "  ·  press your RetGearTarget macro|r")
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
@@ -330,7 +330,7 @@ function RG.Reminders()
   if RG.Opt("bagReminder") then
     local free = freeSlots()
     if free <= 3 then
-      out[#out + 1] = { "|TInterface\\Icons\\INV_Misc_Bag_08:14:14|t " .. (free == 0 and RED or GOLD) .. "Bags " .. (free == 0 and "full" or ("almost full: " .. free .. " free")) .. "|r" .. GREY .. ". Vendor, bank" .. ((RG.IsAlt and not RG.IsAlt() and RG.db.main) and ", or mail spare mats to your bank alt" or "") .. "|r" }
+      out[#out + 1] = { "|TInterface\\Icons\\INV_Misc_Bag_08:14:14|t " .. (free == 0 and RED or GOLD) .. "Bags " .. (free == 0 and "full" or ("almost full: " .. free .. " free")) .. "|r" .. GREY .. ". Vendor, bank" .. ((RG.IsAlt and not RG.IsAlt() and RG.db.main) and ", or mail spare mats to your bank alt" or "") .. "|r", nil, free == 0 and 1 or 2 }
     end
   end
   return out

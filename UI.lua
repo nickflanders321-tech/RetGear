@@ -350,8 +350,8 @@ local function renderProf()
     setItem(r, id, link, title, sub, right, right2, accent, quality)
     if icon then r.icon:SetTexture(icon) end
   end
-  n = n + 1; setBar(getRow(n), "Mining", mining and mining.rank or 0, mining and math.max(mining.max, 1) or 300, T.gold, mining and (mining.rank .. " / " .. mining.max) or (GREY .. "Not learned|r"))
-  n = n + 1; setBar(getRow(n), "Blacksmithing", bs and bs.rank or 0, bs and math.max(bs.max, 1) or 300, { 0.85, 0.55, 0.3 }, bs and (bs.rank .. " / " .. bs.max) or (GREY .. "Not learned|r"))
+  n = n + 1; setBar(getRow(n), "Mining", mining and mining.rank or 0, mining and math.max(mining.max or 0, mining.rank or 0, 1) or 300, T.gold, mining and (mining.rank .. " / " .. (mining.max or "?")) or (GREY .. "Not learned|r"))
+  n = n + 1; setBar(getRow(n), "Blacksmithing", bs and bs.rank or 0, bs and math.max(bs.max or 0, bs.rank or 0, 1) or 300, { 0.85, 0.55, 0.3 }, bs and (bs.rank .. " / " .. (bs.max or "?")) or (GREY .. "Not learned|r"))
   head("Where to mine · Horde side")
   local skill = mining and mining.rank or 0
   for _, m in ipairs(RG.MINING) do
@@ -958,10 +958,29 @@ local function renderCamp()
   return n
 end
 
+local SETTING_GROUPS = {
+  { "Leveling and quests", { "tracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet" } },
+  { "Professions, bags and gold", { "mineReminder", "sellJunk", "autoRepair", "bagReminder", "profitWatch", "autoScan" } },
+  { "Interface", { "minimap", "sounds" } },
+}
 local function renderSettings()
   local n = 0
-  n = n + 1; setHeader(getRow(n), "Features")
-  for _, o in ipairs(RG.OPTIONS or {}) do
+  local byKey, used, ordered = {}, {}, {}
+  for _, o in ipairs(RG.OPTIONS or {}) do byKey[o.key] = o end
+  for _, g in ipairs(SETTING_GROUPS) do
+    local list = {}
+    for _, k in ipairs(g[2]) do if byKey[k] then list[#list + 1] = byKey[k]; used[k] = true end end
+    ordered[#ordered + 1] = { g[1], list }
+  end
+  local other = {}
+  for _, o in ipairs(RG.OPTIONS or {}) do if not used[o.key] then other[#other + 1] = o end end
+  if #other > 0 then ordered[#ordered + 1] = { "Other", other } end
+  for _, grp in ipairs(ordered) do
+   if #grp[2] > 0 then
+    n = n + 1; setHeader(getRow(n), grp[1])
+   end
+   for _, o in ipairs(grp[2]) do
     n = n + 1
     local on = RG.Opt(o.key)
     setStep(getRow(n), "", o.label, on, function()
@@ -972,6 +991,7 @@ local function renderSettings()
     end)
     rows[n].title:SetText((on and "|cffffffff" or GREY) .. o.label .. "|r")
     rows[n].tip = on and "On. Click to turn off." or "Off. Click to turn on."
+   end
   end
   n = n + 1; setHeader(getRow(n), "Tools")
   local function action(label, sub, fn)
@@ -1034,7 +1054,15 @@ local function updateHeader()
   end
 end
 
+-- Many events ask for a redraw at once (looting fires several); coalesce them
+-- into a single rebuild a tenth of a second later.
+local refreshQueued
 function RG.RefreshUI()
+  if not frame or not frame:IsShown() or refreshQueued then return end
+  refreshQueued = true
+  C_Timer.After(0.1, function() refreshQueued = nil; RG.RefreshUINow() end)
+end
+function RG.RefreshUINow()
   if not frame or not frame:IsShown() then return end
   for _, r in ipairs(rows) do r:Hide() end
   updateHeader()
@@ -1132,7 +1160,8 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "dps", "DPS" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "camp", "Camp" }, { "mail", "Bank alt" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "dps", "DPS" }, { "heal", "Healing" },
+    { "prof", "Professions" }, { "camp", "Camp" }, { "ah", "AH" }, { "gold", "Gold" }, { "mail", "Bank alt" }, { "settings", "Settings" } }
   local x = 18
   -- squeeze the padding so every tab fits on one line
   local textW = 0
@@ -1188,7 +1217,7 @@ end
 
 function RG.ToggleUI()
   if not frame then build() end
-  if frame:IsShown() then frame:Hide() else frame:Show(); RG.RefreshUI() end
+  if frame:IsShown() then frame:Hide() else frame:Show(); RG.RefreshUINow() end
 end
 
 -- Item data arrives a moment after it's first asked for; redraw once it does.

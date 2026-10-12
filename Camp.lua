@@ -154,20 +154,20 @@ function RG.Reminders()
   local lvl = UnitLevel("player")
   local state, left = RG.CampState()
   if state == "sitting" then
-    out[#out + 1] = { CAMP_ICON .. GOLD .. "Keep sitting|r" .. GREY .. ": Camp Benefits in about a minute|r" }
+    out[#out + 1] = { CAMP_ICON .. GOLD .. "Keep sitting|r" .. GREY .. ": Camp Benefits in about a minute|r", nil, 1 }
   elseif RG.Opt("campReminder") and skill("Cooking") >= 1 and lvl >= 5 and not inCityOrInstance() then
     if state ~= "active" then
       local pick = RG.CampPick()
-      out[#out + 1] = { CAMP_ICON .. GOLD .. "Make camp|r" .. GREY .. ": fire" .. (pick and (" + " .. pick.name) or "") .. ", sit 1 minute for an hour of buffs|r", function() if RG.ShowTab then RG.ShowTab("camp") end end }
+      out[#out + 1] = { CAMP_ICON .. GOLD .. "Make camp|r" .. GREY .. ": fire" .. (pick and (" + " .. pick.name) or "") .. ", sit 1 minute for an hour of buffs|r", function() if RG.ShowTab then RG.ShowTab("camp") end end, 4 }
     elseif left and left < 300 then
-      out[#out + 1] = { CAMP_ICON .. GOLD .. string.format("Camp buff ends in %d min", math.ceil(left / 60)) .. "|r" .. GREY .. ": make camp at your next stop|r", function() if RG.ShowTab then RG.ShowTab("camp") end end }
+      out[#out + 1] = { CAMP_ICON .. GOLD .. string.format("Camp buff ends in %d min", math.ceil(left / 60)) .. "|r" .. GREY .. ": make camp at your next stop|r", function() if RG.ShowTab then RG.ShowTab("camp") end end, 3 }
     end
   end
   if RG.Opt("wellFed") and lvl < 60 and not wellFed() and not inCityOrInstance() and skill("Cooking") >= 1 then
-    out[#out + 1] = { GOLD .. "Eat cooked food|r" .. GREY .. ": Well Fed gives +5% XP from kills|r" }
+    out[#out + 1] = { GOLD .. "Eat cooked food|r" .. GREY .. ": Well Fed gives +5% XP from kills|r", nil, 5 }
   end
   local nxt = RG.CampNext(1)[1]
-  if nxt then out[#out + 1] = { "|TInterface\\Icons\\Trade_Fishing:14:14|t " .. GREY .. nxt.text:gsub("%. .*$", ".") .. "|r", function() if RG.ShowTab then RG.ShowTab("camp") end end } end
+  if nxt then out[#out + 1] = { "|TInterface\\Icons\\Trade_Fishing:14:14|t " .. GREY .. nxt.text:gsub("%. .*$", ".") .. "|r", function() if RG.ShowTab then RG.ShowTab("camp") end end, 8 } end
   return out
 end
 

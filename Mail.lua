@@ -200,8 +200,12 @@ f:SetScript("OnEvent", function(_, event)
   elseif event == "MAIL_SHOW" then
     C_Timer.After(0.2, showMailButton)
   else
-    snapshot()
-    if mailBtn and mailBtn:IsShown() then showMailButton() end
+    RG.Debounce("mailSnap", 0.8, function()
+      snapshot()
+      if mailBtn and mailBtn:IsShown() then showMailButton() end
+      if RG.RefreshUI then RG.RefreshUI() end
+    end)
+    return
   end
   if RG.RefreshUI then RG.RefreshUI() end
 end)
@@ -215,7 +219,7 @@ function RG.Reminders()
   for _, m in ipairs(RG.MailQuests(2)) do
     if m.missing > 0 and m.q.req <= lvl + 2 and not m.done then
       local what = m.selfMade and ("make " .. (m.items[1].name)) or ("have your bank alt mail " .. (m.q.any and (m.missing .. " missing pages") or m.items[1].name))
-      out[#out + 1] = { "|TInterface\\Icons\\INV_Letter_15:14:14|t " .. GOLD .. m.q.quest .. "|r" .. GREY .. ": " .. what .. "|r", function() if RG.ShowTab then RG.ShowTab("mail") end end }
+      out[#out + 1] = { "|TInterface\\Icons\\INV_Letter_15:14:14|t " .. GOLD .. m.q.quest .. "|r" .. GREY .. ": " .. what .. "|r", function() if RG.ShowTab then RG.ShowTab("mail") end end, 6 }
       break
     end
   end

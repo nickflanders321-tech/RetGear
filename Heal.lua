@@ -262,7 +262,7 @@ f:SetScript("OnEvent", function(_, event)
   else
     if bankOpen and event == "BAG_UPDATE_DELAYED" then readBank() end
     invalidate()
-    C_Timer.After(0.5, checkNew)
+    RG.Debounce("healCheck", 0.6, checkNew)
   end
   if RG.RefreshUI then RG.RefreshUI() end
 end)
@@ -278,7 +278,7 @@ local baseReminders = RG.Reminders
 function RG.Reminders()
   local out = baseReminders and baseReminders() or {}
   if on() and (UnitLevel("player") or 1) >= 40 and hasDualSpec() == false and not RG.db.dualSpecSeen then
-    out[#out + 1] = { HOLY_ICON .. GOLD .. "Dual spec is unlocked|r" .. GREY .. "  (see your class trainer; click to hide)|r", function() RG.db.dualSpecSeen = true; if RG.ShowTab then RG.ShowTab("heal") end end }
+    out[#out + 1] = { HOLY_ICON .. GOLD .. "Dual spec is unlocked|r" .. GREY .. "  (see your class trainer; click to hide)|r", function() RG.db.dualSpecSeen = true; if RG.ShowTab then RG.ShowTab("heal") end end, 4 }
   end
   return out
 end

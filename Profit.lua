@@ -298,7 +298,8 @@ f:SetScript("OnEvent", function(_, event)
   elseif event == "BAG_UPDATE_DELAYED" then
     invalidate()
     if on() then checkSold() end
-    queueMarks()
+    RG.Debounce("bagMarks", 0.3, RG.UpdateBagMarks)
+    return
   else
     invalidate(); queueMarks()
     if RG.RefreshUI then RG.RefreshUI() end
@@ -312,7 +313,7 @@ function RG.Reminders()
   if on() then
     local items, _, total = RG.ProfitList()
     if #items > 0 then
-      out[#out + 1] = { COIN .. " " .. GOLD .. #items .. " bag item" .. (#items > 1 and "s" or "") .. " to sell on the AH|r" .. GREY .. "  (+" .. RG.Money(total) .. ")|r", function() if RG.ShowTab then RG.ShowTab("ah") end end }
+      out[#out + 1] = { COIN .. " " .. GOLD .. #items .. " bag item" .. (#items > 1 and "s" or "") .. " to sell on the AH|r" .. GREY .. "  (+" .. RG.Money(total) .. ")|r", function() if RG.ShowTab then RG.ShowTab("ah") end end, 7 }
     end
   end
   return out
