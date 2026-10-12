@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.20.2 (combat fix)
+- Fixed: "Auras cannot be accessed when secret while tainted by 'RetGear'" in combat. WoW Forever hides buffs and debuffs from addons during combat, so RetGear no longer reads them then: Seal and Blessing of Might are read before the pull and followed through the combat log during the fight (Seal uptime still works), and the camp buff, Aura and Blessing reminders reuse the last reading from out of combat.
+- Party dispel alerts can only fire out of combat on this client (debuffs are hidden in combat).
+- Any refused read is now caught quietly instead of showing an error.
+
 ## v0.20.1 (quality pass)
 - Fixed: after running setup with the Full guidance or Balanced preset, Ret scores could disappear from item tooltips (and the AH auto-scan setting could be misread) until the next login.
 - Safer visuals: dialogs keep a solid dark background even if a client lacks the dialog texture, and map-pin markers use the raid-target star that every client has.

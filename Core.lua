@@ -48,6 +48,41 @@ function RG.Debounce(key, delay, fn)
   C_Timer.After(delay, function() local d = debounced[key]; debounced[key] = nil; if d then d.fn() end end)
 end
 
+-- Auras are "secret" to addons during combat on this client: reading them then
+-- throws a taint error. All aura reads go through here: in combat it returns
+-- nil, true ("can't tell") without touching the API, and any other refusal is
+-- caught the same way.
+local isSecret = issecretvalue or function() return false end
+function RG.AurasLocked() return (InCombatLockdown and InCombatLockdown()) and true or false end
+function RG.FindAura(unit, filter, test)
+  if RG.AurasLocked() then return nil, true end
+  local ok, res = pcall(function()
+    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+      for i = 1, 40 do
+        local a = C_UnitAuras.GetAuraDataByIndex(unit, i, filter)
+        if not a then return nil end
+        if a.name and not isSecret(a.name) then
+          local r = test(a)
+          if r then return r end
+        end
+      end
+    elseif UnitAura then
+      for i = 1, 40 do
+        local n, _, _, dispel, _, exp, src = UnitAura(unit, i, filter)
+        if not n then return nil end
+        local r = test({ name = n, dispelName = dispel, expirationTime = exp, sourceUnit = src })
+        if r then return r end
+      end
+    end
+  end)
+  if ok then return res end
+  return nil, true
+end
+-- A player buff by name: the aura table, or nil (second value true when it couldn't be read).
+function RG.PlayerBuff(name)
+  return RG.FindAura("player", "HELPFUL", function(a) return a.name == name and a end)
+end
+
 function RG.MainName()
   local m = RG.db and RG.db.main
   return m and m:match("^(.-)%-") or m

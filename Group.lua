@@ -117,22 +117,21 @@ function RG.SuggestBlessing(unit)
   if knows("Blessing of Wisdom") then return "Blessing of Wisdom" end
   return "Blessing of Might"
 end
+-- Returns the Blessing name, or nil; second value true when auras can't be read (combat).
 local function myBlessingOn(unit)
-  if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return nil end
-  for i = 1, 40 do
-    local a = C_UnitAuras.GetAuraDataByIndex(unit, i, "HELPFUL")
-    if not a then break end
-    if a.name and a.name:find("Blessing of") and (a.sourceUnit == "player" or a.isFromPlayerOrPlayerPet) then return a.name end
-  end
+  return RG.FindAura(unit, "HELPFUL", function(a)
+    return a.name:find("Blessing of") and (a.sourceUnit == "player" or a.isFromPlayerOrPlayerPet) and a.name
+  end)
 end
 RG.MyBlessingOn = myBlessingOn
+local lastAura
 local function myAura()
-  if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return nil end
-  for i = 1, 40 do
-    local a = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-    if not a then break end
-    if a.name and a.name:find(" Aura$") and (a.sourceUnit == "player" or a.isFromPlayerOrPlayerPet) then return a.name end
-  end
+  local name, blocked = RG.FindAura("player", "HELPFUL", function(a)
+    return a.name:find(" Aura$") and (a.sourceUnit == "player" or a.isFromPlayerOrPlayerPet) and a.name
+  end)
+  if blocked then return lastAura end
+  lastAura = name
+  return name
 end
 RG.MyAura = myAura
 -- Party members missing a Blessing from you: { {unit, name, suggest}, ... }
@@ -140,7 +139,9 @@ function RG.UnblessedParty()
   local out = {}
   if not knows("Blessing of Might") then return out end
   for _, u in ipairs(partyUnits()) do
-    if not UnitIsDeadOrGhost(u) and not myBlessingOn(u) then out[#out + 1] = { unit = u, name = UnitName(u), suggest = RG.SuggestBlessing(u) } end
+    local has, blocked = myBlessingOn(u)
+    if blocked then return {} end
+    if not UnitIsDeadOrGhost(u) and not has then out[#out + 1] = { unit = u, name = UnitName(u), suggest = RG.SuggestBlessing(u) } end
   end
   return out
 end
@@ -227,19 +228,18 @@ local function center(msg)
 end
 local function throttle(key, sec) if alerted[key] and GetTime() - alerted[key] < sec then return false end alerted[key] = GetTime(); return true end
 local function checkDispel(unit)
-  if not RG.Opt("groupAlerts") or not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then return end
+  if not RG.Opt("groupAlerts") then return end
   local purify, cleanse = knows("Purify"), knows("Cleanse")
   if not (purify or cleanse) then return end
-  for i = 1, 40 do
-    local a = C_UnitAuras.GetAuraDataByIndex(unit, i, "HARMFUL")
-    if not a then break end
+  -- Debuffs are hidden from addons in combat on this client; then this stays quiet.
+  RG.FindAura(unit, "HARMFUL", function(a)
     local t = a.dispelName
     local spell = (t == "Magic" and cleanse and "Cleanse") or ((t == "Poison" or t == "Disease") and (cleanse and "Cleanse" or "Purify")) or nil
     if spell and throttle(unit .. t, 8) then
       center(string.format("%s: %s %s (%s)", spell, UnitName(unit) or unit, "has " .. (a.name or t), t))
-      break
+      return true
     end
-  end
+  end)
 end
 local function checkHealth(unit)
   if not RG.Opt("groupAlerts") or not inCombat() then return end
@@ -304,7 +304,7 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
   elseif event == "UNIT_AURA" then
     if a1 and a1:find("^party%d") then checkDispel(a1); if not inCombat() and RG.QueueTracker then RG.QueueTracker() end end
   elseif event == "UNIT_HEALTH" then
-    if a1 and a1:find("^party%d") then checkHealth(a1) end
+    if a1 and a1:find("^party%d") then pcall(checkHealth, a1) end
   elseif event == "CHAT_MSG_LOOT" then
     if run and a1 then
       local link = a1:match("|c%x+|Hitem:.-|h.-|h|r")

@@ -209,10 +209,10 @@ end
 -- Reminders (shown in the tracker): Blessing, Seal, Find Minerals, trainer
 -- ---------------------------------------------------------------------------
 local function hasAura(names)
-  if not (C_UnitAuras and C_UnitAuras.GetAuraDataBySpellName) then return nil end
   for _, n in ipairs(names) do
-    local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, "player", n, "HELPFUL")
-    if ok and aura then return true end
+    local a, blocked = RG.PlayerBuff(n)
+    if blocked then return nil end
+    if a then return true end
   end
   return false
 end

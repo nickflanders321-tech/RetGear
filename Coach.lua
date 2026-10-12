@@ -70,23 +70,21 @@ local function inRange(name)
   elseif IsSpellInRange then r = IsSpellInRange(name, "target") end
   return r == nil or r == true or r == 1
 end
-local function hasAura(test)
-  if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-    for i = 1, 40 do
-      local a = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-      if not a then break end
-      if a.name and test(a.name) then return a.name end
-    end
-  elseif UnitBuff then
-    for i = 1, 40 do
-      local n = UnitBuff("player", i)
-      if not n then break end
-      if test(n) then return n end
-    end
-  end
+-- Buffs can't be read in combat on this client, so Seal and Might are read
+-- out of combat and then followed through the combat log during a fight.
+local buffs = { seal = {}, might = false }
+local function isSeal(n) return type(n) == "string" and n:find("^Seal of") ~= nil end
+local function isMight(n) return type(n) == "string" and n:find("Blessing of Might") ~= nil end
+local function refreshBuffs()
+  local seals, might = {}, false
+  local _, blocked = RG.FindAura("player", "HELPFUL", function(a)
+    if isSeal(a.name) then seals[a.name] = true elseif isMight(a.name) then might = true end
+  end)
+  if blocked then return end
+  buffs.seal, buffs.might = seals, might
 end
-local function hasSeal() return hasAura(function(n) return n:find("^Seal of") end) end
-local function hasMight() return hasAura(function(n) return n:find("Blessing of Might") end) end
+local function hasSeal() return next(buffs.seal) ~= nil end
+local function hasMight() return buffs.might or nil end
 local function targetOK() return UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDead("target") end
 
 -- ---------------------------------------------------------------------------
@@ -307,21 +305,33 @@ end
 -- Events
 -- ---------------------------------------------------------------------------
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_DEAD" }) do pcall(f.RegisterEvent, f, e) end
-f:SetScript("OnEvent", function(_, event)
-  if event == "PLAYER_LOGIN" then myGUID = UnitGUID("player"); return end
+for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_DEAD", "UNIT_AURA" }) do pcall(f.RegisterEvent, f, e) end
+f:SetScript("OnEvent", function(_, event, unit)
+  if event == "PLAYER_LOGIN" then myGUID = UnitGUID("player"); refreshBuffs(); return end
+  if event == "UNIT_AURA" then
+    if unit == "player" and not RG.AurasLocked() then RG.Debounce("coachBuffs", 0.3, refreshBuffs) end
+    return
+  end
   if not on() then return end
   if event == "PLAYER_REGEN_DISABLED" then
     newFight()
     if ticker then ticker:Cancel() end
-    ticker = C_Timer.NewTicker(TICK, sample)
+    ticker = C_Timer.NewTicker(TICK, function() pcall(sample) end)  -- a value hidden in combat must never break the fight log
   elseif event == "PLAYER_REGEN_ENABLED" then
     finish()
+    refreshBuffs()
   elseif event == "PLAYER_DEAD" then
     if cur then cur.died = true end
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" and cur then
-    local _, sub, _, src, srcName, srcFlags, _, _, _, _, _, a12, a13, a14, a15, _, _, a18, a19, _, a21 = CombatLogGetCurrentEventInfo()
+    local _, sub, _, src, srcName, srcFlags, _, dst, _, _, _, a12, a13, a14, a15, _, _, a18, a19, _, a21 = CombatLogGetCurrentEventInfo()
     myGUID = myGUID or UnitGUID("player")
+    -- your own Seal / Might going up or down (Judgement uses the Seal up)
+    if (sub == "SPELL_AURA_APPLIED" or sub == "SPELL_AURA_REFRESH" or sub == "SPELL_AURA_REMOVED") and dst == myGUID then
+      pcall(function()
+        local up = sub ~= "SPELL_AURA_REMOVED"
+        if isSeal(a13) then buffs.seal[a13] = up or nil elseif isMight(a13) then buffs.might = up end
+      end)
+    end
     if src ~= myGUID then
       -- party members' damage, for your share of the group's damage
       if (cur.groupSize or 1) > 1 and srcFlags and band(srcFlags, 0x6) ~= 0 and srcName then

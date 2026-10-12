@@ -65,29 +65,28 @@ RG.FISH = {
 -- ---------------------------------------------------------------------------
 -- Live state: auras and recommendations
 -- ---------------------------------------------------------------------------
-local function aura(name)
-  if C_UnitAuras and C_UnitAuras.GetAuraDataBySpellName then
-    local ok, a = pcall(C_UnitAuras.GetAuraDataBySpellName, "player", name, "HELPFUL")
-    if ok then return a end
-  end
-  if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-    for i = 1, 40 do
-      local a = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-      if not a then break end
-      if a.name == name then return a end
-    end
-  end
+-- Auras can't be read in combat, so the last reading is kept and reused then.
+local last = { state = nil, exp = nil }
+local function readCamp()
+  local b, blocked = RG.PlayerBuff("Camp Benefits")
+  if blocked then return false end
+  if b then
+    local exp = b.expirationTime
+    last.state, last.exp = "active", (type(exp) == "number" and exp > 0) and exp or nil
+  elseif RG.PlayerBuff("Welcoming Campfire") then last.state, last.exp = "sitting", nil
+  elseif RG.PlayerBuff("Campfire Nearby") then last.state, last.exp = "near", nil
+  else last.state, last.exp = nil, nil end
+  return true
 end
 -- "active" (with seconds left) | "sitting" | "near" | nil
 function RG.CampState()
-  local b = aura("Camp Benefits")
-  if b then
-    local left = b.expirationTime and b.expirationTime > 0 and (b.expirationTime - GetTime()) or nil
+  readCamp()
+  if last.state == "active" and last.exp then
+    local left = last.exp - GetTime()
+    if left <= 0 then return nil end
     return "active", left
   end
-  if aura("Welcoming Campfire") then return "sitting" end
-  if aura("Campfire Nearby") then return "near" end
-  return nil
+  return last.state
 end
 
 -- Estimated Sharpening Wheel strength at your level (4 steps from level 1 to 60).
@@ -151,7 +150,7 @@ local function inCityOrInstance()
   local inInst = IsInInstance and IsInInstance()
   return inInst and true or false
 end
-local function wellFed() return aura("Well Fed") ~= nil end
+local function wellFed() return RG.PlayerBuff("Well Fed") ~= nil end
 
 local baseReminders = RG.Reminders
 function RG.Reminders()
