@@ -1,0 +1,15 @@
+## Interface: 16001, 16000, 16002, 16003, 16005, 16010, 16100, 120105, 120100, 120001
+## Title: RetGear |cffD4B46A(Ret Paladin)|r
+## Notes: Gearing helper for an Undead (Horde) standard DPS Retribution Paladin: upgrade scores on tooltips, a leveling gear guide with sources, and live Auction House prices.
+## Author: Nick (Darmine Doggy Doors)
+## Version: @project-version@
+## SavedVariables: RetGearDB
+## IconTexture: Interface\Icons\Spell_Holy_AuraOfLight
+## AddonCompartmentFunc: RetGear_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: RetGear_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: RetGear_OnAddonCompartmentLeave
+
+Data.lua
+Core.lua
+Auction.lua
+UI.lua

@@ -1,0 +1,19 @@
+name: Check Lua
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  luacheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "5.1"
+      - name: Syntax check every Lua file
+        run: |
+          for f in *.lua; do
+            lua -e "local f = assert(io.open('$f')):read('*a'); assert(loadstring(f, '$f'))" && echo "ok  $f"
+          done

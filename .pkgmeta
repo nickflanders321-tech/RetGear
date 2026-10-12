@@ -1,0 +1,5 @@
+package-as: RetGear
+
+ignore:
+  - CHANGELOG.md
+  - .github
