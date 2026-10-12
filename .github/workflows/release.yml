@@ -44,13 +44,19 @@ jobs:
         uses: BigWigsMods/packager@v2
         with:
           args: -o
-      - name: Publish the GitHub release
+      - name: Write release notes
         if: steps.tag.outputs.skip == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           v="${{ steps.tag.outputs.v }}"
+          awk -v h="## $v" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md > release-notes.md
+          [ -s release-notes.md ] || echo "RetGear $v" > release-notes.md
           ls -la .release
-          notes=$(awk -v h="## $v" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md)
-          [ -z "$notes" ] && notes="RetGear $v"
-          gh release view "$v" >/dev/null 2>&1 || gh release create "$v" .release/RetGear*.zip --title "RetGear $v" --notes "$notes"
+      - name: Publish the GitHub release
+        if: steps.tag.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.v }}
+          name: RetGear ${{ steps.tag.outputs.v }}
+          body_path: release-notes.md
+          files: .release/RetGear-*.zip
+          fail_on_unmatched_files: true
