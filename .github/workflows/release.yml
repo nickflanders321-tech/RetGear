@@ -1,13 +1,17 @@
 name: Release
 
-# Publish a GitHub release (or push a tag) like v0.6.1 to ship a version. The packager builds the zip, uploads it
-# to CurseForge (when the CF_API_KEY secret and the project ID in the .toc
-# are set) and attaches it to a GitHub release.
+# Ships a version whenever the number in VERSION changes on main (or when run
+# by hand). It tags the commit, then the packager builds the zip, attaches it
+# to a GitHub release, and uploads it to CurseForge once the CF_API_KEY secret
+# and the project ID in the .toc are set.
 on:
   push:
-    tags: ['v*']
-  release:
-    types: [published]
+    branches: [main]
+    paths: ['VERSION']
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -15,10 +19,20 @@ jobs:
     env:
       CF_API_KEY: ${{ secrets.CF_API_KEY }}
       GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Tag this version
+        id: tag
+        run: |
+          v="v$(tr -d '[:space:]' < VERSION)"
+          if git rev-parse "$v" >/dev/null 2>&1; then
+            echo "Tag $v already exists, nothing to release."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          git tag -a "$v" -m "RetGear $v"
+          git push origin "$v"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
       - uses: BigWigsMods/packager@v2
+        if: steps.tag.outputs.skip == 'false'
