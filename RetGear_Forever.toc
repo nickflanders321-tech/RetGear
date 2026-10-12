@@ -11,6 +11,7 @@
 
 Data.lua
 Waypoints.lua
+Objectives.lua
 Core.lua
 Quests.lua
 QoL.lua

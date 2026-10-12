@@ -14,6 +14,7 @@ for _, o in ipairs({
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
   { key = "arrow",         label = "Arrow to your map pin (/rg way 45 60)", default = true },
   { key = "autoArrow",     label = "Arrow follows your next route step automatically", default = true },
+  { key = "newQuests",     label = "Show new quests you can pick up nearby", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
 
@@ -97,9 +98,136 @@ local function questTargets()
       end
     end
   end
+  -- "collect X" objectives: target the mobs that drop it (QuestieDB Forever data)
+  if RG.QDATA then
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+      local info = C_QuestLog.GetInfo(i)
+      local qd = info and not info.isHeader and info.questID and RG.QDATA[info.questID]
+      if qd and qd.o and not (C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID)) then
+        for _, o in ipairs(C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}) do
+          if not o.finished and o.text and o.type ~= "monster" then
+            for _, d in ipairs(qd.o) do
+              if d[1] == "i" and o.text:find(d[2], 1, true) then
+                for _, mob in ipairs(d[3]) do
+                  if not seen[mob] then
+                    seen[mob] = true
+                    names[#names + 1] = { name = mob, have = o.numFulfilled, need = o.numRequired, quest = info.title, drop = d[2] }
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
   return names
 end
 RG.QuestTargets = questTargets
+
+-- ---------------------------------------------------------------------------
+-- Nearest quest objective / turn-in (QuestieDB Forever coordinates)
+-- ---------------------------------------------------------------------------
+local function toWorld(map, x, y)
+  if not (C_Map and C_Map.GetWorldPosFromMapPos) then return nil end
+  local v = CreateVector2D and CreateVector2D(x / 100, y / 100) or { x = x / 100, y = y / 100 }
+  local ok, cont, wp = pcall(C_Map.GetWorldPosFromMapPos, map, v)
+  if not ok or not wp then return nil end
+  return cont, wp.x, wp.y
+end
+local function playerWorld()
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+  if not pos then return nil end
+  return toWorld(map, pos.x * 100, pos.y * 100)
+end
+-- Every place you could go right now: unfinished objectives and quests ready to turn in.
+function RG.QuestSpots()
+  local spots = {}
+  if not (RG.QDATA and C_QuestLog and C_QuestLog.GetNumQuestLogEntries) then return spots end
+  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+    local info = C_QuestLog.GetInfo(i)
+    local qd = info and not info.isHeader and info.questID and RG.QDATA[info.questID]
+    if qd then
+      if C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID) then
+        if qd.e then spots[#spots + 1] = { turnin = true, quest = info.title, label = qd.e[4], wp = { qd.e[1], qd.e[2], qd.e[3], qd.e[4] ~= "" and qd.e[4] or info.title } } end
+      elseif qd.o then
+        local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}
+        for _, d in ipairs(qd.o) do
+          local game
+          for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then game = o end end
+          if not (game and game.finished) then
+            for _, p in ipairs(d[4]) do
+              local src = d[3][p[4]] or d[2]
+              spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired,
+                wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
+            end
+          end
+        end
+      end
+    end
+  end
+  return spots
+end
+-- Quests you can pick up: high enough level, not done, not in your log, prerequisites met.
+-- Rebuilt when you level, turn in or accept quests (it checks a couple of thousand quests).
+local availCache, availDirty = nil, true
+function RG.MarkQuestsDirty() availDirty = true end
+local function done(id) return C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(id) end
+local function availableQuests()
+  if not availDirty and availCache then return availCache end
+  availDirty = false
+  local list, inLog = {}, {}
+  if not (RG.QDATA and C_QuestLog) then availCache = list; return list end
+  for i = 1, (C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries() or 0) do
+    local info = C_QuestLog.GetInfo(i)
+    if info and info.questID then inLog[info.questID] = true end
+  end
+  local lvl = UnitLevel("player")
+  for id, d in pairs(RG.QDATA) do
+    if d.s and d.n and lvl >= (d.r or 1) and (d.l or 1) >= lvl - 5 and (d.l or 1) <= lvl + 3 and not inLog[id] and not done(id) then
+      local ok = true
+      if d.pg then for _, p in ipairs(d.pg) do if not done(p) then ok = false break end end end
+      if ok and d.ps then ok = false; for _, p in ipairs(d.ps) do if done(p) then ok = true break end end end
+      if ok then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
+    end
+  end
+  availCache = list
+  return list
+end
+RG.AvailableQuests = availableQuests
+-- Nearest few quest givers with something for you, on your continent.
+function RG.NearbyNewQuests(max)
+  if not RG.Opt("newQuests") then return {} end
+  local c, px, py = playerWorld()
+  if not c then return {} end
+  local out = {}
+  for _, q in ipairs(availableQuests()) do
+    local c2, x, y = toWorld(q.wp[1], q.wp[2], q.wp[3])
+    if c2 == c then q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); out[#out + 1] = q end
+  end
+  table.sort(out, function(a, b) return a.dist < b.dist end)
+  for i = #out, (max or 2) + 1, -1 do out[i] = nil end
+  return out
+end
+
+-- Nearest spot on your continent; turnin = true only looks at turn-ins.
+function RG.NearestSpot(turnin)
+  local c, px, py = playerWorld()
+  if not c then return nil end
+  local best, bestD
+  for _, s in ipairs(RG.QuestSpots()) do
+    if (turnin and s.turnin) or (not turnin and not s.turnin) then
+      local c2, x, y = toWorld(s.wp[1], s.wp[2], s.wp[3])
+      if c2 == c then
+        local d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2)
+        if not bestD or d < bestD then best, bestD = s, d end
+      end
+    end
+  end
+  if best then best.dist = bestD end
+  return best
+end
 local targetSet = {}
 
 local MACRO = "RetGearTarget"
@@ -232,7 +360,7 @@ local function nameplate(unit)
   if not t or UnitIsDead(unit) then return end
   if lastAlert[name] and GetTime() - lastAlert[name] < 180 then return end
   lastAlert[name] = GetTime()
-  RG.Print(GOLD .. "Quest mob nearby:|r " .. name .. GREY .. (t.have and t.need and string.format("  (%d/%d)", t.have, t.need) or "") .. "  ·  press your RetGearTarget macro|r")
+  RG.Print(GOLD .. "Quest mob nearby:|r " .. name .. (t.drop and (GREY .. " (drops " .. t.drop .. ")|r") or "") .. GREY .. (t.have and t.need and string.format("  (%d/%d)", t.have, t.need) or "") .. "  ·  press your RetGearTarget macro|r")
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
 end
 
@@ -391,12 +519,13 @@ end
 local f = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "GOSSIP_SHOW", "QUEST_GREETING", "QUEST_DETAIL", "QUEST_PROGRESS", "QUEST_COMPLETE",
   "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "BAG_UPDATE_DELAYED", "PLAYER_REGEN_ENABLED", "NAME_PLATE_UNIT_ADDED",
-  "UI_ERROR_MESSAGE", "USER_WAYPOINT_UPDATED", "SUPER_TRACKING_CHANGED", "ZONE_CHANGED_NEW_AREA" }) do pcall(f.RegisterEvent, f, e) end
+  "UI_ERROR_MESSAGE", "USER_WAYPOINT_UPDATED", "SUPER_TRACKING_CHANGED", "ZONE_CHANGED_NEW_AREA", "PLAYER_LEVEL_UP", "QUEST_TURNED_IN" }) do pcall(f.RegisterEvent, f, e) end
 local barQueued
 local function queueBar() if barQueued then return end; barQueued = true; C_Timer.After(0.5, function() barQueued = nil; refreshBar() end) end
 f:SetScript("OnEvent", function(_, event, a1, a2)
   if event == "PLAYER_LOGIN" then
     C_Timer.NewTicker(30, paceTick)
+    C_Timer.NewTicker(5, function() if not combat() and RG.QueueTracker then RG.QueueTracker() end end)
     C_Timer.After(3, function() refreshBar(); refreshArrow() end)
   elseif event == "GOSSIP_SHOW" then onGossip()
   elseif event == "QUEST_GREETING" then onGreeting()
@@ -413,8 +542,11 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
     end
   elseif event == "USER_WAYPOINT_UPDATED" or event == "SUPER_TRACKING_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
     refreshArrow()
+  elseif event == "PLAYER_LEVEL_UP" or event == "QUEST_TURNED_IN" then
+    availDirty = true; queueBar()
   else
     if paused and (event == "QUEST_REMOVED" or event == "BAG_UPDATE_DELAYED") and freeSlots() > 0 then paused = false end
+    if event ~= "BAG_UPDATE_DELAYED" then availDirty = true end
     queueBar()
   end
 end)
@@ -426,6 +558,10 @@ SlashCmdList.RETGEAR = function(msg)
   if cmd == "way" then
     local x, y = (rest or ""):match("([%d%.]+)[,%s]+([%d%.]+)")
     if x and y then RG.SetWaypoint(tonumber(x), tonumber(y)) else RG.Print("Usage: /rg way 45.2 60.8  (coordinates in your current zone)") end
+    return
+  elseif cmd == "next" then
+    local s2 = RG.NearestSpot(false) or RG.NearestSpot(true)
+    if s2 then RG.PinWaypoint(s2.wp) else RG.Print("No quest objectives with a known location near you.") end
     return
   elseif cmd == "auto" then
     RetGearDB.autoQuest = not RG.Opt("autoQuest"); paused = false

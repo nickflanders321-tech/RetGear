@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.18.0
+- Quest objectives from QuestieDB's WoW Forever data (2,121 quests an Undead paladin can take): where every objective is, which mobs drop your quest items, and where to turn quests in.
+- Tracker "Quests near you": nearest unfinished objective, nearest quest ready to turn in, and up to two new quests you can pick up nearby (level, prerequisites and class checked), each with distance. Click to pin; /rg next pins the nearest objective.
+- The RetGearTarget macro, quest bar and nameplate alerts now include the mobs that drop items for "collect" quests.
+- New Settings toggle: "Show new quests you can pick up nearby".
+
 ## v0.17.1
 - Fixed a stray "." in front of unnumbered checklist rows (Settings and the Camp plan).
 

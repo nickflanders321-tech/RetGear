@@ -207,6 +207,31 @@ function RG.RefreshTracker()
     end
     y = y + 6
   end
+  -- nearest quest objective and turn-in (click to pin)
+  if RG.NearestSpot then
+    local obj, fin = RG.NearestSpot(false), RG.NearestSpot(true)
+    local new = RG.NearbyNewQuests and RG.NearbyNewQuests(2) or {}
+    if obj or fin or #new > 0 then
+      n = n + 1; y = section(n, y, "Quests near you")
+      if fin then
+        n = n + 1
+        y = item(n, y, RG.PIN .. GREEN .. "Turn in:|r " .. fin.quest .. GREY .. "  ·  " .. (fin.label ~= "" and fin.label or "") .. string.format("  ·  %d yd|r", fin.dist or 0),
+          { tip = "Click to show the turn-in on the map.", onClick = function() RG.PinWaypoint(fin.wp) end })
+      end
+      if obj then
+        n = n + 1
+        local prog = obj.have and obj.need and string.format(" (%d/%d)", obj.have, obj.need) or ""
+        y = item(n, y, RG.PIN .. "|cffffffff" .. obj.label .. prog .. "|r" .. GREY .. ((obj.src and obj.src ~= obj.label) and ("  ·  " .. obj.src) or "") .. string.format("  ·  %d yd|r", obj.dist or 0),
+          { tip = obj.quest .. "\nClick to show it on the map.  /rg next does the same.", onClick = function() RG.PinWaypoint(obj.wp) end })
+      end
+      for _, q in ipairs(new) do
+        n = n + 1
+        y = item(n, y, RG.PIN .. "|cffffd100!|r " .. "|cffffffff" .. q.name .. "|r" .. GREY .. string.format("  ·  level %d  ·  %s  ·  %d yd|r", q.lvl or 0, q.giver or "", q.dist or 0),
+          { tip = "New quest you can pick up. Click to show " .. (q.giver or "the quest giver") .. " on the map.", onClick = function() RG.PinWaypoint(q.wp) end })
+      end
+      y = y + 4
+    end
+  end
   -- next upgrade
   local up = nextUpgrade()
   if up then
