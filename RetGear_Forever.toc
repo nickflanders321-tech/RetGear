@@ -11,5 +11,6 @@
 
 Data.lua
 Core.lua
+Quests.lua
 Auction.lua
 UI.lua

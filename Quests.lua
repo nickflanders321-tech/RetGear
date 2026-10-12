@@ -1,0 +1,179 @@
+-- RetGear quest sync: reads your quest log and completed quests so the route
+-- can tick off steps and dungeon quests on its own.
+local _, RG = ...
+
+-- Quest IDs we know for certain (checked on Wowhead), so completion can be
+-- read straight from the game even for quests done before RetGear was installed.
+RG.QUEST_IDS = {
+  ["weapons of choice"] = 893,
+  ["threat from the sea"] = 1427,
+  ["weapons of spirit"] = 3129,
+  ["arugal's folly"] = 424,
+  ["arugal must die"] = 1014,
+}
+
+local function db()
+  RetGearDB.questsDone = RetGearDB.questsDone or {}
+  return RetGearDB.questsDone
+end
+local function norm(s) return s and s:lower():gsub("^%s+", ""):gsub("%s+$", "") or nil end
+
+-- ---------------------------------------------------------------------------
+-- Quest log
+-- ---------------------------------------------------------------------------
+-- Returns a table of lowercased quest titles in your log -> { complete = bool }
+local logCache, logStamp = {}, nil
+function RG.QuestLog()
+  if logStamp and GetTime() - logStamp < 1 then return logCache end
+  logStamp = GetTime()
+  local out = {}
+  if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo then
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+      local info = C_QuestLog.GetInfo(i)
+      if info and not info.isHeader and info.title then
+        local complete = info.questID and C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID)
+        out[norm(info.title)] = { complete = complete and true or false, id = info.questID }
+      end
+    end
+  elseif GetNumQuestLogEntries and GetQuestLogTitle then
+    for i = 1, GetNumQuestLogEntries() do
+      local title, _, _, isHeader, _, isComplete = GetQuestLogTitle(i)
+      if title and not isHeader then out[norm(title)] = { complete = isComplete == 1 or isComplete == true } end
+    end
+  end
+  logCache = out
+  return out
+end
+
+-- "done" | "ready" (complete, turn it in) | "log" (in your log) | nil
+function RG.QuestState(name)
+  local key = norm(name)
+  if not key then return nil end
+  if db()[key] then return "done" end
+  local id = RG.QUEST_IDS[key]
+  if id and C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(id) then
+    db()[key] = true; return "done"
+  end
+  local q = RG.QuestLog()[key]
+  if q then return q.complete and "ready" or "log" end
+  return nil
+end
+
+-- ---------------------------------------------------------------------------
+-- Completed-quest history: map every completed quest ID to its title once.
+-- ---------------------------------------------------------------------------
+local waiting = {}
+local function learnTitle(id)
+  local title = C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(id)
+  if title then db()[norm(title)] = true; return true end
+  return false
+end
+local function scanHistory()
+  if not (C_QuestLog and C_QuestLog.GetAllCompletedQuestIDs) then return end
+  local ids = C_QuestLog.GetAllCompletedQuestIDs() or {}
+  RetGearDB.historyScanned = RetGearDB.historyScanned or {}
+  local seen = RetGearDB.historyScanned
+  local pending = 0
+  for _, id in ipairs(ids) do
+    if not seen[id] then
+      if learnTitle(id) then seen[id] = true
+      elseif C_QuestLog.RequestLoadQuestByID then
+        waiting[id] = true; pending = pending + 1
+        C_QuestLog.RequestLoadQuestByID(id)
+      end
+    end
+  end
+end
+
+-- ---------------------------------------------------------------------------
+-- Auto-detected steps. Returns true when the game confirms a step is done.
+-- ---------------------------------------------------------------------------
+local QUEST_NAMES -- every quest name the route mentions, longest first
+local function questNames()
+  if QUEST_NAMES then return QUEST_NAMES end
+  local set = {}
+  for _, dq in pairs(RG.DUNGEON_QUESTS or {}) do for _, q in ipairs(dq.quests) do set[q[1]:gsub("%s*%(.-%)$", "")] = true end end
+  for _, g in ipairs(RG.GUIDE or {}) do if g.how == "Quest" and g.src then set[(g.src:gsub("%s*%(.-%)$", ""))] = true end end
+  for k in pairs(RG.QUEST_IDS) do set[k] = true end
+  QUEST_NAMES = {}
+  for n in pairs(set) do if #n > 6 then QUEST_NAMES[#QUEST_NAMES + 1] = n end end
+  table.sort(QUEST_NAMES, function(a, b) return #a > #b end)
+  return QUEST_NAMES
+end
+
+local function knowsSpell(name)
+  if C_Spell and C_Spell.GetSpellInfo then
+    local info = C_Spell.GetSpellInfo(name)
+    if not info then return false end
+    if C_SpellBook and C_SpellBook.FindSpellBookSlotForSpell then return C_SpellBook.FindSpellBookSlotForSpell(info.spellID) ~= nil end
+    if IsPlayerSpell then return IsPlayerSpell(info.spellID) end
+    return true
+  end
+  return GetSpellInfo and GetSpellInfo(name) ~= nil
+end
+
+-- entry = the route entry the step belongs to; text = the step text.
+-- Returns done (bool), reason (short text for the tooltip).
+function RG.StepAuto(entry, text)
+  local t = text:lower()
+  -- flight paths
+  if t:find("flight path", 1, true) then
+    for _, place in ipairs({ entry.fp, "The Sepulcher", "Undercity", "Orgrimmar", "Crossroads", "Ratchet", "Thunder Bluff", "Tarren Mill", "Hammerfall", "Booty Bay", "Grom'gol", "Light's Hope" }) do
+      if place and t:find(place:lower(), 1, true) and RG.KnowsFP(place) then return true, "You know the " .. place .. " flight path" end
+    end
+    if entry.fp and t:find("grab the flight path", 1, true) and RG.KnowsFP(entry.fp) then return true, "You know this flight path" end
+  end
+  -- hearthstone
+  if (t:find("make it your home", 1, true) or t:find("hearthstone", 1, true)) and GetBindLocation then
+    local bind = (GetBindLocation() or ""):lower()
+    if bind ~= "" and (t:find(bind, 1, true) or (entry.hub and entry.hub:lower():find(bind, 1, true))) then return true, "Your hearthstone is set to " .. GetBindLocation() end
+  end
+  -- professions
+  if t:find("train mining and blacksmithing", 1, true) then
+    local p = RG.Professions()
+    if p["Mining"] and p["Blacksmithing"] then return true, "You know Mining and Blacksmithing" end
+  end
+  -- spells
+  if t:find("seal of command", 1, true) and knowsSpell("Seal of Command") then return true, "You know Seal of Command" end
+  -- named quests
+  for _, n in ipairs(questNames()) do
+    if t:find(n:lower(), 1, true) then
+      if RG.QuestState(n) == "done" then return true, "Quest turned in: " .. n end
+    end
+  end
+  return false
+end
+
+-- ---------------------------------------------------------------------------
+-- Events
+-- ---------------------------------------------------------------------------
+local f = CreateFrame("Frame")
+for _, e in ipairs({ "PLAYER_LOGIN", "QUEST_TURNED_IN", "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_DATA_LOAD_RESULT", "PLAYER_LEVEL_UP", "LEARNED_SPELL_IN_SKILL_LINE", "SPELLS_CHANGED" }) do pcall(f.RegisterEvent, f, e) end
+local refreshQueued
+local function queueRefresh()
+  if refreshQueued then return end
+  refreshQueued = true
+  C_Timer.After(0.5, function() refreshQueued = nil; logStamp = nil; if RG.RefreshUI then RG.RefreshUI() end end)
+end
+f:SetScript("OnEvent", function(_, event, a1, a2)
+  if event == "PLAYER_LOGIN" then
+    C_Timer.After(5, scanHistory)
+  elseif event == "QUEST_TURNED_IN" then
+    local title = C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(a1)
+    if title then
+      db()[norm(title)] = true
+      for _, n in ipairs(questNames()) do
+        if norm(n) == norm(title) then RG.Print("Route step done: " .. title) break end
+      end
+    end
+    queueRefresh()
+  elseif event == "QUEST_DATA_LOAD_RESULT" then
+    if waiting[a1] then
+      waiting[a1] = nil
+      if a2 and learnTitle(a1) then RetGearDB.historyScanned[a1] = true end
+      queueRefresh()
+    end
+  else
+    queueRefresh()
+  end
+end)

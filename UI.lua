@@ -115,6 +115,7 @@ local function getRow(i)
 
   r:RegisterForClicks("AnyUp")
   r:SetScript("OnEnter", function(self)
+    if self.tip then GameTooltip:SetOwner(self, "ANCHOR_RIGHT"); GameTooltip:SetText(self.tip, 1, 1, 1, 1, true); GameTooltip:Show(); return end
     if not self.itemID and not self.link then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     if self.link then GameTooltip:SetHyperlink(self.link) else GameTooltip:SetItemByID(self.itemID) end
@@ -134,7 +135,7 @@ local function getRow(i)
 end
 
 local function hideAll(r)
-  r.onClick = nil
+  r.onClick = nil; r.tip = nil
   r.title:SetWordWrap(false)
   for _, k in ipairs({ "iconBorder", "icon", "title", "sub", "pill", "meta", "head", "headLine", "barBg", "barFill", "barMark", "barLabel", "barValue", "stripe" }) do r[k]:Hide() end
 end
@@ -212,14 +213,15 @@ local function setBar(r, label, value, max, color, valueText, mark)
 end
 
 -- A numbered to-do line under a route step. Wraps long text; click to tick it off.
-local function setStep(r, num, text, done, onClick)
+local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
   backdrop(r, { 1, 1, 1, done and 0.012 or 0.025 }, { 1, 1, 1, 0.06 })
   r.hl:Show()
   local box = sz(16)
   r.iconBorder:SetSize(box, box); r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("TOPLEFT", 34, -sz(9))
-  r.iconBorder:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], done and 0.9 or 0.35); r.iconBorder:Show()
+  local bc = auto and T.green or T.gold
+  r.iconBorder:SetColorTexture(bc[1], bc[2], bc[3], done and 0.9 or 0.35); r.iconBorder:Show()
   r.icon:SetTexture(done and "Interface\\Buttons\\UI-CheckBox-Check" or WHITE); r.icon:SetTexCoord(0, 1, 0, 1)
   if done then r.icon:SetVertexColor(1, 1, 1, 1) else r.icon:SetVertexColor(0.05, 0.05, 0.06, 1) end
   r.icon:Show()
@@ -231,6 +233,8 @@ local function setStep(r, num, text, done, onClick)
   local th = r.title.GetStringHeight and r.title:GetStringHeight() or sz(14)
   r.h = math.max(sz(32), (th or sz(14)) + sz(16))
   r.onClick = onClick
+  if auto then r.tip = "Done: " .. auto .. "\n|cff8E8E8C(detected from your game)|r"
+  elseif done then r.tip = "Ticked by you. Click to untick." else r.tip = "Click to tick this off." end
   r:Show()
 end
 
@@ -421,7 +425,17 @@ local function renderRoute()
       local steps = RG.STEPS and RG.STEPS[key]
       local open = steps and ((state.open[key] == nil and now) or state.open[key] == true)
       local meta = KIND[r.kind] or ""
-      if steps then meta = meta .. GREY .. "   ·   " .. (open and "hide steps" or (#steps .. " steps")) .. "|r" end
+      RG.db.stepsDone = RG.db.stepsDone or {}
+      local doneN, autoMap = 0, {}
+      if steps then
+        for i, text in ipairs(steps) do
+          local ok, why = RG.StepAuto and RG.StepAuto(r, text)
+          if ok then autoMap[i] = why end
+          if ok or RG.db.stepsDone[key .. "#" .. i] or past then doneN = doneN + 1 end
+        end
+        meta = meta .. GREY .. "   ·   " .. doneN .. "/" .. #steps .. (open and "  ·  hide" or "") .. "|r"
+        if doneN == #steps and not now then status = GREEN .. "Done|r" end
+      end
       setItem(row, nil, nil, titleText, sub, status, meta, accent)
       if steps then row.onClick = function() state.open[key] = not open; RG.RefreshUI() end end
       row.icon:SetTexture(ICON[r.kind] or 134269)
@@ -430,17 +444,20 @@ local function renderRoute()
         for i, text in ipairs(steps) do
           n = n + 1
           local sk = key .. "#" .. i
-          setStep(getRow(n), i, text, RG.db.stepsDone[sk], function()
+          local auto = autoMap[i]
+          setStep(getRow(n), i, text, auto or RG.db.stepsDone[sk] or past, function()
             RG.db.stepsDone[sk] = not RG.db.stepsDone[sk] or nil
             RG.RefreshUI()
-          end)
+          end, auto or (past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
         end
       end
       if dq and lvl <= r.to and (lvl >= dq.prep - 4 or not state.near) then
         for _, q in ipairs(dq.quests) do
           n = n + 1
           local qr = getRow(n)
-          setItem(qr, nil, nil, "|cffffd100" .. q[1] .. "|r", q[2] .. GREY .. "  ·  " .. q[3] .. "|r", "", GREY .. "Quest|r", nil, nil, true)
+          local qs = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
+          local pill = qs == "done" and (GREEN .. "Done|r") or (qs == "ready" and (GREEN .. "Ready to turn in|r") or (qs == "log" and (GOLD .. "In your log|r") or ""))
+          setItem(qr, nil, nil, (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
           qr.icon:SetTexture(136797)
         end
       end
