@@ -19,4 +19,5 @@ Auction.lua
 Profit.lua
 Gold.lua
 Heal.lua
+Coach.lua
 UI.lua

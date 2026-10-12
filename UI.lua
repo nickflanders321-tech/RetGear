@@ -23,7 +23,7 @@ local FONT_TITLE = "Fonts\\MORPHEUS.TTF"
 local FONT_BODY  = "Fonts\\FRIZQT__.TTF"
 local FONT_NUM   = "Fonts\\ARIALN.TTF"
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local W, H = 720, 620
+local W, H = 780, 620
 -- Text size: 1.0 = original, saved per account. A- / A+ in the header change it.
 local function TS() return (RG.db and RG.db.textSize) or 1.2 end
 local function sz(n) return math.floor(n * TS() + 0.5) end
@@ -727,6 +727,85 @@ local function renderHeal()
   return n
 end
 
+local function ago(t)
+  local m = math.floor((time() - (t or time())) / 60)
+  if m < 1 then return "just now" elseif m < 60 then return m .. "m ago" elseif m < 1440 then return math.floor(m / 60) .. "h ago" end
+  return math.floor(m / 1440) .. "d ago"
+end
+local function renderDPS()
+  local n = 0
+  local fights = RG.db.fights or {}
+  if #fights == 0 then
+    n = n + 1; setHeader(getRow(n), "No fights recorded yet")
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffGo hit something|r", "Every fight longer than 8 seconds is recorded. RetGear shows your DPS, where it came from, and the biggest thing to fix.", "", "", "gold")
+    rows[n].icon:SetTexture("Interface\\Icons\\Ability_DualWield")
+    return n
+  end
+  state.fightIdx = math.min(state.fightIdx or 1, #fights)
+  local f = fights[state.fightIdx]
+  local best = RG.BestDPS(f.level)
+  -- headline
+  n = n + 1
+  local title = string.format("%s%s|r  ·  %s%.0f DPS|r", "|cffffffff", f.target or "Fight", GOLD, f.dps)
+  local sub = string.format("%ds  ·  %s  ·  level %d%s", math.floor(f.dur), ago(f.t), f.level or 0, f.instance and "  ·  dungeon" or "")
+  local eff = f.efficiency or 1
+  local effCol = eff >= 0.9 and GREEN or (eff >= 0.75 and GOLD or RED)
+  setItem(getRow(n), nil, nil, title, sub, effCol .. string.format("%d%% efficient", math.floor(eff * 100 + 0.5)) .. "|r",
+    (f.potential or 0) >= 1 and (GREEN .. string.format("+%.0f DPS possible", f.potential) .. "|r") or (best and (GREY .. string.format("best %.0f", best) .. "|r") or ""), "gold")
+  rows[n].icon:SetTexture("Interface\\Icons\\Ability_DualWield")
+  -- what to fix
+  n = n + 1; setHeader(getRow(n), (#(f.tips or {}) > 0) and "What to fix, biggest first" or "Nothing to fix in this fight")
+  for _, t in ipairs(f.tips or {}) do
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffff" .. t.text .. "|r", t.fix or "", t.lost >= 0.5 and (GREEN .. string.format("+%.0f DPS", t.lost) .. "|r") or (GOLD .. "Fix|r"), "", t.lost >= 3 and "gold" or nil, nil, true)
+  end
+  -- uptimes
+  n = n + 1; setHeader(getRow(n), "Uptime")
+  if f.sealPct then n = n + 1; setBar(getRow(n), "Seal up", f.sealPct, 1, f.sealPct >= 0.9 and T.green or T.red, string.format("%d%%", math.floor(f.sealPct * 100 + 0.5)), 0.9) end
+  if f.swingPct then n = n + 1; setBar(getRow(n), "Swinging", f.swingPct, 1, f.swingPct >= 0.85 and T.green or T.red, string.format("%d%%  ·  %d swings", math.floor(f.swingPct * 100 + 0.5), f.swings or 0), 0.85) end
+  if (f.swings or 0) > 0 then
+    local sw = f.swings
+    n = n + 1; setBar(getRow(n), "Missed / dodged / parried", (f.miss + f.dodge + f.parry) / sw, 0.3, T.goldDim,
+      string.format("%d%% / %d%% / %d%%", math.floor(f.miss / sw * 100 + 0.5), math.floor(f.dodge / sw * 100 + 0.5), math.floor(f.parry / sw * 100 + 0.5)))
+  end
+  -- damage breakdown
+  n = n + 1; setHeader(getRow(n), "Where your damage came from")
+  local list = {}
+  for name, a in pairs(f.abilities or {}) do list[#list + 1] = { name = name, a = a } end
+  table.sort(list, function(x, y) return x.a.dmg > y.a.dmg end)
+  local top = list[1] and list[1].a.dmg or 1
+  for _, e in ipairs(list) do
+    n = n + 1
+    local pct = f.total > 0 and e.a.dmg / f.total or 0
+    local col = e.name == "Melee" and T.gold or (e.name:find("^Seal") and T.purple or (e.name:find("^Judgement") and T.blue or T.green))
+    setBar(getRow(n), string.format("%s  %d%%", e.name, math.floor(pct * 100 + 0.5)), e.a.dmg, top, col,
+      string.format("%.0f DPS  ·  %d hits  ·  %d%% crit", e.a.dmg / f.dur, e.a.hits, math.floor(e.a.crits / math.max(1, e.a.hits) * 100 + 0.5)))
+  end
+  -- patterns
+  local pats, seen = RG.CoachPatterns(10)
+  if #pats > 0 and seen >= 3 then
+    n = n + 1; setHeader(getRow(n), "Keeps happening (last " .. seen .. " fights)")
+    for i = 1, math.min(4, #pats) do
+      local p = pats[i]
+      n = n + 1
+      setItem(getRow(n), nil, nil, "|cffffffff" .. p.key:gsub("X%%", "some"):gsub("X sec", "a while") .. "|r", p.fix or "", GOLD .. p.count .. " of " .. seen .. " fights|r", p.avgLost >= 0.5 and (GREEN .. string.format("~+%.0f DPS each", p.avgLost) .. "|r") or "", nil, nil, true)
+    end
+  end
+  -- history
+  n = n + 1; setHeader(getRow(n), "Recent fights  ·  click one to see it")
+  for i = 1, math.min(12, #fights) do
+    local h = fights[i]
+    n = n + 1
+    local r = getRow(n)
+    local e2 = h.efficiency or 1
+    setItem(r, nil, nil, (i == state.fightIdx and GOLD or "|cffffffff") .. (h.target or "Fight") .. "|r", string.format("%ds  ·  %s  ·  level %d", math.floor(h.dur), ago(h.t), h.level or 0),
+      string.format("%s%.0f DPS|r", i == state.fightIdx and GOLD or "|cffffffff", h.dps), (e2 >= 0.9 and GREEN or (e2 >= 0.75 and GOLD or RED)) .. string.format("%d%%", math.floor(e2 * 100 + 0.5)) .. "|r", i == state.fightIdx and "gold" or nil, nil, true)
+    r.onClick = function() state.fightIdx = i; scroll:SetVerticalScroll(0); RG.RefreshUI() end
+  end
+  return n
+end
+
 local function renderSettings()
   local n = 0
   n = n + 1; setHeader(getRow(n), "Features")
@@ -767,6 +846,7 @@ local TITLES = {
   settings = { "Settings", "Turn RetGear's helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
+  dps   = { "DPS coach", "Every fight recorded, and the biggest thing to fix" },
   heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
 }
 local FOOTERS = {
@@ -778,6 +858,7 @@ local FOOTERS = {
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
   talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
+  dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /rg dps reset clears history",
   heal  = "Pieces in your healing set are never sold by RetGear  ·  Forever loot is still being mapped; the list updates weekly",
 }
 
@@ -810,6 +891,7 @@ function RG.RefreshUI()
   elseif state.tab == "talents" then n = renderTalents()
   elseif state.tab == "gold" then n = renderGold()
   elseif state.tab == "heal" then n = renderHeal()
+  elseif state.tab == "dps" then n = renderDPS()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -892,7 +974,7 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "dps", "DPS" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "settings", "Settings" } }
   local x = 18
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
