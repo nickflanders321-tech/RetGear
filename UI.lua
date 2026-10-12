@@ -493,6 +493,34 @@ local function renderAH()
   return n
 end
 
+local function renderSettings()
+  local n = 0
+  n = n + 1; setHeader(getRow(n), "Features")
+  for _, o in ipairs(RG.OPTIONS or {}) do
+    n = n + 1
+    local on = RG.Opt(o.key)
+    setStep(getRow(n), "", o.label, on, function()
+      RetGearDB[o.key] = not on
+      if o.key == "minimap" and RG.MinimapButton then RG.MinimapButton() end
+      if RG.RefreshTracker then RG.RefreshTracker() end
+      RG.RefreshUI()
+    end)
+    rows[n].title:SetText((on and "|cffffffff" or GREY) .. o.label .. "|r")
+    rows[n].tip = on and "On. Click to turn off." or "Off. Click to turn on."
+  end
+  n = n + 1; setHeader(getRow(n), "Tools")
+  local function action(label, sub, fn)
+    n = n + 1
+    setItem(getRow(n), nil, nil, label, sub, GOLD .. "Run|r", "", "gold")
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gear_01")
+    rows[n].onClick = fn
+  end
+  action("Show the welcome screen", "The first-time tour of RetGear", function() if RG.ShowWelcome then RG.ShowWelcome() end end)
+  action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
+  action("Move the tracker back", "Puts the on-screen tracker back on the right side", function() RetGearDB.trackerPos = nil; if RetGearTracker then RetGearTracker:ClearAllPoints(); RetGearTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end end)
+  return n
+end
+
 -- ---------------------------------------------------------------------------
 -- Window
 -- ---------------------------------------------------------------------------
@@ -502,6 +530,7 @@ local TITLES = {
   gear  = { "My gear", "What you're wearing and what to chase next" },
   prof  = { "Professions", "Mining routes, smithing upgrades and material prices" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
+  settings = { "Settings", "Turn RetGear's helpers on or off" },
 }
 local FOOTERS = {
   route = "Click a step to open its to-do list  ·  click a task to tick it off  ·  A- / A+ change the text size",
@@ -509,6 +538,7 @@ local FOOTERS = {
   gear  = "Scores are Attack Power equivalents  ·  tune them with /rg weight",
   prof  = "Ore and bar prices refresh when you open the Auction House",
   ah    = "Opening the AH refreshes prices  ·  /rg alert [item] 25 pings you at 25g or less",
+  settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
 }
 
 local function updateHeader()
@@ -536,6 +566,7 @@ function RG.RefreshUI()
   elseif state.tab == "gear" then n = renderGear()
   elseif state.tab == "route" then n = renderRoute()
   elseif state.tab == "prof" then n = renderProf()
+  elseif state.tab == "settings" then n = renderSettings()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -618,7 +649,7 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "prof", "Professions" }, { "ah", "Auction House" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "prof", "Professions" }, { "ah", "Auction House" }, { "settings", "Settings" } }
   local x = 18
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
@@ -657,6 +688,11 @@ local function build()
 
   frame:SetScript("OnShow", RG.RefreshUI)
   frame:Hide()
+end
+
+function RG.ShowTab(tab)
+  if not frame then build() end
+  state.tab = tab; frame:Show(); RG.RefreshUI()
 end
 
 function RG.ToggleUI()

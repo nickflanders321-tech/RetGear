@@ -12,5 +12,7 @@
 Data.lua
 Core.lua
 Quests.lua
+QoL.lua
+Tracker.lua
 Auction.lua
 UI.lua

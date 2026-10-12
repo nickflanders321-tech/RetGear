@@ -3,6 +3,9 @@
 Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hander DPS, not Shockadin) who levels **Mining and Blacksmithing**, in World of Warcraft: Forever.
 
 ## What it does
+- **On-screen tracker:** your current route step and next tasks, dungeon quests to collect, your next gear upgrade, and reminders (Blessing, Seal, Find Minerals, trainer). Drag it anywhere; right-click the minimap button to hide it.
+- **Upgrade pop-ups** with an Equip button, a **level-up banner**, and a **vendor helper** that sells junk and repairs.
+- **Welcome screen, minimap button and a Settings tab** to turn each helper on or off.
 - **Leveling route** (opens first): an Undead Horde path from Deathknell to 60, zone by zone, with quest hubs, where you can mine along the way, paladin milestones (Seal of Command at 20, warhorse at 40, Charger at 60) and every dungeon. Each dungeon says when to head over and lists the Horde quests to grab first: name, quest giver and where. Chat reminds you two levels early to start collecting them.
 - **Syncs with your quest log:** dungeon quests show whether they're in your log, ready to turn in, or done, and route steps tick themselves when the game confirms them (flight paths, hearthstone, professions, Seal of Command, named quests). Your completed-quest history is read on login.
 - **Travel tips:** the flight path to grab in every zone, zeppelins (Undercity to Orgrimmar and Grom'gol), the Ratchet-Booty Bay boat, and where to set your hearthstone. Open any flight master once and RetGear remembers which flight paths you know, then marks each one on the route as learned or still to grab.
@@ -17,6 +20,9 @@ Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hande
 | Command | What it does |
 |---|---|
 | `/rg` | Open or close the window |
+| `/rg tracker` | Show or hide the on-screen tracker |
+| `/rg settings` | Open the Settings tab |
+| `/rg welcome` | Show the welcome screen again |
 | `/rg track [item]` | Watch an item's AH price (shift-click the item into the command) |
 | `/rg alert [item] 25` | Tell me when it's listed for 25 gold or less |
 | `/rg scan` | Re-check prices while at the AH |
