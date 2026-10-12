@@ -22,4 +22,5 @@ Heal.lua
 Coach.lua
 Mail.lua
 Camp.lua
+Speed.lua
 UI.lua

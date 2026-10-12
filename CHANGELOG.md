@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.15.0
+Speed-leveling tools inspired by RestedXP:
+- Auto accept and turn in quests through gossip and quest greetings. Hold Shift to pause. Skips grey quests, quests that cost gold, and pauses itself when your quest log or bags are full.
+- Smart reward picks: the best Ret upgrade, or the best vendor value when nothing is an upgrade. When a Ret upgrade and a healing-set upgrade compete, it asks you. Reward frames now also mark the healing-set pick.
+- RetGearTarget macro and a quest bar, rebuilt from your quest log out of combat: click to target quest mobs, plus one-click buttons for quest items to use and items that start quests. Drag the bar anywhere.
+- Quest mob alert when one's nameplate appears.
+- Waypoint arrow to your map pin; /rg way x y sets a pin in your zone; right-click the arrow to clear.
+- Leveling pace: time played at each level (AFK excluded), splits on the Route tab and /rg pace.
+- Bag-space warning on the tracker.
+- 7 new Settings toggles.
+
 ## v0.14.0
 - New Camp tab for WoW Forever's camping: Camp Benefits timer, the best object to place solo (Sharpening Wheel vs Fish Bowl, computed from your stats), campfire tiers (Basic / Journeyman / Expert) and every Blacksmithing, Mining, Fishing and Cooking camp object with skill, buff, cost and blueprint source.
 - Fishing and Cooking leveling plan along the Undead route (Tirisfal to Feralas), shown in the Camp tab and in each zone of the route, ticked off from your real skill levels. Skill milestones (Journeyman, Expert books, campfire blueprints, Nat Pagle) print in chat.

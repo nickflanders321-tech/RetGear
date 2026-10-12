@@ -419,6 +419,29 @@ local function renderRoute()
   for _, t in ipairs(RG.TRAVEL or {}) do list[#list + 1] = { from = t.lvl, to = t.lvl, kind = "travel", zone = "Travel", hub = "", notes = t.text, fp = t.fp, travel = true } end
   local ORDER = { pala = 0, travel = 1, zone = 2, dungeon = 3 }
   table.sort(list, function(a, b) if a.from ~= b.from then return a.from < b.from end return (ORDER[a.kind] or 9) < (ORDER[b.kind] or 9) end)
+  -- leveling pace (time played per level)
+  if RG.Pace and not (RG.IsAlt and RG.IsAlt()) then
+    local cur, last, avg = RG.Pace()
+    n = n + 1
+    local pr = getRow(n)
+    local rate, eta = RG.XPRate and RG.XPRate()
+    setItem(pr, nil, nil, "|cffffffffLeveling pace|r" .. GREY .. "   level " .. lvl .. ": " .. RG.FormatDuration(cur) .. " so far|r",
+      "Last level " .. RG.FormatDuration(last) .. GREY .. "  ·  average of last 5: " .. RG.FormatDuration(avg) .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
+      state.pace and (GREY .. "hide splits|r") or (GREY .. "show splits|r"), "", "gold", nil, true)
+    pr.icon:SetTexture("Interface\\Icons\\INV_Misc_PocketWatch_01")
+    pr.onClick = function() state.pace = not state.pace; RG.RefreshUI() end
+    if state.pace then
+      local t = RG.db.levelTime or {}
+      local maxT = 1
+      for l = math.max(1, lvl - 12), lvl do if t[l] and t[l] > maxT then maxT = t[l] end end
+      for l = lvl, math.max(1, lvl - 12), -1 do
+        if t[l] then
+          n = n + 1
+          setBar(getRow(n), "Level " .. l .. (l == lvl and "  (now)" or ""), t[l], maxT, l == lvl and T.gold or T.goldDim, RG.FormatDuration(t[l]))
+        end
+      end
+    end
+  end
   for _, r in ipairs(list) do
     if not state.near or (r.to >= lvl - 3 and r.from <= lvl + 12) then
       local bracket = r.from < 10 and "Levels 1-9" or ("Levels " .. (math.floor(r.from / 10) * 10) .. "-" .. (math.floor(r.from / 10) * 10 + 9))

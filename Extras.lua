@@ -41,26 +41,41 @@ local function markButton(i, text, good)
   m.label:SetText(text); m:Show()
 end
 
+-- Score every quest reward choice. Returns a table:
+-- { upI, up, goldI, gold, healI, heal, unknown = true if some item hasn't loaded }
+function RG.ScoreRewards()
+  local n = GetNumQuestChoices and GetNumQuestChoices() or 0
+  local r = { up = 0.5, gold = -1, heal = 0.5, n = n }
+  for i = 1, n do
+    local link = GetQuestItemLink("choice", i)
+    if not link then r.unknown = true else
+      local _, _, _, _, minLevel, _, _, _, _, _, sell = RG.ItemInfo(link)
+      if not minLevel then r.unknown = true end
+      local loc = RG.EquipLoc(link)
+      if loc and RG.EQUIP_SLOTS[loc] and (minLevel or 0) <= UnitLevel("player") + 1 then
+        local d = RG.Compare(link)
+        if d and d > r.up then r.up, r.upI = d, i end
+        if RG.HealDelta and RG.Opt("healSet") and UnitLevel("player") >= 30 then
+          local hd = RG.HealDelta(link)
+          if hd and hd > r.heal then r.heal, r.healI = hd, i end
+        end
+      end
+      local _, _, qty = GetQuestItemInfo("choice", i)
+      local value = (sell or 0) * (qty or 1)
+      if value > r.gold then r.gold, r.goldI = value, i end
+    end
+  end
+  return r
+end
+
 local function pickReward()
   clearMarks()
   if not RG.Opt("rewardPicker") then return end
   local n = GetNumQuestChoices and GetNumQuestChoices() or 0
   if n < 2 then return end
-  local bestUp, bestUpI, bestGold, bestGoldI = 0.5, nil, -1, nil
-  for i = 1, n do
-    local link = GetQuestItemLink("choice", i)
-    if link then
-      local _, _, _, _, minLevel, _, _, _, _, _, sell = RG.ItemInfo(link)
-      local loc = RG.EquipLoc(link)
-      if loc and RG.EQUIP_SLOTS[loc] and (minLevel or 0) <= UnitLevel("player") + 1 then
-        local d = RG.Compare(link)
-        if d and d > bestUp then bestUp, bestUpI = d, i end
-      end
-      local _, _, qty = GetQuestItemInfo("choice", i)
-      local value = (sell or 0) * (qty or 1)
-      if value > bestGold then bestGold, bestGoldI = value, i end
-    end
-  end
+  local r = RG.ScoreRewards()
+  local bestUp, bestUpI, bestGold, bestGoldI = r.up, r.upI, r.gold, r.goldI
+  if r.healI and r.healI ~= bestUpI then markButton(r.healI, "|cffF58CBAHoly +" .. string.format("%.0f", r.heal) .. "|r", true) end
   if bestUpI then
     markButton(bestUpI, GREEN .. string.format("Ret +%.0f", bestUp) .. "|r", true)
     RG.Print("Best quest reward for you: " .. (GetQuestItemLink("choice", bestUpI) or "") .. " " .. GREEN .. string.format("(+%.0f Ret score)", bestUp) .. "|r")
