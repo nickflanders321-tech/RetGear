@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.10.0
+- Don't-vendor guard: items in your bags worth more on the AH than at a vendor get a gold coin on their bag slot and a tooltip line, are never sold by the junk seller, and trigger a heads-up when you open a vendor. Sell one by mistake and you get a Buy back button.
+- Opening the AH now also prices the tradeable items in your bags and the items from your gold tips.
+- Auction House tab: an "In your bags" list with the extra gold each stack would make, plus tradeable greens that haven't been priced yet.
+- New Gold tab: gold-making tips for Mining, Blacksmithing, cloth, AH tactics and Forever-only systems (Waylaid Crates, new recipes, rare drops), filtered to your level with live prices. Sources: gamsgo.com, boostroom.com, expcarry.com, Icy Veins. The weekly update keeps them current.
+- New commands: /rg gold, /rg profit, /rg profit min, /rg profit ignore. New Settings toggle.
+
 ## v0.9.0
 - Quest reward picker: the best reward for Ret gets a gold frame (or "Sells best" when nothing's an upgrade).
 - Exorcism alert when you target Undead or Demons.

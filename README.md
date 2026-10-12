@@ -3,6 +3,8 @@
 Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hander DPS, not Shockadin) who levels **Mining and Blacksmithing**, in World of Warcraft: Forever.
 
 ## What it does
+- **Don't-vendor guard:** watches your bags for items that sell for more on the Auction House than at a vendor (after the 5% AH cut). They get a gold coin on the bag slot and a tooltip line, the junk seller leaves them alone, you get a heads-up when you open a vendor, and if you sell one anyway you get a one-click **Buy back**. The Auction House tab lists them with the extra gold you'd make.
+- **Gold tab:** money-making tips for a miner and smith at your level, with live AH prices next to each one, including Forever-only systems like Waylaid Crates. Refreshed weekly from the newest WoW Forever gold guides.
 - **Quest reward picker** highlights the best reward for Ret. **Exorcism alerts** on Undead and Demons. **Weapon stone reminder** using stones you can make.
 - **Talents tab:** reads your talent tree and tells you what to take next (Forever's Ret talents), plus what to press while leveling.
 - **XP per hour and time to level** on the tracker; `/rg session` for a session summary. **Ret scores on your character screen.**
@@ -25,6 +27,10 @@ Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hande
 |---|---|
 | `/rg` | Open or close the window |
 | `/rg talents` | Open the Talents tab |
+| `/rg gold` | Open the Gold tab |
+| `/rg profit` | List bag items to sell on the AH instead of a vendor |
+| `/rg profit min 25` | Only flag items worth at least 25 silver more on the AH (default 10) |
+| `/rg profit ignore [item]` | Stop flagging an item (run again to undo) |
 | `/rg session` | Show XP, quests, ore and gold for this session |
 | `/rg tracker` | Show or hide the on-screen tracker |
 | `/rg settings` | Open the Settings tab |

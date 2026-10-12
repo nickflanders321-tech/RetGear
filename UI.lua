@@ -524,6 +524,28 @@ local function renderAH()
       setItem(r, id, link, name, sub, alert and (GOLD .. "Alert set|r") or "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, quality)
     end
   end
+  -- Things in your bags worth more on the AH than at a vendor
+  if RG.ProfitList and RG.Opt("profitWatch") then
+    local items, unpriced, total = RG.ProfitList()
+    if #items > 0 then
+      n = n + 1; setHeader(getRow(n), "In your bags: sell on the AH, not the vendor  (+" .. RG.Money(total) .. ")")
+      for _, e in ipairs(items) do
+        n = n + 1
+        local name, link, quality = itemName(e.id)
+        setItem(getRow(n), e.id, link or e.link, name .. (e.count > 1 and (GREY .. "  x" .. e.count .. "|r") or ""),
+          GREY .. "You keep |r" .. RG.Money(e.p.net) .. GREY .. " each after the AH cut  ·  vendor pays |r" .. RG.Money(e.p.vendor),
+          GREEN .. "+" .. RG.Money(e.total) .. "|r", RG.PriceText(e.id) or "", "gold", quality)
+      end
+    end
+    if #unpriced > 0 then
+      n = n + 1; setHeader(getRow(n), "In your bags: not priced yet (open the AH to check)")
+      for _, e in ipairs(unpriced) do
+        n = n + 1
+        local name, link, quality = itemName(e.id)
+        setItem(getRow(n), e.id, link or e.link, name, GREY .. "Tradeable, so it might sell well. Vendor pays |r" .. RG.Money(e.p and e.p.vendor or 0), GOLD .. "Check price|r", "", nil, quality)
+      end
+    end
+  end
   block("Gear you can buy", gear)
   block("Ore and bars", mats)
   if n == 0 then n = 1; setHeader(getRow(1), "Nothing tracked yet · /rg track [item link]") end
@@ -567,6 +589,60 @@ local function renderTalents()
   return n
 end
 
+local GOLD_ICON = {
+  ["Auction House"] = "Interface\\Icons\\INV_Misc_Coin_01",
+  Mining = "Interface\\Icons\\Trade_Mining",
+  Blacksmithing = "Interface\\Icons\\Trade_BlackSmithing",
+  Farming = "Interface\\Icons\\INV_Fabric_Linen_01",
+  Forever = "Interface\\Icons\\INV_Misc_Note_01",
+}
+local function renderGold()
+  local n = 0
+  local G = RG.GOLD
+  -- live: what your bags are worth on the AH
+  if RG.ProfitList and RG.Opt("profitWatch") then
+    local items, _, total = RG.ProfitList()
+    n = n + 1
+    if #items > 0 then
+      setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", #items .. " item" .. (#items > 1 and "s" or "") .. " sell for more on the AH than at a vendor. Click to see them.", GREEN .. "+" .. RG.Money(total) .. "|r", "", "gold")
+      rows[n].onClick = function() state.tab = "ah"; RG.RefreshUI() end
+    else
+      setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", "Nothing to take to the AH yet. Open the Auction House now and then so RetGear knows the prices.", "", "", "gold")
+    end
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_10")
+  end
+  local prof = RG.Professions()
+  local tips = RG.GoldTips(state.goldAll)
+  local order, byCat = {}, {}
+  for _, t in ipairs(tips) do
+    if not byCat[t.cat] then byCat[t.cat] = {}; order[#order + 1] = t.cat end
+    table.insert(byCat[t.cat], t)
+  end
+  for _, cat in ipairs(order) do
+    n = n + 1; setHeader(getRow(n), cat == "Forever" and "New in WoW Forever" or cat)
+    for _, t in ipairs(byCat[cat]) do
+      n = n + 1
+      local missing = t.prof and not prof[t.prof]
+      local right = missing and (GREY .. "needs " .. t.prof .. "|r") or (GREY .. "levels " .. t.from .. "-" .. t.to .. "|r")
+      setItem(getRow(n), nil, nil, (missing and GREY or "|cffffffff") .. t.title .. "|r", t.text, right, "", nil)
+      rows[n].icon:SetTexture(GOLD_ICON[cat] or "Interface\\Icons\\INV_Misc_Coin_02")
+      if t.ids and not missing then
+        for _, id in ipairs(t.ids) do
+          n = n + 1
+          local name, link, quality = itemName(id)
+          local p = RG.ProfitInfo and RG.ProfitInfo(id)
+          local vend = p and p.vendor and p.vendor > 0 and (GREY .. "vendor |r" .. RG.Money(p.vendor)) or ""
+          setItem(getRow(n), id, link, name, vend, "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, quality, true)
+        end
+      end
+    end
+  end
+  n = n + 1
+  setStep(getRow(n), "", "Show tips for every level, not just mine", state.goldAll, function() state.goldAll = not state.goldAll; RG.RefreshUI() end)
+  n = n + 1; setHeader(getRow(n), "Tips updated " .. G.updated .. "  ·  " .. G.note)
+  return n
+end
+
 local function renderSettings()
   local n = 0
   n = n + 1; setHeader(getRow(n), "Features")
@@ -606,6 +682,7 @@ local TITLES = {
   ah    = { "Auction House", "Lowest buyout from your last scan" },
   settings = { "Settings", "Turn RetGear's helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
+  gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
 }
 local FOOTERS = {
   route = "Click a step to open its to-do list  ·  click a task to tick it off  ·  A- / A+ change the text size",
@@ -615,6 +692,7 @@ local FOOTERS = {
   ah    = "Opening the AH refreshes prices  ·  /rg alert [item] 25 pings you at 25g or less",
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
   talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
+  gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
 }
 
 local function updateHeader()
@@ -644,6 +722,7 @@ function RG.RefreshUI()
   elseif state.tab == "prof" then n = renderProf()
   elseif state.tab == "settings" then n = renderSettings()
   elseif state.tab == "talents" then n = renderTalents()
+  elseif state.tab == "gold" then n = renderGold()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -726,7 +805,7 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "ah", "Auction House" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "ah", "Auction House" }, { "gold", "Gold" }, { "settings", "Settings" } }
   local x = 18
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)

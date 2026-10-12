@@ -37,7 +37,23 @@ for _, id in ipairs(RG.MATS) do MAT[id] = true end
 local function isTracked(id)
   if RG.db.tracked[id] or MAT[id] then return true end
   local g = RG.GuideByID[id]
-  return g and g.ah
+  if g and g.ah then return true end
+  if RG.BagSellSet and RG.Opt("profitWatch") and RG.BagSellSet()[id] then return true end
+  if RG.GoldIDs and select(2, RG.GoldIDs())[id] then return true end
+  return false
+end
+RG.IsPriceWatched = isTracked
+
+-- What opening the AH checks: tracked items, plus sellable things in your bags
+-- and the items from this level's gold tips.
+function RG.ScanIDs()
+  local ids, seen = RG.TrackedIDs(), {}
+  for _, id in ipairs(ids) do seen[id] = true end
+  local extra = {}
+  if RG.BagSellIDs then for _, id in ipairs(RG.BagSellIDs()) do extra[#extra + 1] = id end end
+  if RG.GoldIDs then for _, id in ipairs((RG.GoldIDs())) do extra[#extra + 1] = id end end
+  for _, id in ipairs(extra) do if not seen[id] then seen[id] = true; ids[#ids + 1] = id end end
+  return ids
 end
 
 -- Price from other addons, if present.
@@ -81,7 +97,10 @@ local function record(id, price, count)
     RG.Print(GREEN .. "Price alert:|r " .. (link or id) .. " is listed for " .. money(price) .. " (your target " .. money(db.alerts[id]) .. ").")
     if PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.AUCTION_WINDOW_OPEN or 5274) end
   end
-  if prev == nil or prev.price ~= price then if RG.RefreshUI then RG.RefreshUI() end end
+  if prev == nil or prev.price ~= price then
+    if RG.ProfitInvalidate then RG.ProfitInvalidate() end
+    if RG.RefreshUI then RG.RefreshUI() end
+  end
 end
 
 -- ---------------------------------------------------------------------------
@@ -116,7 +135,7 @@ function RG.ScanAH()
   end
   if not (AuctionHouseFrame and AuctionHouseFrame:IsShown()) then RG.Print("Open the Auction House first, then /rg scan."); return end
   if scanning then return end
-  queue = RG.TrackedIDs()
+  queue = RG.ScanIDs()
   if #queue == 0 then return end
   scanning = true
   RG.Print("Checking prices for " .. #queue .. " items...")
@@ -144,7 +163,7 @@ end
 local legacyQueue, legacyPending = {}, nil
 function RG.LegacyScan()
   if not (QueryAuctionItems and AuctionFrame and AuctionFrame:IsShown()) then RG.Print("Open the Auction House first."); return end
-  legacyQueue = RG.TrackedIDs()
+  legacyQueue = RG.ScanIDs()
   RG.Print("Checking prices for " .. #legacyQueue .. " items...")
   local t
   t = C_Timer.NewTicker(1.0, function()

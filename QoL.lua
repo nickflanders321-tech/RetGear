@@ -146,7 +146,17 @@ local function atMerchant()
   local msgs = {}
   if RG.Opt("sellJunk") then
     local before = GetMoney()
-    if C_MerchantFrame and C_MerchantFrame.SellAllJunkItems then
+    -- Grey items worth more on the AH are left alone, so if any are in your
+    -- bags we sell junk one slot at a time instead of using "sell all".
+    local skip, kept = {}, 0
+    if RG.ProfitSkip then skip = RG.ProfitSkip() end
+    for k in pairs(skip) do
+      local b, sl = k:match("(%d+):(%d+)")
+      local info = C_Container and C_Container.GetContainerItemInfo(tonumber(b), tonumber(sl))
+      if info and info.quality == 0 then kept = kept + 1 end
+    end
+    if kept > 0 then msgs[#msgs + 1] = "kept " .. kept .. " grey item" .. (kept > 1 and "s" or "") .. " worth more on the AH" end
+    if kept == 0 and C_MerchantFrame and C_MerchantFrame.SellAllJunkItems then
       C_MerchantFrame.SellAllJunkItems()
       C_Timer.After(1, function() local got = GetMoney() - before; if got > 0 then RG.Print("Sold your junk for " .. RG.Money(got) .. ".") end end)
     else
@@ -155,7 +165,7 @@ local function atMerchant()
       for bag = 0, 4 do
         for slot = 1, ((C and C.GetContainerNumSlots or GetContainerNumSlots)(bag) or 0) do
           local info = C and C.GetContainerItemInfo and C.GetContainerItemInfo(bag, slot)
-          if info and info.quality == 0 and not info.hasNoValue then
+          if info and info.quality == 0 and not info.hasNoValue and not skip[bag .. ":" .. slot] then
             local price = select(11, RG.ItemInfo(info.itemID)) or 0
             value = value + price * (info.stackCount or 1); sold = sold + 1
             C.UseContainerItem(bag, slot)

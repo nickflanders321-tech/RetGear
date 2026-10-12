@@ -390,7 +390,7 @@ SlashCmdList.RETGEAR = function(msg)
   elseif cmd == "scan" then
     if RG.ScanAH then RG.ScanAH() end
   else
-    RG.Print("Commands: /rg (open), /rg weight [stat value], /rg hitcap 9, /rg talenthit 3, /rg track [item link], /rg untrack [item], /rg scan (at the Auction House), /rg tooltip, /rg reset")
+    RG.Print("Commands: /rg (open), /rg weight [stat value], /rg hitcap 9, /rg talenthit 3, /rg track [item link], /rg untrack [item], /rg scan (at the Auction House), /rg gold, /rg profit, /rg profit min 25, /rg profit ignore [item], /rg tooltip, /rg reset")
   end
 end
 

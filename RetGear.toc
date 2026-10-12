@@ -16,4 +16,6 @@ QoL.lua
 Tracker.lua
 Extras.lua
 Auction.lua
+Profit.lua
+Gold.lua
 UI.lua
