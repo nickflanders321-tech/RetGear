@@ -26,4 +26,5 @@ Mail.lua
 Camp.lua
 Speed.lua
 Setup.lua
+Group.lua
 UI.lua

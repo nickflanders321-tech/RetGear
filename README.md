@@ -21,7 +21,8 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Route steps tick themselves** from your quest log, flight paths, hearthstone, professions and spells.
 - **Junk is sold and gear repaired** at vendors, but anything worth more on the AH is kept.
 - **AH prices** are checked every time you open the Auction House (Auctionator and TSM prices are used too).
-- **Every fight is recorded** by the DPS coach.
+- **Every fight is recorded** by the DPS coach, including your share of the group's damage and any aggro you pull off the tank.
+- **In a party**: reminders for un-blessed party members and a missing Aura, center-screen alerts when someone needs Purify/Cleanse or is about to die, and a report after every dungeon run.
 
 ## The window (`/rg`)
 Styled like the classic WoW interface: the stone-and-gold dialog frame, Character-window tabs along the bottom, tooltip-bordered rows and the purple XP bar (blue while rested). A- / A+ change the text size.
@@ -33,6 +34,7 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **My gear** | Score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
 | **DPS** | Last fight: DPS, efficiency, damage by ability, uptime, and what to fix first with the DPS each fix is worth; problems that keep repeating; fight history |
+| **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
 | **Healing** | Holy set for dual spec at 40: your best healing piece per slot (worn, bags, bank) and a 40-60 hunting list. Your healing set is never sold |
 | **Professions** → *Mining & smithing* | Where to mine, Blacksmithing 1-300 plan, smithing upgrades, smelt-or-sell |
 | **Professions** → *Camp, fish & cook* | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, Fishing and Cooking plan, fish worth keeping |
@@ -48,6 +50,7 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 | Command | What it does |
 |---|---|
 | `/rg` | Open or close the window |
+| `/rg group` · `/rg lfg Scarlet Monastery` | Group tab · post an LFG message |
 | `/rg dps` · `/rg heal` · `/rg camp` · `/rg gold` · `/rg mail` · `/rg talents` · `/rg settings` | Open that tab |
 | `/rg auto` | Auto accept / turn in on or off |
 | `/rg next` | Pin your nearest quest objective (or turn-in) |

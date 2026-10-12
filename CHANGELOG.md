@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.20.0 (group play)
+- New Group tab: solo vs grouped XP/hr over your last 5 levels with a verdict, paladin duties (Aura, each party member's Blessing with a class-based suggestion and health), your quests with who in the party has them and a click to share, Find a group suggestions (dungeons at your level and Group/Elite quests) with one-click LookingForGroup posts, and dungeon run reports.
+- Dungeon run reports when you leave: time, kills, deaths, XP/hr, your average DPS and share of the group's damage, and loot.
+- DPS coach in groups: your share of the party's damage and DPS rank, plus a tip when you pull aggro off the tank.
+- Tracker: "Bless your group" and "Turn on an Aura" in a party; "group quests in your log" while solo.
+- Alerts: Purify/Cleanse when a party member has a Poison, Disease or Magic debuff you can remove; "X is dying" with Lay on Hands / Blessing of Protection.
+- /rg group, /rg lfg <what>. Setup wizard has a Group helper switch. Two new Settings toggles.
+
 ## v0.19.0
 - Setup wizard on first launch (and once after this update): welcome, your main and the professions you'll level, a help-level preset (Full guidance / Balanced / Minimal), automation switches, extras (healing set, DPS coach, AH protection, nearby quests) and a summary with the commands worth remembering. /rg setup or Settings runs it again.
 - Professions you won't level drop out of reminders, the Camp plan and Gold tips.

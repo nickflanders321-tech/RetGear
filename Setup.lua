@@ -163,9 +163,10 @@ local function buildPages()
     { "coach", "DPS coach", "Records fights and tells you the biggest thing to fix. Chat reports follow your preset." },
     { "profitWatch", "Protect items worth more on the AH", "Gold coin on the bag slot, kept out of junk sales, warning at vendors." },
     { "newQuests", "Show new quests near me", "Turn this off if you also run Questie, so you don't see them twice." },
+    { "groupDuties", "Group helper", "In a party: who needs a Blessing, Aura reminder, dispel and \"dying\" alerts, shared quests and LFG posts." },
   }
   for i, a in ipairs(extras) do
-    local c = check(p5, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RetGearDB[a[1]] = v end)
+    local c = check(p5, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RetGearDB[a[1]] = v; if a[1] == "groupDuties" then RetGearDB.groupAlerts = v end end)
     c:SetPoint("TOPLEFT", 0, -36 - (i - 1) * 46)
     table.insert(p5.refreshers, c.refresh)
   end
@@ -184,7 +185,8 @@ local function buildPages()
       .. GOLD .. "Worth remembering|r\n"
       .. GOLD .. "/rg|r  the full guide        " .. GOLD .. "/rg next|r  pin your nearest objective\n"
       .. GOLD .. "/rg dps|r  last fight          " .. GOLD .. "/rg camp|r  camp, fishing, cooking\n"
-      .. GOLD .. "/rg setup|r  run this again    " .. GOLD .. "Right-click|r a route step to pin it")
+      .. GOLD .. "/rg setup|r  run this again    " .. GOLD .. "/rg group|r  group play\n"
+      .. GOLD .. "Right-click|r a route step to pin it")
   end)
 end
 

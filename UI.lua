@@ -837,6 +837,7 @@ local function renderDPS()
   n = n + 1
   local title = string.format("%s%s|r  ·  %s%.0f DPS|r", "|cffffffff", f.target or "Fight", GOLD, f.dps)
   local sub = string.format("%ds  ·  %s  ·  level %d%s", math.floor(f.dur), ago(f.t), f.level or 0, f.instance and "  ·  dungeon" or "")
+  if f.share then sub = sub .. string.format("  ·  %s%d%% of the group's damage, #%d of %d|r", GOLD, math.floor(f.share * 100 + 0.5), f.rank or 1, f.ranked or 1) end
   local eff = f.efficiency or 1
   local effCol = eff >= 0.9 and GREEN or (eff >= 0.75 and GOLD or RED)
   setItem(getRow(n), nil, nil, title, sub, effCol .. string.format("%d%% efficient", math.floor(eff * 100 + 0.5)) .. "|r",
@@ -1011,6 +1012,93 @@ local SETTING_GROUPS = {
   { "Professions, bags and gold", { "mineReminder", "sellJunk", "autoRepair", "bagReminder", "profitWatch", "autoScan" } },
   { "Interface", { "minimap", "sounds" } },
 }
+local function renderGroup()
+  local n = 0
+  local inGroup = (GetNumGroupMembers and GetNumGroupMembers() or 0) > 1
+  -- how grouping is going for you
+  local solo, grp, st, gt = RG.XPModes(5)
+  n = n + 1
+  local verdict, pill
+  if solo and grp then
+    local d = (grp - solo) / solo
+    verdict = string.format("Grouped %s%.1fk XP/hr|r vs solo %s%.1fk|r over your last 5 levels.", GOLD, grp / 1000, GOLD, solo / 1000)
+    pill = d >= 0.05 and (GREEN .. string.format("Grouping +%d%%", math.floor(d * 100 + 0.5)) .. "|r") or (d <= -0.05 and (GOLD .. string.format("Solo +%d%%", math.floor(-d / (1 + d) * 100 + 0.5)) .. "|r") or (GREY .. "About even|r"))
+  else
+    verdict = string.format("Keep playing: RetGear compares solo and grouped XP/hr once it has 10 minutes of each (now %dm solo, %dm grouped).", math.floor((st or 0) / 60), math.floor((gt or 0) / 60))
+  end
+  setItem(getRow(n), nil, nil, inGroup and string.format("|cffffffffIn a party of %d|r", GetNumGroupMembers()) or "|cffffffffPlaying solo|r", verdict, pill or "", "", "gold")
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_GroupLooking")
+
+  if inGroup then
+    -- paladin duties
+    n = n + 1; setHeader(getRow(n), "Your paladin duties")
+    local aura = RG.MyAura and RG.MyAura()
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffAura|r", aura and ("You're running " .. aura .. ". Retribution adds damage; switch to Devotion if the tank struggles.") or "No Aura on. Turn on Retribution Aura (or Devotion for a shaky tank).",
+      aura and (GREEN .. "On|r") or (GOLD .. "Turn one on|r"), "", aura and "green" or nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_DevotionAura")
+    for i = 1, 4 do
+      local u = "party" .. i
+      if UnitExists(u) then
+        n = n + 1
+        local mine = RG.MyBlessingOn and RG.MyBlessingOn(u)
+        local _, class = UnitClass(u)
+        local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        local name = (cc and string.format("|cff%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255) or "|cffffffff") .. (UnitName(u) or u) .. "|r"
+        local hp = UnitHealthMax(u) > 0 and math.floor(UnitHealth(u) / UnitHealthMax(u) * 100) or 0
+        setItem(getRow(n), nil, nil, name .. GREY .. "   level " .. (UnitLevel(u) or "?") .. "|r", mine and ("Has your " .. mine) or ("Suggested: " .. RG.SuggestBlessing(u)),
+          mine and (GREEN .. "Blessed|r") or (GOLD .. "Needs a Blessing|r"), GREY .. hp .. "% health|r", mine and "green" or nil, nil, true)
+        rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_FistOfJustice")
+      end
+    end
+  end
+  -- quests
+  local qs = RG.GroupQuestInfo()
+  local any = false
+  for _, q in ipairs(qs) do
+    local groupTag = q.tag and (q.tag:find("Group") or q.tag:find("Elite") or q.tag:find("Dungeon"))
+    if inGroup or groupTag then
+      if not any then n = n + 1; setHeader(getRow(n), inGroup and "Quests and who has them  ·  click to share" or "Group quests in your log"); any = true end
+      n = n + 1
+      local sub
+      if inGroup then
+        sub = (#q.have > 0 and (GREEN .. "Has it: " .. table.concat(q.have, ", ") .. "|r") or "") .. ((#q.have > 0 and #q.missing > 0) and GREY .. "  ·  |r" or "") .. (#q.missing > 0 and (GOLD .. "Missing: " .. table.concat(q.missing, ", ") .. "|r") or "")
+      else sub = GREY .. "Easier with a group. See Find a group below.|r" end
+      local pill = q.complete and (GREEN .. "Ready to turn in|r") or (groupTag and (GOLD .. q.tag .. "|r") or "")
+      setItem(getRow(n), nil, nil, "|cffffd100" .. q.title .. "|r", sub, pill, (inGroup and #q.missing > 0) and (GOLD .. "Share|r") or "", nil, nil, true)
+      rows[n].icon:SetTexture(136797)
+      if inGroup and #q.missing > 0 then local id = q.id; rows[n].onClick = function() RG.ShareQuest(id) end; rows[n].tip = "Click to share this quest with your party." end
+    end
+  end
+  -- find a group
+  local sug = RG.GroupSuggestions()
+  if #sug > 0 then
+    n = n + 1; setHeader(getRow(n), "Find a group  ·  click to post in LookingForGroup")
+    for _, sgg in ipairs(sug) do
+      n = n + 1
+      setItem(getRow(n), nil, nil, (sgg.kind == "dungeon" and "|cffa58bd8" or "|cffffd100") .. sgg.name .. "|r", GREY .. (sgg.note or "") .. "|r  ·  \"" .. RG.LFGMessage(sgg.name) .. "\"", GOLD .. "Post LFG|r", "", nil, nil, true)
+      rows[n].icon:SetTexture(sgg.kind == "dungeon" and 136058 or 136797)
+      local what = sgg.name
+      rows[n].onClick = function() RG.PostLFG(what) end
+      rows[n].tip = "Click to post: " .. RG.LFGMessage(what)
+    end
+  end
+  -- dungeon runs
+  local runs = RG.db.runs or {}
+  n = n + 1; setHeader(getRow(n), #runs > 0 and "Dungeon runs" or "Dungeon runs  ·  run a dungeon and RetGear reports it here")
+  for i = 1, math.min(10, #runs) do
+    local r = runs[i]
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffa58bd8" .. r.name .. "|r" .. GREY .. "   level " .. (r.level or "?") .. "  ·  " .. ago(r.t) .. "|r",
+      string.format("%s  ·  %d kills  ·  %d deaths  ·  %.1fk XP/hr%s%s", RG.FormatDuration and RG.FormatDuration(r.dur) or "", r.kills or 0, r.deaths or 0, (r.xpHr or 0) / 1000,
+        r.dps and string.format("  ·  %.0f DPS", r.dps) or "", r.share and string.format(" (%d%% of damage)", math.floor(r.share * 100 + 0.5)) or ""),
+      (#(r.loot or {}) > 0) and (GREEN .. #r.loot .. " loot|r") or "", "", nil, nil, true)
+    rows[n].icon:SetTexture(136058)
+    if r.loot and #r.loot > 0 then rows[n].tip = "Loot: " .. table.concat(r.loot, ", ") end
+  end
+  return n
+end
+
 local function renderSettings()
   local n = 0
   local byKey, used, ordered = {}, {}, {}
@@ -1067,6 +1155,7 @@ local TITLES = {
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping, fishing & cooking", "Campfire buffs, what to place, and leveling Fishing and Cooking on the way" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
+  group = { "Group play", "How grouping is going, your paladin duties, shared quests and finding a group" },
   dps   = { "DPS coach", "Every fight recorded, and the biggest thing to fix" },
   heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
 }
@@ -1081,6 +1170,7 @@ local FOOTERS = {
   gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /rg camp",
   mail  = "Click an item to search the AH for it  ·  /rg main makes the current character your main",
+  group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /rg lfg Scarlet Monastery posts your own",
   dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /rg dps reset clears history",
   heal  = "Pieces in your healing set are never sold by RetGear  ·  Forever loot is still being mapped; the list updates weekly",
 }
@@ -1126,6 +1216,7 @@ function RG.RefreshUINow()
   elseif state.tab == "gold" then n = renderGold()
   elseif state.tab == "heal" then n = renderHeal()
   elseif state.tab == "dps" then n = renderDPS()
+  elseif state.tab == "group" then n = renderGroup()
   elseif state.tab == "mail" then n = renderMail()
   elseif state.tab == "camp" then n = renderCamp()
   else n = renderAH() end
@@ -1220,7 +1311,7 @@ local function build()
 
   -- Character-window style tabs along the bottom edge
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "dps", "DPS" },
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "dps", "DPS" }, { "group", "Group" },
     { "heal", "Healing" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
   local x = 12
   for _, d in ipairs(defs) do

@@ -2,6 +2,15 @@
 -- damage down by ability, and finds where DPS was lost (Seal down, not
 -- swinging, abilities sitting off cooldown, misses, parries, missing buffs).
 local _, RG = ...
+-- bitwise AND (WoW ships the bit library; this fallback keeps it working anywhere)
+local band = (bit and bit.band) or function(a, b)
+  local r, m = 0, 1
+  while a > 0 and b > 0 do
+    if a % 2 == 1 and b % 2 == 1 then r = r + m end
+    a, b, m = math.floor(a / 2), math.floor(b / 2), m * 2
+  end
+  return r
+end
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 
 table.insert(RG.OPTIONS, { key = "coach", label = "DPS coach: tips after each fight (DPS tab)", default = true })
@@ -100,6 +109,7 @@ local function newFight()
     class = UnitExists("target") and UnitClassification and UnitClassification("target") or nil,
     instance = instType ~= "none" and instType or nil,
     level = UnitLevel("player"),
+    groupSize = GetNumGroupMembers and GetNumGroupMembers() or 1, party = {}, aggro = 0,
   }
 end
 
@@ -121,6 +131,11 @@ local function sample()
   local maxMana = UnitPowerMax("player", 0) or 0
   if maxMana > 0 then cur.minMana = math.min(cur.minMana, (UnitPower("player", 0) or 0) / maxMana) end
   if not targetOK() then return end
+  -- in a group, time spent holding the mob's attention (stealing it from the tank)
+  if (cur.groupSize or 1) >= 3 and UnitDetailedThreatSituation then
+    local ok, tanking = pcall(UnitDetailedThreatSituation, "player", "target")
+    if ok and tanking then cur.aggro = cur.aggro + TICK end
+  end
   -- each ability's own range check decides whether it could have been used
   cur.meleeSamples = cur.meleeSamples + 1
   local now = GetTime()
@@ -201,6 +216,16 @@ local function analyze(f)
   end
   if not f.stone and (f.level or 0) >= 10 then add("No sharpening stone or weightstone on your weapon", f.total / dur * 0.03, "Use the stone the tracker suggests. You can make them with Blacksmithing.") end
   if f.noMana >= 3 then add(string.format("Out of mana for %.0f sec", f.noMana), nil, "Drink between pulls, and judge Seal of Wisdom on long fights if you keep running dry.") end
+  -- group play
+  if (f.groupSize or 1) > 1 and next(f.party or {}) then
+    local all, rank = f.total, 1
+    for _, dmg in pairs(f.party) do all = all + dmg; if dmg > f.total then rank = rank + 1 end end
+    local n = 1; for _ in pairs(f.party) do n = n + 1 end
+    f.share, f.rank, f.ranked = all > 0 and f.total / all or 0, rank, n
+  end
+  if (f.aggro or 0) >= 3 then
+    add(string.format("You pulled aggro off the tank for %.0f sec", f.aggro), nil, "Let the tank hit first, and judge after its opening moves. If another paladin is in the group, ask for Blessing of Salvation.")
+  end
   if f.died then add("You died in this fight", nil, "Watch your health: use a healing potion, or Lay on Hands in an emergency.") end
 
   table.sort(tips, function(a, b) return a.lost > b.lost end)
@@ -295,9 +320,16 @@ f:SetScript("OnEvent", function(_, event)
   elseif event == "PLAYER_DEAD" then
     if cur then cur.died = true end
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" and cur then
-    local _, sub, _, src, _, _, _, _, _, _, _, a12, a13, a14, a15, _, _, a18, a19, _, a21 = CombatLogGetCurrentEventInfo()
+    local _, sub, _, src, srcName, srcFlags, _, _, _, _, _, a12, a13, a14, a15, _, _, a18, a19, _, a21 = CombatLogGetCurrentEventInfo()
     myGUID = myGUID or UnitGUID("player")
-    if src ~= myGUID then return end
+    if src ~= myGUID then
+      -- party members' damage, for your share of the group's damage
+      if (cur.groupSize or 1) > 1 and srcFlags and band(srcFlags, 0x6) ~= 0 and srcName then
+        local amt = (sub == "SWING_DAMAGE" and a12) or ((sub == "SPELL_DAMAGE" or sub == "SPELL_PERIODIC_DAMAGE" or sub == "RANGE_DAMAGE") and a15) or nil
+        if amt and amt > 0 then cur.party[srcName] = (cur.party[srcName] or 0) + amt end
+      end
+      return
+    end
     if sub == "SWING_DAMAGE" then
       cur.swings = cur.swings + 1; cur.swingHits = cur.swingHits + 1; cur.swingDmg = cur.swingDmg + (a12 or 0)
       if a18 then cur.crits = cur.crits + 1 end
