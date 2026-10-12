@@ -50,24 +50,40 @@ local function spellKnown(name)
   end
   return GetSpellInfo and GetSpellInfo(name) ~= nil
 end
-local function cooldown(name)
+-- Spell state can also come back "secret" in combat; any refusal or hidden
+-- value counts as "can't tell" instead of throwing an error.
+local function num(v) return (type(v) == "number" and not RG.IsSecret(v)) and v or 0 end
+local function rawCooldown(name)
   if C_Spell and C_Spell.GetSpellCooldown then
     local cd = C_Spell.GetSpellCooldown(name)
-    if cd then return cd.startTime or 0, cd.duration or 0 end
+    if cd then return num(cd.startTime), num(cd.duration) end
   elseif GetSpellCooldown then
-    local s, d = GetSpellCooldown(name); return s or 0, d or 0
+    local s, d = GetSpellCooldown(name); return num(s), num(d)
   end
   return 0, 0
 end
-local function usable(name)
+local function cooldown(name)
+  local ok, s, d = pcall(rawCooldown, name)
+  if ok then return s, d end
+  return 0, 0
+end
+local function rawUsable(name)
   if C_Spell and C_Spell.IsSpellUsable then return C_Spell.IsSpellUsable(name) end
   if IsUsableSpell then return IsUsableSpell(name) end
   return true
 end
+local function usable(name)
+  local ok, u = pcall(rawUsable, name)
+  if not ok or RG.IsSecret(u) then return true end
+  return u
+end
+local function rawRange(name)
+  if C_Spell and C_Spell.IsSpellInRange then return C_Spell.IsSpellInRange(name, "target") end
+  if IsSpellInRange then return IsSpellInRange(name, "target") end
+end
 local function inRange(name)
-  local r
-  if C_Spell and C_Spell.IsSpellInRange then r = C_Spell.IsSpellInRange(name, "target")
-  elseif IsSpellInRange then r = IsSpellInRange(name, "target") end
+  local ok, r = pcall(rawRange, name)
+  if not ok or RG.IsSecret(r) then return true end
   return r == nil or r == true or r == 1
 end
 -- Buffs can't be read in combat on this client, so Seal and Might are read
@@ -126,13 +142,13 @@ local function sample()
   if not cur then return end
   cur.samples = cur.samples + 1
   if hasSeal() then cur.sealUp = cur.sealUp + 1 end
-  local maxMana = UnitPowerMax("player", 0) or 0
-  if maxMana > 0 then cur.minMana = math.min(cur.minMana, (UnitPower("player", 0) or 0) / maxMana) end
+  local maxMana = num(UnitPowerMax("player", 0))
+  if maxMana > 0 then cur.minMana = math.min(cur.minMana, num(UnitPower("player", 0)) / maxMana) end
   if not targetOK() then return end
   -- in a group, time spent holding the mob's attention (stealing it from the tank)
   if (cur.groupSize or 1) >= 3 and UnitDetailedThreatSituation then
     local ok, tanking = pcall(UnitDetailedThreatSituation, "player", "target")
-    if ok and tanking then cur.aggro = cur.aggro + TICK end
+    if ok and not RG.IsSecret(tanking) and tanking then cur.aggro = cur.aggro + TICK end
   end
   -- each ability's own range check decides whether it could have been used
   cur.meleeSamples = cur.meleeSamples + 1

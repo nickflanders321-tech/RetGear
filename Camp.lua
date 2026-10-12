@@ -72,7 +72,7 @@ local function readCamp()
   if blocked then return false end
   if b then
     local exp = b.expirationTime
-    last.state, last.exp = "active", (type(exp) == "number" and exp > 0) and exp or nil
+    last.state, last.exp = "active", (type(exp) == "number" and not RG.IsSecret(exp) and exp > 0) and exp or nil
   elseif RG.PlayerBuff("Welcoming Campfire") then last.state, last.exp = "sitting", nil
   elseif RG.PlayerBuff("Campfire Nearby") then last.state, last.exp = "near", nil
   else last.state, last.exp = nil, nil end

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.20.3 (combat hardening)
+- The DPS coach's in-combat checks (cooldowns, range, usable, mana, threat) now treat any hidden ("secret") value as "can't tell" instead of risking an error, the same protection buffs got in v0.20.2.
+- Camp Benefits timer ignores a hidden expiry time instead of erroring.
+
 ## v0.20.2 (combat fix)
 - Fixed: "Auras cannot be accessed when secret while tainted by 'RetGear'" in combat. WoW Forever hides buffs and debuffs from addons during combat, so RetGear no longer reads them then: Seal and Blessing of Might are read before the pull and followed through the combat log during the fight (Seal uptime still works), and the camp buff, Aura and Blessing reminders reuse the last reading from out of combat.
 - Party dispel alerts can only fire out of combat on this client (debuffs are hidden in combat).

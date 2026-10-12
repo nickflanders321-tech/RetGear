@@ -53,6 +53,7 @@ end
 -- nil, true ("can't tell") without touching the API, and any other refusal is
 -- caught the same way.
 local isSecret = issecretvalue or function() return false end
+RG.IsSecret = isSecret
 function RG.AurasLocked() return (InCombatLockdown and InCombatLockdown()) and true or false end
 function RG.FindAura(unit, filter, test)
   if RG.AurasLocked() then return nil, true end
