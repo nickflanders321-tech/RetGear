@@ -205,7 +205,7 @@ for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUS
 end
 f:SetScript("OnEvent", function(_, event)
   if event == "AUCTION_HOUSE_SHOW" then
-    if RG.db.autoScan ~= false then C_Timer.After(1.5, RG.ScanAH) end
+    if RG.Opt("autoScan") then C_Timer.After(1.5, RG.ScanAH) end
   elseif event == "AUCTION_HOUSE_CLOSED" then
     queue = {}; legacyQueue = {}; pending = nil; legacyPending = nil
     if ticker then ticker:Cancel(); ticker = nil end
@@ -233,7 +233,7 @@ SlashCmdList.RETGEAR = function(msg)
     end
     return
   elseif cmd and cmd:lower() == "autoscan" then
-    RG.db.autoScan = RG.db.autoScan == false
+    RG.db.autoScan = not RG.Opt("autoScan")
     RG.Print("Automatic scan when you open the AH " .. (RG.db.autoScan and "on." or "off."))
     return
   end

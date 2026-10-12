@@ -10,11 +10,11 @@ for _, o in ipairs({
   { key = "autoQuest",     label = "Auto accept and turn in quests (hold Shift to pause)", default = true },
   { key = "autoReward",    label = "Auto pick quest rewards when the choice is clear", default = true },
   { key = "targetBar",     label = "Quest target bar and RetGearTarget macro", default = true },
-  { key = "questItems",    label = "Buttons for quest items you need to use", default = true },
+  { key = "questItems",    label = "Buttons for quest items I need to use", default = true },
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
-  { key = "arrow",         label = "Arrow to your map pin (/rg way 45 60)", default = true },
-  { key = "autoArrow",     label = "Arrow follows your next route step automatically", default = true },
-  { key = "newQuests",     label = "Show new quests you can pick up nearby", default = true },
+  { key = "arrow",         label = "Arrow to my map pin (/rg way 45 60)", default = true },
+  { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
+  { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
 
@@ -418,7 +418,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Route waypoints (Waypoints.lua: { uiMapID, x, y, label })
 -- ---------------------------------------------------------------------------
-RG.PIN = "|TInterface\\WorldMap\\UI-WorldMap-QuestIcon:14:14:0:0:32:32:0:16:0:16|t "
+RG.PIN = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:13:13|t "
 function RG.StepWaypoint(entry, i)
   local W = RG.WAYPOINTS
   local list = W and entry and W.steps[entry.zone .. "|" .. entry.from]

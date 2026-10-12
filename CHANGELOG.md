@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.20.1 (quality pass)
+- Fixed: after running setup with the Full guidance or Balanced preset, Ret scores could disappear from item tooltips (and the AH auto-scan setting could be misread) until the next login.
+- Safer visuals: dialogs keep a solid dark background even if a client lacks the dialog texture, and map-pin markers use the raid-target star that every client has.
+- /rg help lists every command, grouped by topic.
+- Consistent wording in Settings ("my" / "I" throughout).
+- Checked: every game function and event against Blizzard's API documentation, every internal function and setting reference, and all player-facing text for spelling (WoW names verified against Forever's own NPC, item, quest and zone names).
+
 ## v0.20.0 (group play)
 - New Group tab: solo vs grouped XP/hr over your last 5 levels with a verdict, paladin duties (Aura, each party member's Blessing with a class-based suggestion and health), your quests with who in the party has them and a click to share, Find a group suggestions (dungeons at your level and Group/Elite quests) with one-click LookingForGroup posts, and dungeon run reports.
 - Dungeon run reports when you leave: time, kills, deaths, XP/hr, your average DPS and share of the group's damage, and loot.

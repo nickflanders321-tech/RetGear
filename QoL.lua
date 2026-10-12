@@ -43,6 +43,12 @@ function RG.DialogBackdrop(f)
   f:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
     tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } })
   f:SetBackdropColor(1, 1, 1, 1); f:SetBackdropBorderColor(1, 1, 1, 1)
+  -- solid dark layer underneath, so text stays readable even if a client lacks the dialog texture
+  if not f.rgSolid then
+    f.rgSolid = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    f.rgSolid:SetPoint("TOPLEFT", 11, -12); f.rgSolid:SetPoint("BOTTOMRIGHT", -12, 11)
+    f.rgSolid:SetColorTexture(0.04, 0.035, 0.03, 0.92)
+  end
 end
 -- Gold title banner across the top edge of a dialog (UI-DialogBox-Header).
 function RG.DialogHeader(f, text, width)

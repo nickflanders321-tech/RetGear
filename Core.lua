@@ -227,7 +227,7 @@ end
 -- Tooltip line
 -- ---------------------------------------------------------------------------
 local function OnTooltip(tooltip)
-  if not RG.db or not RG.db.tooltip or not tooltip.GetItem then return end
+  if not RG.db or not RG.Opt("tooltip") or not tooltip.GetItem then return end
   local _, link = tooltip:GetItem()
   if not link then return end
   local loc = RG.EquipLoc(link)
@@ -424,7 +424,7 @@ SlashCmdList.RETGEAR = function(msg)
   elseif cmd == "talenthit" and tonumber(rest) then
     RG.db.talentHit = tonumber(rest); RG.Print("Hit from talents set to " .. rest .. "%.")
   elseif cmd == "tooltip" then
-    RG.db.tooltip = not RG.db.tooltip; RG.Print("Tooltip scores " .. (RG.db.tooltip and "on." or "off."))
+    RG.db.tooltip = not RG.Opt("tooltip"); RG.Print("Tooltip scores " .. (RG.db.tooltip and "on." or "off."))
   elseif cmd == "track" then
     local id = tonumber(rest:match("item:(%d+)") or rest)
     if id then RG.db.tracked[id] = true; RG.Print("Tracking Auction House prices for item " .. (select(2, GetItemInfo(id)) or id) .. ".") end
@@ -434,7 +434,17 @@ SlashCmdList.RETGEAR = function(msg)
   elseif cmd == "scan" then
     if RG.ScanAH then RG.ScanAH() end
   else
-    RG.Print("Commands: /rg (open), /rg weight [stat value], /rg hitcap 9, /rg talenthit 3, /rg track [item link], /rg untrack [item], /rg scan (at the Auction House), /rg gold, /rg profit, /rg profit min 25, /rg profit ignore [item], /rg tooltip, /rg reset")
+    RG.Print("Commands (type /rg on its own to open the guide):")
+    for _, line in ipairs({
+      "|cffffd100Guide|r  /rg  ·  /rg setup  ·  /rg settings  ·  /rg tracker  ·  /rg welcome",
+      "|cffffd100Questing|r  /rg next  ·  /rg way 45 60  ·  /rg auto  ·  /rg pace  ·  /rg session",
+      "|cffffd100Tabs|r  /rg dps  ·  /rg group  ·  /rg heal  ·  /rg camp  ·  /rg gold  ·  /rg mail  ·  /rg talents",
+      "|cffffd100Group|r  /rg lfg Scarlet Monastery",
+      "|cffffd100Auction House|r  /rg scan  ·  /rg autoscan  ·  /rg track [item]  ·  /rg untrack [item]  ·  /rg alert [item] 25",
+      "|cffffd100Selling|r  /rg profit  ·  /rg profit min 25  ·  /rg profit ignore [item]",
+      "|cffffd100Ret score|r  /rg weight STR 2.5  ·  /rg hitcap 9  ·  /rg talenthit 3  ·  /rg reset  ·  /rg tooltip",
+      "|cffffd100Characters|r  /rg main  ·  /rg dps reset",
+    }) do DEFAULT_CHAT_FRAME:AddMessage("   " .. line) end
   end
 end
 
