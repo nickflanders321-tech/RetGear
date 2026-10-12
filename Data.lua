@@ -464,3 +464,90 @@ RG.STEPS = {
     "Keep farming dungeons for pre-raid gear while you work on it.",
   },
 }
+
+-- Weapon stones (Blacksmithing). Sharpening stones are for swords and axes,
+-- weightstones for maces. bs = Blacksmithing skill where you start making them.
+-- Item IDs and level requirements checked on Wowhead.
+RG.STONES = {
+  sharp = {
+    { id = 2862,  name = "Rough Sharpening Stone",  lvl = 1,  bs = 1,   dmg = 2 },
+    { id = 2863,  name = "Coarse Sharpening Stone", lvl = 5,  bs = 65,  dmg = 3 },
+    { id = 2871,  name = "Heavy Sharpening Stone",  lvl = 15, bs = 125, dmg = 4 },
+    { id = 7964,  name = "Solid Sharpening Stone",  lvl = 25, bs = 200, dmg = 6 },
+    { id = 12404, name = "Dense Sharpening Stone",  lvl = 35, bs = 250, dmg = 8 },
+  },
+  blunt = {
+    { id = 3239,  name = "Rough Weightstone",  lvl = 1,  bs = 1,   dmg = 2 },
+    { id = 3240,  name = "Coarse Weightstone", lvl = 5,  bs = 65,  dmg = 3 },
+    { id = 3241,  name = "Heavy Weightstone",  lvl = 15, bs = 125, dmg = 4 },
+    { id = 7965,  name = "Solid Weightstone",  lvl = 25, bs = 200, dmg = 6 },
+    { id = 12643, name = "Dense Weightstone",  lvl = 35, bs = 250, dmg = 8 },
+  },
+}
+
+-- Blacksmithing 1-300, Horde. Source: wow-professions.com Classic guide.
+RG.BS_PLAN = {
+  { from = 1,   to = 30,  craft = "Rough Sharpening Stone", n = 40, mats = "1 Rough Stone each" },
+  { from = 30,  to = 65,  craft = "Rough Grinding Stone", n = 55, mats = "2 Rough Stone each. Keep 10." },
+  { from = 65,  to = 75,  craft = "Coarse Sharpening Stone", n = 25, mats = "1 Coarse Stone each" },
+  { from = 75,  to = 75,  train = "Journeyman: James Van Brunt in Undercity (needs level 10)" },
+  { from = 75,  to = 90,  craft = "Coarse Grinding Stone", n = 35, mats = "2 Coarse Stone each. Keep them." },
+  { from = 90,  to = 110, craft = "Runed Copper Belt", n = 15, mats = "10 Copper Bar each" },
+  { from = 110, to = 125, craft = "Rough Bronze Leggings", n = 15, mats = "6 Bronze Bar each" },
+  { from = 125, to = 125, train = "Expert: Saru Steelfury in Orgrimmar (needs level 20)" },
+  { from = 125, to = 140, craft = "Heavy Grinding Stone", n = 35, mats = "3 Heavy Stone each. Keep them." },
+  { from = 140, to = 150, craft = "Patterned Bronze Bracers", n = 10, mats = "5 Bronze Bar, 2 Coarse Grinding Stone" },
+  { from = 150, to = 155, craft = "Golden Rod", n = 5, mats = "1 Gold Bar, 2 Coarse Grinding Stone" },
+  { from = 155, to = 165, craft = "Green Iron Leggings", n = 10, mats = "8 Iron Bar, 1 Heavy Grinding Stone, 1 Green Dye" },
+  { from = 165, to = 190, craft = "Green Iron Bracers", n = 25, mats = "6 Iron Bar, 1 Green Dye (dye from tailoring or leatherworking vendors)" },
+  { from = 190, to = 200, craft = "Golden Scale Bracers", n = 10, mats = "5 Steel Bar, 2 Heavy Grinding Stone" },
+  { from = 200, to = 210, craft = "Solid Grinding Stone", n = 30, mats = "4 Solid Stone each. Keep 10." },
+  { from = 210, to = 225, craft = "Heavy Mithril Gauntlet", n = 15, mats = "6 Mithril Bar, 4 Mageweave Cloth" },
+  { from = 225, to = 225, train = "Artisan: Brikk Keencraft in Booty Bay (needs level 35)" },
+  { from = 225, to = 235, craft = "Steel Plate Helm", n = 10, mats = "14 Steel Bar, 1 Solid Grinding Stone" },
+  { from = 235, to = 250, craft = "Mithril Coif", n = 15, mats = "10 Mithril Bar, 6 Mageweave Cloth (or Mithril Spurs if you have the plans)" },
+  { from = 250, to = 260, craft = "Dense Sharpening Stone", n = 20, mats = "1 Dense Stone each" },
+  { from = 260, to = 265, craft = "Heavy Mithril Boots", n = 8, mats = "14 Mithril Bar, 4 Thick Leather" },
+  { from = 265, to = 270, craft = "Imperial Plate Belt", n = 5, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine (plans: Derotain Mudsipper, Tanaris)" },
+  { from = 270, to = 295, craft = "Imperial Plate Bracers", n = 25, mats = "20 Thorium Bar, 1 Star Ruby (plans: Derotain Mudsipper, Tanaris)" },
+  { from = 295, to = 300, craft = "Imperial Plate Boots", n = 5, mats = "34 Thorium Bar, 1 Star Ruby, 1 Aquamarine" },
+}
+
+-- Ore -> bar pairs for the smelt-or-sell check.
+RG.SMELT = {
+  { ore = 2770, bar = 2840 },   -- Copper
+  { ore = 2771, bar = 3576 },   -- Tin
+  { ore = 2772, bar = 3575 },   -- Iron
+  { ore = 3858, bar = 3860 },   -- Mithril
+  { ore = 10620, bar = 12359 }, -- Thorium
+}
+
+-- Retribution talents in the order to take them while leveling with a
+-- two-hander. Names are WoW Forever's (Icy Veins, Mobalytics, Warcraft Tavern).
+-- The planner reads your real talent tree, skips anything you can't take yet,
+-- and suggests the first one with points left.
+RG.TALENT_PRIORITY = {
+  { name = "Seal of Command", why = "Your main damage Seal with a slow two-hander." },
+  { name = "Two-Handed Weapon Specialization", why = "+3% two-handed damage per point." },
+  { name = "Vengeance", why = "Crits stack up to 5 times for more Physical and Holy damage." },
+  { name = "Crusade", why = "+1% damage per point, and another 1% against Undead and Demons." },
+  { name = "Conviction", why = "More critical strikes, which feed Vengeance." },
+  { name = "Sacred Arbiter", why = "Holy Strike hits 10% harder and refreshes your Judgements." },
+  { name = "Sanctified Judgement", why = "Judgement refunds Seal mana, so you drink less." },
+  { name = "Benediction", why = "Cheaper instant spells: more Holy Strikes and Judgements per mana bar." },
+  { name = "Holy Conduit", why = "Cheaper Exorcism, Consecration and Hammer of Wrath." },
+  { name = "Vindication", why = "Weakens what you hit and gives you Attack Power." },
+  { name = "Pursuit of Justice", why = "Faster mounted speed for getting around." },
+  { name = "Twist of Light", why = "Seal-twisting for extra damage once you're comfortable." },
+}
+
+-- Leveling priority, adjusted for Forever's changes (Judgement no longer uses
+-- up your Seal; Holy Strike is baseline at 6).
+RG.ROTATION = {
+  "Keep Blessing of Might on yourself (1 hour in Forever).",
+  "Seal of Command up (Seal of Righteousness before 20). Judgement no longer removes it.",
+  "Holy Strike on cooldown. It's Holy damage, so armor doesn't reduce it.",
+  "Judgement on cooldown.",
+  "Exorcism on Undead and Demons. Hammer of Wrath when a target is below 20% health.",
+  "Consecration when 2 to 4 enemies are on you. It's weak past 4 targets.",
+}

@@ -138,7 +138,9 @@ function RG.RefreshTracker()
   for _, b in ipairs(lines) do b:Hide() end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
-  tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or ""))
+  local rate, eta = RG.XPRate and RG.XPRate()
+  tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "")
+    .. (rate and string.format("  ·  %.1fk/hr  ·  %s", rate / 1000, RG.FormatETA(eta) or "") or ""))
   tr.xp:SetWidth(math.max(1, (W - 2) * ((max and max > 0) and xp / max or 1)))
   if RetGearDB.trackerCollapsed then tr.body:Hide(); tr:SetHeight(40); tr.min.t:SetText("+"); return end
   tr.body:Show(); tr.min.t:SetText("-")

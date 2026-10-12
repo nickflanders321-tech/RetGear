@@ -3,6 +3,10 @@
 Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hander DPS, not Shockadin) who levels **Mining and Blacksmithing**, in World of Warcraft: Forever.
 
 ## What it does
+- **Quest reward picker** highlights the best reward for Ret. **Exorcism alerts** on Undead and Demons. **Weapon stone reminder** using stones you can make.
+- **Talents tab:** reads your talent tree and tells you what to take next (Forever's Ret talents), plus what to press while leveling.
+- **XP per hour and time to level** on the tracker; `/rg session` for a session summary. **Ret scores on your character screen.**
+- **Blacksmithing 1-300 plan** with Horde trainers, **smelt-or-sell** advice, and a **pre-raid checklist**.
 - **On-screen tracker:** your current route step and next tasks, dungeon quests to collect, your next gear upgrade, and reminders (Blessing, Seal, Find Minerals, trainer). Drag it anywhere; right-click the minimap button to hide it.
 - **Upgrade pop-ups** with an Equip button, a **level-up banner**, and a **vendor helper** that sells junk and repairs.
 - **Welcome screen, minimap button and a Settings tab** to turn each helper on or off.
@@ -20,6 +24,8 @@ Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hande
 | Command | What it does |
 |---|---|
 | `/rg` | Open or close the window |
+| `/rg talents` | Open the Talents tab |
+| `/rg session` | Show XP, quests, ore and gold for this session |
 | `/rg tracker` | Show or hide the on-screen tracker |
 | `/rg settings` | Open the Settings tab |
 | `/rg welcome` | Show the welcome screen again |

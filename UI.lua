@@ -23,7 +23,7 @@ local FONT_TITLE = "Fonts\\MORPHEUS.TTF"
 local FONT_BODY  = "Fonts\\FRIZQT__.TTF"
 local FONT_NUM   = "Fonts\\ARIALN.TTF"
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local W, H = 680, 600
+local W, H = 720, 620
 -- Text size: 1.0 = original, saved per account. A- / A+ in the header change it.
 local function TS() return (RG.db and RG.db.textSize) or 1.2 end
 local function sz(n) return math.floor(n * TS() + 0.5) end
@@ -325,6 +325,17 @@ local function renderGear()
     if not link then r.icon:SetTexture(136516); r.icon:SetDesaturated(true) else r.icon:SetDesaturated(false) end
   end
   setBar(scoreRow, "Ret gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
+  -- pre-raid checklist: the level 52+ picks from the gear guide, one row per item
+  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · level 52 to 60")
+  for _, g in ipairs(RG.GUIDE) do
+    if g.id and g.lvl >= 52 then
+      n = n + 1
+      local name, link2, quality = itemName(g.id)
+      local own = RG.OwnState(g.id)
+      local pill = own == "equipped" and (GREEN .. "Equipped|r") or (own == "owned" and (GOLD .. "In your bags|r") or (GREY .. "Not yet|r"))
+      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. g.slot .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
+    end
+  end
   return n
 end
 
@@ -349,6 +360,32 @@ local function renderProf()
     line(nil, (here and GOLD or (done and GREY or "|cffffffff")) .. m.ore .. "|r" .. GREY .. "   skill " .. m.from .. "-" .. m.to .. "|r", m.zones,
       here and (GREEN .. "Mine here now|r") or (done and (GREY .. "Done|r") or ""), "", 136248, here and "gold" or nil)
   end
+  head("Blacksmithing skill-up plan")
+  local bsr = bs and bs.rank or 0
+  local shown = 0
+  for _, p in ipairs(RG.BS_PLAN) do
+    if p.to >= bsr - 1 and shown < (state.near and 6 or 99) then
+      shown = shown + 1
+      local here = bsr >= p.from and bsr < p.to
+      if p.train then
+        line(nil, GOLD .. "Train: |r" .. p.train, "", bsr >= p.from and bsr <= p.from + 5 and (GOLD .. "Do this now|r") or "", "", 136240, bsr >= p.from and bsr <= p.from + 5 and "gold" or nil)
+      else
+        line(nil, (here and GOLD or "|cffffffff") .. p.craft .. "|r" .. GREY .. "   x" .. p.n .. "  ·  skill " .. p.from .. "-" .. p.to .. "|r", p.mats, here and (GREEN .. "Craft now|r") or "", "", 136241, here and "gold" or nil)
+      end
+    end
+  end
+  head("Smelt or sell")
+  local any = false
+  for _, sm in ipairs(RG.SMELT) do
+    local ore, bar = RG.Price(sm.ore), RG.Price(sm.bar)
+    local oreName, barName = RG.ItemInfo(sm.ore), RG.ItemInfo(sm.bar)
+    if ore and bar and oreName and barName then
+      any = true
+      local better = bar > ore
+      line(sm.bar, barName, GREY .. "Bar " .. RG.Money(bar) .. "  vs  ore " .. RG.Money(ore) .. "|r", better and (GREEN .. "Smelt it|r") or (GOLD .. "Sell the ore|r"), "", nil, better and "green" or nil)
+    end
+  end
+  if not any then n = n + 1; setStep(getRow(n), "", "Open the Auction House once to compare ore and bar prices here.", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
   head("Blacksmithing upgrades for Ret")
   local lvl = UnitLevel("player")
   for _, g in ipairs(RG.GUIDE) do
@@ -493,6 +530,43 @@ local function renderAH()
   return n
 end
 
+local function renderTalents()
+  local n = 0
+  local pts = RG.UnspentTalents and RG.UnspentTalents()
+  local tree = RG.ReadTalents and RG.ReadTalents()
+  local nextT = RG.NextTalent and RG.NextTalent()
+  n = n + 1
+  setBar(getRow(n), "Unspent talent points", pts or 0, math.max(pts or 0, 1), pts and pts > 0 and T.gold or T.green,
+    pts == nil and (GREY .. "open your talents once|r") or (pts > 0 and (GOLD .. pts .. " to spend|r") or (GREEN .. "all spent|r")))
+  if nextT then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GOLD .. "Next: " .. nextT.name .. "|r", nextT.why, pts and pts > 0 and (GREEN .. "Take it now|r") or "", "", "gold")
+    rows[n].icon:SetTexture(135891)
+  end
+  n = n + 1; setHeader(getRow(n), "Retribution talents, in order")
+  for i, t in ipairs(RG.TALENT_PRIORITY) do
+    n = n + 1
+    local info = tree and tree[t.name]
+    local right, accent
+    if info then
+      if info.rank >= info.max then right = GREEN .. info.rank .. "/" .. info.max .. "|r"; accent = "green"
+      elseif info.rank > 0 then right = GOLD .. info.rank .. "/" .. info.max .. "|r"
+      else right = GREY .. "0/" .. info.max .. (info.available and "" or " · locked") .. "|r" end
+    else right = tree and (GREY .. "not in your tree|r") or "" end
+    setItem(getRow(n), nil, nil, (info and info.rank >= info.max and GREY or "|cffffffff") .. i .. ".  " .. t.name .. "|r", t.why, right, "", accent)
+    rows[n].icon:SetTexture(135891)
+  end
+  n = n + 1; setHeader(getRow(n), "What to press while leveling")
+  for i, line in ipairs(RG.ROTATION) do
+    n = n + 1; setStep(getRow(n), i, line, false, nil)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  end
+  n = n + 1; setHeader(getRow(n), "Undead and Demons")
+  n = n + 1; setStep(getRow(n), "", "Undead fill Tirisfal, Silverpine, the Plaguelands, Stratholme and Scholomance. Exorcism and Crusade's bonus make you much stronger there, and Holy Wrath stuns them.", false, nil)
+  rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  return n
+end
+
 local function renderSettings()
   local n = 0
   n = n + 1; setHeader(getRow(n), "Features")
@@ -531,6 +605,7 @@ local TITLES = {
   prof  = { "Professions", "Mining routes, smithing upgrades and material prices" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
   settings = { "Settings", "Turn RetGear's helpers on or off" },
+  talents = { "Talents", "What to take next, read from your talent tree" },
 }
 local FOOTERS = {
   route = "Click a step to open its to-do list  ·  click a task to tick it off  ·  A- / A+ change the text size",
@@ -539,6 +614,7 @@ local FOOTERS = {
   prof  = "Ore and bar prices refresh when you open the Auction House",
   ah    = "Opening the AH refreshes prices  ·  /rg alert [item] 25 pings you at 25g or less",
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
+  talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
 }
 
 local function updateHeader()
@@ -567,6 +643,7 @@ function RG.RefreshUI()
   elseif state.tab == "route" then n = renderRoute()
   elseif state.tab == "prof" then n = renderProf()
   elseif state.tab == "settings" then n = renderSettings()
+  elseif state.tab == "talents" then n = renderTalents()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -649,7 +726,7 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "prof", "Professions" }, { "ah", "Auction House" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "ah", "Auction House" }, { "settings", "Settings" } }
   local x = 18
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)

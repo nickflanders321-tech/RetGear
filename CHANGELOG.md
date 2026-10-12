@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.0
+- Quest reward picker: the best reward for Ret gets a gold frame (or "Sells best" when nothing's an upgrade).
+- Exorcism alert when you target Undead or Demons.
+- Weapon stone reminder: tells you which sharpening stone or weightstone to use, and whether you can make it.
+- XP per hour and time to level on the tracker; /rg session prints a session summary.
+- Ret scores on your character screen, with your weakest slot in red.
+- Talents tab: reads your talent tree and suggests the next point, using WoW Forever's Ret talents (Icy Veins, Mobalytics, Warcraft Tavern), plus a leveling priority updated for Forever (Holy Strike, Judgement no longer uses your Seal).
+- Professions: a 1-300 Blacksmithing skill-up plan with Horde trainers (wow-professions.com), and smelt-or-sell advice from AH prices.
+- My gear: a pre-raid checklist for levels 52-60.
+
 ## v0.8.0
 - On-screen tracker: your current route step, next tasks (click to tick), dungeon quests to collect, your next gear upgrade and reminders. Drag it anywhere; collapse it with the minus button.
 - Upgrade pop-up with an Equip button when better gear lands in your bags.
