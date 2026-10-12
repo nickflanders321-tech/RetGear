@@ -7,7 +7,7 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 local HOLY_ICON = "|TInterface\\Icons\\Spell_Holy_HolyBolt:14:14:0:0:64:64:5:59:5:59|t "
 
 table.insert(RG.OPTIONS, { key = "healSet", label = "Collect a healing set for dual spec (Healing tab)", default = true })
-local function on() return RG.Opt("healSet") end
+local function on() return RG.Opt("healSet") and not RG.IsAlt() end
 
 -- Holy Paladin stat values in "healing power" (Classic-style: +Healing first,
 -- then Intellect, MP5 and spell crit; Spirit and Stamina barely matter).
@@ -253,6 +253,7 @@ local f = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "BANKFRAME_OPENED", "PLAYERBANKSLOTS_CHANGED", "BANKFRAME_CLOSED" }) do pcall(f.RegisterEvent, f, e) end
 local bankOpen = false
 f:SetScript("OnEvent", function(_, event)
+  if RG.IsAlt() then return end
   if event == "BANKFRAME_OPENED" then bankOpen = true; readBank()
   elseif event == "BANKFRAME_CLOSED" then if bankOpen then readBank() end; bankOpen = false
   elseif event == "PLAYERBANKSLOTS_CHANGED" then if bankOpen then readBank() end

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.13.0
+- Bank alt support. Your paladin is saved as your main; other characters run in bank alt mode and no longer write quest progress, flight paths, fights, session stats or bank contents over your main's.
+- New Bank alt tab: 9 route quests whose items can be bought and mailed (The Lost Pages, Warsong Saw Blades, Elixir of Agony, Coolant Heads Prevail, Gyro... What?, Stone Is Better than Cloth, The Green Hills of Stranglethorn, Caught!, Chasing A-Me 01), what your main already has, a shopping list for the next few levels with AH prices and total cost, and click-to-search at the AH.
+- Mailbox button on the bank alt: attaches everything on the list and addresses it to your main.
+- Route shows mail-able quests in their zone; the tracker reminds your main before they come up; the bank alt's tracker shows the shopping list.
+- Opening the AH prices the shopping list too. Tabs now squeeze to fit on one line.
+- Sources: Nightfall's Horde leveling guide purchase list (Warcraft Tavern), Warcraft Wiki and Wowhead quest/item pages. Classic-era quests; Forever changes are checked by the weekly update.
+
 ## v0.12.0
 - New DPS tab: a fight-by-fight coach built from the combat log. Shows DPS, efficiency (your DPS vs. what every fix would add), a damage breakdown by ability, Seal and swing uptime, and miss/dodge/parry rates.
 - Ranked tips with estimated DPS gain: Seal not up, not swinging, Judgement / Holy Strike / Exorcism / Hammer of Wrath left sitting ready (measured live, so it works with Forever's cooldowns), too many misses (get hit gear) or parries (stand behind), Blessing of Might or weapon stone missing, out of mana, deaths.

@@ -6,7 +6,7 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 
 table.insert(RG.OPTIONS, { key = "coach", label = "DPS coach: tips after each fight (DPS tab)", default = true })
 table.insert(RG.OPTIONS, { key = "coachChat", label = "Print a one-line DPS report in chat after fights", default = true })
-local function on() return RG.Opt("coach") end
+local function on() return RG.Opt("coach") and not RG.IsAlt() end
 
 local MAX_FIGHTS = 30
 local MIN_FIGHT = 8   -- seconds; shorter fights are too noisy to coach

@@ -317,6 +317,11 @@ local f = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP", "MERCHANT_SHOW", "UNIT_AURA", "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_ENABLED", "MINIMAP_UPDATE_TRACKING", "ZONE_CHANGED_NEW_AREA" }) do pcall(f.RegisterEvent, f, e) end
 local bagTimer
 f:SetScript("OnEvent", function(_, event, a1)
+  if RG.IsAlt and RG.IsAlt() and event ~= "MERCHANT_SHOW" then
+    -- bank alt: only the vendor helper and minimap button
+    if event == "PLAYER_LOGIN" then C_Timer.After(3, RG.MinimapButton) end
+    return
+  end
   if event == "PLAYER_LOGIN" then
     C_Timer.After(3, function()
       checkUpgrades(); RG.MinimapButton()

@@ -20,4 +20,5 @@ Profit.lua
 Gold.lua
 Heal.lua
 Coach.lua
+Mail.lua
 UI.lua

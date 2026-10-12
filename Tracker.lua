@@ -146,6 +146,19 @@ function RG.RefreshTracker()
   tr.body:Show(); tr.min.t:SetText("-")
 
   local n, y = 0, 0
+  -- bank alt: just the shopping list for your main
+  if RG.IsAlt and RG.IsAlt() then
+    tr.lvl:SetText("Bank alt for " .. (RG.MainName() or "your main"))
+    local list = RG.ShoppingList and RG.ShoppingList() or {}
+    n = n + 1; y = section(n, y, #list > 0 and "Buy and mail" or "Nothing to send right now")
+    for i = 1, math.min(6, #list) do
+      local e = list[i]
+      n = n + 1
+      y = item(n, y, (RG.ItemInfo(e.id) or ("item " .. e.id)) .. "  x" .. e.need .. (e.toBuy > 0 and (GREY .. "  (buy " .. e.toBuy .. ")|r") or (GREEN .. "  (in your bags)|r")) .. "\n" .. GREY .. e.quest .. "|r", { onClick = function() if RG.ShowTab then RG.ShowTab("mail") end end })
+    end
+    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 8)
+    return
+  end
   -- current route step
   local r = currentEntry()
   if r then

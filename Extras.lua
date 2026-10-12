@@ -280,6 +280,7 @@ local f = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "QUEST_COMPLETE", "QUEST_DETAIL", "QUEST_FINISHED", "PLAYER_TARGET_CHANGED", "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP",
   "QUEST_TURNED_IN", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "UNIT_INVENTORY_CHANGED", "CHARACTER_POINTS_CHANGED", "PLAYER_TALENT_UPDATE" }) do pcall(f.RegisterEvent, f, e) end
 f:SetScript("OnEvent", function(_, event, a1)
+  if RG.IsAlt and RG.IsAlt() then return end
   if event == "PLAYER_LOGIN" then
     session.gold = GetMoney(); onXP(); oreCounts = oreSnapshot()
     if CharacterFrame then CharacterFrame:HookScript("OnShow", updatePaperdoll) end
@@ -312,4 +313,4 @@ SlashCmdList.RETGEAR = function(msg)
 end
 -- Logging out prints a short summary next time you look at chat.
 local lo = CreateFrame("Frame"); lo:RegisterEvent("PLAYER_LOGOUT")
-lo:SetScript("OnEvent", function() RetGearDB.lastSession = { xp = session.xp, quests = session.quests, ore = session.ore, t = time() - session.start } end)
+lo:SetScript("OnEvent", function() if RG.IsAlt and RG.IsAlt() then return end; RetGearDB.lastSession = { xp = session.xp, quests = session.quests, ore = session.ore, t = time() - session.start } end)

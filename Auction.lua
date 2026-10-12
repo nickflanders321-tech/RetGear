@@ -40,6 +40,7 @@ local function isTracked(id)
   if g and g.ah then return true end
   if RG.BagSellSet and RG.Opt("profitWatch") and RG.BagSellSet()[id] then return true end
   if RG.GoldIDs and select(2, RG.GoldIDs())[id] then return true end
+  if RG.MAIL_QUESTS then for _, q in ipairs(RG.MAIL_QUESTS) do for _, it in ipairs(q.items) do if it[1] == id then return true end end end end
   return false
 end
 RG.IsPriceWatched = isTracked
@@ -52,6 +53,7 @@ function RG.ScanIDs()
   local extra = {}
   if RG.BagSellIDs then for _, id in ipairs(RG.BagSellIDs()) do extra[#extra + 1] = id end end
   if RG.GoldIDs then for _, id in ipairs((RG.GoldIDs())) do extra[#extra + 1] = id end end
+  if RG.MailIDs then for _, id in ipairs(RG.MailIDs()) do extra[#extra + 1] = id end end
   for _, id in ipairs(extra) do if not seen[id] then seen[id] = true; ids[#ids + 1] = id end end
   return ids
 end

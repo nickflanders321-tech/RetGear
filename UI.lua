@@ -498,6 +498,19 @@ local function renderRoute()
           qr.icon:SetTexture(136797)
         end
       end
+      if RG.MailForEntry and (now or not past) then
+        for _, m in ipairs(RG.MailForEntry(r)) do
+          if not m.done then
+            n = n + 1
+            local mr = getRow(n)
+            local have = m.missing == 0 and (GREEN .. "Have it|r") or (m.selfMade and (GREEN .. "You can make it|r") or (GOLD .. "Bank alt: mail it|r"))
+            local what = m.q.any and (m.missing .. " of " .. #m.items .. " pages missing") or (m.items[1].count .. "x " .. m.items[1].name)
+            setItem(mr, not m.q.any and m.items[1].id or nil, nil, "|cffffd100" .. m.q.quest .. "|r" .. GREY .. "   level " .. m.q.lvl .. "|r", what .. GREY .. "  ·  " .. m.q.giver .. "|r", have, m.q.any and "" or (RG.PriceText(m.items[1].id) or ""), m.missing == 0 and "green" or nil, nil, true)
+            mr.icon:SetTexture("Interface\\Icons\\INV_Letter_15")
+            mr.onClick = function() RG.ShowTab("mail") end
+          end
+        end
+      end
     end
   end
   if n == 0 then n = 1; setHeader(getRow(1), "Untick Near my level to see the whole route") end
@@ -806,6 +819,52 @@ local function renderDPS()
   return n
 end
 
+local function renderMail()
+  local n = 0
+  local alt = RG.IsAlt()
+  local main = RG.MainName() or "your main"
+  n = n + 1
+  setItem(getRow(n), nil, nil, alt and ("|cffffffffBank alt for " .. main .. "|r") or "|cffffffffYour bank alt|r",
+    alt and "Buy what's below on the AH (click an item to search for it), then open a mailbox and press the RetGear button to attach it all."
+      or "These quests use items you can buy. Have your bank alt buy them and mail them here. Log in on the alt to see the same list.",
+    alt and (GOLD .. "Main: " .. main .. "|r") or (GREY .. "Main: " .. (RG.db.main and main or "not set") .. "|r"), "", "gold")
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Letter_15")
+  -- shopping list
+  local list = RG.ShoppingList()
+  local total, unknown = 0, 0
+  n = n + 1; setHeader(getRow(n), #list > 0 and "Shopping list  ·  next few levels for " .. main or "Nothing to buy for the next few levels")
+  for _, e in ipairs(list) do
+    n = n + 1
+    local r = getRow(n)
+    local name, link, quality = itemName(e.id)
+    local price = RG.Price(e.id)
+    if price then total = total + price * e.toBuy elseif e.toBuy > 0 then unknown = unknown + 1 end
+    local status = e.toBuy == 0 and (GREEN .. "In the alt's bags|r") or (GOLD .. "Buy " .. e.toBuy .. "|r")
+    if not alt then status = GOLD .. "Need " .. e.need .. "|r" end
+    setItem(r, e.id, link, name, e.quest .. GREY .. "  ·  quest level " .. e.lvl .. "|r", status, RG.PriceText(e.id) or (GREY .. "not priced yet|r"), nil, quality, true)
+    r.onClick = function() RG.SearchAH(e.id) end
+  end
+  if #list > 0 then
+    n = n + 1; setHeader(getRow(n), "About " .. RG.Money(total) .. " to buy everything" .. (unknown > 0 and (" (" .. unknown .. " not priced yet: open the AH)") or ""))
+  end
+  -- every quest
+  n = n + 1; setHeader(getRow(n), "Quests you can skip the farming for")
+  for _, m in ipairs(RG.MailQuests(nil, true)) do
+    n = n + 1
+    local pill
+    if m.done then pill = GREEN .. "Done|r"
+    elseif m.missing == 0 then pill = GREEN .. (m.q.any and "All pages|r" or "Have it|r")
+    elseif m.selfMade then pill = GREEN .. "Make it yourself|r"
+    elseif m.q.bs then pill = GOLD .. "Blacksmithing " .. m.q.bs .. "|r"
+    else pill = GOLD .. "Mail it|r" end
+    local what = m.q.any and (#m.items - m.missing .. " of " .. #m.items .. " pages") or (m.items[1].count .. "x " .. m.items[1].name)
+    setItem(getRow(n), (not m.q.any) and m.items[1].id or nil, nil, (m.done and GREY or "|cffffd100") .. m.q.quest .. "|r" .. GREY .. "   " .. m.q.zone .. "  ·  level " .. m.q.lvl .. "|r",
+      what .. GREY .. "  ·  " .. m.q.giver .. "  ·  " .. m.q.why .. "|r", pill, "", m.done and "green" or nil)
+    if m.q.any then rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_02") end
+  end
+  return n
+end
+
 local function renderSettings()
   local n = 0
   n = n + 1; setHeader(getRow(n), "Features")
@@ -846,6 +905,7 @@ local TITLES = {
   settings = { "Settings", "Turn RetGear's helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
+  mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   dps   = { "DPS coach", "Every fight recorded, and the biggest thing to fix" },
   heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
 }
@@ -858,6 +918,7 @@ local FOOTERS = {
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
   talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
+  mail  = "Click an item to search the AH for it  ·  /rg main makes the current character your main",
   dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /rg dps reset clears history",
   heal  = "Pieces in your healing set are never sold by RetGear  ·  Forever loot is still being mapped; the list updates weekly",
 }
@@ -892,6 +953,7 @@ function RG.RefreshUI()
   elseif state.tab == "gold" then n = renderGold()
   elseif state.tab == "heal" then n = renderHeal()
   elseif state.tab == "dps" then n = renderDPS()
+  elseif state.tab == "mail" then n = renderMail()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -974,12 +1036,20 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "dps", "DPS" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "dps", "DPS" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "mail", "Bank alt" }, { "settings", "Settings" } }
   local x = 18
+  -- squeeze the padding so every tab fits on one line
+  local textW = 0
+  do
+    local probe = frame:CreateFontString(nil, "OVERLAY"); font(probe, FONT_BODY, 12)
+    for _, d in ipairs(defs) do probe:SetText(d[2]); textW = textW + (probe:GetStringWidth() or 50) end
+    probe:Hide()
+  end
+  local pad = math.max(10, math.min(26, math.floor((W - 36 - textW) / #defs) - 2))
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
     b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12); b.text:SetText(d[2]); b.text:SetPoint("CENTER", 0, 1)
-    local w = b.text:GetStringWidth() + 26
+    local w = b.text:GetStringWidth() + pad
     b:SetSize(w, 30); b:SetPoint("TOPLEFT", x, -80); x = x + w + 2
     b.underline = b:CreateTexture(nil, "OVERLAY"); b.underline:SetHeight(2); b.underline:SetPoint("BOTTOMLEFT", 8, 0); b.underline:SetPoint("BOTTOMRIGHT", -8, 0); b.underline:SetColorTexture(unpack(T.gold))
     b:SetScript("OnEnter", function(self) if state.tab ~= d[1] then self.text:SetTextColor(unpack(T.text)) end end)

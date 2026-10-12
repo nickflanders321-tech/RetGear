@@ -27,6 +27,23 @@ local function InitDB()
 end
 
 -- ---------------------------------------------------------------------------
+-- Main character vs bank alt. Saved data is shared by every character on the
+-- account, so other characters run in "bank alt" mode and never overwrite
+-- your main's quests, flight paths, fights or healing set.
+-- ---------------------------------------------------------------------------
+function RG.PlayerKey()
+  return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "")
+end
+function RG.IsAlt()
+  local m = RG.db and RG.db.main
+  return m ~= nil and m ~= RG.PlayerKey()
+end
+function RG.MainName()
+  local m = RG.db and RG.db.main
+  return m and m:match("^(.-)%-") or m
+end
+
+-- ---------------------------------------------------------------------------
 -- Item info helpers (modern client API with fallbacks)
 -- ---------------------------------------------------------------------------
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
@@ -302,8 +319,15 @@ f:SetScript("OnEvent", function(_, event, arg1)
     for _, g in ipairs(RG.GUIDE) do if g.id then RG.RequestItem(g.id) end end
     local _, class = UnitClass("player")
     local _, race = UnitRace("player")
+    if not RG.db.main and class == "PALADIN" then RG.db.main = RG.PlayerKey() end
+    if RG.IsAlt() then
+      RG.Print("Bank alt mode: buying and mailing for " .. GOLD .. (RG.MainName() or "your main") .. "|r. /rg mail shows the shopping list. (/rg main makes this character your main.)")
+      return
+    end
     if class == "PALADIN" and race ~= "Scourge" then RG.Print("Loaded. The leveling guide is set up for an Undead (Horde) paladin, so some quests may not be on your side.") end
     if class ~= "PALADIN" then RG.Print("Loaded. It's tuned for Retribution Paladins, but the scores still work as a Strength DPS guide.") end
+  elseif RG.IsAlt() then
+    return
   elseif event == "PLAYER_LEVEL_UP" then
     if not RG.db.levelAlerts then return end
     local lvl = arg1

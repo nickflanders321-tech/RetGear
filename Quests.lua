@@ -156,6 +156,7 @@ local function queueRefresh()
   C_Timer.After(0.5, function() refreshQueued = nil; logStamp = nil; if RG.RefreshUI then RG.RefreshUI() end end)
 end
 f:SetScript("OnEvent", function(_, event, a1, a2)
+  if RG.IsAlt and RG.IsAlt() then return end -- a bank alt's quests aren't your main's
   if event == "PLAYER_LOGIN" then
     C_Timer.After(5, scanHistory)
   elseif event == "QUEST_TURNED_IN" then
