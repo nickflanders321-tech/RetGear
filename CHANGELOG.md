@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.17.1
+- Fixed a stray "." in front of unnumbered checklist rows (Settings and the Camp plan).
+
 ## v0.17.0
 - Classic WoW look: the stone-and-gold dialog frame with a gold title banner, Character-window tabs along the bottom, tooltip-bordered rows with the quest-log highlight, classic checkboxes, red Blizzard buttons and close buttons, status-bar textures, a purple XP bar (blue while rested), classic quest-log colors, and tab/open/close sounds. The tracker, pop-ups, quest bar and welcome screen match.
 - Fewer tabs (12 to 9): Professions now holds Mining & smithing plus Camp, fish & cook; Gold & AH holds Sell & prices, Gold tips and Bank alt, with sub-tabs at the top right. /rg camp, /rg gold and /rg mail still jump straight there.

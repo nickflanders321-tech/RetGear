@@ -256,7 +256,7 @@ local function setStep(r, num, text, done, onClick, auto)
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r.iconBorder, "TOPRIGHT", 10, 1)
   r.title:SetWidth((W - 56) - 34 - box - 10 - 18)
   r.title:SetWordWrap(true)
-  r.title:SetText((done and GREY or "|cffffffff") .. num .. ".  " .. text .. "|r"); r.title:Show()
+  r.title:SetText((done and GREY or "|cffffffff") .. ((num ~= nil and num ~= "") and (num .. ".  ") or "") .. text .. "|r"); r.title:Show()
   local th = r.title.GetStringHeight and r.title:GetStringHeight() or sz(14)
   r.h = math.max(sz(32), (th or sz(14)) + sz(16))
   r.onClick = onClick
