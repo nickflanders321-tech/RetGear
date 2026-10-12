@@ -80,6 +80,7 @@ RG.HEAL_TIPS = {
   "Flash of Light is your main heal; save Holy Light for big hits. Keep an eye on mana when the group chain-pulls.",
   "Your bags fill up fast with two sets. Buy bigger bags, and park off-set pieces in the bank between runs.",
   "Use the game's Equipment Manager (character screen) to save a Holy set so you can swap it in one click.",
+  "When you heal, place a Fish Bowl at camp instead of the Sharpening Wheel: +8% Intellect, Spirit and Stamina. Use Blessing of Wisdom on yourself, since you're not meleeing.",
 }
 
 -- ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 -- RetGear gold-making tips for an Undead Ret Paladin with Mining and Blacksmithing.
 -- The weekly RetGear update refreshes this table from the newest WoW Forever
 -- gold guides, so keep the shape the same: one row per tip.
---   cat   = "Mining" | "Blacksmithing" | "Farming" | "Auction House" | "Forever"
+--   cat   = "Mining" | "Blacksmithing" | "Fishing" | "Farming" | "Auction House" | "Forever"
 --   from, to = character levels the tip is useful at
 --   title, text = what to do and why
 --   ids   = item IDs whose live AH price is shown with the tip (optional)
@@ -26,6 +26,11 @@ RG.GOLD = {
     -- Blacksmithing
     { cat = "Blacksmithing", from = 5, to = 60, prof = "Blacksmithing", title = "Sharpening stones and weightstones", text = "Every warrior, rogue and paladin leveling uses them. They're cheap to make from stone, stack well and sell steadily.", ids = { 2862, 2863, 2871, 3239, 3240, 3241 } },
     { cat = "Blacksmithing", from = 10, to = 60, prof = "Blacksmithing", title = "Sell gear that's bind on equip", text = "Check the binding before you craft to sell: BoE pieces can go on the AH, BoP can't. Price-check before making a batch." },
+    -- Fishing
+    { cat = "Fishing", from = 10, to = 30, prof = "Fishing", title = "Deviate Fish in the Barrens", text = "Fish the Barrens oases (Lushwater, Stagnant, Forgotten Pools) or outside Wailing Caverns. Savory Deviate Delight is a popular fun item, so the raw fish sells.", ids = { 6522 } },
+    { cat = "Fishing", from = 15, to = 45, prof = "Fishing", title = "Fish for alchemists", text = "Oily Blackmouth (Ratchet docks, Silverpine coast) and Firefin Snapper (coasts, Stonetalon lakes) go into Blackmouth Oil and Fire Oil. Sell them in stacks of 20.", ids = { 6358, 6359 } },
+    { cat = "Fishing", from = 45, to = 60, prof = "Fishing", title = "Stonescale Eels", text = "Azshara and coastal schools, best at night. Raiders' potions use them, so they hold their price.", ids = { 13422 } },
+    { cat = "Fishing", from = 1, to = 60, prof = "Fishing", title = "Fish while you wait", text = "Waiting on respawns, a group or a camp buff? Fish. It levels Fishing and Cooking for free and stocks your Fish Bowls and Well Fed food." },
     -- Forever-only
     { cat = "Forever", from = 1, to = 60, title = "Waylaid Crates", text = "Players turn in supply crates for Merchant's Favor and need set materials to fill them (Copper Bar showed up in the beta). Watch for crate materials spiking on the AH and sell into it." },
     { cat = "Forever", from = 1, to = 60, title = "Sell the mats for new recipes", text = "Forever adds 600+ new profession recipes, and some Blueprints drop from dungeon bosses. Mats those recipes need can jump in price, so check before vendoring anything that looks odd." },

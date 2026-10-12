@@ -544,6 +544,7 @@ RG.TALENT_PRIORITY = {
 -- Leveling priority, adjusted for Forever's changes (Judgement no longer uses
 -- up your Seal; Holy Strike is baseline at 6).
 RG.ROTATION = {
+  "Before a long session, make camp: campfire + Sharpening Wheel, sit for a minute, and you're buffed for an hour.",
   "Keep Blessing of Might on yourself (1 hour in Forever).",
   "Seal of Command up (Seal of Righteousness before 20). Judgement no longer removes it.",
   "Holy Strike on cooldown. It's Holy damage, so armor doesn't reduce it.",

@@ -21,4 +21,5 @@ Gold.lua
 Heal.lua
 Coach.lua
 Mail.lua
+Camp.lua
 UI.lua

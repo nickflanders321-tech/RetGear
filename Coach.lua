@@ -95,7 +95,7 @@ local function newFight()
     swings = 0, swingDmg = 0, swingHits = 0, miss = 0, dodge = 0, parry = 0, glance = 0, crits = 0,
     samples = 0, sealUp = 0, meleeSamples = 0, idle = {}, cd = {}, noMana = 0,
     minMana = 1, speed = mh, died = false,
-    might = hasMight() ~= nil, stone = (GetWeaponEnchantInfo and GetWeaponEnchantInfo()) and true or false,
+    might = hasMight() ~= nil, camp = RG.CampState and RG.CampState() == "active" or false, stone = (GetWeaponEnchantInfo and GetWeaponEnchantInfo()) and true or false,
     target = UnitExists("target") and UnitName("target") or nil,
     class = UnitExists("target") and UnitClassification and UnitClassification("target") or nil,
     instance = instType ~= "none" and instType or nil,
@@ -195,6 +195,10 @@ local function analyze(f)
   end
   -- Buffs at the pull
   if not f.might and spellKnown("Blessing of Might") then add("Blessing of Might was missing at the pull", f.total / dur * 0.05, "Keep Blessing of Might on yourself. The tracker reminds you when it drops.") end
+  if not f.camp and (f.level or 0) >= 5 and not f.instance and RG.Professions and (RG.Professions()["Cooking"] or {}).rank then
+    local pick = RG.CampPick and RG.CampPick()
+    add("No camp buff for this fight", f.total / dur * 0.04, "Make camp at your next stop: campfire" .. (pick and (" + " .. pick.name) or "") .. ", sit for a minute, and you're buffed for an hour.")
+  end
   if not f.stone and (f.level or 0) >= 10 then add("No sharpening stone or weightstone on your weapon", f.total / dur * 0.03, "Use the stone the tracker suggests. You can make them with Blacksmithing.") end
   if f.noMana >= 3 then add(string.format("Out of mana for %.0f sec", f.noMana), nil, "Drink between pulls, and judge Seal of Wisdom on long fights if you keep running dry.") end
   if f.died then add("You died in this fight", nil, "Watch your health: use a healing potion, or Lay on Hands in an emergency.") end

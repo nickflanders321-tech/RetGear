@@ -498,6 +498,16 @@ local function renderRoute()
           qr.icon:SetTexture(136797)
         end
       end
+      if RG.CampForEntry and (now or not past) then
+        for _, cs in ipairs(RG.CampForEntry(r)) do
+          n = n + 1
+          local cr = getRow(n)
+          local done = RG.CampPlanDone(cs)
+          setItem(cr, nil, nil, (done and GREY or "|cffffffff") .. cs.text .. "|r", "", done and (GREEN .. "Done|r") or (GOLD .. "Camp · fish · cook|r"), "", done and "green" or nil, nil, true)
+          cr.icon:SetTexture("Interface\\Icons\\Spell_Fire_Fire")
+          cr.onClick = function() RG.ShowTab("camp") end
+        end
+      end
       if RG.MailForEntry and (now or not past) then
         for _, m in ipairs(RG.MailForEntry(r)) do
           if not m.done then
@@ -608,6 +618,7 @@ local GOLD_ICON = {
   Blacksmithing = "Interface\\Icons\\Trade_BlackSmithing",
   Farming = "Interface\\Icons\\INV_Fabric_Linen_01",
   Forever = "Interface\\Icons\\INV_Misc_Note_01",
+  Fishing = "Interface\\Icons\\Trade_Fishing",
 }
 local function renderGold()
   local n = 0
@@ -865,6 +876,65 @@ local function renderMail()
   return n
 end
 
+local function renderCamp()
+  local n = 0
+  local p = RG.Professions()
+  local function sk(name) return p[name] and p[name].rank or 0 end
+  -- status
+  local state, left = RG.CampState()
+  n = n + 1
+  local st = state == "active" and (GREEN .. (left and string.format("%d min left", math.ceil(left / 60)) or "Active") .. "|r")
+    or (state == "sitting" and (GOLD .. "Keep sitting...|r") or (state == "near" and (GOLD .. "Sit down by the fire|r") or (GREY .. "No camp buff|r")))
+  setItem(getRow(n), nil, nil, "|cffffffffCamp Benefits|r", "Place a campfire, add an object, /sit for about a minute, and the buffs last an hour. You can place one object per hour, and friends can add theirs.", st, "", "gold")
+  rows[n].icon:SetTexture("Interface\\Icons\\Spell_Fire_Fire")
+  -- recommendation
+  local best, opts = RG.CampPick()
+  n = n + 1; setHeader(getRow(n), "What to place when you camp alone")
+  if best then
+    for i, o in ipairs(opts) do
+      n = n + 1
+      setItem(getRow(n), nil, nil, (i == 1 and GOLD or "|cffffffff") .. o.name .. "|r" .. (i == 1 and (GREEN .. "   best for you right now|r") or ""), o.why, string.format("%sRet +%.0f|r", i == 1 and GREEN or GREY, o.value), "", i == 1 and "gold" or nil, nil, true)
+    end
+  else
+    n = n + 1; setItem(getRow(n), nil, nil, "|cffffffffGet Blacksmithing or Fishing to 20|r", "Then you can add a Sharpening Wheel or a Fish Bowl to your fire.", "", "", nil, nil, true)
+  end
+  n = n + 1; setItem(getRow(n), nil, nil, GREY .. "Lodestone (Mining) gives Attack Power but doesn't stack with Blessing of Might, and Might gives you more. Bring it to groups without a paladin. When healing, use the Fish Bowl.|r", "", "", "", nil, nil, true)
+  -- campfires
+  n = n + 1; setHeader(getRow(n), string.format("Campfires  ·  Cooking %d", sk("Cooking")))
+  for _, c in ipairs(RG.CAMPFIRES) do
+    n = n + 1
+    local have = sk("Cooking") >= c.cook
+    setItem(getRow(n), nil, nil, (have and "|cffffffff" or GREY) .. c.name .. "|r" .. GREY .. "   " .. c.slots .. " object slots  ·  " .. c.wood .. "|r", c.how, have and (GREEN .. "Ready|r") or (GOLD .. "Cooking " .. c.cook .. "|r"), c.learn and (GREY .. "learn at " .. c.learn .. "|r") or "", have and "green" or nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\Spell_Fire_Fire")
+  end
+  -- objects
+  n = n + 1; setHeader(getRow(n), "Your camp objects")
+  for _, o in ipairs(RG.CAMP_OBJECTS) do
+    n = n + 1
+    local have = sk(o.prof) >= o.skill
+    setItem(getRow(n), nil, nil, (have and "|cffffffff" or GREY) .. o.name .. "|r" .. GREY .. "   " .. o.prof .. " " .. o.skill .. "|r", o.buff .. GREY .. "  ·  " .. o.how .. (o.mats and ("  ·  " .. o.mats) or "") .. "|r", have and (GREEN .. "Unlocked|r") or (GOLD .. o.prof .. " " .. o.skill .. "|r"), "", have and "green" or nil, nil, true)
+    rows[n].icon:SetTexture(o.prof == "Fishing" and "Interface\\Icons\\Trade_Fishing" or (o.prof == "Mining" and "Interface\\Icons\\Trade_Mining" or (o.prof == "Cooking" and "Interface\\Icons\\INV_Misc_Food_15" or "Interface\\Icons\\Trade_BlackSmithing")))
+  end
+  -- plan
+  n = n + 1; setHeader(getRow(n), string.format("Fishing %d  ·  Cooking %d  ·  leveling plan along your route", sk("Fishing"), sk("Cooking")))
+  local lvl = UnitLevel("player")
+  for _, s in ipairs(RG.CAMP_PLAN) do
+    n = n + 1
+    local done = RG.CampPlanDone(s)
+    local soon = not done and s.lvl <= lvl + 2
+    setStep(getRow(n), "", s.text .. GREY .. "   (level " .. s.lvl .. ", " .. s.zone .. ")|r", done, function() end, done and "your skill is already there" or nil)
+    if soon then rows[n].title:SetText(GOLD .. "Now: |r" .. s.text .. GREY .. "   (" .. s.zone .. ")|r") end
+  end
+  -- fish
+  n = n + 1; setHeader(getRow(n), "Fish worth keeping")
+  for _, fsh in ipairs(RG.FISH) do
+    n = n + 1
+    local name, link, quality = itemName(fsh.id)
+    setItem(getRow(n), fsh.id, link, name, fsh.note .. GREY .. "  ·  Fishing " .. fsh.skill .. "|r", sk("Fishing") >= fsh.skill and (GREEN .. "You can catch it|r") or (GREY .. "Fishing " .. fsh.skill .. "|r"), RG.PriceText(fsh.id) or (GREY .. "not priced yet|r"), nil, quality, true)
+  end
+  return n
+end
+
 local function renderSettings()
   local n = 0
   n = n + 1; setHeader(getRow(n), "Features")
@@ -905,6 +975,7 @@ local TITLES = {
   settings = { "Settings", "Turn RetGear's helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
+  camp  = { "Camping, fishing & cooking", "Campfire buffs, what to place, and leveling Fishing and Cooking on the way" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   dps   = { "DPS coach", "Every fight recorded, and the biggest thing to fix" },
   heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
@@ -918,6 +989,7 @@ local FOOTERS = {
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
   talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
+  camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /rg camp",
   mail  = "Click an item to search the AH for it  ·  /rg main makes the current character your main",
   dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /rg dps reset clears history",
   heal  = "Pieces in your healing set are never sold by RetGear  ·  Forever loot is still being mapped; the list updates weekly",
@@ -954,6 +1026,7 @@ function RG.RefreshUI()
   elseif state.tab == "heal" then n = renderHeal()
   elseif state.tab == "dps" then n = renderDPS()
   elseif state.tab == "mail" then n = renderMail()
+  elseif state.tab == "camp" then n = renderCamp()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -1036,7 +1109,7 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "dps", "DPS" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "mail", "Bank alt" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "dps", "DPS" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "camp", "Camp" }, { "mail", "Bank alt" }, { "settings", "Settings" } }
   local x = 18
   -- squeeze the padding so every tab fits on one line
   local textW = 0

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.14.0
+- New Camp tab for WoW Forever's camping: Camp Benefits timer, the best object to place solo (Sharpening Wheel vs Fish Bowl, computed from your stats), campfire tiers (Basic / Journeyman / Expert) and every Blacksmithing, Mining, Fishing and Cooking camp object with skill, buff, cost and blueprint source.
+- Fishing and Cooking leveling plan along the Undead route (Tirisfal to Feralas), shown in the Camp tab and in each zone of the route, ticked off from your real skill levels. Skill milestones (Journeyman, Expert books, campfire blueprints, Nat Pagle) print in chat.
+- Tracker reminders: make camp, keep sitting, camp buff ending, eat for Well Fed (+5% XP). Settings toggles for both.
+- DPS coach: "No camp buff for this fight" tip. Leveling priority starts with making camp.
+- Gold tab: new Fishing tips (Deviate Fish, Oily Blackmouth, Firefin Snapper, Stonescale Eel) with live prices. Healing tab: use the Fish Bowl when healing.
+- Sources: Icy Veins, Mobalytics, wowforever.be and classicwowforever.com camping guides; wow-professions.com Forever fishing and cooking guides; Warcraft Wiki item pages.
+
 ## v0.13.0
 - Bank alt support. Your paladin is saved as your main; other characters run in bank alt mode and no longer write quest progress, flight paths, fights, session stats or bank contents over your main's.
 - New Bank alt tab: 9 route quests whose items can be bought and mailed (The Lost Pages, Warsong Saw Blades, Elixir of Agony, Coolant Heads Prevail, Gyro... What?, Stone Is Better than Cloth, The Green Hills of Stranglethorn, Caught!, Chasing A-Me 01), what your main already has, a shopping list for the next few levels with AH prices and total cost, and click-to-search at the AH.
