@@ -50,7 +50,8 @@ function RG.GoldTips(all)
   local lvl = UnitLevel("player") or 1
   local out = {}
   for _, t in ipairs(RG.GOLD.tips) do
-    if all or (lvl >= t.from - 2 and lvl <= t.to) then out[#out + 1] = t end
+    local wanted = not t.prof or not RG.Plans or RG.Plans(t.prof)
+    if wanted and (all or (lvl >= t.from - 2 and lvl <= t.to)) then out[#out + 1] = t end
   end
   return out
 end

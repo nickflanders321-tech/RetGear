@@ -341,7 +341,7 @@ f:SetScript("OnEvent", function(_, event, a1)
   if event == "PLAYER_LOGIN" then
     C_Timer.After(3, function()
       checkUpgrades(); RG.MinimapButton()
-      if not RetGearDB.welcomed then RG.ShowWelcome() end
+      if not RetGearDB.setupDone then RG.ShowWelcome() end
     end)
   elseif event == "BAG_UPDATE_DELAYED" then
     if bagTimer then return end

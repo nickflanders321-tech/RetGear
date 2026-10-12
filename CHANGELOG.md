@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.19.0
+- Setup wizard on first launch (and once after this update): welcome, your main and the professions you'll level, a help-level preset (Full guidance / Balanced / Minimal), automation switches, extras (healing set, DPS coach, AH protection, nearby quests) and a summary with the commands worth remembering. /rg setup or Settings runs it again.
+- Professions you won't level drop out of reminders, the Camp plan and Gold tips.
+
 ## v0.18.0
 - Quest objectives from QuestieDB's WoW Forever data (2,121 quests an Undead paladin can take): where every objective is, which mobs drop your quest items, and where to turn quests in.
 - Tracker "Quests near you": nearest unfinished objective, nearest quest ready to turn in, and up to two new quests you can pick up nearby (level, prerequisites and class checked), each with distance. Click to pin; /rg next pins the nearest objective.

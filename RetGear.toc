@@ -25,4 +25,5 @@ Coach.lua
 Mail.lua
 Camp.lua
 Speed.lua
+Setup.lua
 UI.lua

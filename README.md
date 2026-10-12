@@ -5,6 +5,9 @@ An all-in-one leveling and gearing companion for an **Undead (Horde) Retribution
 ## Install
 Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (during the beta it's `_forever_beta_`), then restart the game. Type `/rg` or click the minimap button.
 
+## First launch
+A six-page **setup wizard** asks how much help you want (Full guidance, Balanced or Minimal), which professions you'll level, and which automation and extras to turn on. Run it again with `/rg setup` or from Settings.
+
 ## On your screen
 - **Tracker** (right side): your current route step and tasks, dungeon quests to collect, your next gear upgrade, and the 5 most important reminders (Blessing and Seal, camp buff, talents, trainer, bags, and more). Drag it anywhere; right-click the minimap button to hide it.
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
@@ -56,7 +59,8 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 | `/rg alert [item] 25` | Tell me when it's listed for 25 gold or less |
 | `/rg scan` · `/rg autoscan` | Re-check prices at the AH · turn the automatic scan on or off |
 | `/rg weight STR 2.5` · `/rg hitcap 9` · `/rg talenthit 3` · `/rg reset` | Tune the Ret score |
-| `/rg tracker` · `/rg tooltip` · `/rg welcome` | Show or hide the tracker / tooltip line / welcome screen |
+| `/rg setup` | Run the setup wizard again |
+| `/rg tracker` · `/rg tooltip` | Show or hide the tracker / tooltip line / welcome screen |
 | `/rg main` | Make this character your main |
 | `/rg dps reset` | Clear fight history |
 

@@ -117,6 +117,13 @@ function RG.CampPick()
 end
 
 local function skill(name) local p = RG.Professions()[name]; return p and p.rank or 0 end
+-- Fishing/Cooking steps hide when setup says you won't level that profession.
+local function planned(step)
+  if not RG.Plans then return true end
+  for prof in pairs(step.need or {}) do if (prof == "Fishing" or prof == "Cooking") and not RG.Plans(prof) then return false end end
+  return true
+end
+RG.CampPlanned = planned
 function RG.CampPlanDone(step)
   for prof, need in pairs(step.need or {}) do if skill(prof) < need then return false end end
   return true
@@ -126,7 +133,7 @@ function RG.CampNext(max)
   local lvl = UnitLevel("player")
   local out = {}
   for _, s in ipairs(RG.CAMP_PLAN) do
-    if s.lvl <= lvl + 2 and not RG.CampPlanDone(s) then out[#out + 1] = s; if #out >= (max or 1) then break end end
+    if s.lvl <= lvl + 2 and planned(s) and not RG.CampPlanDone(s) then out[#out + 1] = s; if #out >= (max or 1) then break end end
   end
   return out
 end

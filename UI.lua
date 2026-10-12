@@ -985,6 +985,7 @@ local function renderCamp()
   n = n + 1; setHeader(getRow(n), string.format("Fishing %d  ·  Cooking %d  ·  leveling plan along your route", sk("Fishing"), sk("Cooking")))
   local lvl = UnitLevel("player")
   for _, s in ipairs(RG.CAMP_PLAN) do
+   if not RG.CampPlanned or RG.CampPlanned(s) then
     n = n + 1
     local done = RG.CampPlanDone(s)
     local soon = not done and s.lvl <= lvl + 2
@@ -992,6 +993,7 @@ local function renderCamp()
     setStep(getRow(n), "", (cw and RG.PIN or "") .. s.text .. GREY .. "   (level " .. s.lvl .. ", " .. s.zone .. ")|r", done, cw and function() RG.PinWaypoint(cw) end or function() end, done and "your skill is already there" or nil)
     if cw then rows[n].tip = "Click to show " .. cw[4] .. " on the map." end
     if soon then rows[n].title:SetText(GOLD .. "Now: |r" .. (cw and RG.PIN or "") .. s.text .. GREY .. "   (" .. s.zone .. ")|r") end
+   end
   end
   -- fish
   n = n + 1; setHeader(getRow(n), "Fish worth keeping")
@@ -1045,7 +1047,7 @@ local function renderSettings()
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gear_01")
     rows[n].onClick = fn
   end
-  action("Show the welcome screen", "The first-time tour of RetGear", function() if RG.ShowWelcome then RG.ShowWelcome() end end)
+  action("Run setup again", "Help level, professions, automation and extras, in six short pages", function() if RG.ShowSetup then RG.ShowSetup() end end)
   action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
   action("Move the tracker back", "Puts the on-screen tracker back on the right side", function() RetGearDB.trackerPos = nil; if RetGearTracker then RetGearTracker:ClearAllPoints(); RetGearTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end end)
   return n
