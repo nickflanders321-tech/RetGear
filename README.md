@@ -10,7 +10,7 @@ Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
 - **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
-- **Arrow**: points to your map pin (`/rg way 45 60`).
+- **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/rg way 45 60` pins any spot.
 
 ## Done for you
 - Quests are **accepted and turned in automatically** (hold **Shift** to pause). The best reward is picked: the Ret upgrade, or the best vendor value. When a Ret and a healing upgrade compete, you choose.
@@ -20,6 +20,8 @@ Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (
 - **Every fight is recorded** by the DPS coach.
 
 ## The window (`/rg`)
+Styled like the classic WoW interface: the stone-and-gold dialog frame, Character-window tabs along the bottom, tooltip-bordered rows and the purple XP bar (blue while rested). A- / A+ change the text size.
+
 | Tab | What's in it |
 |---|---|
 | **Route** | Undead Horde path from Deathknell to 60: zones, dungeons and when to go, quest givers, flight paths, travel, paladin milestones, buy-and-mail quests, camping/fishing steps, and your leveling pace per level |
@@ -28,11 +30,11 @@ Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
 | **DPS** | Last fight: DPS, efficiency, damage by ability, uptime, and what to fix first with the DPS each fix is worth; problems that keep repeating; fight history |
 | **Healing** | Holy set for dual spec at 40: your best healing piece per slot (worn, bags, bank) and a 40-60 hunting list. Your healing set is never sold |
-| **Professions** | Where to mine, Blacksmithing 1-300 plan, smithing upgrades, smelt-or-sell |
-| **Camp** | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, Fishing and Cooking plan, fish worth keeping |
-| **AH** | Your bag items to sell on the AH, plus tracked gear and materials with live prices |
-| **Gold** | Gold-making tips for your level with live prices (refreshed weekly) |
-| **Bank alt** | Quests you can skip farming for: what to buy and mail, with a shopping list for your bank alt |
+| **Professions** → *Mining & smithing* | Where to mine, Blacksmithing 1-300 plan, smithing upgrades, smelt-or-sell |
+| **Professions** → *Camp, fish & cook* | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, Fishing and Cooking plan, fish worth keeping |
+| **Gold & AH** → *Sell & prices* | Your bag items to sell on the AH, plus tracked gear and materials with live prices |
+| **Gold & AH** → *Gold tips* | Gold-making tips for your level with live prices (refreshed weekly) |
+| **Gold & AH** → *Bank alt* | Quests you can skip farming for: what to buy and mail, with a shopping list for your bank alt |
 | **Settings** | Every helper, grouped, on or off |
 
 ## Bank alt
@@ -59,4 +61,4 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 ## Keeping it current
 A weekly update checks the newest WoW Forever guides and refreshes the route, gear, gold tips, healing list, bank-alt quests and camping data. Each release is listed in `CHANGELOG.md`.
 
-Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.
+Waypoints come from [QuestieDB](https://github.com/Questie/QuestieDB)'s WoW Forever NPC data; `tools/waypoints` rebuilds them. Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.

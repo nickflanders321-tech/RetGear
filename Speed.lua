@@ -4,7 +4,7 @@
 -- leveling pace per level, and a bag-space reminder.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
-local GOLDC = { 0.83, 0.71, 0.42 }
+local GOLDC = { 1, 0.82, 0 }
 
 for _, o in ipairs({
   { key = "autoQuest",     label = "Auto accept and turn in quests (hold Shift to pause)", default = true },
@@ -13,6 +13,7 @@ for _, o in ipairs({
   { key = "questItems",    label = "Buttons for quest items you need to use", default = true },
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
   { key = "arrow",         label = "Arrow to your map pin (/rg way 45 60)", default = true },
+  { key = "autoArrow",     label = "Arrow follows your next route step automatically", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
 
@@ -238,6 +239,8 @@ end
 -- ===========================================================================
 -- 3. Waypoint arrow (points at your map pin)
 -- ===========================================================================
+local lastAuto, lastPlaced, lastLabel
+local function samePin(a, b) return a and b and a.map == b.map and math.abs(a.x - b.x) < 0.2 and math.abs(a.y - b.y) < 0.2 end
 local arrow
 local function worldPos(mapID, pos)
   if not (C_Map and C_Map.GetWorldPosFromMapPos and mapID and pos) then return nil end
@@ -273,19 +276,65 @@ local function buildArrow()
     if d < 8 then RG.Print(GREEN .. "Arrived.|r"); if C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide(); return end
     local bearing = math.atan2(dy, dx)
     self.tex:SetRotation(bearing - facing)
-    self.dist:SetText(string.format("%d yd", d))
+    local label = lastPlaced and samePin({ map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }, lastPlaced) and lastLabel or nil
+    self.dist:SetText((label and (label .. "\n") or "") .. string.format("%d yd", d))
   end)
 end
-local function refreshArrow()
+local refreshArrow
+function RG.RefreshArrow() if refreshArrow then refreshArrow() end end
+refreshArrow = function()
   if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt()) then if arrow then arrow:Hide() end return end
   local has = C_Map and C_Map.HasUserWaypoint and C_Map.HasUserWaypoint()
   if has then buildArrow(); arrow:Show() elseif arrow then arrow:Hide() end
 end
+-- ---------------------------------------------------------------------------
+-- Route waypoints (Waypoints.lua: { uiMapID, x, y, label })
+-- ---------------------------------------------------------------------------
+RG.PIN = "|TInterface\\WorldMap\\UI-WorldMap-QuestIcon:14:14:0:0:32:32:0:16:0:16|t "
+function RG.StepWaypoint(entry, i)
+  local W = RG.WAYPOINTS
+  local list = W and entry and W.steps[entry.zone .. "|" .. entry.from]
+  return list and list[i]
+end
+function RG.WaypointForText(text)
+  local W = RG.WAYPOINTS
+  if not (W and text) then return nil end
+  for name, wp in pairs(W.givers) do if text:find(name, 1, true) then return wp end end
+end
+function RG.CampWaypoint(step)
+  local W = RG.WAYPOINTS
+  if not (W and RG.CAMP_PLAN) then return nil end
+  for i, s in ipairs(RG.CAMP_PLAN) do if s == step then return W.camp[i] end end
+end
+local function currentPin()
+  local wp = C_Map and C_Map.GetUserWaypoint and C_Map.GetUserWaypoint()
+  return wp and { map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }
+end
+function RG.PinWaypoint(wp, quiet)
+  if not (wp and C_Map and C_Map.SetUserWaypoint and UiMapPoint) then RG.Print("This client doesn't support map pins.") return end
+  local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(wp[1], wp[2] / 100, wp[3] / 100))
+  if not ok then if not quiet then RG.Print("Can't pin " .. wp[4] .. " from here.") end return end
+  if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
+  lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
+  if RG.RefreshArrow then RG.RefreshArrow() end
+  if not quiet then RG.Print("Pinned " .. GOLD .. wp[4] .. "|r" .. GREY .. string.format(" (%.1f, %.1f). Follow the arrow.|r", wp[2], wp[3])) end
+end
+-- Called by the tracker with the next unfinished step that has a waypoint.
+function RG.AutoPin(key, wp)
+  if not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
+  if IsInInstance and IsInInstance() then return end
+  local cur = currentPin()
+  if cur and not samePin(cur, lastPlaced) then return end -- you placed your own pin: leave it
+  lastAuto = key
+  RG.PinWaypoint(wp, true)
+end
+
 function RG.SetWaypoint(x, y)
   if not (C_Map and C_Map.SetUserWaypoint and UiMapPoint) then RG.Print("This client doesn't support map pins.") return end
   local mapID = C_Map.GetBestMapForUnit("player")
   if not mapID or (C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(mapID)) then RG.Print("Can't place a pin here.") return end
   C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(mapID, x / 100, y / 100))
+  lastPlaced = nil -- a pin you chose: auto-follow leaves it alone
   if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   refreshArrow()
   RG.Print(string.format("Pin set at %.1f, %.1f. Follow the arrow (right-click it to clear).", x, y))

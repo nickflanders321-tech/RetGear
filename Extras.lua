@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 0.83, 0.71, 0.42 }
+local GOLDC = { 1, 0.82, 0 }
 
 -- New options (shown in the Settings tab)
 for _, o in ipairs({

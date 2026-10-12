@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 0.83, 0.71, 0.42 }
+local GOLDC = { 1, 0.82, 0 }
 local W = 300
 local tr, lines, collapsed
 
@@ -65,7 +65,11 @@ local function line(i)
   b.text = b:CreateFontString(nil, "OVERLAY"); b.text:SetFont("Fonts\\ARIALN.TTF", 13, ""); b.text:SetPoint("TOPLEFT", 16, 0); b.text:SetWidth(W - 44); b.text:SetJustifyH("LEFT"); b.text:SetWordWrap(true)
   b.box = b:CreateTexture(nil, "ARTWORK"); b.box:SetSize(10, 10); b.box:SetPoint("TOPLEFT", 1, -2)
   b.check = b:CreateTexture(nil, "OVERLAY"); b.check:SetSize(16, 16); b.check:SetPoint("CENTER", b.box, "CENTER", 1, 1); b.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-  b:SetScript("OnClick", function(self) if self.onClick then self.onClick() end end)
+  b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  b:SetScript("OnClick", function(self, btn)
+    if btn == "RightButton" and self.onRightClick then self.onRightClick(); return end
+    if self.onClick then self.onClick() end
+  end)
   b:SetScript("OnEnter", function(self) if self.tip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(self.tip, 1, 1, 1, 1, true); GameTooltip:Show() end end)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)
   lines[i] = b
@@ -75,16 +79,16 @@ end
 local function build()
   tr = CreateFrame("Frame", "RetGearTracker", UIParent, "BackdropTemplate")
   tr:SetWidth(W); tr:SetClampedToScreen(true); tr:SetMovable(true); tr:EnableMouse(true); tr:SetFrameStrata("MEDIUM")
-  RG.Backdrop(tr, { 0.03, 0.03, 0.04, 0.82 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.45 })
+  RG.Backdrop(tr, { 0.02, 0.02, 0.02, 0.6 }, { 0.6, 0.55, 0.45, 0.6 })
   local pos = RetGearDB.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   tr:RegisterForDrag("LeftButton")
   tr:SetScript("OnDragStart", tr.StartMoving)
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RetGearDB.trackerPos = { p, rp, x, y } end)
 
-  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(20, 20); crest:SetPoint("TOPLEFT", 10, -8); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); crest:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  tr.title = tr:CreateFontString(nil, "OVERLAY"); tr.title:SetFont("Fonts\\MORPHEUS.TTF", 15, ""); tr.title:SetPoint("LEFT", crest, "RIGHT", 8, 0); tr.title:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); tr.title:SetText("RetGear")
-  tr.lvl = tr:CreateFontString(nil, "OVERLAY"); tr.lvl:SetFont("Fonts\\ARIALN.TTF", 12, ""); tr.lvl:SetPoint("LEFT", tr.title, "RIGHT", 8, -1); tr.lvl:SetTextColor(0.6, 0.6, 0.6)
+  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); crest:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  tr.title = tr:CreateFontString(nil, "OVERLAY", "GameFontNormal"); tr.title:SetPoint("LEFT", crest, "RIGHT", 6, 0); tr.title:SetText("RetGear")
+  tr.lvl = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.lvl:SetPoint("LEFT", tr.title, "RIGHT", 8, 0); tr.lvl:SetTextColor(0.75, 0.75, 0.75)
 
   local function hdrBtn(label, x, fn, tip)
     local b = CreateFrame("Button", nil, tr); b:SetSize(20, 20); b:SetPoint("TOPRIGHT", x, -8)
@@ -99,8 +103,10 @@ local function build()
   local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(14, 14); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\Icons\\INV_Misc_Book_09"); gi:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
   -- XP bar under the header
-  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(2); xpBg:SetPoint("TOPLEFT", 1, -34); xpBg:SetPoint("TOPRIGHT", -1, -34); xpBg:SetColorTexture(1, 1, 1, 0.07)
-  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(2); tr.xp:SetPoint("LEFT", xpBg, "LEFT"); tr.xp:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(4); xpBg:SetPoint("TOPLEFT", 6, -32); xpBg:SetPoint("TOPRIGHT", -6, -32)
+  xpBg:SetTexture("Interface\\TargetingFrame\\UI-StatusBar"); xpBg:SetVertexColor(0.12, 0.12, 0.12, 0.9)
+  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(4); tr.xp:SetPoint("LEFT", xpBg, "LEFT")
+  tr.xp:SetTexture("Interface\\TargetingFrame\\UI-StatusBar"); tr.xp:SetVertexColor(0.58, 0.0, 0.55, 1)
 
   tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -42); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   lines = {}
@@ -110,16 +116,18 @@ local function section(n, y, label)
   local b = line(n)
   b.onClick, b.tip = nil, nil
   b.box:Hide(); b.check:Hide()
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
-  b.text:SetText(GOLD .. label:upper() .. "|r")
-  b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(14); b:Show()
-  return y + 18
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", math.floor(12 * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5), "")
+  b.text:SetShadowColor(0, 0, 0, 1); b.text:SetShadowOffset(1, -1)
+  b.text:SetText(GOLD .. label .. "|r")
+  b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
+  return y + 19
 end
 local function item(n, y, text, opts)
   opts = opts or {}
   local b = line(n)
-  b.onClick, b.tip = opts.onClick, opts.tip
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", opts.box ~= nil and 16 or 4, 0); b.text:SetFont("Fonts\\ARIALN.TTF", math.floor(13 * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5), "")
+  b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", opts.box ~= nil and 16 or 8, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", math.floor(11.5 * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5), "")
+  b.text:SetShadowColor(0, 0, 0, 1); b.text:SetShadowOffset(1, -1)
   b.text:SetText(text)
   if opts.box ~= nil then
     b.box:Show(); b.box:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], opts.box and 0.9 or 0.35)
@@ -141,7 +149,7 @@ function RG.RefreshTracker()
   local rate, eta = RG.XPRate and RG.XPRate()
   tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "")
     .. (rate and string.format("  ·  %.1fk/hr  ·  %s", rate / 1000, RG.FormatETA(eta) or "") or ""))
-  tr.xp:SetWidth(math.max(1, (W - 2) * ((max and max > 0) and xp / max or 1)))
+  tr.xp:SetWidth(math.max(1, (W - 12) * ((max and max > 0) and xp / max or 1)))
   if RetGearDB.trackerCollapsed then tr.body:Hide(); tr:SetHeight(40); tr.min.t:SetText("+"); return end
   tr.body:Show(); tr.min.t:SetText("-")
 
@@ -174,7 +182,10 @@ function RG.RefreshTracker()
         shown = shown + 1
         n = n + 1
         local sk = key .. "#" .. i
-        y = item(n, y, text, { box = false, tip = "Click to tick this off.", onClick = function() RG.db.stepsDone[sk] = true; RG.RefreshTracker(); if RG.RefreshUI then RG.RefreshUI() end end })
+        local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+        if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
+        y = item(n, y, (wp and RG.PIN or "") .. text, { box = false, tip = "Click to tick this off." .. (wp and ("\nRight-click: show " .. wp[4] .. " on the map.") or ""), onClick = function() RG.db.stepsDone[sk] = true; RG.RefreshTracker(); if RG.RefreshUI then RG.RefreshUI() end end,
+          onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
       end
     end
     if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. Check the route for your next zone.|r") end

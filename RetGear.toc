@@ -10,6 +10,7 @@
 ## AddonCompartmentFuncOnLeave: RetGear_OnAddonCompartmentLeave
 
 Data.lua
+Waypoints.lua
 Core.lua
 Quests.lua
 QoL.lua

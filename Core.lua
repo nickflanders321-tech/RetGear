@@ -3,8 +3,9 @@
 local ADDON, RG = ...
 _G.RetGear = RG
 
-local GOLD = "|cffD4B46A"
-local GREEN, RED, GREY = "|cff4FAE7A", "|cffD6624F", "|cff8E8E8C"
+-- Classic WoW text colors: quest-log gold, quest-complete green, error red, poor-quality grey
+local GOLD = "|cffffd100"
+local GREEN, RED, GREY = "|cff40c040", "|cffff3333", "|cffa0a0a0"
 RG.COLORS = { GOLD = GOLD, GREEN = GREEN, RED = RED, GREY = GREY }
 
 function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "RetGear|r " .. tostring(msg)) end

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.17.0
+- Classic WoW look: the stone-and-gold dialog frame with a gold title banner, Character-window tabs along the bottom, tooltip-bordered rows with the quest-log highlight, classic checkboxes, red Blizzard buttons and close buttons, status-bar textures, a purple XP bar (blue while rested), classic quest-log colors, and tab/open/close sounds. The tracker, pop-ups, quest bar and welcome screen match.
+- Fewer tabs (12 to 9): Professions now holds Mining & smithing plus Camp, fish & cook; Gold & AH holds Sell & prices, Gold tips and Bank alt, with sub-tabs at the top right. /rg camp, /rg gold and /rg mail still jump straight there.
+- Route waypoints with WoW Forever coordinates (QuestieDB, game build 1.60.1): 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers. The arrow follows your next step automatically (never over a pin you placed); right-click a step, or click a quest giver, dungeon or trainer, to pin it. New Settings toggle: "Arrow follows your next route step".
+- tools/waypoints rebuilds the waypoints from the latest QuestieDB data.
+
 ## v0.16.0 (quality pass)
 - Faster: window redraws are merged (looting used to rebuild it up to a dozen times), and bag-driven work (healing set, bank-alt list, coin marks) waits for the bag burst to finish.
 - Clearer tracker: reminders are ranked (urgent first: full bags, keep sitting, Blessing/Seal) and capped at 5, with a "+N more" line.

@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 0.83, 0.71, 0.42 }
+local GOLDC = { 1, 0.82, 0 }
 
 -- Settings with their defaults. The Settings tab shows these as checkboxes.
 RG.OPTIONS = {
@@ -27,10 +27,29 @@ end
 local function sound(id) if RG.Opt("sounds") and PlaySound and id then pcall(PlaySound, id) end end
 local SND = SOUNDKIT or {}
 
+-- Classic tooltip-style frame: dark tooltip background with the beveled tooltip
+-- border. Small frames (under 40px) get a thinner border so icons stay visible.
 local function backdrop(f, bg, edge)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-  f:SetBackdropColor(unpack(bg)); f:SetBackdropBorderColor(unpack(edge))
+  local small = (f.GetHeight and (f:GetHeight() or 0) > 0 and f:GetHeight() < 40)
+  f:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true, tileSize = 16, edgeSize = small and 10 or 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+  f:SetBackdropColor(bg[1], bg[2], bg[3], bg[4] or 1)
+  f:SetBackdropBorderColor(edge[1], edge[2], edge[3], math.max(edge[4] or 1, 0.75))
+end
+-- Classic dialog frame: the stone-and-gold border used by Blizzard's popups.
+function RG.DialogBackdrop(f)
+  if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
+  f:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } })
+  f:SetBackdropColor(1, 1, 1, 1); f:SetBackdropBorderColor(1, 1, 1, 1)
+end
+-- Gold title banner across the top edge of a dialog (UI-DialogBox-Header).
+function RG.DialogHeader(f, text, width)
+  local h = f:CreateTexture(nil, "ARTWORK"); h:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+  h:SetSize(width or 300, 64); h:SetPoint("TOP", 0, 12)
+  local t = f:CreateFontString(nil, "OVERLAY", "GameFontNormal"); t:SetPoint("TOP", h, "TOP", 0, -14); t:SetText(text)
+  return h, t
 end
 RG.Backdrop = backdrop
 
@@ -43,26 +62,21 @@ local function layoutToasts()
 end
 function RG.Toast(title, text, icon, button, onButton, seconds)
   local t = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-  t:SetSize(380, 84); t:SetFrameStrata("DIALOG")
-  backdrop(t, { 0.04, 0.035, 0.03, 0.96 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.8 })
-  local glow = t:CreateTexture(nil, "BACKGROUND", nil, 1); glow:SetPoint("TOPLEFT", 1, -1); glow:SetPoint("BOTTOMRIGHT", -1, 1); glow:SetTexture(WHITE)
-  if glow.SetGradient and CreateColor then glow:SetGradient("HORIZONTAL", CreateColor(GOLDC[1], GOLDC[2], GOLDC[3], 0.18), CreateColor(GOLDC[1], GOLDC[2], GOLDC[3], 0)) end
-  local ib = t:CreateTexture(nil, "ARTWORK"); ib:SetSize(50, 50); ib:SetPoint("LEFT", 14, 0); ib:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.9)
-  local ic = t:CreateTexture(nil, "OVERLAY"); ic:SetPoint("TOPLEFT", ib, 2, -2); ic:SetPoint("BOTTOMRIGHT", ib, -2, 2); ic:SetTexture(icon or "Interface\\Icons\\Spell_Holy_AuraOfLight"); ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  local h = t:CreateFontString(nil, "OVERLAY"); h:SetFont("Fonts\\MORPHEUS.TTF", 18, ""); h:SetPoint("TOPLEFT", ib, "TOPRIGHT", 12, 0); h:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); h:SetText(title)
-  local b = t:CreateFontString(nil, "OVERLAY"); b:SetFont("Fonts\\ARIALN.TTF", 13, ""); b:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -4); b:SetWidth(button and 210 or 290); b:SetJustifyH("LEFT"); b:SetText(text or "")
-  local x = CreateFrame("Button", nil, t); x:SetSize(18, 18); x:SetPoint("TOPRIGHT", -6, -6)
-  local xt = x:CreateFontString(nil, "OVERLAY"); xt:SetFont("Fonts\\ARIALN.TTF", 14, ""); xt:SetPoint("CENTER"); xt:SetText("x"); xt:SetTextColor(0.6, 0.6, 0.6)
+  t:SetSize(400, 96); t:SetFrameStrata("DIALOG")
+  RG.DialogBackdrop(t)
+  local ic = t:CreateTexture(nil, "ARTWORK"); ic:SetSize(40, 40); ic:SetPoint("LEFT", 24, 0); ic:SetTexture(icon or "Interface\\Icons\\Spell_Holy_AuraOfLight")
+  local ring = t:CreateTexture(nil, "OVERLAY"); ring:SetSize(68, 68); ring:SetPoint("CENTER", ic, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+  local h = t:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); h:SetPoint("TOPLEFT", ic, "TOPRIGHT", 14, 2); h:SetText(title)
+  local b = t:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); b:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -5); b:SetWidth(button and 210 or 290); b:SetJustifyH("LEFT"); b:SetText(text or "")
+  local x = CreateFrame("Button", nil, t, "UIPanelCloseButton"); x:SetPoint("TOPRIGHT", -2, -2)
   local function close()
     for i, v in ipairs(toasts) do if v == t then table.remove(toasts, i) break end end
     t:Hide(); layoutToasts()
   end
   x:SetScript("OnClick", close)
   if button then
-    local btn = CreateFrame("Button", nil, t, "BackdropTemplate")
-    btn:SetSize(84, 26); btn:SetPoint("BOTTOMRIGHT", -12, 12)
-    backdrop(btn, { GOLDC[1], GOLDC[2], GOLDC[3], 0.2 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.8 })
-    local bt = btn:CreateFontString(nil, "OVERLAY"); bt:SetFont("Fonts\\FRIZQT__.TTF", 12, ""); bt:SetPoint("CENTER"); bt:SetText(button); bt:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    local btn = CreateFrame("Button", nil, t, "UIPanelButtonTemplate")
+    btn:SetSize(96, 24); btn:SetPoint("BOTTOMRIGHT", -18, 16); btn:SetText(button)
     btn:SetScript("OnClick", function() if onButton then onButton() end; close() end)
   end
   -- fade in, wait, fade out
@@ -248,14 +262,14 @@ end
 -- ---------------------------------------------------------------------------
 function RG.ShowWelcome()
   local f = CreateFrame("Frame", "RetGearWelcome", UIParent, "BackdropTemplate")
-  f:SetSize(480, 420); f:SetPoint("CENTER", 0, 60); f:SetFrameStrata("DIALOG")
-  backdrop(f, { 0.035, 0.035, 0.045, 0.98 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.9 })
-  local glow = f:CreateTexture(nil, "BACKGROUND", nil, 1); glow:SetPoint("TOPLEFT", 1, -1); glow:SetPoint("TOPRIGHT", -1, -1); glow:SetHeight(120); glow:SetTexture(WHITE)
-  if glow.SetGradient and CreateColor then glow:SetGradient("VERTICAL", CreateColor(GOLDC[1], GOLDC[2], GOLDC[3], 0), CreateColor(GOLDC[1], GOLDC[2], GOLDC[3], 0.15)) end
-  local crest = f:CreateTexture(nil, "OVERLAY"); crest:SetSize(56, 56); crest:SetPoint("TOP", 0, -22); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); crest:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  local t = f:CreateFontString(nil, "OVERLAY"); t:SetFont("Fonts\\MORPHEUS.TTF", 24, ""); t:SetPoint("TOP", crest, "BOTTOM", 0, -10); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  f:SetSize(480, 450); f:SetPoint("CENTER", 0, 60); f:SetFrameStrata("DIALOG")
+  RG.DialogBackdrop(f)
+  RG.DialogHeader(f, "RetGear", 300)
+  local crest = f:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOP", 0, -34); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
+  local ring = f:CreateTexture(nil, "OVERLAY"); ring:SetSize(74, 74); ring:SetPoint("CENTER", crest, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+  local t = f:CreateFontString(nil, "OVERLAY"); t:SetFont("Fonts\\MORPHEUS.TTF", 24, ""); t:SetPoint("TOP", crest, "BOTTOM", 0, -12); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); t:SetShadowColor(0, 0, 0, 1); t:SetShadowOffset(1, -1)
   t:SetText("Welcome, " .. (UnitName("player") or "Paladin") .. "!")
-  local b = f:CreateFontString(nil, "OVERLAY"); b:SetFont("Fonts\\ARIALN.TTF", 14, ""); b:SetPoint("TOP", t, "BOTTOM", 0, -12); b:SetWidth(390); b:SetJustifyH("LEFT")
+  local b = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); b:SetPoint("TOP", t, "BOTTOM", 0, -12); b:SetWidth(390); b:SetJustifyH("LEFT"); b:SetSpacing(2)
   b:SetWidth(410)
   b:SetText(GOLD .. "RetGear|r walks you from level 1 to 60 as a Retribution Paladin.\n\n"
     .. GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows your next steps and the most important reminders.\n"
@@ -266,9 +280,7 @@ function RG.ShowWelcome()
     .. GOLD .. "•|r Items worth more on the AH get a " .. GOLD .. "gold coin|r and are never vendored.\n"
     .. GOLD .. "•|r Everything else lives in " .. GOLD .. "/rg|r or the minimap button. Settings turns any of it off.")
   local function btn(label, x, fn, primary)
-    local o = CreateFrame("Button", nil, f, "BackdropTemplate"); o:SetSize(150, 30); o:SetPoint("BOTTOM", x, 18)
-    backdrop(o, primary and { GOLDC[1], GOLDC[2], GOLDC[3], 0.25 } or { 1, 1, 1, 0.05 }, { GOLDC[1], GOLDC[2], GOLDC[3], primary and 0.9 or 0.4 })
-    local s = o:CreateFontString(nil, "OVERLAY"); s:SetFont("Fonts\\FRIZQT__.TTF", 12, ""); s:SetPoint("CENTER"); s:SetText(label); s:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    local o = CreateFrame("Button", nil, f, "UIPanelButtonTemplate"); o:SetSize(150, 24); o:SetPoint("BOTTOM", x, 22); o:SetText(label)
     o:SetScript("OnClick", function() RetGearDB.welcomed = true; f:Hide(); if fn then fn() end end)
   end
   btn("Open the guide", -80, function() if RG.ToggleUI then RG.ToggleUI() end end, true)

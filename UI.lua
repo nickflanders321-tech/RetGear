@@ -1,5 +1,6 @@
--- RetGear window. Holy/Retribution look: dark glass panel, gold trim, card
--- rows with item-quality borders, status pills and progress bars.
+-- RetGear window, in the classic WoW style: the stone-and-gold dialog frame,
+-- a gold title banner, tooltip-bordered rows, quest-log highlights, classic
+-- status bars and Character-window tabs along the bottom.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 
@@ -7,18 +8,20 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 -- Theme
 -- ---------------------------------------------------------------------------
 local T = {
-  bg      = { 0.035, 0.035, 0.045, 0.97 },
-  panel   = { 1, 1, 1, 0.035 },
-  edge    = { 1, 1, 1, 0.08 },
-  gold    = { 0.83, 0.71, 0.42 },
-  goldDim = { 0.54, 0.45, 0.26 },
-  green   = { 0.31, 0.68, 0.48 },
-  red     = { 0.84, 0.38, 0.31 },
-  purple  = { 0.65, 0.55, 0.85 },
-  blue    = { 0.44, 0.66, 0.86 },
-  text    = { 0.96, 0.96, 0.95 },
-  dim     = { 0.56, 0.56, 0.55 },
+  bg      = { 0.05, 0.045, 0.04, 0.97 },
+  panel   = { 0.09, 0.08, 0.07, 0.92 },   -- row background (tooltip texture tinted)
+  edge    = { 0.55, 0.5, 0.42, 0.85 },    -- tooltip border, classic grey-gold
+  gold    = { 1, 0.82, 0 },               -- NORMAL_FONT_COLOR
+  goldDim = { 0.62, 0.5, 0.14 },
+  green   = { 0.25, 0.75, 0.25 },
+  red     = { 1, 0.2, 0.2 },
+  purple  = { 0.64, 0.21, 0.93 },         -- epic purple
+  blue    = { 0.0, 0.44, 0.87 },          -- rare blue
+  text    = { 1, 1, 1 },
+  dim     = { 0.62, 0.62, 0.62 },
 }
+local TOOLTIP_BG, TOOLTIP_EDGE = "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border"
+local STATUSBAR = "Interface\\TargetingFrame\\UI-StatusBar"
 local FONT_TITLE = "Fonts\\MORPHEUS.TTF"
 local FONT_BODY  = "Fonts\\FRIZQT__.TTF"
 local FONT_NUM   = "Fonts\\ARIALN.TTF"
@@ -37,9 +40,29 @@ local frame, scroll, content, tabs, footer, sectionTitle
 local rows = {}
 local state = { tab = "route", near = true, open = {} }
 
-local function backdrop(f, bg, edge)
+-- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
+-- prices, gold tips and the bank alt. Sub-tabs pick the section.
+local GROUPS = { prof = { "prof", "camp" }, money = { "ah", "gold", "mail" } }
+local SUBLABEL = { prof = "Mining & smithing", camp = "Camp, fish & cook", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt" }
+local PARENT = {}
+for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
+local function parentOf(tab) return PARENT[tab] or tab end
+state.lastSub = {}
+
+local function setTabLook(b, on)
+  for _, t in ipairs(b.parts) do t:SetTexture(on and "Interface\\PaperDollInfoFrame\\UI-Character-ActiveTab" or "Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab") end
+  b.text:SetFontObject(on and "GameFontHighlightSmall" or "GameFontNormalSmall")
+  b.text:SetPoint("CENTER", 0, on and -3 or 2)
+  b:SetFrameLevel((frame:GetFrameLevel() or 1) + (on and 3 or 1))
+end
+
+
+-- Tooltip-style box (rows, tags, small buttons). edge = border size.
+local function backdrop(f, bg, edge, size)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
+  size = size or 12
+  local inset = size >= 12 and 3 or 2
+  f:SetBackdrop({ bgFile = TOOLTIP_BG, edgeFile = TOOLTIP_EDGE, tile = true, tileSize = 16, edgeSize = size, insets = { left = inset, right = inset, top = inset, bottom = inset } })
   f:SetBackdropColor(unpack(bg)); f:SetBackdropBorderColor(unpack(edge))
 end
 local function font(fs, path, size, flags) fs:SetFont(path, size, flags or "") end
@@ -68,10 +91,10 @@ local function pillKind(s)
   return "muted"
 end
 local PILL = {
-  green = { bg = { 0.31, 0.68, 0.48, 0.14 }, edge = { 0.31, 0.68, 0.48, 0.55 } },
-  gold  = { bg = { 0.83, 0.71, 0.42, 0.14 }, edge = { 0.83, 0.71, 0.42, 0.55 } },
-  red   = { bg = { 0.84, 0.38, 0.31, 0.14 }, edge = { 0.84, 0.38, 0.31, 0.55 } },
-  muted = { bg = { 1, 1, 1, 0.04 },          edge = { 1, 1, 1, 0.12 } },
+  green = { bg = { 0.25, 0.75, 0.25, 0.14 }, edge = { 0.25, 0.75, 0.25, 0.75 } },
+  gold  = { bg = { 1, 0.82, 0, 0.14 }, edge = { 1, 0.82, 0, 0.75 } },
+  red   = { bg = { 1, 0.2, 0.2, 0.14 }, edge = { 1, 0.2, 0.2, 0.75 } },
+  muted = { bg = { 0.1, 0.1, 0.1, 0.8 },   edge = { 0.5, 0.5, 0.5, 0.6 } },
 }
 
 -- ---------------------------------------------------------------------------
@@ -81,10 +104,11 @@ local function getRow(i)
   if rows[i] then return rows[i] end
   local r = CreateFrame("Button", nil, content, "BackdropTemplate")
   r:SetWidth(W - 56)
-  r.hl = r:CreateTexture(nil, "HIGHLIGHT"); r.hl:SetAllPoints(); r.hl:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.07)
+  r.hl = r:CreateTexture(nil, "HIGHLIGHT"); r.hl:SetPoint("TOPLEFT", 3, -3); r.hl:SetPoint("BOTTOMRIGHT", -3, 3)
+  r.hl:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight"); r.hl:SetBlendMode("ADD"); r.hl:SetAlpha(0.45)
 
   -- accent stripe on the left edge (current zone, equipped, etc.)
-  r.stripe = r:CreateTexture(nil, "ARTWORK"); r.stripe:SetPoint("TOPLEFT", 0, 0); r.stripe:SetPoint("BOTTOMLEFT", 0, 0); r.stripe:SetWidth(2)
+  r.stripe = r:CreateTexture(nil, "ARTWORK"); r.stripe:SetPoint("TOPLEFT", 3, -3); r.stripe:SetPoint("BOTTOMLEFT", 3, 3); r.stripe:SetWidth(3)
 
   -- icon with a quality-colored border
   r.iconBorder = r:CreateTexture(nil, "ARTWORK"); r.iconBorder:SetSize(32, 32); r.iconBorder:SetPoint("LEFT", 8, 0)
@@ -104,11 +128,11 @@ local function getRow(i)
   -- section header pieces
   r.head = r:CreateFontString(nil, "OVERLAY"); font(r.head, FONT_BODY, 11); r.head:SetPoint("BOTTOMLEFT", 2, 7); r.head:SetTextColor(unpack(T.gold))
   r.headLine = r:CreateTexture(nil, "ARTWORK"); r.headLine:SetHeight(1); r.headLine:SetPoint("LEFT", r.head, "RIGHT", 10, 0); r.headLine:SetPoint("RIGHT", r, "RIGHT", 0, 0)
-  r.headLine:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.25)
+  r.headLine:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.3)
 
   -- progress bar pieces
-  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetHeight(8); r.barBg:SetPoint("BOTTOMLEFT", 12, 10); r.barBg:SetPoint("BOTTOMRIGHT", -12, 10); r.barBg:SetColorTexture(1, 1, 1, 0.07)
-  r.barFill = r:CreateTexture(nil, "OVERLAY"); r.barFill:SetHeight(8); r.barFill:SetPoint("LEFT", r.barBg, "LEFT", 0, 0); r.barFill:SetTexture(WHITE)
+  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetHeight(10); r.barBg:SetPoint("BOTTOMLEFT", 12, 9); r.barBg:SetPoint("BOTTOMRIGHT", -12, 9); r.barBg:SetTexture(STATUSBAR); r.barBg:SetVertexColor(0.15, 0.15, 0.15, 0.9)
+  r.barFill = r:CreateTexture(nil, "OVERLAY"); r.barFill:SetHeight(10); r.barFill:SetPoint("LEFT", r.barBg, "LEFT", 0, 0); r.barFill:SetTexture(STATUSBAR)
   r.barMark = r:CreateTexture(nil, "OVERLAY"); r.barMark:SetSize(2, 14); r.barMark:SetColorTexture(1, 1, 1, 0.8)
   r.barLabel = r:CreateFontString(nil, "OVERLAY"); font(r.barLabel, FONT_BODY, 12); r.barLabel:SetPoint("TOPLEFT", 12, -7)
   r.barValue = r:CreateFontString(nil, "OVERLAY"); font(r.barValue, FONT_NUM, 13); r.barValue:SetPoint("TOPRIGHT", -12, -7)
@@ -122,7 +146,8 @@ local function getRow(i)
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  r:SetScript("OnClick", function(self)
+  r:SetScript("OnClick", function(self, btn)
+    if btn == "RightButton" and self.onRightClick then self.onRightClick(self); return end
     if self.onClick then self.onClick(self); return end
     local link = self.link or (self.itemID and select(2, RG.ItemInfo(self.itemID)))
     if not link then return end
@@ -135,7 +160,7 @@ local function getRow(i)
 end
 
 local function hideAll(r)
-  r.onClick = nil; r.tip = nil
+  r.onClick = nil; r.onRightClick = nil; r.tip = nil
   r.title:SetWordWrap(false)
   for _, k in ipairs({ "iconBorder", "icon", "title", "sub", "pill", "meta", "head", "headLine", "barBg", "barFill", "barMark", "barLabel", "barValue", "stripe" }) do r[k]:Hide() end
 end
@@ -143,9 +168,9 @@ end
 local function setHeader(r, text)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind, r.h = "head", HEAD_H()
-  font(r.head, FONT_BODY, sz(11))
+  font(r.head, FONT_BODY, sz(12.5))
   r:SetBackdrop(nil); r.hl:Hide()
-  r.head:SetText(text:upper()); r.head:Show(); r.headLine:Show()
+  r.head:SetText(text); r.head:SetTextColor(unpack(T.gold)); r.head:SetShadowColor(0, 0, 0, 1); r.head:SetShadowOffset(1, -1); r.head:Show(); r.headLine:Show()
   r:Show()
 end
 
@@ -153,7 +178,7 @@ end
 local function setItem(r, id, link, title, sub, right, right2, accent, quality, small)
   hideAll(r); r.itemID, r.link = id, link
   r.kind, r.h = small and "sub" or "item", small and SUB_H() or ROW_H()
-  backdrop(r, small and { 1, 1, 1, 0.018 } or T.panel, accent == "gold" and { T.gold[1], T.gold[2], T.gold[3], 0.45 } or T.edge)
+  backdrop(r, small and { 0.07, 0.065, 0.06, 0.85 } or T.panel, accent == "gold" and { T.gold[1], T.gold[2], T.gold[3], 0.9 } or (accent == "green" and { T.green[1], T.green[2], T.green[3], 0.9 } or T.edge), small and 10 or 12)
   r.hl:Show()
   local size = small and sz(22) or sz(32)
   r.iconBorder:SetSize(size, size)
@@ -162,7 +187,8 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   r.icon:SetTexture(id and itemIcon(id) or 134400); r.icon:SetDesaturated(false)
   r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93); r.icon:SetVertexColor(1, 1, 1, 1)
   local qc = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
-  if qc then r.iconBorder:SetColorTexture(qc.r, qc.g, qc.b, 0.9) else r.iconBorder:SetColorTexture(1, 1, 1, 0.15) end
+  r.iconBorder:SetVertexColor(1, 1, 1, 1)
+  if qc then r.iconBorder:SetColorTexture(qc.r, qc.g, qc.b, 0.95) else r.iconBorder:SetColorTexture(0.35, 0.33, 0.3, 0.9) end
   font(r.title, FONT_BODY, small and sz(11.5) or sz(13))
   font(r.sub, FONT_NUM, small and sz(11.5) or sz(12.5))
   font(r.pillText, FONT_NUM, sz(11)); font(r.meta, FONT_NUM, sz(11))
@@ -176,7 +202,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   local kind = pillKind(right)
   if kind then
     r.pillText:SetText(right); r.pill:SetWidth(r.pillText:GetStringWidth() + 18)
-    backdrop(r.pill, PILL[kind].bg, PILL[kind].edge)
+    backdrop(r.pill, PILL[kind].bg, PILL[kind].edge, 8)
     r.pill:ClearAllPoints(); r.pill:SetPoint(small and "RIGHT" or "TOPRIGHT", -10, small and 0 or -6)
     r.pill:Show()
   end
@@ -199,7 +225,7 @@ local function setBar(r, label, value, max, color, valueText, mark)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind, r.h = "bar", BAR_H()
   font(r.barLabel, FONT_BODY, sz(12)); font(r.barValue, FONT_NUM, sz(13))
-  backdrop(r, T.panel, T.edge); r.hl:Hide()
+  backdrop(r, T.panel, T.edge, 12); r.hl:Hide()
   r.barLabel:SetText(label); r.barLabel:Show()
   r.barValue:SetText(valueText or ""); r.barValue:Show()
   r.barBg:Show()
@@ -216,15 +242,16 @@ end
 local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
-  backdrop(r, { 1, 1, 1, done and 0.012 or 0.025 }, { 1, 1, 1, 0.06 })
+  backdrop(r, { 0.07, 0.065, 0.06, done and 0.6 or 0.85 }, { 0.45, 0.42, 0.36, done and 0.4 or 0.7 }, 10)
   r.hl:Show()
   local box = sz(16)
   r.iconBorder:SetSize(box, box); r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("TOPLEFT", 34, -sz(9))
   local bc = auto and T.green or T.gold
-  r.iconBorder:SetColorTexture(bc[1], bc[2], bc[3], done and 0.9 or 0.35); r.iconBorder:Show()
-  r.icon:SetTexture(done and "Interface\\Buttons\\UI-CheckBox-Check" or WHITE); r.icon:SetTexCoord(0, 1, 0, 1)
-  if done then r.icon:SetVertexColor(1, 1, 1, 1) else r.icon:SetVertexColor(0.05, 0.05, 0.06, 1) end
-  r.icon:Show()
+  -- the classic checkbox: an empty box, with a gold check (green when the game ticked it)
+  r.iconBorder:SetTexture("Interface\\Buttons\\UI-CheckBox-Up"); r.iconBorder:SetVertexColor(1, 1, 1, 1); r.iconBorder:SetTexCoord(0, 1, 0, 1); r.iconBorder:Show()
+  r.icon:SetTexture("Interface\\Buttons\\UI-CheckBox-Check"); r.icon:SetTexCoord(0, 1, 0, 1)
+  r.icon:SetVertexColor(auto and 0.4 or 1, auto and 1 or 1, auto and 0.4 or 1, 1)
+  r.icon:SetShown(done and true or false)
   font(r.title, FONT_NUM, sz(13))
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r.iconBorder, "TOPRIGHT", 10, 1)
   r.title:SetWidth((W - 56) - 34 - box - 10 - 18)
@@ -233,7 +260,7 @@ local function setStep(r, num, text, done, onClick, auto)
   local th = r.title.GetStringHeight and r.title:GetStringHeight() or sz(14)
   r.h = math.max(sz(32), (th or sz(14)) + sz(16))
   r.onClick = onClick
-  if auto then r.tip = "Done: " .. auto .. "\n|cff8E8E8C(detected from your game)|r"
+  if auto then r.tip = "Done: " .. auto .. "\n|cffa0a0a0(detected from your game)|r"
   elseif done then r.tip = "Ticked by you. Click to untick." else r.tip = "Click to tick this off." end
   r:Show()
 end
@@ -498,6 +525,8 @@ local function renderRoute()
       end
       setItem(row, nil, nil, titleText, sub, status, meta, accent)
       if steps then row.onClick = function() state.open[key] = not open; RG.RefreshUI() end end
+      local ew = RG.WAYPOINTS and (RG.WAYPOINTS.dungeons[r.zone] or (RG.StepWaypoint and RG.StepWaypoint(r, 1)))
+      if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = "Click to open the steps. Right-click: show " .. ew[4] .. " on the map." end
       row.icon:SetTexture(ICON[r.kind] or 134269)
       if open then
         RG.db.stepsDone = RG.db.stepsDone or {}
@@ -505,10 +534,16 @@ local function renderRoute()
           n = n + 1
           local sk = key .. "#" .. i
           local auto = autoMap[i]
-          setStep(getRow(n), i, text, auto or RG.db.stepsDone[sk] or past, function()
+          local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+          local srow = getRow(n)
+          setStep(srow, i, (wp and RG.PIN or "") .. text, auto or RG.db.stepsDone[sk] or past, function()
             RG.db.stepsDone[sk] = not RG.db.stepsDone[sk] or nil
             RG.RefreshUI()
           end, auto or (past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
+          if wp then
+            srow.onRightClick = function() RG.PinWaypoint(wp) end
+            srow.tip = (srow.tip or "") .. "\n|cffffd100Right-click: show " .. wp[4] .. " on the map and follow the arrow|r"
+          end
         end
       end
       if dq and lvl <= r.to and (lvl >= dq.prep - 4 or not state.near) then
@@ -517,8 +552,10 @@ local function renderRoute()
           local qr = getRow(n)
           local qs = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
           local pill = qs == "done" and (GREEN .. "Done|r") or (qs == "ready" and (GREEN .. "Ready to turn in|r") or (qs == "log" and (GOLD .. "In your log|r") or ""))
-          setItem(qr, nil, nil, (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
+          local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
+          setItem(qr, nil, nil, (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
           qr.icon:SetTexture(136797)
+          if gw then qr.onClick = function() RG.PinWaypoint(gw) end; qr.tip = "Click to show " .. q[2] .. " on the map." end
         end
       end
       if RG.CampForEntry and (now or not past) then
@@ -529,6 +566,8 @@ local function renderRoute()
           setItem(cr, nil, nil, (done and GREY or "|cffffffff") .. cs.text .. "|r", "", done and (GREEN .. "Done|r") or (GOLD .. "Camp · fish · cook|r"), "", done and "green" or nil, nil, true)
           cr.icon:SetTexture("Interface\\Icons\\Spell_Fire_Fire")
           cr.onClick = function() RG.ShowTab("camp") end
+          local cw = RG.CampWaypoint and RG.CampWaypoint(cs)
+          if cw then cr.onRightClick = function() RG.PinWaypoint(cw) end; cr.tip = "Click for the Camp tab. Right-click: show " .. cw[4] .. " on the map." end
         end
       end
       if RG.MailForEntry and (now or not past) then
@@ -541,6 +580,8 @@ local function renderRoute()
             setItem(mr, not m.q.any and m.items[1].id or nil, nil, "|cffffd100" .. m.q.quest .. "|r" .. GREY .. "   level " .. m.q.lvl .. "|r", what .. GREY .. "  ·  " .. m.q.giver .. "|r", have, m.q.any and "" or (RG.PriceText(m.items[1].id) or ""), m.missing == 0 and "green" or nil, nil, true)
             mr.icon:SetTexture("Interface\\Icons\\INV_Letter_15")
             mr.onClick = function() RG.ShowTab("mail") end
+            local mw = RG.WaypointForText and RG.WaypointForText(m.q.giver)
+            if mw then mr.onRightClick = function() RG.PinWaypoint(mw) end; mr.tip = "Click for the Bank alt tab. Right-click: show " .. mw[4] .. " on the map." end
           end
         end
       end
@@ -895,6 +936,8 @@ local function renderMail()
     setItem(getRow(n), (not m.q.any) and m.items[1].id or nil, nil, (m.done and GREY or "|cffffd100") .. m.q.quest .. "|r" .. GREY .. "   " .. m.q.zone .. "  ·  level " .. m.q.lvl .. "|r",
       what .. GREY .. "  ·  " .. m.q.giver .. "  ·  " .. m.q.why .. "|r", pill, "", m.done and "green" or nil)
     if m.q.any then rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_02") end
+    local mw = RG.WaypointForText and RG.WaypointForText(m.q.giver)
+    if mw then rows[n].onClick = function() RG.PinWaypoint(mw) end; rows[n].tip = "Click to show " .. mw[4] .. " on the map." end
   end
   return n
 end
@@ -945,8 +988,10 @@ local function renderCamp()
     n = n + 1
     local done = RG.CampPlanDone(s)
     local soon = not done and s.lvl <= lvl + 2
-    setStep(getRow(n), "", s.text .. GREY .. "   (level " .. s.lvl .. ", " .. s.zone .. ")|r", done, function() end, done and "your skill is already there" or nil)
-    if soon then rows[n].title:SetText(GOLD .. "Now: |r" .. s.text .. GREY .. "   (" .. s.zone .. ")|r") end
+    local cw = RG.CampWaypoint and RG.CampWaypoint(s)
+    setStep(getRow(n), "", (cw and RG.PIN or "") .. s.text .. GREY .. "   (level " .. s.lvl .. ", " .. s.zone .. ")|r", done, cw and function() RG.PinWaypoint(cw) end or function() end, done and "your skill is already there" or nil)
+    if cw then rows[n].tip = "Click to show " .. cw[4] .. " on the map." end
+    if soon then rows[n].title:SetText(GOLD .. "Now: |r" .. (cw and RG.PIN or "") .. s.text .. GREY .. "   (" .. s.zone .. ")|r") end
   end
   -- fish
   n = n + 1; setHeader(getRow(n), "Fish worth keeping")
@@ -1041,16 +1086,19 @@ local FOOTERS = {
 local function updateHeader()
   local lvl = UnitLevel("player")
   local p = RG.Professions()
-  local bits = { "Level " .. lvl, "Undead Retribution" }
-  if p["Mining"] then bits[#bits + 1] = "Mining " .. p["Mining"].rank end
-  if p["Blacksmithing"] then bits[#bits + 1] = "Blacksmithing " .. p["Blacksmithing"].rank end
-  frame.subtitle:SetText(table.concat(bits, "   ·   "))
+  local bits = { "Level " .. lvl .. " Undead Retribution" }
+  for _, prof in ipairs({ "Mining", "Blacksmithing", "Fishing", "Cooking" }) do
+    if p[prof] then bits[#bits + 1] = prof .. " " .. p[prof].rank end
+  end
+  frame.subtitle:SetText(table.concat(bits, "  ·  "))
   local xp, max = UnitXP and UnitXP("player") or 0, UnitXPMax and UnitXPMax("player") or 0
+  local rested = GetXPExhaustion and GetXPExhaustion() or nil
+  if rested and rested > 0 then frame.xp:SetStatusBarColor(0.0, 0.39, 0.88) else frame.xp:SetStatusBarColor(0.58, 0.0, 0.55) end
   if max and max > 0 and lvl < (GetMaxPlayerLevel and GetMaxPlayerLevel() or 60) then
-    frame.xpFill:SetWidth(math.max(1, (W - 2) * xp / max)); frame.xpFill:Show()
-    frame.xpText:SetText(string.format("%d%% to %d", math.floor(xp / max * 100), lvl + 1))
+    frame.xp:SetMinMaxValues(0, max); frame.xp:SetValue(xp)
+    frame.xpText:SetText(string.format("XP %d / %d  (%d%%)%s", xp, max, math.floor(xp / max * 100), rested and rested > 0 and "  ·  rested" or ""))
   else
-    frame.xpFill:SetWidth(W - 2); frame.xpText:SetText("Max level")
+    frame.xp:SetMinMaxValues(0, 1); frame.xp:SetValue(1); frame.xpText:SetText("Max level")
   end
 end
 
@@ -1091,56 +1139,62 @@ function RG.RefreshUINow()
     y = y + (r.h or ROW_H()) + GAP
   end
   content:SetHeight(math.max(1, y))
-  for k, b in pairs(tabs) do
-    local on = k == state.tab
-    b.text:SetTextColor(unpack(on and T.gold or T.dim)); b.underline:SetShown(on)
+  local parent = parentOf(state.tab)
+  for k, b in pairs(tabs) do setTabLook(b, k == parent) end
+  -- sub-tabs (right side of the section title) for merged tabs
+  for _, b in pairs(frame.subBtns) do b:Hide() end
+  local subs = GROUPS[parent]
+  local anchor
+  if subs then
+    state.lastSub[parent] = state.tab
+    for i = #subs, 1, -1 do
+      local b = frame.subBtns[subs[i]]
+      local on = subs[i] == state.tab
+      backdrop(b, on and { 0.25, 0.2, 0.05, 0.9 } or { 0.08, 0.07, 0.06, 0.85 }, on and { T.gold[1], T.gold[2], T.gold[3], 1 } or { 0.5, 0.47, 0.4, 0.8 }, 10)
+      b.text:SetFontObject(on and "GameFontHighlightSmall" or "GameFontNormalSmall")
+      b:ClearAllPoints()
+      if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -22, -86) end
+      b:Show(); anchor = b
+    end
   end
+  frame.scan:ClearAllPoints()
+  if anchor then frame.scan:SetPoint("RIGHT", anchor, "LEFT", -10, 0) else frame.scan:SetPoint("TOPRIGHT", -20, -86) end
 end
 
-local function flatButton(parent, text, w)
-  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
-  b:SetSize(w, 24)
-  backdrop(b, { 1, 1, 1, 0.05 }, { T.gold[1], T.gold[2], T.gold[3], 0.45 })
-  b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 11); b.text:SetPoint("CENTER"); b.text:SetText(text); b.text:SetTextColor(unpack(T.gold))
-  b:SetScript("OnEnter", function(self) self:SetBackdropColor(T.gold[1], T.gold[2], T.gold[3], 0.15) end)
-  b:SetScript("OnLeave", function(self) self:SetBackdropColor(1, 1, 1, 0.05) end)
+-- Classic red Blizzard button
+local function panelButton(parent, text, w, h)
+  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  b:SetSize(w, h or 22); b:SetText(text)
   return b
 end
 
 local function build()
   frame = CreateFrame("Frame", "RetGearFrame", UIParent, "BackdropTemplate")
   frame:SetSize(W, H); frame:SetPoint("CENTER")
-  backdrop(frame, T.bg, { T.goldDim[1], T.goldDim[2], T.goldDim[3], 0.9 })
+  RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving); frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "RetGearFrame")
 
-  -- soft holy glow across the top
-  local glow = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
-  glow:SetPoint("TOPLEFT", 1, -1); glow:SetPoint("TOPRIGHT", -1, -1); glow:SetHeight(110); glow:SetTexture(WHITE)
-  gradient(glow, "VERTICAL", { T.gold[1], T.gold[2], T.gold[3], 0 }, { T.gold[1], T.gold[2], T.gold[3], 0.13 })
+  -- gold title banner
+  RG.DialogHeader(frame, "RetGear", 320)
 
-  -- crest icon
-  local crestBorder = frame:CreateTexture(nil, "ARTWORK"); crestBorder:SetSize(46, 46); crestBorder:SetPoint("TOPLEFT", 16, -14); crestBorder:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.9)
-  local crest = frame:CreateTexture(nil, "OVERLAY"); crest:SetPoint("TOPLEFT", crestBorder, 2, -2); crest:SetPoint("BOTTOMRIGHT", crestBorder, -2, 2)
-  crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); crest:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  -- crest, framed like an action button
+  local crest = frame:CreateTexture(nil, "ARTWORK"); crest:SetSize(40, 40); crest:SetPoint("TOPLEFT", 22, -24)
+  crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
+  local crestRing = frame:CreateTexture(nil, "OVERLAY"); crestRing:SetSize(68, 68); crestRing:SetPoint("CENTER", crest, "CENTER", 0, 0)
+  crestRing:SetTexture("Interface\\Buttons\\UI-Quickslot2")
 
-  local title = frame:CreateFontString(nil, "OVERLAY"); font(title, FONT_TITLE, 26); title:SetPoint("TOPLEFT", crestBorder, "TOPRIGHT", 12, 2)
-  title:SetText("RetGear"); title:SetTextColor(unpack(T.gold)); title:SetShadowColor(0, 0, 0, 1); title:SetShadowOffset(1, -1)
-  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_NUM, 12); frame.subtitle:SetPoint("BOTTOMLEFT", crestBorder, "BOTTOMRIGHT", 12, 2); frame.subtitle:SetTextColor(unpack(T.dim))
+  frame.subtitle = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); frame.subtitle:SetPoint("TOPLEFT", crest, "TOPRIGHT", 14, -2)
+  frame.subtitle:SetJustifyH("LEFT")
 
-  local close = CreateFrame("Button", nil, frame)
-  close:SetSize(28, 28); close:SetPoint("TOPRIGHT", -10, -10)
-  close.t = close:CreateFontString(nil, "OVERLAY"); font(close.t, FONT_NUM, 18); close.t:SetPoint("CENTER"); close.t:SetText("x"); close.t:SetTextColor(unpack(T.dim))
-  close:SetScript("OnEnter", function(self) self.t:SetTextColor(unpack(T.gold)) end)
-  close:SetScript("OnLeave", function(self) self.t:SetTextColor(unpack(T.dim)) end)
+  local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+  close:SetPoint("TOPRIGHT", -6, -6)
   close:SetScript("OnClick", function() frame:Hide() end)
   local function sizeBtn(label, delta, anchor)
-    local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
-    b:SetSize(30, 22); b:SetPoint("RIGHT", anchor, "LEFT", -6, 0)
-    backdrop(b, { 1, 1, 1, 0.05 }, { T.gold[1], T.gold[2], T.gold[3], 0.35 })
-    b.t = b:CreateFontString(nil, "OVERLAY"); font(b.t, FONT_BODY, delta > 0 and 13 or 10); b.t:SetPoint("CENTER"); b.t:SetText(label); b.t:SetTextColor(unpack(T.gold))
+    local b = panelButton(frame, label, 34, 20)
+    b:SetPoint("RIGHT", anchor, "LEFT", -4, 0)
     b:SetScript("OnClick", function()
       RG.db.textSize = math.max(0.9, math.min(1.7, (RG.db.textSize or 1.2) + delta))
       RG.RefreshUI()
@@ -1152,61 +1206,78 @@ local function build()
   local plus = sizeBtn("A+", 0.1, close)
   sizeBtn("A-", -0.1, plus)
 
-  -- XP bar under the header
-  local xpBg = frame:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(3); xpBg:SetPoint("TOPLEFT", 1, -72); xpBg:SetPoint("TOPRIGHT", -1, -72); xpBg:SetColorTexture(1, 1, 1, 0.06)
-  frame.xpFill = frame:CreateTexture(nil, "OVERLAY"); frame.xpFill:SetHeight(3); frame.xpFill:SetPoint("LEFT", xpBg, "LEFT"); frame.xpFill:SetTexture(WHITE)
-  gradient(frame.xpFill, "HORIZONTAL", { T.goldDim[1], T.goldDim[2], T.goldDim[3], 1 }, { T.gold[1], T.gold[2], T.gold[3], 1 })
-  frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("BOTTOMRIGHT", xpBg, "TOPRIGHT", -14, 8); frame.xpText:SetTextColor(unpack(T.dim))
+  -- classic XP bar: purple, blue while rested
+  frame.xp = CreateFrame("StatusBar", nil, frame, "BackdropTemplate")
+  frame.xp:SetPoint("TOPLEFT", crest, "BOTTOMRIGHT", 14, 14); frame.xp:SetPoint("RIGHT", frame, "RIGHT", -24, 0); frame.xp:SetHeight(12)
+  frame.xp:SetStatusBarTexture(STATUSBAR)
+  backdrop(frame.xp, { 0, 0, 0, 0.6 }, { 0.6, 0.55, 0.45, 0.9 }, 8)
+  frame.xpText = frame.xp:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); frame.xpText:SetPoint("CENTER", 0, 0)
 
-  -- tabs: text with a gold underline on the active one
+  local div = frame:CreateTexture(nil, "ARTWORK"); div:SetHeight(1); div:SetPoint("TOPLEFT", 16, -74); div:SetPoint("TOPRIGHT", -16, -74)
+  div:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.35)
+
+  -- Character-window style tabs along the bottom edge
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "dps", "DPS" }, { "heal", "Healing" },
-    { "prof", "Professions" }, { "camp", "Camp" }, { "ah", "AH" }, { "gold", "Gold" }, { "mail", "Bank alt" }, { "settings", "Settings" } }
-  local x = 18
-  -- squeeze the padding so every tab fits on one line
-  local textW = 0
-  do
-    local probe = frame:CreateFontString(nil, "OVERLAY"); font(probe, FONT_BODY, 12)
-    for _, d in ipairs(defs) do probe:SetText(d[2]); textW = textW + (probe:GetStringWidth() or 50) end
-    probe:Hide()
-  end
-  local pad = math.max(10, math.min(26, math.floor((W - 36 - textW) / #defs) - 2))
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "dps", "DPS" },
+    { "heal", "Healing" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
+  local x = 12
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
-    b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12); b.text:SetText(d[2]); b.text:SetPoint("CENTER", 0, 1)
-    local w = b.text:GetStringWidth() + pad
-    b:SetSize(w, 30); b:SetPoint("TOPLEFT", x, -80); x = x + w + 2
-    b.underline = b:CreateTexture(nil, "OVERLAY"); b.underline:SetHeight(2); b.underline:SetPoint("BOTTOMLEFT", 8, 0); b.underline:SetPoint("BOTTOMRIGHT", -8, 0); b.underline:SetColorTexture(unpack(T.gold))
-    b:SetScript("OnEnter", function(self) if state.tab ~= d[1] then self.text:SetTextColor(unpack(T.text)) end end)
-    b:SetScript("OnLeave", function(self) if state.tab ~= d[1] then self.text:SetTextColor(unpack(T.dim)) end end)
-    b:SetScript("OnClick", function() state.tab = d[1]; scroll:SetVerticalScroll(0); RG.RefreshUI() end)
+    b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); b.text:SetText(d[2])
+    local w = math.max(64, b.text:GetStringWidth() + 32)
+    b:SetSize(w, 32); b:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", x, 7); x = x + w - 12
+    local L = b:CreateTexture(nil, "BACKGROUND"); L:SetSize(20, 32); L:SetPoint("TOPLEFT"); L:SetTexCoord(0, 0.15625, 0, 1)
+    local R = b:CreateTexture(nil, "BACKGROUND"); R:SetSize(20, 32); R:SetPoint("TOPRIGHT"); R:SetTexCoord(0.84375, 1, 0, 1)
+    local M = b:CreateTexture(nil, "BACKGROUND"); M:SetPoint("TOPLEFT", L, "TOPRIGHT"); M:SetPoint("BOTTOMRIGHT", R, "BOTTOMLEFT"); M:SetTexCoord(0.15625, 0.84375, 0, 1)
+    b.parts = { L, M, R }
+    local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight"); hl:SetBlendMode("ADD")
+    hl:SetPoint("TOPLEFT", 10, -4); hl:SetPoint("BOTTOMRIGHT", -10, 4)
+    b:SetScript("OnClick", function()
+      if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_TAB or 841) end
+      local subs = GROUPS[d[1]]
+      state.tab = subs and (state.lastSub[d[1]] or subs[1]) or d[1]
+      scroll:SetVerticalScroll(0); RG.RefreshUINow()
+    end)
     tabs[d[1]] = b
   end
-  local tabLine = frame:CreateTexture(nil, "ARTWORK"); tabLine:SetHeight(1); tabLine:SetPoint("TOPLEFT", 1, -110); tabLine:SetPoint("TOPRIGHT", -1, -110); tabLine:SetColorTexture(1, 1, 1, 0.07)
 
-  -- section title row
-  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_TITLE, 18); sectionTitle:SetPoint("TOPLEFT", 20, -122); sectionTitle:SetTextColor(unpack(T.text))
-  frame.sectionSub = frame:CreateFontString(nil, "OVERLAY"); font(frame.sectionSub, FONT_NUM, 12); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -3); frame.sectionSub:SetTextColor(unpack(T.dim))
+  -- section title
+  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_BODY, 16); sectionTitle:SetPoint("TOPLEFT", 22, -86); sectionTitle:SetTextColor(unpack(T.gold))
+  sectionTitle:SetShadowColor(0, 0, 0, 1); sectionTitle:SetShadowOffset(1, -1)
+  frame.sectionSub = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
+
+  -- sub-tabs for merged tabs (top right of the section)
+  frame.subBtns = {}
+  for _, subs in pairs(GROUPS) do
+    for _, sub in ipairs(subs) do
+      local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
+      b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); b.text:SetPoint("CENTER"); b.text:SetText(SUBLABEL[sub])
+      b:SetSize(b.text:GetStringWidth() + 26, 24)
+      b:SetScript("OnClick", function() state.tab = sub; scroll:SetVerticalScroll(0); RG.RefreshUINow() end)
+      frame.subBtns[sub] = b
+    end
+  end
 
   frame.near = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-  frame.near:SetSize(24, 24); frame.near:SetPoint("TOPRIGHT", -112, -124)
+  frame.near:SetSize(24, 24); frame.near:SetPoint("TOPRIGHT", -112, -86)
   frame.near:SetChecked(state.near)
-  frame.near.label = frame.near:CreateFontString(nil, "OVERLAY"); font(frame.near.label, FONT_NUM, 12)
-  frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level"); frame.near.label:SetTextColor(unpack(T.dim))
+  frame.near.label = frame.near:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level")
   frame.near:SetScript("OnClick", function(self) state.near = self:GetChecked(); RG.RefreshUI() end)
 
-  frame.scan = flatButton(frame, "Scan prices", 110); frame.scan:SetPoint("TOPRIGHT", -20, -124)
+  frame.scan = panelButton(frame, "Scan prices", 110, 22)
   frame.scan:SetScript("OnClick", function() RG.ScanAH() end)
 
   scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-  scroll:SetPoint("TOPLEFT", 18, -164); scroll:SetPoint("BOTTOMRIGHT", -38, 40)
+  scroll:SetPoint("TOPLEFT", 18, -128); scroll:SetPoint("BOTTOMRIGHT", -38, 36)
   content = CreateFrame("Frame", nil, scroll); content:SetSize(W - 56, 10)
   scroll:SetScrollChild(content)
 
-  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 1, 32); footLine:SetPoint("BOTTOMRIGHT", -1, 32); footLine:SetColorTexture(1, 1, 1, 0.07)
-  footer = frame:CreateFontString(nil, "OVERLAY"); font(footer, FONT_NUM, 11); footer:SetPoint("BOTTOMLEFT", 20, 12); footer:SetTextColor(unpack(T.dim))
+  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.25)
+  footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 14)
 
-  frame:SetScript("OnShow", RG.RefreshUI)
+  frame:SetScript("OnShow", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_OPEN or 839) end; RG.RefreshUI() end)
+  frame:SetScript("OnHide", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_CLOSE or 840) end end)
   frame:Hide()
 end
 
