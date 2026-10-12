@@ -3,6 +3,7 @@
 Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hander DPS, not Shockadin) who levels **Mining and Blacksmithing**, in World of Warcraft: Forever.
 
 ## What it does
+- **Healing tab (dual spec at 40):** a Holy off-set for healing dungeons. Every item gets a Holy score on its tooltip, RetGear tracks the best healing piece you own for each slot (worn, bags or bank), and lists what to hunt for from level 40 to 60 with the boss and dungeon. Your healing set is never sold by the junk seller or flagged for the AH, and you get a Buy back button if you vendor a piece by mistake.
 - **Don't-vendor guard:** watches your bags for items that sell for more on the Auction House than at a vendor (after the 5% AH cut). They get a gold coin on the bag slot and a tooltip line, the junk seller leaves them alone, you get a heads-up when you open a vendor, and if you sell one anyway you get a one-click **Buy back**. The Auction House tab lists them with the extra gold you'd make.
 - **Gold tab:** money-making tips for a miner and smith at your level, with live AH prices next to each one, including Forever-only systems like Waylaid Crates. Refreshed weekly from the newest WoW Forever gold guides.
 - **Quest reward picker** highlights the best reward for Ret. **Exorcism alerts** on Undead and Demons. **Weapon stone reminder** using stones you can make.
@@ -28,6 +29,7 @@ Gearing helper for an **Undead (Horde) Retribution Paladin** (standard two-hande
 | `/rg` | Open or close the window |
 | `/rg talents` | Open the Talents tab |
 | `/rg gold` | Open the Gold tab |
+| `/rg heal` | Open the Healing tab (your Holy set for dual spec) |
 | `/rg profit` | List bag items to sell on the AH instead of a vendor |
 | `/rg profit min 25` | Only flag items worth at least 25 silver more on the AH (default 10) |
 | `/rg profit ignore [item]` | Stop flagging an item (run again to undo) |

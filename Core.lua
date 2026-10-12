@@ -54,6 +54,8 @@ local STAT_KEYS = {
   ITEM_MOD_HASTE_RATING_SHORT = "HASTE_RATING", ITEM_MOD_MASTERY_RATING_SHORT = "MASTERY_RATING",
   ITEM_MOD_VERSATILITY = "VERS_RATING", ITEM_MOD_SPELL_POWER_SHORT = "SP",
   ITEM_MOD_SPELL_DAMAGE_DONE_SHORT = "SP",
+  ITEM_MOD_SPELL_HEALING_DONE_SHORT = "HEAL", ITEM_MOD_MANA_REGENERATION_SHORT = "MP5",
+  ITEM_MOD_POWER_REGEN0_SHORT = "MP5",
 }
 
 -- Text patterns for "Equip:" effects that many Classic-era items use.
@@ -64,6 +66,11 @@ local LINE_PATTERNS = {
   { "increases attack power by (%d+)", "AP" },
   { "increases damage and healing done by magical spells and effects by up to (%d+)", "SP" },
   { "increases damage done by holy spells and effects by up to (%d+)", "SP" },
+  -- healing (used by the Healing tab's Holy score)
+  { "increases damage and healing done by magical spells and effects by up to (%d+)", "HEAL" },
+  { "increases healing done by spells and effects by up to (%d+)", "HEAL" },
+  { "restores (%d+) mana per 5 sec", "MP5" },
+  { "improves your chance to get a critical strike with spells by (%d+)%%", "SCRIT" },
 }
 
 local cache = {}
@@ -72,7 +79,7 @@ function RG.GetStats(link)
   if cache[link] then return cache[link] end
   local s = { STR = 0, AGI = 0, STA = 0, INT = 0, SPI = 0, AP = 0, CRIT = 0, HIT = 0, SP = 0,
               CRIT_RATING = 0, HIT_RATING = 0, HASTE_RATING = 0, MASTERY_RATING = 0, VERS_RATING = 0,
-              DPS = 0, SPEED = 0 }
+              DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0 }
   local raw = GetItemStats and GetItemStats(link)
   if raw then
     for k, v in pairs(raw) do
@@ -80,7 +87,10 @@ function RG.GetStats(link)
       if key then s[key] = s[key] + v end
       if k == "ITEM_MOD_DAMAGE_PER_SECOND_SHORT" then s.DPS = v end
     end
+    -- modern "spell power" heals too
+    if (raw.ITEM_MOD_SPELL_POWER_SHORT or 0) > 0 then s.HEAL = s.HEAL + raw.ITEM_MOD_SPELL_POWER_SHORT end
   end
+  local fromTable = { AP = raw and (raw.ITEM_MOD_ATTACK_POWER_SHORT or 0) > 0, HEAL = s.HEAL > 0, MP5 = s.MP5 > 0 }
   -- Tooltip text for Equip: lines and weapon speed.
   local data = C_TooltipInfo and C_TooltipInfo.GetHyperlink and C_TooltipInfo.GetHyperlink(link)
   local equipSeen = {}
@@ -98,9 +108,9 @@ function RG.GetStats(link)
             local n = t:match(p[1])
             -- Ignore situational bonuses like "when fighting Beasts", and don't
             -- count Attack Power twice when the stat table already has it.
-            if n and not t:find("when fighting") and not equipSeen[t] and not (p[2] == "AP" and raw and (raw.ITEM_MOD_ATTACK_POWER_SHORT or 0) > 0) then
+            if n and not t:find("when fighting") and not equipSeen[t .. p[2]] and not fromTable[p[2]] then
               s[p[2]] = s[p[2]] + tonumber(n)
-              equipSeen[t] = true
+              equipSeen[t .. p[2]] = true
             end
           end
         end

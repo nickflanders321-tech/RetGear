@@ -643,6 +643,90 @@ local function renderGold()
   return n
 end
 
+local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784 }
+local function renderHeal()
+  local n = 0
+  local lvl = UnitLevel("player")
+  local set, total = RG.HealSet()
+  -- dual spec status
+  n = n + 1
+  local ds = RG.HasDualSpec and RG.HasDualSpec()
+  local dsText = lvl < 40 and ("Unlocks at level 40 (" .. (40 - lvl) .. " to go). Start saving healing pieces now.")
+    or (ds and "You have dual spec. Swap at your class trainer, then put on your healing set." or "Unlocked! Visit your class trainer in a capital city to learn it.")
+  setItem(getRow(n), nil, nil, "|cffF58CBADual spec: Holy|r", dsText, ds and (GREEN .. "Ready|r") or (lvl >= 40 and (GOLD .. "Go learn it|r") or (GREY .. "Level 40|r")), "", "gold")
+  rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_HolyBolt")
+  -- your set, slot by slot
+  local filled = 0
+  for _, g in pairs(set) do filled = filled + #g end
+  n = n + 1; setHeader(getRow(n), string.format("Your healing set  ·  %d of 16 slots  ·  Holy score %.0f", filled, total))
+  local used = {}
+  local hasTwoHand = set["Main Hand"] and set["Main Hand"][1] and RG.EquipLoc(set["Main Hand"][1].link) == "INVTYPE_2HWEAPON"
+  for _, slot in ipairs(RG.HEAL_SLOTS) do
+    used[slot] = (used[slot] or 0) + 1
+    local p = set[slot] and set[slot][used[slot]]
+    if not (slot == "Off Hand" and hasTwoHand) then
+      -- next thing on the list for this slot that you can use soon and don't own
+      local nextG
+      for _, g in ipairs(RG.HEAL_GUIDE) do
+        local gs = g.slot == "Two-Hand" and "Main Hand" or g.slot
+        if gs == slot and g.lvl <= lvl + 5 and not RG.OwnState(g.id) then
+          local link = select(2, RG.ItemInfo(g.id))
+          local better = not p or not link or RG.HealScore(link) > p.score + 0.5
+          if better then nextG = g; break end
+        end
+      end
+      n = n + 1
+      local r = getRow(n)
+      local hunt = nextG and ((RG.ItemInfo(nextG.id) or "item") .. GREY .. "  ·  " .. nextG.src .. ", " .. nextG.zone .. "|r") or nil
+      if p then
+        local name, _, quality = RG.ItemInfo(p.link)
+        local where = p.where == "worn" and "wearing it" or (p.where == "bank" and "in your bank" or "in your bags")
+        setItem(r, p.id, p.link, (name or p.link) .. GREY .. "   " .. slot .. "|r", hunt and (GOLD .. "Next: |r" .. hunt) or (GREY .. "Nothing better on the list yet|r"), GREEN .. string.format("%.0f", p.score) .. "|r", GREY .. where .. "|r", nil, quality, true)
+      else
+        setItem(r, nextG and nextG.id or nil, nil, GREY .. slot .. ": nothing yet|r", hunt and (GOLD .. "Look for: |r" .. hunt) or (GREY .. "Any piece with Intellect or +Healing will do|r"), "", "", nil, nil, true)
+        if not nextG then r.icon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot") end
+      end
+    end
+  end
+  -- the hunting list
+  local brackets = { { 33, 45, "Levels 40-45  ·  Scarlet Monastery" }, { 42, 49, "Levels 42-50  ·  Zul'Farrak and Maraudon" }, { 50, 55, "Levels 50-55  ·  Sunken Temple and Blackrock Depths" }, { 55, 60, "Levels 55-60  ·  Blackrock Spire, Dire Maul, Stratholme, Scholomance" } }
+  local shown = {}
+  local bs = RG.Skill and RG.Skill("Blacksmithing") or 0
+  for _, b in ipairs(brackets) do
+    if state.healAll or b[2] >= lvl - 3 then
+      local any = false
+      for _, g in ipairs(RG.HEAL_GUIDE) do
+        if not shown[g.id] and g.lvl >= b[1] and g.lvl <= b[2] then
+          if not any then n = n + 1; setHeader(getRow(n), b[3]); any = true end
+          shown[g.id] = true
+          n = n + 1
+          local name, link, quality = itemName(g.id)
+          local own = RG.OwnState(g.id)
+          local pill
+          if own == "equipped" then pill = GREEN .. "Wearing it|r"
+          elseif own then pill = GREEN .. "Saved|r"
+          elseif g.bs then pill = bs >= g.bs and (GREEN .. "You can make it|r") or (GOLD .. "Blacksmithing " .. g.bs .. "|r")
+          elseif lvl < g.lvl then pill = GREY .. "Level " .. g.lvl .. (g.approx and "ish" or "") .. "|r"
+          else pill = GOLD .. "Go get it|r" end
+          local score = link and RG.HealScore(link) or 0
+          local sub = g.src .. GREY .. "  ·  " .. g.zone .. "  ·  " .. g.slot .. (g.note and ("  ·  " .. g.note) or "") .. "|r"
+          setItem(getRow(n), g.id, link, name, sub, pill, g.ah and RG.PriceText(g.id) or (GREY .. "Holy " .. string.format("%.0f", score) .. "|r"), own and "green" or nil, quality)
+          if not link then rows[n].icon:SetTexture(HOW_ICON[g.how] or 134400) end
+        end
+      end
+    end
+  end
+  n = n + 1
+  setStep(getRow(n), "", "Show the list for every level, not just mine", state.healAll, function() state.healAll = not state.healAll; RG.RefreshUI() end)
+  n = n + 1; setHeader(getRow(n), "Healing tips")
+  for _, t in ipairs(RG.HEAL_TIPS) do
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffff" .. t .. "|r", "", "", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_FlashHeal")
+  end
+  return n
+end
+
 local function renderSettings()
   local n = 0
   n = n + 1; setHeader(getRow(n), "Features")
@@ -683,6 +767,7 @@ local TITLES = {
   settings = { "Settings", "Turn RetGear's helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
+  heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
 }
 local FOOTERS = {
   route = "Click a step to open its to-do list  ·  click a task to tick it off  ·  A- / A+ change the text size",
@@ -693,6 +778,7 @@ local FOOTERS = {
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
   talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
+  heal  = "Pieces in your healing set are never sold by RetGear  ·  Forever loot is still being mapped; the list updates weekly",
 }
 
 local function updateHeader()
@@ -723,6 +809,7 @@ function RG.RefreshUI()
   elseif state.tab == "settings" then n = renderSettings()
   elseif state.tab == "talents" then n = renderTalents()
   elseif state.tab == "gold" then n = renderGold()
+  elseif state.tab == "heal" then n = renderHeal()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -805,7 +892,7 @@ local function build()
 
   -- tabs: text with a gold underline on the active one
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "ah", "Auction House" }, { "gold", "Gold" }, { "settings", "Settings" } }
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "prof", "Professions" }, { "heal", "Healing" }, { "ah", "AH" }, { "gold", "Gold" }, { "settings", "Settings" } }
   local x = 18
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.11.0
+- New Healing tab for a Holy dual spec (WoW Forever unlocks dual spec at level 40): your healing set slot by slot, the next piece to hunt for each slot, and a level 40-60 list of 38 Horde-friendly healing items with boss and dungeon, including Whitesoul Helm you can make with Blacksmithing.
+- Holy score on item tooltips (+Healing, Intellect, MP5, spell crit), with "in your healing set, keep it" or "+X healing set upgrade".
+- Your healing set is protected: never flagged to sell on the AH, and selling a piece at a vendor offers a Buy back.
+- RetGear remembers healing gear in your bank, pops up when a new piece joins your set, and reminds you to learn dual spec at 40.
+- Stat reading now understands +Healing, mana per 5 and spell crit.
+- Healing items are Classic-era drops (Forever loot tables are still being mapped). Sources: Icy Veins pre-raid list, Wowhead, Warcraft Wiki, Ten Ton Hammer.
+
 ## v0.10.0
 - Don't-vendor guard: items in your bags worth more on the AH than at a vendor get a gold coin on their bag slot and a tooltip line, are never sold by the junk seller, and trigger a heads-up when you open a vendor. Sell one by mistake and you get a Buy back button.
 - Opening the AH now also prices the tradeable items in your bags and the items from your gold tips.

@@ -18,4 +18,5 @@ Extras.lua
 Auction.lua
 Profit.lua
 Gold.lua
+Heal.lua
 UI.lua

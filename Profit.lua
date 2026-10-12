@@ -92,7 +92,7 @@ function RG.ProfitList()
       for slot = 1, numSlots(bag) do
         local info = slotInfo(bag, slot)
         local id = info and info.itemID
-        if id and not info.isBound and not pdb().profitIgnore[id] and classOf(id) ~= 12 then
+        if id and not info.isBound and not pdb().profitIgnore[id] and classOf(id) ~= 12 and not (RG.IsHealKeeper and RG.IsHealKeeper(id)) then
           local e = byID[id]
           if not e then e = { id = id, link = info.hyperlink, count = 0, quality = info.quality, slots = {} }; byID[id] = e end
           e.count = e.count + (info.stackCount or 1)
@@ -237,6 +237,13 @@ local function onVendor()
   watched = {}
   local have = counts()
   for _, e in ipairs(items) do watched[e.id] = { count = have[e.id] or e.count, e = e } end
+  -- your healing set for dual spec: watch it too
+  if RG.HealSet and RG.Opt("healSet") then
+    local _, _, keep = RG.HealSet()
+    for id in pairs(keep) do
+      if have[id] and not watched[id] then watched[id] = { count = have[id], e = { id = id, heal = true } } end
+    end
+  end
   if #items == 0 then return end
   local names = {}
   for i = 1, math.min(3, #items) do names[i] = items[i].link or (RG.ItemInfo(items[i].id)) or "item" end
@@ -256,7 +263,16 @@ local function checkSold()
       local sold = w.count - now
       w.count = now
       local idx = buybackIndex(id)
-      if idx then
+      if idx and w.e.heal then
+        local link = select(2, RG.ItemInfo(id)) or "that item"
+        RG.Print(RED .. "Careful:|r you sold " .. link .. ", a piece of your healing set for dual spec. Buy it back from the vendor's Buyback tab.")
+        if RG.Toast then
+          RG.Toast("Healing set item sold", link .. " was in your healing set.", select(10, RG.ItemInfo(id)), "Buy back", function()
+            local i = buybackIndex(id)
+            if i and MerchantFrame and MerchantFrame:IsShown() then BuybackItem(i); RG.Print("Bought back " .. link .. ".") else RG.Print("Open the vendor again to buy it back.") end
+          end, 10)
+        end
+      elseif idx then
         local link = w.e.link or select(2, RG.ItemInfo(id)) or "that item"
         local lost = w.e.p.gain * sold
         RG.Print(RED .. "Oops:|r you sold " .. link .. (sold > 1 and (" x" .. sold) or "") .. ", which is worth about " .. RG.Money(lost) .. " more on the AH. Buy it back from the vendor's Buyback tab.")
