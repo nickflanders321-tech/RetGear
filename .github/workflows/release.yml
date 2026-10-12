@@ -1,11 +1,13 @@
 name: Release
 
-# Push a tag like v0.6.1 to publish. The packager builds the zip, uploads it
+# Publish a GitHub release (or push a tag) like v0.6.1 to ship a version. The packager builds the zip, uploads it
 # to CurseForge (when the CF_API_KEY secret and the project ID in the .toc
 # are set) and attaches it to a GitHub release.
 on:
   push:
     tags: ['v*']
+  release:
+    types: [published]
 
 jobs:
   release:
