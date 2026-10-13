@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.21.1 (talents fix)
+- Fixed: the Talents tab said "open your talents once" forever. WoW Forever doesn't answer the usual "unspent talent points" call, so RetGear now tries every way it knows, and if none work it counts your points itself (one per level from 10, minus what's spent in your tree).
+- The tab refreshes as soon as you spend a point or level up, and clicking the unspent-points bar opens your talent window.
+- New `/rg talents check` shows how talents are being read on this client, for bug reports.
+
 ## v0.21.0 (cleaner tracker, quest levels)
 - The tracker is reorganized around a **Quests** list: every quest in your log on one line with its **level** in the game's colors (grey, green, yellow, orange, red), progress and distance on the right. Ready-to-turn-in quests come first, then the nearest.
 - Click a quest to open it in your quest log, right-click to show it on the map, hover for all its objectives, its zone and the turn-in.

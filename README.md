@@ -56,6 +56,7 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 | `/rg undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
 | `/rg way 45 60` | Pin a spot in your zone and follow the arrow |
 | `/rg pace` | Time at this level, last level and your average |
+| `/rg talents check` | Show how talent points are read on this client (send it to me if talents look wrong) |
 | `/rg session` | XP, quests, ore and gold this session |
 | `/rg profit` | Bag items to sell on the AH; `/rg profit min 25` sets the threshold in silver; `/rg profit ignore [item]` stops flagging an item |
 | `/rg track [item]` · `/rg untrack [item]` | Watch an item's AH price |

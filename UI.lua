@@ -660,7 +660,10 @@ local function renderTalents()
   local nextT = RG.NextTalent and RG.NextTalent()
   n = n + 1
   setBar(getRow(n), "Unspent talent points", pts or 0, math.max(pts or 0, 1), pts and pts > 0 and T.gold or T.green,
-    pts == nil and (GREY .. "open your talents once|r") or (pts > 0 and (GOLD .. pts .. " to spend|r") or (GREEN .. "all spent|r")))
+    pts == nil and (GREY .. "can't read · /rg talents check|r") or (pts > 0 and (GOLD .. pts .. " to spend|r") or (GREEN .. "all spent|r")))
+  rows[n].tip = (pts == nil and "This client didn't report your talent points.\nType /rg talents check and send me the result.\n\n" or "")
+    .. "Click to open your talents" .. (RG.talentSource and ("\n" .. GREY .. "Read via " .. RG.talentSource .. "|r") or "")
+  rows[n].onClick = function() if ToggleTalentFrame then pcall(ToggleTalentFrame) elseif PlayerTalentFrame_Toggle then pcall(PlayerTalentFrame_Toggle) end end
   if nextT then
     n = n + 1
     setItem(getRow(n), nil, nil, GOLD .. "Next: " .. nextT.name .. "|r", nextT.why, pts and pts > 0 and (GREEN .. "Take it now|r") or "", "", "gold")

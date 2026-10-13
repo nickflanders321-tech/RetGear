@@ -245,22 +245,78 @@ end
 -- ===========================================================================
 -- 6. Talent planner
 -- ===========================================================================
-function RG.UnspentTalents()
-  if UnitCharacterPoints then local p = UnitCharacterPoints("player"); if p then return p end end
-  if GetUnspentTalentPoints then local ok, p = pcall(GetUnspentTalentPoints); if ok and p then return p end end
-  return nil
+-- Talent APIs differ between clients, so each way of reading talents is tried
+-- in turn; RG.talentSource remembers which one worked (shown by /rg talents check).
+local function try(fn, ...)
+  if not fn then return nil end
+  local ok, a, b, c, d, e, f, g, h = pcall(fn, ...)
+  if ok then return a, b, c, d, e, f, g, h end
 end
--- Reads the talent tree. Returns { [name] = { rank, max, available } } or nil.
+-- Classic-style trees: GetTalentInfo(tab, i) -> name, icon, tier, column, rank, maxRank, ..., available
 function RG.ReadTalents()
-  if not (GetNumTalentTabs and GetNumTalents and GetTalentInfo) then return nil end
-  local out, found = {}, false
-  for tab = 1, GetNumTalentTabs() do
-    for i = 1, GetNumTalents(tab) do
-      local name, _, tier, _, rank, maxRank, _, available = GetTalentInfo(tab, i)
-      if name then out[name] = { rank = rank or 0, max = maxRank or 1, available = available ~= false, tier = tier, tab = tab }; found = true end
+  local tabs = try(GetNumTalentTabs)
+  if not (tabs and tabs > 0 and GetNumTalents and GetTalentInfo) then return nil end
+  local out, found, spent = {}, false, 0
+  for tab = 1, tabs do
+    for i = 1, (try(GetNumTalents, tab) or 0) do
+      local name, _, tier, _, rank, maxRank, _, available = try(GetTalentInfo, tab, i)
+      if type(name) == "string" then
+        out[name] = { rank = rank or 0, max = maxRank or 1, available = available ~= false, tier = tier, tab = tab }
+        spent = spent + (tonumber(rank) or 0); found = true
+      end
     end
   end
-  return found and out or nil
+  return found and out or nil, spent
+end
+-- Modern talent trees (C_ClassTalents / C_Traits): unspent points from the tree's currency.
+local function traitUnspent()
+  if not (C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits and C_Traits.GetConfigInfo and C_Traits.GetTreeCurrencyInfo) then return nil end
+  local cfg = try(C_ClassTalents.GetActiveConfigID)
+  local info = cfg and try(C_Traits.GetConfigInfo, cfg)
+  if not (info and info.treeIDs) then return nil end
+  local total
+  for _, tree in ipairs(info.treeIDs) do
+    for _, cur in ipairs(try(C_Traits.GetTreeCurrencyInfo, cfg, tree, false) or {}) do
+      if type(cur.quantity) == "number" then total = (total or 0) + cur.quantity end
+    end
+  end
+  return total
+end
+function RG.UnspentTalents()
+  local p = try(UnitCharacterPoints, "player")
+  if RG.IsSecret and RG.IsSecret(p) then p = nil end
+  if type(p) == "number" then RG.talentSource = "UnitCharacterPoints"; return p end
+  p = try(GetUnspentTalentPoints)
+  if type(p) == "number" then RG.talentSource = "GetUnspentTalentPoints"; return p end
+  p = traitUnspent()
+  if type(p) == "number" then RG.talentSource = "C_Traits"; return p end
+  -- count it ourselves: one point per level from 10, minus what's spent in the tree
+  local tree, spent = RG.ReadTalents()
+  if tree then
+    RG.talentSource = "counted from your talent tree"
+    return math.max(0, math.max(0, (UnitLevel("player") or 1) - 9) - (spent or 0))
+  end
+  if C_ClassTalents and C_ClassTalents.HasUnspentTalentPoints then
+    local has = try(C_ClassTalents.HasUnspentTalentPoints)
+    if has ~= nil then RG.talentSource = "HasUnspentTalentPoints"; return has and 1 or 0 end
+  end
+  RG.talentSource = nil
+  return nil
+end
+-- What this client offers, for bug reports: /rg talents check
+function RG.TalentCheck()
+  local function has(x) return x and "yes" or "no" end
+  RG.Print("Talent check (please send this if talents look wrong):")
+  local p = try(UnitCharacterPoints, "player")
+  DEFAULT_CHAT_FRAME:AddMessage("   UnitCharacterPoints: " .. has(UnitCharacterPoints) .. " -> " .. tostring(p))
+  DEFAULT_CHAT_FRAME:AddMessage("   GetUnspentTalentPoints: " .. has(GetUnspentTalentPoints) .. " -> " .. tostring(try(GetUnspentTalentPoints)))
+  DEFAULT_CHAT_FRAME:AddMessage("   GetNumTalentTabs: " .. has(GetNumTalentTabs) .. " -> " .. tostring(try(GetNumTalentTabs)) .. "   GetTalentInfo: " .. has(GetTalentInfo))
+  local tree, spent = RG.ReadTalents()
+  local n = 0; for _ in pairs(tree or {}) do n = n + 1 end
+  DEFAULT_CHAT_FRAME:AddMessage("   tree read: " .. n .. " talents, " .. tostring(spent) .. " points spent")
+  DEFAULT_CHAT_FRAME:AddMessage("   C_ClassTalents: " .. has(C_ClassTalents) .. "   C_Traits: " .. has(C_Traits) .. " -> " .. tostring(traitUnspent()))
+  local u = RG.UnspentTalents()
+  DEFAULT_CHAT_FRAME:AddMessage("   result: " .. tostring(u) .. " unspent (" .. (RG.talentSource or "no method worked") .. ")")
 end
 function RG.NextTalent()
   local tree = RG.ReadTalents()
@@ -315,6 +371,7 @@ f:SetScript("OnEvent", function(_, event, a1)
     oreCounts = now
   end
   if (event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED") and CharacterFrame and CharacterFrame:IsShown() then updatePaperdoll() end
+  if (event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_TALENT_UPDATE" or event == "PLAYER_LEVEL_UP") and RG.RefreshUI then RG.RefreshUI() end
   if RG.QueueTracker then RG.QueueTracker() end
 end)
 
@@ -323,7 +380,10 @@ local base = SlashCmdList.RETGEAR
 SlashCmdList.RETGEAR = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   if cmd and cmd:lower() == "session" then RG.SessionSummary(); return end
-  if cmd and cmd:lower() == "talents" then if RG.ShowTab then RG.ShowTab("talents") end; return end
+  if cmd and cmd:lower() == "talents" then
+    if (msg or ""):lower():find("check") then RG.TalentCheck() elseif RG.ShowTab then RG.ShowTab("talents") end
+    return
+  end
   return base(msg)
 end
 -- Logging out prints a short summary next time you look at chat.
