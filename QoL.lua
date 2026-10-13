@@ -20,7 +20,7 @@ RG.OPTIONS = {
   { key = "sounds",       label = "Play sounds for pop-ups",                default = true },
 }
 function RG.Opt(key)
-  local v = WaypathDB and WaypathDB[key]
+  local v = RG.db and RG.db[key]
   if v == nil then for _, o in ipairs(RG.OPTIONS) do if o.key == key then return o.default end end end
   return v ~= false
 end
@@ -287,7 +287,7 @@ function RG.ShowWelcome()
     .. GOLD .. "•|r Everything else lives in " .. GOLD .. "/wp|r or the minimap button. Settings turns any of it off.")
   local function btn(label, x, fn, primary)
     local o = CreateFrame("Button", nil, f, "UIPanelButtonTemplate"); o:SetSize(150, 24); o:SetPoint("BOTTOM", x, 22); o:SetText(label)
-    o:SetScript("OnClick", function() WaypathDB.welcomed = true; f:Hide(); if fn then fn() end end)
+    o:SetScript("OnClick", function() RG.db.welcomed = true; f:Hide(); if fn then fn() end end)
   end
   btn("Open the guide", -80, function() if RG.ToggleUI then RG.ToggleUI() end end, true)
   btn("Got it", 80)
@@ -300,7 +300,7 @@ end
 -- ---------------------------------------------------------------------------
 local mm
 local function placeMinimap()
-  local a = math.rad(WaypathDB.mmAngle or 200)
+  local a = math.rad(RG.db.mmAngle or 200)
   mm:ClearAllPoints(); mm:SetPoint("CENTER", Minimap, "CENTER", math.cos(a) * 104, math.sin(a) * 104)
 end
 function RG.MinimapButton()
@@ -313,14 +313,14 @@ function RG.MinimapButton()
     mm:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
     mm:RegisterForClicks("LeftButtonUp", "RightButtonUp"); mm:RegisterForDrag("LeftButton")
     mm:SetScript("OnClick", function(_, btn)
-      if btn == "RightButton" then WaypathDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
-      elseif IsShiftKeyDown and IsShiftKeyDown() then WaypathDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+      if btn == "RightButton" then RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+      elseif IsShiftKeyDown and IsShiftKeyDown() then RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
       elseif IsControlKeyDown and IsControlKeyDown() then if RG.ShowTab then RG.ShowTab("settings") end
       elseif RG.ToggleUI then RG.ToggleUI() end
     end)
     mm:SetScript("OnDragStart", function(self) self:SetScript("OnUpdate", function()
       local mx, my = Minimap:GetCenter(); local cx, cy = GetCursorPosition(); local s = Minimap:GetEffectiveScale()
-      WaypathDB.mmAngle = math.deg(math.atan2(cy / s - my, cx / s - mx)); placeMinimap()
+      RG.db.mmAngle = math.deg(math.atan2(cy / s - my, cx / s - mx)); placeMinimap()
     end) end)
     mm:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
     mm:SetScript("OnEnter", function(self)
@@ -350,7 +350,8 @@ f:SetScript("OnEvent", function(_, event, a1)
   if event == "PLAYER_LOGIN" then
     C_Timer.After(3, function()
       checkUpgrades(); RG.MinimapButton()
-      if not WaypathDB.setupDone then RG.ShowWelcome() end
+      -- a brand new character is asked "new profile or bank alt?" first (Core.lua)
+      if not RG.db.setupDone and RG.CharMode and RG.CharMode() then RG.ShowWelcome() end
     end)
   elseif event == "BAG_UPDATE_DELAYED" then
     if bagTimer then return end
@@ -372,7 +373,7 @@ local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
-  if cmd == "tracker" then WaypathDB.tracker = not RG.Opt("tracker"); RG.RefreshTracker(); RG.Print("Tracker " .. (RG.Opt("tracker") and "shown." or "hidden.")); return end
+  if cmd == "tracker" then RG.db.tracker = not RG.Opt("tracker"); RG.RefreshTracker(); RG.Print("Tracker " .. (RG.Opt("tracker") and "shown." or "hidden.")); return end
   if cmd == "welcome" then RG.ShowWelcome(); return end
   if cmd == "settings" then if RG.ShowTab then RG.ShowTab("settings") end; return end
   return base(msg)
@@ -389,8 +390,8 @@ BINDING_NAME_WAYPATH_SORT = "Sort my bags"
 function Waypath_Bind(action)
   if action == "toggle" then if RG.ToggleUI then RG.ToggleUI() end
   elseif action == "next" then SlashCmdList.WAYPATH("next")
-  elseif action == "arrow" then WaypathDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
-  elseif action == "tracker" then WaypathDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+  elseif action == "arrow" then RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+  elseif action == "tracker" then RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
   elseif action == "undo" then SlashCmdList.WAYPATH("undo")
   elseif action == "sort" then if RG.SortBags then RG.SortBags(BankFrame and BankFrame:IsShown()) end end
 end

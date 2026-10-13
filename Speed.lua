@@ -380,7 +380,7 @@ local function buildBar()
   if bar then return end
   bar = CreateFrame("Frame", "WaypathSpeedBar", UIParent, "BackdropTemplate")
   bar:SetSize(200, 30); bar:SetMovable(true); bar:SetClampedToScreen(true)
-  local pos = WaypathDB.speedBarPos
+  local pos = RG.db.speedBarPos
   if pos then bar:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else bar:SetPoint("CENTER", UIParent, "CENTER", 0, -230) end
   local handle = CreateFrame("Frame", nil, bar)
   handle:SetSize(12, 30); handle:SetPoint("LEFT"); handle:EnableMouse(true); handle:RegisterForDrag("LeftButton")
@@ -388,7 +388,7 @@ local function buildBar()
   handle:SetScript("OnDragStart", function() if not combat() then bar:StartMoving() end end)
   handle:SetScript("OnDragStop", function()
     bar:StopMovingOrSizing()
-    local p, _, _, x, y = bar:GetPoint(); WaypathDB.speedBarPos = { p, x, y }
+    local p, _, _, x, y = bar:GetPoint(); RG.db.speedBarPos = { p, x, y }
   end)
   handle:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+ quest bar"); GameTooltip:AddLine("Drag to move. Buttons: quest items to use, then quest mobs to target.", 1, 1, 1, true); GameTooltip:Show() end)
   handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -525,11 +525,11 @@ local function buildArrow()
   if arrow then return end
   arrow = CreateFrame("Frame", "WaypathArrow", UIParent)
   arrow:SetSize(84, 84); arrow:SetMovable(true); arrow:EnableMouse(true); arrow:RegisterForDrag("LeftButton"); arrow:SetClampedToScreen(true)
-  arrow:SetScale(WaypathDB.arrowScale or 1)
-  local pos = WaypathDB.arrowPos
+  arrow:SetScale(RG.db.arrowScale or 1)
+  local pos = RG.db.arrowPos
   if pos then arrow:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else arrow:SetPoint("TOP", UIParent, "TOP", 0, -150) end
   arrow:SetScript("OnDragStart", arrow.StartMoving)
-  arrow:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, _, x, y = self:GetPoint(); WaypathDB.arrowPos = { p, x, y } end)
+  arrow:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, _, x, y = self:GetPoint(); RG.db.arrowPos = { p, x, y } end)
   -- disc and ring
   arrow.disc = arrow:CreateTexture(nil, "BACKGROUND"); arrow.disc:SetSize(64, 64); arrow.disc:SetPoint("CENTER")
   arrow.disc:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"); arrow.disc:SetVertexColor(0, 0, 0, 0.55)
@@ -557,8 +557,8 @@ local function buildArrow()
   end)
   arrow:EnableMouseWheel(true)
   arrow:SetScript("OnMouseWheel", function(self, delta)
-    local sc = math.max(0.6, math.min(1.8, (WaypathDB.arrowScale or 1) + delta * 0.1))
-    WaypathDB.arrowScale = sc; self:SetScale(sc)
+    local sc = math.max(0.6, math.min(1.8, (RG.db.arrowScale or 1) + delta * 0.1))
+    RG.db.arrowScale = sc; self:SetScale(sc)
   end)
   arrow:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
@@ -689,7 +689,7 @@ function RG.ArrowTo(wp)
     RG.ClearWaypoint()
     RG.Notify("Arrow off")
   else
-    if not RG.Opt("arrow") then WaypathDB.arrow = true end
+    if not RG.Opt("arrow") then RG.db.arrow = true end
     RG.PinWaypoint(wp, true)
     RG.Notify("Arrow on: " .. wp[4])
   end
@@ -816,7 +816,7 @@ SlashCmdList.WAYPATH = function(msg)
     if s2 then RG.PinWaypoint(s2.wp) else RG.Print("No quest objectives with a known location near you.") end
     return
   elseif cmd == "auto" then
-    WaypathDB.autoQuest = not RG.Opt("autoQuest"); paused = false
+    RG.db.autoQuest = not RG.Opt("autoQuest"); paused = false
     RG.Print("Auto accept and turn in " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)." or "off."))
     return
   elseif cmd == "undo" then

@@ -57,10 +57,13 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **Gold & AH** → *Bank alt* | Quests you can skip farming for: what to buy and mail, with a shopping list for your bank alt |
 | **Settings** | Every helper, grouped, on or off |
 
-## Bank alt
-No bank alt yet? Make a new Undead on the same realm and log in: a secret guide on the tracker walks it to the Undercity Auction House, bank and mailbox with the arrow (`/wp bankalt` shows it on your main too).
+## Characters: profiles and bank alts
+Every character has its **own profile**: its own settings, route progress, quests, flight paths, professions plan, stat weights and 2nd spec set. Auction House prices, price alerts and window positions are shared by the whole account. The first time a new character logs in with Waypath+, it asks: **New profile** (the full leveling guide, starting fresh with the setup wizard) or **Bank alt**. Settings → *This character* switches between the two, makes a character your main, or starts a character over with a brand new profile (`/wp char profile`, `/wp char alt`, `/wp char reset`).
 
-Your paladin is your **main**. Any other character runs in **bank alt mode**: it won't touch your main's data, its tracker shows the shopping list, clicking an item searches the AH, and a button at the mailbox attaches everything and addresses it to your main. `/wp main` changes which character is your main.
+## Bank alt
+No bank alt yet? Make a new Undead on the same realm, log in and pick **Bank alt**: a secret guide on the tracker walks it to the Undercity Auction House, bank and mailbox with the arrow (`/wp bankalt` shows it on your main too).
+
+Your **main** is the character your bank alts buy for (the first character with a profile, or whichever you pick with `/wp main`). A bank alt's tracker shows the shopping list, clicking an item searches the AH, and a button at the mailbox attaches everything and addresses it to your main. `/wp main` changes which character is your main.
 
 ## Key bindings
 Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your nearest objective, arrow on/off, show/hide the tracker, undo a tick, sort bags. Minimap button: click opens the guide, right-click hides the tracker, Shift-click toggles the arrow, Ctrl-click opens Settings.
@@ -92,7 +95,8 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp errors` · `/wp errors clear` | Waypath+'s caught errors, in a window you can copy from · clear them |
 | `/wp setup` | Run the setup wizard again |
 | `/wp tracker` · `/wp tooltip` | Show or hide the tracker / tooltip line / welcome screen |
-| `/wp main` | Make this character your main |
+| `/wp main` | Make this character your main (the one bank alts buy for) |
+| `/wp char profile` · `/wp char alt` · `/wp char reset` | Give this character its own profile, make it a bank alt, or start it over with a brand new profile |
 
 ## Keeping it current
 Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, 2nd spec builds and gear, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.

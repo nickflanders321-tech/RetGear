@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.43.0 (a profile for every character)
+- **New characters aren't bank alts automatically any more.** The first time a character logs in with Waypath+ it asks: **New profile** (the full leveling guide with this character's own settings and progress, starting with the setup wizard) or **Bank alt** (the shopping list and mailbox helper for your main). The very first character gets a profile without asking.
+- **Every character has its own profile:** settings and preset, route progress and ticked steps, quests, flight paths, professions plan, stat weights, 2nd spec and its gear set, and so on. Auction House prices and alerts, recipes, the bank-alt shopping data and window positions are shared by the account.
+- Your existing data becomes your main's profile when you update; nothing is lost.
+- Settings → *This character*: switch between a profile and a bank alt, make this character your main, or **start this character over** with a brand new profile. Also `/wp char profile`, `/wp char alt`, `/wp char reset`.
+- Your main (the character bank alts buy for) is the first character with a profile, or whichever you pick with `/wp main`. Only your main's bags count for the bank alt's shopping list.
+
 ## v0.42.0 (faster Auction House scan that stays out of your way)
 - **Full scans:** when the server allows it (every 15 minutes), opening the Auction House sends one request for every auction and Waypath+ reads the prices it needs in the background, a chunk per frame. It takes a few seconds instead of a second or more per item. The modern Auction House's full scan doesn't touch your Browse list at all.
 - **Only out-of-date prices are checked:** between full scans, Waypath+ only looks up items whose price is more than 2 hours old, as fast as the server accepts searches (it used to wait 1.2 seconds per item and re-check everything every time). Reopening the AH right after a scan checks nothing.

@@ -37,10 +37,54 @@ local function migrateFromRetGear()
   if disable then pcall(disable, "RetGear") end
   RG.oldAddonOn = true
 end
+-- ---------------------------------------------------------------------------
+-- Profiles: every character has its own profile (settings, route progress,
+-- quests, flight paths, weights, professions plan, 2nd spec set...). A few
+-- things are shared by the whole account: Auction House prices and alerts,
+-- recipes read from profession windows, which character is your main and what
+-- it has (for bank alts), the error log, and where windows sit on screen.
+-- WaypathDB.chars[character] = "profile" (full guide) or "alt" (bank alt).
+-- ---------------------------------------------------------------------------
+local SHARED = {
+  prices = true, tracked = true, alerts = true, lastFullScan = true, recipes = true,
+  main = true, mainHave = true, mainLevel = true, mainBS = true, mailDone = true,
+  errors = true, chars = true, profiles = true, profilesMigrated = true, migratedFrom = true, altGuide = true,
+  trackerPos = true, trackerScale = true, trackerWidth = true, windowPos = true, arrowPos = true, arrowScale = true,
+  speedBarPos = true, mmAngle = true, textSize = true,
+}
+RG.SHARED_KEYS = SHARED
+local function charKey() return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "") end
+
+local function setupProfiles(root)
+  root.profiles = root.profiles or {}
+  root.chars = root.chars or {}
+  -- before profiles, everything belonged to your main (or to whoever logged in)
+  if not root.profilesMigrated then
+    local owner = root.main or charKey()
+    local p = root.profiles[owner] or {}
+    local move = {}
+    for k in pairs(root) do if not SHARED[k] then move[#move + 1] = k end end
+    for _, k in ipairs(move) do p[k] = root[k]; root[k] = nil end
+    root.profiles[owner] = p
+    if next(p) then root.chars[owner] = root.chars[owner] or "profile" end
+    root.profilesMigrated = true
+  end
+  local key = charKey()
+  root.profiles[key] = root.profiles[key] or {}
+  local prof = root.profiles[key]
+  RG.root, RG.profile = root, prof
+  -- RG.db: one table for the rest of the add-on; shared keys go to the account
+  return setmetatable({}, {
+    __index = function(_, k) if SHARED[k] then return root[k] end return prof[k] end,
+    __newindex = function(_, k, v) if SHARED[k] then root[k] = v else prof[k] = v end end,
+  })
+end
+
 local function InitDB()
   pcall(migrateFromRetGear)
   WaypathDB = WaypathDB or {}
-  local db = WaypathDB
+  local db = setupProfiles(WaypathDB)
+  RG.db = db
   -- the DPS coach was removed: drop its saved fight history
   db.fights, db.spellAvg, db.coach, db.coachChat = nil, nil, nil, nil
   if db.stepsDone then
@@ -70,20 +114,60 @@ local function InitDB()
   if db.levelAlerts == nil then db.levelAlerts = true end
   db.prices = db.prices or {}     -- [itemID] = { price = copper, t = time(), n = listings }
   db.tracked = db.tracked or {}   -- [itemID] = true (extra items you asked to watch)
-  RG.db = db
 end
+RG.InitDB = InitDB
 
 -- ---------------------------------------------------------------------------
--- Main character vs bank alt. Saved data is shared by every character on the
--- account, so other characters run in "bank alt" mode and never overwrite
--- your main's quests, flight paths, fights or 2nd spec set.
+-- Full profile vs bank alt. Each character picks the first time it logs in
+-- with Waypath+ (the very first character is a full profile). Your "main" is
+-- the character bank alts buy and mail for.
 -- ---------------------------------------------------------------------------
-function RG.PlayerKey()
-  return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "")
+RG.PlayerKey = charKey
+function RG.CharMode()
+  local r = RG.root
+  return r and r.chars and r.chars[charKey()] or nil
 end
-function RG.IsAlt()
-  local m = RG.db and RG.db.main
-  return m ~= nil and m ~= RG.PlayerKey()
+function RG.IsAlt() return RG.CharMode() == "alt" end
+function RG.IsMain() return RG.db ~= nil and RG.db.main == charKey() end
+function RG.SetCharMode(mode)
+  if not RG.root then return end
+  RG.root.chars[charKey()] = mode
+  if mode == "profile" and not RG.root.main then RG.root.main = charKey() end
+  if mode == "alt" and RG.root.main == charKey() then RG.root.main = nil end
+end
+-- Start this character over: a brand new, empty profile (settings back to defaults).
+function RG.ResetProfile()
+  if not RG.root then return end
+  RG.root.profiles[charKey()] = {}
+  ReloadUI()
+end
+-- The first-login question for a new character.
+function RG.AskCharMode()
+  if not (StaticPopupDialogs and StaticPopup_Show) then RG.SetCharMode("profile"); return end
+  local main = RG.MainName()
+  StaticPopupDialogs.WAYPATH_NEW_CHAR = {
+    text = "|cffffd100Waypath+|r: first time on %s.\n\n|cffffd100New profile|r: the full leveling guide with this character's own settings, route progress and professions. Your other characters keep theirs.\n\n|cffffd100Bank alt|r: no leveling guide. A shopping list of quest items to buy and mail" .. (main and (" to " .. main) or " to your main") .. ", and the vendor and mailbox helpers.",
+    button1 = "New profile", button2 = "Bank alt",
+    OnAccept = function()
+      RG.SetCharMode("profile")
+      RG.Print("New profile for " .. (UnitName("player") or "this character") .. ".")
+      if RG.ShowWelcome and not RG.db.setupDone then RG.ShowWelcome() end
+    end,
+    OnCancel = function(_, _, reason)
+      if reason ~= "clicked" then return end   -- closed some other way: ask again next login
+      RG.SetCharMode("alt")
+      RG.db.setupDone, RG.db.welcomed = true, true
+      ReloadUI()
+    end,
+    timeout = 0, whileDead = true, hideOnEscape = false, preferredIndex = 3,
+  }
+  StaticPopup_Show("WAYPATH_NEW_CHAR", UnitName("player") or "this character")
+end
+function RG.KnownChars()
+  local out = {}
+  for k, m in pairs((RG.root and RG.root.chars) or {}) do out[#out + 1] = { key = k, mode = m } end
+  table.sort(out, function(a, b) return a.key < b.key end)
+  return out
 end
 -- Run fn once, `delay` seconds after the last call with this key (bursts of
 -- bag and quest events collapse into one piece of work).
@@ -505,6 +589,14 @@ f:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" and arg1 == ADDON then
     InitDB()
   elseif event == "PLAYER_LOGIN" then
+    -- a character Waypath+ hasn't seen: the first one gets a full profile, any
+    -- later one is asked: its own new profile, or a bank alt
+    if not RG.CharMode() then
+      local others = 0
+      for k in pairs(RG.root.chars) do if k ~= RG.PlayerKey() then others = others + 1 end end
+      if others == 0 then RG.SetCharMode("profile")
+      else C_Timer.After(2.5, function() if RG.AskCharMode then RG.AskCharMode() end end) end
+    end
     if RG.oldAddonOn and StaticPopupDialogs and StaticPopup_Show then
       StaticPopupDialogs.WAYPATH_REPLACED = {
         text = "RetGear is now |cffffd100Waypath+|r." .. (RG.migrated and "\n\nYour progress, settings and ticked steps came across." or "") .. "\n\nReload to switch the old RetGear off. You can then delete the RetGear folder from Interface\\AddOns.",
@@ -522,7 +614,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
     local _, class = UnitClass("player")
     local _, race = UnitRace("player")
     -- your main: the first character past level 10 that logs in with the add-on
-    if not RG.db.main and ((UnitLevel("player") or 1) >= 10 or class == "PALADIN") then RG.db.main = RG.PlayerKey() end
+    if not RG.db.main and not RG.IsAlt() and ((UnitLevel("player") or 1) >= 10 or class == "PALADIN") then RG.db.main = RG.PlayerKey() end
     if RG.IsAlt() then
       RG.Print("Bank alt mode: buying and mailing for " .. GOLD .. (RG.MainName() or "your main") .. "|r. /wp mail shows the shopping list. (/wp main makes this character your main.)")
       return

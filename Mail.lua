@@ -51,7 +51,7 @@ local function count(id, bank)
   return (C_Item and C_Item.GetItemCount and C_Item.GetItemCount(id, bank)) or (GetItemCount and GetItemCount(id, bank)) or 0
 end
 local function snapshot()
-  if RG.IsAlt() then return end
+  if not RG.IsMain() then return end   -- only your main's bags count for the bank alt's list
   RG.db.mainHave = RG.db.mainHave or {}
   RG.db.mailDone = RG.db.mailDone or {}
   RG.db.mainLevel = UnitLevel("player")
@@ -231,9 +231,21 @@ SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "mail" or cmd == "alt" or cmd == "bank" then if RG.ShowTab then RG.ShowTab("mail") end return end
+  if cmd == "char" or cmd == "character" or cmd == "profile" then
+    local what = ((msg or ""):match("^%s*%S+%s+(%S+)") or ""):lower()
+    if what == "alt" or what == "bankalt" then RG.SetCharMode("alt"); ReloadUI()
+    elseif what == "profile" or what == "full" or (cmd == "profile" and what == "") then RG.SetCharMode("profile"); ReloadUI()
+    elseif what == "reset" or what == "new" then RG.ResetProfile()
+    else
+      RG.Print("This character: " .. (RG.IsAlt() and "bank alt" or "its own profile") .. (RG.IsMain() and " (your main)" or "") .. ".")
+      RG.Print("/wp char profile  ·  /wp char alt  ·  /wp char reset (a brand new profile)  ·  /wp main")
+    end
+    return
+  end
   if cmd == "main" then
+    if RG.IsAlt() then RG.SetCharMode("profile") end
     RG.db.main = RG.PlayerKey()
-    RG.Print(UnitName("player") .. " is now your main. Other characters will run in bank alt mode. /reload to apply.")
+    RG.Print(UnitName("player") .. " is now your main: your bank alts buy and mail for this character. /reload to apply.")
     return
   end
   return base(msg)

@@ -22,11 +22,11 @@ function RG.ApplyPreset(name)
   local p = RG.PRESETS[name]
   if not p then return end
   for _, k in ipairs(allKeys()) do
-    if p.on then WaypathDB[k] = false else WaypathDB[k] = nil end
+    if p.on then RG.db[k] = false else RG.db[k] = nil end
   end
-  for _, k in ipairs(p.on or {}) do WaypathDB[k] = true end
-  for _, k in ipairs(p.off or {}) do WaypathDB[k] = false end
-  WaypathDB.preset = name
+  for _, k in ipairs(p.on or {}) do RG.db[k] = true end
+  for _, k in ipairs(p.off or {}) do RG.db[k] = false end
+  RG.db.preset = name
 end
 
 -- Professions you plan to level switch their reminders and plans on or off.
@@ -36,9 +36,9 @@ local PROF_KEYS = {
   Cooking = { "campReminder", "wellFed" },
 }
 local function applyPlan(plan)
-  WaypathDB.plan = plan
+  RG.db.plan = plan
   for prof, keys in pairs(PROF_KEYS) do
-    if not RG.Plans(prof) then for _, k in ipairs(keys) do WaypathDB[k] = false end end
+    if not RG.Plans(prof) then for _, k in ipairs(keys) do RG.db[k] = false end end
   end
 end
 -- Does this character level the profession? Yes if it knows it, or if setup says so.
@@ -46,7 +46,7 @@ end
 local LEGACY = { Mining = true, Blacksmithing = true, Fishing = true, Cooking = true }
 function RG.Plans(prof)
   if RG.Skill and RG.Skill(prof) then return true end
-  local plan = WaypathDB and WaypathDB.plan
+  local plan = RG.db and RG.db.plan
   if plan and plan[prof] ~= nil then return plan[prof] and true or false end
   return LEGACY[prof] and (plan ~= nil or RG.IsClass("PALADIN")) or false
 end
@@ -120,8 +120,8 @@ local function buildPages()
   mainBtn:SetScript("OnClick", function() RG.db.main = RG.PlayerKey(); p2.refreshers[1]() end)
   table.insert(p2.refreshers, function()
     local isMain = RG.db.main == RG.PlayerKey()
-    mainText:SetText(isMain and (GREEN .. UnitName("player") .. " is your main.|r Your other characters run as bank alts and never change this character's progress.")
-      or (GOLD .. "This character isn't your main yet.|r Make it your main if it's the paladin you're leveling."))
+    mainText:SetText((isMain and (GREEN .. UnitName("player") .. " is your main|r (the character your bank alts buy for).") or (GOLD .. "This character has its own profile.|r Make it your main if your bank alts should buy for it."))
+      .. GREY .. " Every character has its own settings and progress.|r")
     mainBtn:SetShown(not isMain)
   end)
   local profHead = text(p2, "GameFontNormal", "Which professions will you level?  " .. GREY .. "Two main ones, plus any of Cooking, Fishing and First Aid|r", W - 70); profHead:SetPoint("TOPLEFT", 0, -116)
@@ -136,7 +136,7 @@ local function buildPages()
   -- 3. Preset
   local p3 = newPage("How much help do you want?")
   local btns = {}
-  local function pick(name) WaypathDB.preset = name; for k, b in pairs(btns) do b.select(k == name) end end
+  local function pick(name) RG.db.preset = name; for k, b in pairs(btns) do b.select(k == name) end end
   local y = -38
   for _, name in ipairs({ "full", "balanced", "minimal" }) do
     local pr = RG.PRESETS[name]
@@ -145,7 +145,7 @@ local function buildPages()
     btns[name] = b
   end
   local note = text(p3, "GameFontHighlightSmall", GREY .. "You'll fine-tune the big switches on the next page.|r", W - 70); note:SetPoint("TOPLEFT", 0, y - 4)
-  table.insert(p3.refreshers, function() pick(WaypathDB.preset or "full") end)
+  table.insert(p3.refreshers, function() pick(RG.db.preset or "full") end)
 
   -- 4. Automation (preset applied on entering this page)
   local p4 = newPage("Automation")
@@ -157,7 +157,7 @@ local function buildPages()
     { "targetBar", "Quest bar and WaypathTarget macro", "Click to target the quest mobs you still need and use quest items." },
   }
   for i, a in ipairs(auto) do
-    local c = check(p4, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) WaypathDB[a[1]] = v; if a[1] == "sellJunk" then WaypathDB.autoRepair = v end end)
+    local c = check(p4, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RG.db[a[1]] = v; if a[1] == "sellJunk" then RG.db.autoRepair = v end end)
     c:SetPoint("TOPLEFT", 0, -36 - (i - 1) * 46)
     table.insert(p4.refreshers, c.refresh)
   end
@@ -171,7 +171,7 @@ local function buildPages()
     { "groupDuties", "Group helper", "In a party: who needs a Blessing, Aura reminder, dispel and \"dying\" alerts, shared quests and LFG posts." },
   }
   for i, a in ipairs(extras) do
-    local c = check(p5, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) WaypathDB[a[1]] = v; if a[1] == "groupDuties" then WaypathDB.groupAlerts = v end end)
+    local c = check(p5, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RG.db[a[1]] = v; if a[1] == "groupDuties" then RG.db.groupAlerts = v end end)
     c:SetPoint("TOPLEFT", 0, -36 - (i - 1) * 46)
     table.insert(p5.refreshers, c.refresh)
   end
@@ -185,7 +185,7 @@ local function buildPages()
     if not sp.main then
       local b = CreateFrame("Button", nil, p5, "UIPanelButtonTemplate")
       b:SetSize(math.max(84, (#sp.name * 7) + 20), 22); b:SetPoint("TOPLEFT", x, -36 - #extras * 46 - 48); b:SetText(sp.name)
-      b:SetScript("OnClick", function() RG.SetSecondSpec(sp.key); WaypathDB.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
+      b:SetScript("OnClick", function() RG.SetSecondSpec(sp.key); RG.db.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
       b.key = sp.key
       specBtns[#specBtns + 1] = b; x = x + b:GetWidth() + 6
     end
@@ -199,7 +199,7 @@ local function buildPages()
   local p6 = newPage("You're all set")
   local summary = text(p6, "GameFontHighlight", "", W - 70); summary:SetPoint("TOPLEFT", 0, -38); summary:SetSpacing(4)
   table.insert(p6.refreshers, function()
-    local pr = RG.PRESETS[WaypathDB.preset or "full"]
+    local pr = RG.PRESETS[RG.db.preset or "full"]
     local lv = {}
     for _, n in ipairs({ "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }) do if RG.Plans(n) then lv[#lv + 1] = n end end
     summary:SetText(GOLD .. "Help level:|r " .. pr.label .. "\n" .. GOLD .. "Professions:|r " .. (#lv > 0 and table.concat(lv, ", ") or "none") .. "\n"
@@ -218,7 +218,7 @@ end
 local function show(i)
   -- leaving a page: apply what it set
   if page == 2 and i > 2 then applyPlan(plan) end
-  if page == 3 and i == 4 then RG.ApplyPreset(WaypathDB.preset or "full"); applyPlan(plan) end
+  if page == 3 and i == 4 then RG.ApplyPreset(RG.db.preset or "full"); applyPlan(plan) end
   page = i
   for k, p in ipairs(pages) do
     p:SetShown(k == i)
@@ -231,7 +231,7 @@ local function show(i)
 end
 local function finish(open)
   if page < 3 then applyPlan(plan) end
-  WaypathDB.welcomed = true; WaypathDB.setupDone = true
+  RG.db.welcomed = true; RG.db.setupDone = true
   wiz:Hide()
   if RG.RefreshTracker then RG.RefreshTracker() end
   if RG.MinimapButton then RG.MinimapButton() end
@@ -240,7 +240,7 @@ local function finish(open)
 end
 
 function RG.ShowSetup()
-  if RG.IsAlt and RG.IsAlt() then RG.Print("This is a bank alt; run /wp setup on your main.") return end
+  if RG.IsAlt and RG.IsAlt() then RG.Print("This character is a bank alt. /wp char profile gives it its own full profile.") return end
   if not wiz then
     wiz = CreateFrame("Frame", "WaypathSetup", UIParent, "BackdropTemplate")
     wiz:SetSize(W, H); wiz:SetPoint("CENTER", 0, 40); wiz:SetFrameStrata("DIALOG")
@@ -266,7 +266,7 @@ function RG.ShowSetup()
     end
   end
   plan = {}
-  for k, v in pairs(WaypathDB.plan or {}) do plan[k] = v end
+  for k, v in pairs(RG.db.plan or {}) do plan[k] = v end
   wiz:Show(); show(1)
   if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_QUEST_LOG_OPEN or 844) end
 end

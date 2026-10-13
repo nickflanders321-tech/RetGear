@@ -146,7 +146,7 @@ local function build()
   tr = CreateFrame("Frame", "WaypathTracker", UIParent, "BackdropTemplate")
   tr:SetWidth(W); tr:SetClampedToScreen(true); tr:SetMovable(true); tr:EnableMouse(true); tr:SetFrameStrata("MEDIUM")
   RG.Backdrop(tr, { 0.02, 0.02, 0.02, 0.6 }, { 0.6, 0.55, 0.45, 0.6 })
-  local pos = WaypathDB.trackerPos
+  local pos = RG.db.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   tr:RegisterForDrag("LeftButton")
   tr:SetScript("OnDragStart", function(self) if not RG.Opt("trackerLocked") then self:StartMoving() end end)
@@ -154,13 +154,13 @@ local function build()
   tr:EnableMouseWheel(true)
   tr:SetScript("OnMouseWheel", function(self, delta)
     if IsControlKeyDown and IsControlKeyDown() then
-      WaypathDB.trackerScale = math.max(0.6, math.min(1.6, (WaypathDB.trackerScale or 1) + delta * 0.05))
+      RG.db.trackerScale = math.max(0.6, math.min(1.6, (RG.db.trackerScale or 1) + delta * 0.05))
     elseif IsShiftKeyDown and IsShiftKeyDown() then
-      WaypathDB.trackerWidth = math.max(240, math.min(460, (WaypathDB.trackerWidth or 300) + delta * 20))
+      RG.db.trackerWidth = math.max(240, math.min(460, (RG.db.trackerWidth or 300) + delta * 20))
     else return end
     RG.RefreshTracker()
   end)
-  tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); WaypathDB.trackerPos = { p, rp, x, y } end)
+  tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
 
   local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); crest:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   tr.title = tr:CreateFontString(nil, "OVERLAY", "GameFontNormal"); tr.title:SetPoint("LEFT", crest, "RIGHT", 6, 0); tr.title:SetText("Waypath+")
@@ -185,14 +185,14 @@ local function build()
     b:SetScript("OnLeave", function(self) self.t:SetTextColor(0.6, 0.6, 0.6); GameTooltip:Hide() end)
     return b
   end
-  tr.min = hdrBtn("-", -8, function() WaypathDB.trackerCollapsed = not WaypathDB.trackerCollapsed; RG.RefreshTracker() end, "Collapse or expand")
+  tr.min = hdrBtn("-", -8, function() RG.db.trackerCollapsed = not RG.db.trackerCollapsed; RG.RefreshTracker() end, "Collapse or expand")
   local g = hdrBtn("", -30, function() if RG.ToggleUI then RG.ToggleUI() end end, "Open the full guide")
   local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(14, 14); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\Icons\\INV_Misc_Book_09"); gi:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   -- arrow on/off switch
   local ab = CreateFrame("Button", nil, tr); ab:SetSize(20, 20); ab:SetPoint("TOPRIGHT", -52, -8)
   ab.icon = ab:CreateTexture(nil, "OVERLAY"); ab.icon:SetSize(16, 16); ab.icon:SetPoint("CENTER"); ab.icon:SetTexture("Interface\\Minimap\\MinimapArrow")
   ab:SetScript("OnClick", function(self)
-    WaypathDB.arrow = not RG.Opt("arrow")
+    RG.db.arrow = not RG.Opt("arrow")
     if RG.RefreshArrow then RG.RefreshArrow() end
     RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
     if PlaySound and SOUNDKIT and RG.Opt("sounds") then pcall(PlaySound, SOUNDKIT.U_CHAT_SCROLL_BUTTON or 1115) end
@@ -219,8 +219,8 @@ local function build()
 end
 
 -- Sections fold with a click on their header (remembered between sessions).
-local function folded(key) return key and WaypathDB.trackerFold and WaypathDB.trackerFold[key] end
-local function fontSize(base) return math.floor(base * ((WaypathDB.textSize or 1.2) / 1.2) + 0.5) end
+local function folded(key) return key and RG.db.trackerFold and RG.db.trackerFold[key] end
+local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
 local function section(n, y, label, key, right)
   local b = line(n)
   b.onClick, b.onRightClick, b.tip, b.onDoubleClick = nil, nil, nil, nil
@@ -228,8 +228,8 @@ local function section(n, y, label, key, right)
   local isFolded = folded(key)
   if key then
     b.onClick = function()
-      WaypathDB.trackerFold = WaypathDB.trackerFold or {}
-      WaypathDB.trackerFold[key] = not WaypathDB.trackerFold[key] or nil
+      RG.db.trackerFold = RG.db.trackerFold or {}
+      RG.db.trackerFold[key] = not RG.db.trackerFold[key] or nil
       RG.RefreshTracker()
     end
     b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
@@ -282,13 +282,13 @@ local function questTip(q)
 end
 
 function RG.RefreshTracker()
-  if not WaypathDB or not RG.db then return end
+  if not RG.db or not RG.db then return end
   if not RG.Opt("tracker") then if tr then tr:Hide() end return end
   if not tr then build() end
   tr:Show()
   -- size and width (Ctrl / Shift + mouse wheel)
-  W = WaypathDB.trackerWidth or 300
-  tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(WaypathDB.trackerScale or 1)
+  W = RG.db.trackerWidth or 300
+  tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
   for _, b in ipairs(lines) do b:Hide(); b:SetWidth(W - 24) end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
@@ -303,7 +303,7 @@ function RG.RefreshTracker()
     tr.arrowBtn.icon:SetDesaturated(not on)
     if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
-  if WaypathDB.trackerCollapsed then tr.body:Hide(); tr:SetHeight(40); tr.min.t:SetText("+"); return end
+  if RG.db.trackerCollapsed then tr.body:Hide(); tr:SetHeight(40); tr.min.t:SetText("+"); return end
   tr.body:Show(); tr.min.t:SetText("-")
 
   local n, y = 0, 0
@@ -388,14 +388,14 @@ function RG.RefreshTracker()
       for _, g in ipairs(groups) do
         if shownQ >= MAXQ then hidden = hidden + #g.list
         else
-          local zf = WaypathDB.trackerFold and WaypathDB.trackerFold["zone:" .. g.zone]
+          local zf = RG.db.trackerFold and RG.db.trackerFold["zone:" .. g.zone]
           n = n + 1
           y = item(n, y, (zf and "+ " or "") .. "|cffc9a227" .. g.zone .. "|r" .. (g.here and (GREY .. "  (you're here)|r") or ""),
             { single = true, indent = 2, right = GREY .. #g.list .. (g.ready and ("  ·  " .. GREEN .. g.ready .. " ready|r") or "") .. "|r",
               tip = "Click to fold or show this zone's quests.",
               onClick = function()
-                WaypathDB.trackerFold = WaypathDB.trackerFold or {}
-                WaypathDB.trackerFold["zone:" .. g.zone] = not WaypathDB.trackerFold["zone:" .. g.zone] or nil
+                RG.db.trackerFold = RG.db.trackerFold or {}
+                RG.db.trackerFold["zone:" .. g.zone] = not RG.db.trackerFold["zone:" .. g.zone] or nil
                 RG.RefreshTracker()
               end })
           if not zf then

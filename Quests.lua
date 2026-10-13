@@ -13,8 +13,8 @@ RG.QUEST_IDS = {
 }
 
 local function db()
-  WaypathDB.questsDone = WaypathDB.questsDone or {}
-  return WaypathDB.questsDone
+  RG.db.questsDone = RG.db.questsDone or {}
+  return RG.db.questsDone
 end
 local function norm(s) return s and s:lower():gsub("^%s+", ""):gsub("%s+$", "") or nil end
 
@@ -71,8 +71,8 @@ end
 local function scanHistory()
   if not (C_QuestLog and C_QuestLog.GetAllCompletedQuestIDs) then return end
   local ids = C_QuestLog.GetAllCompletedQuestIDs() or {}
-  WaypathDB.historyScanned = WaypathDB.historyScanned or {}
-  local seen = WaypathDB.historyScanned
+  RG.db.historyScanned = RG.db.historyScanned or {}
+  local seen = RG.db.historyScanned
   local pending = 0
   for _, id in ipairs(ids) do
     if not seen[id] then
@@ -192,7 +192,7 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
   elseif event == "QUEST_DATA_LOAD_RESULT" then
     if waiting[a1] then
       waiting[a1] = nil
-      if a2 and learnTitle(a1) then WaypathDB.historyScanned[a1] = true end
+      if a2 and learnTitle(a1) then RG.db.historyScanned[a1] = true end
       queueRefresh()
     end
   else

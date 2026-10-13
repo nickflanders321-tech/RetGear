@@ -392,4 +392,4 @@ SlashCmdList.WAYPATH = function(msg)
 end
 -- Logging out prints a short summary next time you look at chat.
 local lo = CreateFrame("Frame"); lo:RegisterEvent("PLAYER_LOGOUT")
-lo:SetScript("OnEvent", function() if RG.IsAlt and RG.IsAlt() then return end; WaypathDB.lastSession = { xp = session.xp, quests = session.quests, ore = session.ore, t = time() - session.start } end)
+lo:SetScript("OnEvent", function() if RG.IsAlt and RG.IsAlt() then return end; RG.db.lastSession = { xp = session.xp, quests = session.quests, ore = session.ore, t = time() - session.start } end)

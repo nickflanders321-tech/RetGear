@@ -39,7 +39,7 @@ local function BAR_H() return sz(44) end
 local frame, scroll, content, tabs, footer, sectionTitle
 local rows = {}
 local state = { tab = "route", near = true, open = {} }
-local function saveTab() if WaypathDB then WaypathDB.lastTab = state.tab end end
+local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
@@ -1814,7 +1814,7 @@ local function renderSettings()
     n = n + 1
     local on = RG.Opt(o.key)
     setStep(getRow(n), "", o.label, on, function()
-      WaypathDB[o.key] = not on
+      RG.db[o.key] = not on
       if o.key == "minimap" and RG.MinimapButton then RG.MinimapButton() end
       if RG.RefreshTracker then RG.RefreshTracker() end
       RG.RefreshUI()
@@ -1823,19 +1823,45 @@ local function renderSettings()
     rows[n].tip = on and "On. Click to turn off." or "Off. Click to turn on."
    end
   end
-  n = n + 1; setHeader(getRow(n), "Tools")
   local function action(label, sub, fn)
     n = n + 1
     setItem(getRow(n), nil, nil, label, sub, GOLD .. "Run|r", "", "gold")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gear_01")
     rows[n].onClick = fn
   end
+  -- this character's profile
+  local mode = RG.CharMode and RG.CharMode()
+  local isMain = RG.IsMain and RG.IsMain()
+  n = n + 1; setHeader(getRow(n), "This character  ·  " .. (UnitName("player") or "") .. "  ·  " .. (mode == "alt" and "bank alt" or "own profile") .. (isMain and ", your main" or ""))
+  if mode == "alt" then
+    action("Give this character its own profile", "Turns off bank alt mode: the full leveling guide with this character's own settings and progress (reloads)", function() RG.SetCharMode("profile"); ReloadUI() end)
+  else
+    action("Make this character a bank alt", "No leveling guide here: a shopping list of quest items to buy and mail to " .. (RG.MainName() or "your main") .. ", plus the vendor and mailbox helpers (reloads)", function() RG.SetCharMode("alt"); ReloadUI() end)
+    if not isMain then action("Make this my main", "Your bank alts buy and mail for this character", function() RG.db.main = RG.PlayerKey(); RG.Print(UnitName("player") .. " is now your main."); RG.RefreshUI() end) end
+  end
+  action("Start this character over", "A brand new, empty profile for this character: settings back to defaults, route, quests and plans cleared (reloads; asks first)", function()
+    if StaticPopupDialogs and StaticPopup_Show then
+      StaticPopupDialogs.WAYPATH_RESET_PROFILE = { text = "Start " .. (UnitName("player") or "this character") .. " over with a brand new Waypath+ profile?\n\nIts settings, ticked steps, quests and plans are cleared. Other characters and Auction House prices aren't touched.",
+        button1 = YES or "Yes", button2 = NO or "No", OnAccept = function() RG.ResetProfile() end, timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3 }
+      StaticPopup_Show("WAYPATH_RESET_PROFILE")
+    end
+  end)
+  local others = {}
+  for _, c in ipairs(RG.KnownChars and RG.KnownChars() or {}) do
+    if c.key ~= RG.PlayerKey() then others[#others + 1] = c.key:match("^(.-)%-") .. (c.mode == "alt" and " (bank alt)" or "") .. ((RG.db.main == c.key) and " (main)" or "") end
+  end
+  if #others > 0 then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GREY .. "Your other characters|r", table.concat(others, ", "), "", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_GroupNeedMore")
+  end
+  n = n + 1; setHeader(getRow(n), "Actions")
   action("Run setup again", "Help level, professions, automation and extras, in six short pages", function() if RG.ShowSetup then RG.ShowSetup() end end)
   action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
-  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() WaypathDB.trackerPos = nil; WaypathDB.trackerScale = nil; WaypathDB.trackerWidth = nil; if WaypathTracker then WaypathTracker:ClearAllPoints(); WaypathTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
+  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() RG.db.trackerPos = nil; RG.db.trackerScale = nil; RG.db.trackerWidth = nil; if WaypathTracker then WaypathTracker:ClearAllPoints(); WaypathTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
   action("Abandon grey quests", "Drops quests too low to give useful XP (asks first)", function() if RG.AbandonGreyQuests then RG.AbandonGreyQuests() end end)
   action("Swap to 2nd spec gear / back", "Swap between your 2nd spec's set and your main gear (pick the spec on the 2nd Spec tab)", function() if RG.SwapGear then RG.SwapGear() end end)
-  action("Show Waypath+ errors", (WaypathDB.errors and #WaypathDB.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)
+  action("Show Waypath+ errors", (RG.db.errors and #RG.db.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)
   return n
 end
 
@@ -1864,7 +1890,7 @@ local FOOTERS = {
   gear  = "Click an item to see where it drops or which quest gives it  ·  scores are Attack Power equivalents (/wp weight)",
   prof  = "Double-click a place to point the arrow at it  ·  counts include your bank (open it once)  ·  opening a profession window reads its exact recipes",
   ah    = "Opening the AH refreshes out-of-date prices (a full scan when the server allows one)  ·  searching yourself pauses it  ·  /wp alert [item] 25 pings you at 25g or less",
-  settings = "Everything here is saved for your account  ·  /wp tracker shows or hides the tracker",
+  settings = "Settings are saved for this character (prices and window positions are shared)  ·  /wp tracker shows or hides the tracker",
   talents = "Talent names follow WoW Forever  ·  /wp talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
   fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so Waypath+ knows your recipes  ·  /wp fish",
@@ -1967,13 +1993,13 @@ end
 local function build()
   frame = CreateFrame("Frame", "WaypathFrame", UIParent, "BackdropTemplate")
   frame:SetSize(W, H)
-  local pos = WaypathDB and WaypathDB.windowPos
+  local pos = RG.db and RG.db.windowPos
   if pos then frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else frame:SetPoint("CENTER") end
-  if WaypathDB and WaypathDB.lastTab and TITLES[WaypathDB.lastTab] then state.tab = WaypathDB.lastTab end
+  if RG.db and RG.db.lastTab and TITLES[RG.db.lastTab] then state.tab = RG.db.lastTab end
   RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); WaypathDB.windowPos = { p, rp, x, y } end)
+  frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.windowPos = { p, rp, x, y } end)
   frame:SetScript("OnHide", saveTab)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "WaypathFrame")
