@@ -1,24 +1,29 @@
 # Gear guide generator
 
-Builds `Classes/PaladinGear.lua`: Ret paladin upgrades for every slot (two-hander, head to feet, rings,
-trinkets), levels 8-60, that an Undead paladin can actually get in WoW Forever:
+Builds `Classes/<Class>Gear.lua` for every class: leveling upgrades for every slot it uses
+(two-hander or one-handers, off-hand, ranged or wand, head to feet, rings, trinkets), levels
+5-60, that a Horde character of that class can actually get in WoW Forever:
 
-- **Quest rewards** from quests open to Undead paladins (Horde quest givers), not raid quests.
+- **Quest rewards** from quests open to that class (Horde quest givers), not raid quests.
 - **Dungeon boss drops** from 5-player dungeons (no raids, no Stockade).
 - **Horde vendors** (no PvP quartermasters) and a few named rare mobs.
 
-Stats and equip effects (Attack Power, crit, hit) come from the cMaNGOS classic database; whether
-an item exists in Forever and where it comes from comes from QuestieDB's Forever data. Each item
-is scored with Waypath+'s default Ret weights. Per slot the generator keeps the upgrade path
-(anything 5% better than everything at or below its level), plus the best quest reward and the
-best dungeon drop in each 5-level window. Caster pieces without melee stats are skipped.
+Each class's stat weights, weapon model (`2H`, `DW` dual wield, `ranged`, `caster`, `feral`),
+weapon skills and armor types come from `Classes/<Class>.lua`, the same table the add-on scores
+items with in game, so the list and the tooltips agree. Stats and equip effects (Attack Power,
+spell damage by school, crit, hit, mp5) come from the cMaNGOS classic database; whether an item
+exists in Forever and where it comes from comes from QuestieDB's merged Forever data. Per slot
+the generator keeps the upgrade path (anything 5% better than everything at or below its
+level), plus the best quest reward and the best dungeon drop in each 5-level window. Armor and
+jewelry that only carry Stamina for that class are skipped.
 
 ```sh
 git clone --depth 1 https://github.com/cmangos/classic-db.git /tmp/cdb
 zcat /tmp/cdb/Full_DB/*.sql.gz > /tmp/classic.sql
-git clone --depth 1 https://github.com/Questie/QuestieDB.git /tmp/qdb
-lua5.1 dump.lua /tmp/qdb/data/Forever /tmp/forever_gear.json
-python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb ../../Classes/PaladinGear.lua
+sh tools/qdb/export.sh /tmp/qdb
+lua5.1 tools/gear/dump.lua /tmp/qdb/src/corrections/Forever/combined /tmp/forever_gear.json
+python3 tools/gear/gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb . [Class ...]
 ```
 
-Hand-written entries in `Data.lua` (`RG.GUIDE`, e.g. your Blacksmithing crafts) take priority.
+Hand-written entries in each class's `guide` table (tips, Forever-only items, crafts) take
+priority over generated ones.

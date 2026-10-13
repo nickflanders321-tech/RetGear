@@ -4,7 +4,8 @@ An all-in-one leveling companion for World of Warcraft: Forever: your route with
 
 **What's covered so far:**
 - **Questing, for every Horde race and class:** Orc, Troll, Tauren, Undead and Skyborne each get their own starting zones (Valley of Trials and Durotar; Camp Narache and Mulgore; Deathknell, Brill and Silverpine; Zephras Isle), then the shared Horde route to 60 with travel tips from their home city. Starting-zone steps are built from WoW Forever's quest data, stop by stop, and tick themselves off. Every class sees its own class quests (including Forever's new ones, like the Forsaken paladin chain, Orc mages and Troll warlocks) on the tracker, and each dungeon lists the quests that race and class can take.
-- **Gear, talents and rotation:** written for **Retribution Paladins** so far; other classes are next.
+- **Gear, for every class:** each class has its own stat weights and gear guide (Arms Warrior, Beast Mastery Hunter, Combat Rogue, Shadow Priest, Enhancement Shaman, Frost Mage, Affliction Warlock, Feral Druid, Retribution Paladin), limited to the armor and weapons it can use. Tooltips, upgrade pop-ups, bag arrows, quest reward picks and each dungeon's "drops for you" all use it.
+- **Talents and rotation:** Retribution Paladin so far; other classes are next.
 - **Professions:** guides for **Mining, Blacksmithing, Fishing and Cooking** so far.
 
 Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`. `tools/audit` checks every race and class on each change.

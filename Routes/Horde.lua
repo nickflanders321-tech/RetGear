@@ -10,15 +10,15 @@ H.route = {
   { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon in the ruins above Undercity (take the Orgrimmar zeppelin to Tirisfal if you started in Kalimdor). Several quests, with good weapon rewards." },
   { o = 7, from = 13, to = 18, kind = "dungeon", zone = "Ragefire Chasm", hub = "Orgrimmar", notes = "Inside Orgrimmar, in the Cleft of Shadow. Undead: take the zeppelin from outside Undercity." },
   { o = 8, from = 17, to = 24, kind = "dungeon", zone = "Wailing Caverns", hub = "The Barrens", notes = "Grab the dungeon quests at the Crossroads first." },
-  { o = 9, from = 18, to = 26, kind = "zone",    zone = "The Barrens", hub = "The Crossroads / Camp Taurajo", fp = "Crossroads", notes = "Lots of quests. Weapons of Choice at Camp Taurajo gives Demolition Hammer." },
+  { o = 9, from = 18, to = 26, kind = "zone",    zone = "The Barrens", hub = "The Crossroads / Camp Taurajo", fp = "Crossroads", notes = "Lots of quests, with good weapon rewards at Camp Taurajo." },
   { o = 11, from = 22, to = 30, kind = "dungeon", zone = "Shadowfang Keep", hub = "Silverpine Forest", notes = "In Silverpine Forest, south of The Sepulcher. From Kalimdor, take the Orgrimmar zeppelin to Tirisfal." },
   { o = 12, from = 22, to = 27, kind = "zone",    zone = "Stonetalon Mountains", hub = "Sun Rock Retreat", fp = "Sun Rock Retreat", notes = "Miners: Tin and a little Iron." },
-  { o = 13, from = 24, to = 32, kind = "dungeon", zone = "Blackfathom Deeps", hub = "Ashenvale", notes = "Aku'mai drops Strike of the Hydra." },
+  { o = 13, from = 24, to = 32, kind = "dungeon", zone = "Blackfathom Deeps", hub = "Ashenvale", notes = "On the Ashenvale coast, by Zoram'gar Outpost." },
   { o = 14, from = 25, to = 30, kind = "zone",    zone = "Hillsbrad Foothills", hub = "Tarren Mill", fp = "Tarren Mill", notes = "Good mix with Ashenvale. Miners: Tin and Silver." },
   { o = 15, from = 25, to = 30, kind = "zone",    zone = "Ashenvale", hub = "Splintertree Post", fp = "Splintertree Post", notes = "" },
   { o = 15.5, from = 26, to = 31, kind = "dungeon", zone = "Excavation Site", hub = "Wetlands", notes = "New Forever dungeon in the Wetlands (26-31)." },
   { o = 15.7, from = 28, to = 33, kind = "dungeon", zone = "City of Dalaran", hub = "Alterac Mountains / Hillsbrad", notes = "New Forever dungeon: the sealed city of Dalaran (28-33). Tarren Mill is the closest Horde town." },
-  { o = 16, from = 29, to = 38, kind = "dungeon", zone = "Razorfen Kraul", hub = "The Barrens", notes = "Overlord Ramtusk drops Corpsemaker." },
+  { o = 16, from = 29, to = 38, kind = "dungeon", zone = "Razorfen Kraul", hub = "The Barrens", notes = "South of Camp Taurajo in The Barrens." },
   { o = 16.5, from = 29, to = 38, kind = "dungeon", zone = "Gnomeregan", hub = "Dun Morogh", notes = "Deep in Alliance land (Dun Morogh): most Horde groups skip it unless a quest sends them." },
   { o = 17, from = 30, to = 35, kind = "zone",    zone = "Thousand Needles", hub = "Freewind Post", fp = "Freewind Post", notes = "Miners: Iron starts showing up." },
   { o = 18, from = 33, to = 40, kind = "zone",    zone = "Arathi Highlands", hub = "Hammerfall", fp = "Hammerfall", notes = "Its quests are 34-42 in Forever, so come at 33, not 30. Miners: great Iron and Gold." },
@@ -29,22 +29,22 @@ H.route = {
   { o = 22.5, from = 37, to = 46, kind = "dungeon", zone = "Razorfen Downs", hub = "The Barrens / Thousand Needles", notes = "South end of The Barrens, at the top of the Thousand Needles road." },
   { o = 23, from = 36, to = 44, kind = "zone",    zone = "Riverglades", hub = "Powderfuse Port", notes = "New Forever zone (33-44): take the boat from Tanaris to Powderfuse Port. Quest data for it isn't out yet, so there are no steps here until it is." },
   { o = 24, from = 40, to = 45, kind = "zone",    zone = "Badlands", hub = "Kargath", fp = "Kargath", notes = "Uldaman is here. Miners: Mithril." },
-  { o = 25, from = 41, to = 51, kind = "dungeon", zone = "Uldaman", hub = "Badlands", notes = "Archaedas drops Stoneslayer." },
-  { o = 26, from = 40, to = 45, kind = "zone",    zone = "Swamp of Sorrows", hub = "Stonard", fp = "Stonard", notes = "Threat From the Sea gives Tok'kar's Murloc Chopper." },
+  { o = 25, from = 41, to = 51, kind = "dungeon", zone = "Uldaman", hub = "Badlands", notes = "In the north of the Badlands, near Kargath." },
+  { o = 26, from = 40, to = 45, kind = "zone",    zone = "Swamp of Sorrows", hub = "Stonard", fp = "Stonard", notes = "Stonard quests, and Threat From the Sea for a weapon reward." },
   { o = 27, from = 43, to = 48, kind = "zone",    zone = "Tanaris", hub = "Gadgetzan", fp = "Gadgetzan", notes = "Zul'Farrak is here. Miners: Mithril and Truesilver." },
   { o = 28, from = 44, to = 54, kind = "dungeon", zone = "Zul'Farrak", hub = "Tanaris", notes = "" },
-  { o = 29, from = 44, to = 50, kind = "zone",    zone = "Feralas", hub = "Camp Mojache", fp = "Camp Mojache", notes = "Weapons of Spirit gives Will of the Mountain Giant." },
-  { o = 30, from = 46, to = 55, kind = "dungeon", zone = "Maraudon", hub = "Desolace", notes = "Princess Theradras drops her Scepter and Blackstone Ring." },
+  { o = 29, from = 44, to = 50, kind = "zone",    zone = "Feralas", hub = "Camp Mojache", fp = "Camp Mojache", notes = "Camp Mojache quests; Weapons of Spirit has weapon rewards." },
+  { o = 30, from = 46, to = 55, kind = "dungeon", zone = "Maraudon", hub = "Desolace", notes = "In Desolace, west of Shadowprey Village's road. Long dungeon: do the wings in two runs." },
   { o = 31, from = 47, to = 52, kind = "zone",    zone = "The Hinterlands", hub = "Revantusk Village", fp = "Revantusk", notes = "Miners: Mithril and Truesilver." },
   { o = 32, from = 48, to = 54, kind = "zone",    zone = "Searing Gorge", hub = "Thorium Point", fp = "Thorium Point", notes = "Miners: Mithril, Truesilver and early Thorium." },
   { o = 33, from = 50, to = 55, kind = "zone",    zone = "Un'Goro Crater", hub = "Marshal's Refuge", fp = "Marshal's Refuge", notes = "Miners: Thorium everywhere." },
   { o = 33.5, from = 50, to = 56, kind = "dungeon", zone = "The Temple of Atal'Hakkar", hub = "Swamp of Sorrows", notes = "The Sunken Temple, in the Swamp of Sorrows. Stonard is the closest Horde town." },
-  { o = 34, from = 52, to = 60, kind = "dungeon", zone = "Blackrock Depths", hub = "Searing Gorge / Burning Steppes", notes = "Hand of Justice and Savage Gladiator Chain." },
+  { o = 34, from = 52, to = 60, kind = "dungeon", zone = "Blackrock Depths", hub = "Searing Gorge / Burning Steppes", notes = "Huge dungeon under Blackrock Mountain: plan two or three runs." },
   { o = 35, from = 51, to = 55, kind = "zone",    zone = "Felwood", hub = "Bloodvenom Post", fp = "Bloodvenom", notes = "" },
   { o = 36, from = 53, to = 58, kind = "zone",    zone = "Burning Steppes", hub = "Flame Crest", fp = "Flame Crest", notes = "Miners: Thorium." },
   { o = 37, from = 55, to = 60, kind = "zone",    zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Miners: rich Thorium." },
   { o = 38, from = 55, to = 60, kind = "zone",    zone = "Western & Eastern Plaguelands", hub = "The Bulwark / Light's Hope", fp = "Light's Hope", notes = "Tirion Fordring's chain ends in Mark of Fordring." },
-  { o = 39, from = 56, to = 60, kind = "dungeon", zone = "Stratholme, Scholomance, Dire Maul, LBRS/UBRS", hub = "Level 58-60", notes = "Pre-raid gear: Rivendare's Runeblade, Treant's Bane, Truestrike Shoulders." },
+  { o = 39, from = 56, to = 60, kind = "dungeon", zone = "Stratholme, Scholomance, Dire Maul, LBRS/UBRS", hub = "Level 58-60", notes = "The level 58-60 dungeons for pre-raid gear: the gear guide's pre-raid checklist says which ones drop yours." },
 }
 
 -- Dungeon quests to collect before each run (Horde), and the level to head
@@ -150,9 +150,9 @@ H.steps = {
     "Pick up the four quests first (listed below): Deathguard Kristof in the tents between Brill and Undercity, Morbin Lightbane and Theodore Griffs in Undercity, Tabitha Heartweaver at The Sepulcher.",
     "The entrance is in the surface ruins above Undercity: go through the front gate, and the portal is up a short flight of stairs before the keep.",
     "Bosses: Witherfang, The Baron, Viktor the Vile (light the fireplace to start him), The Abandoned, Bjork and Rath'mael. The Lordaeron Captain on the west side is Horde-only.",
-    "Loot the Abominable Head from The Baron (about 13% drop): it starts Unending Torment, whose reward can be the Monstrous Cleaver two-hander.",
+    "Paladins: Loot the Abominable Head from The Baron (about 13% drop): it starts Unending Torment, whose reward can be the Monstrous Cleaver two-hander.",
     "Light's Justice needs 25 Intact Limbs, which only undead drop, so don't skip the undead packs.",
-    "The Wrath of Rath'mael rewards the Forsaken Greataxe, a two-hander. Run out of the dungeon when you're done.",
+    "Finish The Wrath of Rath'mael at the last boss, then run out of the dungeon rather than hearthing.",
   },
   ["Ragefire Chasm|13"] = {
     "Pick up the quests listed below before you go.",
@@ -186,7 +186,7 @@ H.steps = {
   ["Blackfathom Deeps|24"] = {
     "Grab the quests at Zoram'gar Outpost on the Ashenvale coast and in Thunder Bluff (listed below).",
     "The entrance is in the ruins on the Zoram Strand, on Ashenvale's west coast.",
-    "Aku'mai at the end drops Strike of the Hydra.",
+    "Paladins: Aku'mai at the end drops Strike of the Hydra.",
     "Paladins: take Olric Frostvale's quest in Ashenvale first, then collect the Purified Kor Gem here for Wolf's Bane.",
   },
   ["Hillsbrad Foothills|25"] = {
@@ -202,7 +202,7 @@ H.steps = {
   ["Razorfen Kraul|29"] = {
     "Pick up the quests in Undercity and Thunder Bluff first (listed below).",
     "The entrance is at the far south of The Barrens, past Camp Taurajo.",
-    "Overlord Ramtusk drops Corpsemaker, a great two-hander at 29.",
+    "Paladins: Overlord Ramtusk drops Corpsemaker, a great two-hander at 29.",
   },
   ["Thousand Needles|30"] = {
     "Go south from Camp Taurajo down the Great Lift into Thousand Needles.",
@@ -223,7 +223,7 @@ H.steps = {
     "Pick up the three quests in Undercity first (listed below).",
     "Ride north from Brill to the north-east corner of Tirisfal, past the Scarlet Watch Post.",
     "Run the wings in order: Graveyard (~33), Library (~35), Armory (~37), Cathedral (~39).",
-    "Herod in the Armory drops Ravager, and Mograine in the Cathedral drops Mograine's Might.",
+    "Paladins: Herod in the Armory drops Ravager, and Mograine in the Cathedral drops Mograine's Might.",
   },
   ["Stranglethorn Vale|32"] = {
     "Take the zeppelin from outside Undercity to Grom'gol and grab the flight path.",
@@ -244,7 +244,7 @@ H.steps = {
   ["Uldaman|41"] = {
     "Pick up the quests in Kargath, Dustwallow and Orgrimmar first (listed below).",
     "The entrance is in the north of the Badlands.",
-    "Archaedas at the end drops Stoneslayer.",
+    "Paladins: Archaedas at the end drops Stoneslayer.",
   },
   ["Swamp of Sorrows|40"] = {
     "Go to Stonard in the middle of the swamp and grab the flight path.",
@@ -269,7 +269,7 @@ H.steps = {
   ["Maraudon|46"] = {
     "Pick up the quests at Shadowprey Village, outside Maraudon and in Orgrimmar first (listed below).",
     "The entrance is in central Desolace.",
-    "Princess Theradras drops her Scepter and the Blackstone Ring.",
+    "Paladins: Princess Theradras drops her Scepter and the Blackstone Ring.",
   },
   ["The Hinterlands|47"] = {
     "Go to Revantusk Village on the east coast and grab the flight path.",
@@ -289,7 +289,7 @@ H.steps = {
   ["Blackrock Depths|52"] = {
     "Pick up the quests in Kargath and Flame Crest first (listed below).",
     "Blackrock Mountain sits between Searing Gorge and Burning Steppes.",
-    "Look out for Hand of Justice and the Savage Gladiator Chain from Gorosh.",
+    "Paladins: Look out for Hand of Justice and the Savage Gladiator Chain from Gorosh.",
   },
   ["Felwood|51"] = {
     "Go to Bloodvenom Post and grab the flight path.",

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.37.0 (gear for every class)
+- **Every class gets its own gear guide**, built from the item database and WoW Forever's quest and dungeon data with that class's own stat weights: Arms Warrior, Beast Mastery Hunter, Combat Rogue, Shadow Priest, Enhancement Shaman, Frost Mage, Affliction Warlock and Feral Druid (Retribution Paladin as before). Each list only has armor and weapons the class can use, and covers every slot it uses: two-handers or one-handers, off-hands, ranged weapons and wands, head to feet, rings and trinkets.
+- **Scores follow your class:** item tooltips ("Arms score", "Frost score", ...), the Equip pop-up, bag arrows, quest reward picks and the My gear tab all score for your class, and never suggest plate before 40 or a weapon you can't use. Spell damage counts by school (Frost for a Frost mage, Shadow for warlocks and priests), and wands, bows and guns count for the classes that rely on them.
+- **Stat weights are kept per class** (`/wp weight` changes your class's only). Your paladin's weights carry over.
+- **Dungeons show what they drop for you:** the tracker and Route tab list each dungeon's best upgrades from your own gear guide, instead of Ret-only item names. Paladin-specific drop tips are now marked "Paladins:".
+- No weapon stone reminder for casters and druids.
+- `tools/audit` now checks every class's gear guide too (an upgrade for every slot at every stage of leveling).
+
 ## v0.36.0 (every Horde race and class: questing)
 - **Starting zones for every Horde race:** Orc and Troll (Valley of Trials, Durotar, then The Barrens), Tauren (Camp Narache, Mulgore, then The Barrens), Undead (Deathknell, Brill, Silverpine) and Skyborne (Zephras Isle, then Mulgore and The Barrens). Each has its own travel tips from its home city and does Ragefire Chasm and Wailing Caverns before the far-off dungeons.
 - **Steps built from WoW Forever's quest data:** each step is one stop ("At Razor Hill: ..."), visiting the busiest quest hub for your level first and catching up anything that falls behind. Steps tick themselves off once all their quests are turned in, and each has a waypoint for the arrow. Undead now use these too (the Tirisfal and Silverpine steps changed).

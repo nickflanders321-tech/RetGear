@@ -51,9 +51,20 @@ local function InitDB()
       end
     end
   end
-  db.weights = db.weights or {}
+  -- stat weights and hit cap are kept per class (a mage's weights aren't a paladin's);
+  -- the weights saved before this belonged to the paladin
+  db.weightsByClass, db.hitCapByClass = db.weightsByClass or {}, db.hitCapByClass or {}
+  if not db.weightsPerClass then
+    if db.weights and next(db.weights) then db.weightsByClass.PALADIN = db.weights end
+    if db.hitCap then db.hitCapByClass.PALADIN = db.hitCap end
+    db.weightsPerClass = true
+  end
+  local cls = RG.PLAYER_CLASS or "PALADIN"
+  db.weightsByClass[cls] = db.weightsByClass[cls] or {}
+  db.weights = db.weightsByClass[cls]
   for k, v in pairs(RG.DEFAULT_WEIGHTS) do if db.weights[k] == nil then db.weights[k] = v end end
-  if db.hitCap == nil then db.hitCap = RG.DEFAULT_HIT_CAP end
+  if db.hitCapByClass[cls] == nil then db.hitCapByClass[cls] = RG.DEFAULT_HIT_CAP end
+  db.hitCap = db.hitCapByClass[cls]
   if db.talentHit == nil then db.talentHit = 0 end
   if db.tooltip == nil then db.tooltip = true end
   if db.levelAlerts == nil then db.levelAlerts = true end
@@ -170,8 +181,11 @@ local STAT_KEYS = {
   ITEM_MOD_VERSATILITY = "VERS_RATING", ITEM_MOD_SPELL_POWER_SHORT = "SP",
   ITEM_MOD_SPELL_DAMAGE_DONE_SHORT = "SP",
   ITEM_MOD_SPELL_HEALING_DONE_SHORT = "HEAL", ITEM_MOD_MANA_REGENERATION_SHORT = "MP5",
-  ITEM_MOD_POWER_REGEN0_SHORT = "MP5",
+  ITEM_MOD_POWER_REGEN0_SHORT = "MP5", ITEM_MOD_RANGED_ATTACK_POWER_SHORT = "RAP",
+  ITEM_MOD_CRIT_SPELL_RATING_SHORT = "CRIT_RATING", ITEM_MOD_HIT_SPELL_RATING_SHORT = "HIT_RATING",
 }
+-- Spell schools in "Increases damage done by Shadow spells and effects by up to X."
+local SCHOOL = { holy = "SP_HOLY", fire = "SP_FIRE", nature = "SP_NATURE", frost = "SP_FROST", shadow = "SP_SHADOW", arcane = "SP_ARCANE" }
 
 -- Text patterns for "Equip:" effects that many Classic-era items use.
 local LINE_PATTERNS = {
@@ -180,19 +194,23 @@ local LINE_PATTERNS = {
   { "^equip: %+(%d+) attack power%.?$", "AP" },
   { "increases attack power by (%d+)", "AP" },
   { "increases damage and healing done by magical spells and effects by up to (%d+)", "SP" },
-  { "increases damage done by holy spells and effects by up to (%d+)", "SP" },
+  { "increases ranged attack power by (%d+)", "RAP" },
+  -- WoW Forever merges hit and crit: spell hit and crit count as hit and crit for everyone
+  { "improves your chance to hit with spells by (%d+)%%", "HIT" },
   -- healing (used by the Healing tab's Holy score)
   { "increases damage and healing done by magical spells and effects by up to (%d+)", "HEAL" },
   { "increases healing done by spells and effects by up to (%d+)", "HEAL" },
   { "restores (%d+) mana per 5 sec", "MP5" },
   { "improves your chance to get a critical strike with spells by (%d+)%%", "SCRIT" },
+  { "improves your chance to get a critical strike with spells by (%d+)%%", "CRIT" },
 }
 
 local cache = {}
 function RG.GetStats(link)
   if not link then return nil end
   if cache[link] then return cache[link] end
-  local s = { STR = 0, AGI = 0, STA = 0, INT = 0, SPI = 0, AP = 0, CRIT = 0, HIT = 0, SP = 0,
+  local s = { STR = 0, AGI = 0, STA = 0, INT = 0, SPI = 0, AP = 0, RAP = 0, CRIT = 0, HIT = 0, SP = 0,
+              SP_HOLY = 0, SP_FIRE = 0, SP_NATURE = 0, SP_FROST = 0, SP_SHADOW = 0, SP_ARCANE = 0,
               CRIT_RATING = 0, HIT_RATING = 0, HASTE_RATING = 0, MASTERY_RATING = 0, VERS_RATING = 0,
               DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0 }
   local raw = GetItemStats and GetItemStats(link)
@@ -219,6 +237,8 @@ function RG.GetStats(link)
         local dps = t:match("^%(([%d%.]+) damage per second%)")
         if dps and s.DPS == 0 then s.DPS = tonumber(dps) end
         if t:find("^equip:") then
+          local school, n = t:match("increases damage done by (%a+) spells and effects by up to (%d+)")
+          if school and SCHOOL[school] and not equipSeen[t] then s[SCHOOL[school]] = s[SCHOOL[school]] + tonumber(n); equipSeen[t] = true end
           for _, p in ipairs(LINE_PATTERNS) do
             local n = t:match(p[1])
             -- Ignore situational bonuses like "when fighting Beasts", and don't
@@ -240,26 +260,61 @@ end
 -- ---------------------------------------------------------------------------
 -- Scoring
 -- ---------------------------------------------------------------------------
-local function isTwoHander(link)
-  return RG.EquipLoc(link) == "INVTYPE_2HWEAPON"
+local RANGED_LOC = { INVTYPE_RANGED = true, INVTYPE_RANGEDRIGHT = true, INVTYPE_THROWN = true }
+-- How much of a weapon's damage counts, by the class's weapon model (Classes/<Class>.lua):
+-- 2H = one big two-hander, DW = two one-handers, caster/feral = weapon damage doesn't count,
+-- ranged = the ranged weapon is the big one (melee weapons only count a little).
+local MULT_2H = { ["2H"] = 1, DW = 0.75, ranged = 1, caster = 0, feral = 0 }
+local MULT_1H = { ["2H"] = 0.55, DW = 1, ranged = 0.55, caster = 0, feral = 0 }
+
+-- Can this character wear or wield it? (armor type, weapon skill, shields, relics)
+function RG.CanUse(link)
+  local C = RG.ActiveClass
+  if not (C and C.weapons) or not GetItemInfoInstant then return true end
+  local _, _, _, loc, _, classID, subID = GetItemInfoInstant(link)
+  if not classID then return true end
+  if classID == 2 then
+    if subID == 14 or subID == 20 then return true end   -- miscellaneous, fishing poles
+    if not C._weaponSet then C._weaponSet = {}; for _, w in ipairs(C.weapons) do C._weaponSet[w] = true end end
+    return C._weaponSet[subID] or false
+  elseif classID == 4 then
+    if subID == 0 or loc == "INVTYPE_CLOAK" then return true end
+    if subID == 6 then return C.shield and true or false end
+    if subID >= 7 and subID <= 9 then return C.relic == subID end
+    local from = C.armor and C.armor[subID]
+    return from ~= nil and (UnitLevel("player") or 1) >= from
+  end
+  return true
 end
 
--- Score an item. hitRoom = how much hit % still counts before the cap
--- (nil = all of it).
-function RG.Score(link, hitRoom)
+-- Score an item. hitRoom = how much hit % still counts before the cap (nil = all
+-- of it); slot = the inventory slot it would go in (17 = off-hand).
+function RG.Score(link, hitRoom, slot)
   local s = RG.GetStats(link)
   if not s then return 0 end
+  if not RG.CanUse(link) then return 0 end
   local w = RG.db.weights
   local hit = s.HIT
   if hitRoom then hit = math.max(0, math.min(hit, hitRoom)) end
-  local score = s.STR * w.STR + s.AGI * w.AGI + s.AP * w.AP + s.CRIT * w.CRIT + hit * w.HIT
-    + s.STA * w.STA + s.INT * w.INT + s.SPI * w.SPI + s.SP * w.SP
-    + s.CRIT_RATING * w.CRIT_RATING + s.HIT_RATING * w.HIT_RATING + s.HASTE_RATING * w.HASTE_RATING
-    + s.MASTERY_RATING * w.MASTERY_RATING + s.VERS_RATING * w.VERS_RATING
+  local score = hit * (w.HIT or 0)
+  for k, v in pairs(s) do
+    if k ~= "HIT" and k ~= "DPS" and k ~= "SPEED" and v ~= 0 and w[k] then score = score + v * w[k] end
+  end
   if s.DPS > 0 then
-    local mult = isTwoHander(link) and 1 or 0.55  -- a one-hander alone is a big step down for Ret
-    score = score + s.DPS * w.WEAPON_DPS * mult
-    if s.SPEED > 3.0 and isTwoHander(link) then score = score + (s.SPEED - 3.0) * 10 * w.SLOW_BONUS end
+    local loc = RG.EquipLoc(link)
+    local model = RG.WEAPON_MODEL or "2H"
+    if RANGED_LOC[loc] then
+      score = score + s.DPS * (w.RANGED_DPS or 0)
+    else
+      local twoH = loc == "INVTYPE_2HWEAPON"
+      local mult
+      if twoH then mult = MULT_2H[model] or 1
+      elseif slot == 17 or loc == "INVTYPE_WEAPONOFFHAND" then mult = model == "DW" and 0.5 or 0
+      else mult = MULT_1H[model] or 1 end
+      score = score + s.DPS * (w.WEAPON_DPS or 0) * mult
+      if twoH and model == "2H" and s.SPEED > 3.0 then score = score + (s.SPEED - 3.0) * 10 * (w.SLOW_BONUS or 0) end
+      if model == "DW" and not twoH and slot ~= 17 and s.SPEED > 2.6 then score = score + (s.SPEED - 2.6) * 10 * (w.SLOW_BONUS or 0) end
+    end
   end
   return score
 end
@@ -279,24 +334,25 @@ function RG.Compare(link)
   local loc = RG.EquipLoc(link)
   local slots = loc and RG.EQUIP_SLOTS[loc]
   if not slots then return nil end
+  if not RG.CanUse(link) then return nil end   -- wrong armor type or weapon skill
   local cap = RG.db.hitCap
   local curHit = RG.CurrentHit()
   local best
   for _, slot in ipairs(slots) do
     local old = GetInventoryItemLink("player", slot)
     local oldScore, oldHit = 0, 0
-    if old then oldHit = RG.GetStats(old).HIT; oldScore = RG.Score(old) end
+    if old then oldHit = RG.GetStats(old).HIT; oldScore = RG.Score(old, nil, slot) end
     -- Two-hander replaces main hand and off hand together.
     if loc == "INVTYPE_2HWEAPON" then
       local off = GetInventoryItemLink("player", 17)
-      if off then oldScore = oldScore + RG.Score(off); oldHit = oldHit + RG.GetStats(off).HIT end
+      if off then oldScore = oldScore + RG.Score(off, nil, 17); oldHit = oldHit + RG.GetStats(off).HIT end
     end
     local hitWithout = curHit - oldHit
-    local newScore = RG.Score(link, math.max(0, cap - hitWithout))
+    local newScore = RG.Score(link, math.max(0, cap - hitWithout), slot)
     -- Count the old item's hit only up to the cap too.
     if old and oldHit > 0 then
       local capped = math.max(0, math.min(oldHit, cap - hitWithout))
-      oldScore = oldScore - (oldHit - capped) * RG.db.weights.HIT
+      oldScore = oldScore - (oldHit - capped) * (RG.db.weights.HIT or 0)
     end
     local delta = newScore - oldScore
     if not best or delta > best.delta then best = { delta = delta, slot = slot, new = newScore, old = oldScore } end
@@ -359,6 +415,25 @@ function RG.GuideDelta(g)
   local _, link = GetItemInfo(g.id)
   if not link then RG.RequestItem(g.id); return nil end
   return (RG.Compare(link))
+end
+
+-- The best upgrades for you that drop in a dungeon (from your class's gear guide).
+-- routeZone can be a combined route name ("Stratholme, Scholomance, ..., LBRS/UBRS").
+function RG.DungeonDrops(routeZone, max)
+  local out = {}
+  for _, g in ipairs(RG.GUIDE or {}) do
+    if g.id and g.how == "Dungeon" and g.zone and g.zone ~= "" and not RG.OwnState(g.id) then
+      local here = routeZone:find(g.zone, 1, true) or g.zone:find(routeZone, 1, true)
+        or (g.zone:find("Blackrock Spire", 1, true) and routeZone:find("BRS", 1, true))
+      if here then
+        local d = RG.GuideDelta(g)
+        if d and d > 0.5 then out[#out + 1] = { g = g, d = d } end
+      end
+    end
+  end
+  table.sort(out, function(a, b) return a.d > b.d end)
+  for i = #out, (max or 3) + 1, -1 do out[i] = nil end
+  return out
 end
 
 function RG.OwnState(id)
@@ -437,7 +512,8 @@ f:SetScript("OnEvent", function(_, event, arg1)
       return
     end
     local cname = UnitClass("player") or "your class"
-    if not RG.ClassSupported then RG.Print("Loaded. " .. cname .. " talents and gear aren't in yet: the route, quests, arrow, travel and professions all work, and item scores use a general melee guide for now.")
+    if not RG.ClassSupported then RG.Print("Loaded. " .. cname .. " isn't set up yet: the route, quests, arrow, travel and professions all work, and item scores use a general melee guide for now.")
+    elseif not RG.ClassHasTalents then RG.Print("Loaded. " .. cname .. " gear scores and the gear guide are ready; talent builds come in a later update.")
     elseif RG.PLAYER_FACTION == "Alliance" then RG.Print("Loaded. The leveling route is Horde-only for now; Alliance routes are coming. Quest tracking, the arrow, bags and gold all work.")
     elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it picks up from level 12, which is the same for every Horde race.") end
   elseif RG.IsAlt() then
@@ -522,9 +598,9 @@ SlashCmdList.WAYPATH = function(msg)
       RG.Print("Change one with /wp weight STR 2.5")
     end
   elseif cmd == "reset" then
-    RG.db.weights = {}; InitDB(); wipe(cache); RG.Print("Weights reset to the defaults.")
+    RG.db.weightsByClass[RG.PLAYER_CLASS or "PALADIN"] = {}; InitDB(); wipe(cache); RG.Print("Weights reset to the defaults.")
   elseif cmd == "hitcap" and tonumber(rest) then
-    RG.db.hitCap = tonumber(rest); RG.Print("Hit cap set to " .. rest .. "%.")
+    RG.db.hitCap = tonumber(rest); RG.db.hitCapByClass[RG.PLAYER_CLASS or "PALADIN"] = RG.db.hitCap; RG.Print("Hit cap set to " .. rest .. "%.")
   elseif cmd == "talenthit" and tonumber(rest) then
     RG.db.talentHit = tonumber(rest); RG.Print("Hit from talents set to " .. rest .. "%.")
   elseif cmd == "tooltip" then

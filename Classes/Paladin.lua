@@ -21,6 +21,7 @@ P.weights = {
   INT        = 0.15,  -- Intellect (mana for seals and judgements)
   SPI        = 0.05,
   SP         = 0.3,   -- spell damage / healing ("damage and healing done by magical spells")
+  SP_HOLY    = 0.3,   -- Holy spell damage only (Exorcism, Consecration, Holy Strike)
   WEAPON_DPS = 14,    -- per point of two-hand weapon DPS
   SLOW_BONUS = 4,     -- per 0.1 sec of weapon speed above 3.0 (slow 2H swings hit harder)
   -- Modern rating stats, in case WoW Forever items use ratings instead of %:
@@ -33,6 +34,18 @@ P.weights = {
 
 -- Hit chance needed to never miss a boss three levels above you.
 P.hitCap = 9
+
+-- What the class can wear and wield (item subclass IDs), and how its weapons are
+-- scored: "2H" = one big two-hander (a one-hander counts for 55%).
+-- Weapons: 0 1H axe, 1 2H axe, 2 bow, 3 gun, 4 1H mace, 5 2H mace, 6 polearm, 7 1H sword,
+-- 8 2H sword, 10 staff, 13 fist, 15 dagger, 16 thrown, 18 crossbow, 19 wand.
+-- Armor: level each type can be worn from (1 cloth, 2 leather, 3 mail, 4 plate).
+P.classBit = 2
+P.model = "2H"
+P.weapons = { 0, 1, 4, 5, 7, 8 }
+P.armor = { [1] = 1, [2] = 1, [3] = 1, [4] = 40 }
+P.shield = true
+P.relic = 7   -- librams
 
 -- Leveling guide. Every item was checked against the Classic item database
 -- (wowhead.com/classic). "lvl" is the level you can use it; ~ means the item

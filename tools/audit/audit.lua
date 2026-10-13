@@ -9,7 +9,8 @@
 --   * no step or note speaks to another class ("Paladins: ..." lines are filtered per class)
 --     or assumes a profession without saying so ("Miners: ...")
 --   * class quests from the data show up for the class in the levels they exist
--- Gearing and professions are reported (not failed) until their phases land.
+-- Gearing: every class has its own gear list with an upgrade for each slot it uses at
+-- every stage of leveling. Talents and professions are reported until their phases land.
 local MARKDOWN = arg[1] == "--markdown"
 
 local COMBOS = {
@@ -131,8 +132,28 @@ for _, race in ipairs(RACE_ORDER) do
     local dq = 0
     for _, d in pairs(RG.DUNGEON_QUESTS) do dq = dq + #d.quests end
     r.dq = dq
-    -- 6. gearing / professions (report)
-    r.gear = RG.ClassSupported and (#RG.GUIDE .. " items") or "not yet"
+    -- 6. gearing: a gear list of its own, weights for its main stats, and an upgrade
+    -- for every slot it uses by each stage of leveling
+    local items, slots = 0, {}
+    for _, g in ipairs(RG.GUIDE) do
+      if g.id then items = items + 1; slots[g.slot] = slots[g.slot] or {}; table.insert(slots[g.slot], g.lvl) end
+    end
+    local model = RG.WEAPON_MODEL
+    local need = { "Head", "Shoulder", "Chest", "Hands", "Legs", "Feet", "Waist", "Wrist", "Back" }
+    need[#need + 1] = (model == "DW") and "Main Hand" or "2H"
+    if model == "ranged" or model == "caster" then need[#need + 1] = "Ranged" end
+    local gearGaps = {}
+    for _, sl in ipairs(need) do
+      for _, by in ipairs({ 20, 35, 50, 60 }) do
+        local ok = false
+        for _, l in ipairs(slots[sl] or {}) do if l <= by and l > by - 20 then ok = true break end end
+        if not ok then gearGaps[#gearGaps + 1] = sl .. "@" .. by end
+      end
+    end
+    if items < 60 then fail(combo, "gear guide has only " .. items .. " items") end
+    if not RG.ActiveClass.weights or not next(RG.ActiveClass.weights) then fail(combo, "no stat weights") end
+    if #gearGaps > 4 then fail(combo, "gear guide gaps: " .. table.concat(gearGaps, ", ")) end
+    r.gear = items .. " items" .. (#gearGaps > 0 and (" (gaps: " .. table.concat(gearGaps, " ") .. ")") or "")
     r.talents = #RG.TALENT_PRIORITY > 0 and (#RG.TALENT_PRIORITY .. "") or "not yet"
     local profs = {}
     for name in pairs(RG.PROFESSIONS) do profs[#profs + 1] = name end
@@ -160,4 +181,4 @@ if #failures > 0 then
   for _, f in ipairs(failures) do if not seen[f] then seen[f] = true; io.stderr:write("  " .. f .. "\n") end end
   os.exit(1)
 end
-io.stderr:write("\nAll " .. #rows .. " race/class combinations pass the questing checks.\n")
+io.stderr:write("\nAll " .. #rows .. " race/class combinations pass the questing and gear checks.\n")

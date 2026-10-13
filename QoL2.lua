@@ -6,7 +6,7 @@
 --   * dual-spec gear swap: offers your healing set when you switch to Holy
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
-table.insert(RG.OPTIONS, { key = "bagArrows", label = "Mark upgrades on bag icons (green arrow: Ret, light: healing set)", default = true })
+table.insert(RG.OPTIONS, { key = "bagArrows", label = "Mark upgrades on bag icons (green arrow: an upgrade for you, light: healing set)", default = true })
 table.insert(RG.OPTIONS, { key = "specSwap", label = "Offer to swap gear when I change spec (Holy / Retribution)", default = true })
 table.insert(RG.OPTIONS, { key = "quietErrors", label = "Catch Waypath+ errors quietly (see them with /wp errors)", default = true })
 

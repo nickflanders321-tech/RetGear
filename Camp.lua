@@ -98,7 +98,7 @@ function RG.CampPick()
   local w = RG.db.weights
   local opts = {}
   if (p.Blacksmithing and p.Blacksmithing.rank or 0) >= 20 then
-    opts[#opts + 1] = { name = "Sharpening Wheel", value = wheelStr(lvl) * w.STR, why = string.format("about +%d Strength", wheelStr(lvl)) }
+    opts[#opts + 1] = { name = "Sharpening Wheel", value = wheelStr(lvl) * (w.STR or 0), why = string.format("about +%d Strength", wheelStr(lvl)) }
   end
   if (p.Fishing and p.Fishing.rank or 0) >= 20 and UnitStat then
     local v, txt = 0, {}

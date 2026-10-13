@@ -145,7 +145,7 @@ local function buildPages()
   local p4 = newPage("Automation")
   local auto = {
     { "autoQuest", "Accept and turn in quests for me", "Hold Shift at a quest giver to pause. Skips grey quests and quests that cost gold." },
-    { "autoReward", "Pick the quest reward when the choice is clear", "Ret upgrade first, then best vendor value. Asks you when a Ret and a healing upgrade compete." },
+    { "autoReward", "Pick the quest reward when the choice is clear", "Your upgrade first, then best vendor value. Paladins: asks when a Ret and a healing upgrade compete." },
     { "autoArrow", "Arrow follows my next route step", "Never moves a pin you placed yourself." },
     { "sellJunk", "Sell grey junk and repair at vendors", "Anything worth more on the AH is kept, and you get a buy-back button if you sell it by mistake." },
     { "targetBar", "Quest bar and WaypathTarget macro", "Click to target the quest mobs you still need and use quest items." },

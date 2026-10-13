@@ -550,6 +550,13 @@ function RG.RefreshTracker()
         end
         if #missing > 3 then n = n + 1; y = item(n, y, GREY .. "+" .. (#missing - 3) .. " more on the Route tab|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       end
+      -- what it drops for you
+      local drops = RG.DungeonDrops and RG.DungeonDrops(dr.zone, 2) or {}
+      if #drops > 0 then
+        local parts = {}
+        for _, dd in ipairs(drops) do parts[#parts + 1] = (RG.ItemInfo(dd.g.id) or "item") .. " " .. GREEN .. string.format("+%.0f", dd.d) .. "|r" end
+        n = n + 1; y = item(n, y, GOLD .. "Drops for you:|r " .. table.concat(parts, GREY .. ", |r"), { tip = GREY .. "Upgrades from your gear guide that drop here.|r", onClick = function() if RG.ShowTab then RG.ShowTab("gear") end end })
+      end
     end
     y = y + 5
   end

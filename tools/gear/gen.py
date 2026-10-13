@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
-"""Build Classes/PaladinGear.lua: Ret paladin gear upgrades for every slot, levels 10-60.
+"""Build Classes/<Class>Gear.lua for every class: leveling gear upgrades for every slot,
+levels 5-60, scored with that class's own stat weights and limited to what it can wear
+and wield (both read from Classes/<Class>.lua, so the add-on and this list agree).
 
 Stats come from the cMaNGOS classic database (item_template + spell_template),
-sources from QuestieDB's WoW Forever data (quest rewards, dungeon boss drops,
-vendors), so only items that exist in Forever and that an Undead paladin can
-get are listed. Items are scored with Waypath+'s default Ret weights.
+sources from QuestieDB's merged WoW Forever data (quest rewards, dungeon boss drops,
+vendors), so only items that exist in Forever and that a Horde character of that class
+can get are listed.
 
 Usage:
   git clone --depth 1 https://github.com/cmangos/classic-db.git /tmp/cdb
   zcat /tmp/cdb/Full_DB/*.sql.gz > /tmp/classic.sql
-  lua5.1 dump.lua <QuestieDB>/data/Forever /tmp/forever_gear.json
-  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json <QuestieDB> ../../Classes/PaladinGear.lua
+  lua5.1 dump.lua /tmp/qdb/src/corrections/Forever/combined /tmp/forever_gear.json
+  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...]
 """
 import json, re, sys
 from collections import defaultdict
 
-sql_path, json_path, qdb_dir, out_path = sys.argv[1:5]
+sql_path, json_path, qdb_dir, addon_dir = sys.argv[1:5]
+import os, glob
+ONLY = set(sys.argv[5:])
+if addon_dir.endswith('.lua'): addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(addon_dir)))  # old usage: path to PaladinGear.lua
 
 # ---------------------------------------------------------------------------
 # SQL parsing (only the tables we need)
@@ -108,10 +113,25 @@ def zone_name(z):
     return DUNGEON.get(z) or AREA.get(z)
 
 # ---------------------------------------------------------------------------
-# Scoring (Waypath+ default Ret weights)
+# Classes: weights, weapon model and proficiencies come from Classes/<Class>.lua
 # ---------------------------------------------------------------------------
-W = dict(STR=2.2, AGI=1.0, AP=1.0, CRIT=22, HIT=25, STA=0.15, INT=0.15, SPI=0.05, SP=0.3, DPS=14, SLOW=4)
+def lua_table(src, name):
+    m = re.search(r'^\w\.%s = \{(.*?)^\}' % name, src, re.S | re.M) or re.search(r'^\w\.%s = \{(.*?)\}' % name, src, re.S | re.M)
+    return m.group(1) if m else ''
+def read_class(path):
+    src = open(path, encoding='utf-8').read()
+    tok = re.search(r'RG\.RegisterClass\("(\w+)"', src).group(1)
+    name = re.search(r'name = "([^"]+)"', src).group(1)
+    spec = re.search(r'spec = "([^"]+)"', src).group(1)
+    w = {k: float(v) for k, v in re.findall(r'^\s*(\w+)\s*=\s*(-?[\d.]+),', lua_table(src, 'weights'), re.M)}
+    model = re.search(r'\w\.model = "(\w+)"', src).group(1)
+    weapons = {int(x) for x in re.findall(r'\d+', lua_table(src, 'weapons'))}
+    armor = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', lua_table(src, 'armor'))}
+    bit = int(re.search(r'\w\.classBit = (\d+)', src).group(1))
+    return dict(tok=tok, name=name, spec=spec, w=w, model=model, weapons=weapons, armor=armor, bit=bit)
+
 STAT = {3: "AGI", 4: "STR", 5: "INT", 6: "SPI", 7: "STA"}
+SCHOOL = {2: "SP_HOLY", 4: "SP_FIRE", 8: "SP_NATURE", 16: "SP_FROST", 32: "SP_SHADOW", 64: "SP_ARCANE"}
 def stats_of(d):
     s = defaultdict(float)
     for k in range(1, 11):
@@ -125,9 +145,16 @@ def stats_of(d):
         for e in (1, 2, 3):
             aura, bp, misc = int(sp["EffectApplyAuraName%d" % e]), int(sp["EffectBasePoints%d" % e]) + 1, int(sp["EffectMiscValue%d" % e])
             if aura == 99: s["AP"] += bp
-            elif aura == 52: s["CRIT"] += bp
-            elif aura == 54: s["HIT"] += bp
-            elif aura == 13 and (misc & 2): s["SP"] += bp
+            elif aura == 124: s["RAP"] += bp
+            elif aura in (52, 57): s["CRIT"] += bp          # WoW Forever merges melee and spell crit
+            elif aura in (54, 55): s["HIT"] += bp           # ... and hit
+            elif aura == 135: s["HEAL"] += bp
+            elif aura == 85 and misc == 0: s["MP5"] += bp
+            elif aura == 13 and misc:
+                if (misc & 126) == 126: s["SP"] += bp
+                else:
+                    for bitv, key in SCHOOL.items():
+                        if misc & bitv: s[key] += bp
     return s
 
 def weapon(d):
@@ -136,39 +163,66 @@ def weapon(d):
     dmg = sum((float(d["dmg_min%d" % k]) + float(d["dmg_max%d" % k])) / 2 for k in range(1, 6))
     return dmg / delay, delay
 
-def score(d, slot):
+MULT_2H = {"2H": 1, "DW": 0.75, "ranged": 1, "caster": 0, "feral": 0}
+MULT_1H = {"2H": 0.55, "DW": 1, "ranged": 0.55, "caster": 0, "feral": 0}
+def score(d, slot, C):
+    """Same formula as RG.Score in Core.lua."""
+    W, model = C["w"], C["model"]
     s = stats_of(d)
-    v = sum(W[k] * s[k] for k in s)
-    if slot == "2H":
-        dps, speed = weapon(d)
-        v += dps * W["DPS"] + max(0, (speed - 3.0) * 10) * W["SLOW"]
-    return v, s
+    v = sum(W.get(k, 0) * s[k] for k in s)
+    stat_only = v - W.get("STA", 0) * s.get("STA", 0)
+    dps, speed = weapon(d)
+    if dps > 0:
+        if slot == "Ranged": v += dps * W.get("RANGED_DPS", 0)
+        elif slot == "2H":
+            v += dps * W.get("WEAPON_DPS", 0) * MULT_2H[model]
+            if model == "2H" and speed > 3.0: v += (speed - 3.0) * 10 * W.get("SLOW_BONUS", 0)
+        elif slot == "Off Hand": v += dps * W.get("WEAPON_DPS", 0) * (0.5 if model == "DW" else 0)
+        else:
+            v += dps * W.get("WEAPON_DPS", 0) * MULT_1H[model]
+            if model == "DW" and speed > 2.6: v += (speed - 2.6) * 10 * W.get("SLOW_BONUS", 0)
+    return v, s, stat_only
 
-INV = {1: "Head", 2: "Neck", 3: "Shoulder", 5: "Chest", 20: "Chest", 6: "Waist", 7: "Legs", 8: "Feet", 9: "Wrist",
-       10: "Hands", 11: "Ring", 12: "Trinket", 16: "Back", 17: "2H"}
-TWOH = {1, 5, 8}  # 2H axe, 2H mace, 2H sword (paladins can't use polearms or staves)
+ARMOR_INV = {1: "Head", 2: "Neck", 3: "Shoulder", 5: "Chest", 20: "Chest", 6: "Waist", 7: "Legs", 8: "Feet", 9: "Wrist",
+             10: "Hands", 11: "Ring", 12: "Trinket", 16: "Back"}
+# Which weapon slots each model gets a list for
+MODEL_SLOTS = {"2H": {"2H"}, "DW": {"Main Hand", "Off Hand"}, "ranged": {"Ranged", "2H"},
+               "caster": {"2H", "Main Hand", "Off Hand", "Ranged"}, "feral": {"2H"}}
 
-def eligible(d):
+def eligible(d, C):
     cls, sub, inv = int(d["class"]), int(d["subclass"]), int(d["InventoryType"])
-    if inv not in INV: return None
+    slots = MODEL_SLOTS[C["model"]]
+    slot = None
     if cls == 2:
-        if inv != 17 or sub not in TWOH: return None
+        if sub not in C["weapons"]: return None
+        if inv == 17: slot = "2H"
+        elif inv in (13, 21): slot = "Main Hand"
+        elif inv == 22: slot = "Off Hand"
+        elif inv in (15, 25, 26): slot = "Ranged"
+        else: return None
+        if slot not in slots: return None
     elif cls == 4:
-        if sub not in (0, 1, 2, 3, 4): return None
-        if inv == 17: return None
+        if inv == 23:   # held in off-hand
+            if "Off Hand" not in slots or C["model"] != "caster": return None
+            slot = "Off Hand"
+        elif inv in ARMOR_INV:
+            if sub in (1, 2, 3, 4) and inv != 16:
+                lvl_from = C["armor"].get(sub)
+                if lvl_from is None: return None
+                if lvl_from > 1 and int(d["RequiredLevel"]) < lvl_from: return None
+            elif sub not in (0, 1): return None
+            slot = ARMOR_INV[inv]
+        else: return None
     else:
         return None
     ac, ar = int(d["AllowableClass"]), int(d["AllowableRace"])
-    if ac not in (-1, 0) and not (ac & 2): return None
-    if ar not in (-1, 0) and not (ar & 16): return None
+    if ac not in (-1, 0) and not (ac & C["bit"]): return None
+    if ar not in (-1, 0) and not (ar & 178): return None
     if int(d["Quality"]) < 2 or int(d["RandomProperty"]) != 0 or int(d["requiredhonorrank"]) != 0: return None
     if int(d["RequiredReputationFaction"]) != 0: return None
-    return INV[inv]
+    return slot
 
-# ---------------------------------------------------------------------------
-# Sources (Forever data)
-# ---------------------------------------------------------------------------
-RAID_ZONES = {2717, 2677, 2159, 1977, 3429, 3428, 3456, 19, 2437}
+RAID_ZONES = {2717, 2677, 2159, 1977, 3429, 3428, 3456, 19}  # MC, BWL, Onyxia, ZG, AQ, Naxx
 def givers_of(q):
     st = q.get("start") or []
     if isinstance(st, dict): return L(st.get("1")), L(st.get("3"))
@@ -184,13 +238,15 @@ def raid_item(iid):
 
 # quests that need a raid boss's drop to start or finish
 RAID_QUESTS = {"The Lord of Blackrock", "The Nightmare Manifests", "Victory for the Horde", "The Savior of Kalimdor"}
+HORDE = 2 | 16 | 32 | 128 | 8589934592   # Orc, Undead, Tauren, Troll, Skyborne (Horde)
+CLASS_BIT = 2   # set per class below
 def horde_quest(qid):
     q = FQ.get(str(qid))
     if not q or q["name"] in RAID_QUESTS: return None
     races = q.get("races") or 0
-    if races and not (int(races) & 16): return None
+    if races and not (int(races) & HORDE): return None
     classes = q.get("classes") or 0
-    if classes and not (int(classes) & 2): return None
+    if classes and not (int(classes) & CLASS_BIT): return None
     z = q.get("zone")
     if z in RAID_ZONES or DUNGEON.get(z) in RAIDS: return None
     if z == 1377 and (q.get("reqLevel") or 0) >= 60: return None  # Silithus: Ahn'Qiraj war quests
@@ -240,64 +296,67 @@ def sources(iid):
     return out
 
 # ---------------------------------------------------------------------------
-# Pick the upgrades
+# Pick the upgrades, class by class
 # ---------------------------------------------------------------------------
-cands = defaultdict(list)
-for iid, d in items.items():
-    slot = eligible(d)
-    if not slot: continue
-    src = sources(iid)
-    if not src: continue
-    req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
-    if req > 60: continue
-    sc, st = score(d, slot)
-    if sc <= 0: continue
-    # armor and jewelry must carry melee stats (skip caster and tank-only pieces)
-    if slot != "2H" and sum(st.get(k, 0) for k in ("STR", "AGI", "AP", "CRIT", "HIT")) <= 0: continue
-    # prefer quest rewards, then dungeon, then the rest
-    order = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3}
-    src.sort(key=lambda x: order.get(x["how"], 9))
-    s0 = src[0]
-    lvl = max(req, int(s0.get("req") or 0)) if s0["how"] == "Quest" else req
-    if lvl < 8: continue
-    cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
-                        "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "stats": dict(st)})
-
-picked = []
-for slot, lst in cands.items():
-    lst.sort(key=lambda c: (c["lvl"], -c["score"]))
-    by_id = {}
-    # 1) the upgrade path: anything better than everything available at its level or below
-    best = 0
-    for c in lst:
-        if c["score"] > best * 1.05:
-            by_id[c["id"]] = c; best = max(best, c["score"])
-    # 2) per 5-level window: the best quest reward and the best dungeon drop (easy alternatives)
-    for lo in range(8, 61, 5):
-        win = [c for c in lst if lo <= c["lvl"] < lo + 5]
-        for how in ("Quest", "Dungeon"):
-            w = [c for c in win if c["how"] == how]
-            if w:
-                top = max(w, key=lambda c: c["score"])
-                # only if it's a real upgrade over what the path offered 5 levels earlier
-                prior = max([c["score"] for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
-                if top["score"] > prior * 1.05: by_id[top["id"]] = top
-    picked += list(by_id.values())
-
-picked.sort(key=lambda c: (c["lvl"], c["slot"]))
-cnt = defaultdict(int)
-for c in picked: cnt[c["slot"]] += 1
-print("picked %d: %s" % (len(picked), dict(cnt)), file=sys.stderr)
-
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
-with open(out_path, "w", encoding="utf-8") as f:
-    f.write("-- GENERATED by tools/gear/gen.py: do not edit by hand.\n")
-    f.write("-- Ret paladin upgrades for every slot, levels 8-60: quest rewards an Undead paladin can get,\n")
-    f.write("-- dungeon boss drops, and Horde vendors. Stats: cMaNGOS classic DB; sources: QuestieDB Forever data.\n")
-    f.write("local _, RG = ...\n")
-    f.write("RG.CLASS_GEAR = RG.CLASS_GEAR or {}\n")
-    f.write("RG.CLASS_GEAR.PALADIN = {\n")
-    for c in picked:
-        f.write("  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d, gen = true },  -- %s\n" % (
-            c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), c["name"]))
-    f.write("}\n")
+ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3}
+src_cache = {}
+for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
+    if path.endswith('Gear.lua'): continue
+    C = read_class(path)
+    if ONLY and C["name"] not in ONLY and C["tok"] not in ONLY: continue
+    CLASS_BIT = C["bit"]
+    cands = defaultdict(list)
+    for iid, d in items.items():
+        slot = eligible(d, C)
+        if not slot: continue
+        src = sources(iid)
+        if not src: continue
+        req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
+        if req > 60: continue
+        sc, st, stat_only = score(d, slot, C)
+        if sc <= 0: continue
+        # armor and jewelry must carry stats this class wants, not only Stamina
+        if slot in ARMOR_INV.values() and stat_only <= 1.0: continue
+        src.sort(key=lambda x: ORDER.get(x["how"], 9))
+        s0 = src[0]
+        lvl = max(req, int(s0.get("req") or 0)) if s0["how"] == "Quest" else req
+        if lvl < 5: continue
+        cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
+                            "how": s0["how"], "src": s0["src"], "zone": s0["zone"]})
+    picked = []
+    for slot, lst in cands.items():
+        lst.sort(key=lambda c: (c["lvl"], -c["score"]))
+        by_id = {}
+        # 1) the upgrade path: anything better than everything available at its level or below
+        best = 0
+        for c in lst:
+            if c["score"] > best * 1.05:
+                by_id[c["id"]] = c; best = max(best, c["score"])
+        # 2) per 5-level window: the best quest reward and the best dungeon drop (easy alternatives)
+        for lo in range(5, 61, 5):
+            win = [c for c in lst if lo <= c["lvl"] < lo + 5]
+            for how in ("Quest", "Dungeon"):
+                w = [c for c in win if c["how"] == how]
+                if w:
+                    top = max(w, key=lambda c: c["score"])
+                    prior = max([c["score"] for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
+                    if top["score"] > prior * 1.05: by_id[top["id"]] = top
+        picked += list(by_id.values())
+    picked.sort(key=lambda c: (c["lvl"], c["slot"]))
+    cnt = defaultdict(int)
+    for c in picked: cnt[c["slot"]] += 1
+    print("%-8s %-14s picked %3d: %s" % (C["name"], C["spec"], len(picked), dict(sorted(cnt.items()))), file=sys.stderr)
+    out_path = os.path.join(addon_dir, 'Classes', C["name"] + 'Gear.lua')
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("-- GENERATED by tools/gear/gen.py: do not edit by hand.\n")
+        f.write("-- %s %s upgrades for every slot, levels 5-60: quest rewards a Horde %s can get,\n" % (C["spec"], C["name"].lower(), C["name"].lower()))
+        f.write("-- dungeon boss drops, and Horde vendors, scored with Classes/%s.lua's weights.\n" % C["name"])
+        f.write("-- Stats: cMaNGOS classic DB; sources: QuestieDB merged Forever data.\n")
+        f.write("local _, RG = ...\n")
+        f.write("RG.CLASS_GEAR = RG.CLASS_GEAR or {}\n")
+        f.write("RG.CLASS_GEAR.%s = {\n" % C["tok"])
+        for c in picked:
+            f.write("  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d, gen = true },  -- %s\n" % (
+                c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), c["name"]))
+        f.write("}\n")

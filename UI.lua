@@ -276,8 +276,8 @@ end
 -- Tabs
 -- ---------------------------------------------------------------------------
 -- Gear guide order: the two-hander first (your biggest upgrade), then head to toe.
-local GUIDE_SLOTS = { "2H", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
-local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon" }
+local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
+local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand" }
 local function guideRows()
   local list, lvl = {}, UnitLevel("player")
   if state.near then
@@ -366,7 +366,22 @@ local function renderGuide()
   return #list
 end
 
-local SLOT_GUIDE = { [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hands", [11] = "Ring", [12] = "Ring", [13] = "Trinket", [14] = "Trinket", [15] = "Back", [16] = "2H" }
+local SLOT_GUIDE = { [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hands", [11] = "Ring", [12] = "Ring", [13] = "Trinket", [14] = "Trinket", [15] = "Back", [16] = "2H", [17] = "Off Hand", [18] = "Ranged" }
+-- the gear guide's weapon list for a slot: two-handers, or one-handers for dual wielders
+-- and casters holding a one-hander
+local function guideSlotFor(slot)
+  if slot == 16 then
+    local m = RG.WEAPON_MODEL
+    if m == "DW" then return "Main Hand" end
+    if m == "caster" then
+      local worn = GetInventoryItemLink("player", 16)
+      if worn and RG.EquipLoc(worn) ~= "INVTYPE_2HWEAPON" then return "Main Hand" end
+    end
+    return "2H"
+  end
+  if slot == 17 and RG.WEAPON_MODEL == "DW" then return "Main Hand" end   -- any one-hander fits the off hand
+  return SLOT_GUIDE[slot]
+end
 local function renderGear()
   local n, total = 0, 0
   local hit, cap = RG.CurrentHit(), RG.db.hitCap
@@ -440,7 +455,7 @@ local function renderGear()
     total = total + score
     local nextUp
     for _, g in ipairs(RG.GUIDE) do
-      if g.id and SLOT_GUIDE[slot] == g.slot and g.lvl <= lvl + 6 and not RG.OwnState(g.id) then
+      if g.id and guideSlotFor(slot) == g.slot and g.lvl <= lvl + 6 and not RG.OwnState(g.id) then
         local d = RG.GuideDelta(g)
         -- prefer the biggest upgrade you can use within 3 levels, else the soonest one
         if d and d > 0.5 then
@@ -459,7 +474,7 @@ local function renderGear()
     setItem(r, id, link, link or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
     if not link then r.icon:SetTexture(136516); r.icon:SetDesaturated(true) else r.icon:SetDesaturated(false) end
   end
-  setBar(scoreRow, "Ret gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
+  setBar(scoreRow, (RG.SCORE_NAME or "Upgrade score"):gsub(" score$", "") .. " gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
   -- pre-raid checklist: the level 52+ picks from the gear guide, one row per item
   n = n + 1; setHeader(getRow(n), "Pre-raid checklist · best dungeon and quest pieces, level 52 to 60")
   for _, slot in ipairs(GUIDE_SLOTS) do
@@ -525,7 +540,7 @@ local function renderProf()
     end
   end
   if not any then n = n + 1; setStep(getRow(n), "", "Open the Auction House once to compare ore and bar prices here.", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
-  head("Blacksmithing upgrades for Ret")
+  head("Blacksmithing upgrades for you")
   local lvl = UnitLevel("player")
   for _, g in ipairs(RG.GUIDE) do
     if g.bs then
@@ -709,6 +724,15 @@ local function renderRoute()
         end
       end
     end
+    -- the dungeon's best drops for you
+    if e.dq and lvl >= e.dq.prep - 4 and RG.DungeonDrops then
+      for _, dd in ipairs(RG.DungeonDrops(r.zone, 3)) do
+        n = n + 1
+        local name, link2, quality = itemName(dd.g.id)
+        setItem(getRow(n), dd.g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[dd.g.slot] or dd.g.slot) .. "|r", GREY .. "Drops from " .. dd.g.src .. "|r",
+          GREEN .. string.format("+%.0f", dd.d) .. "|r", dd.g.lvl > lvl and (GREY .. "level " .. dd.g.lvl .. "|r") or "", nil, quality, true)
+      end
+    end
     -- camping / fishing / cooking and bank-alt items for the zone you're in
     if now and RG.CampForEntry then
       for _, cs in ipairs(RG.CampForEntry(r)) do
@@ -883,7 +907,7 @@ local function renderTalents()
     rows[n].icon:SetTexture(135891)
   end
   local cls = RG.ActiveClass or {}
-  if not RG.ClassSupported then
+  if not RG.ClassHasTalents then
     n = n + 1; setHeader(getRow(n), "Talent builds for your class are coming in a later update")
     return n
   end
@@ -1496,7 +1520,7 @@ end
 -- ---------------------------------------------------------------------------
 local TITLES = {
   route = { "Leveling route", "Your path from your starting zone to 60" },
-  guide = { "Gear guide", "Ret upgrades by level, and where they come from" },
+  guide = { "Gear guide", "Upgrades for your spec by level, and where they come from" },
   gear  = { "My gear", "What you're wearing and what to chase next" },
   prof  = { "Professions", "Mining routes, smithing upgrades and material prices" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
@@ -1516,7 +1540,7 @@ local FOOTERS = {
   prof  = "Ore and bar prices refresh when you open the Auction House",
   ah    = "Opening the AH refreshes prices  ·  /wp alert [item] 25 pings you at 25g or less",
   settings = "Everything here is saved for your account  ·  /wp tracker shows or hides the tracker",
-  talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /wp talents opens this tab",
+  talents = "Talent names follow WoW Forever  ·  /wp talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
   fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so Waypath+ knows your recipes  ·  /wp fish",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",

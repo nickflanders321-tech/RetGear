@@ -54,11 +54,17 @@ end
 -- Class: stat weights, gear guide, talents, rotation, class quests
 -- ---------------------------------------------------------------------------
 RG.DEFAULT_WEIGHTS = C.weights or {}
+RG.WEAPON_MODEL = C.model or "2H"
+-- Dual wielders put one-handers in either hand; every class has a ranged slot.
+RG.EQUIP_SLOTS.INVTYPE_RANGEDRIGHT = { 18 }
+RG.EQUIP_SLOTS.INVTYPE_THROWN = { 18 }
+if C.model == "DW" or C.token == "HUNTER" then RG.EQUIP_SLOTS.INVTYPE_WEAPON = { 16, 17 } end
 RG.DEFAULT_HIT_CAP = C.hitCap or 9
 -- Class quests, talents, rotation and class milestones only come from your own
 -- class: another class's would be wrong. Weights and the gear guide do fall
 -- back (a rough melee guide is better than none until your class has its own).
 local own = RG.ClassSupported and C or {}
+RG.ClassHasTalents = own.talents and #own.talents > 0
 RG.CLASS_QUESTS = own.classQuests or {}
 RG.TALENT_PRIORITY = own.talents or {}
 RG.ROTATION = own.rotation or {}

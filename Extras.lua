@@ -77,7 +77,7 @@ local function pickReward()
   local bestUp, bestUpI, bestGold, bestGoldI = r.up, r.upI, r.gold, r.goldI
   if r.healI and r.healI ~= bestUpI then markButton(r.healI, "|cffF58CBAHoly +" .. string.format("%.0f", r.heal) .. "|r", true) end
   if bestUpI then
-    markButton(bestUpI, GREEN .. string.format("Ret +%.0f", bestUp) .. "|r", true)
+    markButton(bestUpI, GREEN .. string.format("%s +%.0f", (RG.ActiveClass and RG.ActiveClass.scoreName) or "Upgrade", bestUp) .. "|r", true)
     RG.Print("Best quest reward for you: " .. (GetQuestItemLink("choice", bestUpI) or "") .. " " .. GREEN .. string.format("(+%.0f %s)", bestUp, RG.SCORE_NAME) .. "|r")
   elseif bestGoldI and bestGold > 0 then
     markButton(bestGoldI, GOLD .. "Sells best|r", false)
@@ -130,6 +130,8 @@ local function weaponKind()
   if subID == 4 or subID == 5 then return "blunt" end
 end
 function RG.BestStone()
+  -- casters and druids in forms don't swing their weapon
+  if RG.WEAPON_MODEL == "caster" or RG.WEAPON_MODEL == "feral" then return nil end
   local kind = weaponKind()
   if not kind then return nil end
   local lvl, bs = UnitLevel("player"), RG.Skill("Blacksmithing") or 0
