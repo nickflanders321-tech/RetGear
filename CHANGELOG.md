@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.36.0 (every Horde race and class: questing)
+- **Starting zones for every Horde race:** Orc and Troll (Valley of Trials, Durotar, then The Barrens), Tauren (Camp Narache, Mulgore, then The Barrens), Undead (Deathknell, Brill, Silverpine) and Skyborne (Zephras Isle, then Mulgore and The Barrens). Each has its own travel tips from its home city and does Ragefire Chasm and Wailing Caverns before the far-off dungeons.
+- **Steps built from WoW Forever's quest data:** each step is one stop ("At Razor Hill: ..."), visiting the busiest quest hub for your level first and catching up anything that falls behind. Steps tick themselves off once all their quests are turned in, and each has a waypoint for the arrow. Undead now use these too (the Tirisfal and Silverpine steps changed).
+- **Class quests for every class** on the tracker, from the quest data: Orc mages, Troll warlocks, Skyborne druids and the Forsaken paladin chain included. Click one to show its quest giver.
+- **Dungeon quests for your race and class:** each dungeon lists every quest you can take for it (with waypoints), not only the hand-picked ones. New on the route: Excavation Site, City of Dalaran, Gnomeregan, Razorfen Downs, the Sunken Temple, and Riverglades (no quest data for it yet).
+- **New quests nearby** only shows quests your race and class can take, and hides either/or quests once you've done the other one.
+- **Nothing speaks to the wrong class or profession:** paladin-only lines show only for paladins, and ore tips are marked "Miners:".
+- Quest data now includes WoW Forever's own quests and changes (QuestieDB's merged Forever export), so map pins and tick-offs work for them too.
+- New `tools/audit` checks all 28 Horde race/class combinations on every change.
+
 ## v0.35.0 (DPS coach removed)
 - **The DPS coach is gone:** no more fight recording, DPS tab, after-fight chat reports or "last fight" reminders. Its saved fight history is cleared on login, which also makes your saved data smaller.
 - Dungeon run reports on the Group tab keep time, kills, deaths, XP per hour and loot (they no longer show DPS).

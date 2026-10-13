@@ -72,10 +72,21 @@ local function currentEntry()
 end
 
 -- True once every quest for a dungeon is turned in (nothing left to collect or do there).
+-- Quests from the data whose earlier steps you haven't done yet don't count.
+function RG.QuestPrereqsMet(id)
+  local d = id and RG.QDATA and RG.QDATA[id]
+  if not d then return true end
+  local done = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
+  if not done then return true end
+  if d.pg then for _, p in ipairs(d.pg) do if not done(p) then return false end end end
+  if d.ps then local any = false; for _, p in ipairs(d.ps) do if done(p) then any = true break end end; if not any then return false end end
+  if d.x then for _, p in ipairs(d.x) do if done(p) then return false end end end
+  return (d.r or 1) <= (UnitLevel("player") or 1) + 2
+end
 function RG.DungeonQuestsDone(dq)
   if not (dq and dq.quests and #dq.quests > 0 and RG.QuestState) then return false end
   for _, q in ipairs(dq.quests) do
-    if RG.QuestState((q[1]:gsub("%s*%(.-%)$", ""))) ~= "done" then return false end
+    if RG.QuestState((q[1]:gsub("%s*%(.-%)$", ""))) ~= "done" and (not q.id or RG.QuestPrereqsMet(q.id)) then return false end
   end
   return true
 end
@@ -465,7 +476,8 @@ function RG.RefreshTracker()
     end
     y = y + 5
   end
-  -- 3b. paladin class quests: the next step of the class chain for your level
+  -- 3b. hand-written class chain (paladin): the next step for your level
+  local shownClassSteps = false
   for _, pr in ipairs(RG.ROUTE) do
     if pr.kind == "pala" and lvl >= pr.from and lvl <= pr.to then
       local pkey = pr.zone .. "|" .. pr.from
@@ -476,6 +488,7 @@ function RG.RefreshTracker()
       end
       if first then
         local isFolded
+        shownClassSteps = true
         n = n + 1; y, isFolded = section(n, y, "Class quests: " .. pr.hub, "pala", GREY .. left .. " to do|r")
         if not isFolded then
           local sk = pkey .. "#" .. firstI
@@ -490,13 +503,33 @@ function RG.RefreshTracker()
       break
     end
   end
+  -- 3c. class quests from the quest database (every class): shown when no
+  -- hand-written class chain is active right now
+  if not shownClassSteps and RG.ClassQuests then
+    local cq = RG.ClassQuests(3)
+    if #cq > 0 then
+      local isFolded
+      n = n + 1; y, isFolded = section(n, y, "Class quests", "pala", cq[1].now and (GREEN .. "ready|r") or (GREY .. "at " .. cq[1].req .. "|r"))
+      if not isFolded then
+        for _, q in ipairs(cq) do
+          local wp = q.wp
+          n = n + 1
+          y = item(n, y, (isTarget(wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. (q.now and "|cffffd100" or GREY) .. q.name .. "|r", { single = true, wp = wp,
+            right = q.now and (GREY .. (q.giver or "") .. "|r") or (GREY .. "level " .. q.req .. "|r"),
+            tip = "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "?") .. (q.now and "" or (" at level " .. q.req)) .. "|r\n\n" .. GOLD .. "Click:|r show the quest giver on the map\n" .. GOLD .. "Double-click:|r arrow on / off",
+            onClick = function() RG.PinWaypoint(wp) end })
+        end
+      end
+      y = y + 5
+    end
+  end
   -- 4. next dungeon: quests still to collect
   local dr, dq = nextDungeon()
   if dr then
     local missing = {}
     for _, q in ipairs(dq.quests) do
       local st = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
-      if not st then missing[#missing + 1] = q end
+      if not st and (not q.id or RG.QuestPrereqsMet(q.id)) then missing[#missing + 1] = q end
     end
     local isFolded
     n = n + 1; y, isFolded = section(n, y, dr.zone, "dungeon", lvl >= dq.go and (GREEN .. "go now|r") or (GREY .. "go at " .. dq.go .. "|r"))
@@ -509,7 +542,7 @@ function RG.RefreshTracker()
       else
         for i = 1, math.min(3, #missing) do
           local q = missing[i]
-          local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
+          local gw = q.wp or (RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]])
           n = n + 1
           y = item(n, y, (isTarget(gw) and ARROW or "") .. RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", { single = true, right = GREY .. "pick up|r", wp = gw,
             tip = "|cffffffff" .. q[1] .. "|r\n" .. GREY .. q[2] .. ", " .. q[3] .. "|r" .. (gw and ("\n\n" .. GOLD .. "Click:|r show " .. q[2] .. " on the map\n" .. GOLD .. "Double-click:|r arrow on / off") or ""),

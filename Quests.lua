@@ -116,6 +116,25 @@ end
 -- entry = the route entry the step belongs to; text = the step text.
 -- Returns done (bool), reason (short text for the tooltip).
 function RG.StepAuto(entry, text)
+  local key = entry and (entry.zone .. "|" .. entry.from)
+  local sq = key and RG.STEP_QUESTS and RG.STEP_QUESTS[key]
+  if sq and text then
+    for i, t in ipairs(RG.STEPS[key] or {}) do
+      if t == text and sq[i] then
+        local left = 0
+        local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
+        for _, id in ipairs(sq[i]) do
+          local ok = isDone and isDone(id)
+          -- one of a pair of either/or quests counts for both
+          local d = not ok and RG.QDATA and RG.QDATA[id]
+          if d and d.x and isDone then for _, x in ipairs(d.x) do if isDone(x) then ok = true break end end end
+          if not ok then left = left + 1 end
+        end
+        if left == 0 then return true, "All its quests are turned in" end
+        return false
+      end
+    end
+  end
   local t = text:lower()
   -- flight paths
   if t:find("flight path", 1, true) then
@@ -130,9 +149,10 @@ function RG.StepAuto(entry, text)
     if bind ~= "" and (t:find(bind, 1, true) or (entry.hub and entry.hub:lower():find(bind, 1, true))) then return true, "Your hearthstone is set to " .. GetBindLocation() end
   end
   -- professions
-  if t:find("train mining and blacksmithing", 1, true) then
-    local p = RG.Professions()
-    if p["Mining"] and p["Blacksmithing"] then return true, "You know Mining and Blacksmithing" end
+  if t:find("learn your professions", 1, true) or t:find("train mining and blacksmithing", 1, true) then
+    local p, n = RG.Professions(), 0
+    for _, name in ipairs({ "Mining", "Blacksmithing", "Herbalism", "Alchemy", "Skinning", "Leatherworking", "Tailoring", "Enchanting", "Engineering" }) do if p[name] then n = n + 1 end end
+    if n >= 2 then return true, "You know two professions" end
   end
   -- spells
   if t:find("seal of command", 1, true) and knowsSpell("Seal of Command") then return true, "You know Seal of Command" end

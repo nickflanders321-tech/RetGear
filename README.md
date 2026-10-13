@@ -2,7 +2,12 @@
 
 An all-in-one leveling companion for World of Warcraft: Forever: your route with an arrow, a quest tracker, travel tips, gear upgrades, professions and gold. (Formerly **RetGear**.)
 
-**What's covered so far:** the full guide (talents, gear, class quests, rotation, healing set) is written for **Retribution Paladins**, the route starts in the **Undead** zones, and the profession guides cover **Mining, Blacksmithing, Fishing and Cooking**. Every other class and race already gets the route from level 12 on, the quest tracker, arrow, travel tips, bags and gold tools; their own talents, gear lists and starting zones are being added class by class. Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`.
+**What's covered so far:**
+- **Questing, for every Horde race and class:** Orc, Troll, Tauren, Undead and Skyborne each get their own starting zones (Valley of Trials and Durotar; Camp Narache and Mulgore; Deathknell, Brill and Silverpine; Zephras Isle), then the shared Horde route to 60 with travel tips from their home city. Starting-zone steps are built from WoW Forever's quest data, stop by stop, and tick themselves off. Every class sees its own class quests (including Forever's new ones, like the Forsaken paladin chain, Orc mages and Troll warlocks) on the tracker, and each dungeon lists the quests that race and class can take.
+- **Gear, talents and rotation:** written for **Retribution Paladins** so far; other classes are next.
+- **Professions:** guides for **Mining, Blacksmithing, Fishing and Cooking** so far.
+
+Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`. `tools/audit` checks every race and class on each change.
 
 ## Install
 Copy the `Waypath` folder into `World of Warcraft\_forever_\Interface\AddOns\` (during the beta it's `_forever_beta_`), then restart the game. Type `/wp` (or `/waypath`) or click the minimap button.
@@ -89,4 +94,4 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 ## Keeping it current
 Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, healing list, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.
 
-Gear guide items are scored from the cMaNGOS classic item database and checked against WoW Forever's item data (`tools/gear`). Waypoints and quest objectives come from [QuestieDB](https://github.com/Questie/QuestieDB)'s WoW Forever data; `tools/waypoints` and `tools/objectives` rebuild them. Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.
+Gear guide items are scored from the cMaNGOS classic item database and checked against WoW Forever's item data (`tools/gear`). Waypoints, quest objectives, starting-zone steps and dungeon quests come from [QuestieDB](https://github.com/Questie/QuestieDB)'s merged WoW Forever data (`tools/qdb`); `tools/waypoints`, `tools/objectives` and `tools/routes` rebuild them. Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.

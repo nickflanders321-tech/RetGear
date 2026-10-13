@@ -1,13 +1,18 @@
-"""Build Objectives.lua: for every quest an Undead (Horde) character can take, where to
-finish it and where its objectives are (kill / loot / use), from QuestieDB's WoW Forever data.
+"""Build Objectives.lua: for every quest a Horde character can take (any race, any class),
+who gives it, where to finish it and where its objectives are (kill / loot / use), from
+QuestieDB's merged WoW Forever data (see tools/qdb). Race- and class-only quests carry
+ra = race letters and cl = class letters; the add-on filters them for your character.
 Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder]"""
 import json, re, sys, os
 QDB = sys.argv[1].rstrip('/') + '/'
 D = json.load(open(sys.argv[2], encoding='utf-8'))
 RET = (sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')).rstrip('/') + '/'
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
-UNDEAD = 16
-PALADIN = 2
+# Horde races: Orc, Undead, Tauren, Troll, Skyborne (Windshaper)
+RACES = [(2, 'O'), (16, 'U'), (32, 'T'), (128, 'R'), (8589934592, 'S')]
+HORDE = sum(b for b, _ in RACES)
+CLASSES = [(1, 'W'), (2, 'P'), (4, 'H'), (8, 'R'), (16, 'I'), (64, 'S'), (128, 'M'), (256, 'L'), (1024, 'D')]
+ALL_CLASSES = sum(b for b, _ in CLASSES)
 
 def at(arr, i):  # 1-based access to a Lua array that may have been encoded as a dict
     if arr is None: return None
@@ -40,11 +45,14 @@ def lstr(s): return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 out, nq, nobj, npts = [], 0, 0, 0
 for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
-    name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS = [at(q, i) for i in range(1, 13)]
-    races = races or 0
-    if races and not (races & UNDEAD): continue
-    if classes and not (classes & PALADIN): continue
+    name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
+    races = int(races or 0); classes = int(classes or 0)
+    if races and not (races & HORDE): continue
     if qlvl and qlvl > 62: continue
+    if qlvl is not None and qlvl < 0: qlvl = None   # -1 = scales with you
+    ra = ''.join(c for b, c in RACES if races & b) if races and (races & HORDE) != HORDE else ''
+    cl = ''.join(c for b, c in CLASSES if classes & b) if classes and (classes & ALL_CLASSES) != ALL_CLASSES else ''
+    if classes and not cl and (classes & ALL_CLASSES) == 0: continue
     zone = zone if isinstance(zone, int) else 0
     # where to turn it in
     end = None
@@ -79,7 +87,9 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         add('kill', (o[2] if len(o) > 2 and o[2] else '?'), [('npc', i) for i in ids])
     # who gives it (NPC only; item-started quests show up by themselves)
     start = None
-    for i in (at(starts, 1) or []):
+    givers = at(starts, 1) or []
+    if givers and all((at(D['npcs'].get(str(i)) or [], 3) or 'AH') == 'A' for i in givers): continue   # Alliance-only quest giver
+    for i in givers:
         n, sp = spawns_of('npc', i)
         pts = rep_points(sp, zone, 1)
         if pts: start = (pts[0], n); break
@@ -94,6 +104,10 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         parts.append('l=%d' % (qlvl or reqlvl or 1))
         if preG: parts.append('pg={%s}' % ','.join(str(x) for x in preG))
         if preS: parts.append('ps={%s}' % ','.join(str(x) for x in preS))
+        if excl: parts.append('x={%s}' % ','.join(str(x) for x in excl))
+    if ra: parts.append('ra="%s"' % ra)
+    if cl: parts.append('cl="%s"' % cl)
+    if cl and len(cl) <= 4: parts.append('cq=true')   # a real class quest (not a "most classes" variant)
     if objs:
         os_ = []
         for kind, label, mobs, pts in objs:
@@ -105,7 +119,10 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         "-- Generated from QuestieDB's WoW Forever data (coordinates already converted to Forever's maps):",
         '-- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.',
         '-- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,',
-        '--   pg = {all of these first}, ps = {any of these first}, o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... } }',
+        '--   pg = {all of these first}, ps = {any of these first}, x = {done one of these: this one is gone},',
+        '--   ra = only these races (O Orc, U Undead, T Tauren, R Troll, S Skyborne), cl = only these classes',
+        '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
+        '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... } }',
         'local _, RG = ...', 'RG.QDATA = {']
 open(RET + 'Objectives.lua', 'w', encoding='utf-8').write('\n'.join(head) + '\n' + ',\n'.join(out) + '\n}\n')
 print(f'{nq} quests, {nobj} objectives, {npts} points', file=sys.stderr)

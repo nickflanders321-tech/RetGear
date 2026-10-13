@@ -7,36 +7,42 @@ local _, RG = ...
 local H = { faction = "Horde" }
 
 H.route = {
-  { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon right above Undercity. Four quests for you, two of them give two-handers." },
-  { o = 7, from = 13, to = 18, kind = "dungeon", zone = "Ragefire Chasm", hub = "Orgrimmar", notes = "Take the zeppelin from outside Undercity." },
+  { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon in the ruins above Undercity (take the Orgrimmar zeppelin to Tirisfal if you started in Kalimdor). Several quests, with good weapon rewards." },
+  { o = 7, from = 13, to = 18, kind = "dungeon", zone = "Ragefire Chasm", hub = "Orgrimmar", notes = "Inside Orgrimmar, in the Cleft of Shadow. Undead: take the zeppelin from outside Undercity." },
   { o = 8, from = 17, to = 24, kind = "dungeon", zone = "Wailing Caverns", hub = "The Barrens", notes = "Grab the dungeon quests at the Crossroads first." },
   { o = 9, from = 18, to = 26, kind = "zone",    zone = "The Barrens", hub = "The Crossroads / Camp Taurajo", fp = "Crossroads", notes = "Lots of quests. Weapons of Choice at Camp Taurajo gives Demolition Hammer." },
-  { o = 11, from = 22, to = 30, kind = "dungeon", zone = "Shadowfang Keep", hub = "Silverpine Forest", notes = "Close to home for Undead." },
-  { o = 12, from = 22, to = 27, kind = "zone",    zone = "Stonetalon Mountains", hub = "Sun Rock Retreat", fp = "Sun Rock Retreat", notes = "Tin and a little Iron." },
+  { o = 11, from = 22, to = 30, kind = "dungeon", zone = "Shadowfang Keep", hub = "Silverpine Forest", notes = "In Silverpine Forest, south of The Sepulcher. From Kalimdor, take the Orgrimmar zeppelin to Tirisfal." },
+  { o = 12, from = 22, to = 27, kind = "zone",    zone = "Stonetalon Mountains", hub = "Sun Rock Retreat", fp = "Sun Rock Retreat", notes = "Miners: Tin and a little Iron." },
   { o = 13, from = 24, to = 32, kind = "dungeon", zone = "Blackfathom Deeps", hub = "Ashenvale", notes = "Aku'mai drops Strike of the Hydra." },
-  { o = 14, from = 25, to = 30, kind = "zone",    zone = "Hillsbrad Foothills", hub = "Tarren Mill", fp = "Tarren Mill", notes = "Tin and Silver. Good mix with Ashenvale." },
+  { o = 14, from = 25, to = 30, kind = "zone",    zone = "Hillsbrad Foothills", hub = "Tarren Mill", fp = "Tarren Mill", notes = "Good mix with Ashenvale. Miners: Tin and Silver." },
   { o = 15, from = 25, to = 30, kind = "zone",    zone = "Ashenvale", hub = "Splintertree Post", fp = "Splintertree Post", notes = "" },
+  { o = 15.5, from = 26, to = 31, kind = "dungeon", zone = "Excavation Site", hub = "Wetlands", notes = "New Forever dungeon in the Wetlands (26-31)." },
+  { o = 15.7, from = 28, to = 33, kind = "dungeon", zone = "City of Dalaran", hub = "Alterac Mountains / Hillsbrad", notes = "New Forever dungeon: the sealed city of Dalaran (28-33). Tarren Mill is the closest Horde town." },
   { o = 16, from = 29, to = 38, kind = "dungeon", zone = "Razorfen Kraul", hub = "The Barrens", notes = "Overlord Ramtusk drops Corpsemaker." },
-  { o = 17, from = 30, to = 35, kind = "zone",    zone = "Thousand Needles", hub = "Freewind Post", fp = "Freewind Post", notes = "Iron starts showing up." },
-  { o = 18, from = 33, to = 40, kind = "zone",    zone = "Arathi Highlands", hub = "Hammerfall", fp = "Hammerfall", notes = "Great Iron and Gold mining. Its quests are 34-42 in Forever, so come at 33, not 30." },
-  { o = 19, from = 32, to = 40, kind = "zone",    zone = "Desolace", hub = "Shadowprey Village", fp = "Shadowprey", notes = "Iron. Kolkar and centaur quests." },
-  { o = 20, from = 33, to = 45, kind = "dungeon", zone = "Scarlet Monastery", hub = "Tirisfal Glades", notes = "Right in your backyard. Herod (Armory) drops Ravager; Mograine (Cathedral) drops Mograine's Might." },
-  { o = 21, from = 32, to = 42, kind = "zone",    zone = "Stranglethorn Vale", hub = "Grom'gol Base Camp", fp = "Grom'gol", notes = "Nesingwary hunting quests. Iron and Mithril up north." },
+  { o = 16.5, from = 29, to = 38, kind = "dungeon", zone = "Gnomeregan", hub = "Dun Morogh", notes = "Deep in Alliance land (Dun Morogh): most Horde groups skip it unless a quest sends them." },
+  { o = 17, from = 30, to = 35, kind = "zone",    zone = "Thousand Needles", hub = "Freewind Post", fp = "Freewind Post", notes = "Miners: Iron starts showing up." },
+  { o = 18, from = 33, to = 40, kind = "zone",    zone = "Arathi Highlands", hub = "Hammerfall", fp = "Hammerfall", notes = "Its quests are 34-42 in Forever, so come at 33, not 30. Miners: great Iron and Gold." },
+  { o = 19, from = 32, to = 40, kind = "zone",    zone = "Desolace", hub = "Shadowprey Village", fp = "Shadowprey", notes = "Kolkar and centaur quests. Miners: Iron." },
+  { o = 20, from = 33, to = 45, kind = "dungeon", zone = "Scarlet Monastery", hub = "Tirisfal Glades", notes = "North-east Tirisfal Glades, past Brill (Orgrimmar zeppelin to Tirisfal from Kalimdor). Four wings: Graveyard, Library, Armory, Cathedral." },
+  { o = 21, from = 32, to = 42, kind = "zone",    zone = "Stranglethorn Vale", hub = "Grom'gol Base Camp", fp = "Grom'gol", notes = "Nesingwary hunting quests. Miners: Iron and Mithril up north." },
   { o = 22, from = 36, to = 42, kind = "zone",    zone = "Dustwallow Marsh", hub = "Brackenwall Village", fp = "Brackenwall", notes = "" },
-  { o = 24, from = 40, to = 45, kind = "zone",    zone = "Badlands", hub = "Kargath", fp = "Kargath", notes = "Mithril. Uldaman is here." },
+  { o = 22.5, from = 37, to = 46, kind = "dungeon", zone = "Razorfen Downs", hub = "The Barrens / Thousand Needles", notes = "South end of The Barrens, at the top of the Thousand Needles road." },
+  { o = 23, from = 36, to = 44, kind = "zone",    zone = "Riverglades", hub = "Powderfuse Port", notes = "New Forever zone (33-44): take the boat from Tanaris to Powderfuse Port. Quest data for it isn't out yet, so there are no steps here until it is." },
+  { o = 24, from = 40, to = 45, kind = "zone",    zone = "Badlands", hub = "Kargath", fp = "Kargath", notes = "Uldaman is here. Miners: Mithril." },
   { o = 25, from = 41, to = 51, kind = "dungeon", zone = "Uldaman", hub = "Badlands", notes = "Archaedas drops Stoneslayer." },
   { o = 26, from = 40, to = 45, kind = "zone",    zone = "Swamp of Sorrows", hub = "Stonard", fp = "Stonard", notes = "Threat From the Sea gives Tok'kar's Murloc Chopper." },
-  { o = 27, from = 43, to = 48, kind = "zone",    zone = "Tanaris", hub = "Gadgetzan", fp = "Gadgetzan", notes = "Mithril and Truesilver. Zul'Farrak is here." },
+  { o = 27, from = 43, to = 48, kind = "zone",    zone = "Tanaris", hub = "Gadgetzan", fp = "Gadgetzan", notes = "Zul'Farrak is here. Miners: Mithril and Truesilver." },
   { o = 28, from = 44, to = 54, kind = "dungeon", zone = "Zul'Farrak", hub = "Tanaris", notes = "" },
   { o = 29, from = 44, to = 50, kind = "zone",    zone = "Feralas", hub = "Camp Mojache", fp = "Camp Mojache", notes = "Weapons of Spirit gives Will of the Mountain Giant." },
   { o = 30, from = 46, to = 55, kind = "dungeon", zone = "Maraudon", hub = "Desolace", notes = "Princess Theradras drops her Scepter and Blackstone Ring." },
-  { o = 31, from = 47, to = 52, kind = "zone",    zone = "The Hinterlands", hub = "Revantusk Village", fp = "Revantusk", notes = "Mithril and Truesilver." },
-  { o = 32, from = 48, to = 54, kind = "zone",    zone = "Searing Gorge", hub = "Thorium Point", fp = "Thorium Point", notes = "Mithril, Truesilver and early Thorium." },
-  { o = 33, from = 50, to = 55, kind = "zone",    zone = "Un'Goro Crater", hub = "Marshal's Refuge", fp = "Marshal's Refuge", notes = "Thorium everywhere. The Mighty U'cha gives Beastslayer." },
+  { o = 31, from = 47, to = 52, kind = "zone",    zone = "The Hinterlands", hub = "Revantusk Village", fp = "Revantusk", notes = "Miners: Mithril and Truesilver." },
+  { o = 32, from = 48, to = 54, kind = "zone",    zone = "Searing Gorge", hub = "Thorium Point", fp = "Thorium Point", notes = "Miners: Mithril, Truesilver and early Thorium." },
+  { o = 33, from = 50, to = 55, kind = "zone",    zone = "Un'Goro Crater", hub = "Marshal's Refuge", fp = "Marshal's Refuge", notes = "Miners: Thorium everywhere." },
+  { o = 33.5, from = 50, to = 56, kind = "dungeon", zone = "The Temple of Atal'Hakkar", hub = "Swamp of Sorrows", notes = "The Sunken Temple, in the Swamp of Sorrows. Stonard is the closest Horde town." },
   { o = 34, from = 52, to = 60, kind = "dungeon", zone = "Blackrock Depths", hub = "Searing Gorge / Burning Steppes", notes = "Hand of Justice and Savage Gladiator Chain." },
   { o = 35, from = 51, to = 55, kind = "zone",    zone = "Felwood", hub = "Bloodvenom Post", fp = "Bloodvenom", notes = "" },
-  { o = 36, from = 53, to = 58, kind = "zone",    zone = "Burning Steppes", hub = "Flame Crest", fp = "Flame Crest", notes = "Thorium." },
-  { o = 37, from = 55, to = 60, kind = "zone",    zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Rich Thorium." },
+  { o = 36, from = 53, to = 58, kind = "zone",    zone = "Burning Steppes", hub = "Flame Crest", fp = "Flame Crest", notes = "Miners: Thorium." },
+  { o = 37, from = 55, to = 60, kind = "zone",    zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Miners: rich Thorium." },
   { o = 38, from = 55, to = 60, kind = "zone",    zone = "Western & Eastern Plaguelands", hub = "The Bulwark / Light's Hope", fp = "Light's Hope", notes = "Tirion Fordring's chain ends in Mark of Fordring." },
   { o = 39, from = 56, to = 60, kind = "dungeon", zone = "Stratholme, Scholomance, Dire Maul, LBRS/UBRS", hub = "Level 58-60", notes = "Pre-raid gear: Rivendare's Runeblade, Treant's Bane, Truestrike Shoulders." },
 }
@@ -74,6 +80,11 @@ H.dungeons = {
     { "Amongst the Ruins", "Je'neu Sancrea", "Ashenvale, Zoram'gar Outpost" },
     { "Blackfathom Villainy", "Bashana Runetotem", "Thunder Bluff, Elder Rise" },
   } },
+  ["Excavation Site"] = { go = 27, prep = 25, quests = {} },
+  ["City of Dalaran"] = { go = 29, prep = 27, quests = {} },
+  ["Gnomeregan"] = { go = 32, prep = 30, quests = {} },
+  ["Razorfen Downs"] = { go = 38, prep = 36, quests = {} },
+  ["The Temple of Atal'Hakkar"] = { go = 50, prep = 48, quests = {} },
   ["Razorfen Kraul"] = { go = 30, prep = 28, quests = {
     { "Going, Going, Guano!", "Master Apothecary Faranell", "Undercity, The Apothecarium" },
     { "A Vengeful Fate", "Auld Stonespire", "Thunder Bluff" },
@@ -159,7 +170,7 @@ H.steps = {
     "Kill quilboars at the Forgotten Pools, harpies in the Dry Hills, and centaur in the north.",
     "Grab the Ratchet flight path and its quests on the east coast.",
     "Go south to Camp Taurajo: take Weapons of Choice from Tatternack Steelforge for the Demolition Hammer.",
-    "Mine the Copper and Tin outcrops along the cliffs and canyon walls.",
+    "Miners: Copper and Tin outcrops along the cliffs and canyon walls.",
   },
   ["Shadowfang Keep|22"] = {
     "Pick up the quests at The Sepulcher and in Undercity first (listed below).",
@@ -170,7 +181,7 @@ H.steps = {
   ["Stonetalon Mountains|22"] = {
     "Run west from the Crossroads to Sun Rock Retreat and grab the flight path.",
     "Do the harpy and Windshear Crag quests, including the Venture Co. loggers.",
-    "Mine Tin and your first Iron in the mountain passes.",
+    "Miners: Tin and your first Iron in the mountain passes.",
   },
   ["Blackfathom Deeps|24"] = {
     "Grab the quests at Zoram'gar Outpost on the Ashenvale coast and in Thunder Bluff (listed below).",
@@ -181,7 +192,7 @@ H.steps = {
   ["Hillsbrad Foothills|25"] = {
     "From The Sepulcher, follow the road south-east to Tarren Mill and grab the flight path.",
     "Take the Tarren Mill quests: the farms, the Syndicate in the foothills, and the yetis.",
-    "Mine Tin and Silver around the foothills and on the Alterac slopes.",
+    "Miners: Tin and Silver around the foothills and on the Alterac slopes.",
   },
   ["Ashenvale|25"] = {
     "Go to Splintertree Post in east Ashenvale and grab the flight path.",
@@ -201,7 +212,7 @@ H.steps = {
   ["Arathi Highlands|33"] = {
     "Head east from Tarren Mill into Arathi and follow the road to Hammerfall in the far east. Grab the flight path.",
     "Take the Hammerfall quests: Boulderfist ogres, Witherbark trolls, and the Syndicate.",
-    "Arathi is one of the best Iron and Gold mining zones. Fill your bags.",
+    "Miners: Arathi is one of the best Iron and Gold zones. Fill your bags.",
   },
   ["Desolace|32"] = {
     "Go to Shadowprey Village on the south-west coast and grab the flight path.",
@@ -218,7 +229,7 @@ H.steps = {
     "Take the zeppelin from outside Undercity to Grom'gol and grab the flight path.",
     "Do the Nesingwary hunting quests (tigers, panthers, raptors) at his camp north of Grom'gol.",
     "Collect Green Hills of Stranglethorn pages as they drop and turn them in.",
-    "Run south to Booty Bay for its flight path. Mine Iron and Mithril in the north.",
+    "Run south to Booty Bay for its flight path. Miners: Iron and Mithril in the north.",
   },
   ["Dustwallow Marsh|36"] = {
     "Go to Brackenwall Village in west Dustwallow and grab the flight path.",
@@ -228,7 +239,7 @@ H.steps = {
   ["Badlands|40"] = {
     "Go to Kargath on the west edge and grab the flight path.",
     "Do the Dark Iron dwarf, ogre and buzzard quests, plus Jarkal's Uldaman reagent run.",
-    "Mine Mithril and Iron along the canyon walls.",
+    "Miners: Mithril and Iron along the canyon walls.",
   },
   ["Uldaman|41"] = {
     "Pick up the quests in Kargath, Dustwallow and Orgrimmar first (listed below).",
@@ -243,7 +254,7 @@ H.steps = {
   ["Tanaris|43"] = {
     "Go to Gadgetzan and grab the flight path.",
     "Do the pirate quests at Lost Rigger Cove, the Wastewander bandits, and the Steamwheedle Port quests.",
-    "Mine Mithril and Truesilver across the dunes.",
+    "Miners: Mithril and Truesilver across the dunes.",
   },
   ["Zul'Farrak|44"] = {
     "Pick up the quests in Gadgetzan, Steamwheedle Port and Dustwallow first (listed below).",
@@ -263,17 +274,17 @@ H.steps = {
   ["The Hinterlands|47"] = {
     "Go to Revantusk Village on the east coast and grab the flight path.",
     "Do the troll and owlbeast quests.",
-    "Mine Mithril and Truesilver in the hills.",
+    "Miners: Mithril and Truesilver in the hills.",
   },
   ["Searing Gorge|48"] = {
     "Go to Thorium Point on the north cliff and grab the flight path.",
     "Do the Dark Iron and golem quests.",
-    "Mine Thorium and Mithril, and smelt in the Thorium Point forge.",
+    "Miners: Thorium and Mithril, and the Thorium Point forge to smelt.",
   },
   ["Un'Goro Crater|50"] = {
     "Go to Marshal's Refuge on the north rim and grab the flight path.",
     "Take The Mighty U'cha for Beastslayer, and collect crystals and pylons as you go.",
-    "Thorium veins are everywhere. Mine every one.",
+    "Miners: Thorium veins are everywhere. Mine every one.",
   },
   ["Blackrock Depths|52"] = {
     "Pick up the quests in Kargath and Flame Crest first (listed below).",
@@ -287,12 +298,12 @@ H.steps = {
   ["Burning Steppes|53"] = {
     "Go to Flame Crest and grab the flight path.",
     "Do the Blackrock orc and black dragon quests.",
-    "Mine Thorium on the ridges.",
+    "Miners: Thorium on the ridges.",
   },
   ["Winterspring|55"] = {
     "Go to Everlook and grab the flight path.",
     "Do the Winterfall furbolg and Frostsaber quests.",
-    "Rich Thorium veins line the valleys.",
+    "Miners: rich Thorium veins line the valleys.",
   },
   ["Western & Eastern Plaguelands|55"] = {
     "Start at The Bulwark in Western Plaguelands for the plague quests.",

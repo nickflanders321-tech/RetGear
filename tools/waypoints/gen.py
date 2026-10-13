@@ -111,9 +111,16 @@ def find(text, zones):
     pts = npcs[name]['spawns'][z]
     x, y = pts[0] if len(pts) <= 2 else best_point(pts)
     return (ui[z], round(x, 1), round(y, 1), name, i)
-data = open(RET + 'Data.lua', encoding='utf-8').read()
-steps_block = data[data.index('RG.STEPS = {'):]
-steps_block = steps_block[:steps_block.index('\n}\n')]
+# Route data lives in Classes/, Races/ and Routes/Horde.lua (see Profile.lua)
+import glob
+data = ''
+for f in sorted(glob.glob(RET + 'Classes/*.lua')) + sorted(glob.glob(RET + 'Races/*.lua')) + [RET + 'Routes/Horde.lua']:
+    if f.endswith('Gear.lua'): continue
+    data += open(f, encoding='utf-8').read() + '\n'
+steps_block = ''
+for m in re.finditer(r'^\w\.steps = \{\n(.*?)\n\}\n', data, re.S | re.M):
+    steps_block += m.group(1) + '\n'
+steps_block = steps_block.replace('\n  },\n', '\n  },\n')
 # Dungeon entrances (Forever percentages, Era-based table before the expansion overrides)
 dsrc = open(QDB + 'support/Forever/Zones/dungeons.lua', encoding='utf-8').read()
 dsrc = dsrc[:dsrc.index('if Expansions.Current')]
@@ -153,7 +160,7 @@ def first_npc_any(text, prefer=None):
     zones = ([prefer] if prefer else []) + CAPITALS + [z for z in ui]
     return find(text, zones)
 givers = {}
-dq = data[data.index('RG.DUNGEON_QUESTS'):]
+dq = data[data.index('H.dungeons = {'):]
 for q, giver, where in re.findall(r'\{ "([^"]+)", "([^"]+)", "([^"]+)" \}', dq[:dq.index('\n}\n')]):
     city = where.split(',')[0]
     w = find(giver, ([area(city)] if area(city) else []) + CAPITALS + list(ui))

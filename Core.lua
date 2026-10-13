@@ -438,7 +438,8 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
     local cname = UnitClass("player") or "your class"
     if not RG.ClassSupported then RG.Print("Loaded. " .. cname .. " talents and gear aren't in yet: the route, quests, arrow, travel and professions all work, and item scores use a general melee guide for now.")
-    elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it starts with the Undead zones, and from level 12 or so it's the same for every Horde race.") end
+    elseif RG.PLAYER_FACTION == "Alliance" then RG.Print("Loaded. The leveling route is Horde-only for now; Alliance routes are coming. Quest tracking, the arrow, bags and gold all work.")
+    elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it picks up from level 12, which is the same for every Horde race.") end
   elseif RG.IsAlt() then
     return
   elseif event == "PLAYER_LEVEL_UP" then

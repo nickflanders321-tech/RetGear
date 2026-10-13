@@ -185,8 +185,9 @@ local function availableQuests()
   end
   local lvl = UnitLevel("player")
   for id, d in pairs(RG.QDATA) do
-    if d.s and d.n and lvl >= (d.r or 1) and (d.l or 1) >= lvl - 5 and (d.l or 1) <= lvl + 3 and not inLog[id] and not done(id) then
+    if d.s and d.n and lvl >= (d.r or 1) and (d.l or 1) >= lvl - 5 and (d.l or 1) <= lvl + 3 and not inLog[id] and not done(id) and RG.QuestForMe(d) then
       local ok = true
+      if d.x then for _, p in ipairs(d.x) do if done(p) or inLog[p] then ok = false break end end end
       if d.pg then for _, p in ipairs(d.pg) do if not done(p) then ok = false break end end end
       if ok and d.ps then ok = false; for _, p in ipairs(d.ps) do if done(p) then ok = true break end end end
       if ok then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
@@ -196,6 +197,43 @@ local function availableQuests()
   return list
 end
 RG.AvailableQuests = availableQuests
+
+-- Your class quests from the quest database (every class, including Forever's
+-- new ones): the ones you can take now, then the next ones coming up (up to
+-- 3 levels ahead), lowest level first. Raid tier-set turn-ins are left out.
+local classCache, classDirty = nil, true
+function RG.ClassQuests(max)
+  if classDirty or not classCache then
+    classDirty = false
+    local list, inLog = {}, {}
+    if RG.QDATA and C_QuestLog then
+      for i = 1, (C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries() or 0) do
+        local info = C_QuestLog.GetInfo(i)
+        if info and info.questID then inLog[info.questID] = true end
+      end
+      local lvl = UnitLevel("player")
+      for id, d in pairs(RG.QDATA) do
+        if d.cq and d.s and d.n and (d.r or 1) < 58 and (d.r or 1) <= lvl + 3 and (d.l or 1) >= lvl - 8 and not inLog[id] and not done(id) and RG.QuestForMe(d) then
+          local ok = true
+          if d.x then for _, p in ipairs(d.x) do if done(p) or inLog[p] then ok = false break end end end
+          if ok and d.pg then for _, p in ipairs(d.pg) do if not (done(p) or inLog[p]) then ok = false break end end end
+          if ok and d.ps then ok = false; for _, p in ipairs(d.ps) do if done(p) or inLog[p] then ok = true break end end end
+          if ok then
+            list[#list + 1] = { id = id, name = d.n, lvl = d.l, req = d.r or 1, now = lvl >= (d.r or 1), giver = d.s[4],
+              wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } }
+          end
+        end
+      end
+      table.sort(list, function(a, b) if a.now ~= b.now then return a.now end if a.req ~= b.req then return a.req < b.req end return a.id < b.id end)
+    end
+    classCache = list
+  end
+  local out = {}
+  for i = 1, math.min(max or #classCache, #classCache) do out[i] = classCache[i] end
+  return out
+end
+local markBase = RG.MarkQuestsDirty
+function RG.MarkQuestsDirty() classDirty = true; markBase() end
 -- Nearest few quest givers with something for you, on your continent.
 function RG.NearbyNewQuests(max)
   if not RG.Opt("newQuests") then return {} end
@@ -610,6 +648,8 @@ end
 -- ---------------------------------------------------------------------------
 RG.PIN = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:13:13|t "
 function RG.StepWaypoint(entry, i)
+  local gw = entry and RG.STEP_WP and RG.STEP_WP[entry.zone .. "|" .. entry.from]
+  if gw and gw[i] then return gw[i] end
   local W = RG.WAYPOINTS
   local list = W and entry and W.steps[entry.zone .. "|" .. entry.from]
   return list and list[i]
@@ -755,10 +795,10 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
   elseif event == "USER_WAYPOINT_UPDATED" or event == "SUPER_TRACKING_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
     refreshArrow()
   elseif event == "PLAYER_LEVEL_UP" or event == "QUEST_TURNED_IN" then
-    availDirty = true; queueBar()
+    RG.MarkQuestsDirty(); queueBar()
   else
     if paused and (event == "QUEST_REMOVED" or event == "BAG_UPDATE_DELAYED") and freeSlots() > 0 then paused = false end
-    if event ~= "BAG_UPDATE_DELAYED" then availDirty = true end
+    if event ~= "BAG_UPDATE_DELAYED" then RG.MarkQuestsDirty() end
     queueBar()
   end
 end)

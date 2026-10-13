@@ -14,7 +14,11 @@ Data.lua
 Classes\Paladin.lua
 Classes\PaladinGear.lua
 Races\Undead.lua
+Races\Durotar.lua
+Races\Tauren.lua
+Races\Skyborne.lua
 Routes\Horde.lua
+Routes\Generated.lua
 Professions\Mining.lua
 Professions\Blacksmithing.lua
 Profile.lua

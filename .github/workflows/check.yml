@@ -24,3 +24,5 @@ jobs:
               [ -z "$f" ] || [ -f "$f" ] || { echo "missing $f (listed in $t)"; exit 1; }
             done
           done
+      - name: Every Horde race and class gets a complete route (tools/audit)
+        run: lua tools/audit/audit.lua --markdown >> "$GITHUB_STEP_SUMMARY"

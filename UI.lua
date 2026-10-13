@@ -697,7 +697,7 @@ local function renderRoute()
           n = n + 1
           local qr = getRow(n)
           local pill = qs == "ready" and (GREEN .. "Ready to turn in|r") or (qs == "log" and (GOLD .. "In your log|r") or (GREY .. "Pick up|r"))
-          local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
+          local gw = q.wp or (RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]])
           setItem(qr, nil, nil, RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, "", nil, nil, true)
           qr.icon:SetTexture(136797)
           local title = q[1]
@@ -1495,7 +1495,7 @@ end
 -- Window
 -- ---------------------------------------------------------------------------
 local TITLES = {
-  route = { "Leveling route", "Undead Horde path from Deathknell to 60" },
+  route = { "Leveling route", "Your path from your starting zone to 60" },
   guide = { "Gear guide", "Ret upgrades by level, and where they come from" },
   gear  = { "My gear", "What you're wearing and what to chase next" },
   prof  = { "Professions", "Mining routes, smithing upgrades and material prices" },

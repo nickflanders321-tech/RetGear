@@ -1,8 +1,8 @@
 -- Dump Forever NPC names, spawns, friendliness and flags as TSV: id \t name \t friendly \t flags \t sub \t zone:x,y;x,y|zone:...
 local QDB = {}
 QuestieLoader = { ImportModule = function() return QDB end }
-dofile(arg[1])
-local npcs = loadstring(QDB.npcData)()
+local npcs = dofile(arg[1])  -- the merged export returns the table; raw data sets QDB.npcData
+if type(npcs) ~= "table" then npcs = loadstring(QDB.npcData)() end
 local zones = {}
 local f = io.open(arg[2], "w")
 for id, n in pairs(npcs) do

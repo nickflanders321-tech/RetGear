@@ -3,10 +3,18 @@
 local dir, out = arg[1], arg[2]
 local QDB = {}
 QuestieLoader = { ImportModule = function() return QDB end }
-dofile(dir .. "/foreverQuestDB.lua"); local quests = loadstring(QDB.questData)()
-dofile(dir .. "/foreverItemDB.lua"); local items = loadstring(QDB.itemData)()
-dofile(dir .. "/foreverNpcDB.lua"); local npcs = loadstring(QDB.npcData)()
-dofile(dir .. "/foreverObjectDB.lua"); local objects = loadstring(QDB.objectData)()
+-- Works with QuestieDB's raw data/Forever files and with its merged export
+-- (tools/export-forever.lua --include-authored -> src/corrections/Forever/combined),
+-- which adds the new Forever quests, NPCs and level changes.
+local function load(file, field)
+  local r = dofile(dir .. "/" .. file)
+  if type(r) == "table" then return r end
+  return loadstring(QDB[field])()
+end
+local quests = load("foreverQuestDB.lua", "questData")
+local items = load("foreverItemDB.lua", "itemData")
+local npcs = load("foreverNpcDB.lua", "npcData")
+local objects = load("foreverObjectDB.lua", "objectData")
 local function enc(v)
   local t = type(v)
   if t == "nil" then return "null" elseif t == "number" then return string.format("%.17g", v)
@@ -25,11 +33,11 @@ local function enc(v)
 end
 local f = io.open(out, "w")
 local Q = {}
-for id, q in pairs(quests) do Q[id] = { q[1], q[2], q[3], q[4], q[5], q[6], q[10], q[17], q[24], q[7], q[12], q[13] } end
+for id, q in pairs(quests) do Q[id] = { q[1], q[2], q[3], q[4], q[5], q[6], q[10], q[17], q[24], q[7], q[12], q[13], q[16] } end
 local I = {}
 for id, it in pairs(items) do if it[2] or it[3] then I[id] = { it[1], it[2], it[3] } end end
 local N = {}
-for id, n in pairs(npcs) do N[id] = { n[1], n[7] } end
+for id, n in pairs(npcs) do N[id] = { n[1], n[7], n[13] } end
 local O = {}
 for id, o in pairs(objects) do O[id] = { o[1], o[4] } end
 f:write('{"quests":', enc(Q), ',"items":', enc(I), ',"npcs":', enc(N), ',"objects":', enc(O), '}')

@@ -16,7 +16,7 @@ local FP = {
   ["Felwood"] = "Bloodvenom Post", ["Winterspring"] = "Everlook", ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Moonglade"] = "Moonglade",
 }
 -- Inn towns (hearthstone locations) -> zone
-local INN_TOWN = { ["Brill"] = "Tirisfal Glades", ["Undercity"] = "Undercity", ["The Sepulcher"] = "Silverpine Forest", ["Tarren Mill"] = "Hillsbrad Foothills",
+local INN_TOWN = { ["Brill"] = "Tirisfal Glades", ["Sen'jin Village"] = "Durotar", ["Undercity"] = "Undercity", ["The Sepulcher"] = "Silverpine Forest", ["Tarren Mill"] = "Hillsbrad Foothills",
   ["Hammerfall"] = "Arathi Highlands", ["Revantusk Village"] = "The Hinterlands", ["Kargath"] = "Badlands", ["Stonard"] = "Swamp of Sorrows",
   ["Grom'gol Base Camp"] = "Stranglethorn Vale", ["Booty Bay"] = "Stranglethorn Vale", ["Orgrimmar"] = "Orgrimmar", ["Razor Hill"] = "Durotar",
   ["The Crossroads"] = "The Barrens", ["Camp Taurajo"] = "The Barrens", ["Ratchet"] = "The Barrens", ["Thunder Bluff"] = "Thunder Bluff",
@@ -63,6 +63,8 @@ local DESTINATION = {
   ["Zul'Farrak"] = "Tanaris", ["Maraudon"] = "Desolace", ["Blackrock Depths"] = "Searing Gorge", ["Gnomeregan"] = "Dun Morogh",
   ["The Deadmines"] = "Westfall", ["Sunken Temple"] = "Swamp of Sorrows", ["Dire Maul"] = "Feralas",
   ["Western & Eastern Plaguelands"] = "Western Plaguelands", ["Stratholme, Scholomance, Dire Maul, LBRS/UBRS"] = "Burning Steppes",
+  ["Excavation Site"] = "Wetlands", ["City of Dalaran"] = "Hillsbrad Foothills", ["The Temple of Atal'Hakkar"] = "Swamp of Sorrows",
+  ["Riverglades"] = "Tanaris", ["Valley of Trials"] = "Durotar", ["Camp Narache"] = "Mulgore",
 }
 function RG.TravelZone(name)
   if not name then return nil end

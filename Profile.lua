@@ -7,7 +7,7 @@
 local _, RG = ...
 
 local FALLBACK_CLASS, FALLBACK_RACE = "PALADIN", "Scourge"
-local HORDE_RACES = { Orc = true, Scourge = true, Undead = true, Tauren = true, Troll = true, BloodElf = true, Goblin = true }
+local HORDE_RACES = { Orc = true, Scourge = true, Undead = true, Tauren = true, Troll = true, Skyborne = true }
 
 local function token(fn)
   if not fn then return nil end
@@ -17,7 +17,10 @@ end
 
 local classToken = token(UnitClass)
 local raceToken = token(UnitRace)
-local faction = (raceToken and not HORDE_RACES[raceToken]) and "Alliance" or "Horde"
+if raceToken and raceToken:find("Sky") then raceToken = "Skyborne" end
+local factionNow = UnitFactionGroup and select(1, pcall(UnitFactionGroup, "player")) and UnitFactionGroup("player")
+local faction = (factionNow == "Alliance" or factionNow == "Horde") and factionNow
+  or ((raceToken and not HORDE_RACES[raceToken]) and "Alliance" or "Horde")
 
 local C = RG.CLASSES[classToken or ""] or RG.CLASSES[FALLBACK_CLASS]
 if raceToken == "Undead" then raceToken = "Scourge" end
@@ -33,6 +36,19 @@ RG.ClassSupported = classToken ~= nil and RG.CLASSES[classToken] ~= nil
 RG.RaceSupported = raceToken ~= nil and RG.RACES[raceToken] ~= nil
 
 function RG.IsClass(t) return RG.PLAYER_CLASS == t end
+
+-- Quest data (Objectives.lua) marks race- and class-only quests with letters.
+local RACE_LETTER = { Orc = "O", Scourge = "U", Tauren = "T", Troll = "R", Skyborne = "S" }
+local CLASS_LETTER = { WARRIOR = "W", PALADIN = "P", HUNTER = "H", ROGUE = "R", PRIEST = "I", SHAMAN = "S", MAGE = "M", WARLOCK = "L", DRUID = "D" }
+RG.RACE_LETTER = RACE_LETTER[RG.PLAYER_RACE] or ((RG.PLAYER_RACE or ""):find("Sky") and "S") or "?"
+RG.CLASS_LETTER = CLASS_LETTER[RG.PLAYER_CLASS] or "?"
+-- Can this character take the quest? (race and class only; level and prerequisites are checked elsewhere)
+function RG.QuestForMe(d)
+  if not d then return false end
+  if d.ra and not d.ra:find(RG.RACE_LETTER, 1, true) then return false end
+  if d.cl and not d.cl:find(RG.CLASS_LETTER, 1, true) then return false end
+  return true
+end
 
 -- ---------------------------------------------------------------------------
 -- Class: stat weights, gear guide, talents, rotation, class quests
@@ -71,6 +87,10 @@ for _, src in ipairs({ H, R, own }) do
   for _, t in ipairs(src.travel or {}) do travel[#travel + 1] = t end
   for k, v in pairs(src.steps or {}) do steps[k] = v end
 end
+-- A race can move shared entries (its home dungeons come first: R.prefer = { zone = o }).
+for _, r in ipairs(route) do
+  if R.prefer and R.prefer[r.zone] then r.o = R.prefer[r.zone] end
+end
 -- o = position the entry was written at; entries without one go by level.
 for i, r in ipairs(route) do r._i = i end
 table.sort(route, function(a, b)
@@ -80,8 +100,58 @@ table.sort(route, function(a, b)
 end)
 for i, t in ipairs(travel) do t._i = i end
 table.sort(travel, function(a, b) if a.lvl ~= b.lvl then return a.lvl < b.lvl end return a._i < b._i end)
+-- Starting zones with generated quest steps (Routes/Generated.lua): text, the
+-- quests each step covers (so it ticks itself off) and the hub's waypoint.
+local stepQuests, stepWp = {}, {}
+local gen = R.gen and RG.GEN_STEPS and RG.GEN_STEPS[RG.RACE_LETTER]
+if gen then
+  for _, r in ipairs(R.route or {}) do
+    local key = r.zone .. "|" .. r.from
+    local g = gen[key]
+    if g and not (R.steps and R.steps[key]) then
+      local texts, qs, ws = {}, {}, {}
+      for i, s in ipairs(g) do texts[i], qs[i], ws[i] = s.t, s.q, s.w end
+      steps[key], stepQuests[key], stepWp[key] = texts, qs, ws
+    end
+  end
+end
+-- Lines for one class ("Paladins: ...") only show for that class.
+local CLASS_PLURAL = { Warriors = "WARRIOR", Paladins = "PALADIN", Hunters = "HUNTER", Rogues = "ROGUE", Priests = "PRIEST",
+  Shamans = "SHAMAN", Mages = "MAGE", Warlocks = "WARLOCK", Druids = "DRUID" }
+for key, list in pairs(steps) do
+  local keep, changed = {}, false
+  for _, text in ipairs(list) do
+    local who = type(text) == "string" and text:match("^(%a+): ")
+    if who and CLASS_PLURAL[who] and CLASS_PLURAL[who] ~= RG.PLAYER_CLASS then changed = true else keep[#keep + 1] = text end
+  end
+  if changed and not stepQuests[key] then steps[key] = keep end
+end
 RG.ROUTE, RG.TRAVEL, RG.STEPS = route, travel, steps
-RG.DUNGEON_QUESTS = H.dungeons or {}
+RG.STEP_QUESTS, RG.STEP_WP = stepQuests, stepWp
+-- Dungeon quests: the hand-written list for each dungeon plus every other quest
+-- for it in the quest data (Routes/Generated.lua), only the ones this race and
+-- class can take.
+local function forMe(g)
+  if g.ra and not g.ra:find(RG.RACE_LETTER, 1, true) then return false end
+  if g.cl and not g.cl:find(RG.CLASS_LETTER, 1, true) then return false end
+  return true
+end
+local dungeons = {}
+for name, dq in pairs(H.dungeons or {}) do
+  local copy = {}
+  for k, v in pairs(dq) do copy[k] = v end
+  local list, seen = {}, {}
+  for _, q in ipairs(dq.quests or {}) do list[#list + 1] = q; seen[(q[1]:gsub("%s*%(.-%)$", ""))] = true end
+  for _, g in ipairs((RG.GEN_DUNGEONS or {})[name] or {}) do
+    if not seen[g.n] and g.g ~= "" and forMe(g) and g.l <= (dq.go or 0) + 12 and g.r <= (dq.go or 60) + 2 then
+      seen[g.n] = true
+      list[#list + 1] = { g.n, g.g, g.at, wp = g.w, id = g.id }
+    end
+  end
+  copy.quests = list
+  dungeons[name] = copy
+end
+RG.DUNGEON_QUESTS = dungeons
 
 -- ---------------------------------------------------------------------------
 -- Professions (all of them for now; the tabs check your skills)

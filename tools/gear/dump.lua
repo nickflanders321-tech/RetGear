@@ -3,9 +3,14 @@
 local dir, out = arg[1], arg[2]
 local QDB = {}
 QuestieLoader = { ImportModule = function() return QDB end }
-dofile(dir .. "/foreverQuestDB.lua"); local quests = loadstring(QDB.questData)()
-dofile(dir .. "/foreverItemDB.lua"); local items = loadstring(QDB.itemData)()
-dofile(dir .. "/foreverNpcDB.lua"); local npcs = loadstring(QDB.npcData)()
+local function load(file, field)  -- raw data/Forever or the merged export (see tools/qdb)
+  local r = dofile(dir .. "/" .. file)
+  if type(r) == "table" then return r end
+  return loadstring(QDB[field])()
+end
+local quests = load("foreverQuestDB.lua", "questData")
+local items = load("foreverItemDB.lua", "itemData")
+local npcs = load("foreverNpcDB.lua", "npcData")
 local function enc(v)
   local t = type(v)
   if t == "nil" then return "null" elseif t == "number" then return string.format("%.17g", v)

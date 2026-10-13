@@ -3,7 +3,8 @@
 local file, out = arg[1], arg[2]
 local QDB = {}
 QuestieLoader = { ImportModule = function() return QDB end }
-dofile(file); local objects = loadstring(QDB.objectData)()
+local objects = dofile(file)  -- the merged export returns the table; raw data sets QDB.objectData
+if type(objects) ~= "table" then objects = loadstring(QDB.objectData)() end
 local f = io.open(out, "w")
 for _, o in pairs(objects) do
   local n = o[1]
