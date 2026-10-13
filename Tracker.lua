@@ -162,7 +162,7 @@ local function build()
   ab:SetScript("OnClick", function(self)
     RetGearDB.arrow = not RG.Opt("arrow")
     if RG.RefreshArrow then RG.RefreshArrow() end
-    RG.Print("Arrow " .. (RG.Opt("arrow") and (GREEN .. "on|r") or (GREY .. "off|r")) .. ".")
+    RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
     if PlaySound and SOUNDKIT and RG.Opt("sounds") then pcall(PlaySound, SOUNDKIT.U_CHAT_SCROLL_BUTTON or 1115) end
     RG.RefreshTracker()
     if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
@@ -515,6 +515,15 @@ function RG.RefreshTracker()
   tr.body:SetHeight(math.max(10, y))
   tr:SetHeight(42 + y + 8)
 end
+
+-- Fade the tracker during fights so it doesn't cover the action.
+table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = true })
+local fade = CreateFrame("Frame")
+fade:RegisterEvent("PLAYER_REGEN_DISABLED"); fade:RegisterEvent("PLAYER_REGEN_ENABLED")
+fade:SetScript("OnEvent", function(_, event)
+  if not tr then return end
+  if event == "PLAYER_REGEN_DISABLED" and RG.Opt("trackerFade") then tr:SetAlpha(0.35) else tr:SetAlpha(1) end
+end)
 
 -- Refresh on the things that change the tracker, at most a few times a second.
 local pending

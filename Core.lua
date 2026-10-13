@@ -9,6 +9,10 @@ local GREEN, RED, GREY = "|cff40c040", "|cffff3333", "|cffa0a0a0"
 RG.COLORS = { GOLD = GOLD, GREEN = GREEN, RED = RED, GREY = GREY }
 
 function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "RetGear|r " .. tostring(msg)) end
+-- Small confirmations (pins, arrow on/off) flash in the middle of the screen instead of filling chat.
+function RG.Notify(msg)
+  if UIErrorsFrame and UIErrorsFrame.AddMessage then UIErrorsFrame:AddMessage(tostring(msg), 1, 0.82, 0) else RG.Print(msg) end
+end
 
 -- ---------------------------------------------------------------------------
 -- Saved settings

@@ -1,0 +1,8 @@
+<Bindings>
+  <Binding name="RETGEAR_TOGGLE" header="RETGEAR" category="ADDONS">RetGear_Bind("toggle")</Binding>
+  <Binding name="RETGEAR_NEXT" category="ADDONS">RetGear_Bind("next")</Binding>
+  <Binding name="RETGEAR_ARROW" category="ADDONS">RetGear_Bind("arrow")</Binding>
+  <Binding name="RETGEAR_TRACKER" category="ADDONS">RetGear_Bind("tracker")</Binding>
+  <Binding name="RETGEAR_UNDO" category="ADDONS">RetGear_Bind("undo")</Binding>
+  <Binding name="RETGEAR_SORT" category="ADDONS">RetGear_Bind("sort")</Binding>
+</Bindings>

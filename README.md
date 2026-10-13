@@ -52,6 +52,9 @@ No bank alt yet? Make a new Undead on the same realm and log in: a secret guide 
 
 Your paladin is your **main**. Any other character runs in **bank alt mode**: it won't touch your main's data, its tracker shows the shopping list, clicking an item searches the AH, and a button at the mailbox attaches everything and addresses it to your main. `/rg main` changes which character is your main.
 
+## Key bindings
+Esc > Options > Keybindings > AddOns > RetGear: open the guide, pin your nearest objective, arrow on/off, show/hide the tracker, undo a tick, sort bags. Minimap button: click opens the guide, right-click hides the tracker, Shift-click toggles the arrow, Ctrl-click opens Settings.
+
 ## Commands
 | Command | What it does |
 |---|---|

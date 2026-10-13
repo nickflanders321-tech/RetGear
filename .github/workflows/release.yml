@@ -41,7 +41,7 @@ jobs:
         run: |
           v="${{ steps.tag.outputs.v }}"
           mkdir -p .release/RetGear
-          cp *.toc *.lua README.md .release/RetGear/
+          cp *.toc *.lua *.xml README.md .release/RetGear/
           sed -i "s/@project-version@/$v/g" .release/RetGear/*.toc
           (cd .release && zip -qr "RetGear-$v.zip" RetGear)
           awk -v h="## $v" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md > release-notes.md

@@ -314,6 +314,8 @@ function RG.MinimapButton()
     mm:RegisterForClicks("LeftButtonUp", "RightButtonUp"); mm:RegisterForDrag("LeftButton")
     mm:SetScript("OnClick", function(_, btn)
       if btn == "RightButton" then RetGearDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+      elseif IsShiftKeyDown and IsShiftKeyDown() then RetGearDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+      elseif IsControlKeyDown and IsControlKeyDown() then if RG.ShowTab then RG.ShowTab("settings") end
       elseif RG.ToggleUI then RG.ToggleUI() end
     end)
     mm:SetScript("OnDragStart", function(self) self:SetScript("OnUpdate", function()
@@ -323,7 +325,8 @@ function RG.MinimapButton()
     mm:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
     mm:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("RetGear", GOLDC[1], GOLDC[2], GOLDC[3])
-      GameTooltip:AddLine("Click: open the guide", 1, 1, 1); GameTooltip:AddLine("Right-click: show or hide the tracker", 1, 1, 1); GameTooltip:AddLine("Drag: move this button", 0.6, 0.6, 0.6)
+      GameTooltip:AddLine("Click: open the guide", 1, 1, 1); GameTooltip:AddLine("Right-click: show or hide the tracker", 1, 1, 1)
+      GameTooltip:AddLine("Shift-click: arrow on or off", 1, 1, 1); GameTooltip:AddLine("Ctrl-click: settings", 1, 1, 1); GameTooltip:AddLine("Drag: move this button", 0.6, 0.6, 0.6)
       GameTooltip:Show()
     end)
     mm:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -373,4 +376,21 @@ SlashCmdList.RETGEAR = function(msg)
   if cmd == "welcome" then RG.ShowWelcome(); return end
   if cmd == "settings" then if RG.ShowTab then RG.ShowTab("settings") end; return end
   return base(msg)
+end
+
+-- Key Bindings (Esc > Options > Keybindings > AddOns > RetGear)
+BINDING_HEADER_RETGEAR = "RetGear"
+BINDING_NAME_RETGEAR_TOGGLE = "Open or close the guide"
+BINDING_NAME_RETGEAR_NEXT = "Pin my nearest quest objective"
+BINDING_NAME_RETGEAR_ARROW = "Arrow on or off"
+BINDING_NAME_RETGEAR_TRACKER = "Show or hide the tracker"
+BINDING_NAME_RETGEAR_UNDO = "Undo my last ticked task"
+BINDING_NAME_RETGEAR_SORT = "Sort my bags"
+function RetGear_Bind(action)
+  if action == "toggle" then if RG.ToggleUI then RG.ToggleUI() end
+  elseif action == "next" then SlashCmdList.RETGEAR("next")
+  elseif action == "arrow" then RetGearDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+  elseif action == "tracker" then RetGearDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+  elseif action == "undo" then SlashCmdList.RETGEAR("undo")
+  elseif action == "sort" then if RG.SortBags then RG.SortBags(BankFrame and BankFrame:IsShown()) end end
 end

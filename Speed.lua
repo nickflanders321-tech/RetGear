@@ -484,7 +484,7 @@ local function buildArrow()
   arrow:SetScript("OnMouseUp", function(_, btn)
     if btn == "RightButton" then RG.ClearWaypoint(); return end
     local now = GetTime()
-    if now - lastUp < 0.35 then lastUp = 0; RG.ClearWaypoint(); RG.Print(GREY .. "Arrow off.|r") else lastUp = now end
+    if now - lastUp < 0.35 then lastUp = 0; RG.ClearWaypoint(); RG.Notify("Arrow off") else lastUp = now end
   end)
   arrow:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Drag to move. Double-click or right-click to turn the arrow off.", 1, 1, 1, 1, true); GameTooltip:Show() end)
   arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -501,7 +501,7 @@ local function buildArrow()
     if not (c1 and c2 and c1 == c2) then self.dist:SetText(GREY .. "other continent|r"); return end
     local dx, dy = tx - px, ty - py -- x = north, y = west
     local d = math.sqrt(dx * dx + dy * dy)
-    if d < 8 then RG.Print(GREEN .. "Arrived.|r"); if C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide(); return end
+    if d < 8 then RG.Notify("Arrived"); if C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide(); return end
     local bearing = math.atan2(dy, dx)
     self.tex:SetRotation(bearing - facing)
     local label = lastPlaced and samePin({ map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }, lastPlaced) and lastLabel or nil
@@ -545,7 +545,7 @@ function RG.PinWaypoint(wp, quiet)
   if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
   if RG.RefreshArrow then RG.RefreshArrow() end
-  if not quiet then RG.Print("Pinned " .. GOLD .. wp[4] .. "|r" .. GREY .. string.format(" (%.1f, %.1f). Follow the arrow.|r", wp[2], wp[3])) end
+  if not quiet then RG.Notify("Pinned " .. wp[4] .. ": follow the arrow") end
 end
 function RG.ClearWaypoint()
   if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
@@ -557,11 +557,11 @@ function RG.ArrowTo(wp)
   local cur = currentPin()
   if cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) then
     RG.ClearWaypoint()
-    RG.Print(GREY .. "Arrow off.|r")
+    RG.Notify("Arrow off")
   else
     if not RG.Opt("arrow") then RetGearDB.arrow = true end
     RG.PinWaypoint(wp, true)
-    RG.Print("Arrow on: " .. GOLD .. wp[4] .. "|r" .. GREY .. "  (double-click again to turn it off)|r")
+    RG.Notify("Arrow on: " .. wp[4])
   end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
@@ -587,7 +587,7 @@ function RG.SetWaypoint(x, y)
   lastPlaced = nil -- a pin you chose: auto-follow leaves it alone
   if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   refreshArrow()
-  RG.Print(string.format("Pin set at %.1f, %.1f. Follow the arrow (right-click it to clear).", x, y))
+  RG.Notify(string.format("Pin set at %.1f, %.1f: follow the arrow", x, y))
 end
 
 -- ===========================================================================

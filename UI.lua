@@ -39,6 +39,7 @@ local function BAR_H() return sz(44) end
 local frame, scroll, content, tabs, footer, sectionTitle
 local rows = {}
 local state = { tab = "route", near = true, open = {} }
+local function saveTab() if RetGearDB then RetGearDB.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
@@ -1389,7 +1390,7 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishSound", "fishRecast", "profitWatch", "autoScan" } },
   { "Interface", { "minimap", "sounds" } },
@@ -1657,10 +1658,15 @@ end
 
 local function build()
   frame = CreateFrame("Frame", "RetGearFrame", UIParent, "BackdropTemplate")
-  frame:SetSize(W, H); frame:SetPoint("CENTER")
+  frame:SetSize(W, H)
+  local pos = RetGearDB and RetGearDB.windowPos
+  if pos then frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else frame:SetPoint("CENTER") end
+  if RetGearDB and RetGearDB.lastTab then state.tab = RetGearDB.lastTab end
   RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", frame.StartMoving); frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+  frame:SetScript("OnDragStart", frame.StartMoving)
+  frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RetGearDB.windowPos = { p, rp, x, y } end)
+  frame:SetScript("OnHide", saveTab)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "RetGearFrame")
 
@@ -1773,7 +1779,7 @@ end
 
 function RG.ShowTab(tab)
   if not frame then build() end
-  state.tab = tab; frame:Show(); RG.RefreshUI()
+  state.tab = tab; saveTab(); frame:Show(); RG.RefreshUI()
 end
 
 function RG.ToggleUI()

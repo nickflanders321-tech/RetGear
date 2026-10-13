@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.31.0 (quality-of-life sweep)
+- **Key bindings** (Esc > Options > Keybindings > AddOns > RetGear): open or close the guide, pin your nearest quest objective, arrow on/off, show/hide the tracker, undo your last ticked task, sort your bags.
+- **The guide window remembers** where you dragged it and which tab you had open, across reloads and logins.
+- **Less chat spam:** map pins, "arrow on/off", "Arrived" and `/rg way` confirmations now flash briefly in the middle of the screen instead of filling your chat.
+- **Tracker fades during combat** (35% opacity) so it doesn't cover the fight, and comes back when combat ends. Turn off in Settings.
+- **Minimap button shortcuts:** Shift-click turns the arrow on or off, Ctrl-click opens Settings (click still opens the guide, right-click still hides the tracker).
+
 ## v0.30.0 (ore alerts)
 - **Ore nearby alert:** when you come within about 90 yards of a spot where a vein you can mine can spawn, and it still gives Mining skill, RetGear tells you on screen ("Iron Deposit spot 60 yd to your left: check your minimap") with a ping, and the tracker shows it; click the line to pin it and follow the arrow.
 - Uses WoW Forever's known vein spawn points (about 4,600 spots in 39 zones, from QuestieDB). The game doesn't let addons read the minimap's ore dots, so a spot can be empty if it was mined: Find Minerals on your minimap shows whether it's up.
