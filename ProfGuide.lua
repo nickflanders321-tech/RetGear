@@ -213,6 +213,39 @@ local function playerMap()
   local m = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
   return m
 end
+-- Spots near you first: the zone you're in, then your continent, then your
+-- race's home zones; `extra(w)` adds its own points (e.g. a better level).
+local HOME_MAPS = { O = { [1411] = true, [1413] = true }, R = { [1411] = true, [1413] = true }, T = { [1412] = true, [1413] = true },
+  U = { [1420] = true, [1421] = true }, S = { [1412] = true, [1413] = true } }
+local contCache = {}
+local function continentOf(map)
+  if not map then return nil end
+  if contCache[map] ~= nil then return contCache[map] or nil end
+  local m, cont = map, false
+  for _ = 1, 6 do
+    local info = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(m)
+    if not info then break end
+    if info.mapType == 2 then cont = m; break end
+    m = info.parentMapID
+    if not m or m == 0 then break end
+  end
+  contCache[map] = cont
+  return cont or nil
+end
+function RG.RankSpots(list, extra)
+  local here = playerMap()
+  local hc = continentOf(here)
+  local home = HOME_MAPS[RG.RACE_LETTER] or {}
+  local scored = {}
+  for i, w in ipairs(list or {}) do
+    local sc = (w[1] == here and 100 or 0) + ((hc and continentOf(w[1]) == hc) and 40 or 0) + (home[w[1]] and 25 or 0) + (extra and extra(w) or 0)
+    scored[#scored + 1] = { w = w, s = sc, i = i }
+  end
+  table.sort(scored, function(a, b) if a.s ~= b.s then return a.s > b.s end return a.i < b.i end)
+  local out = {}
+  for i, e in ipairs(scored) do out[i] = e.w end
+  return out
+end
 local function pickNear(list, filter)
   if not list then return nil end
   local here, home = playerMap(), CAPITAL[RG.RACE_LETTER]
@@ -271,16 +304,17 @@ function RG.MatPlaces(id, max)
     if v then add("Buy " .. name, v[4], v) end
   end
   for _, node in ipairs((RG.MAT_NODES or {})[id] or {}) do
-    local spots = RG.GATHER_SPOTS and RG.GATHER_SPOTS[node]
+    local spots = RG.GATHER_SPOTS and RG.RankSpots(RG.GATHER_SPOTS[node], function(w) return (tonumber(w[4]:match(": (%d+)")) or 0) / 5 end)
     if spots and spots[1] then add((kind == "herb" and "Pick " or "Mine ") .. node, spots[1][4], spots[1]) end
     break
   end
   local spots = RG.MAT_SPOTS and RG.MAT_SPOTS[id]
   if spots then
     local me = lvl()
-    local best
-    for _, s in ipairs(spots) do if (s[5] or 0) <= me + 2 then best = s; break end end
-    best = best or spots[#spots]
+    local ok = {}
+    for _, s in ipairs(spots) do if (s[5] or 0) <= me + 2 then ok[#ok + 1] = s end end
+    -- near you, a level you can handle, and a good drop rate (list order)
+    local best = RG.RankSpots(ok, function(w) return math.max(0, 20 - (me - (w[5] or 0))) end)[1] or spots[#spots]
     if best then add((kind == "leather" and "Skin or loot " or "Farm ") .. name, best[4], best) end
   end
   return out, kind
@@ -296,7 +330,7 @@ function RG.ProfPlaces(name, now)
   local function add(title, sub, wp, icon) out[#out + 1] = { title = title, sub = sub, wp = wp, icon = icon } end
   if st.gather then
     for _, node in ipairs({ st.gather, st.also }) do
-      for i, s in ipairs((RG.GATHER_SPOTS or {})[node] or {}) do
+      for i, s in ipairs(RG.RankSpots((RG.GATHER_SPOTS or {})[node], function(w) return (tonumber(w[4]:match(": (%d+)")) or 0) / 5 end)) do
         if i > 2 then break end
         add((name == "Mining" and "Mine " or "Pick ") .. node, s[4], s)
       end
@@ -307,7 +341,7 @@ function RG.ProfPlaces(name, now)
     for _, s in ipairs(RG.SKIN_SPOTS or {}) do
       if s[5] <= top and s[5] >= top - 4 then picks[#picks + 1] = s end
     end
-    table.sort(picks, function(a, b) return a[5] > b[5] end)
+    picks = RG.RankSpots(picks, function(w) return w[5] * 2 end)
     for i = 1, math.min(3, #picks) do add("Skin " .. picks[i][4]:match("^(.-) %(") , picks[i][4], picks[i]) end
   elseif P.fishTab and RG.FISH_ROUTE then
     for _, f in ipairs(RG.FISH_ROUTE) do

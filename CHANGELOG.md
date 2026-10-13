@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.45.0 (fixes from your screenshots)
+- **Talents for every class:** the Talents tab now shows a leveling build for every class and spec (it used to be empty outside Paladin). It shows what to work toward, ranks as "x/target", and the next point to spend, all taken from the current Forever guides.
+- **Gear guide fits your character:** early-level items no longer come from another race's starting zone (no Tirisfal or Darkshore picks for an Orc), and quest, rare and vendor items from Alliance-only zones are gone for Horde.
+- **Profession spots near you:** suggested places prefer your current zone first, then your continent, then your home zones. An Orc in Durotar gets Durotar spots instead of Mulgore.
+- **More skinning and farming spots:** neutral beasts such as Mottled Boar now count, and each level range lists more places.
+
 ## v0.44.2
 - "What's new" covers every update since the one you last saw, not just the latest. `/wp news` shows the last two updates, and `/wp news all` shows older ones.
 

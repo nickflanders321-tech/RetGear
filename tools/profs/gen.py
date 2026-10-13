@@ -116,7 +116,7 @@ for line in open(npcs_tsv, encoding="utf-8"):
         for part in spawns.split("|"):
             z, pts = part.split(":")
             sp.setdefault(int(z), []).extend(tuple(map(float, p.split(","))) for p in pts.split(";") if p)
-    npc_spawns[nid] = (sp, friend, sub)
+    npc_spawns[nid] = (sp, friend, sub, int(flags or 0))
 
 def centre(pts):
     """The point with the most other points within 8 map units."""
@@ -269,8 +269,8 @@ def mob_spots(cands, limit=8):
         sp = npc_spawns.get(cid)
         if not n or not sp: continue
         if (n.get("rank") or 0) not in (0,): continue
-        friend = sp[1]
-        if friend: continue   # only mobs hostile to everyone (no guards, no Horde NPCs)
+        # hostile ("") or neutral ("AH") mobs; not one faction's NPCs/guards, not vendors or quest givers
+        if sp[1] in ("A", "H") or sp[3]: continue
         for z, pts in sp[0].items():
             if z in DUNGEON_AREAS or z not in ui or z in ALLIANCE_ZONES: continue
             if len(pts) < 4: continue
@@ -376,13 +376,13 @@ for block, names in (("RG.NODE_SPOTS = {", ore_nodes), ("RG.HERB_SPOTS = {", her
             p, c = centre(pts)
             if c >= 3: cl.append((c, m, p, "%s: %d %s nearby (%d in the zone)" % (MAPNAME.get(m, "?"), c, nm + ("s" if not nm.endswith("s") else ""), len(pts))))
         cl.sort(key=lambda o: -o[0])
-        if cl: GATHER[nm] = cl[:4]
+        if cl: GATHER[nm] = cl[:8]
 
 skin_spots = []
 for cid, c in creatures.items():
     if not int(c["SkinningLootId"] or 0): continue
     n = FN.get(str(cid)); sp = npc_spawns.get(cid)
-    if not n or not sp or (n.get("rank") or 0) != 0 or sp[1]: continue
+    if not n or not sp or (n.get("rank") or 0) != 0 or sp[1] in ("A", "H") or sp[3]: continue
     for z, pts in sp[0].items():
         if z in DUNGEON_AREAS or z not in ui or z in ALLIANCE_ZONES or len(pts) < 6: continue
         p, cnt = centre(pts)
@@ -390,7 +390,7 @@ for cid, c in creatures.items():
         skin_spots.append((hi, cnt, ui[z], p, "%s (%s, level %d)" % (npc_name.get(cid, n["name"]), AREA.get(z, "?"), hi)))
 SKIN = []
 for lvl in range(1, 64):
-    band = sorted([s for s in skin_spots if s[0] == lvl], key=lambda s: -s[1])[:3]
+    band = sorted([s for s in skin_spots if s[0] == lvl], key=lambda s: -s[1])[:6]
     SKIN += band
 
 fish = defaultdict(list)

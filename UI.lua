@@ -1138,17 +1138,25 @@ local function renderTalents()
     n = n + 1; setHeader(getRow(n), "Talent builds for your class are coming in a later update")
     return n
   end
-  n = n + 1; setHeader(getRow(n), (cls.spec or "Your") .. " talents, in order")
+  local G = RG.TALENT_GUIDE
+  n = n + 1; setHeader(getRow(n), (cls.spec or "Your") .. " talents, in order" .. (G and "  ·  WoW Forever beta build (level 30)" or ""))
+  if G and G.goal then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GOLD .. "Work toward:|r " .. G.goal, GREY .. "From the newest Forever guide; level 60 builds come with the twice-weekly update once they're published. Other specs: 2nd Spec tab.|r", "", "", nil, nil, true)
+    rows[n].icon:SetTexture(G.icon or 135891)
+  end
   for i, t in ipairs(RG.TALENT_PRIORITY) do
     n = n + 1
     local info = tree and tree[t.name]
     local right, accent
     if info then
-      if info.rank >= info.max then right = GREEN .. info.rank .. "/" .. info.max .. "|r"; accent = "green"
-      elseif info.rank > 0 then right = GOLD .. info.rank .. "/" .. info.max .. "|r"
-      else right = GREY .. "0/" .. info.max .. (info.available and "" or " · locked") .. "|r" end
-    else right = tree and (GREY .. "not in your tree|r") or "" end
-    setItem(getRow(n), nil, nil, (info and info.rank >= info.max and GREY or "|cffffffff") .. i .. ".  " .. t.name .. "|r", t.why, right, "", accent)
+      local want = math.min(t.target or info.max, info.max)
+      if info.rank >= want then right = GREEN .. info.rank .. "/" .. want .. "|r"; accent = "green"
+      elseif info.rank > 0 then right = GOLD .. info.rank .. "/" .. want .. "|r"
+      else right = GREY .. "0/" .. want .. (info.available and "" or " · locked") .. "|r" end
+    else right = tree and (GREY .. "not in your tree|r") or (t.target and (GREY .. t.target .. " pt" .. (t.target > 1 and "s" or "") .. "|r") or "") end
+    local done = info and info.rank >= math.min(t.target or info.max, info.max)
+    setItem(getRow(n), nil, nil, (done and GREY or "|cffffffff") .. i .. ".  " .. t.name .. "|r", t.why, right, "", accent)
     rows[n].icon:SetTexture(135891)
   end
   n = n + 1; setHeader(getRow(n), "What to press while leveling")

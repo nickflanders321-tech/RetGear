@@ -11,7 +11,6 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 2976, slot = "Hands", lvl = 10, how = "Rare mob", src = "Pyrewood Tailor", zone = "Silverpine Forest", score = 4, bl = 15, gen = true },  -- Hunting Gloves
   { id = 4909, slot = "Legs", lvl = 10, how = "Quest", src = "Rites of the Earthmother (Cairne Bloodhoof)", zone = "Mulgore", score = 8, q = 776, gen = true },  -- Kodo Hunter's Leggings
   { id = 5275, slot = "Waist", lvl = 10, how = "Quest", src = "The Disruption Ends (Thork)", zone = "The Barrens", score = 1, q = 872, gen = true },  -- Binding Girdle
-  { id = 1928, slot = "2H", lvl = 11, how = "Rare mob", src = "Defias Magician", zone = "Westfall", score = 12, bl = 17, gen = true },  -- Defias Mage Staff
   { id = 11303, slot = "Ranged", lvl = 11, how = "Vendor", src = "Kuna Thunderhorn", zone = "Thunder Bluff", score = 86, also = { { how = "Vendor", src = "Abigail Sawyer", zone = "Undercity" }, { how = "Vendor", src = "Lhara", zone = "Mulgore" } }, gen = true },  -- Fine Shortbow
   { id = 15444, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 14, q = 5730, gen = true },  -- Staff of Orgrimmar
   { id = 14149, slot = "Back", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 4, bl = 16, gen = true },  -- Subterranean Cape
@@ -23,7 +22,7 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 11304, slot = "Ranged", lvl = 14, how = "Vendor", src = "Uthrok", zone = "The Barrens", score = 104, also = { { how = "Vendor", src = "Wallace the Blind", zone = "Silverpine Forest" }, { how = "Vendor", src = "Borand", zone = "Stonetalon Mountains" } }, gen = true },  -- Fine Longbow
   { id = 5318, slot = "2H", lvl = 15, how = "Quest", src = "Serena Bloodfeather (Darsok Swiftdagger)", zone = "The Barrens", score = 15, q = 876, gen = true },  -- Zhovur Axe
   { id = 5314, slot = "Back", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 6, q = 899, gen = true },  -- Boar Hunter's Cape
-  { id = 4788, slot = "Feet", lvl = 15, how = "Vendor", src = "Defias Profiteer", zone = "Westfall", score = 10, also = { { how = "Vendor", src = "Alexandre Lefevre", zone = "Silverpine Forest" }, { how = "Vendor", src = "Pizznukle", zone = "The Barrens" } }, gen = true },  -- Agile Boots
+  { id = 4788, slot = "Feet", lvl = 15, how = "Vendor", src = "Alexandre Lefevre", zone = "Silverpine Forest", score = 10, also = { { how = "Vendor", src = "Pizznukle", zone = "The Barrens" } }, gen = true },  -- Agile Boots
   { id = 5299, slot = "Hands", lvl = 15, how = "Quest", src = "Cry of the Thunderhawk (Jorn Skyseer)", zone = "The Barrens", score = 7, q = 913, gen = true },  -- Gloves of the Moon
   { id = 6480, slot = "Legs", lvl = 15, how = "Quest", src = "Deviate Hides (Nalpak)", zone = "Wailing Caverns", score = 9, q = 1486, gen = true },  -- Slick Deviate Leggings
   { id = 5309, slot = "Ranged", lvl = 15, how = "Quest", src = "The Guns of Northwatch (Captain Thalo'thas Brightsun)", zone = "The Barrens", score = 110, q = 891, gen = true },  -- Privateer Musket

@@ -118,6 +118,9 @@ for m in re.finditer(r'\[(\d+)\] = \{"([^"]+)",(?:\{([\d,]*)\}|nil)', dsrc):
 RAIDS = {"Molten Core", "Blackwing Lair", "Onyxia's Lair", "Zul'Gurub", "Ruins of Ahn'Qiraj", "Temple of Ahn'Qiraj", "Naxxramas",
          "Utgarde Keep"}  # (Utgarde: not a classic-level dungeon)
 HORDE_FAR = {"The Stockade"}  # inside Stormwind
+# Alliance home zones: no quest rewards, rare mobs or vendors from there for the Horde
+ALLIANCE_ZONES = {"Dun Morogh", "Elwynn Forest", "Teldrassil", "Darkshore", "Westfall", "Loch Modan", "Redridge Mountains",
+                  "Duskwood", "Stormwind City", "Ironforge", "Darnassus"}
 def zone_name(z):
     if z is None: return None
     return DUNGEON.get(z) or AREA.get(z)
@@ -295,6 +298,7 @@ def sources(iid):
             gv, _ = givers_of(q)
             if gv:
                 n = FN.get(str(gv[0])); giver = n and n.get("name")
+            if zname in ALLIANCE_ZONES: continue
             out.append({"how": "Quest", "lvl": q.get("level") or q.get("reqLevel") or 0, "req": q.get("reqLevel") or 0,
                         "src": q["name"] + (" (" + giver + ")" if giver else ""), "zone": zname or "", "quest": q["name"], "q": int(qid)})
     drops = L(f.get("npcDrops"))
@@ -308,12 +312,12 @@ def sources(iid):
                 if d in RAIDS or d in HORDE_FAR: continue
                 if (n.get("rank") or 0) < 1: continue
                 out.append({"how": "Dungeon", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": d, "bl": n.get("maxLevel") or 0})
-            elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z):
+            elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in ALLIANCE_ZONES:
                 out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
     for vid in L(f.get("vendors")):
         n = FN.get(str(vid))
         sub = (n.get("sub") or "") if n else ""
-        if n and "H" in (n.get("faction") or "") and not re.search(r"Supply Officer|Quartermaster|Legionnaire|Battlemaster", sub):
+        if n and "H" in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in ALLIANCE_ZONES and not re.search(r"Supply Officer|Quartermaster|Legionnaire|Battlemaster", sub):
             out.append({"how": "Vendor", "lvl": 0, "src": n["name"], "zone": zone_name(n.get("zone")) or ""})
     return out
 

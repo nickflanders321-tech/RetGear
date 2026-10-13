@@ -68,6 +68,30 @@ RG.ClassHasTalents = own.talents and #own.talents > 0
 RG.CLASS_QUESTS = own.classQuests or {}
 RG.TALENT_PRIORITY = own.talents or {}
 RG.ROTATION = own.rotation or {}
+-- Classes without a hand-written talent order use their leveling spec's build
+-- from the WoW Forever guides (Classes/Specs.lua): "Frost 21: Improved Frostbolt 5, ..."
+if not RG.ClassHasTalents and RG.ClassSupported and RG.SPECS then
+  for _, s in ipairs(RG.SPECS[RG.PLAYER_CLASS] or {}) do
+    if s.main then
+      local list = {}
+      for _, line in ipairs(s.build or {}) do
+        local tree, body = line:match("^(%a[%a ]-) %d+: (.+)$")
+        for part in (body or ""):gmatch("[^,]+") do
+          part = part:gsub("^%s+", ""):gsub("%s+$", "")
+          local name, pts = part:match("^(.-)%s+(%d+)$")
+          name, pts = name or part, tonumber(pts) or 1
+          if name ~= "" then
+            list[#list + 1] = { name = name, target = pts, why = (tree and (tree .. " tree") or "") .. "  ·  " .. pts .. " point" .. (pts > 1 and "s" or "") .. " in the " .. s.name .. " build" }
+          end
+        end
+      end
+      if #list > 0 then
+        RG.TALENT_PRIORITY, RG.ClassHasTalents, RG.TALENT_GUIDE = list, true, s
+        if #RG.ROTATION == 0 then RG.ROTATION = s.tips or {} end
+      end
+    end
+  end
+end
 -- What item scores are called on tooltips and toasts ("Ret score").
 RG.SCORE_NAME = own.scoreName and (own.scoreName .. " score") or "Upgrade score"
 
@@ -75,8 +99,14 @@ RG.SCORE_NAME = own.scoreName and (own.scoreName .. " score") or "Upgrade score"
 -- entries win when both list an item).
 local guide, have = {}, {}
 for _, g in ipairs(C.guide or {}) do guide[#guide + 1] = g; if g.id then have[g.id] = true end end
+-- Before level 13 you're still in or near your own starting zone: skip early
+-- items from the other races' starting zones (an Orc won't walk to Tirisfal at 8).
+local HOME = { O = { Durotar = true }, R = { Durotar = true }, T = { Mulgore = true }, U = { ["Tirisfal Glades"] = true }, S = { ["Zephras Isle"] = true, Mulgore = true } }
+local START = { Durotar = true, Mulgore = true, ["Tirisfal Glades"] = true, ["Zephras Isle"] = true }
+local home = HOME[RG.RACE_LETTER] or {}
 for _, g in ipairs((RG.CLASS_GEAR or {})[C.token] or {}) do
-  if not have[g.id] then guide[#guide + 1] = g; have[g.id] = true end
+  local farStart = (g.lvl or 0) < 13 and START[g.zone] and not home[g.zone]
+  if not have[g.id] and not farStart then guide[#guide + 1] = g; have[g.id] = true end
 end
 table.sort(guide, function(a, b)
   if a.lvl ~= b.lvl then return a.lvl < b.lvl end

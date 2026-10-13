@@ -6,12 +6,10 @@ local _, RG = ...
 RG.CLASS_GEAR = RG.CLASS_GEAR or {}
 RG.CLASS_GEAR.MAGE = {
   { id = 3446, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 1, q = 408, gen = true },  -- Darkwood Staff
-  { id = 5071, slot = "Ranged", lvl = 9, how = "Rare mob", src = "Strider Clutchmother", zone = "Darkshore", score = 52, bl = 20, gen = true },  -- Shadow Wand
   { id = 5340, slot = "2H", lvl = 10, how = "Quest", src = "Apothecary Zamah (Apothecary Helbrim)", zone = "The Barrens", score = 1, q = 853, gen = true },  -- Cauldron Stirrer
   { id = 4768, slot = "Hands", lvl = 10, how = "Rare mob", src = "Elder Mystic Razorsnout", zone = "The Barrens", score = 2, bl = 15, gen = true },  -- Adept's Gloves
   { id = 7507, slot = "Off Hand", lvl = 10, how = "Quest", src = "The Balnir Farmstead (Anastasia Hartwell)", zone = "", score = 0, q = 1882, gen = true },  -- Arcane Orb
   { id = 10820, slot = "Waist", lvl = 10, how = "Quest", src = "Mura Runetotem (Tonga Runetotem)", zone = "The Barrens", score = 2, q = 3301, gen = true },  -- Jackseed Belt
-  { id = 1928, slot = "2H", lvl = 11, how = "Rare mob", src = "Defias Magician", zone = "Westfall", score = 2, bl = 17, gen = true },  -- Defias Mage Staff
   { id = 5337, slot = "Hands", lvl = 11, how = "Quest", src = "Stolen Booty (Gazlowe)", zone = "The Barrens", score = 1, q = 888, gen = true },  -- Wayfaring Gloves
   { id = 5242, slot = "Ranged", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 59, q = 99, gen = true },  -- Cinder Wand
   { id = 3449, slot = "Back", lvl = 12, how = "Quest", src = "Pyrewood Ambush (Deathstalker Faerleia)", zone = "Silverpine Forest", score = 1, q = 452, gen = true },  -- Mystic Shawl
@@ -21,7 +19,6 @@ RG.CLASS_GEAR.MAGE = {
   { id = 1929, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Evoker", zone = "The Deadmines", score = 1, bl = 18, also = { { how = "Dungeon", src = "Defias Wizard", zone = "The Deadmines", bl = 19 } }, gen = true },  -- Silk-threaded Trousers
   { id = 15443, slot = "Main Hand", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 1, q = 5730, gen = true },  -- Kris of Orgrimmar
   { id = 14151, slot = "Main Hand", lvl = 13, how = "Dungeon", src = "Jergosh the Invoker", zone = "Ragefire Chasm", score = 0, bl = 16, gen = true },  -- Chanting Blade
-  { id = 15945, slot = "Off Hand", lvl = 13, how = "Rare mob", src = "Shadowclaw", zone = "Darkshore", score = 1, bl = 13, gen = true },  -- Runic Stave
   { id = 3451, slot = "Off Hand", lvl = 13, how = "Quest", src = "A Recipe For Death (Apothecary Renferrel)", zone = "Silverpine Forest", score = 1, q = 451, gen = true },  -- Nightglow Concoction
   { id = 5326, slot = "Ranged", lvl = 13, how = "Quest", src = "The Escape (Wizzlecrank's Shredder)", zone = "The Barrens", score = 68, q = 863, gen = true },  -- Flaring Baton
   { id = 15452, slot = "Wrist", lvl = 13, how = "Quest", src = "Returning the Lost Satchel (Maur Grimtotem)", zone = "Ragefire Chasm", score = 2, q = 5724, gen = true },  -- Featherbead Bracers
@@ -36,18 +33,17 @@ RG.CLASS_GEAR.MAGE = {
   { id = 6477, slot = "Waist", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 3, q = 899, gen = true },  -- Grassland Sash
   { id = 16981, slot = "Wrist", lvl = 15, how = "Quest", src = "Earthen Arise (Mor'rogal)", zone = "Stonetalon Mountains", score = 2, q = 6481, gen = true },  -- Owlbeard Bracers
   { id = 16894, slot = "2H", lvl = 16, how = "Quest", src = "Arachnophobia", zone = "Stonetalon Mountains", score = 4, q = 6284, gen = true },  -- Clear Crystal Rod
-  { id = 1172, slot = "Off Hand", lvl = 16, how = "Quest", src = "The Coastal Menace (Captain Grayson)", zone = "Westfall", score = 2, q = 104, gen = true },  -- Grayson's Torch
   { id = 12053, slot = "Ring", lvl = 16, how = "Dungeon", src = "Mutanus the Devourer", zone = "Wailing Caverns", score = 2, bl = 22, gen = true },  -- Volcanic Rock Ring
   { id = 5198, slot = "Ranged", lvl = 17, how = "Dungeon", src = "Cookie", zone = "The Deadmines", score = 112, bl = 20, gen = true },  -- Cookie's Stirring Rod
   { id = 1156, slot = "Ring", lvl = 17, how = "Dungeon", src = "Gilnid", zone = "The Deadmines", score = 4, bl = 20, gen = true },  -- Lavishly Jeweled Ring
   { id = 5201, slot = "2H", lvl = 18, how = "Dungeon", src = "Captain Greenskin", zone = "The Deadmines", score = 8, bl = 20, gen = true },  -- Emberstone Staff
-  { id = 4792, slot = "Back", lvl = 18, how = "Vendor", src = "Captured Servant of Azora", zone = "Redridge Mountains", score = 2, also = { { how = "Vendor", src = "Halija Whitestrider", zone = "The Barrens" } }, gen = true },  -- Spirit Cloak
+  { id = 4792, slot = "Back", lvl = 18, how = "Vendor", src = "Halija Whitestrider", zone = "The Barrens", score = 2, gen = true },  -- Spirit Cloak
   { id = 14371, slot = "Chest", lvl = 18, how = "Dungeon", src = "Kresh", zone = "Wailing Caverns", score = 4, bl = 20, gen = true },  -- Mystic's Robe
   { id = 5970, slot = "Hands", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 2, bl = 21, gen = true },  -- Serpent Gloves
   { id = 6633, slot = "Main Hand", lvl = 18, how = "Dungeon", src = "Razorclaw the Butcher", zone = "Shadowfang Keep", score = 1, bl = 22, gen = true },  -- Butcher's Slicer
   { id = 8071, slot = "Ranged", lvl = 18, how = "Quest", src = "Deviate Eradication (Ebru)", zone = "Wailing Caverns", score = 88, q = 1487, gen = true },  -- Sizzle Stick
   { id = 6505, slot = "2H", lvl = 19, how = "Quest", src = "Leaders of the Fang (Nara Wildmane)", zone = "Wailing Caverns", score = 9, q = 914, gen = true },  -- Crescent Staff
-  { id = 4793, slot = "Back", lvl = 19, how = "Vendor", src = "Captured Servant of Azora", zone = "Redridge Mountains", score = 2, also = { { how = "Vendor", src = "Halija Whitestrider", zone = "The Barrens" } }, gen = true },  -- Sylvan Cloak
+  { id = 4793, slot = "Back", lvl = 19, how = "Vendor", src = "Halija Whitestrider", zone = "The Barrens", score = 2, gen = true },  -- Sylvan Cloak
   { id = 5202, slot = "Chest", lvl = 19, how = "Dungeon", src = "Edwin VanCleef", zone = "The Deadmines", score = 6, bl = 21, gen = true },  -- Corsair's Overshirt
   { id = 3461, slot = "Chest", lvl = 19, how = "Quest", src = "Assault on Fenris Isle (High Executor Hadrec)", zone = "Silverpine Forest", score = 4, q = 442, gen = true },  -- High Robe of the Adjudicator
   { id = 14374, slot = "Feet", lvl = 19, how = "Dungeon", src = "Verdan the Everliving", zone = "Wailing Caverns", score = 4, bl = 21, gen = true },  -- Sanguine Sandals
@@ -55,7 +51,7 @@ RG.CLASS_GEAR.MAGE = {
   { id = 23173, slot = "Legs", lvl = 20, how = "Dungeon", src = "Sever", zone = "Shadowfang Keep", score = 16, bl = 25, gen = true },  -- Abomination Skin Leggings
   { id = 12998, slot = "Shoulder", lvl = 20, how = "Rare mob", src = "Brontus", zone = "The Barrens", score = 10, bl = 27, gen = true },  -- Magician's Mantle
   { id = 6908, slot = "Waist", lvl = 20, how = "Dungeon", src = "Ghamoo-ra", zone = "Blackfathom Deeps", score = 4, bl = 25, gen = true },  -- Ghamoo-ra's Bind
-  { id = 4838, slot = "Off Hand", lvl = 21, how = "Vendor", src = "Kzixx", zone = "Duskwood", score = 3, also = { { how = "Vendor", src = "Zixil", zone = "Hillsbrad Foothills" }, { how = "Vendor", src = "Veenix", zone = "Stonetalon Mountains" } }, gen = true },  -- Orb of Power
+  { id = 4838, slot = "Off Hand", lvl = 21, how = "Vendor", src = "Zixil", zone = "Hillsbrad Foothills", score = 3, also = { { how = "Vendor", src = "Veenix", zone = "Stonetalon Mountains" } }, gen = true },  -- Orb of Power
   { id = 6463, slot = "Ring", lvl = 21, how = "Dungeon", src = "Mutanus the Devourer", zone = "Wailing Caverns", score = 5, bl = 22, gen = true },  -- Deep Fathom Ring
   { id = 6667, slot = "Back", lvl = 22, how = "Quest", src = "Gerenzo Wrenchwhistle (Ziz Fizziks)", zone = "Stonetalon Mountains", score = 3, q = 1096, gen = true },  -- Engineer's Cloak
   { id = 16975, slot = "Waist", lvl = 22, how = "Quest", src = "Warsong Supplies (Locke Okarr)", zone = "Ashenvale", score = 7, q = 6571, gen = true },  -- Warsong Sash

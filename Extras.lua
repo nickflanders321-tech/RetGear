@@ -327,7 +327,7 @@ function RG.NextTalent()
   if not tree then return RG.TALENT_PRIORITY[1], nil end
   for _, t in ipairs(RG.TALENT_PRIORITY) do
     local info = tree[t.name]
-    if info and info.rank < info.max and info.available then return t, info end
+    if info and info.rank < math.min(t.target or info.max, info.max) and info.available then return t, info end
   end
   return nil
 end
