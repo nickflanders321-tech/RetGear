@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.43.1 (no more cut-off text)
+- Long lines in the Waypath+ window wrap instead of ending in "...": every row grows to fit its whole description (route notes, fishing spots, gear sources, tips, profession steps), on every tab.
+- Section headers that don't fit on one line wrap too, and the footer at the bottom of the window takes a second line when it needs one.
+
 ## v0.43.0 (a profile for every character)
 - **New characters aren't bank alts automatically any more.** The first time a character logs in with Waypath+ it asks: **New profile** (the full leveling guide with this character's own settings and progress, starting with the setup wizard) or **Bank alt** (the shopping list and mailbox helper for your main). The very first character gets a profile without asking.
 - **Every character has its own profile:** settings and preset, route progress and ticked steps, quests, flight paths, professions plan, stat weights, 2nd spec and its gear set, and so on. Auction House prices and alerts, recipes, the bank-alt shopping data and window positions are shared by the account.

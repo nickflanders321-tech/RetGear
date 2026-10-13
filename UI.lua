@@ -177,7 +177,7 @@ end
 
 local function hideAll(r)
   r.onClick = nil; r.onRightClick = nil; r.tip = nil; r.onDoubleClick = nil
-  r.title:SetWordWrap(false)
+  r.title:SetWordWrap(false); r.sub:SetWordWrap(false)
   for _, k in ipairs({ "iconBorder", "icon", "title", "sub", "pill", "meta", "head", "headLine", "barBg", "barFill", "barMark", "barLabel", "barValue", "stripe" }) do r[k]:Hide() end
 end
 
@@ -187,6 +187,13 @@ local function setHeader(r, text)
   font(r.head, FONT_BODY, sz(12.5))
   r:SetBackdrop(nil); r.hl:Hide()
   r.head:SetText(text); r.head:SetTextColor(unpack(T.gold)); r.head:SetShadowColor(0, 0, 0, 1); r.head:SetShadowOffset(1, -1); r.head:Show(); r.headLine:Show()
+  -- a header too long for one line wraps (and drops its rule line) instead of running off the edge
+  local maxW = (W - 56) - 8
+  r.head:SetWidth(0); r.head:SetWordWrap(false)
+  if (r.head:GetStringWidth() or 0) > maxW then
+    r.head:SetWidth(maxW); r.head:SetWordWrap(true); r.headLine:Hide()
+    r.h = math.max(r.h, math.ceil((r.head:GetStringHeight() or 0) + 12))
+  end
   r:Show()
 end
 
@@ -229,6 +236,20 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   local leftX = (small and 34 or 8) + size + 10
   r.title:SetWidth(math.max(120, (W - 56) - leftX - rightW - 26))
   r.sub:SetWidth(math.max(120, (W - 56) - leftX - (r.meta:IsShown() and r.meta:GetStringWidth() or 0) - 26))
+  -- long text wraps and the row grows to fit it (nothing is cut off with "...")
+  r.title:SetWordWrap(true); r.sub:SetWordWrap(true)
+  if r.title.SetMaxLines then r.title:SetMaxLines(0) end
+  if r.sub.SetMaxLines then r.sub:SetMaxLines(0) end
+  local th = r.title:GetStringHeight() or 0
+  local hasSub = sub and sub ~= ""
+  local shh = hasSub and (r.sub:GetStringHeight() or 0) or 0
+  local gap = hasSub and 2 or 0
+  local content = th + gap + shh
+  local pad = small and 5 or 7
+  r.h = math.max(r.h, math.ceil(content + pad * 2))
+  local top = math.max(pad, (r.h - content) / 2)
+  r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r, "TOPLEFT", leftX, -top)
+  r.sub:ClearAllPoints(); r.sub:SetPoint("TOPLEFT", r.title, "BOTTOMLEFT", 0, -gap)
   if accent then
     local c = accent == "green" and T.green or (accent == "purple" and T.purple or (accent == "blue" and T.blue or T.gold))
     r.stripe:SetColorTexture(c[1], c[2], c[3], 0.9); r.stripe:Show()
@@ -2118,7 +2139,10 @@ local function build()
   scroll:SetScrollChild(content)
 
   local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.25)
-  footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 14)
+  footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 7)
+  -- long footers wrap onto a second line instead of running off the window
+  footer:SetWidth(W - 44); footer:SetHeight(22); footer:SetJustifyH("LEFT"); footer:SetJustifyV("MIDDLE"); footer:SetWordWrap(true)
+  if footer.SetMaxLines then footer:SetMaxLines(2) end
 
   frame:SetScript("OnShow", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_OPEN or 839) end; RG.RefreshUI() end)
   frame:SetScript("OnHide", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_CLOSE or 840) end end)
