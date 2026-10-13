@@ -4,7 +4,7 @@
 local _, RG = ...
 local C = { name = "Druid", spec = "Feral", scoreName = "Feral", lfgName = "Feral Druid", lfgNote = "Mark of the Wild" }
 
--- Feral (Cat) leveling: in forms your weapon's damage doesn't count, only its stats. Strength and Agility give Attack Power (Agility also crit), and a little Intellect lets you shift back for heals.
+-- Feral (Cat) leveling: in WoW Forever Cat and Bear Form scale with your weapon's damage, so a strong two-hander matters. Strength and Agility give Attack Power (Agility also crit), and a little Intellect lets you shift back for heals.
 -- Weights are in Attack Power (or spell damage) equivalents. Change any of them
 -- in game with /wp weight <stat> <value>.
 C.weights = {
@@ -16,18 +16,18 @@ C.weights = {
   STA        = 0.4,   -- Stamina
   INT        = 0.2,   -- Intellect (heals between fights)
   SPI        = 0.1,   -- Spirit
-  WEAPON_DPS = 0,   -- weapon damage doesn't count in forms
+  WEAPON_DPS = 8,   -- per point of weapon DPS (forms scale with it in Forever)
 }
 C.hitCap = 9
 
 -- What the class can wear and wield (item subclass IDs) and how weapons score:
--- "feral" = weapon damage doesn't count in forms, only stats.
+-- "feral" = forms scale with the weapon (Forever change); polearms are new for druids.
 -- Weapons: 0 1H axe, 1 2H axe, 2 bow, 3 gun, 4 1H mace, 5 2H mace, 6 polearm, 7 1H sword,
 -- 8 2H sword, 10 staff, 13 fist, 15 dagger, 16 thrown, 18 crossbow, 19 wand.
 -- Armor: level each type can be worn from (1 cloth, 2 leather, 3 mail, 4 plate).
 C.classBit = 1024
 C.model = "feral"
-C.weapons = { 4, 5, 10, 13, 15 }
+C.weapons = { 4, 5, 6, 10, 13, 15 }
 C.armor = { [1] = 1, [2] = 1 }
 C.shield = false
 C.relic = 8

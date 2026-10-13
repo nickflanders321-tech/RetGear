@@ -55,7 +55,7 @@ function RG.ScoreRewards()
       if loc and RG.EQUIP_SLOTS[loc] and (minLevel or 0) <= UnitLevel("player") + 1 then
         local d = RG.Compare(link)
         if d and d > r.up then r.up, r.upI = d, i end
-        if RG.HealDelta and RG.Opt("healSet") and UnitLevel("player") >= 30 then
+        if RG.HealDelta and RG.SecondSetOn and RG.SecondSetOn() and UnitLevel("player") >= 30 then
           local hd = RG.HealDelta(link)
           if hd and hd > r.heal then r.heal, r.healI = hd, i end
         end
@@ -75,7 +75,7 @@ local function pickReward()
   if n < 2 then return end
   local r = RG.ScoreRewards()
   local bestUp, bestUpI, bestGold, bestGoldI = r.up, r.upI, r.gold, r.goldI
-  if r.healI and r.healI ~= bestUpI then markButton(r.healI, "|cffF58CBAHoly +" .. string.format("%.0f", r.heal) .. "|r", true) end
+  if r.healI and r.healI ~= bestUpI then markButton(r.healI, "|cffF58CBA" .. (RG.SecondSpecName and RG.SecondSpecName() or "2nd spec") .. " +" .. string.format("%.0f", r.heal) .. "|r", true) end
   if bestUpI then
     markButton(bestUpI, GREEN .. string.format("%s +%.0f", (RG.ActiveClass and RG.ActiveClass.scoreName) or "Upgrade", bestUp) .. "|r", true)
     RG.Print("Best quest reward for you: " .. (GetQuestItemLink("choice", bestUpI) or "") .. " " .. GREEN .. string.format("(+%.0f %s)", bestUp, RG.SCORE_NAME) .. "|r")

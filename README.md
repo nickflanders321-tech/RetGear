@@ -21,21 +21,21 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 ## On your screen
 - **Tracker** (right side): your quests grouped by zone (the zone you're in first), one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, double-click it to turn the arrow to it on or off, right-click to show it on the map, and click a section header to fold it. Drag it anywhere (or lock it in Settings), Ctrl + mouse wheel over it to resize, Shift + mouse wheel to make it wider or narrower; right-click the minimap button to hide it. With two or more quests ready, a **Turn-in run** line sends the arrow to each turn-in in turn, nearest first.
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `WaypathTarget` macro does the same from a key.
-- **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
+- **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a score for your **2nd spec** (Holy, Protection, Restoration, any spec you pick), and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Fishing panel** (tracker): while you hold a fishing pole, your skill and catches per point, whether fish get away in this zone, your lure timer, fish per hour this session, and raw fish to cook.
-- **Bag icons**: a green arrow on items that are Ret upgrades, a small Holy icon on healing-set pieces.
+- **Bag icons**: a green arrow on items that are Ret upgrades, your 2nd spec's icon on pieces for your 2nd set.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Ore alerts**: a heads-up when you walk near a spot where a vein you can mine (and that still gives skill) spawns, with direction and distance.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
 - **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Double-click the arrow, or right-click it, to turn it off; the arrow switch in the tracker's header turns it on or off for good. Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/wp way 45 60` pins any spot.
 
 ## Done for you
-- Quests are **accepted and turned in automatically** (hold **Shift** to pause). The best reward is picked: the Ret upgrade, or the best vendor value. When a Ret and a healing upgrade compete, you choose.
+- Quests are **accepted and turned in automatically** (hold **Shift** to pause). The best reward is picked: your upgrade, or the best vendor value. When an upgrade for you and one for your 2nd spec compete, you choose.
 - **Route steps tick themselves** from your quest log, flight paths, hearthstone, professions and spells.
 - **Bags sorted** with one click: the Sort button on your bags and bank.
 - **Junk is sold and gear repaired** at vendors, but anything worth more on the AH is kept.
 - **AH prices** are checked every time you open the Auction House (Auctionator and TSM prices are used too).
-- **Dual-spec gear swap**: switch to Holy and Waypath+ offers to put on your healing set; switch back and it re-equips your Ret gear (also a Swap row on the Healing tab).
+- **Dual-spec gear swap**: switch to your 2nd spec and Waypath+ offers to put on its set; switch back and it re-equips your main gear (also a Swap row on the 2nd Spec tab).
 - **In a party**: reminders for un-blessed party members and a missing Aura, center-screen alerts when someone needs Purify/Cleanse or is about to die, and a report after every dungeon run.
 
 ## The window (`/wp`)
@@ -48,7 +48,7 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **My gear** | Gear check (your 8 best upgrades from the guide vs what you wear, and the dungeons with the most upgrades for you), score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
 | **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
-| **Healing** | Holy set for dual spec at 40: your best healing piece per slot (worn, bags, bank) and a 40-60 hunting list. Your healing set is never sold |
+| **2nd Spec** | Pick any spec of your class (all 28: tanks, healers and damage). **Spec & build**: its WoW Forever talent build, stats, tips and what's new in Forever. **Gear to collect**: your best piece per slot for it (worn, bags, bank), and what to hunt for from level 30, by dungeon. Dual spec unlocks at 40; your 2nd set is never sold |
 | **Professions** → *Mining & smithing* | Where to mine, Blacksmithing 1-300 plan, smithing upgrades, smelt-or-sell |
 | **Professions** → *Fishing & cooking* | Your Fishing and Cooking skill, next rank and how to get it, whether every fish bites in your zone, where to fish for your skill (Horde), raw fish in your bags that still level Cooking, fish to catch and cook (recipes, day/night and seasonal fish), poles, lures and gear you own, the Stranglethorn Fishing Extravaganza, and your catch history |
 | **Professions** → *Camping* | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, and the camping and cooking steps along your route |
@@ -70,7 +70,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 |---|---|
 | `/wp` | Open or close the window |
 | `/wp group` · `/wp lfg Scarlet Monastery` | Group tab · post an LFG message |
-| `/wp heal` · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp talents` · `/wp settings` | Open that tab |
+| `/wp spec` · `/wp heal` (2nd spec gear) · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp talents` · `/wp settings` | Open that tab |
 | `/wp auto` | Auto accept / turn in on or off |
 | `/wp next` | Pin your nearest quest objective (or turn-in) |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
@@ -86,13 +86,14 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp weight STR 2.5` · `/wp hitcap 9` · `/wp talenthit 3` · `/wp reset` | Tune the Ret score |
 | `/wp turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
 | `/wp greys` | Abandon unfinished grey quests (asks first) |
-| `/wp gear heal` · `/wp gear ret` | Equip your healing set / put your Ret gear back on |
+| `/wp gear 2` · `/wp gear 1` | Equip your 2nd spec's set / put your main gear back on |
+| `/wp spec holy` (any spec name) | Make that spec your 2nd spec |
 | `/wp errors` · `/wp errors clear` | Waypath+'s caught errors, in a window you can copy from · clear them |
 | `/wp setup` | Run the setup wizard again |
 | `/wp tracker` · `/wp tooltip` | Show or hide the tracker / tooltip line / welcome screen |
 | `/wp main` | Make this character your main |
 
 ## Keeping it current
-Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, healing list, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.
+Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, 2nd spec builds and gear, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.
 
 Gear guide items are scored from the cMaNGOS classic item database and checked against WoW Forever's item data (`tools/gear`). Waypoints, quest objectives, starting-zone steps and dungeon quests come from [QuestieDB](https://github.com/Questie/QuestieDB)'s merged WoW Forever data (`tools/qdb`); `tools/waypoints`, `tools/objectives` and `tools/routes` rebuild them. Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.

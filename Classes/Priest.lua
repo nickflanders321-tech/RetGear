@@ -36,7 +36,7 @@ C.shield = false
 C.guide = {
   { tip = true, lvl = 5, text = "A wand is your best leveling damage until Shadowform: buy one on the Auction House or from an Enchanter, and finish every mob with it." },
   { tip = true, lvl = 10, text = "Take Spirit Tap early in Shadow: with a high-Spirit set you barely need to drink." },
-  { tip = true, lvl = 20, text = "Keep a set of healing gear in the bank for dungeons: the Healing tab tracks it." },
+  { tip = true, lvl = 20, text = "Pick Holy or Discipline as your 2nd spec (2nd Spec tab) and Waypath+ collects a healing set for dungeons." },
 }
 
 RG.RegisterClass("PRIEST", C)

@@ -26,6 +26,8 @@ local FILES = {
   "Races/Skyborne.lua", "Routes/Horde.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua", "Professions/Herbalism.lua", "Professions/Skinning.lua", "Professions/Alchemy.lua", "Professions/Enchanting.lua", "Professions/Engineering.lua", "Professions/Leatherworking.lua", "Professions/Tailoring.lua", "Professions/FirstAid.lua", "Professions/Cooking.lua", "Professions/Fishing.lua",
   "Profile.lua", "Waypoints.lua", "Objectives.lua", "NodeData.lua",
 }
+-- 2nd specs (load before Profile.lua, like the .toc does)
+for i, f in ipairs(FILES) do if f == "Races/Undead.lua" then table.insert(FILES, i, "Classes/SpecGear.lua"); table.insert(FILES, i, "Classes/Specs.lua"); break end end
 -- extra class files, if any were added since
 local function exists(p) local f = io.open(p) if f then f:close() return true end return false end
 for _, c in ipairs({ "Warrior", "Hunter", "Rogue", "Priest", "Shaman", "Mage", "Warlock", "Druid" }) do
@@ -196,21 +198,49 @@ for _, race in ipairs(RACE_ORDER) do
       else fail(combo, name .. " has no starting trainer for this race") end
     end
     r.profs = profOK .. "/" .. #ALL_PROFS
+    -- 8. 2nd specs: every spec of the class has a build, tips, weights and a gear list for 30-60
+    local specs = (RG.SPECS or {})[RG.PLAYER_CLASS] or {}
+    if #specs < 3 then fail(combo, "only " .. #specs .. " specs") end
+    local mains, specOK = 0, 0
+    for _, sp in ipairs(specs) do
+      local ok = true
+      local function bad(msg) ok = false; fail(combo, sp.name .. ": " .. msg) end
+      if sp.main then mains = mains + 1 end
+      for _, k in ipairs({ "key", "name", "role", "kind", "tab", "icon", "stats", "goal", "source" }) do if not sp[k] then bad("no " .. k) end end
+      if not (sp.build and #sp.build > 0) then bad("no build") end
+      if not (sp.tips and #sp.tips > 0) then bad("no tips") end
+      if not sp.main then
+        if not (sp.weights and next(sp.weights)) then bad("no weights") end
+        local list = ((RG.SPEC_GEAR or {})[RG.PLAYER_CLASS] or {})[sp.key] or {}
+        local slotsSeen, n, bands = {}, 0, { 0, 0, 0 }
+        for _, g in ipairs(list) do
+          n = n + 1; slotsSeen[g.slot] = true
+          if g.lvl < 40 then bands[1] = bands[1] + 1 elseif g.lvl < 50 then bands[2] = bands[2] + 1 else bands[3] = bands[3] + 1 end
+        end
+        local ns = 0; for _ in pairs(slotsSeen) do ns = ns + 1 end
+        if n < 40 then bad("only " .. n .. " gear items") end
+        if ns < 12 then bad("gear for only " .. ns .. " slots") end
+        for b, c in ipairs(bands) do if c < 8 then bad("only " .. c .. " items in levels " .. (20 + b * 10) .. "s") end end
+      end
+      if ok then specOK = specOK + 1 end
+    end
+    if mains ~= 1 then fail(combo, mains .. " leveling specs marked main (want 1)") end
+    r.specs = specOK .. "/" .. #specs
     r.bad = badQuest + badWord
     rows[#rows + 1] = r
   end
 end
 
-local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Talents", "Professions with a trainer nearby" }
+local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Talents", "Professions with a trainer nearby", "2nd specs ready" }
 if MARKDOWN then
   print("| " .. table.concat(head, " | ") .. " |")
   print("|" .. string.rep("---|", #head))
 end
 for _, r in ipairs(rows) do
-  local cells = { r.combo, r.start, r.steps, r.wp .. "%", r.gaps, r.cq, r.dq, r.bad, r.gear, r.talents, r.profs }
+  local cells = { r.combo, r.start, r.steps, r.wp .. "%", r.gaps, r.cq, r.dq, r.bad, r.gear, r.talents, r.profs, r.specs }
   if MARKDOWN then print("| " .. table.concat(cells, " | ") .. " |")
-  else print(string.format("%-18s %-26s steps %3d  wp %3d%%  gaps %d  class quests %-16s dungeon quests %3d  problems %d  gear %s  talents %s",
-    r.combo, r.start, r.steps, r.wp, r.gaps, r.cq, r.dq, r.bad, r.gear, r.talents)) end
+  else print(string.format("%-18s %-26s steps %3d  wp %3d%%  gaps %d  class quests %-16s dungeon quests %3d  problems %d  gear %s  talents %s  2nd specs %s",
+    r.combo, r.start, r.steps, r.wp, r.gaps, r.cq, r.dq, r.bad, r.gear, r.talents, r.specs)) end
 end
 if #failures > 0 then
   io.stderr:write("\n" .. #failures .. " problem(s):\n")
@@ -218,4 +248,4 @@ if #failures > 0 then
   for _, f in ipairs(failures) do if not seen[f] then seen[f] = true; io.stderr:write("  " .. f .. "\n") end end
   os.exit(1)
 end
-io.stderr:write("\nAll " .. #rows .. " race/class combinations pass the questing, gear and profession checks.\n")
+io.stderr:write("\nAll " .. #rows .. " race/class combinations pass the questing, gear, profession and 2nd spec checks.\n")

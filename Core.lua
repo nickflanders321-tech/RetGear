@@ -76,7 +76,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Main character vs bank alt. Saved data is shared by every character on the
 -- account, so other characters run in "bank alt" mode and never overwrite
--- your main's quests, flight paths, fights or healing set.
+-- your main's quests, flight paths, fights or 2nd spec set.
 -- ---------------------------------------------------------------------------
 function RG.PlayerKey()
   return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "")
@@ -183,6 +183,9 @@ local STAT_KEYS = {
   ITEM_MOD_SPELL_HEALING_DONE_SHORT = "HEAL", ITEM_MOD_MANA_REGENERATION_SHORT = "MP5",
   ITEM_MOD_POWER_REGEN0_SHORT = "MP5", ITEM_MOD_RANGED_ATTACK_POWER_SHORT = "RAP",
   ITEM_MOD_CRIT_SPELL_RATING_SHORT = "CRIT_RATING", ITEM_MOD_HIT_SPELL_RATING_SHORT = "HIT_RATING",
+  -- tank stats (used by tank specs on the 2nd Spec tab)
+  RESISTANCE0_NAME = "ARMOR", ITEM_MOD_DEFENSE_SKILL_RATING_SHORT = "DEF", ITEM_MOD_DODGE_RATING_SHORT = "DODGE",
+  ITEM_MOD_PARRY_RATING_SHORT = "PARRY", ITEM_MOD_BLOCK_RATING_SHORT = "BLOCK", ITEM_MOD_BLOCK_VALUE_SHORT = "BLOCKVAL",
 }
 -- Spell schools in "Increases damage done by Shadow spells and effects by up to X."
 local SCHOOL = { holy = "SP_HOLY", fire = "SP_FIRE", nature = "SP_NATURE", frost = "SP_FROST", shadow = "SP_SHADOW", arcane = "SP_ARCANE" }
@@ -197,12 +200,18 @@ local LINE_PATTERNS = {
   { "increases ranged attack power by (%d+)", "RAP" },
   -- WoW Forever merges hit and crit: spell hit and crit count as hit and crit for everyone
   { "improves your chance to hit with spells by (%d+)%%", "HIT" },
-  -- healing (used by the Healing tab's Holy score)
+  -- healing (used by healer specs on the 2nd Spec tab)
   { "increases damage and healing done by magical spells and effects by up to (%d+)", "HEAL" },
   { "increases healing done by spells and effects by up to (%d+)", "HEAL" },
   { "restores (%d+) mana per 5 sec", "MP5" },
   { "improves your chance to get a critical strike with spells by (%d+)%%", "SCRIT" },
   { "improves your chance to get a critical strike with spells by (%d+)%%", "CRIT" },
+  -- tank stats
+  { "increased defense %+(%d+)", "DEF" },
+  { "increases your chance to dodge an attack by (%d+)%%", "DODGE" },
+  { "increases your chance to parry an attack by (%d+)%%", "PARRY" },
+  { "increases your chance to block attacks with a shield by (%d+)%%", "BLOCK" },
+  { "increases the block value of your shield by (%d+)", "BLOCKVAL" },
 }
 
 local cache = {}
@@ -212,7 +221,8 @@ function RG.GetStats(link)
   local s = { STR = 0, AGI = 0, STA = 0, INT = 0, SPI = 0, AP = 0, RAP = 0, CRIT = 0, HIT = 0, SP = 0,
               SP_HOLY = 0, SP_FIRE = 0, SP_NATURE = 0, SP_FROST = 0, SP_SHADOW = 0, SP_ARCANE = 0,
               CRIT_RATING = 0, HIT_RATING = 0, HASTE_RATING = 0, MASTERY_RATING = 0, VERS_RATING = 0,
-              DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0 }
+              DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0,
+              ARMOR = 0, DEF = 0, DODGE = 0, PARRY = 0, BLOCK = 0, BLOCKVAL = 0 }
   local raw = GetItemStats and GetItemStats(link)
   if raw then
     for k, v in pairs(raw) do
@@ -223,7 +233,8 @@ function RG.GetStats(link)
     -- modern "spell power" heals too
     if (raw.ITEM_MOD_SPELL_POWER_SHORT or 0) > 0 then s.HEAL = s.HEAL + raw.ITEM_MOD_SPELL_POWER_SHORT end
   end
-  local fromTable = { AP = raw and (raw.ITEM_MOD_ATTACK_POWER_SHORT or 0) > 0, HEAL = s.HEAL > 0, MP5 = s.MP5 > 0 }
+  local fromTable = { AP = raw and (raw.ITEM_MOD_ATTACK_POWER_SHORT or 0) > 0, HEAL = s.HEAL > 0, MP5 = s.MP5 > 0,
+    DEF = s.DEF > 0, DODGE = s.DODGE > 0, PARRY = s.PARRY > 0, BLOCK = s.BLOCK > 0, BLOCKVAL = s.BLOCKVAL > 0 }
   -- Tooltip text for Equip: lines and weapon speed.
   local data = C_TooltipInfo and C_TooltipInfo.GetHyperlink and C_TooltipInfo.GetHyperlink(link)
   local equipSeen = {}
@@ -236,6 +247,10 @@ function RG.GetStats(link)
         if sp then s.SPEED = tonumber(sp) end
         local dps = t:match("^%(([%d%.]+) damage per second%)")
         if dps and s.DPS == 0 then s.DPS = tonumber(dps) end
+        local armor = s.ARMOR == 0 and t:match("^(%d+) armor$")
+        if armor then s.ARMOR = tonumber(armor) end
+        local block = s.BLOCKVAL == 0 and t:match("^(%d+) block$")
+        if block then s.BLOCKVAL = tonumber(block) end
         if t:find("^equip:") then
           local school, n = t:match("increases damage done by (%a+) spells and effects by up to (%d+)")
           if school and SCHOOL[school] and not equipSeen[t] then s[SCHOOL[school]] = s[SCHOOL[school]] + tonumber(n); equipSeen[t] = true end
@@ -264,8 +279,8 @@ local RANGED_LOC = { INVTYPE_RANGED = true, INVTYPE_RANGEDRIGHT = true, INVTYPE_
 -- How much of a weapon's damage counts, by the class's weapon model (Classes/<Class>.lua):
 -- 2H = one big two-hander, DW = two one-handers, caster/feral = weapon damage doesn't count,
 -- ranged = the ranged weapon is the big one (melee weapons only count a little).
-local MULT_2H = { ["2H"] = 1, DW = 0.75, ranged = 1, caster = 0, feral = 0 }
-local MULT_1H = { ["2H"] = 0.55, DW = 1, ranged = 0.55, caster = 0, feral = 0 }
+local MULT_2H = { ["2H"] = 1, DW = 0.75, ranged = 1, caster = 0, feral = 1, tank = 0.6 }
+local MULT_1H = { ["2H"] = 0.55, DW = 1, ranged = 0.55, caster = 0, feral = 0.55, tank = 1 }
 
 -- Can this character wear or wield it? (armor type, weapon skill, shields, relics)
 function RG.CanUse(link)
@@ -289,11 +304,12 @@ end
 
 -- Score an item. hitRoom = how much hit % still counts before the cap (nil = all
 -- of it); slot = the inventory slot it would go in (17 = off-hand).
-function RG.Score(link, hitRoom, slot)
+-- w and model are optional: the 2nd Spec tab scores with its spec's weights and weapon model.
+function RG.Score(link, hitRoom, slot, w, model)
   local s = RG.GetStats(link)
   if not s then return 0 end
   if not RG.CanUse(link) then return 0 end
-  local w = RG.db.weights
+  w = w or RG.db.weights
   local hit = s.HIT
   if hitRoom then hit = math.max(0, math.min(hit, hitRoom)) end
   local score = hit * (w.HIT or 0)
@@ -302,7 +318,7 @@ function RG.Score(link, hitRoom, slot)
   end
   if s.DPS > 0 then
     local loc = RG.EquipLoc(link)
-    local model = RG.WEAPON_MODEL or "2H"
+    model = model or RG.WEAPON_MODEL or "2H"
     if RANGED_LOC[loc] then
       score = score + s.DPS * (w.RANGED_DPS or 0)
     else

@@ -29,6 +29,8 @@ Classes\Warlock.lua
 Classes\WarlockGear.lua
 Classes\Druid.lua
 Classes\DruidGear.lua
+Classes\Specs.lua
+Classes\SpecGear.lua
 Races\Undead.lua
 Races\Durotar.lua
 Races\Tauren.lua
@@ -59,7 +61,7 @@ Extras.lua
 Auction.lua
 Profit.lua
 Gold.lua
-Heal.lua
+SecondSpec.lua
 Mail.lua
 AltGuide.lua
 Camp.lua

@@ -43,8 +43,8 @@ local function saveTab() if WaypathDB then WaypathDB.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
-local GROUPS = { prof = { "prof", "fish", "camp" }, money = { "ah", "gold", "mail" } }
-local SUBLABEL = { prof = "Mining & smithing", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt" }
+local GROUPS = { prof = { "prof", "fish", "camp" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
+local SUBLABEL = { prof = "Mining & smithing", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec & build", heal = "Gear to collect" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -323,8 +323,26 @@ local function renderGuide()
   local list = guideRows()
   local lvl = UnitLevel("player")
   if #list == 0 then list = { { header = "Nothing near your level · untick Near my level" } } end
+  -- your 2nd spec: a link to its gear list
+  local off = 0
+  local s2 = RG.SecondSpecActive and RG.SecondSpecActive()
+  if s2 or lvl >= 20 then
+    off = 1
+    local r = getRow(1)
+    if s2 then
+      local soon = 0
+      for _, g in ipairs(RG.SpecGuide(s2)) do if g.lvl <= lvl + 5 and not RG.OwnState(g.id) then soon = soon + 1 end end
+      setItem(r, nil, nil, "|cffffffff2nd spec: " .. s2.name .. "|r", (soon > 0 and (soon .. " " .. s2.name .. " piece" .. (soon > 1 and "s" or "") .. " to start collecting near your level") or ("Your " .. s2.name .. " set and what to hunt for")) .. GREY .. "  ·  this list is for your leveling spec|r", GOLD .. "Show|r", "", "gold", nil, true)
+      r.icon:SetTexture(s2.icon)
+      r.onClick = function() state.tab = "heal"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
+    else
+      setItem(r, nil, nil, GREY .. "No 2nd spec yet|r", GREY .. "Pick one on the 2nd Spec tab and its gear to collect shows up there.|r", GOLD .. "Choose|r", "", nil, nil, true)
+      r.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+      r.onClick = function() state.tab = "spec"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
+    end
+  end
   for i, e in ipairs(list) do
-    local r = getRow(i)
+    local r = getRow(i + off)
     if e.header then setHeader(r, e.header)
     elseif e.g.tip then
       setItem(r, nil, nil, GOLD .. "Tip|r" .. GREY .. "  ·  level " .. e.g.lvl .. "|r", e.g.text, "", "", "gold")
@@ -363,7 +381,7 @@ local function renderGuide()
       end
     end
   end
-  return #list
+  return #list + off
 end
 
 local SLOT_GUIDE = { [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hands", [11] = "Ring", [12] = "Ring", [13] = "Trinket", [14] = "Trinket", [15] = "Back", [16] = "2H", [17] = "Off Hand", [18] = "Ranged" }
@@ -1032,46 +1050,142 @@ local function renderGold()
   return n
 end
 
-local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784, Dungeon = 136058, Vendor = 133784, ["Rare mob"] = 133639 }
-local function renderHeal()
-  local n = 0
-  if not RG.IsClass("PALADIN") then n = n + 1; setHeader(getRow(n), "The off-spec gear set is Paladin-only for now: other hybrids are coming in a later update"); return n end
+-- ---------------------------------------------------------------------------
+-- 2nd Spec: pick any spec of your class, its build and tips (Classes/Specs.lua)
+-- ---------------------------------------------------------------------------
+local KIND_COLOR = { heal = "|cff7CFC9A", tank = "|cff9FB8FF", melee = "|cffFF9F7A", ranged = "|cffFFD27A", caster = "|cffC9A0FF" }
+local function specIcon(r, s) r.icon:SetTexture(s and s.icon or "Interface\\Icons\\INV_Misc_QuestionMark") end
+local function dualSpecRows(n, s)
   local lvl = UnitLevel("player")
-  local set, total = RG.HealSet()
-  -- dual spec status
-  n = n + 1
   local ds = RG.HasDualSpec and RG.HasDualSpec()
-  local dsText = lvl < 40 and ("Unlocks at level 40 (" .. (40 - lvl) .. " to go). Start saving healing pieces now.")
-    or (ds and "You have dual spec. Swap at your class trainer, then put on your healing set." or "Unlocked! Visit your class trainer in a capital city to learn it.")
-  setItem(getRow(n), nil, nil, "|cffF58CBADual spec: Holy|r", dsText, ds and (GREEN .. "Ready|r") or (lvl >= 40 and (GOLD .. "Go learn it|r") or (GREY .. "Level 40|r")), "", "gold")
-  rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_HolyBolt")
-  -- one-click swap
+  local at = RG.DUAL_SPEC_LEVEL or 40
+  n = n + 1
+  local dsText = lvl < at and ("Unlocks at level " .. at .. " (" .. (at - lvl) .. " to go). Start saving " .. s.name .. " pieces now: the Gear tab lists them.")
+    or (ds and ("You have dual spec. Switch at your class trainer, then put on your " .. s.name .. " set.") or "Unlocked! Visit your class trainer in a capital city to learn it.")
+  setItem(getRow(n), nil, nil, "|cffF58CBADual spec: " .. s.name .. "|r", dsText, ds and (GREEN .. "Ready|r") or (lvl >= at and (GOLD .. "Go learn it|r") or (GREY .. "Level " .. at .. "|r")), "", "gold")
+  specIcon(rows[n], s)
+  local _, total = RG.SpecSet()
   if total > 0 then
     n = n + 1
     local wearing = RG.db.wearingHeal
-    setItem(getRow(n), nil, nil, wearing and "|cffffffffPut your Ret gear back on|r" or "|cffffffffEquip your healing set|r",
-      wearing and "Re-equips the Retribution gear you wore before the swap." or "Puts on the best healing piece from your bags for each slot and remembers your Ret gear. Also: /wp gear heal, /wp gear ret.",
+    local main = RG.MainSpec and RG.MainSpec()
+    local mainName = main and main.name or "main"
+    setItem(getRow(n), nil, nil, wearing and ("|cffffffffPut your " .. mainName .. " gear back on|r") or ("|cffffffffEquip your " .. s.name .. " set|r"),
+      wearing and ("Re-equips the " .. mainName .. " gear you wore before the swap.") or ("Puts on the best " .. s.name .. " piece from your bags for each slot and remembers your " .. mainName .. " gear. Also: /wp gear 2, /wp gear 1."),
       GOLD .. "Swap|r", "", "gold")
-    rows[n].icon:SetTexture(wearing and "Interface\\Icons\\Spell_Holy_AuraOfLight" or "Interface\\Icons\\Spell_Holy_FlashHeal")
+    if wearing then specIcon(rows[n], main) else specIcon(rows[n], s) end
     rows[n].onClick = function() if RG.SwapGear then RG.SwapGear() end end
   end
+  return n
+end
+
+local function renderSpec()
+  local n = 0
+  local list = RG.SpecList and RG.SpecList() or {}
+  if #list == 0 then n = n + 1; setHeader(getRow(n), "No spec data for your class yet"); return n end
+  local cur = RG.SecondSpec and RG.SecondSpec()
+  n = n + 1; setHeader(getRow(n), "Pick your 2nd spec  ·  click one")
+  for _, s in ipairs(list) do
+    n = n + 1
+    local chosen = cur and cur.key == s.key
+    local pill
+    if chosen and s.main then pill = GOLD .. "You level as this|r"
+    elseif chosen then pill = GREEN .. "Your 2nd spec|r"
+    elseif s.main then pill = GREY .. "Leveling spec|r"
+    else pill = GOLD .. "Choose|r" end
+    setItem(getRow(n), nil, nil, (chosen and "|cffffffff" or "|cffd8d0c0") .. s.name .. "|r  " .. (KIND_COLOR[s.kind] or "") .. s.role .. "|r",
+      GREY .. s.stats .. "|r", pill, "", chosen and "green" or nil)
+    specIcon(rows[n], s)
+    rows[n].onClick = function() RG.SetSecondSpec(s.key) end
+  end
+  if not cur then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GREY .. "No 2nd spec yet|r", GREY .. "Pick one above: Waypath+ then collects gear for it, never sells it, and swaps it on when you change spec. Dual spec unlocks at level " .. (RG.DUAL_SPEC_LEVEL or 40) .. ".|r", "", "", nil, nil, true)
+    return n
+  end
+  if cur.main then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GOLD .. cur.name .. " is the spec you level with|r", GREY .. "Your Gear guide already follows it. Pick one of the other specs to collect a second set.|r", "", "", nil, nil, true)
+  else
+    n = dualSpecRows(n, cur)
+    local guide = RG.SpecGuide(cur)
+    local lvl = UnitLevel("player")
+    local soon = 0
+    for _, g in ipairs(guide) do if g.lvl <= lvl + 5 and not RG.OwnState(g.id) then soon = soon + 1 end end
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffff" .. cur.name .. " gear to collect|r", soon > 0 and (soon .. " piece" .. (soon > 1 and "s" or "") .. " you can get within 5 levels, slot by slot, with where they drop.") or "Your set, slot by slot, and what to hunt for next.", GOLD .. "Open|r", "", "gold")
+    specIcon(rows[n], cur)
+    rows[n].onClick = function() state.tab = "heal"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
+  end
+  -- the build
+  n = n + 1; setHeader(getRow(n), cur.name .. " build  ·  WoW Forever (beta, level 30)")
+  for _, line in ipairs(cur.build or {}) do
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffff" .. line .. "|r", "", "", "", nil, nil, true)
+    specIcon(rows[n], cur)
+  end
+  if cur.goal then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GOLD .. "Work toward:|r " .. cur.goal, "", "", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+  end
+  n = n + 1
+  setItem(getRow(n), nil, nil, GOLD .. "Stats:|r " .. cur.stats, "", "", "", nil, nil, true)
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+  n = n + 1; setHeader(getRow(n), "Playing " .. cur.name)
+  for _, t in ipairs(cur.tips or {}) do
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffff" .. t .. "|r", "", "", "", nil, nil, true)
+    specIcon(rows[n], cur)
+  end
+  if cur.forever and #cur.forever > 0 then
+    n = n + 1; setHeader(getRow(n), "New in WoW Forever")
+    for _, t in ipairs(cur.forever) do
+      n = n + 1
+      setItem(getRow(n), nil, nil, "|cffffffff" .. t .. "|r", "", "", "", nil, nil, true)
+      rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gem_Pearl_04")
+    end
+  end
+  n = n + 1; setHeader(getRow(n), "Guide: " .. ((cur.source or ""):gsub("^https?://", ""):gsub("^www%.", "")) .. "  ·  updated " .. (RG.SPECS_UPDATED or ""))
+  return n
+end
+
+-- ---------------------------------------------------------------------------
+-- 2nd Spec > Gear: your 2nd set slot by slot, then what to hunt for by level
+-- ---------------------------------------------------------------------------
+local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784, Dungeon = 136058, Vendor = 133784, ["Rare mob"] = 133639 }
+local function renderHeal()
+  local n = 0
+  local s = RG.SecondSpec and RG.SecondSpec()
+  if not s or s.main then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GOLD .. (s and (s.name .. " is your leveling spec") or "Pick a 2nd spec first") .. "|r", GREY .. "Choose any other spec of your class on the Spec page: this page then lists the gear to start collecting for it.|r", GOLD .. "Choose|r", "", "gold")
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    rows[n].onClick = function() state.tab = "spec"; RG.RefreshUINow() end
+    return n
+  end
+  local lvl = UnitLevel("player")
+  local set, total = RG.SpecSet()
+  local guide = RG.SpecGuide(s)
+  n = dualSpecRows(n, s)
   -- your set, slot by slot
+  local slots = RG.SpecSlots(s)
   local filled = 0
   for _, g in pairs(set) do filled = filled + #g end
-  n = n + 1; setHeader(getRow(n), string.format("Your healing set  ·  %d of 16 slots  ·  Holy score %.0f", filled, total))
+  n = n + 1; setHeader(getRow(n), string.format("Your %s set  ·  %d of %d slots  ·  %s score %.0f", s.name, filled, #slots, s.name, total))
   local used = {}
   local hasTwoHand = set["Main Hand"] and set["Main Hand"][1] and RG.EquipLoc(set["Main Hand"][1].link) == "INVTYPE_2HWEAPON"
-  for _, slot in ipairs(RG.HEAL_SLOTS) do
+  for _, slot in ipairs(slots) do
     used[slot] = (used[slot] or 0) + 1
     local p = set[slot] and set[slot][used[slot]]
     if not (slot == "Off Hand" and hasTwoHand) then
       -- next thing on the list for this slot that you can use soon and don't own
       local nextG
-      for _, g in ipairs(RG.HEAL_GUIDE) do
+      for _, g in ipairs(guide) do
         local gs = g.slot == "Two-Hand" and "Main Hand" or g.slot
         if gs == slot and g.lvl <= lvl + 5 and not RG.OwnState(g.id) then
           local link = select(2, RG.ItemInfo(g.id))
-          local better = not p or not link or RG.HealScore(link) > p.score + 0.5
+          local better = not p or not link or RG.SpecScore(link, s) > p.score + 0.5
           if better then nextG = g; break end
         end
       end
@@ -1083,22 +1197,32 @@ local function renderHeal()
         local where = p.where == "worn" and "wearing it" or (p.where == "bank" and "in your bank" or "in your bags")
         setItem(r, p.id, p.link, (name or p.link) .. GREY .. "   " .. slot .. "|r", hunt and (GOLD .. "Next: |r" .. hunt) or (GREY .. "Nothing better on the list yet|r"), GREEN .. string.format("%.0f", p.score) .. "|r", GREY .. where .. "|r", nil, quality, true)
       else
-        setItem(r, nextG and nextG.id or nil, nil, GREY .. slot .. ": nothing yet|r", hunt and (GOLD .. "Look for: |r" .. hunt) or (GREY .. "Any piece with Intellect or +Healing will do|r"), "", "", nil, nil, true)
+        setItem(r, nextG and nextG.id or nil, nil, GREY .. slot .. ": nothing yet|r", hunt and (GOLD .. "Look for: |r" .. hunt) or (GREY .. "Any piece with " .. s.stats:match("^[^,]+") .. " will do|r"), "", "", nil, nil, true)
         if not nextG then r.icon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot") end
       end
     end
   end
-  -- the hunting list
-  local brackets = { { 33, 45, "Levels 40-45  ·  Scarlet Monastery" }, { 42, 49, "Levels 42-50  ·  Zul'Farrak and Maraudon" }, { 50, 55, "Levels 50-55  ·  Sunken Temple and Blackrock Depths" }, { 55, 60, "Levels 55-60  ·  Blackrock Spire, Dire Maul, Stratholme, Scholomance" } }
-  local shown = {}
+  -- the hunting list, in 5-level steps, each named after where most of it comes from
   local bs = RG.Skill and RG.Skill("Blacksmithing") or 0
-  for _, b in ipairs(brackets) do
-    if state.healAll or b[2] >= lvl - 3 then
-      local any = false
-      for _, g in ipairs(RG.HEAL_GUIDE) do
-        if not shown[g.id] and g.lvl >= b[1] and g.lvl <= b[2] then
-          if not any then n = n + 1; setHeader(getRow(n), b[3]); any = true end
-          shown[g.id] = true
+  for lo = 25, 60, 5 do
+    local hi = lo + 4
+    if state.healAll or hi >= lvl - 3 then
+      local inBand, zones, zcount = {}, {}, {}
+      for _, g in ipairs(guide) do
+        if g.lvl >= lo and g.lvl <= hi then
+          inBand[#inBand + 1] = g
+          if g.zone and g.zone ~= "" then
+            if not zcount[g.zone] then zones[#zones + 1] = g.zone end
+            zcount[g.zone] = (zcount[g.zone] or 0) + 1
+          end
+        end
+      end
+      if #inBand > 0 then
+        table.sort(zones, function(a, b) return zcount[a] > zcount[b] end)
+        local top = {}
+        for i = 1, math.min(3, #zones) do top[i] = zones[i] end
+        n = n + 1; setHeader(getRow(n), "Levels " .. math.max(lo, 28) .. "-" .. math.min(hi, 60) .. (#top > 0 and ("  ·  " .. table.concat(top, ", ")) or ""))
+        for _, g in ipairs(inBand) do
           n = n + 1
           local name, link, quality = itemName(g.id)
           local own = RG.OwnState(g.id)
@@ -1108,9 +1232,9 @@ local function renderHeal()
           elseif g.bs then pill = bs >= g.bs and (GREEN .. "You can make it|r") or (GOLD .. "Blacksmithing " .. g.bs .. "|r")
           elseif lvl < g.lvl then pill = GREY .. "Level " .. g.lvl .. (g.approx and "ish" or "") .. "|r"
           else pill = GOLD .. "Go get it|r" end
-          local score = link and RG.HealScore(link) or 0
+          local score = link and RG.SpecScore(link, s) or (g.score or 0)
           local sub = g.src .. GREY .. "  ·  " .. g.zone .. "  ·  " .. g.slot .. (g.note and ("  ·  " .. g.note) or "") .. "|r"
-          setItem(getRow(n), g.id, link, name, sub, pill, g.ah and RG.PriceText(g.id) or (GREY .. "Holy " .. string.format("%.0f", score) .. "|r"), own and "green" or nil, quality)
+          setItem(getRow(n), g.id, link, name, sub, pill, g.ah and RG.PriceText(g.id) or (GREY .. s.name .. " " .. string.format("%.0f", score) .. "|r"), own and "green" or nil, quality)
           if not link then rows[n].icon:SetTexture(HOW_ICON[g.how] or 134400) end
         end
       end
@@ -1118,11 +1242,18 @@ local function renderHeal()
   end
   n = n + 1
   setStep(getRow(n), "", "Show the list for every level, not just mine", state.healAll, function() state.healAll = not state.healAll; RG.RefreshUI() end)
-  n = n + 1; setHeader(getRow(n), "Healing tips")
-  for _, t in ipairs(RG.HEAL_TIPS) do
+  n = n + 1; setHeader(getRow(n), "Collecting a 2nd set")
+  local tips = {
+    "Collect from level 30: dual spec unlocks at " .. (RG.DUAL_SPEC_LEVEL or 40) .. " in WoW Forever, at your class trainer in a capital city.",
+    "Everything in your " .. s.name .. " set is marked in your bags, and Waypath+ won't vendor or auction it.",
+    "Two sets fill your bags fast: buy bigger bags and park the set in your bank between runs (open your bank once so Waypath+ remembers it).",
+    "Save the set in the game's Equipment Manager too, or use the Swap button above (/wp gear 2, /wp gear 1).",
+    "Scores use " .. s.name .. "'s own stat values. Forever loot is still being mapped: the list updates twice a week.",
+  }
+  for _, t in ipairs(tips) do
     n = n + 1
     setItem(getRow(n), nil, nil, "|cffffffff" .. t .. "|r", "", "", "", nil, nil, true)
-    rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_FlashHeal")
+    specIcon(rows[n], s)
   end
   return n
 end
@@ -1553,7 +1684,7 @@ local function renderSettings()
   action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
   action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() WaypathDB.trackerPos = nil; WaypathDB.trackerScale = nil; WaypathDB.trackerWidth = nil; if WaypathTracker then WaypathTracker:ClearAllPoints(); WaypathTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
   action("Abandon grey quests", "Drops quests too low to give useful XP (asks first)", function() if RG.AbandonGreyQuests then RG.AbandonGreyQuests() end end)
-  action("Equip healing set / Ret set", "Swap between your healing gear and your Retribution gear", function() if RG.SwapGear then RG.SwapGear() end end)
+  action("Swap to 2nd spec gear / back", "Swap between your 2nd spec's set and your main gear (pick the spec on the 2nd Spec tab)", function() if RG.SwapGear then RG.SwapGear() end end)
   action("Show Waypath+ errors", (WaypathDB.errors and #WaypathDB.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)
   return n
 end
@@ -1574,7 +1705,8 @@ local TITLES = {
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   group = { "Group play", "How grouping is going, your paladin duties, shared quests and finding a group" },
-  heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
+  spec  = { "2nd spec", "Pick any spec of your class: its WoW Forever build, stats and tips" },
+  heal  = { "2nd spec gear", "Gear to start collecting for your 2nd spec, and where to find it" },
 }
 local FOOTERS = {
   route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  click a gold heading to fold it  ·  finished steps are hidden",
@@ -1589,7 +1721,8 @@ local FOOTERS = {
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
   mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
   group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /wp lfg Scarlet Monastery posts your own",
-  heal  = "Pieces in your healing set are never sold by Waypath+  ·  Forever loot is still being mapped; the list updates weekly",
+  spec  = "Dual spec unlocks at level 40 at your class trainer  ·  builds follow the newest WoW Forever spec guides  ·  /wp spec",
+  heal  = "Pieces in your 2nd set are never sold by Waypath+  ·  Forever loot is still being mapped; the list updates twice a week  ·  /wp heal",
 }
 
 local function updateHeader()
@@ -1633,6 +1766,7 @@ function RG.RefreshUINow()
   elseif state.tab == "talents" then n = renderTalents()
   elseif state.tab == "gold" then n = renderGold()
   elseif state.tab == "heal" then n = renderHeal()
+  elseif state.tab == "spec" then n = renderSpec()
   elseif state.tab == "group" then n = renderGroup()
   elseif state.tab == "mail" then n = renderMail()
   elseif state.tab == "camp" then n = renderCamp()
@@ -1685,7 +1819,7 @@ local function build()
   frame:SetSize(W, H)
   local pos = WaypathDB and WaypathDB.windowPos
   if pos then frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else frame:SetPoint("CENTER") end
-  if WaypathDB and WaypathDB.lastTab then state.tab = WaypathDB.lastTab end
+  if WaypathDB and WaypathDB.lastTab and TITLES[WaypathDB.lastTab] then state.tab = WaypathDB.lastTab end
   RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
@@ -1736,7 +1870,7 @@ local function build()
   -- Character-window style tabs along the bottom edge
   tabs = {}
   local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "group", "Group" },
-    { "heal", "Healing" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
+    { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
   local x = 12
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
@@ -1817,6 +1951,8 @@ end
 
 function RG.ShowTab(tab)
   if not frame then build() end
+  if GROUPS[tab] then tab = state.lastSub[tab] or GROUPS[tab][1] end
+  if not TITLES[tab] then tab = "route" end
   state.tab = tab; saveTab(); frame:Show(); RG.RefreshUI()
 end
 

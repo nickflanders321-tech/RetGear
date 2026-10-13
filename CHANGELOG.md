@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.39.0 (2nd spec for every class)
+- **The Healing tab is now the 2nd Spec tab**, for every class. Pick any spec of your class as your second spec: all 28, tanks, healers and damage (Druids get Cat and Bear separately). Paladins keep Holy until they pick something else.
+- **Spec & build:** the spec's WoW Forever talent build (the newest beta builds, level 30), the talents to work toward, its stat priority, how to play it, and what's new for it in Forever. From the mobalytics.gg verified Forever spec guides; the twice-weekly update swaps in level 60 builds once they're published.
+- **Gear to collect:** once you pick a spec, this page shows your best piece per slot for it (worn, in your bags or in your bank), the next thing to hunt for in each slot, and a list from level 30 to 60 grouped by level with the dungeons most of it comes from. Each spec's list is built from WoW Forever's quest, dungeon and vendor data with that spec's own stat values: shields, Defense, dodge, parry, block and armor for tanks; +healing, mp5 and Intellect for healers; daggers for Assassination and Subtlety. The Gear guide tab links to it.
+- **Everything that knew about the Holy set now follows your 2nd spec:** item tooltips ("Protection score"), bag icons, quest reward picks, the never-sell protection, the bank memory, upgrade toasts, and the swap when you change spec (any class, whenever your 2nd spec uses a different talent tree; Cat and Bear swap with the button). `/wp spec`, `/wp spec <name>`, `/wp gear 2` and `/wp gear 1`.
+- The setup wizard asks for your 2nd spec.
+- **Druid forms scale with weapon damage in WoW Forever:** feral gear now counts weapon damage, and druids can use polearms.
+- Tooltips and scores read tank stats (Defense, dodge, parry, block, block value and armor).
+- `tools/audit` checks every spec too: build, tips, stat values, and a gear list covering levels 30 to 60.
+
 ## v0.38.0 (every profession)
 - **All twelve professions are in:** Mining, Herbalism, Skinning, Blacksmithing, Engineering, Alchemy, Leatherworking, Tailoring, Enchanting, Cooking, Fishing and First Aid. The Professions tab shows the ones you know or plan: your skill, the trainer for your next rank (and the closest one for your race when you haven't learned it yet), where you are in a 1-300 plan with the next steps and materials, supplies to buy, and material prices.
 - **Plans come from the WoW Forever guides** (wow-professions.com, beta data), with Forever's changes: Healing Potions are made with First Aid now, Alchemy's new recipes, Herbalism needing character level = herb skill / 5. Where Forever's route isn't published yet (225-300 for several crafts) the Classic route fills in, marked as untested.

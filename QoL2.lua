@@ -1,13 +1,13 @@
 -- Waypath+ quality of life, part two:
---   * upgrade arrows on bag icons (Ret upgrades, healing-set pieces)
+--   * upgrade arrows on bag icons (upgrades for you, pieces for your 2nd spec)
 --   * error catcher: Waypath+'s own errors are logged quietly (/wp errors)
 --   * turn-in run: the arrow chains through every quest that's ready
 --   * abandon grey quests in one click (asks first)
---   * dual-spec gear swap: offers your healing set when you switch to Holy
+--   * dual-spec gear swap: offers your 2nd spec's set when you switch to that spec
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
-table.insert(RG.OPTIONS, { key = "bagArrows", label = "Mark upgrades on bag icons (green arrow: an upgrade for you, light: healing set)", default = true })
-table.insert(RG.OPTIONS, { key = "specSwap", label = "Offer to swap gear when I change spec (Holy / Retribution)", default = true })
+table.insert(RG.OPTIONS, { key = "bagArrows", label = "Mark upgrades on bag icons (green arrow: an upgrade for you, light: a piece for your 2nd spec)", default = true })
+table.insert(RG.OPTIONS, { key = "specSwap", label = "Offer to swap gear when I change to or from my 2nd spec", default = true })
 table.insert(RG.OPTIONS, { key = "quietErrors", label = "Catch Waypath+ errors quietly (see them with /wp errors)", default = true })
 
 local function notify(msg) if RG.Notify then RG.Notify(msg) else RG.Print(msg) end end
@@ -156,6 +156,10 @@ function RG.UpdateBagArrows()
     if up or heal or marks[b] then
       local m = getMark(b)
       m.up:SetShown(up and true or false)
+      if heal then
+        local s = RG.SecondSpecActive and RG.SecondSpecActive()
+        m.heal:SetTexture(s and s.icon or "Interface\\Icons\\Spell_Holy_HolyBolt")
+      end
       m.heal:SetShown(heal and true or false)
     end
   end)
@@ -281,11 +285,11 @@ end
 -- ===========================================================================
 local SLOT_FOR = { Head = { 1 }, Neck = { 2 }, Shoulder = { 3 }, Back = { 15 }, Chest = { 5 }, Wrist = { 9 }, Hands = { 10 },
   Waist = { 6 }, Legs = { 7 }, Feet = { 8 }, Ring = { 11, 12 }, Trinket = { 13, 14 }, ["Main Hand"] = { 16 }, ["Two-Hand"] = { 16 },
-  ["Off Hand"] = { 17 }, Relic = { 18 } }
-local GROUP_ORDER = { "Main Hand", "Two-Hand", "Off Hand", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket", "Relic" }
+  ["Off Hand"] = { 17 }, Relic = { 18 }, Ranged = { 18 } }
+local GROUP_ORDER = { "Main Hand", "Two-Hand", "Off Hand", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket", "Relic", "Ranged" }
 
--- Which tree has the most points: "heal" (Holy), "ret", or "prot".
-function RG.CurrentRole()
+-- Which talent tree has the most points (1-3), or nil early on.
+function RG.CurrentTree()
   local t = RG.ReadTalents and RG.ReadTalents()
   if not t then return nil end
   local by = {}
@@ -293,8 +297,20 @@ function RG.CurrentRole()
   local best, bestN = nil, 0
   for tab, n in pairs(by) do if n > bestN then best, bestN = tab, n end end
   if not best or bestN < 5 then return nil end
-  return ({ "heal", "prot", "ret" })[best]
+  return best
 end
+-- "second" when your talents are in your 2nd spec's tree, "main" when they're in
+-- your leveling spec's tree, nil otherwise (or when both specs share a tree, like
+-- Cat and Bear: swap those by hand).
+function RG.CurrentRole()
+  local tree = RG.CurrentTree()
+  local second, main = RG.SecondSpecActive and RG.SecondSpecActive(), RG.MainSpec and RG.MainSpec()
+  if not (tree and second and main) or second.tab == main.tab then return nil end
+  if tree == second.tab then return "second" elseif tree == main.tab then return "main" end
+end
+local function secondName() local s = RG.SecondSpecActive and RG.SecondSpecActive(); return s and s.name or "2nd spec" end
+local function mainName() local s = RG.MainSpec and RG.MainSpec(); return s and s.name or "main" end
+RG.SecondSpecName, RG.MainSpecName = secondName, mainName
 
 local function equipQueue(jobs, done)
   local equip = (C_Item and C_Item.EquipItemByName) or EquipItemByName
@@ -314,10 +330,10 @@ local function idAt(slot) return GetInventoryItemID and GetInventoryItemID("play
 
 function RG.EquipHealSet()
   if inCombat() then RG.Print("You can't change gear in combat."); return end
-  if not RG.HealSet then return end
+  if not (RG.HealSet and RG.SecondSpecActive and RG.SecondSpecActive()) then RG.Print("Pick a 2nd spec on the 2nd Spec tab first (/wp spec)."); return end
   if RG.HealInvalidate then RG.HealInvalidate() end
   local set = RG.HealSet()
-  -- remember what you wear now (only if it isn't the healing set already)
+  -- remember what you wear now (only if it isn't the 2nd set already)
   if not RG.db.wearingHeal then
     local saved = {}
     for slot = 1, 18 do saved[slot] = GetInventoryItemLink("player", slot) or false end
@@ -345,18 +361,18 @@ function RG.EquipHealSet()
   end
   RG.db.wearingHeal = true
   if #jobs == 0 then
-    RG.Print("Healing set: nothing to change" .. (inBank > 0 and (" (" .. inBank .. " piece" .. (inBank > 1 and "s are" or " is") .. " in your bank)") or "") .. ".")
+    RG.Print(secondName() .. " set: nothing to change" .. (inBank > 0 and (" (" .. inBank .. " piece" .. (inBank > 1 and "s are" or " is") .. " in your bank)") or "") .. ".")
     return
   end
-  RG.Print(GOLD .. "Equipping your healing set|r (" .. #jobs .. " piece" .. (#jobs > 1 and "s" or "") .. ")" .. (inBank > 0 and (GREY .. ". " .. inBank .. " more in your bank.|r") or "."))
-  equipQueue(jobs, function() notify(GREEN .. "Healing set on|r") end)
+  RG.Print(GOLD .. "Equipping your " .. secondName() .. " set|r (" .. #jobs .. " piece" .. (#jobs > 1 and "s" or "") .. ")" .. (inBank > 0 and (GREY .. ". " .. inBank .. " more in your bank.|r") or "."))
+  equipQueue(jobs, function() notify(GREEN .. secondName() .. " set on|r") end)
 end
 
 function RG.EquipRetSet()
   if inCombat() then RG.Print("You can't change gear in combat."); return end
   local saved = RG.db.retGear
   RG.db.wearingHeal = nil
-  if not saved then RG.Print("No saved Retribution gear yet: Waypath+ saves it when it puts your healing set on."); return end
+  if not saved then RG.Print("No saved " .. mainName() .. " gear yet: Waypath+ saves it when it puts your " .. secondName() .. " set on."); return end
   local jobs = {}
   -- weapons first so a two-hander/one-hander swap lands cleanly
   for _, slot in ipairs({ 16, 17, 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 13, 14, 18 }) do
@@ -366,9 +382,9 @@ function RG.EquipRetSet()
       if id and idAt(slot) ~= id then jobs[#jobs + 1] = { link, slot } end
     end
   end
-  if #jobs == 0 then RG.Print("Retribution gear: nothing to change."); return end
-  RG.Print(GOLD .. "Equipping your Retribution gear|r (" .. #jobs .. " piece" .. (#jobs > 1 and "s" or "") .. ").")
-  equipQueue(jobs, function() notify(GREEN .. "Retribution gear on|r") end)
+  if #jobs == 0 then RG.Print(mainName() .. " gear: nothing to change."); return end
+  RG.Print(GOLD .. "Equipping your " .. mainName() .. " gear|r (" .. #jobs .. " piece" .. (#jobs > 1 and "s" or "") .. ").")
+  equipQueue(jobs, function() notify(GREEN .. mainName() .. " gear on|r") end)
 end
 
 function RG.SwapGear()
@@ -378,22 +394,22 @@ end
 if StaticPopupDialogs then
   StaticPopupDialogs.WAYPATH_SPEC_SWAP = {
     text = "%s", button1 = YES or "Yes", button2 = NO or "No",
-    OnAccept = function(_, data) if data == "heal" then RG.EquipHealSet() else RG.EquipRetSet() end end,
+    OnAccept = function(_, data) if data == "second" then RG.EquipHealSet() else RG.EquipRetSet() end end,
     timeout = 0, whileDead = false, hideOnEscape = true, preferredIndex = 3,
   }
 end
 local function checkRole()
-  if not RG.db or (RG.IsAlt and RG.IsAlt()) or not RG.IsClass("PALADIN") then return end
+  if not RG.db or (RG.IsAlt and RG.IsAlt()) then return end
   local role = RG.CurrentRole()
-  if not role or role == "prot" then return end
+  if not role then return end
   local last = RG.db.lastRole
   if last ~= role and inCombat() then RG.pendingRoleSwap = true; return end
   RG.db.lastRole = role
   if not last or last == role or not RG.Opt("specSwap") then return end
   if (UnitLevel("player") or 1) < 10 then return end
   local text
-  if role == "heal" and not RG.db.wearingHeal then text = "You switched to Holy.\nEquip your healing set?"
-  elseif role == "ret" and RG.db.wearingHeal then text = "You switched back to Retribution.\nPut your Ret gear back on?"
+  if role == "second" and not RG.db.wearingHeal then text = "You switched to " .. secondName() .. ".\nEquip your " .. secondName() .. " set?"
+  elseif role == "main" and RG.db.wearingHeal then text = "You switched back to " .. mainName() .. ".\nPut your " .. mainName() .. " gear back on?"
   else return end
   if StaticPopup_Show then
     local dlg = StaticPopup_Show("WAYPATH_SPEC_SWAP", text)
@@ -413,7 +429,12 @@ ev:SetScript("OnEvent", function(_, event)
   elseif event == "QUEST_TURNED_IN" then
     if run then C_Timer.After(1, runNext) end
   elseif event == "PLAYER_LOGIN" then
-    C_Timer.After(5, function() local r = RG.CurrentRole(); if r and r ~= "prot" then RG.db.lastRole = RG.db.lastRole or r end end)
+    C_Timer.After(5, function()
+      local r = RG.CurrentRole()
+      -- saved roles from before 2nd specs were "heal" and "ret"
+      if RG.db.lastRole == "heal" then RG.db.lastRole = "second" elseif RG.db.lastRole == "ret" then RG.db.lastRole = "main" end
+      if r then RG.db.lastRole = RG.db.lastRole or r end
+    end)
   elseif event == "PLAYER_REGEN_ENABLED" then
     if RG.pendingRoleSwap then RG.pendingRoleSwap = nil; C_Timer.After(1, checkRole) end
   else
@@ -431,8 +452,8 @@ SlashCmdList.WAYPATH = function(msg)
   if cmd == "errors" or cmd == "error" then
     if rest == "clear" then WaypathDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
     return
-  elseif cmd == "gear" and (rest == "heal" or rest == "holy") then RG.EquipHealSet(); return
-  elseif cmd == "gear" and rest == "ret" then RG.EquipRetSet(); return
+  elseif cmd == "gear" and (rest == "heal" or rest == "holy" or rest == "2" or rest == "second" or rest == "spec") then RG.EquipHealSet(); return
+  elseif cmd == "gear" and (rest == "ret" or rest == "1" or rest == "main") then RG.EquipRetSet(); return
   elseif cmd == "turnin" or cmd == "turnins" then RG.TurnInRun(); return
   elseif cmd == "greys" or cmd == "grey" then RG.AbandonGreyQuests(); return
   end

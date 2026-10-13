@@ -238,8 +238,8 @@ local function onVendor()
   watched = {}
   local have = counts()
   for _, e in ipairs(items) do watched[e.id] = { count = have[e.id] or e.count, e = e } end
-  -- your healing set for dual spec: watch it too
-  if RG.HealSet and RG.Opt("healSet") and RG.IsClass("PALADIN") then
+  -- your 2nd spec's set: watch it too
+  if RG.HealSet and RG.SecondSetOn and RG.SecondSetOn() then
     local _, _, keep = RG.HealSet()
     for id in pairs(keep) do
       if have[id] and not watched[id] then watched[id] = { count = have[id], e = { id = id, heal = true } } end
@@ -266,9 +266,9 @@ local function checkSold()
       local idx = buybackIndex(id)
       if idx and w.e.heal then
         local link = select(2, RG.ItemInfo(id)) or "that item"
-        RG.Print(RED .. "Careful:|r you sold " .. link .. ", a piece of your healing set for dual spec. Buy it back from the vendor's Buyback tab.")
+        RG.Print(RED .. "Careful:|r you sold " .. link .. ", a piece of your " .. (RG.SecondSpecName and RG.SecondSpecName() or "2nd spec") .. " set. Buy it back from the vendor's Buyback tab.")
         if RG.Toast then
-          RG.Toast("Healing set item sold", link .. " was in your healing set.", select(10, RG.ItemInfo(id)), "Buy back", function()
+          RG.Toast("2nd spec item sold", link .. " was in your " .. (RG.SecondSpecName and RG.SecondSpecName() or "2nd spec") .. " set.", select(10, RG.ItemInfo(id)), "Buy back", function()
             local i = buybackIndex(id)
             if i and MerchantFrame and MerchantFrame:IsShown() then BuybackItem(i); RG.Print("Bought back " .. link .. ".") else RG.Print("Open the vendor again to buy it back.") end
           end, 10)

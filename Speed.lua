@@ -74,7 +74,7 @@ local function onComplete(retry)
     RG.Print("Picked " .. (GetQuestItemLink("choice", pick) or "a reward") .. GREY .. " (" .. why .. ")|r")
     GetQuestReward(pick)
   elseif r.upI and r.healI then
-    RG.Print("Your call: " .. (GetQuestItemLink("choice", r.upI) or "") .. " is a Ret upgrade, " .. (GetQuestItemLink("choice", r.healI) or "") .. " is a healing set upgrade.")
+    RG.Print("Your call: " .. (GetQuestItemLink("choice", r.upI) or "") .. " is an upgrade for you, " .. (GetQuestItemLink("choice", r.healI) or "") .. " is an upgrade for your " .. (RG.SecondSpecName and RG.SecondSpecName() or "2nd spec") .. " set.")
   end
 end
 

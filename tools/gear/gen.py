@@ -8,18 +8,28 @@ sources from QuestieDB's merged WoW Forever data (quest rewards, dungeon boss dr
 vendors), so only items that exist in Forever and that a Horde character of that class
 can get are listed.
 
+It also builds Classes/SpecGear.lua: for every spec on the 2nd Spec tab (Classes/Specs.lua)
+that isn't the class's leveling spec, the gear to start collecting from level 30, scored with
+that spec's weights, weapon model and weapons (tanks get shields, defense, dodge, parry, block
+and armor; healers get +healing, mp5 and Intellect).
+
 Usage:
   git clone --depth 1 https://github.com/cmangos/classic-db.git /tmp/cdb
   zcat /tmp/cdb/Full_DB/*.sql.gz > /tmp/classic.sql
   lua5.1 dump.lua /tmp/qdb/src/corrections/Forever/combined /tmp/forever_gear.json
-  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...]
+  lua5.1 specs_dump.lua <Waypath+ folder> /tmp/specs.json
+  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json]
 """
 import json, re, sys
 from collections import defaultdict
 
-sql_path, json_path, qdb_dir, addon_dir = sys.argv[1:5]
+args = sys.argv[1:]
+SPECS_JSON = None
+if "--specs" in args:
+    i = args.index("--specs"); SPECS_JSON = args[i + 1]; del args[i:i + 2]
+sql_path, json_path, qdb_dir, addon_dir = args[0:4]
 import os, glob
-ONLY = set(sys.argv[5:])
+ONLY = set(args[4:])
 if addon_dir.endswith('.lua'): addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(addon_dir)))  # old usage: path to PaladinGear.lua
 
 # ---------------------------------------------------------------------------
@@ -137,6 +147,8 @@ def stats_of(d):
     for k in range(1, 11):
         t, v = int(d["stat_type%d" % k]), int(d["stat_value%d" % k])
         if t in STAT and v: s[STAT[t]] += v
+    if int(d.get("armor") or 0) > 0: s["ARMOR"] += int(d["armor"])
+    if int(d.get("block") or 0) > 0: s["BLOCKVAL"] += int(d["block"])
     for k in range(1, 6):
         sid, trig = int(d["spellid_%d" % k]), int(d["spelltrigger_%d" % k])
         if not sid or trig != 1: continue
@@ -150,6 +162,11 @@ def stats_of(d):
             elif aura in (54, 55): s["HIT"] += bp           # ... and hit
             elif aura == 135: s["HEAL"] += bp
             elif aura == 85 and misc == 0: s["MP5"] += bp
+            elif aura == 30 and misc == 95: s["DEF"] += bp     # Defense skill
+            elif aura == 49: s["DODGE"] += bp
+            elif aura == 47: s["PARRY"] += bp
+            elif aura == 51: s["BLOCK"] += bp
+            elif aura == 158: s["BLOCKVAL"] += bp
             elif aura == 13 and misc:
                 if (misc & 126) == 126: s["SP"] += bp
                 else:
@@ -163,14 +180,16 @@ def weapon(d):
     dmg = sum((float(d["dmg_min%d" % k]) + float(d["dmg_max%d" % k])) / 2 for k in range(1, 6))
     return dmg / delay, delay
 
-MULT_2H = {"2H": 1, "DW": 0.75, "ranged": 1, "caster": 0, "feral": 0}
-MULT_1H = {"2H": 0.55, "DW": 1, "ranged": 0.55, "caster": 0, "feral": 0}
+MULT_2H = {"2H": 1, "DW": 0.75, "ranged": 1, "caster": 0, "feral": 1, "tank": 0.6}
+MULT_1H = {"2H": 0.55, "DW": 1, "ranged": 0.55, "caster": 0, "feral": 0.55, "tank": 1}
 def score(d, slot, C):
     """Same formula as RG.Score in Core.lua."""
     W, model = C["w"], C["model"]
     s = stats_of(d)
     v = sum(W.get(k, 0) * s[k] for k in s)
-    stat_only = v - W.get("STA", 0) * s.get("STA", 0)
+    # what the item gives beyond its armor value (and, except for tanks, beyond Stamina)
+    stat_only = v - W.get("ARMOR", 0) * s.get("ARMOR", 0)
+    if C.get("kind") != "tank": stat_only -= W.get("STA", 0) * s.get("STA", 0)
     dps, speed = weapon(d)
     if dps > 0:
         if slot == "Ranged": v += dps * W.get("RANGED_DPS", 0)
@@ -187,7 +206,7 @@ ARMOR_INV = {1: "Head", 2: "Neck", 3: "Shoulder", 5: "Chest", 20: "Chest", 6: "W
              10: "Hands", 11: "Ring", 12: "Trinket", 16: "Back"}
 # Which weapon slots each model gets a list for
 MODEL_SLOTS = {"2H": {"2H"}, "DW": {"Main Hand", "Off Hand"}, "ranged": {"Ranged", "2H"},
-               "caster": {"2H", "Main Hand", "Off Hand", "Ranged"}, "feral": {"2H"}}
+               "caster": {"2H", "Main Hand", "Off Hand", "Ranged"}, "feral": {"2H"}, "tank": {"Main Hand", "Off Hand"}}
 
 def eligible(d, C):
     cls, sub, inv = int(d["class"]), int(d["subclass"]), int(d["InventoryType"])
@@ -204,6 +223,9 @@ def eligible(d, C):
     elif cls == 4:
         if inv == 23:   # held in off-hand
             if "Off Hand" not in slots or C["model"] != "caster": return None
+            slot = "Off Hand"
+        elif inv == 14 and sub == 6:   # shield
+            if not C.get("shield") or "Off Hand" not in slots: return None
             slot = "Off Hand"
         elif inv in ARMOR_INV:
             if sub in (1, 2, 3, 4) and inv != 16:
@@ -301,16 +323,18 @@ def sources(iid):
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3}
 src_cache = {}
-for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
-    if path.endswith('Gear.lua'): continue
-    C = read_class(path)
-    if ONLY and C["name"] not in ONLY and C["tok"] not in ONLY: continue
+def pick(C, lvl_from=5):
+    """The upgrade path for every slot plus the best quest reward and dungeon drop per
+    5-level window, from lvl_from to 60."""
+    global CLASS_BIT
     CLASS_BIT = C["bit"]
     cands = defaultdict(list)
     for iid, d in items.items():
         slot = eligible(d, C)
         if not slot: continue
-        src = sources(iid)
+        key = (iid, CLASS_BIT)
+        if key not in src_cache: src_cache[key] = sources(iid)
+        src = [dict(x) for x in src_cache[key]]
         if not src: continue
         req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
         if req > 60: continue
@@ -321,10 +345,11 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
         src.sort(key=lambda x: ORDER.get(x["how"], 9))
         s0 = src[0]
         lvl = max(req, int(s0.get("req") or 0)) if s0["how"] == "Quest" else req
-        if lvl < 5: continue
+        if lvl < max(5, lvl_from - 2): continue
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"]})
     picked = []
+    start = (lvl_from // 5) * 5
     for slot, lst in cands.items():
         lst.sort(key=lambda c: (c["lvl"], -c["score"]))
         by_id = {}
@@ -334,7 +359,7 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
             if c["score"] > best * 1.05:
                 by_id[c["id"]] = c; best = max(best, c["score"])
         # 2) per 5-level window: the best quest reward and the best dungeon drop (easy alternatives)
-        for lo in range(5, 61, 5):
+        for lo in range(start, 61, 5):
             win = [c for c in lst if lo <= c["lvl"] < lo + 5]
             for how in ("Quest", "Dungeon"):
                 w = [c for c in win if c["how"] == how]
@@ -342,8 +367,21 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
                     top = max(w, key=lambda c: c["score"])
                     prior = max([c["score"] for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
                     if top["score"] > prior * 1.05: by_id[top["id"]] = top
-        picked += list(by_id.values())
+        picked += [c for c in by_id.values() if c["lvl"] >= lvl_from - 2]
     picked.sort(key=lambda c: (c["lvl"], c["slot"]))
+    return picked
+
+def entry(c):
+    return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d, gen = true },  -- %s\n" % (
+        c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), c["name"])
+
+CLASSES = {}
+for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
+    if path.endswith('Gear.lua') or path.endswith('Specs.lua'): continue
+    C = read_class(path)
+    CLASSES[C["tok"]] = C
+    if ONLY and C["name"] not in ONLY and C["tok"] not in ONLY: continue
+    picked = pick(C)
     cnt = defaultdict(int)
     for c in picked: cnt[c["slot"]] += 1
     print("%-8s %-14s picked %3d: %s" % (C["name"], C["spec"], len(picked), dict(sorted(cnt.items()))), file=sys.stderr)
@@ -356,7 +394,40 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
         f.write("local _, RG = ...\n")
         f.write("RG.CLASS_GEAR = RG.CLASS_GEAR or {}\n")
         f.write("RG.CLASS_GEAR.%s = {\n" % C["tok"])
-        for c in picked:
-            f.write("  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d, gen = true },  -- %s\n" % (
-                c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), c["name"]))
+        for c in picked: f.write(entry(c))
         f.write("}\n")
+
+# ---------------------------------------------------------------------------
+# 2nd specs: gear to collect from level 30 for every other spec
+# ---------------------------------------------------------------------------
+SPEC_FROM = 30
+if SPECS_JSON:
+    specs = json.load(open(SPECS_JSON))
+    out = ["-- GENERATED by tools/gear/gen.py --specs: do not edit by hand.",
+           "-- Gear to start collecting for every 2nd spec (Classes/Specs.lua), levels %d-60: quest rewards" % SPEC_FROM,
+           "-- a Horde character of that class can get, dungeon boss drops and Horde vendors, scored with",
+           "-- the spec's own weights. Stats: cMaNGOS classic DB; sources: QuestieDB merged Forever data.",
+           "-- Leveling specs use their class's gear guide instead (Classes/<Class>Gear.lua).",
+           "local _, RG = ...", "RG.SPEC_GEAR = RG.SPEC_GEAR or {}"]
+    for tok in sorted(specs):
+        C = CLASSES.get(tok)
+        if not C: continue
+        out.append("RG.SPEC_GEAR.%s = {" % tok)
+        for sp in specs[tok]:
+            if sp.get("main"): continue
+            S = dict(C)
+            S["w"] = {k: float(v) for k, v in (sp.get("weights") or {}).items()}
+            S["model"] = sp.get("model") or C["model"]
+            if sp.get("weapons"): S["weapons"] = set(sp["weapons"])
+            S["shield"] = bool(sp.get("shield"))
+            S["kind"] = sp.get("kind")
+            picked = pick(S, SPEC_FROM)
+            cnt = defaultdict(int)
+            for c in picked: cnt[c["slot"]] += 1
+            print("%-8s %-14s picked %3d: %s" % (C["name"], sp["name"], len(picked), dict(sorted(cnt.items()))), file=sys.stderr)
+            out.append("  %s = {" % sp["key"])
+            for c in picked: out.append("  " + entry(c).rstrip("\n"))
+            out.append("  },")
+        out.append("}")
+    with open(os.path.join(addon_dir, 'Classes', 'SpecGear.lua'), "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")

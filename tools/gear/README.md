@@ -22,8 +22,15 @@ git clone --depth 1 https://github.com/cmangos/classic-db.git /tmp/cdb
 zcat /tmp/cdb/Full_DB/*.sql.gz > /tmp/classic.sql
 sh tools/qdb/export.sh /tmp/qdb
 lua5.1 tools/gear/dump.lua /tmp/qdb/src/corrections/Forever/combined /tmp/forever_gear.json
-python3 tools/gear/gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb . [Class ...]
+lua5.1 tools/gear/specs_dump.lua . /tmp/specs.json
+python3 tools/gear/gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb . [Class ...] --specs /tmp/specs.json
 ```
+
+With `--specs` it also writes `Classes/SpecGear.lua`: for every spec in `Classes/Specs.lua` that
+isn't the class's leveling spec, the gear to start collecting from level 30 (the 2nd Spec tab),
+scored with that spec's weights and weapon model. Tanks (`model = "tank"`) get one-handers and
+shields and value Stamina, armor, Defense, dodge, parry and block; healers value +healing, mp5
+and Intellect; specs can narrow the class's weapons (daggers for Assassination and Subtlety).
 
 Hand-written entries in each class's `guide` table (tips, Forever-only items, crafts) take
 priority over generated ones.

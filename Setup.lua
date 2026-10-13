@@ -151,7 +151,7 @@ local function buildPages()
   local p4 = newPage("Automation")
   local auto = {
     { "autoQuest", "Accept and turn in quests for me", "Hold Shift at a quest giver to pause. Skips grey quests and quests that cost gold." },
-    { "autoReward", "Pick the quest reward when the choice is clear", "Your upgrade first, then best vendor value. Paladins: asks when a Ret and a healing upgrade compete." },
+    { "autoReward", "Pick the quest reward when the choice is clear", "Your upgrade first, then best vendor value. Asks when an upgrade for you and one for your 2nd spec compete." },
     { "autoArrow", "Arrow follows my next route step", "Never moves a pin you placed yourself." },
     { "sellJunk", "Sell grey junk and repair at vendors", "Anything worth more on the AH is kept, and you get a buy-back button if you sell it by mistake." },
     { "targetBar", "Quest bar and WaypathTarget macro", "Click to target the quest mobs you still need and use quest items." },
@@ -165,7 +165,7 @@ local function buildPages()
   -- 5. Extras
   local p5 = newPage("Extras")
   local extras = {
-    { "healSet", "Collect a healing set for dual spec", "Dual spec unlocks at 40. Waypath+ tracks your best healing gear and never sells it." },
+    { "healSet", "Collect gear for a 2nd spec", "Pick the spec below (or later on the 2nd Spec tab). Dual spec unlocks at 40; Waypath+ tracks your best pieces for it and never sells them." },
     { "profitWatch", "Protect items worth more on the AH", "Gold coin on the bag slot, kept out of junk sales, warning at vendors." },
     { "newQuests", "Show new quests near me", "Turn this off if you also run Questie, so you don't see them twice." },
     { "groupDuties", "Group helper", "In a party: who needs a Blessing, Aura reminder, dispel and \"dying\" alerts, shared quests and LFG posts." },
@@ -177,6 +177,23 @@ local function buildPages()
   end
   local alt = text(p5, "GameFontHighlightSmall", GOLD .. "Bank alt?|r Just log in on it: Waypath+ notices it isn't your main and shows a shopping list of quest items to buy and mail, with a one-click button at the mailbox.", W - 70)
   alt:SetPoint("TOPLEFT", 0, -36 - #extras * 46 - 6); alt:SetSpacing(2)
+  -- 2nd spec: one button per spec of your class
+  local specLabel = text(p5, "GameFontNormal", GOLD .. "2nd spec:|r", 80)
+  specLabel:SetPoint("TOPLEFT", 0, -36 - #extras * 46 - 52)
+  local specBtns, x = {}, 80
+  for _, sp in ipairs(RG.SpecList and RG.SpecList() or {}) do
+    if not sp.main then
+      local b = CreateFrame("Button", nil, p5, "UIPanelButtonTemplate")
+      b:SetSize(math.max(84, (#sp.name * 7) + 20), 22); b:SetPoint("TOPLEFT", x, -36 - #extras * 46 - 48); b:SetText(sp.name)
+      b:SetScript("OnClick", function() RG.SetSecondSpec(sp.key); WaypathDB.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
+      b.key = sp.key
+      specBtns[#specBtns + 1] = b; x = x + b:GetWidth() + 6
+    end
+  end
+  table.insert(p5.refreshers, function()
+    local cur = RG.SecondSpec and RG.SecondSpec()
+    for _, b in ipairs(specBtns) do if cur and cur.key == b.key then b:LockHighlight() else b:UnlockHighlight() end end
+  end)
 
   -- 6. Done
   local p6 = newPage("You're all set")
@@ -186,7 +203,7 @@ local function buildPages()
     local lv = {}
     for _, n in ipairs({ "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }) do if RG.Plans(n) then lv[#lv + 1] = n end end
     summary:SetText(GOLD .. "Help level:|r " .. pr.label .. "\n" .. GOLD .. "Professions:|r " .. (#lv > 0 and table.concat(lv, ", ") or "none") .. "\n"
-      .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "Healing set:|r " .. (RG.Opt("healSet") and "collecting" or "off") .. "\n\n"
+      .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "2nd spec:|r " .. ((RG.SecondSpecActive and RG.SecondSpecActive()) and (RG.SecondSpecActive().name .. (RG.Opt("healSet") and ", collecting its gear" or "")) or "none yet (/wp spec)") .. "\n\n"
       .. GOLD .. "Worth remembering|r\n"
       .. GOLD .. "/wp|r  the full guide        " .. GOLD .. "/wp next|r  pin your nearest objective\n"
       .. GOLD .. "/wp group|r  group play         " .. GOLD .. "/wp camp|r  camp, fishing, cooking\n"

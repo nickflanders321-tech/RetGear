@@ -77,7 +77,7 @@ RG.FISH_COOK = {
   { id = 13758, dish = "Filet of Redgill",         cook = 225, fish = 205, where = "Inland: Feralas, The Hinterlands, Un'Goro", recipe = "Kelsey Yance (Booty Bay)" },
   { id = 13755, dish = "Grilled Squid",            cook = 240, fish = 205, where = "Coast: Tanaris, Azshara, Feralas (winter)", recipe = "Gikkix (Gadgetzan)", note = "Well Fed +10 Agility: crit for Ret", ret = true, season = "winter" },
   { id = 13756, dish = "Hot Smoked Bass",          cook = 240, fish = 205, where = "Coast: Tanaris, Feralas (summer)", recipe = "Kelsey Yance (Booty Bay)", season = "summer" },
-  { id = 13759, dish = "Nightfin Soup",            cook = 250, fish = 205, where = "Feralas, The Hinterlands, Western Plaguelands", recipe = "Gikkix (Gadgetzan)", note = "Mana regen: great for your healing set", time = "night" },
+  { id = 13759, dish = "Nightfin Soup",            cook = 250, fish = 205, where = "Feralas, The Hinterlands, Western Plaguelands", recipe = "Gikkix (Gadgetzan)", note = "Mana regen: great when you heal", time = "night" },
   { id = 13760, dish = "Poached Sunscale Salmon",  cook = 250, fish = 205, where = "Feralas, The Hinterlands, Azshara", recipe = "Gikkix (Gadgetzan)", note = "Health regen while leveling", time = "day" },
   { id = 13888, dish = "Lobster Stew",             cook = 275, fish = 205, where = "Coast: Feralas, Azshara", recipe = "Sheendra Tallgrass (Camp Mojache)" },
   { id = 13893, dish = "Mightfish Steak",          cook = 275, fish = 205, where = "Coast: Feralas, Tanaris", recipe = "Sheendra Tallgrass (Camp Mojache)" },
