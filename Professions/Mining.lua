@@ -2,7 +2,7 @@
 -- skill, ore and bar prices to track, and ore -> bar pairs for smelt-or-sell.
 -- Vein spawn points for ore alerts are in NodeData.lua.
 local _, RG = ...
-local M = { name = "Mining", gathering = true }
+local M = { name = "Mining", kind = "gather", gathering = true, icon = "Interface\\Icons\\Trade_Mining" }
 
 -- Mining: where to find each ore on the Horde side, by skill.
 M.zones = {
@@ -26,6 +26,22 @@ M.smelt = {
   { ore = 2772, bar = 3575 },   -- Iron
   { ore = 3858, bar = 3860 },   -- Mithril
   { ore = 10620, bar = 12359 }, -- Thorium
+}
+
+-- Any Mining trainer teaches every rank (Journeyman at level 10, Expert 20, Artisan 35).
+M.train = {
+  start = { O = "Makaru in Orgrimmar (closest to Durotar)", R = "Makaru in Orgrimmar (closest to Durotar)", T = "Brek Stonehoof in Thunder Bluff", U = "Brom Killian in Undercity", S = "the Zephras Isle Mining trainers" },
+  apprentice = "Makaru (Orgrimmar), Brom Killian (Undercity), Brek Stonehoof (Thunder Bluff)",
+  journeyman = "any Mining trainer (level 10)", expert = "any Mining trainer (level 20)", artisan = "any Mining trainer (level 35)",
+}
+M.supplies = "Mining Pick: Trade Supplies vendors in every capital and most towns."
+-- Gathering plan: what to mine at each skill (zones come from the spawn data in NodeData.lua).
+M.plan = {
+  { from = 1,   to = 65,  gather = "Copper Vein" },
+  { from = 65,  to = 125, gather = "Tin Vein", also = "Silver Vein" },
+  { from = 125, to = 175, gather = "Iron Deposit", also = "Gold Vein" },
+  { from = 175, to = 245, gather = "Mithril Deposit", also = "Truesilver Deposit" },
+  { from = 245, to = 300, gather = "Small Thorium Vein", also = "Rich Thorium Vein" },
 }
 
 RG.RegisterProfession("Mining", M)

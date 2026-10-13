@@ -23,8 +23,8 @@ local COMBOS = {
 local RACE_ORDER = { "Orc", "Troll", "Tauren", "Scourge", "Skyborne" }
 local FILES = {
   "Data.lua", "Classes/Paladin.lua", "Classes/PaladinGear.lua", "Races/Undead.lua", "Races/Durotar.lua", "Races/Tauren.lua",
-  "Races/Skyborne.lua", "Routes/Horde.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua",
-  "Profile.lua", "Waypoints.lua", "Objectives.lua",
+  "Races/Skyborne.lua", "Routes/Horde.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua", "Professions/Herbalism.lua", "Professions/Skinning.lua", "Professions/Alchemy.lua", "Professions/Enchanting.lua", "Professions/Engineering.lua", "Professions/Leatherworking.lua", "Professions/Tailoring.lua", "Professions/FirstAid.lua", "Professions/Cooking.lua", "Professions/Fishing.lua",
+  "Profile.lua", "Waypoints.lua", "Objectives.lua", "NodeData.lua",
 }
 -- extra class files, if any were added since
 local function exists(p) local f = io.open(p) if f then f:close() return true end return false end
@@ -57,6 +57,40 @@ local PROF_OK = { "Miners:", "Crafters:", "Blacksmiths:", "%(miners", "learn you
 
 local failures, rows = {}, {}
 local function fail(combo, msg) failures[#failures + 1] = combo .. ": " .. msg end
+
+-- Professions (same for every race and class): each has trainers for every rank, a
+-- plan that runs from 1 to 300 with no gaps, materials or supplies, and a camp object.
+ALL_PROFS = { "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }
+do
+  local RG = load("WARRIOR", "Orc")
+  local camp = io.open("Camp.lua"):read("*a")
+  for _, name in ipairs(ALL_PROFS) do
+    local P = RG.PROFESSIONS[name]
+    if not P then fail("Professions", name .. " is missing")
+    else
+      for _, rank in ipairs({ "apprentice", "journeyman", "expert", "artisan" }) do
+        if not (P.train and P.train[rank]) then fail("Professions", name .. " has no " .. rank .. " trainer") end
+      end
+      if not P.fishTab then
+        local reach = 1
+        for _, st in ipairs(P.plan or {}) do
+          if not st.train then
+            if st.from > reach then fail("Professions", name .. " plan has a gap at " .. reach .. "-" .. st.from) end
+            if st.to > reach then reach = st.to end
+          end
+        end
+        if reach < 300 then fail("Professions", name .. " plan stops at " .. reach) end
+      end
+      if not camp:find('prof = "' .. name .. '",%s*skill = %d+') then fail("Professions", name .. " has no camp object") end
+      for _, st in ipairs(P.plan or {}) do
+        if st.gather then
+          local zones = name == "Mining" and RG.ORE_ZONES or RG.HERB_ZONES
+          if not (zones and zones[st.gather]) then fail("Professions", name .. ": no zones known for " .. st.gather) end
+        end
+      end
+    end
+  end
+end
 
 for _, race in ipairs(RACE_ORDER) do
   for _, class in ipairs(COMBOS[race]) do
@@ -155,16 +189,19 @@ for _, race in ipairs(RACE_ORDER) do
     if #gearGaps > 4 then fail(combo, "gear guide gaps: " .. table.concat(gearGaps, ", ")) end
     r.gear = items .. " items" .. (#gearGaps > 0 and (" (gaps: " .. table.concat(gearGaps, " ") .. ")") or "")
     r.talents = #RG.TALENT_PRIORITY > 0 and (#RG.TALENT_PRIORITY .. "") or "not yet"
-    local profs = {}
-    for name in pairs(RG.PROFESSIONS) do profs[#profs + 1] = name end
-    table.sort(profs)
-    r.profs = table.concat(profs, ", ")
+    -- 7. professions: every one has a closest trainer for this race
+    local profOK = 0
+    for name, P in pairs(RG.PROFESSIONS) do
+      if P.train and P.train.start and P.train.start[RG.RACE_LETTER] then profOK = profOK + 1
+      else fail(combo, name .. " has no starting trainer for this race") end
+    end
+    r.profs = profOK .. "/" .. #ALL_PROFS
     r.bad = badQuest + badWord
     rows[#rows + 1] = r
   end
 end
 
-local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Talents", "Profession guides" }
+local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Talents", "Professions with a trainer nearby" }
 if MARKDOWN then
   print("| " .. table.concat(head, " | ") .. " |")
   print("|" .. string.rep("---|", #head))
@@ -181,4 +218,4 @@ if #failures > 0 then
   for _, f in ipairs(failures) do if not seen[f] then seen[f] = true; io.stderr:write("  " .. f .. "\n") end end
   os.exit(1)
 end
-io.stderr:write("\nAll " .. #rows .. " race/class combinations pass the questing and gear checks.\n")
+io.stderr:write("\nAll " .. #rows .. " race/class combinations pass the questing, gear and profession checks.\n")

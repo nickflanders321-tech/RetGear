@@ -20,27 +20,53 @@ RG.CAMPFIRES = {
 }
 -- Your professions' camp objects. buff = what you get; mats = what it costs to place.
 RG.CAMP_OBJECTS = {
-  { prof = "Blacksmithing", skill = 20,  name = "Sharpening Wheel", buff = "+Strength (6 / 11 / 20 / 34 as you level)", mats = "1 Rough Stone, 1 Copper Bar", how = "Trainer recipe", best = "dps" },
-  { prof = "Blacksmithing", skill = 140, name = "Anvil",            buff = "Strength, plus an anvil anywhere", how = "Blueprint: Gilnid, The Deadmines (Alliance side, so buy it on the AH with your bank alt)" },
-  { prof = "Blacksmithing", skill = 300, name = "Master Forge",     buff = "Strength, plus Master Forge recipes", how = "Blueprint source not found yet" },
-  { prof = "Mining",        skill = 20,  name = "Lodestone",        buff = "+melee Attack Power (12 up to 90). Doesn't stack with Blessing of Might", how = "Trainer recipe", best = "group" },
-  { prof = "Mining",        skill = 140, name = "Rock Garden",      buff = "Spawns a common ore node over time", how = "Blueprint: Relic Guardian, Excavation Site in Wetlands (Alliance side, so try the AH)" },
-  { prof = "Mining",        skill = 300, name = "Molten Foundry",   buff = "Smelts ores that need a Mining Foundry", how = "Blueprint source not found yet" },
-  { prof = "Fishing",       skill = 20,  name = "Fish Bowl",        buff = "+8% to all stats. Doesn't stack with Blessing of Kings", mats = "1 Raw Brilliant Smallfish, 1 Empty Vial", how = "Trainer recipe", best = "heal" },
-  { prof = "Fishing",       skill = 140, name = "Fishing Rack",     buff = "Fish Bowl, plus uncommon fish and skill lures for an hour", mats = "2 Simple Wood, 1 Crystal Vial, 2 Raw Mithril Head Trout", how = "Blueprint: Gelihast, Blackfathom Deeps" },
-  { prof = "Fishing",       skill = 300, name = "Fishing Hut",      buff = "Fish Bowl, plus rare fish and more lures", mats = "5 Simple Wood, 2 Bolt of Runecloth, 1 Seasonal Fish Steaks", how = "Blueprint source not found yet" },
-  { prof = "Cooking",       skill = 140, name = "Cookie's Feast",   buff = "Stamina food for the group", how = "Blueprint: Cookie, The Deadmines (try the AH)" },
+  { prof = "Alchemy",        skill = 20,  name = "Mana Well",        buff = "Mana regeneration. Doesn't stack with Blessing of Wisdom", mats = "1 Peacebloom, 1 Empty Vial", how = "Trainer recipe or Camping 101" },
+  { prof = "Alchemy",        skill = 140, name = "Fermenter",        buff = "Needed for a few Alchemy recipes", mats = "1 Leaded Vial, 1 Kingsblood, 1 Swiftthistle", how = "Blueprint: Rath'mael, Ruins of Lordaeron" },
+  { prof = "Alchemy",        skill = 300, name = "Alchemy Laboratory", buff = "Needed for some Alchemy recipes", mats = "1 Lich's Index Finger, 1 Crystal Vial, 2 Dreamfoil", how = "Blueprint source not found yet" },
+  { prof = "Blacksmithing",  skill = 20,  name = "Sharpening Wheel", buff = "+Strength (6 / 11 / 20 / 34 as you level). Doesn't stack with Strength of Earth Totem", mats = "1 Rough Stone, 1 Copper Bar", how = "Trainer recipe or Camping 101", best = "dps" },
+  { prof = "Blacksmithing",  skill = 140, name = "Anvil",            buff = "An anvil anywhere", mats = "5 Bronze Bar, 2 Coarse Grinding Stone, 2 Medium Leather", how = "Blueprint: Gilnid, The Deadmines (Alliance side, so try the AH)" },
+  { prof = "Blacksmithing",  skill = 300, name = "Master Forge",     buff = "Needed for many Blacksmithing recipes", mats = "1 Golem Heart, 5 Thorium Bar, 2 Rugged Leather", how = "Blueprint source not found yet" },
+  { prof = "Enchanting",     skill = 20,  name = "Enchanted Lute",   buff = "Armor, all stats and all resistances. Doesn't stack with Mark of the Wild", mats = "1 Simple Wood, 1 Strange Dust", how = "Trainer recipe or Camping 101" },
+  { prof = "Enchanting",     skill = 140, name = "Arcane Salvager",  buff = "Better disenchanting", mats = "2 Vision Dust, 1 Lesser Nether Essence", how = "Blueprint: Shade of the Archmage, City of Dalaran" },
+  { prof = "Enchanting",     skill = 300, name = "Arcane Forge",     buff = "Needed for some Enchanting recipes", mats = "1 Maker's Spark, 2 Large Brilliant Shard, 4 Greater Eternal Essence", how = "Blueprint source not found yet" },
+  { prof = "Engineering",    skill = 20,  name = "Reagent Bot",      buff = "A vendor for class reagents and profession supplies, for everyone at camp", mats = "1 Handful of Copper Bolts, 1 Copper Tube", how = "Trainer recipe or Camping 101" },
+  { prof = "Engineering",    skill = 140, name = "Repair Bot",       buff = "Repairs for everyone at camp", mats = "2 Whirring Bronze Gizmo, 1 Bronze Tube, 1 Heavy Leather", how = "Blueprint: Sneed, The Deadmines (try the AH)" },
+  { prof = "Engineering",    skill = 300, name = "Anarchist's Workbench", buff = "Needed for some Engineering recipes", mats = "1 Essence of Anarchy, 2 Thorium Widget", how = "Blueprint source not found yet" },
+  { prof = "Leatherworking", skill = 20,  name = "Camp Tent",        buff = "Rested XP worth up to 5% of a level, once an hour", mats = "5 Light Leather", how = "Trainer recipe or Camping 101", best = "xp" },
+  { prof = "Leatherworking", skill = 140, name = "Tanning Rack",     buff = "Needed for many Leatherworking recipes", mats = "5 Medium Leather, 3 Fine Thread, 2 Simple Wood", how = "Blueprint: Razorclaw the Butcher, Shadowfang Keep" },
+  { prof = "Leatherworking", skill = 300, name = "Sewing Machine",   buff = "Needed for many Leatherworking recipes", mats = "1 Undeath Engine, 5 Rugged Leather, 1 Rune Thread", how = "Blueprint source not found yet" },
+  { prof = "Tailoring",      skill = 20,  name = "Faction Banner",   buff = "+Spirit. Doesn't stack with Divine Spirit", mats = "1 Bolt of Linen Cloth, 1 Coarse Thread", how = "Trainer recipe or Camping 101" },
+  { prof = "Tailoring",      skill = 140, name = "Spinning Wheel",   buff = "Needed for many Tailoring recipes", mats = "2 Simple Wood, 5 Bolt of Silk Cloth, 3 Fine Thread", how = "Blueprint: Unstable Sentinel, City of Dalaran" },
+  { prof = "Tailoring",      skill = 300, name = "Loom",             buff = "Needed for many Tailoring recipes", mats = "1 Bottled Screams, 4 Bolt of Runecloth, 4 Simple Wood", how = "Blueprint source not found yet" },
+  { prof = "Herbalism",      skill = 20,  name = "Incense Candle",   buff = "+Intellect. Doesn't stack with Arcane Intellect", mats = "1 Peacebloom, 1 Silverleaf", how = "Trainer recipe or Camping 101" },
+  { prof = "Herbalism",      skill = 140, name = "Greenhouse",       buff = "Grows herbs from seeds you plant", mats = "2 Simple Wood, 1 Arthas' Tears, 1 Purple Lotus", how = "Blueprint: Shadetooth, Excavation Site" },
+  { prof = "Herbalism",      skill = 300, name = "Seed Hybridizer",  buff = "Multiplies seeds or combines them into rarer ones", mats = "4 Mountain Silversage, 1 Crystal Vial, 2 Runecloth", how = "Blueprint source not found yet" },
+  { prof = "Mining",         skill = 20,  name = "Lodestone",        buff = "+melee Attack Power (12 up to 90). Doesn't stack with Blessing of Might", mats = "1 Rough Stone, 1 Copper Bar", how = "Trainer recipe or Camping 101", best = "group" },
+  { prof = "Mining",         skill = 140, name = "Rock Garden",      buff = "A common ore node that grows over time", mats = "2 Heavy Stone, 1 Iron Ore, 1 Silver Bar", how = "Blueprint: Relic Guardian, Excavation Site" },
+  { prof = "Mining",         skill = 300, name = "Molten Foundry",   buff = "Needed to smelt Heavy Thorium", mats = "5 Thorium Bar, 2 Dense Stone, 1 Truesilver Bar", how = "Blueprint source not found yet" },
+  { prof = "Skinning",       skill = 20,  name = "Camp Chair",       buff = "+2% crit. Doesn't stack with Moonkin Aura", mats = "3 Light Leather, 2 Simple Wood", how = "Trainer recipe or Camping 101" },
+  { prof = "Skinning",       skill = 140, name = "Field Guide",      buff = "A book anyone at camp can read to learn Track Beasts", mats = "3 Medium Leather, 2 Slimy Murloc Scale, 1 Fine Thread", how = "Blueprint: Lady Anacondra, Wailing Caverns" },
+  { prof = "Skinning",       skill = 300, name = "Trapper's Workbench", buff = "A workbench with a trap", mats = "2 Simple Wood, 4 Heavy Leather, 1 Iron Bar", how = "Blueprint source not found yet" },
+  { prof = "Cooking",        skill = 140, name = "Cookie's Feast",   buff = "Stamina food for everyone at camp", mats = "2 Mystery Meat, 1 Heavy Kodo Meat, 1 Soothing Spices", how = "Blueprint: Cookie, The Deadmines (try the AH)" },
+  { prof = "Cooking",        skill = 300, name = "Iron Oven",        buff = "Needed for the most advanced Cooking recipes", mats = "10 Simple Flour, 5 Refreshing Spring Water, 4 Soothing Spices", how = "Blueprint source not found yet" },
+  { prof = "First Aid",      skill = 20,  name = "First Aid Kit",    buff = "+Stamina. Doesn't stack with Power Word: Fortitude", mats = "3 Linen Bandage, 1 Refreshing Spring Water", how = "Trainer recipe or Camping 101" },
+  { prof = "First Aid",      skill = 140, name = "Toxin Study",      buff = "Healing potions and anti-venom", mats = "1 Anti-Venom, 2 Mageweave Bandage, 2 Simple Wood", how = "Blueprint: Commander Springvale, Shadowfang Keep" },
+  { prof = "First Aid",      skill = 300, name = "Plague Doctor's Laboratory", buff = "Healing potions and poultices", mats = "2 Simple Wood, 2 Strong Anti-Venom, 5 Heavy Runecloth Bandage", how = "Blueprint source not found yet" },
+  { prof = "Fishing",        skill = 20,  name = "Fish Bowl",        buff = "+8% to all stats. Doesn't stack with Blessing of Kings", mats = "1 Raw Brilliant Smallfish, 1 Empty Vial", how = "Trainer recipe or Camping 101", best = "heal" },
+  { prof = "Fishing",        skill = 140, name = "Fishing Rack",     buff = "Uncommon fish for an hour, plus fishing lures", mats = "2 Simple Wood, 1 Crystal Vial, 2 Raw Mithril Head Trout", how = "Blueprint: Gelihast, Blackfathom Deeps" },
+  { prof = "Fishing",        skill = 300, name = "Fishing Hut",      buff = "Rare fish for an hour, plus fishing lures", mats = "5 Simple Wood, 2 Bolt of Runecloth, 1 Seasonal Fish Steaks", how = "Blueprint source not found yet" },
 }
 
--- Leveling plan for Fishing and Cooking, tied to your route (Horde, Undead start).
+-- Leveling plan for Fishing and Cooking, tied to your route. "@start" and "@second" are
+-- your race's first two route zones; {Cooking} and {Fishing} become your closest trainers.
 -- zone = route zone it belongs to; lvl = character level; need = { prof = skill } that marks it done.
 RG.CAMP_PLAN = {
-  { lvl = 5,  zone = "Tirisfal Glades", text = "Do The Great Outdoors (around level 5). Learn Cooking in Brill or Undercity, buy Simple Wood and Flint and Tinder, and make a Basic Campfire Kit.", need = { Cooking = 1 } },
-  { lvl = 5,  zone = "Tirisfal Glades", text = "Learn Fishing from Clyde Kellen at Brightwater Lake. Buy a Fishing Pole, a Shiny Bauble and the Brilliant Smallfish recipe from Martine Tramblay.", need = { Fishing = 1 } },
-  { lvl = 6,  zone = "Tirisfal Glades", text = "Fish while you wait on respawns: the Undercity canals are best (Tirisfal's lakes give lots of Sickly Looking Fish). Cook every Brilliant Smallfish you catch, and keep a few raw ones for Fish Bowls.", need = { Fishing = 50, Cooking = 40 } },
-  { lvl = 8,  zone = "Tirisfal Glades", text = "Learn the camp objects at 20 skill: Sharpening Wheel (Blacksmithing trainer) and Fish Bowl (Fishing trainer). Lodestone (Mining) is only worth it in groups.", need = { Blacksmithing = 20 } },
-  { lvl = 10, zone = "Silverpine Forest", text = "Train Journeyman Fishing (Fishing 50, level 10) and Journeyman Cooking (Cooking 50). Fish the Undercity canals or the Silverpine coast to 130.", need = { Fishing = 130 } },
-  { lvl = 12, zone = "Silverpine Forest", text = "Cook Longjaw Mud Snapper and Bristle Whisker Catfish. Recipes are in Undercity from Lizbeth Cromwell and Ronald Burch. Push Cooking toward 90 for the Journeyman Campfire.", need = { Cooking = 90 } },
+  { lvl = 5,  zone = "@start", text = "Do The Great Outdoors (around level 5). Learn Cooking from {Cooking}, buy Simple Wood and Flint and Tinder, and make a Basic Campfire Kit.", need = { Cooking = 1 } },
+  { lvl = 5,  zone = "@start", text = "Learn Fishing from {Fishing}. Buy a Fishing Pole and Shiny Baubles from a fishing supply vendor, and the Brilliant Smallfish recipe.", need = { Fishing = 1 } },
+  { lvl = 6,  zone = "@start", text = "Fish while you wait on respawns, and cook every fish you catch. Keep a few Raw Brilliant Smallfish for Fish Bowls.", need = { Fishing = 50, Cooking = 50 } },
+  { lvl = 8,  zone = "@start", text = "At skill 20, learn your professions' camp objects from their trainers (the Camping tab lists them): one object per camp, and the best one for you is marked.", need = { Cooking = 20 } },
+  { lvl = 10, zone = "@second", text = "Train Journeyman Fishing (Fishing 50, level 10) and Journeyman Cooking (Cooking 50). Fish wherever you quest to 130.", need = { Fishing = 130 } },
+  { lvl = 12, zone = "@second", text = "Cook what you catch: Longjaw Mud Snapper and Rainbow Fin Albacore (recipes from the fishing and cooking vendors in your capital). Push Cooking toward 90 for the Journeyman Campfire.", need = { Cooking = 90 } },
   { lvl = 18, zone = "Wailing Caverns", text = "Kill Lord Serpentis for the Journeyman Campfire blueprint (Cooking 90 to learn, 140 to use: 5 object slots). Fish the oasis outside for Deviate Fish.", need = { Cooking = 140 } },
   { lvl = 20, zone = "Stonetalon Mountains", text = "Get Expert Fishing (\"The Bass and You\", Old Man Heming in Booty Bay, 1g, level 20; or the AH) at Fishing 125. Buy Nightcrawlers at Sun Rock Retreat and fish Stonetalon's lakes to 205.", need = { Fishing = 205 } },
   { lvl = 22, zone = "Stonetalon Mountains", text = "Get the Expert Cookbook at Cooking 125, before you reach 150 (Wulan, Shadowprey Village in Desolace, or the AH). Without it you stop gaining skill at 150.", need = { Cooking = 150 } },
@@ -91,25 +117,37 @@ end
 
 -- Estimated Sharpening Wheel strength at your level (4 steps from level 1 to 60).
 local function wheelStr(lvl) if lvl >= 45 then return 34 elseif lvl >= 30 then return 20 elseif lvl >= 15 then return 11 end return 6 end
--- Which ONE object to place when you camp alone (one per hour), in Ret score terms.
+-- Which ONE object to place when you camp alone (one per hour), scored with your
+-- class's stat weights. Rough sizes, scaled like the Sharpening Wheel (4 steps 1-60).
 function RG.CampPick()
   local p = RG.Professions()
   local lvl = UnitLevel("player")
-  local w = RG.db.weights
+  local w = RG.db.weights or {}
+  local step = wheelStr(lvl)
   local opts = {}
-  if (p.Blacksmithing and p.Blacksmithing.rank or 0) >= 20 then
-    opts[#opts + 1] = { name = "Sharpening Wheel", value = wheelStr(lvl) * (w.STR or 0), why = string.format("about +%d Strength", wheelStr(lvl)) }
+  local function has(prof) return (p[prof] and p[prof].rank or 0) >= 20 end
+  local function add(prof, name, value, why) if has(prof) then opts[#opts + 1] = { name = name, value = value, why = why } end end
+  add("Blacksmithing", "Sharpening Wheel", step * (w.STR or 0), string.format("about +%d Strength", step))
+  add("Mining", "Lodestone", math.min(90, 12 + lvl * 1.3) * (w.AP or 0), string.format("about +%d melee Attack Power", math.min(90, 12 + math.floor(lvl * 1.3))))
+  add("Herbalism", "Incense Candle", step * (w.INT or 0), string.format("about +%d Intellect", step))
+  add("Tailoring", "Faction Banner", step * (w.SPI or 0), string.format("about +%d Spirit", step))
+  add("First Aid", "First Aid Kit", step * (w.STA or 0), string.format("about +%d Stamina", step))
+  add("Skinning", "Camp Chair", 2 * (w.CRIT or 0), "+2% crit")
+  add("Alchemy", "Mana Well", step * 0.5 * (w.MP5 or w.INT or 0), "mana regeneration")
+  if has("Enchanting") then
+    local v = 0
+    for _, k in ipairs({ "STR", "AGI", "STA", "INT", "SPI" }) do v = v + (w[k] or 0) * step / 3 end
+    opts[#opts + 1] = { name = "Enchanted Lute", value = v, why = "armor, all stats and resistances" }
   end
-  if (p.Fishing and p.Fishing.rank or 0) >= 20 and UnitStat then
-    local v, txt = 0, {}
+  if has("Leatherworking") and lvl < 60 then opts[#opts + 1] = { name = "Camp Tent", value = 1e6, why = "rested XP worth up to 5% of a level every hour" } end
+  if has("Fishing") and UnitStat then
+    local v = 0
     local keys = { { 1, "STR" }, { 2, "AGI" }, { 3, "STA" }, { 4, "INT" }, { 5, "SPI" } }
     for _, k in ipairs(keys) do
       local _, stat = UnitStat("player", k[1])
-      local add = (stat or 0) * 0.08
-      v = v + add * (w[k[2]] or 0)
+      v = v + (stat or 0) * 0.08 * (w[k[2]] or 0)
     end
-    local _, str = UnitStat("player", 1)
-    opts[#opts + 1] = { name = "Fish Bowl", value = v, why = string.format("+8%% all stats (about +%d Strength)", math.floor((str or 0) * 0.08 + 0.5)) }
+    opts[#opts + 1] = { name = "Fish Bowl", value = v, why = "+8% to all your stats" }
   end
   table.sort(opts, function(a, b) return a.value > b.value end)
   return opts[1], opts
@@ -119,7 +157,7 @@ local function skill(name) local p = RG.Professions()[name]; return p and p.rank
 -- Fishing/Cooking steps hide when setup says you won't level that profession.
 local function planned(step)
   if not RG.Plans then return true end
-  for prof in pairs(step.need or {}) do if (prof == "Fishing" or prof == "Cooking") and not RG.Plans(prof) then return false end end
+  for prof in pairs(step.need or {}) do if not RG.Plans(prof) then return false end end
   return true
 end
 RG.CampPlanned = planned
@@ -135,6 +173,18 @@ function RG.CampNext(max)
     if s.lvl <= lvl + 2 and planned(s) and not RG.CampPlanDone(s) then out[#out + 1] = s; if #out >= (max or 1) then break end end
   end
   return out
+end
+do
+  local R = RG.ActiveRace or {}
+  local z1 = R.route and R.route[1] and R.route[1].zone
+  local z2 = R.route and (R.route[3] or R.route[2]) and (R.route[3] or R.route[2]).zone
+  for _, st in ipairs(RG.CAMP_PLAN) do
+    if st.zone == "@start" then st.zone = z1 or "Tirisfal Glades" elseif st.zone == "@second" then st.zone = z2 or z1 or "Silverpine Forest" end
+    st.text = st.text:gsub("{(%a[%a ]*)}", function(prof)
+      local P = RG.PROFESSIONS and RG.PROFESSIONS[prof]
+      return P and P.train and P.train.start and P.train.start[RG.RACE_LETTER] or "a trainer in your capital"
+    end)
+  end
 end
 function RG.CampForEntry(r)
   local out = {}

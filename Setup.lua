@@ -31,18 +31,24 @@ end
 
 -- Professions you plan to level switch their reminders and plans on or off.
 local PROF_KEYS = {
-  Mining = { "mineReminder" },
+  Mining = { "mineReminder", "oreAlert" },
+  Herbalism = { "herbAlert" },
   Cooking = { "campReminder", "wellFed" },
 }
 local function applyPlan(plan)
   WaypathDB.plan = plan
   for prof, keys in pairs(PROF_KEYS) do
-    if not plan[prof] then for _, k in ipairs(keys) do WaypathDB[k] = false end end
+    if not RG.Plans(prof) then for _, k in ipairs(keys) do WaypathDB[k] = false end end
   end
 end
+-- Does this character level the profession? Yes if it knows it, or if setup says so.
+-- (Plans saved before every profession was in the guide only had these four, on by default.)
+local LEGACY = { Mining = true, Blacksmithing = true, Fishing = true, Cooking = true }
 function RG.Plans(prof)
+  if RG.Skill and RG.Skill(prof) then return true end
   local plan = WaypathDB and WaypathDB.plan
-  return not plan or plan[prof] ~= false
+  if plan and plan[prof] ~= nil then return plan[prof] and true or false end
+  return LEGACY[prof] and (plan ~= nil or RG.IsClass("PALADIN")) or false
 end
 
 -- ---------------------------------------------------------------------------
@@ -118,12 +124,12 @@ local function buildPages()
       or (GOLD .. "This character isn't your main yet.|r Make it your main if it's the paladin you're leveling."))
     mainBtn:SetShown(not isMain)
   end)
-  local profHead = text(p2, "GameFontNormal", "Which professions will you level?"); profHead:SetPoint("TOPLEFT", 0, -116)
-  local profs = { { "Mining", "Ore routes, Find Minerals reminder, smelt-or-sell" }, { "Blacksmithing", "Smithing upgrades, Sharpening Wheel for camp, weapon stones" },
-    { "Fishing", "Fish Bowl for camp, fishing plan and fish worth selling" }, { "Cooking", "Campfires, Well Fed (+5% XP) reminders, cooking plan" } }
+  local profHead = text(p2, "GameFontNormal", "Which professions will you level?  " .. GREY .. "Two main ones, plus any of Cooking, Fishing and First Aid|r", W - 70); profHead:SetPoint("TOPLEFT", 0, -116)
+  local profs = { "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }
   for i, pr in ipairs(profs) do
-    local c = check(p2, pr[1], pr[2], function() return plan[pr[1]] ~= false end, function(v) plan[pr[1]] = v end)
-    c:SetPoint("TOPLEFT", 0, -138 - (i - 1) * 40)
+    local c = check(p2, pr, nil, function() if plan[pr] ~= nil then return plan[pr] end return RG.Plans(pr) end, function(v) plan[pr] = v end)
+    local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
+    c:SetPoint("TOPLEFT", col * (W / 2 - 30), -138 - row * 28)
     table.insert(p2.refreshers, c.refresh)
   end
 
@@ -178,7 +184,7 @@ local function buildPages()
   table.insert(p6.refreshers, function()
     local pr = RG.PRESETS[WaypathDB.preset or "full"]
     local lv = {}
-    for _, n in ipairs({ "Mining", "Blacksmithing", "Fishing", "Cooking" }) do if plan[n] ~= false then lv[#lv + 1] = n end end
+    for _, n in ipairs({ "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }) do if RG.Plans(n) then lv[#lv + 1] = n end end
     summary:SetText(GOLD .. "Help level:|r " .. pr.label .. "\n" .. GOLD .. "Professions:|r " .. (#lv > 0 and table.concat(lv, ", ") or "none") .. "\n"
       .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "Healing set:|r " .. (RG.Opt("healSet") and "collecting" or "off") .. "\n\n"
       .. GOLD .. "Worth remembering|r\n"

@@ -493,9 +493,12 @@ local function renderGear()
   return n
 end
 
+local PROF_ORDER = { "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }
+local RANKS = { { "apprentice", "Apprentice", 0, 1 }, { "journeyman", "Journeyman", 50, 10 }, { "expert", "Expert", 125, 20 }, { "artisan", "Artisan", 200, 35 } }
 local function renderProf()
-  local prof = RG.Professions()
-  local mining, bs = prof["Mining"], prof["Blacksmithing"]
+  local known = RG.Professions()
+  local mining, bs = known["Mining"], known["Blacksmithing"]
+  local lvl = UnitLevel("player")
   local n = 0
   local function head(t) n = n + 1; setHeader(getRow(n), t) end
   local function line(id, title, sub, right, right2, icon, accent, quality)
@@ -504,30 +507,62 @@ local function renderProf()
     setItem(r, id, link, title, sub, right, right2, accent, quality)
     if icon then r.icon:SetTexture(icon) end
   end
-  n = n + 1; setBar(getRow(n), "Mining", mining and mining.rank or 0, mining and math.max(mining.max or 0, mining.rank or 0, 1) or 300, T.gold, mining and (mining.rank .. " / " .. (mining.max or "?")) or (GREY .. "Not learned|r"))
-  n = n + 1; setBar(getRow(n), "Blacksmithing", bs and bs.rank or 0, bs and math.max(bs.max or 0, bs.rank or 0, 1) or 300, { 0.85, 0.55, 0.3 }, bs and (bs.rank .. " / " .. (bs.max or "?")) or (GREY .. "Not learned|r"))
-  head("Where to mine · Horde side")
-  local skill = mining and mining.rank or 0
-  for _, m in ipairs(RG.MINING) do
-    local here = skill >= m.from and skill <= m.to
-    local done = skill > m.to
-    line(nil, (here and GOLD or (done and GREY or "|cffffffff")) .. m.ore .. "|r" .. GREY .. "   skill " .. m.from .. "-" .. m.to .. "|r", m.zones,
-      here and (GREEN .. "Mine here now|r") or (done and (GREY .. "Done|r") or ""), "", 136248, here and "gold" or nil)
-  end
-  head("Blacksmithing skill-up plan")
-  local bsr = bs and bs.rank or 0
-  local shown = 0
-  for _, p in ipairs(RG.BS_PLAN) do
-    if p.to >= bsr - 1 and shown < (state.near and 6 or 99) then
-      shown = shown + 1
-      local here = bsr >= p.from and bsr < p.to
-      if p.train then
-        line(nil, GOLD .. "Train: |r" .. p.train, "", bsr >= p.from and bsr <= p.from + 5 and (GOLD .. "Do this now|r") or "", "", 136240, bsr >= p.from and bsr <= p.from + 5 and "gold" or nil)
+  local shownAny = false
+  for _, name in ipairs(PROF_ORDER) do
+    local P = RG.PROFESSIONS[name]
+    local k = known[name]
+    if P and (k or (RG.Plans and RG.Plans(name))) then
+      shownAny = true
+      local rank, max = k and k.rank or 0, k and k.max or 0
+      n = n + 1; setBar(getRow(n), name, rank, math.max(max, rank, 1), T.gold, k and (rank .. " / " .. max) or (GREY .. "Not learned yet|r"))
+      -- where to train next
+      local T2 = P.train or {}
+      if not k then
+        local start = T2.start and T2.start[RG.RACE_LETTER]
+        line(nil, GOLD .. "Learn it|r" .. GREY .. "  ·  no level needed|r", start and ("Closest trainer: " .. start) or (T2.apprentice or ""), GOLD .. "Train|r", "", P.icon, "gold")
       else
-        line(nil, (here and GOLD or "|cffffffff") .. p.craft .. "|r" .. GREY .. "   x" .. p.n .. "  ·  skill " .. p.from .. "-" .. p.to .. "|r", p.mats, here and (GREEN .. "Craft now|r") or "", "", 136241, here and "gold" or nil)
+        for ri = 2, #RANKS do
+          local key, label, needSkill, needLvl = RANKS[ri][1], RANKS[ri][2], RANKS[ri][3], RANKS[ri][4]
+          local cap = ({ 75, 150, 225, 300 })[ri - 1]
+          if max <= cap and max < 300 and rank >= needSkill - 10 and T2[key] then
+            local ready = rank >= needSkill and lvl >= needLvl
+            line(nil, (ready and GOLD or "|cffffffff") .. "Train " .. label .. "|r" .. GREY .. "  ·  skill " .. needSkill .. ", level " .. needLvl .. "|r", T2[key],
+              ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), "", P.icon, ready and "gold" or nil)
+            break
+          end
+        end
       end
+      -- the plan: where you are now and the next steps
+      local shown = 0
+      for _, st in ipairs(P.plan or {}) do
+        if st.to >= rank and shown < (state.near and 3 or 99) and not st.train then
+          shown = shown + 1
+          local here = rank >= st.from and rank < st.to
+          local title, subText
+          if st.craft then
+            title = st.craft .. GREY .. "   x" .. st.n .. "  ·  skill " .. st.from .. "-" .. st.to .. "|r"; subText = st.mats
+          elseif st.gather then
+            local zonesOf = (name == "Mining" and RG.ORE_ZONES) or RG.HERB_ZONES or {}
+            title = st.gather .. (st.also and (GREY .. " and " .. st.also .. "|r") or "") .. GREY .. "   skill " .. st.from .. "-" .. st.to .. "|r"
+            subText = zonesOf[st.gather] or ""
+            if name == "Herbalism" then subText = subText .. GREY .. "  ·  needs level " .. math.max(1, math.floor(st.from / 5)) .. "|r" end
+          elseif st.skin then
+            title = st.skin .. GREY .. "   skill " .. st.from .. "-" .. st.to .. "|r"; subText = st.where
+          end
+          if title then
+            line(nil, (here and GOLD or "|cffffffff") .. title .. "|r", subText or "", here and (GREEN .. (st.craft and "Craft now" or "Do this now") .. "|r") or "", "", P.icon, here and "gold" or nil)
+          end
+        end
+      end
+      if P.fishTab then line(nil, "|cffffffffFishing guide|r", "Zones by skill, lures, poles and the derby are on the Fishing tab (/wp fish).", "", "", P.icon) end
+      if P.supplies then line(nil, GREY .. "Supplies|r", P.supplies, "", "", P.icon) end
     end
   end
+  if not shownAny then
+    head("Pick your professions")
+    line(nil, "|cffffffffTwo main professions, plus Cooking, Fishing and First Aid|r", "Good pairs: Mining + Blacksmithing or Engineering, Herbalism + Alchemy, Skinning + Leatherworking, Tailoring + Enchanting. Two gathering professions make the most gold while leveling. Run /wp setup to pick yours.", "", "", 136240)
+  end
+  if mining then
   head("Smelt or sell")
   local any = false
   for _, sm in ipairs(RG.SMELT) do
@@ -540,8 +575,9 @@ local function renderProf()
     end
   end
   if not any then n = n + 1; setStep(getRow(n), "", "Open the Auction House once to compare ore and bar prices here.", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
+  end
+  if bs then
   head("Blacksmithing upgrades for you")
-  local lvl = UnitLevel("player")
   for _, g in ipairs(RG.GUIDE) do
     if g.bs then
       local name, link, quality = itemName(g.id)
@@ -553,11 +589,20 @@ local function renderProf()
       line(g.id, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, nil, can and not own and "green" or nil, quality)
     end
   end
-  head("Ore and bar prices · lowest buyout")
-  for _, id in ipairs(RG.MATS) do
-    local nm2, _, quality = itemName(id)
-    local cnt = (C_Item and C_Item.GetItemCount and C_Item.GetItemCount(id, true)) or 0
-    line(id, nm2, cnt > 0 and ("You have " .. cnt) or (GREY .. "None in your bags|r"), "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, nil, quality)
+  end
+  -- prices of the materials your professions use
+  local ids, seen = {}, {}
+  for name in pairs(known) do
+    local P = RG.PROFESSIONS[name]
+    for _, id in ipairs(P and P.mats or {}) do if not seen[id] then seen[id] = true; ids[#ids + 1] = id end end
+  end
+  if #ids > 0 then
+    head("Material prices · lowest buyout")
+    for _, id in ipairs(ids) do
+      local nm2, _, quality = itemName(id)
+      local cnt = (C_Item and C_Item.GetItemCount and C_Item.GetItemCount(id, true)) or 0
+      line(id, nm2, cnt > 0 and ("You have " .. cnt) or (GREY .. "None in your bags|r"), "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, nil, quality)
+    end
   end
   return n
 end
@@ -619,14 +664,9 @@ local function renderRoute()
     n = n + 1
     local row = getRow(n)
     local col = e.done and GREY or (now and GOLD or "|cffffffff")
-    local ore = ""
-    if not e.done then
-      for _, m in ipairs(RG.MINING) do
-        if m.zones:find(r.zone, 1, true) and mining >= m.from - 25 then ore = ore .. (ore == "" and "" or ", ") .. m.ore end
-      end
-    end
+    local gather = not e.done and RG.GatherHere and RG.GatherHere(r.zone)
     local sub = (r.notes ~= "" and r.notes or r.hub)
-    if ore ~= "" then sub = sub .. GREY .. "  ·  Ore: " .. ore .. "|r" end
+    if gather then sub = sub .. GREY .. "  ·  " .. gather .. "|r" end
     local range = r.from == r.to and ("Level " .. r.from) or ("Levels " .. r.from .. "-" .. r.to)
     local status = e.done and (GREEN .. "Done|r") or (now and (GREEN .. "You are here|r") or (GREY .. range .. "|r"))
     if r.fp and not e.done then
@@ -974,7 +1014,7 @@ local function renderGold()
       local missing = t.prof and not prof[t.prof]
       local right = missing and (GREY .. "needs " .. t.prof .. "|r") or (GREY .. "levels " .. t.from .. "-" .. t.to .. "|r")
       setItem(getRow(n), nil, nil, (missing and GREY or "|cffffffff") .. t.title .. "|r", t.text, right, "", nil)
-      rows[n].icon:SetTexture(GOLD_ICON[cat] or "Interface\\Icons\\INV_Misc_Coin_02")
+      rows[n].icon:SetTexture(GOLD_ICON[cat] or (RG.PROFESSIONS[cat] and RG.PROFESSIONS[cat].icon) or "Interface\\Icons\\INV_Misc_Coin_02")
       if t.ids and not missing then
         for _, id in ipairs(t.ids) do
           n = n + 1
@@ -1187,12 +1227,12 @@ local function renderCamp()
   if best then
     for i, o in ipairs(opts) do
       n = n + 1
-      setItem(getRow(n), nil, nil, (i == 1 and GOLD or "|cffffffff") .. o.name .. "|r" .. (i == 1 and (GREEN .. "   best for you right now|r") or ""), o.why, string.format("%sRet +%.0f|r", i == 1 and GREEN or GREY, o.value), "", i == 1 and "gold" or nil, nil, true)
+      setItem(getRow(n), nil, nil, (i == 1 and GOLD or "|cffffffff") .. o.name .. "|r" .. (i == 1 and (GREEN .. "   best for you right now|r") or ""), o.why, (o.value >= 1e6 and ((i == 1 and GREEN or GREY) .. "XP|r") or string.format("%s+%.0f|r", i == 1 and GREEN or GREY, o.value)), "", i == 1 and "gold" or nil, nil, true)
     end
   else
-    n = n + 1; setItem(getRow(n), nil, nil, "|cffffffffGet Blacksmithing or Fishing to 20|r", "Then you can add a Sharpening Wheel or a Fish Bowl to your fire.", "", "", nil, nil, true)
+    n = n + 1; setItem(getRow(n), nil, nil, "|cffffffffGet any profession to 20|r", "Every profession, plus Fishing and First Aid, has a camp object at skill 20 (listed below).", "", "", nil, nil, true)
   end
-  n = n + 1; setItem(getRow(n), nil, nil, GREY .. "Lodestone (Mining) gives Attack Power but doesn't stack with Blessing of Might, and Might gives you more. Bring it to groups without a paladin. When healing, use the Fish Bowl.|r", "", "", "", nil, nil, true)
+  n = n + 1; setItem(getRow(n), nil, nil, GREY .. "Camp objects don't stack with the matching class buff (Sharpening Wheel and Strength of Earth Totem, Lodestone and Blessing of Might, Fish Bowl and Blessing of Kings...): in a group, bring one nobody's buff covers.|r", "", "", "", nil, nil, true)
   -- campfires
   n = n + 1; setHeader(getRow(n), string.format("Campfires  ·  Cooking %d", sk("Cooking")))
   for _, c in ipairs(RG.CAMPFIRES) do
@@ -1204,10 +1244,13 @@ local function renderCamp()
   -- objects
   n = n + 1; setHeader(getRow(n), "Your camp objects")
   for _, o in ipairs(RG.CAMP_OBJECTS) do
+   if p[o.prof] or (RG.Plans and RG.Plans(o.prof)) then
     n = n + 1
     local have = sk(o.prof) >= o.skill
     setItem(getRow(n), nil, nil, (have and "|cffffffff" or GREY) .. o.name .. "|r" .. GREY .. "   " .. o.prof .. " " .. o.skill .. "|r", o.buff .. GREY .. "  ·  " .. o.how .. (o.mats and ("  ·  " .. o.mats) or "") .. "|r", have and (GREEN .. "Unlocked|r") or (GOLD .. o.prof .. " " .. o.skill .. "|r"), "", have and "green" or nil, nil, true)
-    rows[n].icon:SetTexture(o.prof == "Fishing" and "Interface\\Icons\\Trade_Fishing" or (o.prof == "Mining" and "Interface\\Icons\\Trade_Mining" or (o.prof == "Cooking" and "Interface\\Icons\\INV_Misc_Food_15" or "Interface\\Icons\\Trade_BlackSmithing")))
+    local PD = RG.PROFESSIONS[o.prof]
+    rows[n].icon:SetTexture(PD and PD.icon or "Interface\\Icons\\Spell_Fire_Fire")
+   end
   end
   -- plan
   n = n + 1; setHeader(getRow(n), string.format("Fishing %d  ·  Cooking %d  ·  leveling plan along your route", sk("Fishing"), sk("Cooking")))

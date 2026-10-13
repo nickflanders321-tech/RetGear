@@ -1,7 +1,8 @@
--- Waypath+ gold-making tips for an Undead Ret Paladin with Mining and Blacksmithing.
+-- Waypath+ gold-making tips, for every profession (tips for professions you don't
+-- have or plan are hidden).
 -- The weekly Waypath+ update refreshes this table from the newest WoW Forever
 -- gold guides, so keep the shape the same: one row per tip.
---   cat   = "Mining" | "Blacksmithing" | "Fishing" | "Farming" | "Auction House" | "Forever"
+--   cat   = "Auction House" | "Farming" | "Forever" | a profession name ("Mining", "Herbalism", ...)
 --   from, to = character levels the tip is useful at
 --   title, text = what to do and why
 --   ids   = item IDs whose live AH price is shown with the tip (optional)
@@ -26,6 +27,19 @@ RG.GOLD = {
     -- Blacksmithing
     { cat = "Blacksmithing", from = 5, to = 60, prof = "Blacksmithing", title = "Sharpening stones and weightstones", text = "Every warrior, rogue and paladin leveling uses them. They're cheap to make from stone, stack well and sell steadily.", ids = { 2862, 2863, 2871, 3239, 3240, 3241 } },
     { cat = "Blacksmithing", from = 10, to = 60, prof = "Blacksmithing", title = "Sell gear that's bind on equip", text = "Check the binding before you craft to sell: BoE pieces can go on the AH, BoP can't. Price-check before making a batch." },
+    -- Herbalism
+    { cat = "Herbalism", from = 1, to = 30, prof = "Herbalism", title = "Early herbs for the alchemist rush", text = "Peacebloom, Silverleaf, Briarthorn and Mageroyal feed every new alchemist's first 120 points, and Forever's 77 new Alchemy recipes add more demand. Sell in stacks of 20.", ids = { 2447, 765, 2450, 785 } },
+    { cat = "Herbalism", from = 30, to = 60, prof = "Herbalism", title = "Kingsblood, Liferoot and up", text = "Mid-level herbs (Kingsblood, Liferoot, Sungrass) are mana and protection potion staples. Your herb alerts point you to patches you can still learn from.", ids = { 3356, 3357, 8838 } },
+    -- Skinning
+    { cat = "Skinning", from = 5, to = 60, prof = "Skinning", title = "Skin everything you kill", text = "Leather sells steadily because leatherworkers need hundreds of pieces. In Forever each beast can be skinned once, so skin your own kills right away.", ids = { 2318, 2319, 4234, 4304, 8170 } },
+    -- Crafting
+    { cat = "Alchemy", from = 10, to = 60, prof = "Alchemy", title = "Potions people use every day", text = "Mana potions and elixirs sell all through leveling. Forever moved Healing Potions to First Aid, so focus on mana, protection and buff potions.", ids = { 3827, 6149 } },
+    { cat = "Enchanting", from = 10, to = 60, prof = "Enchanting", title = "Disenchant, then sell the dust", text = "Green items you can't use are often worth more as dust and essences than at a vendor or on the AH. Compare before you sell.", ids = { 10940, 11083, 11137, 11176 } },
+    { cat = "Tailoring", from = 10, to = 60, prof = "Tailoring", title = "Bags always sell", text = "Every new character needs bags. Linen, Woolen, Silk and Mageweave bags are the tailor's steady earners.", ids = { 4238, 4240, 10050 } },
+    { cat = "Leatherworking", from = 10, to = 60, prof = "Leatherworking", title = "Armor kits and leveling gear", text = "Armor kits sell to everyone, and bind on equip leather and mail pieces with good stats sell to leveling rogues, hunters, druids and shamans.", ids = { 2304, 2313 } },
+    { cat = "Engineering", from = 10, to = 60, prof = "Engineering", title = "Ammo and explosives", text = "Hunters burn through arrows and shot; bombs and grenades sell to everyone who groups. Your own Repair Bot camp object saves the trip back to town.", ids = { 2512, 2516 } },
+    { cat = "First Aid", from = 1, to = 60, prof = "First Aid", title = "Healing Potions are First Aid now", text = "In Forever, Healing Potions come from First Aid, so a First Aid user can sell them as well as bandages.", ids = { 929, 1710 } },
+    { cat = "Cooking", from = 5, to = 60, prof = "Cooking", title = "Well Fed food sells", text = "Forever's cooked food gives a little extra XP besides its stats, so good leveling food sells. Cook what you fish while you wait.", ids = {} },
     -- Fishing
     { cat = "Fishing", from = 10, to = 30, prof = "Fishing", title = "Deviate Fish in the Barrens", text = "Fish the Barrens oases (Lushwater, Stagnant, Forgotten Pools) or outside Wailing Caverns. Savory Deviate Delight is a popular fun item, so the raw fish sells.", ids = { 6522 } },
     { cat = "Fishing", from = 15, to = 45, prof = "Fishing", title = "Fish for alchemists", text = "Oily Blackmouth (Ratchet docks, Silverpine coast) and Firefin Snapper (coasts, Stonetalon lakes) go into Blackmouth Oil and Fire Oil. Sell them in stacks of 20.", ids = { 6358, 6359 } },

@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.38.0 (every profession)
+- **All twelve professions are in:** Mining, Herbalism, Skinning, Blacksmithing, Engineering, Alchemy, Leatherworking, Tailoring, Enchanting, Cooking, Fishing and First Aid. The Professions tab shows the ones you know or plan: your skill, the trainer for your next rank (and the closest one for your race when you haven't learned it yet), where you are in a 1-300 plan with the next steps and materials, supplies to buy, and material prices.
+- **Plans come from the WoW Forever guides** (wow-professions.com, beta data), with Forever's changes: Healing Potions are made with First Aid now, Alchemy's new recipes, Herbalism needing character level = herb skill / 5. Where Forever's route isn't published yet (225-300 for several crafts) the Classic route fills in, marked as untested.
+- **Herb alerts:** walk near a spot where an herb you can pick (and still learn from) grows, and you get the same heads-up as for ore. Herb and ore zones come from WoW Forever's spawn data (about 10,800 herb spots), and route cards show what you can gather in each zone.
+- **Camping for every profession:** all 35 camp objects (Mana Well, Enchanted Lute, Reagent Bot, Camp Tent, Faction Banner, Incense Candle, Camp Chair, First Aid Kit and the rest, with their 140 and 300 upgrades and where the blueprints drop). "What to place when you camp alone" scores your own objects with your class's stat weights (and always picks the Camp Tent's rested XP while leveling).
+- **Setup asks about all twelve professions**, and the fishing/cooking plan starts in your own starting zone with your closest trainers.
+- Blacksmithing's plan now follows the WoW Forever route (it changed from Classic in several places).
+- Gold tips for every profession.
+- `tools/audit` checks every profession too: trainers for every rank, a plan from 1 to 300 with no gaps, a camp object, and a nearby trainer for every race.
+
 ## v0.37.0 (gear for every class)
 - **Every class gets its own gear guide**, built from the item database and WoW Forever's quest and dungeon data with that class's own stat weights: Arms Warrior, Beast Mastery Hunter, Combat Rogue, Shadow Priest, Enhancement Shaman, Frost Mage, Affliction Warlock and Feral Druid (Retribution Paladin as before). Each list only has armor and weapons the class can use, and covers every slot it uses: two-handers or one-handers, off-hands, ranged weapons and wands, head to feet, rings and trinkets.
 - **Scores follow your class:** item tooltips ("Arms score", "Frost score", ...), the Equip pop-up, bag arrows, quest reward picks and the My gear tab all score for your class, and never suggest plate before 40 or a weapon you can't use. Spell damage counts by school (Frost for a Frost mage, Shadow for warlocks and priests), and wands, bows and guns count for the classes that rely on them.

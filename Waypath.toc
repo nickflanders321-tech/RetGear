@@ -37,6 +37,16 @@ Routes\Horde.lua
 Routes\Generated.lua
 Professions\Mining.lua
 Professions\Blacksmithing.lua
+Professions\Herbalism.lua
+Professions\Skinning.lua
+Professions\Alchemy.lua
+Professions\Enchanting.lua
+Professions\Engineering.lua
+Professions\Leatherworking.lua
+Professions\Tailoring.lua
+Professions\FirstAid.lua
+Professions\Cooking.lua
+Professions\Fishing.lua
 Profile.lua
 Waypoints.lua
 Objectives.lua

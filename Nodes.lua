@@ -1,4 +1,4 @@
--- Waypath+ ore alerts: tells you when you walk near a spot where a vein you can
+-- Waypath+ ore and herb alerts: tells you when you walk near a spot where a vein or herb you can
 -- mine (and that still gives Mining skill) can spawn. The game doesn't let addons
 -- read the minimap's ore dots, so this uses WoW Forever's known vein spawn points
 -- (NodeData.lua): a spot may be empty if someone mined it. Find Minerals shows
@@ -6,7 +6,17 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 table.insert(RG.OPTIONS, { key = "oreAlert", label = "Alert me near ore I can mine (still gives Mining skill)", default = true })
-table.insert(RG.OPTIONS, { key = "oreAlertAll", label = "Ore alerts for every vein I can mine, even ones that no longer give skill", default = false })
+table.insert(RG.OPTIONS, { key = "oreAlertAll", label = "Ore and herb alerts for every node I can gather, even ones that no longer give skill", default = false })
+table.insert(RG.OPTIONS, { key = "herbAlert", label = "Alert me near herbs I can pick (still gives Herbalism skill)", default = true })
+
+-- Gathering kinds: which profession, which node list and which option turns it on.
+-- Herbs in WoW Forever also need character level = the herb's skill / 5.
+local KINDS = {
+  { key = "ore",  prof = "Mining",    opt = "oreAlert",  types = function() return RG.NODE_ORES end,  spots = function() return RG.NODE_SPOTS end,
+    icon = "Interface\\Icons\\Trade_Mining", word = "spot" },
+  { key = "herb", prof = "Herbalism", opt = "herbAlert", types = function() return RG.HERB_TYPES end, spots = function() return RG.HERB_SPOTS end,
+    icon = "Interface\\Icons\\Trade_Herbalism", word = "patch", levelGate = true },
+}
 
 local RANGE = 90       -- yards: close enough to see it on the minimap and walk over
 local SPOT_COOLDOWN = 600
@@ -14,13 +24,15 @@ local GLOBAL_COOLDOWN = 20
 
 -- Parse a map's spots once: { {x, y, mask}, ... }
 local parsed = {}
-local function spotsFor(map)
-  if parsed[map] ~= nil then return parsed[map] end
-  local s = RG.NODE_SPOTS and RG.NODE_SPOTS[map]
-  if not s then parsed[map] = false; return false end
+local function spotsFor(kind, map)
+  local key = kind.key .. map
+  if parsed[key] ~= nil then return parsed[key] end
+  local all = kind.spots()
+  local s = all and all[map]
+  if not s then parsed[key] = false; return false end
   local out = {}
   for x, y, m in s:gmatch("([%d.]+),([%d.]+),(%d+)") do out[#out + 1] = { tonumber(x), tonumber(y), tonumber(m) } end
-  parsed[map] = out
+  parsed[key] = out
   return out
 end
 
@@ -39,10 +51,12 @@ end
 
 -- Which ore types are worth an alert at your skill: you can mine it, and (unless
 -- "every vein" is on) it still gives skill (grey at 100 above its requirement).
-local function wanted(skill)
+local function wanted(kind, skill)
   local mask, names = 0, {}
-  for i, o in ipairs(RG.NODE_ORES or {}) do
-    if skill >= o[2] and (RG.Opt("oreAlertAll") or skill < o[2] + 100) then mask = mask + 2 ^ (i - 1); names[i] = o[1] end
+  local lvl = UnitLevel("player") or 1
+  for i, o in ipairs(kind.types() or {}) do
+    local levelOk = not kind.levelGate or lvl * 5 >= o[2] or o[2] <= 1
+    if skill >= o[2] and levelOk and (RG.Opt("oreAlertAll") or skill < o[2] + 100) then mask = mask + 2 ^ (i - 1); names[i] = o[1] end
   end
   return mask, names
 end
@@ -73,40 +87,44 @@ RG.OreNearby = function() return nearest end
 
 local function check()
   nearest = nil
-  if not RG.Opt("oreAlert") or (RG.IsAlt and RG.IsAlt()) then return end
+  if RG.IsAlt and RG.IsAlt() then return end
   if (InCombatLockdown and InCombatLockdown()) or (IsInInstance and IsInInstance()) then return end
-  local skill = RG.Skill and RG.Skill("Mining")
-  if not skill then return end
   local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
   if not map then return end
-  local spots = spotsFor(map)
-  if not spots then return end
   local pos = C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
   local size = mapSize(map)
   if not pos or not size then return end
   local px, py = pos.x * 100, pos.y * 100
   if RG.IsSecret and (RG.IsSecret(px) or RG.IsSecret(py)) then return end
-  local mask, names = wanted(skill)
-  if mask == 0 then return end
-  local best, bestD
-  for _, s in ipairs(spots) do
-    if band(s[3], mask) > 0 then
-      local dx, dy = (s[1] - px) / 100 * size[1], (s[2] - py) / 100 * size[2]
-      local d = math.sqrt(dx * dx + dy * dy)
-      if d <= RANGE and (not bestD or d < bestD) then best, bestD = s, d end
+  local best, bestD, bestKind, bestNames
+  for _, kind in ipairs(KINDS) do
+    local skill = RG.Opt(kind.opt) and RG.Skill and RG.Skill(kind.prof)
+    local spots = skill and spotsFor(kind, map)
+    if spots then
+      local mask, names = wanted(kind, skill)
+      if mask > 0 then
+        for _, s in ipairs(spots) do
+          if band(s[3], mask) > 0 then
+            local dx, dy = (s[1] - px) / 100 * size[1], (s[2] - py) / 100 * size[2]
+            local d = math.sqrt(dx * dx + dy * dy)
+            if d <= RANGE and (not bestD or d < bestD) then best, bestD, bestKind, bestNames = s, d, kind, names end
+          end
+        end
+      end
     end
   end
   if not best then return end
-  -- name the best ore that can spawn there
+  -- name the best node type that can spawn there
   local ore
-  for i = #RG.NODE_ORES, 1, -1 do if names[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = names[i]; break end end
-  local key = map .. ":" .. best[1] .. ":" .. best[2]
-  nearest = { ore = ore, dist = bestD, wp = { map, best[1], best[2], ore or "Ore" }, dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2]) }
+  local types = bestKind.types()
+  for i = #types, 1, -1 do if bestNames[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = bestNames[i]; break end end
+  local key = bestKind.key .. map .. ":" .. best[1] .. ":" .. best[2]
+  nearest = { ore = ore, dist = bestD, kind = bestKind, wp = { map, best[1], best[2], ore or "Node" }, dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2]) }
   local now = GetTime()
   if lastSpot[key] and now - lastSpot[key] < SPOT_COOLDOWN then return end
   if now - lastAlert < GLOBAL_COOLDOWN then return end
   lastSpot[key], lastAlert = now, now
-  local msg = string.format("%s spot %d yd %s: check your minimap", ore or "Ore", bestD, nearest.dir)
+  local msg = string.format("%s %s %d yd %s: check your minimap", ore or "Node", bestKind.word, bestD, nearest.dir)
   if UIErrorsFrame then UIErrorsFrame:AddMessage(msg, 0.95, 0.75, 0.3) end
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
   if RG.QueueTracker then RG.QueueTracker() end
@@ -121,11 +139,32 @@ local baseReminders = RG.Reminders
 function RG.Reminders()
   local out = baseReminders and baseReminders() or {}
   local n = nearest
-  if n and RG.Opt("oreAlert") then
+  if n then
     local wp = n.wp
-    out[#out + 1] = { "|TInterface\\Icons\\Trade_Mining:14:14|t " .. GOLD .. (n.ore or "Ore") .. "|r" .. GREY .. string.format(" spot %d yd %s (click to pin)|r", n.dist, n.dir), function() RG.PinWaypoint(wp) end, 3 }
+    out[#out + 1] = { "|T" .. n.kind.icon .. ":14:14|t " .. GOLD .. (n.ore or "Node") .. "|r" .. GREY .. string.format(" %s %d yd %s (click to pin)|r", n.kind.word, n.dist, n.dir), function() RG.PinWaypoint(wp) end, 3 }
   end
   return out
 end
 
 RG.OreCheck = function() pcall(check) end
+
+-- "Ore: Tin, Silver  ·  Herbs: Briarthorn" for a zone: what you can gather there
+-- that still gives you skill (from the spawn data's best zones).
+function RG.GatherHere(zone)
+  local parts = {}
+  for _, kind in ipairs(KINDS) do
+    local skill = RG.Skill and RG.Skill(kind.prof)
+    local zones = kind.key == "ore" and RG.ORE_ZONES or RG.HERB_ZONES
+    if skill and zones then
+      local list = {}
+      for _, o in ipairs(kind.types() or {}) do
+        local z = zones[o[1]]
+        if z and z:find(zone, 1, true) and skill >= o[2] - 25 and skill < o[2] + 100 then
+          list[#list + 1] = (o[1]:gsub(" Vein$", ""):gsub(" Deposit$", ""):gsub(" Mineral$", ""))
+        end
+      end
+      if #list > 0 then parts[#parts + 1] = (kind.key == "ore" and "Ore: " or "Herbs: ") .. table.concat(list, ", ") end
+    end
+  end
+  return #parts > 0 and table.concat(parts, "  ·  ") or nil
+end
