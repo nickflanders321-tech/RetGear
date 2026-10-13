@@ -37,12 +37,12 @@ RG.CAMP_OBJECTS = {
 RG.CAMP_PLAN = {
   { lvl = 5,  zone = "Tirisfal Glades", text = "Do The Great Outdoors (around level 5). Learn Cooking in Brill or Undercity, buy Simple Wood and Flint and Tinder, and make a Basic Campfire Kit.", need = { Cooking = 1 } },
   { lvl = 5,  zone = "Tirisfal Glades", text = "Learn Fishing from Clyde Kellen at Brightwater Lake. Buy a Fishing Pole, a Shiny Bauble and the Brilliant Smallfish recipe from Martine Tramblay.", need = { Fishing = 1 } },
-  { lvl = 6,  zone = "Tirisfal Glades", text = "Fish Brightwater Lake when you're waiting on respawns. Cook every Brilliant Smallfish you catch, and keep a few raw ones for Fish Bowls.", need = { Fishing = 50, Cooking = 40 } },
+  { lvl = 6,  zone = "Tirisfal Glades", text = "Fish while you wait on respawns: the Undercity canals are best (Tirisfal's lakes give lots of Sickly Looking Fish). Cook every Brilliant Smallfish you catch, and keep a few raw ones for Fish Bowls.", need = { Fishing = 50, Cooking = 40 } },
   { lvl = 8,  zone = "Tirisfal Glades", text = "Learn the camp objects at 20 skill: Sharpening Wheel (Blacksmithing trainer) and Fish Bowl (Fishing trainer). Lodestone (Mining) is only worth it in groups.", need = { Blacksmithing = 20 } },
   { lvl = 10, zone = "Silverpine Forest", text = "Train Journeyman Fishing (Fishing 50, level 10) and Journeyman Cooking (Cooking 50). Fish the Undercity canals or the Silverpine coast to 130.", need = { Fishing = 130 } },
   { lvl = 12, zone = "Silverpine Forest", text = "Cook Longjaw Mud Snapper and Bristle Whisker Catfish. Recipes are in Undercity from Lizbeth Cromwell and Ronald Burch. Push Cooking toward 90 for the Journeyman Campfire.", need = { Cooking = 90 } },
   { lvl = 18, zone = "Wailing Caverns", text = "Kill Lord Serpentis for the Journeyman Campfire blueprint (Cooking 90 to learn, 140 to use: 5 object slots). Fish the oasis outside for Deviate Fish.", need = { Cooking = 140 } },
-  { lvl = 20, zone = "Stonetalon Mountains", text = "Get Expert Fishing (\"The Bass and You\", Old Man Heming in Booty Bay, or the AH) at Fishing 125. Buy Nightcrawlers at Sun Rock Retreat and fish Stonetalon's lakes to 205.", need = { Fishing = 205 } },
+  { lvl = 20, zone = "Stonetalon Mountains", text = "Get Expert Fishing (\"The Bass and You\", Old Man Heming in Booty Bay, 1g, level 20; or the AH) at Fishing 125. Buy Nightcrawlers at Sun Rock Retreat and fish Stonetalon's lakes to 205.", need = { Fishing = 205 } },
   { lvl = 22, zone = "Stonetalon Mountains", text = "Get the Expert Cookbook at Cooking 125, before you reach 150 (Wulan, Shadowprey Village in Desolace, or the AH). Without it you stop gaining skill at 150.", need = { Cooking = 150 } },
   { lvl = 26, zone = "Blackfathom Deeps", text = "Kill Gelihast for the Fishing Rack blueprint (Fishing 140): it gives your Fish Bowl plus uncommon fish for an hour.", need = { Fishing = 140 } },
   { lvl = 26, zone = "Ashenvale", text = "Buy the Anvil blueprint on the AH (it drops in Deadmines). It lets you smith anywhere at Blacksmithing 140.", need = { Blacksmithing = 140 } },
@@ -180,7 +180,7 @@ end
 -- Skill milestones in chat
 local lastSkill = {}
 local MILESTONES = {
-  Fishing = { [20] = "Learn the Fish Bowl at your Fishing trainer.", [50] = "Train Journeyman Fishing (level 10).", [125] = "Get Expert Fishing: \"The Bass and You\" (Old Man Heming, Booty Bay, or the AH).", [140] = "Fishing Rack unlocked if you have the blueprint (Gelihast, Blackfathom Deeps).", [225] = "Take Nat Pagle, Angler Extreme in Dustwallow Marsh (level 35) for Artisan Fishing." },
+  Fishing = { [20] = "Learn the Fish Bowl at your Fishing trainer.", [50] = "Train Journeyman Fishing (level 10).", [125] = "Get Expert Fishing: \"The Bass and You\" (Old Man Heming, Booty Bay, 1g, level 20; or the AH).", [140] = "Fishing Rack unlocked if you have the blueprint (Gelihast, Blackfathom Deeps).", [225] = "Take Nat Pagle, Angler Extreme in Dustwallow Marsh (level 35) for Artisan Fishing." },
   Cooking = { [50] = "Train Journeyman Cooking.", [90] = "You can learn the Journeyman Campfire blueprint (Lord Serpentis, Wailing Caverns).", [125] = "Get the Expert Cookbook now. Skill stops at 150 without it.", [140] = "Journeyman Campfire usable: 5 object slots.", [200] = "You can learn the Expert Campfire blueprint.", [225] = "Artisan Cooking: Clamlette Surprise in Gadgetzan (level 35)." },
   Blacksmithing = { [20] = "Learn the Sharpening Wheel camp object at your trainer.", [140] = "Anvil camp object unlocked if you have the blueprint (Deadmines, or the AH)." },
   Mining = { [20] = "Lodestone camp object unlocked (good for groups without a paladin).", [140] = "Rock Garden unlocked if you have the blueprint (Wetlands excavation site, or the AH)." },
@@ -215,6 +215,6 @@ local base = SlashCmdList.RETGEAR
 SlashCmdList.RETGEAR = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
-  if cmd == "camp" or cmd == "fish" or cmd == "cook" then if RG.ShowTab then RG.ShowTab("camp") end return end
+  if cmd == "camp" then if RG.ShowTab then RG.ShowTab("camp") end return end
   return base(msg)
 end

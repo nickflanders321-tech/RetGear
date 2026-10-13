@@ -42,8 +42,8 @@ local state = { tab = "route", near = true, open = {} }
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
-local GROUPS = { prof = { "prof", "camp" }, money = { "ah", "gold", "mail" } }
-local SUBLABEL = { prof = "Mining & smithing", camp = "Camp, fish & cook", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt" }
+local GROUPS = { prof = { "prof", "fish", "camp" }, money = { "ah", "gold", "mail" } }
+local SUBLABEL = { prof = "Mining & smithing", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -1013,18 +1013,142 @@ local function renderCamp()
     if soon then rows[n].title:SetText(GOLD .. "Now: |r" .. (cw and RG.PIN or "") .. s.text .. GREY .. "   (" .. s.zone .. ")|r") end
    end
   end
-  -- fish
-  n = n + 1; setHeader(getRow(n), "Fish worth keeping")
-  for _, fsh in ipairs(RG.FISH) do
+  return n
+end
+
+local function renderFish()
+  local n = 0
+  local p = RG.Professions()
+  local fsk, fmax = (p.Fishing and p.Fishing.rank) or 0, (p.Fishing and p.Fishing.max) or 0
+  local csk, cmax = (p.Cooking and p.Cooking.rank) or 0, (p.Cooking and p.Cooking.max) or 0
+  local lvl = UnitLevel("player")
+  local ORANGE = "|cffff8040"
+  -- skill bars
+  local rankName = "not learned"
+  for _, r in ipairs(RG.FISH_RANKS) do if fmax >= r.max then rankName = r.name end end
+  n = n + 1; setBar(getRow(n), "Fishing  ·  " .. rankName, fsk, math.max(fmax, 1), T.blue or T.gold, p.Fishing and (fsk .. " / " .. fmax) or "learn it from a trainer")
+  n = n + 1; setBar(getRow(n), "Cooking", csk, math.max(cmax, 1), T.gold, p.Cooking and (csk .. " / " .. cmax) or "learn it from a trainer")
+  -- right now
+  n = n + 1; setHeader(getRow(n), "Right now")
+  local nextR, st = RG.FishNextRank()
+  if nextR then
     n = n + 1
-    local name, link, quality = itemName(fsh.id)
-    setItem(getRow(n), fsh.id, link, name, fsh.note .. GREY .. "  ·  Fishing " .. fsh.skill .. "|r", sk("Fishing") >= fsh.skill and (GREEN .. "You can catch it|r") or (GREY .. "Fishing " .. fsh.skill .. "|r"), RG.PriceText(fsh.id) or (GREY .. "not priced yet|r"), nil, quality, true)
+    local pill = st == "ready" and (GREEN .. "Do it now|r") or (st == "learn" and (GOLD .. "Learn Fishing|r") or (GREY .. "Fishing " .. nextR.at .. ", level " .. nextR.lvl .. "|r"))
+    setItem(getRow(n), nil, nil, "|cffffffffNext rank: " .. nextR.name .. "|r" .. GREY .. "   (cap " .. nextR.max .. ")|r", nextR.how, pill, "", st == "ready" and "gold" or nil)
+    rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing")
+    if nextR.wp then local wp = nextR.wp; rows[n].onClick = function() RG.PinWaypoint(wp) end; rows[n].tip = "Click to show " .. wp[4] .. " on the map." end
+  end
+  local z, zoneName = RG.FishZone()
+  n = n + 1
+  if z then
+    local pill = z.status == "all" and (GREEN .. "Every fish bites|r") or (z.status == "some" and (GOLD .. "Some get away|r") or (RED .. "Too low|r"))
+    setItem(getRow(n), nil, nil, "|cffffffff" .. z.zone .. "|r" .. GREY .. string.format("   fishing starts at %d, every fish bites at %d|r", math.max(1, z.min), z.full),
+      string.format("Your skill %d%s%s = %d.%s", z.skill, z.pole > 0 and (" + pole " .. z.pole) or "", z.lure and (" + lure " .. z.lure) or "", z.eff,
+        z.status ~= "all" and (" A lure (+25 to +100) closes the gap.") or ""), pill, "", z.status == "all" and "green" or nil)
+  else
+    setItem(getRow(n), nil, nil, "|cffffffff" .. (zoneName ~= "" and zoneName or "This zone") .. "|r", "No fishing level known for this zone.", "", "")
+  end
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_02")
+  local s = RG.FishSession()
+  if s and s.catches > 0 then
+    n = n + 1
+    local top = {}
+    for id, c in pairs(s.items) do top[#top + 1] = { id = id, c = c } end
+    table.sort(top, function(a, b) return a.c > b.c end)
+    local parts = {}
+    for i = 1, math.min(3, #top) do parts[#parts + 1] = (itemName(top[i].id) or "?") .. " x" .. top[i].c end
+    setItem(getRow(n), nil, nil, string.format("|cffffffffThis session: %d fish|r", s.catches) .. (s.perHour and (GREY .. "   " .. s.perHour .. " per hour|r") or ""),
+      table.concat(parts, ", "), s.gained > 0 and (GREEN .. "+" .. s.gained .. " skill|r") or "", "")
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_14")
+  end
+  -- cook now
+  local cook, total = RG.CookNow()
+  if not RG.db.cookRecipes then
+    n = n + 1; setItem(getRow(n), nil, nil, GOLD .. "Open your Cooking window once|r", "Then RetGear knows your recipes and shows which fish in your bags still give Cooking skill.", "", "", nil, nil, true)
+  elseif total > 0 then
+    n = n + 1; setHeader(getRow(n), string.format("Cook these at your campfire  ·  %d raw fish still give skill", total))
+    for _, e in ipairs(cook) do
+      n = n + 1
+      local name, link, quality = itemName(e.c.id)
+      local col = e.st == "optimal" and ORANGE or (e.st == "medium" and "|cffffff00" or GREEN)
+      setItem(getRow(n), e.c.id, link, name .. GREY .. "  x" .. e.have .. "|r", "Cook into " .. e.c.dish, col .. (e.st == "optimal" and "Skill every cook" or (e.st == "medium" and "Skill most cooks" or "Skill sometimes")) .. "|r", "", nil, quality, true)
+    end
+  end
+  -- where to fish
+  n = n + 1; setHeader(getRow(n), "Where to fish for your skill (Horde)")
+  for _, r in ipairs(RG.FISH_ROUTE) do
+    n = n + 1
+    local here = fsk >= r.from and fsk < r.to
+    local done = fsk >= r.to
+    setItem(getRow(n), nil, nil, (here and GOLD or (done and GREY or "|cffffffff")) .. r.from .. "-" .. r.to .. "  ·  " .. r.spot .. "|r" .. GREY .. "   " .. r.zone .. "|r", r.text,
+      here and (GREEN .. "You're here|r") or (done and (GREY .. "Done|r") or (GREY .. "level " .. r.lvl .. "+|r")), "", here and "gold" or nil)
+    rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing")
+    if r.wp then local wp = r.wp; rows[n].onClick = function() RG.PinWaypoint(wp) end; rows[n].tip = "Click to show " .. wp[4] .. " on the map." end
+  end
+  -- fish to catch and cook
+  local night = RG.FishNight()
+  n = n + 1; setHeader(getRow(n), string.format("Fish to catch and cook  ·  Cooking %d  ·  it's %s on the server", csk, night and "night" or "day"))
+  for _, c in ipairs(RG.FISH_COOK) do
+    if c.cook <= csk + 75 or c.ret then
+      n = n + 1
+      local name, link, quality = itemName(c.id)
+      local have = GetItemCount and GetItemCount(c.id) or 0
+      local cst = RG.CookState(c.dish)
+      local pill
+      if c.time == "night" and not night then pill = GREY .. "Night only|r"
+      elseif c.time == "day" and night then pill = GREY .. "Day only|r"
+      elseif fsk < c.fish then pill = GREY .. "Fishing " .. c.fish .. "|r"
+      elseif csk < c.cook then pill = GREY .. "Cooking " .. c.cook .. "|r"
+      elseif cst == "optimal" or cst == "medium" or cst == "easy" then pill = GREEN .. "Levels Cooking|r"
+      elseif cst == "trivial" then pill = GREY .. "No more skill|r"
+      elseif cst == "missing" then pill = GOLD .. "Get the recipe|r"
+      else pill = "" end
+      local sub = "-> " .. c.dish .. GREY .. "  ·  " .. c.where .. "  ·  Cooking " .. c.cook .. (c.recipe and ("  ·  recipe: " .. c.recipe) or "") .. (c.note and ("  ·  " .. c.note) or "") .. (c.season and ("  ·  " .. c.season .. " only") or "") .. "|r"
+      setItem(getRow(n), c.id, link, name .. (have > 0 and (GREY .. "  x" .. have .. " in bags|r") or ""), sub, pill, "", c.ret and "gold" or nil, quality, true)
+    end
+  end
+  -- gear
+  n = n + 1; setHeader(getRow(n), "Poles, lures and fishing gear")
+  for _, g in ipairs(RG.FISH_GEAR) do
+    n = n + 1
+    local name, link, quality = itemName(g.id)
+    local have = GetItemCount and GetItemCount(g.id, true) or 0
+    local pill
+    if have > 0 then pill = GREEN .. (g.kind == "lure" and ("You have " .. have) or "You have it") .. "|r"
+    elseif g.skill and fsk < g.skill then pill = GREY .. "Fishing " .. g.skill .. "|r"
+    else pill = "" end
+    setItem(getRow(n), g.id, link, name .. GREY .. "   +" .. g.bonus .. (g.mins and (" for " .. g.mins .. " min") or "") .. "|r", g.how, pill, "", have > 0 and "green" or nil, quality, true)
+  end
+  -- extravaganza
+  n = n + 1; setHeader(getRow(n), "Stranglethorn Fishing Extravaganza (Booty Bay)")
+  for _, line in ipairs(RG.FISH_DERBY) do
+    n = n + 1; setStep(getRow(n), "", line, false, nil)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  end
+  -- sell
+  n = n + 1; setHeader(getRow(n), "Fish other professions buy")
+  for _, f in ipairs(RG.FISH_SELL) do
+    n = n + 1
+    local name, link, quality = itemName(f.id)
+    setItem(getRow(n), f.id, link, name, f.note, "", RG.PriceText(f.id) or (GREY .. "not priced yet|r"), nil, quality, true)
+  end
+  -- lifetime
+  local d = RG.db.fish
+  if d and (d.total or 0) > 0 then
+    local top = {}
+    for id, c in pairs(d.caught or {}) do top[#top + 1] = { id = id, c = c } end
+    table.sort(top, function(a, b) return a.c > b.c end)
+    local parts = {}
+    for i = 1, math.min(5, #top) do parts[#parts + 1] = (itemName(top[i].id) or "?") .. " " .. top[i].c end
+    n = n + 1; setHeader(getRow(n), string.format("Since you installed RetGear: %d catches", d.total))
+    n = n + 1; setStep(getRow(n), "", table.concat(parts, "  ·  "), false, nil)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
   return n
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet" } },
   { "Professions, bags and gold", { "mineReminder", "sellJunk", "autoRepair", "bagReminder", "profitWatch", "autoScan" } },
   { "Interface", { "minimap", "sounds" } },
@@ -1179,7 +1303,8 @@ local TITLES = {
   settings = { "Settings", "Turn RetGear's helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
-  camp  = { "Camping, fishing & cooking", "Campfire buffs, what to place, and leveling Fishing and Cooking on the way" },
+  camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
+  fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   group = { "Group play", "How grouping is going, your paladin duties, shared quests and finding a group" },
   dps   = { "DPS coach", "Every fight recorded, and the biggest thing to fix" },
@@ -1194,6 +1319,7 @@ local FOOTERS = {
   settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
   talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
+  fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so RetGear knows your recipes  ·  /rg fish",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /rg camp",
   mail  = "Click an item to search the AH for it  ·  /rg main makes the current character your main",
   group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /rg lfg Scarlet Monastery posts your own",
@@ -1245,6 +1371,7 @@ function RG.RefreshUINow()
   elseif state.tab == "group" then n = renderGroup()
   elseif state.tab == "mail" then n = renderMail()
   elseif state.tab == "camp" then n = renderCamp()
+  elseif state.tab == "fish" then n = renderFish()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])

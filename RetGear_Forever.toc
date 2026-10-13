@@ -24,6 +24,7 @@ Heal.lua
 Coach.lua
 Mail.lua
 Camp.lua
+Fish.lua
 Speed.lua
 Setup.lua
 Group.lua

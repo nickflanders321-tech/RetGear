@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.22.0 (fishing, in depth)
+- New **Professions → Fishing & cooking** page (`/rg fish` or `/rg cook`):
+  - Fishing and Cooking skill bars, your next Fishing rank and exactly how to get it (Journeyman at 50 and level 10; Expert book from Old Man Heming at 125 and level 20, 1g; Artisan from Nat Pagle at level 35).
+  - Your zone: where fishing starts, where every fish bites, and your skill + pole + lure against it.
+  - Where to fish for each skill bracket as Undead Horde: Undercity canals, your questing zones, the islands by Grom'gol, then Tanaris or Feralas.
+  - Raw fish in your bags that still level Cooking (read from your Cooking window), colored like the game.
+  - Fish to catch and cook: what each becomes, where it's caught, Cooking skill, Horde recipe vendors, day/night and seasonal fish (Grilled Squid's +10 Agility is flagged for Ret, Nightfin Soup for your healing set).
+  - Every pole, lure and piece of fishing gear with its bonus and where to get it, and which you own.
+  - Stranglethorn Fishing Extravaganza rules and prizes, fish other professions buy, and your catch history.
+- New **Fishing panel** on the tracker while you hold a pole: skill and catches per point, a warning when fish get away in your zone, lure timer or "no lure", fish per hour and skill gained this session, and raw fish to cook. Turn it off in Settings.
+- Reminders when your Fishing is capped and the next rank is ready, and when you're carrying 5+ raw fish that still level Cooking.
+- Plan fixes from WoW Forever data: Expert Fishing needs level 20 (1g); Undead should fish the Undercity canals rather than Tirisfal's lakes.
+
 ## v0.21.3 (double-click arrow)
 - Double-click a quest, new quest, route task or dungeon quest giver on the tracker to point the arrow at it; double-click it again to turn the arrow off. The line the arrow is pointing at is marked with a small arrow.
 - Double-click (or right-click) the arrow itself to turn it off. Hovering the arrow explains this.

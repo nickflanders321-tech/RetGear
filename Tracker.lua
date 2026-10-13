@@ -260,6 +260,21 @@ function RG.RefreshTracker()
     return
   end
   local MAXQ = 10
+  -- 0. fishing: shows while you hold a pole or caught something in the last 10 minutes
+  local fl, fright = nil, nil
+  if RG.FishTrackerLines then fl, fright = RG.FishTrackerLines() end
+  if fl and #fl > 0 then
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Fishing", "fishing", fright)
+    if not isFolded then
+      for _, l in ipairs(fl) do
+        n = n + 1
+        y = item(n, y, l[1], { single = true, right = l[2], onClick = l[3], tip = l[4] })
+      end
+    end
+    y = y + 5
+    MAXQ = 6 -- keep the tracker short while fishing
+  end
   -- 1. your quests: level, name, progress, distance
   local quests = RG.MyQuests and RG.MyQuests() or {}
   local new = RG.NearbyNewQuests and RG.NearbyNewQuests(2) or {}

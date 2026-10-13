@@ -12,6 +12,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Tracker** (right side): your quests grouped by zone (the zone you're in first), one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, double-click it to turn the arrow to it on or off, right-click to show it on the map, and click a section header to fold it. Drag it anywhere; right-click the minimap button to hide it.
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
 - **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
+- **Fishing panel** (tracker): while you hold a fishing pole, your skill and catches per point, whether fish get away in this zone, your lure timer, fish per hour this session, and raw fish to cook.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Double-click the arrow, or right-click it, to turn it off. Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/rg way 45 60` pins any spot.
 
@@ -36,7 +37,8 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
 | **Healing** | Holy set for dual spec at 40: your best healing piece per slot (worn, bags, bank) and a 40-60 hunting list. Your healing set is never sold |
 | **Professions** → *Mining & smithing* | Where to mine, Blacksmithing 1-300 plan, smithing upgrades, smelt-or-sell |
-| **Professions** → *Camp, fish & cook* | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, Fishing and Cooking plan, fish worth keeping |
+| **Professions** → *Fishing & cooking* | Your Fishing and Cooking skill, next rank and how to get it, whether every fish bites in your zone, where to fish for your skill (Horde), raw fish in your bags that still level Cooking, fish to catch and cook (recipes, day/night and seasonal fish), poles, lures and gear you own, the Stranglethorn Fishing Extravaganza, and your catch history |
+| **Professions** → *Camping* | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, and the camping and cooking steps along your route |
 | **Gold & AH** → *Sell & prices* | Your bag items to sell on the AH, plus tracked gear and materials with live prices |
 | **Gold & AH** → *Gold tips* | Gold-making tips for your level with live prices (refreshed weekly) |
 | **Gold & AH** → *Bank alt* | Quests you can skip farming for: what to buy and mail, with a shopping list for your bank alt |
@@ -50,7 +52,7 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 |---|---|
 | `/rg` | Open or close the window |
 | `/rg group` · `/rg lfg Scarlet Monastery` | Group tab · post an LFG message |
-| `/rg dps` · `/rg heal` · `/rg camp` · `/rg gold` · `/rg mail` · `/rg talents` · `/rg settings` | Open that tab |
+| `/rg dps` · `/rg heal` · `/rg fish` · `/rg camp` · `/rg gold` · `/rg mail` · `/rg talents` · `/rg settings` | Open that tab |
 | `/rg auto` | Auto accept / turn in on or off |
 | `/rg next` | Pin your nearest quest objective (or turn-in) |
 | `/rg undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |

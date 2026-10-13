@@ -484,7 +484,7 @@ SlashCmdList.RETGEAR = function(msg)
     for _, line in ipairs({
       "|cffffd100Guide|r  /rg  ·  /rg setup  ·  /rg settings  ·  /rg tracker",
       "|cffffd100Questing|r  /rg next  ·  /rg undo  ·  /rg way 45 60  ·  /rg auto  ·  /rg pace  ·  /rg session",
-      "|cffffd100Tabs|r  /rg dps  ·  /rg group  ·  /rg heal  ·  /rg camp  ·  /rg gold  ·  /rg mail  ·  /rg talents",
+      "|cffffd100Tabs|r  /rg dps  ·  /rg group  ·  /rg heal  ·  /rg fish  ·  /rg camp  ·  /rg gold  ·  /rg mail  ·  /rg talents",
       "|cffffd100Group|r  /rg lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /rg scan  ·  /rg autoscan  ·  /rg track [item]  ·  /rg untrack [item]  ·  /rg alert [item] 25",
       "|cffffd100Selling|r  /rg profit  ·  /rg profit min 25  ·  /rg profit ignore [item]",
