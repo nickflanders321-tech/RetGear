@@ -30,7 +30,7 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 
 | Tab | What's in it |
 |---|---|
-| **Route** | Undead Horde path from Deathknell to 60: zones, dungeons and when to go, quest givers, flight paths, travel, paladin milestones, buy-and-mail quests, camping/fishing steps, and your leveling pace per level |
+| **Route** | Undead Horde path from Deathknell to 60 in four foldable sections: **Now** (your zones and dungeons, with only the steps left to do), **Coming up** (next 5 levels), **Later** and **Done**. Dungeon quests to collect, flight paths, travel, paladin milestones, buy-and-mail quests, camping/fishing steps, and your leveling pace |
 | **Gear guide** | Ret upgrades from level 11 to 60 with where they drop, including your own Blacksmithing crafts |
 | **My gear** | Score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |

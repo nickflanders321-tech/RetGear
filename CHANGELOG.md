@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.23.0 (cleaner Route tab)
+- The Route tab is reorganized into four sections:
+  - **Now**: the zones and dungeons for your level, opened, showing only the steps you still have to do.
+  - **Coming up**: the next 5 levels, closed until you click one.
+  - **Later**: the rest of the route by level bracket (folded).
+  - **Done**: everything you've finished (folded).
+- Finished steps are hidden; a "+ N finished steps hidden" line shows them again. Finished zones, flight paths and dungeons move to Done.
+- Dungeon quests you've turned in no longer clutter the list; quests still to get show their level and "Pick up", "In your log" or "Ready to turn in".
+- Zones say "N to do" instead of a done/total count. Click any gold heading to fold or unfold it.
+- The leveling pace row is shorter, and the "Near my level" box is gone from the Route tab (the sections replace it).
+
 ## v0.22.1 (sort bags)
 - **Sort button** on your bags (top right of the backpack) and on your bank. `/rg sort` and `/rg sort bank` do the same.
 - Uses the game's own bag sort when WoW Forever has it. Otherwise RetGear sorts for you: merges stacks, then Hearthstone, quest items, food and potions, gear, materials (ore, bars, cloth, fish), recipes, and grey junk last. Quivers and profession bags are left alone, and sorting stops if you enter combat.

@@ -444,22 +444,194 @@ end
 local function renderRoute()
   local lvl = UnitLevel("player")
   local mining = RG.Skill("Mining") or 0
-  local n, lastBracket = 0, nil
+  local n = 0
   local KIND = { zone = GREY .. "Questing|r", dungeon = "|cffA58BD8Dungeon|r", pala = GOLD .. "Paladin|r", travel = "|cff6FA8DCTravel|r" }
   local ICON = { zone = 134269, dungeon = 136058, pala = 135920, travel = "Interface\\Icons\\Ability_Mount_Wyvern_01" }
+  RG.db.stepsDone = RG.db.stepsDone or {}
+  state.showDone = state.showDone or {}
   local list = {}
   for i, r in ipairs(RG.ROUTE) do list[i] = r end
   for _, t in ipairs(RG.TRAVEL or {}) do list[#list + 1] = { from = t.lvl, to = t.lvl, kind = "travel", zone = "Travel", hub = "", notes = t.text, fp = t.fp, travel = true } end
   local ORDER = { pala = 0, travel = 1, zone = 2, dungeon = 3 }
   table.sort(list, function(a, b) if a.from ~= b.from then return a.from < b.from end return (ORDER[a.kind] or 9) < (ORDER[b.kind] or 9) end)
-  -- leveling pace (time played per level)
+
+  -- work out each entry: its steps, which are done, and where it belongs (now / next / later / done)
+  local entries = {}
+  for _, r in ipairs(list) do
+    local e = { r = r, key = r.zone .. "|" .. r.from }
+    e.steps = RG.STEPS and RG.STEPS[e.key]
+    e.past = lvl > r.to
+    e.dq = r.kind == "dungeon" and RG.DUNGEON_QUESTS[r.zone]
+    e.dqDone = e.dq and RG.DungeonQuestsDone and RG.DungeonQuestsDone(e.dq)
+    e.auto, e.doneN = {}, 0
+    if e.steps then
+      for i, text in ipairs(e.steps) do
+        local ok, why = RG.StepAuto and RG.StepAuto(r, text)
+        if not ok and e.dqDone then ok, why = true, "all of this dungeon's quests are turned in" end
+        if ok then e.auto[i] = why end
+        if ok or RG.db.stepsDone[e.key .. "#" .. i] or e.past then e.doneN = e.doneN + 1 end
+      end
+    end
+    if r.kind == "travel" then
+      local k = r.fp and RG.KnowsFP(r.fp)
+      e.done = (k == true) or lvl > r.from + 2
+    elseif e.dq then
+      e.done = e.dqDone or e.past
+    elseif e.steps then
+      e.done = e.doneN >= #e.steps
+    else
+      e.done = e.past
+    end
+    if e.done then e.where = "done"
+    elseif lvl >= r.from and lvl <= r.to then e.where = "now"
+    elseif r.from <= lvl + 5 then e.where = "next"
+    else e.where = "later" end
+    -- a dungeon you're collecting quests for counts as "now"
+    if e.dq and not e.done and lvl >= e.dq.prep and lvl <= r.to then e.where = "now" end
+    entries[#entries + 1] = e
+  end
+
+  -- one route entry: a card, then (when open) its unfinished steps, dungeon quests, camp and bank-alt items
+  local function card(e, openDefault)
+    local r = e.r
+    local now = e.where == "now"
+    n = n + 1
+    local row = getRow(n)
+    local col = e.done and GREY or (now and GOLD or "|cffffffff")
+    local ore = ""
+    if not e.done then
+      for _, m in ipairs(RG.MINING) do
+        if m.zones:find(r.zone, 1, true) and mining >= m.from - 25 then ore = ore .. (ore == "" and "" or ", ") .. m.ore end
+      end
+    end
+    local sub = (r.notes ~= "" and r.notes or r.hub)
+    if ore ~= "" then sub = sub .. GREY .. "  ·  Ore: " .. ore .. "|r" end
+    local range = r.from == r.to and ("Level " .. r.from) or ("Levels " .. r.from .. "-" .. r.to)
+    local status = e.done and (GREEN .. "Done|r") or (now and (GREEN .. "You are here|r") or (GREY .. range .. "|r"))
+    if r.fp and not e.done then
+      local k = RG.KnowsFP(r.fp)
+      if k == false and lvl >= r.from - 1 then status = GOLD .. "Grab the " .. r.fp .. " flight path|r"
+      elseif k == true and r.kind ~= "travel" then sub = sub .. GREY .. "  ·  flight path learned|r" end
+    end
+    if e.dq then
+      if e.dqDone then status = GREEN .. "Quests done|r"
+      elseif lvl >= e.dq.prep and lvl < e.dq.go then status = GOLD .. "Collect quests now|r"
+      elseif lvl >= e.dq.go and lvl <= r.to then status = GREEN .. "Go now|r" end
+      sub = "Head over at level " .. e.dq.go .. GREY .. "  ·  " .. (e.dq.note or r.notes) .. "|r"
+    end
+    local titleText = r.kind == "travel" and ("|cff6FA8DC" .. "Travel" .. "|r" .. GREY .. "   level " .. r.from .. "|r") or (col .. r.zone .. "|r" .. GREY .. (r.kind == "pala" and "" or ("   " .. r.hub)) .. "|r")
+    local open = e.steps and not e.done and ((state.open[e.key] == nil and openDefault) or state.open[e.key] == true)
+    local left = e.steps and (#e.steps - e.doneN) or 0
+    local meta = (KIND[r.kind] or "") .. (e.steps and (GREY .. "   ·   " .. (e.done and ("all " .. #e.steps .. " done") or (left .. " to do")) .. (open and "  ·  hide" or "") .. "|r") or "")
+    local accent = e.done and nil or (now and "gold" or (r.kind == "pala" and "gold" or (r.kind == "dungeon" and "purple" or (r.kind == "travel" and "blue" or nil))))
+    setItem(row, nil, nil, titleText, e.done and "" or sub, status, meta, accent, nil, e.done)
+    if e.steps and not e.done then row.onClick = function() state.open[e.key] = not open; RG.RefreshUI() end end
+    local ew = RG.WAYPOINTS and (RG.WAYPOINTS.dungeons[r.zone] or (RG.StepWaypoint and RG.StepWaypoint(r, 1)))
+    if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = (e.steps and not e.done and "Click to open the steps. " or "") .. "Right-click: show " .. ew[4] .. " on the map." end
+    row.icon:SetTexture(ICON[r.kind] or 134269)
+    if e.done then return end
+    -- unfinished steps (finished ones hidden behind a "show" line)
+    if open then
+      local showAll = state.showDone[e.key]
+      local num = 0
+      for i, text in ipairs(e.steps) do
+        local sk = e.key .. "#" .. i
+        local auto = e.auto[i]
+        local isDone = auto or RG.db.stepsDone[sk] or e.past
+        if not isDone or showAll then
+          num = num + 1
+          n = n + 1
+          local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+          local srow = getRow(n)
+          setStep(srow, i, (wp and RG.PIN or "") .. text, isDone, function()
+            if RG.db.stepsDone[sk] then RG.db.stepsDone[sk] = nil; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end
+            elseif RG.TickStep then RG.TickStep(sk, text) else RG.db.stepsDone[sk] = true; RG.RefreshUI() end
+          end, auto or (e.past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
+          if wp then
+            srow.onRightClick = function() RG.PinWaypoint(wp) end
+            srow.tip = (srow.tip or "") .. "\n|cffffd100Right-click: show " .. wp[4] .. " on the map and follow the arrow|r"
+          end
+        end
+      end
+      if e.doneN > 0 then
+        n = n + 1
+        local tr = getRow(n)
+        setStep(tr, "", GREY .. (showAll and ("Hide the " .. e.doneN .. " finished step" .. (e.doneN > 1 and "s" or "")) or ("+ " .. e.doneN .. " finished step" .. (e.doneN > 1 and "s" or "") .. " hidden  ·  click to show")) .. "|r", false, function() state.showDone[e.key] = not showAll; RG.RefreshUI() end)
+        tr.iconBorder:Hide(); tr.icon:Hide(); tr.tip = nil
+      end
+    end
+    -- dungeon quests still to do
+    if e.dq and lvl >= e.dq.prep - 4 then
+      for _, q in ipairs(e.dq.quests) do
+        local qs = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
+        if qs ~= "done" then
+          n = n + 1
+          local qr = getRow(n)
+          local pill = qs == "ready" and (GREEN .. "Ready to turn in|r") or (qs == "log" and (GOLD .. "In your log|r") or (GREY .. "Pick up|r"))
+          local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
+          setItem(qr, nil, nil, RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, "", nil, nil, true)
+          qr.icon:SetTexture(136797)
+          local title = q[1]
+          if qs == "log" or qs == "ready" then
+            qr.onClick = function() RG.OpenQuest(title) end
+            qr.tip = "Click to open it in your quest log." .. (gw and ("\nRight-click: show " .. q[2] .. " on the map.") or "")
+            if gw then qr.onRightClick = function() RG.PinWaypoint(gw) end end
+          elseif gw then qr.onClick = function() RG.PinWaypoint(gw) end; qr.onRightClick = qr.onClick; qr.tip = "Click to show " .. q[2] .. " on the map." end
+        end
+      end
+    end
+    -- camping / fishing / cooking and bank-alt items for the zone you're in
+    if now and RG.CampForEntry then
+      for _, cs in ipairs(RG.CampForEntry(r)) do
+        if not RG.CampPlanDone(cs) then
+          n = n + 1
+          local cr = getRow(n)
+          setItem(cr, nil, nil, "|cffffffff" .. cs.text .. "|r", "", GOLD .. "Camp · fish · cook|r", "", nil, nil, true)
+          cr.icon:SetTexture("Interface\\Icons\\Spell_Fire_Fire")
+          cr.onClick = function() RG.ShowTab("camp") end
+          local cw = RG.CampWaypoint and RG.CampWaypoint(cs)
+          if cw then cr.onRightClick = function() RG.PinWaypoint(cw) end; cr.tip = "Click for the Camp tab. Right-click: show " .. cw[4] .. " on the map." end
+        end
+      end
+    end
+    if now and RG.MailForEntry then
+      for _, m in ipairs(RG.MailForEntry(r)) do
+        if not m.done then
+          n = n + 1
+          local mr = getRow(n)
+          local have = m.missing == 0 and (GREEN .. "Have it|r") or (m.selfMade and (GREEN .. "You can make it|r") or (GOLD .. "Bank alt: mail it|r"))
+          local what = m.q.any and (m.missing .. " of " .. #m.items .. " pages missing") or (m.items[1].count .. "x " .. m.items[1].name)
+          setItem(mr, not m.q.any and m.items[1].id or nil, nil, "|cffffd100" .. m.q.quest .. "|r" .. GREY .. "   level " .. m.q.lvl .. "|r", what .. GREY .. "  ·  " .. m.q.giver .. "|r", have, m.q.any and "" or (RG.PriceText(m.items[1].id) or ""), m.missing == 0 and "green" or nil, nil, true)
+          mr.icon:SetTexture("Interface\\Icons\\INV_Letter_15")
+          mr.onClick = function() RG.ShowTab("mail") end
+          local mw = RG.WaypointForText and RG.WaypointForText(m.q.giver)
+          if mw then mr.onRightClick = function() RG.PinWaypoint(mw) end; mr.tip = "Click for the Bank alt tab. Right-click: show " .. mw[4] .. " on the map." end
+        end
+      end
+    end
+  end
+
+  -- a foldable section header
+  local function section(label, key, count, defaultOpen)
+    n = n + 1
+    local r = getRow(n)
+    local isOpen = state[key]
+    if isOpen == nil then isOpen = defaultOpen end
+    setHeader(r, (isOpen and "- " or "+ ") .. label .. (count and (GREY .. "   " .. count .. "|r") or ""))
+    r.onClick = function() state[key] = not isOpen; RG.RefreshUI() end
+    r.tip = isOpen and "Click to fold this section." or "Click to show this section."
+    return isOpen
+  end
+  local function count(where) local c = 0; for _, e in ipairs(entries) do if e.where == where then c = c + 1 end end; return c end
+
+  -- leveling pace: one line (click for splits)
   if RG.Pace and not (RG.IsAlt and RG.IsAlt()) then
     local cur, last, avg = RG.Pace()
+    local _, eta = RG.XPRate and RG.XPRate()
     n = n + 1
     local pr = getRow(n)
-    local rate, eta = RG.XPRate and RG.XPRate()
-    setItem(pr, nil, nil, "|cffffffffLeveling pace|r" .. GREY .. "   level " .. lvl .. ": " .. RG.FormatDuration(cur) .. " so far|r",
-      (last and ("Last level " .. RG.FormatDuration(last) .. GREY .. "  ·  average of last 5: " .. RG.FormatDuration(avg)) or (GREY .. "Times for earlier levels appear after your next level-up")) .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
+    setItem(pr, nil, nil, "|cffffffffLevel " .. lvl .. "|r" .. GREY .. "   " .. RG.FormatDuration(cur) .. " so far" .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
+      last and (GREY .. "Last level " .. RG.FormatDuration(last) .. "  ·  average of last 5: " .. RG.FormatDuration(avg) .. "|r") or (GREY .. "Times for earlier levels appear after your next level-up|r"),
       state.pace and (GREY .. "hide splits|r") or (GREY .. "show splits|r"), "", "gold", nil, true)
     pr.icon:SetTexture("Interface\\Icons\\INV_Misc_PocketWatch_01")
     pr.onClick = function() state.pace = not state.pace; RG.RefreshUI() end
@@ -475,133 +647,42 @@ local function renderRoute()
       end
     end
   end
-  for _, r in ipairs(list) do
-    if not state.near or (r.to >= lvl - 3 and r.from <= lvl + 12) then
-      local bracket = r.from < 10 and "Levels 1-9" or ("Levels " .. (math.floor(r.from / 10) * 10) .. "-" .. (math.floor(r.from / 10) * 10 + 9))
-      if r.from >= 60 then bracket = "Level 60" end
-      if bracket ~= lastBracket then n = n + 1; setHeader(getRow(n), bracket); lastBracket = bracket end
-      n = n + 1
-      local row = getRow(n)
-      local now = lvl >= r.from and lvl <= r.to
-      local past = lvl > r.to
-      local col = now and GOLD or (past and GREY or "|cffffffff")
-      local ore = ""
-      for _, m in ipairs(RG.MINING) do
-        if m.zones:find(r.zone, 1, true) and mining >= m.from - 25 then ore = ore .. (ore == "" and "" or ", ") .. m.ore end
-      end
-      local sub = (r.notes ~= "" and r.notes or r.hub)
-      if ore ~= "" then sub = sub .. GREY .. "  ·  Ore: " .. ore .. "|r" end
-      local fpPill
-      if r.fp then
-        local k = RG.KnowsFP(r.fp)
-        if k == true then fpPill = GREEN .. "Flight path learned|r"
-        elseif k == false then fpPill = GOLD .. "Grab the " .. r.fp .. " flight path|r"
-        else fpPill = GREY .. "Flight path: " .. r.fp .. "|r" end
-      end
-      local range = r.from == r.to and ("Level " .. r.from) or ("Levels " .. r.from .. "-" .. r.to)
-      local dq = r.kind == "dungeon" and RG.DUNGEON_QUESTS[r.zone]
-      local status = now and (GREEN .. "You are here|r") or (GREY .. range .. "|r")
-      local accent = now and "gold" or (r.kind == "pala" and "gold" or (r.kind == "dungeon" and "purple" or (r.kind == "travel" and "blue" or nil)))
-      if r.kind == "travel" then
-        status = fpPill or (now and (GREEN .. "Now|r") or (GREY .. "Level " .. r.from .. "|r"))
-      elseif fpPill and (now or lvl >= r.from - 1) and not past then
-        status = (now and RG.KnowsFP(r.fp) == false) and fpPill or status
-        sub = sub .. "  ·  " .. fpPill
-      end
-      local dqDone = dq and RG.DungeonQuestsDone and RG.DungeonQuestsDone(dq)
-      if dq then
-        if dqDone then status = GREEN .. "Quests done|r"
-        elseif lvl >= dq.prep and lvl < dq.go then status = GOLD .. "Collect quests now|r"
-        elseif lvl >= dq.go and lvl <= r.to then status = GREEN .. "Go now|r" end
-        sub = "Head over at level " .. dq.go .. GREY .. "  ·  " .. (dq.note or r.notes) .. "|r"
-      end
-      local titleText = r.kind == "travel" and ("|cff6FA8DC" .. "Travel" .. "|r" .. GREY .. "   level " .. r.from .. "|r") or (col .. r.zone .. "|r" .. GREY .. (r.kind == "pala" and "" or ("   " .. r.hub)) .. "|r")
-      local key = r.zone .. "|" .. r.from
-      local steps = RG.STEPS and RG.STEPS[key]
-      local open = steps and ((state.open[key] == nil and now) or state.open[key] == true)
-      local meta = KIND[r.kind] or ""
-      RG.db.stepsDone = RG.db.stepsDone or {}
-      local doneN, autoMap = 0, {}
-      if steps then
-        for i, text in ipairs(steps) do
-          local ok, why = RG.StepAuto and RG.StepAuto(r, text)
-          if not ok and dqDone then ok, why = true, "all of this dungeon's quests are turned in" end
-          if ok then autoMap[i] = why end
-          if ok or RG.db.stepsDone[key .. "#" .. i] or past then doneN = doneN + 1 end
+
+  -- Now: always open, steps showing
+  if section("Now  ·  level " .. lvl, "secNow", nil, true) then
+    local any = false
+    for _, e in ipairs(entries) do if e.where == "now" then card(e, true); any = true end end
+    if not any then
+      n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Everything for your level is done.|r", "Your next zones are under Coming up.", "", "", "green", nil, true)
+    end
+  end
+  -- Coming up: the next 5 levels, closed until you open them
+  local nNext = count("next")
+  if nNext > 0 and section("Coming up  ·  next 5 levels", "secNext", nNext .. " to do", true) then
+    for _, e in ipairs(entries) do if e.where == "next" then card(e, false) end end
+  end
+  -- Later: the rest of the route, by level bracket
+  local nLater = count("later")
+  if nLater > 0 and section("Later", "secLater", nLater .. " to do", false) then
+    local lastBracket
+    for _, e in ipairs(entries) do
+      if e.where == "later" then
+        local r = e.r
+        local bracket = r.from >= 60 and "Level 60" or ("Levels " .. (math.floor(r.from / 10) * 10) .. "-" .. (math.floor(r.from / 10) * 10 + 9))
+        if bracket ~= lastBracket then
+          n = n + 1; setStep(getRow(n), "", GOLD .. bracket .. "|r", false, nil)
+          rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+          lastBracket = bracket
         end
-        meta = meta .. GREY .. "   ·   " .. doneN .. "/" .. #steps .. (open and "  ·  hide" or "") .. "|r"
-        if doneN == #steps and (not now or dqDone) then status = GREEN .. (dqDone and "Quests done" or "Done") .. "|r" end
-      end
-      setItem(row, nil, nil, titleText, sub, status, meta, accent)
-      if steps then row.onClick = function() state.open[key] = not open; RG.RefreshUI() end end
-      local ew = RG.WAYPOINTS and (RG.WAYPOINTS.dungeons[r.zone] or (RG.StepWaypoint and RG.StepWaypoint(r, 1)))
-      if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = "Click to open the steps. Right-click: show " .. ew[4] .. " on the map." end
-      row.icon:SetTexture(ICON[r.kind] or 134269)
-      if open then
-        RG.db.stepsDone = RG.db.stepsDone or {}
-        for i, text in ipairs(steps) do
-          n = n + 1
-          local sk = key .. "#" .. i
-          local auto = autoMap[i]
-          local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
-          local srow = getRow(n)
-          setStep(srow, i, (wp and RG.PIN or "") .. text, auto or RG.db.stepsDone[sk] or past, function()
-            if RG.db.stepsDone[sk] then RG.db.stepsDone[sk] = nil; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end
-            elseif RG.TickStep then RG.TickStep(sk, text) else RG.db.stepsDone[sk] = true; RG.RefreshUI() end
-          end, auto or (past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
-          if wp then
-            srow.onRightClick = function() RG.PinWaypoint(wp) end
-            srow.tip = (srow.tip or "") .. "\n|cffffd100Right-click: show " .. wp[4] .. " on the map and follow the arrow|r"
-          end
-        end
-      end
-      if dq and lvl <= r.to and (lvl >= dq.prep - 4 or not state.near) then
-        for _, q in ipairs(dq.quests) do
-          n = n + 1
-          local qr = getRow(n)
-          local qs = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
-          local pill = qs == "done" and (GREEN .. "Done|r") or (qs == "ready" and (GREEN .. "Ready to turn in|r") or (qs == "log" and (GOLD .. "In your log|r") or ""))
-          local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
-          setItem(qr, nil, nil, (qs == "done" and "" or RG.LevelTag(RG.QuestLevel(q[1]))) .. (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
-          qr.icon:SetTexture(136797)
-          local title = q[1]
-          if qs == "log" or qs == "ready" then
-            qr.onClick = function() RG.OpenQuest(title) end
-            qr.tip = "Click to open it in your quest log." .. (gw and ("\nRight-click: show " .. q[2] .. " on the map.") or "")
-            if gw then qr.onRightClick = function() RG.PinWaypoint(gw) end end
-          elseif gw then qr.onClick = function() RG.PinWaypoint(gw) end; qr.onRightClick = qr.onClick; qr.tip = "Click to show " .. q[2] .. " on the map." end
-        end
-      end
-      if RG.CampForEntry and (now or not past) then
-        for _, cs in ipairs(RG.CampForEntry(r)) do
-          n = n + 1
-          local cr = getRow(n)
-          local done = RG.CampPlanDone(cs)
-          setItem(cr, nil, nil, (done and GREY or "|cffffffff") .. cs.text .. "|r", "", done and (GREEN .. "Done|r") or (GOLD .. "Camp · fish · cook|r"), "", done and "green" or nil, nil, true)
-          cr.icon:SetTexture("Interface\\Icons\\Spell_Fire_Fire")
-          cr.onClick = function() RG.ShowTab("camp") end
-          local cw = RG.CampWaypoint and RG.CampWaypoint(cs)
-          if cw then cr.onRightClick = function() RG.PinWaypoint(cw) end; cr.tip = "Click for the Camp tab. Right-click: show " .. cw[4] .. " on the map." end
-        end
-      end
-      if RG.MailForEntry and (now or not past) then
-        for _, m in ipairs(RG.MailForEntry(r)) do
-          if not m.done then
-            n = n + 1
-            local mr = getRow(n)
-            local have = m.missing == 0 and (GREEN .. "Have it|r") or (m.selfMade and (GREEN .. "You can make it|r") or (GOLD .. "Bank alt: mail it|r"))
-            local what = m.q.any and (m.missing .. " of " .. #m.items .. " pages missing") or (m.items[1].count .. "x " .. m.items[1].name)
-            setItem(mr, not m.q.any and m.items[1].id or nil, nil, "|cffffd100" .. m.q.quest .. "|r" .. GREY .. "   level " .. m.q.lvl .. "|r", what .. GREY .. "  ·  " .. m.q.giver .. "|r", have, m.q.any and "" or (RG.PriceText(m.items[1].id) or ""), m.missing == 0 and "green" or nil, nil, true)
-            mr.icon:SetTexture("Interface\\Icons\\INV_Letter_15")
-            mr.onClick = function() RG.ShowTab("mail") end
-            local mw = RG.WaypointForText and RG.WaypointForText(m.q.giver)
-            if mw then mr.onRightClick = function() RG.PinWaypoint(mw) end; mr.tip = "Click for the Bank alt tab. Right-click: show " .. mw[4] .. " on the map." end
-          end
-        end
+        card(e, false)
       end
     end
   end
-  if n == 0 then n = 1; setHeader(getRow(1), "Untick Near my level to see the whole route") end
+  -- Done: hidden unless you open it
+  local nDone = count("done")
+  if nDone > 0 and section("Done", "secDone", nDone .. " finished", false) then
+    for i = #entries, 1, -1 do local e = entries[i]; if e.where == "done" then card(e, false) end end
+  end
   return n
 end
 
@@ -1311,7 +1392,7 @@ local TITLES = {
   heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
 }
 local FOOTERS = {
-  route = "Click a step to open its to-do list  ·  click a task to tick it off  ·  A- / A+ change the text size",
+  route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  click a gold heading to fold it  ·  finished steps are hidden",
   guide = "Shift-click to link  ·  Ctrl-click to preview  ·  green means better than what you wear",
   gear  = "Scores are Attack Power equivalents  ·  tune them with /rg weight",
   prof  = "Ore and bar prices refresh when you open the Auction House",
@@ -1375,7 +1456,7 @@ function RG.RefreshUINow()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
-  frame.near:SetShown(state.tab == "guide" or state.tab == "route")
+  frame.near:SetShown(state.tab == "guide")
   frame.scan:SetShown(state.tab == "ah")
   -- stack rows with their own heights
   local y = 0
