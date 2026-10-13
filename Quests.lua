@@ -32,13 +32,13 @@ function RG.QuestLog()
       local info = C_QuestLog.GetInfo(i)
       if info and not info.isHeader and info.title then
         local complete = info.questID and C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID)
-        out[norm(info.title)] = { complete = complete and true or false, id = info.questID }
+        out[norm(info.title)] = { complete = complete and true or false, id = info.questID, title = info.title, level = info.level }
       end
     end
   elseif GetNumQuestLogEntries and GetQuestLogTitle then
     for i = 1, GetNumQuestLogEntries() do
       local title, _, _, isHeader, _, isComplete = GetQuestLogTitle(i)
-      if title and not isHeader then out[norm(title)] = { complete = isComplete == 1 or isComplete == true } end
+      if title and not isHeader then out[norm(title)] = { complete = isComplete == 1 or isComplete == true, title = title } end
     end
   end
   logCache = out
@@ -236,4 +236,19 @@ function RG.OpenQuest(title, qid)
   end)
   if not ok then RG.Print("Couldn't open the quest log right now (try again out of combat).") end
   return true
+end
+
+-- Quests in your log that a piece of guide text names (e.g. a route step or a
+-- gear source). Returns a list of { title, id, complete, level }.
+function RG.QuestsInText(text)
+  local out = {}
+  if not text or text == "" then return out end
+  local t = text:lower():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+  for key, q in pairs(RG.QuestLog()) do
+    if #key >= 5 and t:find(key, 1, true) then
+      out[#out + 1] = { title = q.title or key, id = q.id, complete = q.complete, level = q.level }
+    end
+  end
+  table.sort(out, function(a, b) return (a.title or "") < (b.title or "") end)
+  return out
 end

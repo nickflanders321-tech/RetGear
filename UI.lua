@@ -318,7 +318,20 @@ local function renderGuide()
       else right = GREY .. "Loading|r" end
       local right2 = g.ah and RG.PriceText(g.id) or (GREY .. g.how .. "|r")
       if g.bs and (RG.Skill("Blacksmithing") or 0) >= g.bs and not own then right2 = GREEN .. "You can make this|r" end
+      local qsrc = g.how == "Quest" and g.src and g.src:gsub("%s*%(.-%)$", "")
+      local qIn = qsrc and RG.InLog and RG.InLog(qsrc)
+      if qIn and not own then right2 = GOLD .. "Quest in your log|r" end
       setItem(r, g.id, link, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. (g.approx and "~" or "") .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, accent, quality)
+      if qIn then
+        r.onClick = function(self)
+          if IsModifiedClick and (IsModifiedClick("CHATLINK") or IsModifiedClick("DRESSUP")) then
+            local insert = ChatEdit_InsertLink or (ChatFrameUtil and ChatFrameUtil.InsertLink)
+            if IsModifiedClick("CHATLINK") and insert and link then insert(link) elseif DressUpItemLink and link then DressUpItemLink(link) end
+            return
+          end
+          RG.OpenQuest(qsrc)
+        end
+      end
     end
   end
   return #list
@@ -551,6 +564,18 @@ local function renderRoute()
             srow.onRightClick = function() RG.PinWaypoint(wp) end
             srow.tip = (srow.tip or "") .. "\n|cffffd100Right-click: show " .. wp[4] .. " on the map and follow the arrow|r"
           end
+          -- quests this step names that are in your log: click to open them
+          if not isDone then
+            for _, q in ipairs(RG.QuestsInText and RG.QuestsInText(text) or {}) do
+              n = n + 1
+              local qr = getRow(n)
+              setItem(qr, nil, nil, RG.LevelTag(q.level or RG.QuestLevel(q.title)) .. "|cffffd100" .. q.title .. "|r", GREY .. "Click to open it in your quest log|r",
+                q.complete and (GREEN .. "Ready to turn in|r") or (GOLD .. "In your log|r"), "", nil, nil, true)
+              qr.icon:SetTexture(136797)
+              qr.onClick = function() RG.OpenQuest(q.title, q.id) end
+              qr.tip = "Click to open " .. q.title .. " in your quest log."
+            end
+          end
         end
       end
       if e.doneN > 0 then
@@ -603,9 +628,12 @@ local function renderRoute()
           local what = m.q.any and (m.missing .. " of " .. #m.items .. " pages missing") or (m.items[1].count .. "x " .. m.items[1].name)
           setItem(mr, not m.q.any and m.items[1].id or nil, nil, "|cffffd100" .. m.q.quest .. "|r" .. GREY .. "   level " .. m.q.lvl .. "|r", what .. GREY .. "  ·  " .. m.q.giver .. "|r", have, m.q.any and "" or (RG.PriceText(m.items[1].id) or ""), m.missing == 0 and "green" or nil, nil, true)
           mr.icon:SetTexture("Interface\\Icons\\INV_Letter_15")
-          mr.onClick = function() RG.ShowTab("mail") end
+          local mq = m.q.quest
+          local inLog = RG.InLog and RG.InLog(mq)
+          mr.onClick = function() if not (inLog and RG.OpenQuest(mq)) then RG.ShowTab("mail") end end
           local mw = RG.WaypointForText and RG.WaypointForText(m.q.giver)
-          if mw then mr.onRightClick = function() RG.PinWaypoint(mw) end; mr.tip = "Click for the Bank alt tab. Right-click: show " .. mw[4] .. " on the map." end
+          mr.tip = (inLog and "Click to open it in your quest log." or "Click for the Bank alt tab.") .. (mw and (" Right-click: show " .. mw[4] .. " on the map.") or "")
+          if mw then mr.onRightClick = function() RG.PinWaypoint(mw) end end
         end
       end
     end

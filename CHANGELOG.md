@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.23.1 (open guide quests in your log)
+- Route tab: when a step names a quest that's in your quest log, a line for that quest appears right under the step (with its level and "In your log" or "Ready to turn in"). Click it to open the quest in your quest log.
+- Bank-alt quests on the Route tab open in your quest log when you have them (otherwise the Bank alt tab, as before).
+- Gear guide: when a quest reward's quest is in your log, it says "Quest in your log" and clicking it opens the quest. Shift-click and Ctrl-click still link or preview the item.
+
 ## v0.23.0 (cleaner Route tab)
 - The Route tab is reorganized into four sections:
   - **Now**: the zones and dungeons for your level, opened, showing only the steps you still have to do.
