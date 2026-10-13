@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.41.0 (profession guide)
+- **The Professions tab guides you through every profession.** Pick one of yours (or any of the twelve) and it shows:
+  - **Now:** the craft for your skill and how many are left in this step, worked out from the guide's count and your current skill, so it counts down as you level.
+  - **Materials:** how many more of each material you need to finish the step, counting your bags and bank ("14 more Linen Cloth"), with the Auction House cost of what's missing. Crafted reagents you're short of (bolts, bars, elixirs) add the materials to make them. When a step lists choices (Cooking), it picks the one you're closest to making.
+  - **Where to go:** the densest herb or ore cluster for your skill, beasts to skin at your skill, fishing pools, and for each missing material the mob that drops it most for your level, the herb or vein it comes from, or the nearest vendor that sells it, plus your next trainer. **Double-click any place and the arrow takes you there** (double-click a missing material too).
+  - **Next:** the step after this one and what you still need for it, and the whole 1-300 route on request.
+- A toast tells you when a step is done and what's next.
+- Opening a profession window reads the exact recipes from your client, so Forever's changes are counted correctly.
+- New `tools/profs` builds the recipes, material sources, gathering clusters, skinning spots, fishing pools and trainer locations from the classic database and WoW Forever's spawn data. `tools/audit` checks that every craft has recipe data, every herb and vein has a place to go, every skinning step has beasts, and every trainer has a map pin.
+- Routes follow the wow-professions.com WoW Forever guides (cross-checked with wowtbc.gg's Forever guides); their 225-300 sections still use the Classic route until the Forever versions are published.
+
 ## v0.40.0 (where does this drop?)
 - **Click any item in My gear** (your upgrades, or a slot you're wearing) and a small window shows where to get it:
   - **Dungeon drops:** the dungeon, the boss that drops it and its level, the level to run it from, how many dungeon quests you have there, and a button to put the entrance on your map.

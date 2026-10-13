@@ -3,6 +3,7 @@
 -- Forever). Pairs with Skinning.
 local _, RG = ...
 local L = { name = "Leatherworking", kind = "craft", icon = "Interface\\Icons\\INV_Misc_ArmorKit_17" }
+L.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 L.train = {
   start = { O = "Kamari in the Drag, Orgrimmar", R = "Kamari in the Drag, Orgrimmar", T = "Chaw Stronghide in Bloodhoof Village", U = "Shelene Rhobart at the road junction south-east of Brill", S = "Kamari in Orgrimmar or Chaw Stronghide in Bloodhoof Village" },
   apprentice = "Kamari (Orgrimmar), Dan Golthas (Undercity), Mak (Thunder Bluff)",

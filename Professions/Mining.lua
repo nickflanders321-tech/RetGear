@@ -3,6 +3,7 @@
 -- Vein spawn points for ore alerts are in NodeData.lua.
 local _, RG = ...
 local M = { name = "Mining", kind = "gather", gathering = true, icon = "Interface\\Icons\\Trade_Mining" }
+M.source = "WoW Forever ore spawn data"
 
 -- Mining: where to find each ore on the Horde side, by skill.
 M.zones = {

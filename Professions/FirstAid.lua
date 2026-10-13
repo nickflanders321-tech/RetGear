@@ -3,6 +3,7 @@
 -- guide (beta data; 225-300 not yet tested on Forever).
 local _, RG = ...
 local F = { name = "First Aid", kind = "secondary", icon = "Interface\\Icons\\Spell_Holy_SealOfSacrifice" }
+F.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 F.train = {
   start = { O = "Rawrk in the Razor Hill barracks", R = "Rawrk in the Razor Hill barracks", T = "Vira Younghoof in the Bloodhoof Village inn", U = "Nurse Neela in the Brill inn", S = "the Zephras Isle First Aid trainers" },
   apprentice = "Arnok (Orgrimmar), Mary Edras (Undercity), Pand Stonebinder (Thunder Bluff)",

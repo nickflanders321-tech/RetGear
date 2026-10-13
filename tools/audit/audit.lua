@@ -23,7 +23,7 @@ local COMBOS = {
 local RACE_ORDER = { "Orc", "Troll", "Tauren", "Scourge", "Skyborne" }
 local FILES = {
   "Data.lua", "Classes/Paladin.lua", "Classes/PaladinGear.lua", "Races/Undead.lua", "Races/Durotar.lua", "Races/Tauren.lua",
-  "Races/Skyborne.lua", "Routes/Horde.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua", "Professions/Herbalism.lua", "Professions/Skinning.lua", "Professions/Alchemy.lua", "Professions/Enchanting.lua", "Professions/Engineering.lua", "Professions/Leatherworking.lua", "Professions/Tailoring.lua", "Professions/FirstAid.lua", "Professions/Cooking.lua", "Professions/Fishing.lua",
+  "Races/Skyborne.lua", "Routes/Horde.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua", "Professions/Herbalism.lua", "Professions/Skinning.lua", "Professions/Alchemy.lua", "Professions/Enchanting.lua", "Professions/Engineering.lua", "Professions/Leatherworking.lua", "Professions/Tailoring.lua", "Professions/FirstAid.lua", "Professions/Cooking.lua", "Professions/Fishing.lua", "Professions/Generated.lua",
   "Profile.lua", "Waypoints.lua", "Objectives.lua", "NodeData.lua",
 }
 -- 2nd specs (load before Profile.lua, like the .toc does)
@@ -88,7 +88,37 @@ do
         if st.gather then
           local zones = name == "Mining" and RG.ORE_ZONES or RG.HERB_ZONES
           if not (zones and zones[st.gather]) then fail("Professions", name .. ": no zones known for " .. st.gather) end
+          -- a place to send the arrow for every node you gather
+          for _, node in ipairs({ st.gather, st.also }) do
+            if not (RG.GATHER_SPOTS and RG.GATHER_SPOTS[node]) then fail("Professions", name .. ": no gathering spot for " .. node) end
+          end
         end
+        -- every craft has a recipe (reagents) so the tab can count materials
+        if st.craft then
+          local any = false
+          for part in (st.craft .. ","):gmatch("%s*(.-)%s*,") do
+            for o in (part .. " or "):gmatch("(.-) or ") do
+              o = o:gsub("^%s+", ""):gsub("%s+$", "")
+              if RG.RECIPES and RG.RECIPES[o] then any = true end
+            end
+          end
+          if not any then fail("Professions", name .. ": no recipe data for " .. st.craft) end
+        end
+        -- skinning: beasts to skin at every step
+        if st.skin then
+          local ok = false
+          for _, sp in ipairs(RG.SKIN_SPOTS or {}) do if sp[5] >= math.floor(st.from / 10) and sp[5] <= math.max(10, math.floor(st.to / 5)) then ok = true break end end
+          if not ok then fail("Professions", name .. ": no skinning spots for " .. st.skin) end
+        end
+      end
+      -- every rank's trainer (or the start trainer) can be put on the map
+      for _, rank in ipairs({ "apprentice", "journeyman", "expert", "artisan" }) do
+        local t = P.train and P.train[rank] or ""
+        local pinned = false
+        for nm in t:gmatch("([A-Z][%a'%.]+[%a'%. ]-) %(") do if RG.PROF_TRAINERS[nm] then pinned = true end end
+        for nm in t:gmatch("([A-Z][%a']+ ?[%a']*) in ") do if RG.PROF_TRAINERS[nm] then pinned = true end end
+        local book = t:lower():find("book") or t:lower():find("quest") or t:lower():find("any ") or t:lower():find("cookbook")
+        if not pinned and not book then fail("Professions", name .. ": no map pin for the " .. rank .. " trainer (" .. t:sub(1, 40) .. ")") end
       end
     end
   end

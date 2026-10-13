@@ -44,7 +44,7 @@ local function saveTab() if WaypathDB then WaypathDB.lastTab = state.tab end end
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
 local GROUPS = { prof = { "prof", "fish", "camp" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
-local SUBLABEL = { prof = "Mining & smithing", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec & build", heal = "Gear to collect" }
+local SUBLABEL = { prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec & build", heal = "Gear to collect" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -155,6 +155,15 @@ local function getRow(i)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
   r:SetScript("OnClick", function(self, btn)
     if btn == "RightButton" and self.onRightClick then self.onRightClick(self); return end
+    if self.onDoubleClick then
+      -- wait a moment so a double-click doesn't also do the single-click action
+      local now = GetTime()
+      if self.pending and now - self.pending < 0.35 then self.pending = nil; self.onDoubleClick(self); return end
+      self.pending = now
+      local single = self.onClick
+      C_Timer.After(0.35, function() if self.pending == now then self.pending = nil; if single then single(self) end end end)
+      return
+    end
     if self.onClick then self.onClick(self); return end
     local link = self.link or (self.itemID and select(2, RG.ItemInfo(self.itemID)))
     if not link then return end
@@ -167,7 +176,7 @@ local function getRow(i)
 end
 
 local function hideAll(r)
-  r.onClick = nil; r.onRightClick = nil; r.tip = nil
+  r.onClick = nil; r.onRightClick = nil; r.tip = nil; r.onDoubleClick = nil
   r.title:SetWordWrap(false)
   for _, k in ipairs({ "iconBorder", "icon", "title", "sub", "pill", "meta", "head", "headLine", "barBg", "barFill", "barMark", "barLabel", "barValue", "stripe" }) do r[k]:Hide() end
 end
@@ -513,113 +522,242 @@ end
 
 local PROF_ORDER = { "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }
 local RANKS = { { "apprentice", "Apprentice", 0, 1 }, { "journeyman", "Journeyman", 50, 10 }, { "expert", "Expert", 125, 20 }, { "artisan", "Artisan", 200, 35 } }
+local KIND_WORD = { vendor = "vendor", herb = "herb", ore = "ore", stone = "stone", gem = "gem", cloth = "cloth", leather = "leather",
+  meat = "meat", fish = "fish", elemental = "elemental", enchant = "enchanting", crafted = "you make it", drop = "drop" }
+function RG.ShowProf(name)
+  state.profSel = name
+  if RG.ShowTab then RG.ShowTab("prof") end
+end
 local function renderProf()
   local known = RG.Professions()
-  local mining, bs = known["Mining"], known["Blacksmithing"]
   local lvl = UnitLevel("player")
   local n = 0
   local function head(t) n = n + 1; setHeader(getRow(n), t) end
-  local function line(id, title, sub, right, right2, icon, accent, quality)
+  local function line(id, title, sub, right, right2, icon, accent, quality, small)
     n = n + 1; local r = getRow(n)
     local link = id and select(2, RG.ItemInfo(id))
-    setItem(r, id, link, title, sub, right, right2, accent, quality)
+    setItem(r, id, link, title, sub, right, right2, accent, quality, small)
     if icon then r.icon:SetTexture(icon) end
+    return r
   end
-  local shownAny = false
+  -- a place you can double-click to send the arrow there
+  local function place(pl, icon)
+    local r = line(nil, "|cffffffff" .. pl.title .. "|r", pl.sub or "", pl.wp and (GOLD .. "Double-click|r") or "", pl.wp and (GREY .. "arrow|r") or "", icon or "Interface\\Icons\\INV_Misc_Map_01", pl.wp and "gold" or nil)
+    if pl.wp then
+      r.onDoubleClick = function() RG.ArrowTo(pl.wp) end
+      r.tip = "Double-click to put " .. pl.wp[4] .. " on your map and point the arrow at it."
+    end
+    return r
+  end
+  -- which profession: yours first, then the one you picked from the full list
+  local mine = {}
   for _, name in ipairs(PROF_ORDER) do
-    local P = RG.PROFESSIONS[name]
+    if RG.PROFESSIONS[name] and (known[name] or (RG.Plans and RG.Plans(name))) then mine[#mine + 1] = name end
+  end
+  if not state.profSel or not RG.PROFESSIONS[state.profSel] then state.profSel = mine[1] or "Mining" end
+  local sel = state.profSel
+  -- your professions: a bar each, click to open
+  head("Your professions  ·  click one to open its guide")
+  if #mine == 0 then
+    line(nil, "|cffffffffTwo main professions, plus Cooking, Fishing and First Aid|r", "Good pairs: Mining + Blacksmithing or Engineering, Herbalism + Alchemy, Skinning + Leatherworking, Tailoring + Enchanting. Two gathering professions make the most gold while leveling. Run /wp setup to pick yours, or open any profession below.", "", "", 136240, nil, nil, true)
+  end
+  for _, name in ipairs(mine) do
     local k = known[name]
-    if P and (k or (RG.Plans and RG.Plans(name))) then
-      shownAny = true
-      local rank, max = k and k.rank or 0, k and k.max or 0
-      n = n + 1; setBar(getRow(n), name, rank, math.max(max, rank, 1), T.gold, k and (rank .. " / " .. max) or (GREY .. "Not learned yet|r"))
-      -- where to train next
-      local T2 = P.train or {}
-      if not k then
-        local start = T2.start and T2.start[RG.RACE_LETTER]
-        line(nil, GOLD .. "Learn it|r" .. GREY .. "  ·  no level needed|r", start and ("Closest trainer: " .. start) or (T2.apprentice or ""), GOLD .. "Train|r", "", P.icon, "gold")
-      else
-        for ri = 2, #RANKS do
-          local key, label, needSkill, needLvl = RANKS[ri][1], RANKS[ri][2], RANKS[ri][3], RANKS[ri][4]
-          local cap = ({ 75, 150, 225, 300 })[ri - 1]
-          if max <= cap and max < 300 and rank >= needSkill - 10 and T2[key] then
-            local ready = rank >= needSkill and lvl >= needLvl
-            line(nil, (ready and GOLD or "|cffffffff") .. "Train " .. label .. "|r" .. GREY .. "  ·  skill " .. needSkill .. ", level " .. needLvl .. "|r", T2[key],
-              ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), "", P.icon, ready and "gold" or nil)
-            break
-          end
-        end
-      end
-      -- the plan: where you are now and the next steps
-      local shown = 0
-      for _, st in ipairs(P.plan or {}) do
-        if st.to >= rank and shown < (state.near and 3 or 99) and not st.train then
-          shown = shown + 1
-          local here = rank >= st.from and rank < st.to
-          local title, subText
-          if st.craft then
-            title = st.craft .. GREY .. "   x" .. st.n .. "  ·  skill " .. st.from .. "-" .. st.to .. "|r"; subText = st.mats
-          elseif st.gather then
-            local zonesOf = (name == "Mining" and RG.ORE_ZONES) or RG.HERB_ZONES or {}
-            title = st.gather .. (st.also and (GREY .. " and " .. st.also .. "|r") or "") .. GREY .. "   skill " .. st.from .. "-" .. st.to .. "|r"
-            subText = zonesOf[st.gather] or ""
-            if name == "Herbalism" then subText = subText .. GREY .. "  ·  needs level " .. math.max(1, math.floor(st.from / 5)) .. "|r" end
-          elseif st.skin then
-            title = st.skin .. GREY .. "   skill " .. st.from .. "-" .. st.to .. "|r"; subText = st.where
-          end
-          if title then
-            line(nil, (here and GOLD or "|cffffffff") .. title .. "|r", subText or "", here and (GREEN .. (st.craft and "Craft now" or "Do this now") .. "|r") or "", "", P.icon, here and "gold" or nil)
-          end
-        end
-      end
-      if P.fishTab then line(nil, "|cffffffffFishing guide|r", "Zones by skill, lures, poles and the derby are on the Fishing tab (/wp fish).", "", "", P.icon) end
-      if P.supplies then line(nil, GREY .. "Supplies|r", P.supplies, "", "", P.icon) end
-    end
-  end
-  if not shownAny then
-    head("Pick your professions")
-    line(nil, "|cffffffffTwo main professions, plus Cooking, Fishing and First Aid|r", "Good pairs: Mining + Blacksmithing or Engineering, Herbalism + Alchemy, Skinning + Leatherworking, Tailoring + Enchanting. Two gathering professions make the most gold while leveling. Run /wp setup to pick yours.", "", "", 136240)
-  end
-  if mining then
-  head("Smelt or sell")
-  local any = false
-  for _, sm in ipairs(RG.SMELT) do
-    local ore, bar = RG.Price(sm.ore), RG.Price(sm.bar)
-    local oreName, barName = RG.ItemInfo(sm.ore), RG.ItemInfo(sm.bar)
-    if ore and bar and oreName and barName then
-      any = true
-      local better = bar > ore
-      line(sm.bar, barName, GREY .. "Bar " .. RG.Money(bar) .. "  vs  ore " .. RG.Money(ore) .. "|r", better and (GREEN .. "Smelt it|r") or (GOLD .. "Sell the ore|r"), "", nil, better and "green" or nil)
-    end
-  end
-  if not any then n = n + 1; setStep(getRow(n), "", "Open the Auction House once to compare ore and bar prices here.", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
-  end
-  if bs then
-  head("Blacksmithing upgrades for you")
-  for _, g in ipairs(RG.GUIDE) do
-    if g.bs then
-      local name, link, quality = itemName(g.id)
-      local can = bs and bs.rank >= g.bs
-      local d = link and RG.GuideDelta(g)
-      local own = RG.OwnState(g.id)
-      local right = own == "equipped" and (GREEN .. "Equipped|r") or (can and (GREEN .. "You can make this|r") or (GREY .. "Needs " .. g.bs .. "|r"))
-      local right2 = (g.lvl > lvl and (GREY .. "Wear at " .. g.lvl .. "|r")) or (d and d > 0.5 and (GREEN .. "Upgrade +" .. string.format("%.0f", d) .. "|r")) or ""
-      line(g.id, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, nil, can and not own and "green" or nil, quality)
-    end
-  end
-  end
-  -- prices of the materials your professions use
-  local ids, seen = {}, {}
-  for name in pairs(known) do
     local P = RG.PROFESSIONS[name]
-    for _, id in ipairs(P and P.mats or {}) do if not seen[id] then seen[id] = true; ids[#ids + 1] = id end end
+    local now = RG.ProfNow(name)
+    local what
+    if not k then what = GOLD .. "Not learned yet|r"
+    elseif now and now.done then what = GREEN .. "Done: 300|r"
+    elseif now and now.craft then
+      local short = 0
+      for _, e in ipairs(now.mats or {}) do if not e.via then short = short + e.short end end
+      what = now.craft .. " x" .. (now.left or 0) .. (short > 0 and (GREY .. "  ·  " .. short .. " materials to get|r") or (GREEN .. "  ·  you have everything|r"))
+    elseif now and now.st then what = (now.st.gather or now.st.skin or (now.st.fish and ("Fish in " .. now.st.fish)) or "") .. GREY .. "  ·  until " .. now.st.to .. "|r" end
+    local r = line(nil, (name == sel and GOLD or "|cffffffff") .. name .. "|r" .. GREY .. "   " .. (k and (k.rank .. " / " .. (k.max or "?")) or "") .. "|r", what or "", name == sel and (GREEN .. "Open|r") or (GOLD .. "Show|r"), "", P.icon, name == sel and "gold" or nil, nil, true)
+    r.onClick = function() state.profSel = name; RG.RefreshUINow() end
   end
-  if #ids > 0 then
-    head("Material prices · lowest buyout")
+
+  -- the selected profession
+  local P = RG.PROFESSIONS[sel]
+  local k = known[sel]
+  local rank, max = k and k.rank or 0, k and k.max or 0
+  if k and not k.max then max = rank end
+  n = n + 1; setBar(getRow(n), sel, rank, math.max(max, rank, 1), T.gold, k and (rank .. " / " .. max) or (GREY .. "Not learned yet|r"))
+  local now = RG.ProfNow(sel, rank)
+  local T2 = P.train or {}
+  -- training
+  if not k then
+    local start = T2.start and T2.start[RG.RACE_LETTER]
+    local pin = RG.TrainerPin(start or T2.apprentice)
+    local r = line(nil, GOLD .. "Learn " .. sel .. "|r" .. GREY .. "  ·  no level needed|r", start and ("Closest trainer: " .. start) or (T2.apprentice or ""), pin and (GOLD .. "Double-click|r") or (GOLD .. "Train|r"), pin and (GREY .. "arrow|r") or "", P.icon, "gold")
+    if pin then r.onDoubleClick = function() RG.ArrowTo(pin) end; r.tip = "Double-click to put " .. pin[4] .. " on your map." end
+  else
+    for ri = 2, #RANKS do
+      local key, label, needSkill, needLvl = RANKS[ri][1], RANKS[ri][2], RANKS[ri][3], RANKS[ri][4]
+      local cap = ({ 75, 150, 225, 300 })[ri - 1]
+      if max <= cap and max < 300 and rank >= needSkill - 10 and T2[key] then
+        local ready = rank >= needSkill and lvl >= needLvl
+        local pin = RG.TrainerPin(T2[key])
+        local r = line(nil, (ready and GOLD or "|cffffffff") .. "Train " .. label .. "|r" .. GREY .. "  ·  skill " .. needSkill .. ", level " .. needLvl .. "|r", T2[key],
+          ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), pin and (GREY .. "double-click: arrow|r") or "", P.icon, ready and "gold" or nil)
+        if pin then r.onDoubleClick = function() RG.ArrowTo(pin) end; r.tip = "Double-click to put " .. pin[4] .. " on your map." end
+        break
+      end
+    end
+  end
+  -- now: the current step and its materials
+  if now and now.done then
+    line(nil, GREEN .. sel .. " is maxed|r", "Nothing left to level. Its recipes and gold tips are still on the Gold tab.", "", "", P.icon, "green")
+  elseif now and now.st then
+    local st = now.st
+    if now.craft then
+      head("Now: " .. now.craft .. "  ·  skill " .. st.from .. "-" .. st.to)
+      local others = {}
+      for _, o in ipairs(now.options or {}) do if o ~= now.craft then others[#others + 1] = o end end
+      line(nil, "|cffffffffMake " .. (now.left or 0) .. " more " .. now.craft .. "|r", (st.mats or "") .. (#others > 0 and (GREY .. "  ·  or: " .. table.concat(others, ", ") .. "|r") or ""),
+        GOLD .. (now.left or 0) .. " left|r", GREY .. "to skill " .. st.to .. "|r", P.icon, "gold")
+      if now.mats then
+        local allReady = true
+        for _, e in ipairs(now.mats) do
+          if not e.via then
+            local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
+            local kind = info and KIND_WORD[info[2]] or ""
+            local name, _, quality = RG.ItemInfo(e.id)
+            local title = (e.short > 0 and "|cffffffff" or GREEN) .. (name or e.name) .. "|r" .. GREY .. "   " .. kind .. "|r"
+            local sub = "Need " .. e.need .. "  ·  you have " .. e.have .. GREY .. " (bags and bank)|r"
+            local price = RG.Price and RG.Price(e.id)
+            local r = line(e.id, title, sub, e.short > 0 and ("|cffff6060" .. e.short .. " more|r") or (GREEN .. "Ready|r"),
+              (e.short > 0 and price) and (GREY .. "AH ~" .. RG.Money(price * e.short) .. "|r") or "", nil, e.short > 0 and nil or "green", quality, true)
+            if e.short > 0 then
+              allReady = false
+              local pl = RG.MatPlaces(e.id, 1)[1]
+              if pl and pl.wp then
+                r.onDoubleClick = function() RG.ArrowTo(pl.wp) end
+                r.tip = pl.title .. ": " .. pl.wp[4] .. "\nDouble-click to point the arrow there."
+              end
+            end
+          end
+        end
+        -- crafted reagents you're short of: what they take
+        for _, e in ipairs(now.mats) do
+          if e.via then
+            local name, _, quality = RG.ItemInfo(e.id)
+            line(e.id, GREY .. "for " .. e.via .. ":|r " .. (e.short > 0 and "|cffffffff" or GREEN) .. (name or e.name) .. "|r", "Need " .. e.need .. "  ·  you have " .. e.have,
+              e.short > 0 and ("|cffff6060" .. e.short .. " more|r") or (GREEN .. "Ready|r"), "", nil, nil, quality, true)
+            if e.short > 0 then allReady = false end
+          end
+        end
+        if allReady then line(nil, GREEN .. "You have everything for this step|r", "Open your " .. sel .. " window and craft away. Waypath+ tells you when the step is done.", "", "", P.icon, "green", nil, true) end
+      else
+        line(nil, GREY .. "Materials: " .. (st.mats or "see the guide") .. "|r", "Open your " .. sel .. " window once and Waypath+ reads the exact recipe from it.", "", "", P.icon, nil, nil, true)
+      end
+    elseif st.gather then
+      head("Now: " .. st.gather .. (st.also and (" and " .. st.also) or "") .. "  ·  skill " .. st.from .. "-" .. st.to)
+      local zonesOf = (sel == "Mining" and RG.ORE_ZONES) or RG.HERB_ZONES or {}
+      line(nil, "|cffffffff" .. (sel == "Mining" and "Mine " or "Pick ") .. st.gather .. "|r", (zonesOf[st.gather] or "") .. (sel == "Herbalism" and (GREY .. "  ·  needs character level " .. math.max(1, math.floor(st.from / 5)) .. "|r") or ""), GOLD .. (st.to - rank) .. " points|r", GREY .. "to skill " .. st.to .. "|r", P.icon, "gold")
+    elseif st.fish then
+      head("Now: fishing  ·  skill " .. st.from .. "-" .. st.to)
+      line(nil, "|cffffffffFish in " .. st.fish .. "|r", (st.where or "") .. (st.lvl and (GREY .. "  ·  from character level " .. st.lvl .. "|r") or ""), GOLD .. (st.to - rank) .. " points|r", GREY .. "to skill " .. st.to .. "|r", P.icon, "gold")
+    elseif st.skin then
+      head("Now: skinning  ·  skill " .. st.from .. "-" .. st.to)
+      line(nil, "|cffffffff" .. st.skin .. "|r", (st.where or "") .. GREY .. "  ·  you can skin up to level " .. RG.SkinMaxLevel(rank) .. "|r", GOLD .. (st.to - rank) .. " points|r", "", P.icon, "gold")
+    end
+    -- where to go
+    local places = RG.ProfPlaces(sel, now)
+    if #places > 0 then
+      head("Where to go  ·  double-click a place and follow the arrow")
+      for _, pl in ipairs(places) do place(pl) end
+    end
+    -- what comes next
+    if now.next then
+      local nx = now.next
+      local opts = RG.StepOptions(nx)
+      local label = opts[1] or nx.gather or nx.skin or (nx.fish and ("Fish in " .. nx.fish))
+      local sub = nx.mats or ""
+      if opts[1] then
+        local m = RG.MatsFor(opts[1], nx.n or 0)
+        if m then
+          local parts = {}
+          for _, e in ipairs(m) do if not e.via and e.short > 0 then parts[#parts + 1] = e.short .. " " .. e.name end end
+          sub = #parts > 0 and ("Still to get: " .. table.concat(parts, ", ")) or (GREEN .. "You already have the materials|r")
+        end
+      end
+      head("Next")
+      line(nil, "|cffffffff" .. label .. (nx.n and (GREY .. "   x" .. nx.n .. "|r") or "") .. "|r" .. GREY .. "  ·  skill " .. nx.from .. "-" .. nx.to .. "|r", sub, "", "", P.icon, nil, nil, true)
+    end
+  end
+  -- the whole route
+  head(sel .. " 1-300  ·  " .. (P.source or "WoW Forever guide") .. (state.profFull and "" or "  ·  click below for every step"))
+  if state.profFull then
+    for _, st in ipairs(RG.ProfPlan(P)) do
+      local here = now and now.st == st
+      local passed = rank >= st.to and not st.train
+      local title
+      if st.train then title = GOLD .. "Train: " .. st.train .. "|r"
+      elseif st.craft then title = st.craft .. GREY .. "   x" .. (st.n or "?") .. "|r"
+      elseif st.gather then title = st.gather .. (st.also and (GREY .. " and " .. st.also .. "|r") or "")
+      elseif st.skin then title = st.skin
+      elseif st.fish then title = "Fish in " .. st.fish end
+      title = (here and GOLD or (passed and GREY or "|cffffffff")) .. (title or "") .. "|r"
+      line(nil, title .. GREY .. "  ·  " .. st.from .. (st.to ~= st.from and ("-" .. st.to) or "") .. "|r", st.mats or st.where or "", here and (GREEN .. "You're here|r") or (passed and (GREY .. "Done|r") or ""), "", P.icon, here and "gold" or nil, nil, true)
+    end
+  end
+  n = n + 1
+  setStep(getRow(n), "", "Show every step of the route", state.profFull, function() state.profFull = not state.profFull; RG.RefreshUI() end)
+  if P.fishTab then line(nil, "|cffffffffFishing guide|r", "Zones by skill, lures, poles and the derby are on the Fishing tab (/wp fish).", "", "", P.icon, nil, nil, true) end
+  if P.supplies then line(nil, GREY .. "Supplies|r", P.supplies, "", "", P.icon, nil, nil, true) end
+
+  -- Mining and Blacksmithing extras
+  if sel == "Mining" and known["Mining"] then
+    head("Smelt or sell")
+    local any = false
+    for _, sm in ipairs(RG.SMELT) do
+      local ore, bar = RG.Price(sm.ore), RG.Price(sm.bar)
+      local oreName, barName = RG.ItemInfo(sm.ore), RG.ItemInfo(sm.bar)
+      if ore and bar and oreName and barName then
+        any = true
+        local better = bar > ore
+        line(sm.bar, barName, GREY .. "Bar " .. RG.Money(bar) .. "  vs  ore " .. RG.Money(ore) .. "|r", better and (GREEN .. "Smelt it|r") or (GOLD .. "Sell the ore|r"), "", nil, better and "green" or nil)
+      end
+    end
+    if not any then n = n + 1; setStep(getRow(n), "", "Open the Auction House once to compare ore and bar prices here.", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
+  end
+  if sel == "Blacksmithing" and known["Blacksmithing"] then
+    local bs = known["Blacksmithing"]
+    head("Blacksmithing upgrades for you")
+    for _, g in ipairs(RG.GUIDE) do
+      if g.bs then
+        local name, link, quality = itemName(g.id)
+        local can = bs and bs.rank >= g.bs
+        local d = link and RG.GuideDelta(g)
+        local own = RG.OwnState(g.id)
+        local right = own == "equipped" and (GREEN .. "Equipped|r") or (can and (GREEN .. "You can make this|r") or (GREY .. "Needs " .. g.bs .. "|r"))
+        local right2 = (g.lvl > lvl and (GREY .. "Wear at " .. g.lvl .. "|r")) or (d and d > 0.5 and (GREEN .. "Upgrade +" .. string.format("%.0f", d) .. "|r")) or ""
+        line(g.id, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, nil, can and not own and "green" or nil, quality)
+      end
+    end
+  end
+  -- material prices for this profession
+  local ids = P.mats or {}
+  if #ids > 0 and k then
+    head("Material prices  ·  lowest buyout")
     for _, id in ipairs(ids) do
       local nm2, _, quality = itemName(id)
-      local cnt = (C_Item and C_Item.GetItemCount and C_Item.GetItemCount(id, true)) or 0
-      line(id, nm2, cnt > 0 and ("You have " .. cnt) or (GREY .. "None in your bags|r"), "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, nil, quality)
+      local cnt = RG.MatCount and RG.MatCount(id) or 0
+      line(id, nm2, cnt > 0 and ("You have " .. cnt) or (GREY .. "None in your bags or bank|r"), "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, nil, quality, true)
+    end
+  end
+  -- every other profession's route
+  head("Every profession's leveling route  ·  click one to read it")
+  for _, name in ipairs(PROF_ORDER) do
+    local isMine = false
+    for _, m in ipairs(mine) do if m == name then isMine = true end end
+    local P2 = RG.PROFESSIONS[name]
+    if P2 and not isMine then
+      local steps = 0
+      for _, st in ipairs(RG.ProfPlan(P2)) do if not st.train then steps = steps + 1 end end
+      local r = line(nil, (name == sel and GOLD or "|cffffffff") .. name .. "|r", steps .. " steps from 1 to 300" .. GREY .. "  ·  " .. (P2.kind == "gather" and "gathering" or (P2.kind or "")) .. "|r", name == sel and (GREEN .. "Open|r") or "", "", P2.icon, name == sel and "gold" or nil, nil, true)
+      r.onClick = function() state.profSel = name; state.profFull = true; RG.RefreshUINow() end
     end
   end
   return n
@@ -1698,7 +1836,7 @@ local TITLES = {
   route = { "Leveling route", "Your path from your starting zone to 60" },
   guide = { "Gear guide", "Upgrades for your spec by level, and where they come from" },
   gear  = { "My gear", "What you're wearing and what to chase next" },
-  prof  = { "Professions", "Mining routes, smithing upgrades and material prices" },
+  prof  = { "Professions", "Where you are in each profession, what you still need, and where to go for it" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
   settings = { "Settings", "Turn Waypath+'s helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
@@ -1714,7 +1852,7 @@ local FOOTERS = {
   route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  click a gold heading to fold it  ·  finished steps are hidden",
   guide = "Click an item to see where it drops or which quest gives it  ·  Shift-click to link  ·  Ctrl-click to preview",
   gear  = "Click an item to see where it drops or which quest gives it  ·  scores are Attack Power equivalents (/wp weight)",
-  prof  = "Ore and bar prices refresh when you open the Auction House",
+  prof  = "Double-click a place to point the arrow at it  ·  counts include your bank (open it once)  ·  opening a profession window reads its exact recipes",
   ah    = "Opening the AH refreshes prices  ·  /wp alert [item] 25 pings you at 25g or less",
   settings = "Everything here is saved for your account  ·  /wp tracker shows or hides the tracker",
   talents = "Talent names follow WoW Forever  ·  /wp talents opens this tab",

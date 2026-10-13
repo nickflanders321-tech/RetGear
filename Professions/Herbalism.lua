@@ -3,6 +3,7 @@
 -- also need character level = the herb's skill / 5 to pick it.
 local _, RG = ...
 local H = { name = "Herbalism", kind = "gather", gathering = true, icon = "Interface\\Icons\\Trade_Herbalism" }
+H.source = "WoW Forever herb spawn data"
 H.train = {
   start = { O = "Jandi in Orgrimmar (closest to Durotar)", R = "Jandi in Orgrimmar (closest to Durotar)", T = "Komin Winterhoof in Thunder Bluff", U = "Martha Alliestar in Undercity", S = "the Zephras Isle Herbalism trainers" },
   apprentice = "Jandi (Orgrimmar), Martha Alliestar (Undercity), Komin Winterhoof (Thunder Bluff)",

@@ -2,6 +2,7 @@
 -- plan, and bars whose Auction House prices are tracked.
 local _, RG = ...
 local B = { name = "Blacksmithing", kind = "craft", icon = "Interface\\Icons\\Trade_BlackSmithing" }
+B.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 
 -- Weapon stones (Blacksmithing). Sharpening stones are for swords and axes,
 -- weightstones for maces. bs = Blacksmithing skill where you start making them.

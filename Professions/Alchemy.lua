@@ -3,6 +3,7 @@
 -- Potions moved to First Aid.
 local _, RG = ...
 local A = { name = "Alchemy", kind = "craft", icon = "Interface\\Icons\\Trade_Alchemy" }
+A.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 A.train = {
   start = { O = "a capital trainer: Yelmak in Orgrimmar", R = "a capital trainer: Yelmak in Orgrimmar", T = "Bena Winterhoof in Thunder Bluff", U = "Doctor Marsh in Undercity", S = "a Zephras Isle trainer, or any capital" },
   apprentice = "Yelmak (Orgrimmar), Doctor Marsh (Undercity), Bena Winterhoof (Thunder Bluff)",

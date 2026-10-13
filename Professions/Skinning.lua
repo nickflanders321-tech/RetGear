@@ -2,6 +2,7 @@
 -- (skill / 10 + 10 below 100), so the beasts in the zones you quest in are usually right.
 local _, RG = ...
 local K = { name = "Skinning", kind = "gather", gathering = true, icon = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01" }
+K.source = "WoW Forever creature data"
 K.train = {
   start = { O = "Thuwd in Orgrimmar (closest to Durotar)", R = "Thuwd in Orgrimmar (closest to Durotar)", T = "Mooranta in Thunder Bluff", U = "Killian Hagey in Undercity", S = "a Zephras Isle trainer, or any capital" },
   apprentice = "Thuwd (Orgrimmar), Killian Hagey (Undercity), Mooranta (Thunder Bluff)",

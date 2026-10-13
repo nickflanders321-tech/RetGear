@@ -2,6 +2,7 @@
 -- Forever guide (beta data; past 225 not yet tested on Forever). Pairs with Mining.
 local _, RG = ...
 local G = { name = "Engineering", kind = "craft", icon = "Interface\\Icons\\Trade_Engineering" }
+G.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 G.train = {
   start = { O = "Mukdrak in Razor Hill", R = "Mukdrak in Razor Hill", T = "Thund in Orgrimmar", U = "Graham Van Talen in Undercity", S = "Thund in Orgrimmar" },
   apprentice = "Thund (Orgrimmar), Graham Van Talen (Undercity)",

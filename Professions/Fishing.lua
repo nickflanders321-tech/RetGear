@@ -3,6 +3,7 @@
 -- Fishing tab; this file gives Fishing the same trainer and plan shape as the rest.
 local _, RG = ...
 local F = { name = "Fishing", kind = "secondary", icon = "Interface\\Icons\\Trade_Fishing" }
+F.source = "wow-professions.com WoW Forever guide"
 F.train = {
   start = { O = "Lau'Tiki in Sen'jin Village", R = "Lau'Tiki in Sen'jin Village", T = "Harn Longcast in Mulgore", U = "Clyde Kellen at Brightwater Lake, Tirisfal", S = "a Zephras Isle trainer, or any capital" },
   apprentice = "Lumak (Orgrimmar), Armand Cromwell (Undercity), Kah Mistrunner (Thunder Bluff)",

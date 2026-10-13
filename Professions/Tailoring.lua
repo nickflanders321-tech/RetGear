@@ -3,6 +3,7 @@
 -- Cloth drops from humanoids while you quest.
 local _, RG = ...
 local T = { name = "Tailoring", kind = "craft", icon = "Interface\\Icons\\Trade_Tailoring" }
+T.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 T.train = {
   start = { O = "Snang in the Drag, Orgrimmar", R = "Snang in the Drag, Orgrimmar", T = "Vhan, middle rise of Thunder Bluff", U = "Bowen Brisboise at Cold Hearth Manor, south-west of Brill", S = "Vhan in Thunder Bluff or Snang in Orgrimmar" },
   apprentice = "Snang (Orgrimmar), Victor Ward (Undercity), Vhan (Thunder Bluff)",

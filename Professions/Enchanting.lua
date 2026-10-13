@@ -3,6 +3,7 @@
 -- Herbalist or the Auction House for gear to disenchant.
 local _, RG = ...
 local E = { name = "Enchanting", kind = "craft", icon = "Interface\\Icons\\Trade_Engraving" }
+E.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
 E.train = {
   start = { O = "Pa'zula in Sen'jin Village", R = "Pa'zula in Sen'jin Village", T = "Mot Dawnstrider in Thunder Bluff", U = "Vance Undergloom upstairs in the Brill inn", S = "a Zephras Isle trainer" },
   apprentice = "Jhag (Orgrimmar), Malcomb Wynn (Undercity), Mot Dawnstrider (Thunder Bluff)",

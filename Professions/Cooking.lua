@@ -4,6 +4,7 @@
 -- option you have the meat or fish for.
 local _, RG = ...
 local K = { name = "Cooking", kind = "secondary", icon = "Interface\\Icons\\INV_Misc_Food_15" }
+K.source = "wow-professions.com WoW Forever guide"
 K.train = {
   start = { O = "Cook Torka in Razor Hill", R = "Cook Torka in Razor Hill", T = "Pyall Silentstride in the big tent at Bloodhoof Village", U = "William Pickman in the Brill inn", S = "a Zephras Isle trainer, or any capital" },
   apprentice = "Zamja (Orgrimmar), Eunice Burch (Undercity), Aska Mistrunner (Thunder Bluff)",

@@ -49,6 +49,7 @@ Professions\Tailoring.lua
 Professions\FirstAid.lua
 Professions\Cooking.lua
 Professions\Fishing.lua
+Professions\Generated.lua
 Profile.lua
 Waypoints.lua
 Objectives.lua
@@ -74,4 +75,5 @@ Setup.lua
 Group.lua
 Bags.lua
 SourceInfo.lua
+ProfGuide.lua
 UI.lua
