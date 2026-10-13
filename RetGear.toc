@@ -28,4 +28,5 @@ Fish.lua
 Speed.lua
 Setup.lua
 Group.lua
+Bags.lua
 UI.lua

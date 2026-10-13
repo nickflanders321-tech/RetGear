@@ -19,6 +19,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 ## Done for you
 - Quests are **accepted and turned in automatically** (hold **Shift** to pause). The best reward is picked: the Ret upgrade, or the best vendor value. When a Ret and a healing upgrade compete, you choose.
 - **Route steps tick themselves** from your quest log, flight paths, hearthstone, professions and spells.
+- **Bags sorted** with one click: the Sort button on your bags and bank.
 - **Junk is sold and gear repaired** at vendors, but anything worth more on the AH is kept.
 - **AH prices** are checked every time you open the Auction House (Auctionator and TSM prices are used too).
 - **Every fight is recorded** by the DPS coach, including your share of the group's damage and any aggro you pull off the tank.
@@ -59,6 +60,7 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 | `/rg way 45 60` | Pin a spot in your zone and follow the arrow |
 | `/rg pace` | Time at this level, last level and your average |
 | `/rg talents check` | Show how talent points are read on this client (send it to me if talents look wrong) |
+| `/rg sort` · `/rg sort bank` | Sort your bags or bank (also the Sort button on your bags) |
 | `/rg session` | XP, quests, ore and gold this session |
 | `/rg profit` | Bag items to sell on the AH; `/rg profit min 25` sets the threshold in silver; `/rg profit ignore [item]` stops flagging an item |
 | `/rg track [item]` · `/rg untrack [item]` | Watch an item's AH price |

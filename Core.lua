@@ -487,6 +487,7 @@ SlashCmdList.RETGEAR = function(msg)
       "|cffffd100Tabs|r  /rg dps  ·  /rg group  ·  /rg heal  ·  /rg fish  ·  /rg camp  ·  /rg gold  ·  /rg mail  ·  /rg talents",
       "|cffffd100Group|r  /rg lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /rg scan  ·  /rg autoscan  ·  /rg track [item]  ·  /rg untrack [item]  ·  /rg alert [item] 25",
+      "|cffffd100Bags|r  /rg sort  ·  /rg sort bank",
       "|cffffd100Selling|r  /rg profit  ·  /rg profit min 25  ·  /rg profit ignore [item]",
       "|cffffd100Ret score|r  /rg weight STR 2.5  ·  /rg hitcap 9  ·  /rg talenthit 3  ·  /rg reset  ·  /rg tooltip",
       "|cffffd100Characters|r  /rg main  ·  /rg dps reset",

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.22.1 (sort bags)
+- **Sort button** on your bags (top right of the backpack) and on your bank. `/rg sort` and `/rg sort bank` do the same.
+- Uses the game's own bag sort when WoW Forever has it. Otherwise RetGear sorts for you: merges stacks, then Hearthstone, quest items, food and potions, gear, materials (ore, bars, cloth, fish), recipes, and grey junk last. Quivers and profession bags are left alone, and sorting stops if you enter combat.
+- Turn the button off in Settings.
+
 ## v0.22.0 (fishing, in depth)
 - New **Professions → Fishing & cooking** page (`/rg fish` or `/rg cook`):
   - Fishing and Cooking skill bars, your next Fishing rank and exactly how to get it (Journeyman at 50 and level 10; Expert book from Old Man Heming at 125 and level 20, 1g; Artisan from Nat Pagle at level 35).
