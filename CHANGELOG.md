@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.30.0 (ore alerts)
+- **Ore nearby alert:** when you come within about 90 yards of a spot where a vein you can mine can spawn, and it still gives Mining skill, RetGear tells you on screen ("Iron Deposit spot 60 yd to your left: check your minimap") with a ping, and the tracker shows it; click the line to pin it and follow the arrow.
+- Uses WoW Forever's known vein spawn points (about 4,600 spots in 39 zones, from QuestieDB). The game doesn't let addons read the minimap's ore dots, so a spot can be empty if it was mined: Find Minerals on your minimap shows whether it's up.
+- Each spot alerts once every 10 minutes, at most one alert every 20 seconds, never in combat or dungeons.
+- Settings: turn it off, or include veins that no longer give skill (handy when you just want ore for smithing).
+- New tool: `tools/nodes` rebuilds the spawn data; the twice-weekly update refreshes it.
+
 ## v0.29.0 (leveling efficiency + fishing alerts)
 - **Route checked against WoW Forever quest data:** every zone's Horde quest levels were measured from the Forever database. Arathi Highlands moves from 30 to **33-40** (its quests are 34-42 in Forever; at 30 they were orange and red). Your ticked Arathi steps carry over.
 - **New dungeon: Ruins of Lordaeron (16-22)**, right above Undercity, with its four Horde quests (The Wrath of Rath'mael, Light's Justice, The New Plague, A Frightened Request), the Unending Torment chain, entrance pin, boss tips, and its two-hander rewards (Forsaken Greataxe, Monstrous Cleaver) flagged in the gear guide.

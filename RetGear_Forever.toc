@@ -29,6 +29,8 @@ Camp.lua
 Fish.lua
 Speed.lua
 Travel.lua
+NodeData.lua
+Nodes.lua
 Setup.lua
 Group.lua
 Bags.lua
