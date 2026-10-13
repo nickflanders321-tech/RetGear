@@ -14,6 +14,13 @@ jobs:
           luaVersion: "5.1"
       - name: Syntax check every Lua file
         run: |
-          for f in *.lua; do
+          for f in *.lua Classes/*.lua Races/*.lua Routes/*.lua Professions/*.lua; do
             lua -e "local f = assert(io.open('$f')):read('*a'); assert(loadstring(f, '$f'))" && echo "ok  $f"
+          done
+      - name: Every file in the TOCs exists
+        run: |
+          for t in *.toc; do
+            grep -v '^#' "$t" | tr -d '\r' | sed 's#\\#/#g' | while read -r f; do
+              [ -z "$f" ] || [ -f "$f" ] || { echo "missing $f (listed in $t)"; exit 1; }
+            done
           done

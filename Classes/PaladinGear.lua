@@ -2,7 +2,8 @@
 -- Ret paladin upgrades for every slot, levels 8-60: quest rewards an Undead paladin can get,
 -- dungeon boss drops, and Horde vendors. Stats: cMaNGOS classic DB; sources: QuestieDB Forever data.
 local _, RG = ...
-RG.GUIDE_MORE = {
+RG.CLASS_GEAR = RG.CLASS_GEAR or {}
+RG.CLASS_GEAR.PALADIN = {
   { id = 3440, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 141, gen = true },  -- Bonecracker
   { id = 10637, slot = "Hands", lvl = 10, how = "Quest", src = "Sample for Helbrim (Apothecary Zinge)", zone = "Undercity", score = 5, gen = true },  -- Brewer's Gloves
   { id = 4909, slot = "Legs", lvl = 10, how = "Quest", src = "Rites of the Earthmother (Cairne Bloodhoof)", zone = "Mulgore", score = 4, gen = true },  -- Kodo Hunter's Leggings
@@ -138,8 +139,3 @@ RG.GUIDE_MORE = {
   { id = 13098, slot = "Ring", lvl = 58, how = "Dungeon", src = "General Drakkisath", zone = "Blackrock Spire", score = 39, gen = true },  -- Painweaver Band
   { id = 13142, slot = "Waist", lvl = 58, how = "Dungeon", src = "General Drakkisath", zone = "Blackrock Spire", score = 60, gen = true },  -- Brigam Girdle
 }
--- Add them to the guide (hand-written entries win when both list an item).
-local have = {}
-for _, g in ipairs(RG.GUIDE) do if g.id then have[g.id] = true end end
-for _, g in ipairs(RG.GUIDE_MORE) do if not have[g.id] then RG.GUIDE[#RG.GUIDE + 1] = g end end
-table.sort(RG.GUIDE, function(a, b) if a.lvl ~= b.lvl then return a.lvl < b.lvl end return (a.tip and 0 or 1) < (b.tip and 0 or 1) end)

@@ -1,4 +1,4 @@
--- RetGear Auction House prices.
+-- Waypath+ Auction House prices.
 -- Live prices come from scanning while you're at the Auction House: opening
 -- the AH scans every tracked item, and any search you do yourself updates
 -- prices too. Auctionator or TradeSkillMaster prices are used when installed,
@@ -21,7 +21,7 @@ local function ageText(t)
   return math.floor(m / 1440) .. "d ago"
 end
 
--- Every item whose price we watch: guide items you can buy, plus /rg track.
+-- Every item whose price we watch: guide items you can buy, plus /wp track.
 function RG.TrackedIDs()
   local ids, seen = {}, {}
   for _, g in ipairs(RG.GUIDE) do if g.ah and not seen[g.id] then ids[#ids + 1] = g.id; seen[g.id] = true end end
@@ -61,7 +61,7 @@ end
 -- Price from other addons, if present.
 local function addonPrice(id)
   if Auctionator and Auctionator.API and Auctionator.API.v1 and Auctionator.API.v1.GetAuctionPriceByItemID then
-    local ok, p = pcall(Auctionator.API.v1.GetAuctionPriceByItemID, "RetGear", id)
+    local ok, p = pcall(Auctionator.API.v1.GetAuctionPriceByItemID, "Waypath", id)
     if ok and p then return p, "Auctionator" end
   end
   if TSM_API and TSM_API.GetCustomPriceValue then
@@ -135,7 +135,7 @@ function RG.ScanAH()
     if RG.LegacyScan then return RG.LegacyScan() end
     RG.Print("Open the Auction House first."); return
   end
-  if not (AuctionHouseFrame and AuctionHouseFrame:IsShown()) then RG.Print("Open the Auction House first, then /rg scan."); return end
+  if not (AuctionHouseFrame and AuctionHouseFrame:IsShown()) then RG.Print("Open the Auction House first, then /wp scan."); return end
   if scanning then return end
   queue = RG.ScanIDs()
   if #queue == 0 then return end
@@ -217,9 +217,9 @@ f:SetScript("OnEvent", function(_, event)
   end
 end)
 
--- /rg alert [item] [gold]: tell me when it's listed at or under that price.
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+-- /wp alert [item] [gold]: tell me when it's listed at or under that price.
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   if cmd and cmd:lower() == "alert" then
     local id = tonumber(rest:match("item:(%d+)") or rest:match("^(%d+)"))
@@ -229,7 +229,7 @@ SlashCmdList.RETGEAR = function(msg)
       RG.db.alerts[id] = math.floor(gold * 10000); RG.db.tracked[id] = true
       RG.Print("Alert set: " .. (select(2, RG.ItemInfo(id)) or id) .. " at " .. money(RG.db.alerts[id]) .. " or less.")
     else
-      RG.Print("Usage: /rg alert [shift-click item] 25   (alert when it's 25 gold or less)")
+      RG.Print("Usage: /wp alert [shift-click item] 25   (alert when it's 25 gold or less)")
     end
     return
   elseif cmd and cmd:lower() == "autoscan" then

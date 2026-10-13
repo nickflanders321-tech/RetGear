@@ -1,4 +1,4 @@
--- RetGear bank alt: quests on your route whose items you can buy on the
+-- Waypath+ bank alt: quests on your route whose items you can buy on the
 -- Auction House and mail to your main instead of farming or crafting them.
 -- Your main records what it already has; the bank alt sees what's left to
 -- buy, can search the AH for it, and attaches it all at the mailbox in one click.
@@ -143,7 +143,7 @@ end
 local mailBtn
 local function attachAll()
   local main = RG.MainName()
-  if not main then RG.Print("No main set yet. Log in on your paladin first (or /rg main there).") return end
+  if not main then RG.Print("No main set yet. Log in on your paladin first (or /wp main there).") return end
   if MailFrameTab2 and MailFrameTab2.Click and not (SendMailFrame and SendMailFrame:IsShown()) then MailFrameTab2:Click() end
   if SendMailNameEditBox then SendMailNameEditBox:SetText(main) end
   if SendMailSubjectEditBox then SendMailSubjectEditBox:SetText("Quest items from your bank alt") end
@@ -165,7 +165,7 @@ local function attachAll()
     end
   end
   if attached > 0 then RG.Print("Attached " .. attached .. " item" .. (attached > 1 and "s" or "") .. " for " .. main .. ". Check it, then press Send.")
-  else RG.Print("Nothing from the shopping list is in your bags yet. Buy it on the AH first (/rg mail).") end
+  else RG.Print("Nothing from the shopping list is in your bags yet. Buy it on the AH first (/wp mail).") end
 end
 local function showMailButton()
   if not RG.IsAlt() or not MailFrame then return end
@@ -176,7 +176,7 @@ local function showMailButton()
     mailBtn:SetScript("OnClick", attachAll)
   end
   local n = #RG.ShoppingList()
-  mailBtn:SetText(n > 0 and ("RetGear: send " .. (RG.MainName() or "main") .. "'s items") or "RetGear: nothing to send")
+  mailBtn:SetText(n > 0 and ("Waypath+: send " .. (RG.MainName() or "main") .. "'s items") or "Waypath+: nothing to send")
   mailBtn:SetEnabled(n > 0)
   mailBtn:Show()
 end
@@ -192,7 +192,7 @@ f:SetScript("OnEvent", function(_, event)
       snapshot()
       if RG.IsAlt() then
         local list = RG.ShoppingList()
-        if #list > 0 then RG.Print(#list .. " item" .. (#list > 1 and "s" or "") .. " to buy and mail to " .. (RG.MainName() or "your main") .. ". /rg mail") end
+        if #list > 0 then RG.Print(#list .. " item" .. (#list > 1 and "s" or "") .. " to buy and mail to " .. (RG.MainName() or "your main") .. ". /wp mail") end
       end
       if RG.QueueTracker then RG.QueueTracker() end
     end)
@@ -226,8 +226,8 @@ function RG.Reminders()
   return out
 end
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "mail" or cmd == "alt" or cmd == "bank" then if RG.ShowTab then RG.ShowTab("mail") end return end

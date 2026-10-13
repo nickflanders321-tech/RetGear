@@ -1,4 +1,4 @@
--- RetGear Healing: a Holy off-set for dual spec (unlocks at level 40 in WoW Forever).
+-- Waypath+ Healing: a Holy off-set for dual spec (unlocks at level 40 in WoW Forever).
 -- Scores healing gear, tracks the best healing piece you own for every slot,
 -- lists what to hunt for from level 40 on, and makes sure you don't vendor
 -- or auction your healing set by accident.
@@ -7,7 +7,7 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 local HOLY_ICON = "|TInterface\\Icons\\Spell_Holy_HolyBolt:14:14:0:0:64:64:5:59:5:59|t "
 
 table.insert(RG.OPTIONS, { key = "healSet", label = "Collect a healing set for dual spec (Healing tab)", default = true })
-local function on() return RG.Opt("healSet") and not RG.IsAlt() end
+local function on() return RG.Opt("healSet") and not RG.IsAlt() and RG.IsClass("PALADIN") end
 
 -- Holy Paladin stat values in "healing power" (Classic-style: +Healing first,
 -- then Intellect, MP5 and spell crit; Spirit and Stamina barely matter).
@@ -75,7 +75,7 @@ for _, g in ipairs(RG.HEAL_GUIDE) do RG.HealByID[g.id] = g end
 -- Healing tips for a part-time Holy paladin.
 RG.HEAL_TIPS = {
   "Dual spec unlocks at level 40 in WoW Forever. Visit your class trainer in a capital city to switch.",
-  "Start collecting now: the Healing tab marks every healing piece you own, and RetGear won't vendor or auction it.",
+  "Start collecting now: the Healing tab marks every healing piece you own, and Waypath+ won't vendor or auction it.",
   "Plate isn't required to heal. Cloth with Intellect, Spirit or +Healing works for a healer paladin.",
   "Flash of Light is your main heal; save Holy Light for big hits. Keep an eye on mana when the group chain-pulls.",
   "Your bags fill up fast with two sets. Buy bigger bags, and park off-set pieces in the bank between runs.",
@@ -241,7 +241,7 @@ local function checkNew()
         for slot = 1, 18 do local l = GetInventoryItemLink("player", slot); if l and tonumber(l:match("item:(%d+)")) == id then isWorn = true end end
         local p = link and RG.HealScore(link) or 0
         if not isWorn and p >= 8 and RG.Toast then
-          RG.Toast("Healing set upgrade", (link or name or "New item") .. " is now in your healing set. RetGear won't sell it.", icon, nil, nil, 6)
+          RG.Toast("Healing set upgrade", (link or name or "New item") .. " is now in your healing set. Waypath+ won't sell it.", icon, nil, nil, 6)
         end
       end
     end
@@ -283,8 +283,8 @@ function RG.Reminders()
   return out
 end
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   if cmd and (cmd:lower() == "heal" or cmd:lower() == "holy") then if RG.ShowTab then RG.ShowTab("heal") end return end
   return base(msg)

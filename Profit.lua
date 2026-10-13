@@ -1,4 +1,4 @@
--- RetGear "Don't vendor that!" guard.
+-- Waypath+ "Don't vendor that!" guard.
 -- Watches your bags for items that sell for more on the Auction House than at
 -- a vendor, marks them in your bags and tooltips, keeps them out of the junk
 -- auto-sell, warns you at vendors, and offers a one-click buy back if you sell
@@ -239,7 +239,7 @@ local function onVendor()
   local have = counts()
   for _, e in ipairs(items) do watched[e.id] = { count = have[e.id] or e.count, e = e } end
   -- your healing set for dual spec: watch it too
-  if RG.HealSet and RG.Opt("healSet") then
+  if RG.HealSet and RG.Opt("healSet") and RG.IsClass("PALADIN") then
     local _, _, keep = RG.HealSet()
     for id in pairs(keep) do
       if have[id] and not watched[id] then watched[id] = { count = have[id], e = { id = id, heal = true } } end
@@ -320,11 +320,11 @@ function RG.Reminders()
   return out
 end
 
--- /rg profit            list what to keep for the AH
--- /rg profit min 25     only flag items worth 25 silver more than vendoring
--- /rg profit ignore [item]  stop flagging an item (again to undo)
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+-- /wp profit            list what to keep for the AH
+-- /wp profit min 25     only flag items worth 25 silver more than vendoring
+-- /wp profit ignore [item]  stop flagging an item (again to undo)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   if cmd and cmd:lower() == "gold" then if RG.ShowTab then RG.ShowTab("gold") end return end
   if not (cmd and cmd:lower() == "profit") then return base(msg) end
@@ -335,7 +335,7 @@ SlashCmdList.RETGEAR = function(msg)
     invalidate(); RG.Print("Only flagging items worth at least " .. RG.Money(RG.ProfitMin()) .. " more on the AH.")
   elseif sub == "ignore" then
     local id = tonumber(arg:match("item:(%d+)") or arg:match("^(%d+)"))
-    if not id then RG.Print("Usage: /rg profit ignore [shift-click item]") return end
+    if not id then RG.Print("Usage: /wp profit ignore [shift-click item]") return end
     local ig = pdb().profitIgnore
     ig[id] = not ig[id] or nil
     invalidate()

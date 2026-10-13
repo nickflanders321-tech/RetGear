@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Build GearData.lua: Ret paladin gear upgrades for every slot, levels 10-60.
+"""Build Classes/PaladinGear.lua: Ret paladin gear upgrades for every slot, levels 10-60.
 
 Stats come from the cMaNGOS classic database (item_template + spell_template),
 sources from QuestieDB's WoW Forever data (quest rewards, dungeon boss drops,
 vendors), so only items that exist in Forever and that an Undead paladin can
-get are listed. Items are scored with RetGear's default Ret weights.
+get are listed. Items are scored with Waypath+'s default Ret weights.
 
 Usage:
   git clone --depth 1 https://github.com/cmangos/classic-db.git /tmp/cdb
   zcat /tmp/cdb/Full_DB/*.sql.gz > /tmp/classic.sql
   lua5.1 dump.lua <QuestieDB>/data/Forever /tmp/forever_gear.json
-  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json <QuestieDB> ../../GearData.lua
+  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json <QuestieDB> ../../Classes/PaladinGear.lua
 """
 import json, re, sys
 from collections import defaultdict
@@ -108,7 +108,7 @@ def zone_name(z):
     return DUNGEON.get(z) or AREA.get(z)
 
 # ---------------------------------------------------------------------------
-# Scoring (RetGear default Ret weights)
+# Scoring (Waypath+ default Ret weights)
 # ---------------------------------------------------------------------------
 W = dict(STR=2.2, AGI=1.0, AP=1.0, CRIT=22, HIT=25, STA=0.15, INT=0.15, SPI=0.05, SP=0.3, DPS=14, SLOW=4)
 STAT = {3: "AGI", 4: "STR", 5: "INT", 6: "SPI", 7: "STA"}
@@ -295,12 +295,9 @@ with open(out_path, "w", encoding="utf-8") as f:
     f.write("-- Ret paladin upgrades for every slot, levels 8-60: quest rewards an Undead paladin can get,\n")
     f.write("-- dungeon boss drops, and Horde vendors. Stats: cMaNGOS classic DB; sources: QuestieDB Forever data.\n")
     f.write("local _, RG = ...\n")
-    f.write("RG.GUIDE_MORE = {\n")
+    f.write("RG.CLASS_GEAR = RG.CLASS_GEAR or {}\n")
+    f.write("RG.CLASS_GEAR.PALADIN = {\n")
     for c in picked:
         f.write("  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d, gen = true },  -- %s\n" % (
             c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), c["name"]))
     f.write("}\n")
-    f.write("-- Add them to the guide (hand-written entries win when both list an item).\n")
-    f.write("local have = {}\nfor _, g in ipairs(RG.GUIDE) do if g.id then have[g.id] = true end end\n")
-    f.write("for _, g in ipairs(RG.GUIDE_MORE) do if not have[g.id] then RG.GUIDE[#RG.GUIDE + 1] = g end end\n")
-    f.write("table.sort(RG.GUIDE, function(a, b) if a.lvl ~= b.lvl then return a.lvl < b.lvl end return (a.tip and 0 or 1) < (b.tip and 0 or 1) end)\n")

@@ -1,4 +1,4 @@
--- RetGear extras: quest reward picker, Exorcism alerts, weapon stone reminder,
+-- Waypath+ extras: quest reward picker, Exorcism alerts, weapon stone reminder,
 -- XP per hour and session summary, character-screen scores, talent planner.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
@@ -10,7 +10,7 @@ for _, o in ipairs({
   { key = "rewardPicker", label = "Highlight the best quest reward", default = true },
   { key = "exorcism",     label = "Alert me to use Exorcism on Undead and Demons", default = true },
   { key = "stoneReminder", label = "Remind me to sharpen my weapon", default = true },
-  { key = "paperdoll",    label = "Show Ret scores on my character screen", default = true },
+  { key = "paperdoll",    label = "Show upgrade scores on my character screen", default = true },
   { key = "talentReminder", label = "Remind me to spend talent points", default = true },
 }) do table.insert(RG.OPTIONS, o) end
 
@@ -78,7 +78,7 @@ local function pickReward()
   if r.healI and r.healI ~= bestUpI then markButton(r.healI, "|cffF58CBAHoly +" .. string.format("%.0f", r.heal) .. "|r", true) end
   if bestUpI then
     markButton(bestUpI, GREEN .. string.format("Ret +%.0f", bestUp) .. "|r", true)
-    RG.Print("Best quest reward for you: " .. (GetQuestItemLink("choice", bestUpI) or "") .. " " .. GREEN .. string.format("(+%.0f Ret score)", bestUp) .. "|r")
+    RG.Print("Best quest reward for you: " .. (GetQuestItemLink("choice", bestUpI) or "") .. " " .. GREEN .. string.format("(+%.0f %s)", bestUp, RG.SCORE_NAME) .. "|r")
   elseif bestGoldI and bestGold > 0 then
     markButton(bestGoldI, GOLD .. "Sells best|r", false)
     RG.Print("No upgrades here. " .. (GetQuestItemLink("choice", bestGoldI) or "") .. " sells for the most (" .. RG.Money(bestGold) .. ").")
@@ -239,7 +239,7 @@ local function updatePaperdoll()
   end
   if CharacterFrame and show then
     if not dollTotal then dollTotal = CharacterFrame:CreateFontString(nil, "OVERLAY"); dollTotal:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE"); dollTotal:SetPoint("TOPRIGHT", CharacterFrame, "TOPRIGHT", -34, -32) end
-    dollTotal:SetText(GOLD .. "Ret score " .. string.format("%.0f", total) .. "|r" .. (worst and (GREY .. "  ·  weakest: " .. (RG.SLOT_NAMES[worst] or "") .. "|r") or ""))
+    dollTotal:SetText(GOLD .. RG.SCORE_NAME .. " " .. string.format("%.0f", total) .. "|r" .. (worst and (GREY .. "  ·  weakest: " .. (RG.SLOT_NAMES[worst] or "") .. "|r") or ""))
     dollTotal:Show()
   elseif dollTotal then dollTotal:Hide() end
 end
@@ -248,7 +248,7 @@ end
 -- 6. Talent planner
 -- ===========================================================================
 -- Talent APIs differ between clients, so each way of reading talents is tried
--- in turn; RG.talentSource remembers which one worked (shown by /rg talents check).
+-- in turn; RG.talentSource remembers which one worked (shown by /wp talents check).
 local function try(fn, ...)
   if not fn then return nil end
   local ok, a, b, c, d, e, f, g, h = pcall(fn, ...)
@@ -305,7 +305,7 @@ function RG.UnspentTalents()
   RG.talentSource = nil
   return nil
 end
--- What this client offers, for bug reports: /rg talents check
+-- What this client offers, for bug reports: /wp talents check
 function RG.TalentCheck()
   local function has(x) return x and "yes" or "no" end
   RG.Print("Talent check (please send this if talents look wrong):")
@@ -377,9 +377,9 @@ f:SetScript("OnEvent", function(_, event, a1)
   if RG.QueueTracker then RG.QueueTracker() end
 end)
 
--- /rg session
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+-- /wp session
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   if cmd and cmd:lower() == "session" then RG.SessionSummary(); return end
   if cmd and cmd:lower() == "talents" then
@@ -390,4 +390,4 @@ SlashCmdList.RETGEAR = function(msg)
 end
 -- Logging out prints a short summary next time you look at chat.
 local lo = CreateFrame("Frame"); lo:RegisterEvent("PLAYER_LOGOUT")
-lo:SetScript("OnEvent", function() if RG.IsAlt and RG.IsAlt() then return end; RetGearDB.lastSession = { xp = session.xp, quests = session.quests, ore = session.ore, t = time() - session.start } end)
+lo:SetScript("OnEvent", function() if RG.IsAlt and RG.IsAlt() then return end; WaypathDB.lastSession = { xp = session.xp, quests = session.quests, ore = session.ore, t = time() - session.start } end)

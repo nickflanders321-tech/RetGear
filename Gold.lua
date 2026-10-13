@@ -1,5 +1,5 @@
--- RetGear gold-making tips for an Undead Ret Paladin with Mining and Blacksmithing.
--- The weekly RetGear update refreshes this table from the newest WoW Forever
+-- Waypath+ gold-making tips for an Undead Ret Paladin with Mining and Blacksmithing.
+-- The weekly Waypath+ update refreshes this table from the newest WoW Forever
 -- gold guides, so keep the shape the same: one row per tip.
 --   cat   = "Mining" | "Blacksmithing" | "Fishing" | "Farming" | "Auction House" | "Forever"
 --   from, to = character levels the tip is useful at
@@ -13,7 +13,7 @@ RG.GOLD = {
   note = "Forever's economy is brand new (beta, launch Nov 4 2026). Prices are still settling, so the live AH prices next to each tip matter more than any guide.",
   tips = {
     -- Every level
-    { cat = "Auction House", from = 1, to = 60, title = "Never vendor without checking", text = "Anything with a gold coin in your bags is worth more on the AH. RetGear keeps it out of the junk sale and lists it on the Auction House tab." },
+    { cat = "Auction House", from = 1, to = 60, title = "Never vendor without checking", text = "Anything with a gold coin in your bags is worth more on the AH. Waypath+ keeps it out of the junk sale and lists it on the Auction House tab." },
     { cat = "Auction House", from = 1, to = 60, title = "Undercut a little, not a lot", text = "List 1 copper under the cheapest auction. Big undercuts just lower the price for everyone, including you next time. Remember the AH keeps 5% and you lose the deposit if it doesn't sell." },
     { cat = "Farming", from = 1, to = 60, title = "Loot everything while you quest", text = "Questing pays best when you also loot every mob and sell grey items. Don't stop to farm until your bags are full of things that are actually worth money." },
     { cat = "Farming", from = 5, to = 60, title = "Cloth is money", text = "Humanoids drop cloth that tailors and First Aid users always need. Sell it in full stacks of 20 on the AH, never at a vendor.", ids = { 2589, 2592, 4306, 4338, 14047 } },

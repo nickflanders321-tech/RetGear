@@ -1,4 +1,4 @@
--- RetGear DPS coach: records every fight from the combat log, breaks your
+-- Waypath+ DPS coach: records every fight from the combat log, breaks your
 -- damage down by ability, and finds where DPS was lost (Seal down, not
 -- swinging, abilities sitting off cooldown, misses, parries, missing buffs).
 local _, RG = ...
@@ -15,7 +15,7 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 
 table.insert(RG.OPTIONS, { key = "coach", label = "DPS coach: tips after each fight (DPS tab)", default = true })
 table.insert(RG.OPTIONS, { key = "coachChat", label = "Print a one-line DPS report in chat after fights", default = true })
-local function on() return RG.Opt("coach") and not RG.IsAlt() end
+local function on() return RG.Opt("coach") and not RG.IsAlt() and RG.IsClass("PALADIN") end
 
 local MAX_FIGHTS = 30
 local MIN_FIGHT = 8   -- seconds; shorter fights are too noisy to coach
@@ -280,7 +280,7 @@ local function finish()
     local msg = string.format("%s: %s%.0f DPS|r over %ds", f.target or "Fight", GOLD, f.dps, math.floor(f.dur))
     if best and best > f.dps then msg = msg .. GREY .. string.format(" (your best at this level %.0f)", best) .. "|r" end
     local t = f.tips[1]
-    if t then msg = msg .. "  ·  " .. (t.lost > 0.5 and (GREEN .. string.format("+%.0f DPS:|r ", t.lost)) or "") .. t.text .. GREY .. "  (/rg dps)|r"
+    if t then msg = msg .. "  ·  " .. (t.lost > 0.5 and (GREEN .. string.format("+%.0f DPS:|r ", t.lost)) or "") .. t.text .. GREY .. "  (/wp dps)|r"
     else msg = msg .. "  ·  " .. GREEN .. "clean fight, nothing to fix|r" end
     RG.Print(msg)
   end
@@ -391,8 +391,8 @@ function RG.Reminders()
   return out
 end
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   cmd = cmd and cmd:lower()
   if cmd == "dps" or cmd == "coach" then

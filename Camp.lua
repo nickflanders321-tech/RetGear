@@ -1,4 +1,4 @@
--- RetGear camping, fishing and cooking (WoW Forever).
+-- Waypath+ camping, fishing and cooking (WoW Forever).
 -- Camping isn't a skill of its own in Forever: Cooking makes the campfire
 -- (bigger fires hold more objects), and each profession adds one object at
 -- skill 20 / 140 / 300. You can place one object per hour. Sit by the fire for
@@ -211,8 +211,8 @@ ev:SetScript("OnEvent", function(_, event, unit)
   if event ~= "PLAYER_LOGIN" and RG.RefreshUI then RG.RefreshUI() end
 end)
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "camp" then if RG.ShowTab then RG.ShowTab("camp") end return end

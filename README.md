@@ -1,23 +1,27 @@
-# RetGear
+# Waypath+
 
-An all-in-one leveling and gearing companion for an **Undead (Horde) Retribution Paladin** (standard two-hander DPS, not Shockadin) with **Mining, Blacksmithing, Fishing and Cooking**, in World of Warcraft: Forever.
+An all-in-one leveling companion for World of Warcraft: Forever: your route with an arrow, a quest tracker, travel tips, gear upgrades, professions and gold. (Formerly **RetGear**.)
+
+**What's covered so far:** the full guide (talents, gear, class quests, rotation, DPS coach, healing set) is written for **Retribution Paladins**, the route starts in the **Undead** zones, and the profession guides cover **Mining, Blacksmithing, Fishing and Cooking**. Every other class and race already gets the route from level 12 on, the quest tracker, arrow, travel tips, bags and gold tools; their own talents, gear lists and starting zones are being added class by class. Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`.
 
 ## Install
-Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (during the beta it's `_forever_beta_`), then restart the game. Type `/rg` or click the minimap button.
+Copy the `Waypath` folder into `World of Warcraft\_forever_\Interface\AddOns\` (during the beta it's `_forever_beta_`), then restart the game. Type `/wp` (or `/waypath`) or click the minimap button.
+
+**Coming from RetGear?** Leave the old `RetGear` folder in place for your first login with Waypath+: it copies your progress, settings and ticked steps across, switches RetGear off and asks you to reload. Then delete the `RetGear` folder. Key bindings need setting again (they're under Waypath+ now), and the quest-target macro is now `WaypathTarget`.
 
 ## First launch
-A six-page **setup wizard** asks how much help you want (Full guidance, Balanced or Minimal), which professions you'll level, and which automation and extras to turn on. Run it again with `/rg setup` or from Settings.
+A six-page **setup wizard** asks how much help you want (Full guidance, Balanced or Minimal), which professions you'll level, and which automation and extras to turn on. Run it again with `/wp setup` or from Settings.
 
 ## On your screen
 - **Tracker** (right side): your quests grouped by zone (the zone you're in first), one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, double-click it to turn the arrow to it on or off, right-click to show it on the map, and click a section header to fold it. Drag it anywhere (or lock it in Settings), Ctrl + mouse wheel over it to resize, Shift + mouse wheel to make it wider or narrower; right-click the minimap button to hide it. With two or more quests ready, a **Turn-in run** line sends the arrow to each turn-in in turn, nearest first.
-- **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
+- **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `WaypathTarget` macro does the same from a key.
 - **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Fishing panel** (tracker): while you hold a fishing pole, your skill and catches per point, whether fish get away in this zone, your lure timer, fish per hour this session, and raw fish to cook.
 - **Bag icons**: a green arrow on items that are Ret upgrades, a small Holy icon on healing-set pieces.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Ore alerts**: a heads-up when you walk near a spot where a vein you can mine (and that still gives skill) spawns, with direction and distance.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
-- **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Double-click the arrow, or right-click it, to turn it off; the arrow switch in the tracker's header turns it on or off for good. Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/rg way 45 60` pins any spot.
+- **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Double-click the arrow, or right-click it, to turn it off; the arrow switch in the tracker's header turns it on or off for good. Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/wp way 45 60` pins any spot.
 
 ## Done for you
 - Quests are **accepted and turned in automatically** (hold **Shift** to pause). The best reward is picked: the Ret upgrade, or the best vendor value. When a Ret and a healing upgrade compete, you choose.
@@ -26,10 +30,10 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Junk is sold and gear repaired** at vendors, but anything worth more on the AH is kept.
 - **AH prices** are checked every time you open the Auction House (Auctionator and TSM prices are used too).
 - **Every fight is recorded** by the DPS coach, including your share of the group's damage and any aggro you pull off the tank.
-- **Dual-spec gear swap**: switch to Holy and RetGear offers to put on your healing set; switch back and it re-equips your Ret gear (also a Swap row on the Healing tab).
+- **Dual-spec gear swap**: switch to Holy and Waypath+ offers to put on your healing set; switch back and it re-equips your Ret gear (also a Swap row on the Healing tab).
 - **In a party**: reminders for un-blessed party members and a missing Aura, center-screen alerts when someone needs Purify/Cleanse or is about to die, and a report after every dungeon run.
 
-## The window (`/rg`)
+## The window (`/wp`)
 Styled like the classic WoW interface: the stone-and-gold dialog frame, Character-window tabs along the bottom, tooltip-bordered rows and the purple XP bar (blue while rested). A- / A+ change the text size.
 
 | Tab | What's in it |
@@ -50,40 +54,40 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **Settings** | Every helper, grouped, on or off |
 
 ## Bank alt
-No bank alt yet? Make a new Undead on the same realm and log in: a secret guide on the tracker walks it to the Undercity Auction House, bank and mailbox with the arrow (`/rg bankalt` shows it on your main too).
+No bank alt yet? Make a new Undead on the same realm and log in: a secret guide on the tracker walks it to the Undercity Auction House, bank and mailbox with the arrow (`/wp bankalt` shows it on your main too).
 
-Your paladin is your **main**. Any other character runs in **bank alt mode**: it won't touch your main's data, its tracker shows the shopping list, clicking an item searches the AH, and a button at the mailbox attaches everything and addresses it to your main. `/rg main` changes which character is your main.
+Your paladin is your **main**. Any other character runs in **bank alt mode**: it won't touch your main's data, its tracker shows the shopping list, clicking an item searches the AH, and a button at the mailbox attaches everything and addresses it to your main. `/wp main` changes which character is your main.
 
 ## Key bindings
-Esc > Options > Keybindings > AddOns > RetGear: open the guide, pin your nearest objective, arrow on/off, show/hide the tracker, undo a tick, sort bags. Minimap button: click opens the guide, right-click hides the tracker, Shift-click toggles the arrow, Ctrl-click opens Settings.
+Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your nearest objective, arrow on/off, show/hide the tracker, undo a tick, sort bags. Minimap button: click opens the guide, right-click hides the tracker, Shift-click toggles the arrow, Ctrl-click opens Settings.
 
 ## Commands
 | Command | What it does |
 |---|---|
-| `/rg` | Open or close the window |
-| `/rg group` · `/rg lfg Scarlet Monastery` | Group tab · post an LFG message |
-| `/rg dps` · `/rg heal` · `/rg fish` · `/rg camp` · `/rg gold` · `/rg mail` · `/rg talents` · `/rg settings` | Open that tab |
-| `/rg auto` | Auto accept / turn in on or off |
-| `/rg next` | Pin your nearest quest objective (or turn-in) |
-| `/rg undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
-| `/rg way 45 60` | Pin a spot in your zone and follow the arrow |
-| `/rg pace` | Time at this level, last level and your average |
-| `/rg talents check` | Show how talent points are read on this client (send it to me if talents look wrong) |
-| `/rg sort` · `/rg sort bank` | Sort your bags or bank (also the Sort button on your bags) |
-| `/rg session` | XP, quests, ore and gold this session |
-| `/rg profit` | Bag items to sell on the AH; `/rg profit min 25` sets the threshold in silver; `/rg profit ignore [item]` stops flagging an item |
-| `/rg track [item]` · `/rg untrack [item]` | Watch an item's AH price |
-| `/rg alert [item] 25` | Tell me when it's listed for 25 gold or less |
-| `/rg scan` · `/rg autoscan` | Re-check prices at the AH · turn the automatic scan on or off |
-| `/rg weight STR 2.5` · `/rg hitcap 9` · `/rg talenthit 3` · `/rg reset` | Tune the Ret score |
-| `/rg turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
-| `/rg greys` | Abandon unfinished grey quests (asks first) |
-| `/rg gear heal` · `/rg gear ret` | Equip your healing set / put your Ret gear back on |
-| `/rg errors` · `/rg errors clear` | RetGear's caught errors, in a window you can copy from · clear them |
-| `/rg setup` | Run the setup wizard again |
-| `/rg tracker` · `/rg tooltip` | Show or hide the tracker / tooltip line / welcome screen |
-| `/rg main` | Make this character your main |
-| `/rg dps reset` | Clear fight history |
+| `/wp` | Open or close the window |
+| `/wp group` · `/wp lfg Scarlet Monastery` | Group tab · post an LFG message |
+| `/wp dps` · `/wp heal` · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp talents` · `/wp settings` | Open that tab |
+| `/wp auto` | Auto accept / turn in on or off |
+| `/wp next` | Pin your nearest quest objective (or turn-in) |
+| `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
+| `/wp way 45 60` | Pin a spot in your zone and follow the arrow |
+| `/wp pace` | Time at this level, last level and your average |
+| `/wp talents check` | Show how talent points are read on this client (send it to me if talents look wrong) |
+| `/wp sort` · `/wp sort bank` | Sort your bags or bank (also the Sort button on your bags) |
+| `/wp session` | XP, quests, ore and gold this session |
+| `/wp profit` | Bag items to sell on the AH; `/wp profit min 25` sets the threshold in silver; `/wp profit ignore [item]` stops flagging an item |
+| `/wp track [item]` · `/wp untrack [item]` | Watch an item's AH price |
+| `/wp alert [item] 25` | Tell me when it's listed for 25 gold or less |
+| `/wp scan` · `/wp autoscan` | Re-check prices at the AH · turn the automatic scan on or off |
+| `/wp weight STR 2.5` · `/wp hitcap 9` · `/wp talenthit 3` · `/wp reset` | Tune the Ret score |
+| `/wp turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
+| `/wp greys` | Abandon unfinished grey quests (asks first) |
+| `/wp gear heal` · `/wp gear ret` | Equip your healing set / put your Ret gear back on |
+| `/wp errors` · `/wp errors clear` | Waypath+'s caught errors, in a window you can copy from · clear them |
+| `/wp setup` | Run the setup wizard again |
+| `/wp tracker` · `/wp tooltip` | Show or hide the tracker / tooltip line / welcome screen |
+| `/wp main` | Make this character your main |
+| `/wp dps reset` | Clear fight history |
 
 ## Keeping it current
 Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, healing list, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.

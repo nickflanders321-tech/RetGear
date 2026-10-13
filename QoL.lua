@@ -1,4 +1,4 @@
--- RetGear quality-of-life: toasts, upgrade pop-ups, level-up banner, vendor
+-- Waypath+ quality-of-life: toasts, upgrade pop-ups, level-up banner, vendor
 -- helper, paladin and mining reminders, welcome screen and minimap button.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
@@ -14,13 +14,13 @@ RG.OPTIONS = {
   { key = "autoRepair",   label = "Repair my gear at vendors",              default = true },
   { key = "reminders",    label = "Remind me about Blessings and Seals",    default = true },
   { key = "mineReminder", label = "Remind me to turn on Find Minerals",     default = true },
-  { key = "tooltip",      label = "Show Ret scores on item tooltips",       default = true },
+  { key = "tooltip",      label = "Show upgrade scores on item tooltips",       default = true },
   { key = "autoScan",     label = "Check prices when I open the Auction House", default = true },
   { key = "minimap",      label = "Show the minimap button",                default = true },
   { key = "sounds",       label = "Play sounds for pop-ups",                default = true },
 }
 function RG.Opt(key)
-  local v = RetGearDB and RetGearDB[key]
+  local v = WaypathDB and WaypathDB[key]
   if v == nil then for _, o in ipairs(RG.OPTIONS) do if o.key == key then return o.default end end end
   return v ~= false
 end
@@ -131,7 +131,7 @@ local function checkUpgrades()
         local delta = RG.Compare(link)
         if delta and delta >= 5 then
           local icon = select(5, (C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant)(link))
-          RG.Toast("Upgrade!", link .. "\n" .. GREEN .. string.format("+%.0f Ret score", delta) .. "|r" .. GREY .. " over what you're wearing|r", icon, "Equip", function()
+          RG.Toast("Upgrade!", link .. "\n" .. GREEN .. string.format("+%.0f %s", delta, RG.SCORE_NAME) .. "|r" .. GREY .. " over what you're wearing|r", icon, "Equip", function()
             if InCombatLockdown() then RG.Print("You can't change gear in combat. Equip it after the fight."); return end
             local equip = (C_Item and C_Item.EquipItemByName) or EquipItemByName
             if equip then equip(link) end
@@ -267,27 +267,27 @@ end
 -- Welcome screen (first run)
 -- ---------------------------------------------------------------------------
 function RG.ShowWelcome()
-  local f = CreateFrame("Frame", "RetGearWelcome", UIParent, "BackdropTemplate")
+  local f = CreateFrame("Frame", "WaypathWelcome", UIParent, "BackdropTemplate")
   f:SetSize(480, 450); f:SetPoint("CENTER", 0, 60); f:SetFrameStrata("DIALOG")
   RG.DialogBackdrop(f)
-  RG.DialogHeader(f, "RetGear", 300)
+  RG.DialogHeader(f, "Waypath+", 300)
   local crest = f:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOP", 0, -34); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
   local ring = f:CreateTexture(nil, "OVERLAY"); ring:SetSize(74, 74); ring:SetPoint("CENTER", crest, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
   local t = f:CreateFontString(nil, "OVERLAY"); t:SetFont("Fonts\\MORPHEUS.TTF", 24, ""); t:SetPoint("TOP", crest, "BOTTOM", 0, -12); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); t:SetShadowColor(0, 0, 0, 1); t:SetShadowOffset(1, -1)
   t:SetText("Welcome, " .. (UnitName("player") or "Paladin") .. "!")
   local b = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); b:SetPoint("TOP", t, "BOTTOM", 0, -12); b:SetWidth(390); b:SetJustifyH("LEFT"); b:SetSpacing(2)
   b:SetWidth(410)
-  b:SetText(GOLD .. "RetGear|r walks you from level 1 to 60 as a Retribution Paladin.\n\n"
+  b:SetText(GOLD .. "Waypath+|r walks you from level 1 to 60.\n\n"
     .. GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows your next steps and the most important reminders.\n"
     .. GOLD .. "•|r Quests are " .. GOLD .. "accepted and turned in for you|r (hold Shift to pause), and the best reward is picked.\n"
     .. GOLD .. "•|r The " .. GOLD .. "quest bar|r targets quest mobs and uses quest items in one click.\n"
-    .. GOLD .. "•|r Tooltips show a " .. GOLD .. "Ret score|r, and better gear pops up with an Equip button.\n"
-    .. GOLD .. "•|r Make " .. GOLD .. "camp|r for an hour of buffs. The DPS tab coaches you after fights.\n"
+    .. GOLD .. "•|r Tooltips show a " .. GOLD .. RG.SCORE_NAME .. "|r, and better gear pops up with an Equip button.\n"
+    .. GOLD .. "•|r Make " .. GOLD .. "camp|r for an hour of buffs.\n"
     .. GOLD .. "•|r Items worth more on the AH get a " .. GOLD .. "gold coin|r and are never vendored.\n"
-    .. GOLD .. "•|r Everything else lives in " .. GOLD .. "/rg|r or the minimap button. Settings turns any of it off.")
+    .. GOLD .. "•|r Everything else lives in " .. GOLD .. "/wp|r or the minimap button. Settings turns any of it off.")
   local function btn(label, x, fn, primary)
     local o = CreateFrame("Button", nil, f, "UIPanelButtonTemplate"); o:SetSize(150, 24); o:SetPoint("BOTTOM", x, 22); o:SetText(label)
-    o:SetScript("OnClick", function() RetGearDB.welcomed = true; f:Hide(); if fn then fn() end end)
+    o:SetScript("OnClick", function() WaypathDB.welcomed = true; f:Hide(); if fn then fn() end end)
   end
   btn("Open the guide", -80, function() if RG.ToggleUI then RG.ToggleUI() end end, true)
   btn("Got it", 80)
@@ -300,31 +300,31 @@ end
 -- ---------------------------------------------------------------------------
 local mm
 local function placeMinimap()
-  local a = math.rad(RetGearDB.mmAngle or 200)
+  local a = math.rad(WaypathDB.mmAngle or 200)
   mm:ClearAllPoints(); mm:SetPoint("CENTER", Minimap, "CENTER", math.cos(a) * 104, math.sin(a) * 104)
 end
 function RG.MinimapButton()
   if not Minimap then return end
   if not mm then
-    mm = CreateFrame("Button", "RetGearMinimapButton", Minimap)
+    mm = CreateFrame("Button", "WaypathMinimapButton", Minimap)
     mm:SetSize(32, 32); mm:SetFrameStrata("MEDIUM"); mm:SetFrameLevel(8)
     local ic = mm:CreateTexture(nil, "BACKGROUND"); ic:SetSize(20, 20); ic:SetPoint("CENTER", 0, 1); ic:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     local ring = mm:CreateTexture(nil, "OVERLAY"); ring:SetSize(54, 54); ring:SetPoint("TOPLEFT"); ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     mm:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
     mm:RegisterForClicks("LeftButtonUp", "RightButtonUp"); mm:RegisterForDrag("LeftButton")
     mm:SetScript("OnClick", function(_, btn)
-      if btn == "RightButton" then RetGearDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
-      elseif IsShiftKeyDown and IsShiftKeyDown() then RetGearDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+      if btn == "RightButton" then WaypathDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+      elseif IsShiftKeyDown and IsShiftKeyDown() then WaypathDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
       elseif IsControlKeyDown and IsControlKeyDown() then if RG.ShowTab then RG.ShowTab("settings") end
       elseif RG.ToggleUI then RG.ToggleUI() end
     end)
     mm:SetScript("OnDragStart", function(self) self:SetScript("OnUpdate", function()
       local mx, my = Minimap:GetCenter(); local cx, cy = GetCursorPosition(); local s = Minimap:GetEffectiveScale()
-      RetGearDB.mmAngle = math.deg(math.atan2(cy / s - my, cx / s - mx)); placeMinimap()
+      WaypathDB.mmAngle = math.deg(math.atan2(cy / s - my, cx / s - mx)); placeMinimap()
     end) end)
     mm:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
     mm:SetScript("OnEnter", function(self)
-      GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("RetGear", GOLDC[1], GOLDC[2], GOLDC[3])
+      GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+", GOLDC[1], GOLDC[2], GOLDC[3])
       GameTooltip:AddLine("Click: open the guide", 1, 1, 1); GameTooltip:AddLine("Right-click: show or hide the tracker", 1, 1, 1)
       GameTooltip:AddLine("Shift-click: arrow on or off", 1, 1, 1); GameTooltip:AddLine("Ctrl-click: settings", 1, 1, 1); GameTooltip:AddLine("Drag: move this button", 0.6, 0.6, 0.6)
       GameTooltip:Show()
@@ -350,7 +350,7 @@ f:SetScript("OnEvent", function(_, event, a1)
   if event == "PLAYER_LOGIN" then
     C_Timer.After(3, function()
       checkUpgrades(); RG.MinimapButton()
-      if not RetGearDB.setupDone then RG.ShowWelcome() end
+      if not WaypathDB.setupDone then RG.ShowWelcome() end
     end)
   elseif event == "BAG_UPDATE_DELAYED" then
     if bagTimer then return end
@@ -367,30 +367,30 @@ f:SetScript("OnEvent", function(_, event, a1)
   if RG.QueueTracker then RG.QueueTracker() end
 end)
 
--- More slash commands: /rg tracker, /rg welcome, /rg settings
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+-- More slash commands: /wp tracker, /wp welcome, /wp settings
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
-  if cmd == "tracker" then RetGearDB.tracker = not RG.Opt("tracker"); RG.RefreshTracker(); RG.Print("Tracker " .. (RG.Opt("tracker") and "shown." or "hidden.")); return end
+  if cmd == "tracker" then WaypathDB.tracker = not RG.Opt("tracker"); RG.RefreshTracker(); RG.Print("Tracker " .. (RG.Opt("tracker") and "shown." or "hidden.")); return end
   if cmd == "welcome" then RG.ShowWelcome(); return end
   if cmd == "settings" then if RG.ShowTab then RG.ShowTab("settings") end; return end
   return base(msg)
 end
 
--- Key Bindings (Esc > Options > Keybindings > AddOns > RetGear)
-BINDING_HEADER_RETGEAR = "RetGear"
-BINDING_NAME_RETGEAR_TOGGLE = "Open or close the guide"
-BINDING_NAME_RETGEAR_NEXT = "Pin my nearest quest objective"
-BINDING_NAME_RETGEAR_ARROW = "Arrow on or off"
-BINDING_NAME_RETGEAR_TRACKER = "Show or hide the tracker"
-BINDING_NAME_RETGEAR_UNDO = "Undo my last ticked task"
-BINDING_NAME_RETGEAR_SORT = "Sort my bags"
-function RetGear_Bind(action)
+-- Key Bindings (Esc > Options > Keybindings > AddOns > Waypath+)
+BINDING_HEADER_WAYPATH = "Waypath+"
+BINDING_NAME_WAYPATH_TOGGLE = "Open or close the guide"
+BINDING_NAME_WAYPATH_NEXT = "Pin my nearest quest objective"
+BINDING_NAME_WAYPATH_ARROW = "Arrow on or off"
+BINDING_NAME_WAYPATH_TRACKER = "Show or hide the tracker"
+BINDING_NAME_WAYPATH_UNDO = "Undo my last ticked task"
+BINDING_NAME_WAYPATH_SORT = "Sort my bags"
+function Waypath_Bind(action)
   if action == "toggle" then if RG.ToggleUI then RG.ToggleUI() end
-  elseif action == "next" then SlashCmdList.RETGEAR("next")
-  elseif action == "arrow" then RetGearDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
-  elseif action == "tracker" then RetGearDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
-  elseif action == "undo" then SlashCmdList.RETGEAR("undo")
+  elseif action == "next" then SlashCmdList.WAYPATH("next")
+  elseif action == "arrow" then WaypathDB.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+  elseif action == "tracker" then WaypathDB.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+  elseif action == "undo" then SlashCmdList.WAYPATH("undo")
   elseif action == "sort" then if RG.SortBags then RG.SortBags(BankFrame and BankFrame:IsShown()) end end
 end

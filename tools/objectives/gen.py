@@ -1,6 +1,6 @@
 """Build Objectives.lua: for every quest an Undead (Horde) character can take, where to
 finish it and where its objectives are (kill / loot / use), from QuestieDB's WoW Forever data.
-Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [RetGear folder]"""
+Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder]"""
 import json, re, sys, os
 QDB = sys.argv[1].rstrip('/') + '/'
 D = json.load(open(sys.argv[2], encoding='utf-8'))
@@ -101,7 +101,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
                        ','.join('{%d,%.1f,%.1f,%d}' % p for p in pts)))
         parts.append('o={' + ','.join(os_) + '}')
     out.append('[%s]={%s}' % (qid, ','.join(parts)))
-head = ['-- RetGear quest objectives: where to finish each quest and where its objectives are.',
+head = ['-- Waypath+ quest objectives: where to finish each quest and where its objectives are.',
         "-- Generated from QuestieDB's WoW Forever data (coordinates already converted to Forever's maps):",
         '-- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.',
         '-- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,',

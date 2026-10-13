@@ -1,5 +1,5 @@
--- RetGear bag sorting: a Sort button on your bags and bank, and /rg sort.
--- Uses the game's own sort when the client has it; otherwise RetGear sorts
+-- Waypath+ bag sorting: a Sort button on your bags and bank, and /wp sort.
+-- Uses the game's own sort when the client has it; otherwise Waypath+ sorts
 -- itself, one move at a time: stacks merged, then Hearthstone, quest items,
 -- consumables, gear, profession materials, recipes, other, and grey junk last.
 local _, RG = ...
@@ -65,7 +65,7 @@ local function before(a, b)
   return a.count > b.count
 end
 
--- One step of RetGear's own sorter. Returns "busy" (wait), "moved" or "done".
+-- One step of Waypath+'s own sorter. Returns "busy" (wait), "moved" or "done".
 local function anyLocked(slots)
   for _, s in ipairs(slots) do local _, _, locked = slotInfo(s[1], s[2]); if locked then return true end end
   return false
@@ -162,7 +162,7 @@ local function makeButton(parent, bank)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetText(bank and "Sort bank" or "Sort bags")
     GameTooltip:AddLine(bank and "Merges stacks and tidies your bank bags." or "Merges stacks, then: Hearthstone, quest items, food and potions, gear, materials, recipes, and grey junk last.", 1, 1, 1, true)
-    GameTooltip:AddLine("/rg sort" .. (bank and " bank" or ""), 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("/wp sort" .. (bank and " bank" or ""), 0.6, 0.6, 0.6)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -198,8 +198,8 @@ ev:SetScript("OnEvent", function(_, event)
   place()
 end)
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   if cmd and cmd:lower() == "sort" then RG.SortBags((rest or ""):lower():find("bank") ~= nil) return end
   return base(msg)

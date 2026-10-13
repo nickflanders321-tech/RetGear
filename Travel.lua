@@ -1,4 +1,4 @@
--- RetGear travel tips: the quickest way from where you are to where the guide
+-- Waypath+ travel tips: the quickest way from where you are to where the guide
 -- sends you next, using your hearthstone, the flight paths you know, Horde
 -- zeppelins, the Booty Bay boat and running across zone borders.
 local _, RG = ...

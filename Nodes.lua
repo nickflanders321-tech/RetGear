@@ -1,4 +1,4 @@
--- RetGear ore alerts: tells you when you walk near a spot where a vein you can
+-- Waypath+ ore alerts: tells you when you walk near a spot where a vein you can
 -- mine (and that still gives Mining skill) can spawn. The game doesn't let addons
 -- read the minimap's ore dots, so this uses WoW Forever's known vein spawn points
 -- (NodeData.lua): a spot may be empty if someone mined it. Find Minerals shows

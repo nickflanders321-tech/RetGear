@@ -1,4 +1,4 @@
--- RetGear window, in the classic WoW style: the stone-and-gold dialog frame,
+-- Waypath+ window, in the classic WoW style: the stone-and-gold dialog frame,
 -- a gold title banner, tooltip-bordered rows, quest-log highlights, classic
 -- status bars and Character-window tabs along the bottom.
 local _, RG = ...
@@ -39,7 +39,7 @@ local function BAR_H() return sz(44) end
 local frame, scroll, content, tabs, footer, sectionTitle
 local rows = {}
 local state = { tab = "route", near = true, open = {} }
-local function saveTab() if RetGearDB then RetGearDB.lastTab = state.tab end end
+local function saveTab() if WaypathDB then WaypathDB.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
@@ -862,7 +862,7 @@ local function renderAH()
   end
   block("Gear you can buy", gear)
   block("Ore and bars", mats)
-  if n == 0 then n = 1; setHeader(getRow(1), "Nothing tracked yet · /rg track [item link]") end
+  if n == 0 then n = 1; setHeader(getRow(1), "Nothing tracked yet · /wp track [item link]") end
   return n
 end
 
@@ -873,8 +873,8 @@ local function renderTalents()
   local nextT = RG.NextTalent and RG.NextTalent()
   n = n + 1
   setBar(getRow(n), "Unspent talent points", pts or 0, math.max(pts or 0, 1), pts and pts > 0 and T.gold or T.green,
-    pts == nil and (GREY .. "can't read · /rg talents check|r") or (pts > 0 and (GOLD .. pts .. " to spend|r") or (GREEN .. "all spent|r")))
-  rows[n].tip = (pts == nil and "This client didn't report your talent points.\nType /rg talents check and send me the result.\n\n" or "")
+    pts == nil and (GREY .. "can't read · /wp talents check|r") or (pts > 0 and (GOLD .. pts .. " to spend|r") or (GREEN .. "all spent|r")))
+  rows[n].tip = (pts == nil and "This client didn't report your talent points.\nType /wp talents check and send me the result.\n\n" or "")
     .. "Click to open your talents" .. (RG.talentSource and ("\n" .. GREY .. "Read via " .. RG.talentSource .. "|r") or "")
   rows[n].onClick = function() if ToggleTalentFrame then pcall(ToggleTalentFrame) elseif PlayerTalentFrame_Toggle then pcall(PlayerTalentFrame_Toggle) end end
   if nextT then
@@ -882,7 +882,12 @@ local function renderTalents()
     setItem(getRow(n), nil, nil, GOLD .. "Next: " .. nextT.name .. "|r", nextT.why, pts and pts > 0 and (GREEN .. "Take it now|r") or "", "", "gold")
     rows[n].icon:SetTexture(135891)
   end
-  n = n + 1; setHeader(getRow(n), "Retribution talents, in order")
+  local cls = RG.ActiveClass or {}
+  if not RG.ClassSupported then
+    n = n + 1; setHeader(getRow(n), "Talent builds for your class are coming in a later update")
+    return n
+  end
+  n = n + 1; setHeader(getRow(n), (cls.spec or "Your") .. " talents, in order")
   for i, t in ipairs(RG.TALENT_PRIORITY) do
     n = n + 1
     local info = tree and tree[t.name]
@@ -900,9 +905,11 @@ local function renderTalents()
     n = n + 1; setStep(getRow(n), i, line, false, nil)
     rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
-  n = n + 1; setHeader(getRow(n), "Undead and Demons")
-  n = n + 1; setStep(getRow(n), "", "Undead fill Tirisfal, Silverpine, the Plaguelands, Stratholme and Scholomance. Exorcism and Crusade's bonus make you much stronger there, and Holy Wrath stuns them.", false, nil)
-  rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  for _, note in ipairs(cls.talentNotes or {}) do
+    n = n + 1; setHeader(getRow(n), note[1])
+    n = n + 1; setStep(getRow(n), "", note[2], false, nil)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  end
   return n
 end
 
@@ -925,7 +932,7 @@ local function renderGold()
       setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", #items .. " item" .. (#items > 1 and "s" or "") .. " sell for more on the AH than at a vendor. Click to see them.", GREEN .. "+" .. RG.Money(total) .. "|r", "", "gold")
       rows[n].onClick = function() state.tab = "ah"; RG.RefreshUI() end
     else
-      setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", "Nothing to take to the AH yet. Open the Auction House now and then so RetGear knows the prices.", "", "", "gold")
+      setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", "Nothing to take to the AH yet. Open the Auction House now and then so Waypath+ knows the prices.", "", "", "gold")
     end
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_10")
   end
@@ -964,6 +971,7 @@ end
 local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784, Dungeon = 136058, Vendor = 133784, ["Rare mob"] = 133639 }
 local function renderHeal()
   local n = 0
+  if not RG.IsClass("PALADIN") then n = n + 1; setHeader(getRow(n), "The off-spec gear set is Paladin-only for now: other hybrids are coming in a later update"); return n end
   local lvl = UnitLevel("player")
   local set, total = RG.HealSet()
   -- dual spec status
@@ -978,7 +986,7 @@ local function renderHeal()
     n = n + 1
     local wearing = RG.db.wearingHeal
     setItem(getRow(n), nil, nil, wearing and "|cffffffffPut your Ret gear back on|r" or "|cffffffffEquip your healing set|r",
-      wearing and "Re-equips the Retribution gear you wore before the swap." or "Puts on the best healing piece from your bags for each slot and remembers your Ret gear. Also: /rg gear heal, /rg gear ret.",
+      wearing and "Re-equips the Retribution gear you wore before the swap." or "Puts on the best healing piece from your bags for each slot and remembers your Ret gear. Also: /wp gear heal, /wp gear ret.",
       GOLD .. "Swap|r", "", "gold")
     rows[n].icon:SetTexture(wearing and "Interface\\Icons\\Spell_Holy_AuraOfLight" or "Interface\\Icons\\Spell_Holy_FlashHeal")
     rows[n].onClick = function() if RG.SwapGear then RG.SwapGear() end end
@@ -1062,11 +1070,12 @@ local function ago(t)
 end
 local function renderDPS()
   local n = 0
+  if not RG.IsClass("PALADIN") then n = n + 1; setHeader(getRow(n), "The DPS coach is Paladin-only for now"); return n end
   local fights = RG.db.fights or {}
   if #fights == 0 then
     n = n + 1; setHeader(getRow(n), "No fights recorded yet")
     n = n + 1
-    setItem(getRow(n), nil, nil, "|cffffffffGo hit something|r", "Every fight longer than 8 seconds is recorded. RetGear shows your DPS, where it came from, and the biggest thing to fix.", "", "", "gold")
+    setItem(getRow(n), nil, nil, "|cffffffffGo hit something|r", "Every fight longer than 8 seconds is recorded. Waypath+ shows your DPS, where it came from, and the biggest thing to fix.", "", "", "gold")
     rows[n].icon:SetTexture("Interface\\Icons\\Ability_DualWield")
     return n
   end
@@ -1141,18 +1150,18 @@ local function renderMail()
   local main = RG.MainName() or "your main"
   n = n + 1
   setItem(getRow(n), nil, nil, alt and ("|cffffffffBank alt for " .. main .. "|r") or "|cffffffffYour bank alt|r",
-    alt and "Buy what's below on the AH (click an item to search for it), then open a mailbox and press the RetGear button to attach it all."
+    alt and "Buy what's below on the AH (click an item to search for it), then open a mailbox and press the Waypath+ button to attach it all."
       or "These quests use items you can buy. Have your bank alt buy them and mail them here. Log in on the alt to see the same list.",
     alt and (GOLD .. "Main: " .. main .. "|r") or (GREY .. "Main: " .. (RG.db.main and main or "not set") .. "|r"), "", "gold")
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Letter_15")
-  -- secret bank-alt guide: open on an alt still setting up, folded on your main (/rg bankalt opens it)
+  -- secret bank-alt guide: open on an alt still setting up, folded on your main (/wp bankalt opens it)
   if RG.ALT_STEPS then
     local open = state.altGuide
     if open == nil then open = RG.altGuideOpen or (alt and RG.AltGuideActive and RG.AltGuideActive()) or false end
     n = n + 1
     local done, total = 0, #RG.ALT_STEPS
     if alt and RG.AltGuideProgress then done = RG.AltGuideProgress() end
-    setItem(getRow(n), nil, nil, GOLD .. "Secret: a bank alt in ten minutes|r", open and GREY .. RG.ALT_INTRO .. "|r" or (GREY .. "Make a new Undead and RetGear walks it to the Undercity Auction House with the arrow. Click to see the steps.|r"),
+    setItem(getRow(n), nil, nil, GOLD .. "Secret: a bank alt in ten minutes|r", open and GREY .. RG.ALT_INTRO .. "|r" or (GREY .. "Make a new Undead and Waypath+ walks it to the Undercity Auction House with the arrow. Click to see the steps.|r"),
       alt and (done >= total and (GREEN .. "Done|r") or (GOLD .. done .. "/" .. total .. "|r")) or (GREY .. (open and "hide" or "show") .. "|r"), "", "gold", nil, not open)
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Key_03")
     rows[n].onClick = function() state.altGuide = not open; RG.altGuideOpen = nil; RG.RefreshUI() end
@@ -1169,7 +1178,7 @@ local function renderMail()
         rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
       end
       if not alt then
-        n = n + 1; setStep(getRow(n), "", GREY .. "On your main, everything is already linked: once the alt logs in, RetGear treats it as your bank alt and shows the shopping list there.|r", false, nil)
+        n = n + 1; setStep(getRow(n), "", GREY .. "On your main, everything is already linked: once the alt logs in, Waypath+ treats it as your bank alt and shows the shopping list there.|r", false, nil)
         rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
       end
     end
@@ -1316,7 +1325,7 @@ local function renderFish()
   -- cook now
   local cook, total = RG.CookNow()
   if not RG.db.cookRecipes then
-    n = n + 1; setItem(getRow(n), nil, nil, GOLD .. "Open your Cooking window once|r", "Then RetGear knows your recipes and shows which fish in your bags still give Cooking skill.", "", "", nil, nil, true)
+    n = n + 1; setItem(getRow(n), nil, nil, GOLD .. "Open your Cooking window once|r", "Then Waypath+ knows your recipes and shows which fish in your bags still give Cooking skill.", "", "", nil, nil, true)
   elseif total > 0 then
     n = n + 1; setHeader(getRow(n), string.format("Cook these at your campfire  ·  %d raw fish still give skill", total))
     for _, e in ipairs(cook) do
@@ -1392,7 +1401,7 @@ local function renderFish()
     table.sort(top, function(a, b) return a.c > b.c end)
     local parts = {}
     for i = 1, math.min(5, #top) do parts[#parts + 1] = (itemName(top[i].id) or "?") .. " " .. top[i].c end
-    n = n + 1; setHeader(getRow(n), string.format("Since you installed RetGear: %d catches", d.total))
+    n = n + 1; setHeader(getRow(n), string.format("Since you installed Waypath+: %d catches", d.total))
     n = n + 1; setStep(getRow(n), "", table.concat(parts, "  ·  "), false, nil)
     rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
@@ -1417,12 +1426,12 @@ local function renderGroup()
     verdict = string.format("Grouped %s%.1fk XP/hr|r vs solo %s%.1fk|r over your last 5 levels.", GOLD, grp / 1000, GOLD, solo / 1000)
     pill = d >= 0.05 and (GREEN .. string.format("Grouping +%d%%", math.floor(d * 100 + 0.5)) .. "|r") or (d <= -0.05 and (GOLD .. string.format("Solo +%d%%", math.floor(-d / (1 + d) * 100 + 0.5)) .. "|r") or (GREY .. "About even|r"))
   else
-    verdict = string.format("Keep playing: RetGear compares solo and grouped XP/hr once it has 10 minutes of each (now %dm solo, %dm grouped).", math.floor((st or 0) / 60), math.floor((gt or 0) / 60))
+    verdict = string.format("Keep playing: Waypath+ compares solo and grouped XP/hr once it has 10 minutes of each (now %dm solo, %dm grouped).", math.floor((st or 0) / 60), math.floor((gt or 0) / 60))
   end
   setItem(getRow(n), nil, nil, inGroup and string.format("|cffffffffIn a party of %d|r", GetNumGroupMembers()) or "|cffffffffPlaying solo|r", verdict, pill or "", "", "gold")
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_GroupLooking")
 
-  if inGroup then
+  if inGroup and RG.IsClass("PALADIN") then
     -- paladin duties
     n = n + 1; setHeader(getRow(n), "Your paladin duties")
     local aura = RG.MyAura and RG.MyAura()
@@ -1487,7 +1496,7 @@ local function renderGroup()
   end
   -- dungeon runs
   local runs = RG.db.runs or {}
-  n = n + 1; setHeader(getRow(n), #runs > 0 and "Dungeon runs" or "Dungeon runs  ·  run a dungeon and RetGear reports it here")
+  n = n + 1; setHeader(getRow(n), #runs > 0 and "Dungeon runs" or "Dungeon runs  ·  run a dungeon and Waypath+ reports it here")
   for i = 1, math.min(10, #runs) do
     local r = runs[i]
     n = n + 1
@@ -1533,7 +1542,7 @@ local function renderSettings()
     n = n + 1
     local on = RG.Opt(o.key)
     setStep(getRow(n), "", o.label, on, function()
-      RetGearDB[o.key] = not on
+      WaypathDB[o.key] = not on
       if o.key == "minimap" and RG.MinimapButton then RG.MinimapButton() end
       if RG.RefreshTracker then RG.RefreshTracker() end
       RG.RefreshUI()
@@ -1551,10 +1560,10 @@ local function renderSettings()
   end
   action("Run setup again", "Help level, professions, automation and extras, in six short pages", function() if RG.ShowSetup then RG.ShowSetup() end end)
   action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
-  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() RetGearDB.trackerPos = nil; RetGearDB.trackerScale = nil; RetGearDB.trackerWidth = nil; if RetGearTracker then RetGearTracker:ClearAllPoints(); RetGearTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
+  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() WaypathDB.trackerPos = nil; WaypathDB.trackerScale = nil; WaypathDB.trackerWidth = nil; if WaypathTracker then WaypathTracker:ClearAllPoints(); WaypathTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
   action("Abandon grey quests", "Drops quests too low to give useful XP (asks first)", function() if RG.AbandonGreyQuests then RG.AbandonGreyQuests() end end)
   action("Equip healing set / Ret set", "Swap between your healing gear and your Retribution gear", function() if RG.SwapGear then RG.SwapGear() end end)
-  action("Show RetGear errors", (RetGearDB.errors and #RetGearDB.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)
+  action("Show Waypath+ errors", (WaypathDB.errors and #WaypathDB.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)
   return n
 end
 
@@ -1567,7 +1576,7 @@ local TITLES = {
   gear  = { "My gear", "What you're wearing and what to chase next" },
   prof  = { "Professions", "Mining routes, smithing upgrades and material prices" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
-  settings = { "Settings", "Turn RetGear's helpers on or off" },
+  settings = { "Settings", "Turn Waypath+'s helpers on or off" },
   talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
@@ -1580,24 +1589,25 @@ local TITLES = {
 local FOOTERS = {
   route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  click a gold heading to fold it  ·  finished steps are hidden",
   guide = "Shift-click to link  ·  Ctrl-click to preview  ·  green means better than what you wear",
-  gear  = "Scores are Attack Power equivalents  ·  tune them with /rg weight",
+  gear  = "Scores are Attack Power equivalents  ·  tune them with /wp weight",
   prof  = "Ore and bar prices refresh when you open the Auction House",
-  ah    = "Opening the AH refreshes prices  ·  /rg alert [item] 25 pings you at 25g or less",
-  settings = "Everything here is saved for your account  ·  /rg tracker shows or hides the tracker",
-  talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /rg talents opens this tab",
-  gold  = "Updated weekly from the newest Forever gold guides  ·  /rg profit lists what to keep for the AH",
-  fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so RetGear knows your recipes  ·  /rg fish",
-  camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /rg camp",
-  mail  = "Click an item to search the AH for it  ·  /rg main makes the current character your main",
-  group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /rg lfg Scarlet Monastery posts your own",
-  dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /rg dps reset clears history",
-  heal  = "Pieces in your healing set are never sold by RetGear  ·  Forever loot is still being mapped; the list updates weekly",
+  ah    = "Opening the AH refreshes prices  ·  /wp alert [item] 25 pings you at 25g or less",
+  settings = "Everything here is saved for your account  ·  /wp tracker shows or hides the tracker",
+  talents = "Forever changed Ret talents; this list uses Forever's talent names  ·  /wp talents opens this tab",
+  gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
+  fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so Waypath+ knows your recipes  ·  /wp fish",
+  camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
+  mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
+  group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /wp lfg Scarlet Monastery posts your own",
+  dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /wp dps reset clears history",
+  heal  = "Pieces in your healing set are never sold by Waypath+  ·  Forever loot is still being mapped; the list updates weekly",
 }
 
 local function updateHeader()
   local lvl = UnitLevel("player")
   local p = RG.Professions()
-  local bits = { "Level " .. lvl .. " Undead Retribution" }
+  local cls = RG.ActiveClass or {}
+  local bits = { "Level " .. lvl .. " " .. (UnitRace("player") or "") .. " " .. ((RG.ClassSupported and cls.spec) and (cls.spec .. " " .. (cls.name or "")) or (UnitClass("player") or "")) }
   for _, prof in ipairs({ "Mining", "Blacksmithing", "Fishing", "Cooking" }) do
     if p[prof] then bits[#bits + 1] = prof .. " " .. p[prof].rank end
   end
@@ -1683,21 +1693,21 @@ local function panelButton(parent, text, w, h)
 end
 
 local function build()
-  frame = CreateFrame("Frame", "RetGearFrame", UIParent, "BackdropTemplate")
+  frame = CreateFrame("Frame", "WaypathFrame", UIParent, "BackdropTemplate")
   frame:SetSize(W, H)
-  local pos = RetGearDB and RetGearDB.windowPos
+  local pos = WaypathDB and WaypathDB.windowPos
   if pos then frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else frame:SetPoint("CENTER") end
-  if RetGearDB and RetGearDB.lastTab then state.tab = RetGearDB.lastTab end
+  if WaypathDB and WaypathDB.lastTab then state.tab = WaypathDB.lastTab end
   RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RetGearDB.windowPos = { p, rp, x, y } end)
+  frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); WaypathDB.windowPos = { p, rp, x, y } end)
   frame:SetScript("OnHide", saveTab)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
-  tinsert(UISpecialFrames, "RetGearFrame")
+  tinsert(UISpecialFrames, "WaypathFrame")
 
   -- gold title banner
-  RG.DialogHeader(frame, "RetGear", 320)
+  RG.DialogHeader(frame, "Waypath+", 320)
 
   -- crest, framed like an action button
   local crest = frame:CreateTexture(nil, "ARTWORK"); crest:SetSize(40, 40); crest:SetPoint("TOPLEFT", 22, -24)

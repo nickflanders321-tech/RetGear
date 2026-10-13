@@ -1,4 +1,4 @@
--- RetGear group play: evaluate how grouping goes (XP/hr solo vs grouped,
+-- Waypath+ group play: evaluate how grouping goes (XP/hr solo vs grouped,
 -- dungeon run reports) and help you be a great paladin in a party
 -- (Blessings, Auras, dispels, emergencies, shared quests, finding a group).
 local _, RG = ...
@@ -81,7 +81,7 @@ local function startRun()
   local name, instType = GetInstanceInfo and GetInstanceInfo()
   if instType ~= "party" then return end
   run = { name = name or "Dungeon", t = time(), start = GetTime(), xp = 0, kills = 0, deaths = 0, myDeaths = 0, loot = {}, fight0 = RG.db.fights and RG.db.fights[1], size = GetNumGroupMembers and GetNumGroupMembers() or 1, level = UnitLevel("player") }
-  RG.Print(GOLD .. run.name .. "|r: run started. RetGear will report when you leave.")
+  RG.Print(GOLD .. run.name .. "|r: run started. Waypath+ will report when you leave.")
 end
 local function finishRun()
   if not run then return end
@@ -205,7 +205,10 @@ function RG.GroupSuggestions()
   return out
 end
 function RG.LFGMessage(what)
-  return string.format("LFG %s - Ret Paladin %d (Blessings, Purify)", what, UnitLevel("player"))
+  local cls = RG.ActiveClass or {}
+  local who = (RG.ClassSupported and cls.lfgName) or (RG.ClassSupported and cls.spec) and (cls.spec .. " " .. (cls.name or "")) or (UnitClass("player") or "")
+  local extra = RG.ClassSupported and cls.lfgNote and (" (" .. cls.lfgNote .. ")") or ""
+  return string.format("LFG %s - %s %d%s", what, who, UnitLevel("player"), extra)
 end
 function RG.PostLFG(what)
   local msg = RG.LFGMessage(what)
@@ -322,14 +325,14 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
   end
 end)
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   cmd = cmd and cmd:lower()
   if cmd == "group" then if RG.ShowTab then RG.ShowTab("group") end return end
   if cmd == "lfg" then
     local s = RG.GroupSuggestions()[1]
-    if rest and rest ~= "" then RG.PostLFG(rest) elseif s then RG.PostLFG(s.name) else RG.Print("Usage: /rg lfg Scarlet Monastery") end
+    if rest and rest ~= "" then RG.PostLFG(rest) elseif s then RG.PostLFG(s.name) else RG.Print("Usage: /wp lfg Scarlet Monastery") end
     return
   end
   return base(msg)

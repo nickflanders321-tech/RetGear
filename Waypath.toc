@@ -1,0 +1,45 @@
+## Interface: 16001, 16000, 16002, 16003, 16005, 16010, 16100, 120105, 120100, 120001
+## Title: Waypath|cffD4B46A+|r
+## Notes: Leveling guide and helper for WoW Forever: your route with an arrow, quest tracker, travel tips, gear upgrades, professions and gold.
+## Author: Nick (Darmine Doggy Doors)
+## Version: @project-version@
+## SavedVariables: WaypathDB
+## OptionalDeps: RetGear, Auctionator, TradeSkillMaster
+## IconTexture: Interface\Icons\INV_Misc_Map_01
+## AddonCompartmentFunc: Waypath_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: Waypath_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: Waypath_OnAddonCompartmentLeave
+
+Data.lua
+Classes\Paladin.lua
+Classes\PaladinGear.lua
+Races\Undead.lua
+Routes\Horde.lua
+Professions\Mining.lua
+Professions\Blacksmithing.lua
+Profile.lua
+Waypoints.lua
+Objectives.lua
+Core.lua
+Quests.lua
+QoL.lua
+QoL2.lua
+Tracker.lua
+Extras.lua
+Auction.lua
+Profit.lua
+Gold.lua
+Heal.lua
+Coach.lua
+Mail.lua
+AltGuide.lua
+Camp.lua
+Fish.lua
+Speed.lua
+Travel.lua
+NodeData.lua
+Nodes.lua
+Setup.lua
+Group.lua
+Bags.lua
+UI.lua

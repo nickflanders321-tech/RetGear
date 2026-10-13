@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.34.0 (RetGear is now Waypath+)
+- **New name: Waypath+.** It's growing past Ret Paladins, so it gets a name that fits every class. The command is now `/wp` (`/waypath`; `/rg` still works).
+- **Moving over keeps everything:** install the `Waypath` folder next to the old `RetGear` one and log in once. Your progress, settings, ticked steps, prices and fishing history are copied across, RetGear is switched off, and a pop-up asks you to reload. Then delete the `RetGear` folder. Key bindings need setting again (Esc > Options > Keybindings > AddOns > Waypath+), and the quest-target macro is now `WaypathTarget`.
+- **Groundwork for every class, race and profession:** paladin data (stat weights, gear guide, class quests, talents, rotation) now lives in `Classes/`, Undead starting zones in `Races/`, the shared Horde route in `Routes/` and Mining/Blacksmithing in `Professions/`. Nothing changes for a Ret Paladin: the route, gear guide and steps are exactly the same.
+- **Other classes no longer get paladin advice:** the DPS coach, Healing tab, healing-set swap, Blessing and Aura reminders, paladin talents and class quests only show on paladins. Other classes get the route, tracker, arrow, travel, bags, gold and professions, with item scores from a general melee guide until their own data is in.
+- Item scores are named per class ("Ret score" on paladins, "Upgrade score" elsewhere), and LFG posts name your own class.
+
 ## v0.33.0 (quality of life)
 - **Upgrade arrows on your bag icons:** a green arrow on anything that's a Ret upgrade you can wear now, and a small Holy icon on pieces for your healing set (level 30+). Turn off in Settings.
 - **Turn-in run:** with two or more quests ready, click the "Turn-in run" line at the top of the tracker's Quests (or the "quests ready" reminder, or `/rg turnin`). The arrow goes to the nearest turn-in, then the next as you hand each one in, until they're all done.

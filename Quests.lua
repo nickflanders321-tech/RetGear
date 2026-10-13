@@ -1,9 +1,9 @@
--- RetGear quest sync: reads your quest log and completed quests so the route
+-- Waypath+ quest sync: reads your quest log and completed quests so the route
 -- can tick off steps and dungeon quests on its own.
 local _, RG = ...
 
 -- Quest IDs we know for certain (checked on Wowhead), so completion can be
--- read straight from the game even for quests done before RetGear was installed.
+-- read straight from the game even for quests done before Waypath+ was installed.
 RG.QUEST_IDS = {
   ["weapons of choice"] = 893,
   ["threat from the sea"] = 1427,
@@ -13,8 +13,8 @@ RG.QUEST_IDS = {
 }
 
 local function db()
-  RetGearDB.questsDone = RetGearDB.questsDone or {}
-  return RetGearDB.questsDone
+  WaypathDB.questsDone = WaypathDB.questsDone or {}
+  return WaypathDB.questsDone
 end
 local function norm(s) return s and s:lower():gsub("^%s+", ""):gsub("%s+$", "") or nil end
 
@@ -71,8 +71,8 @@ end
 local function scanHistory()
   if not (C_QuestLog and C_QuestLog.GetAllCompletedQuestIDs) then return end
   local ids = C_QuestLog.GetAllCompletedQuestIDs() or {}
-  RetGearDB.historyScanned = RetGearDB.historyScanned or {}
-  local seen = RetGearDB.historyScanned
+  WaypathDB.historyScanned = WaypathDB.historyScanned or {}
+  local seen = WaypathDB.historyScanned
   local pending = 0
   for _, id in ipairs(ids) do
     if not seen[id] then
@@ -172,7 +172,7 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
   elseif event == "QUEST_DATA_LOAD_RESULT" then
     if waiting[a1] then
       waiting[a1] = nil
-      if a2 and learnTitle(a1) then RetGearDB.historyScanned[a1] = true end
+      if a2 and learnTitle(a1) then WaypathDB.historyScanned[a1] = true end
       queueRefresh()
     end
   else

@@ -1,6 +1,6 @@
--- RetGear secret bank-alt guide: from a brand-new Undead alt to a working bank alt
+-- Waypath+ secret bank-alt guide: from a brand-new Undead alt to a working bank alt
 -- at the Undercity Auction House in about ten minutes, with the arrow showing the way.
--- Shows on the tracker of any alt until it's done; on your main: /rg bankalt.
+-- Shows on the tracker of any alt until it's done; on your main: /wp bankalt.
 -- Coordinates: QuestieDB WoW Forever NPC data (auctioneers, bankers, innkeeper, bag vendor).
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
@@ -10,7 +10,7 @@ RG.ALT_INTRO = "Make a new character on the same realm: Horde, Undead. Undead st
 RG.ALT_STEPS = {
   { key = "brill", title = "Run to Brill", text = "Skip the Deathknell quests. Leave the graveyard by the road and run east to Brill without stopping to fight.", wp = { 1420, 61.7, 52.0, "Brill" } },
   { key = "uc",    title = "Into Undercity", text = "Keep following the road south-east to the Ruins of Lordaeron. Go through the throne room and ride an elevator down.", wp = { 1458, 56.0, 37.5, "Undercity" } },
-  { key = "ah",    title = "Auction House", text = "The auctioneers stand in the Trade Quarter, the middle ring. Open the Auction House once so RetGear can scan prices.", wp = { 1458, 64.4, 52.4, "Auctioneer Epitwee" } },
+  { key = "ah",    title = "Auction House", text = "The auctioneers stand in the Trade Quarter, the middle ring. Open the Auction House once so Waypath+ can scan prices.", wp = { 1458, 64.4, 52.4, "Auctioneer Epitwee" } },
   { key = "bank",  title = "Bank", text = "The bankers (the Montagues) are right next door. Open your bank once.", wp = { 1458, 66.0, 44.0, "Undercity bank" } },
   { key = "mail",  title = "Mailbox", text = "Open a mailbox next to the bank and collect anything your main sent.", wp = { 1458, 66.0, 44.0, "mailbox by the bank" } },
   { key = "inn",   title = "Make Undercity home", text = "Talk to Innkeeper Norman, make the inn your home, and always log out inside the inn so you log in at the Auction House.", wp = { 1458, 67.7, 37.9, "Innkeeper Norman" } },
@@ -26,10 +26,10 @@ RG.ALT_LEVELING = {
 
 local function key() return RG.PlayerKey and RG.PlayerKey() or "?" end
 local function prog()
-  RetGearDB.altGuide = RetGearDB.altGuide or {}
+  WaypathDB.altGuide = WaypathDB.altGuide or {}
   local k = key()
-  RetGearDB.altGuide[k] = RetGearDB.altGuide[k] or {}
-  return RetGearDB.altGuide[k]
+  WaypathDB.altGuide[k] = WaypathDB.altGuide[k] or {}
+  return WaypathDB.altGuide[k]
 end
 
 -- A step counts as done when it, or any later step, has happened (you can't be in Undercity without passing Brill).
@@ -138,8 +138,8 @@ function RG.AltGuideLines()
   return out, done, total
 end
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "bankalt" or cmd == "altguide" then
@@ -150,7 +150,7 @@ SlashCmdList.RETGEAR = function(msg)
     else
       RG.altGuideOpen = true
       if RG.ShowTab then RG.ShowTab("mail") end
-      RG.Print(GOLD .. "Secret bank-alt guide:|r make a new Undead on this realm and log in: RetGear walks it to the Undercity Auction House with the arrow. The steps are on the Bank alt tab.")
+      RG.Print(GOLD .. "Secret bank-alt guide:|r make a new Undead on this realm and log in: Waypath+ walks it to the Undercity Auction House with the arrow. The steps are on the Bank alt tab.")
     end
     return
   end

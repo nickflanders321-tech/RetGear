@@ -1,6 +1,6 @@
--- RetGear quality of life, part two:
+-- Waypath+ quality of life, part two:
 --   * upgrade arrows on bag icons (Ret upgrades, healing-set pieces)
---   * error catcher: RetGear's own errors are logged quietly (/rg errors)
+--   * error catcher: Waypath+'s own errors are logged quietly (/wp errors)
 --   * turn-in run: the arrow chains through every quest that's ready
 --   * abandon grey quests in one click (asks first)
 --   * dual-spec gear swap: offers your healing set when you switch to Holy
@@ -8,7 +8,7 @@ local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 table.insert(RG.OPTIONS, { key = "bagArrows", label = "Mark upgrades on bag icons (green arrow: Ret, light: healing set)", default = true })
 table.insert(RG.OPTIONS, { key = "specSwap", label = "Offer to swap gear when I change spec (Holy / Retribution)", default = true })
-table.insert(RG.OPTIONS, { key = "quietErrors", label = "Catch RetGear errors quietly (see them with /rg errors)", default = true })
+table.insert(RG.OPTIONS, { key = "quietErrors", label = "Catch Waypath+ errors quietly (see them with /wp errors)", default = true })
 
 local function notify(msg) if RG.Notify then RG.Notify(msg) else RG.Print(msg) end end
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
@@ -19,9 +19,9 @@ local function inCombat() return InCombatLockdown and InCombatLockdown() end
 local MAX_ERRORS = 25
 local told = false
 local function recordError(msg)
-  if not RetGearDB then return end
-  RetGearDB.errors = RetGearDB.errors or {}
-  local list = RetGearDB.errors
+  if not WaypathDB then return end
+  WaypathDB.errors = WaypathDB.errors or {}
+  local list = WaypathDB.errors
   msg = tostring(msg)
   for _, e in ipairs(list) do
     if e.msg == msg then e.count = (e.count or 1) + 1; e.t = time and time() or 0; return end
@@ -32,7 +32,7 @@ local function recordError(msg)
   if not told then
     told = true
     if C_Timer then C_Timer.After(0.1, function()
-      RG.Print(GOLD .. "RetGear hit an error|r" .. GREY .. " (it kept running). Type|r /rg errors " .. GREY .. "to see and copy it for a bug report.|r")
+      RG.Print(GOLD .. "Waypath+ hit an error|r" .. GREY .. " (it kept running). Type|r /wp errors " .. GREY .. "to see and copy it for a bug report.|r")
     end) end
   end
 end
@@ -42,7 +42,7 @@ if seterrorhandler and geterrorhandler then
   local original = geterrorhandler()
   local busy = false
   seterrorhandler(function(msg, ...)
-    if not busy and type(msg) == "string" and msg:find("RetGear", 1, true) then
+    if not busy and type(msg) == "string" and msg:find("Waypath", 1, true) then
       busy = true
       pcall(recordError, msg)
       busy = false
@@ -56,8 +56,8 @@ end
 
 local errFrame
 function RG.ShowErrors()
-  local list = (RetGearDB and RetGearDB.errors) or {}
-  local lines = { "RetGear " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught", "" }
+  local list = (WaypathDB and WaypathDB.errors) or {}
+  local lines = { "Waypath+ " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught", "" }
   for i, e in ipairs(list) do
     lines[#lines + 1] = string.format("#%d  x%d  %s%s", i, e.count or 1, e.v and ("v" .. e.v .. "  ") or "", e.t and date and date("%Y-%m-%d %H:%M", e.t) or "")
     lines[#lines + 1] = e.msg or "?"
@@ -67,7 +67,7 @@ function RG.ShowErrors()
   if #list == 0 then lines[#lines + 1] = "No errors. Nice." end
   local text = table.concat(lines, "\n")
   if not errFrame then
-    errFrame = CreateFrame("Frame", "RetGearErrors", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    errFrame = CreateFrame("Frame", "WaypathErrors", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
     errFrame:SetSize(560, 380); errFrame:SetPoint("CENTER")
     errFrame:SetFrameStrata("DIALOG"); errFrame:SetMovable(true); errFrame:EnableMouse(true)
     errFrame:RegisterForDrag("LeftButton")
@@ -78,12 +78,12 @@ function RG.ShowErrors()
       errFrame:SetBackdropColor(0.05, 0.05, 0.07, 0.95); errFrame:SetBackdropBorderColor(0.6, 0.5, 0.2, 1)
     end
     local title = errFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", 12, -10); title:SetText("RetGear errors  ·  Ctrl+A, Ctrl+C to copy")
+    title:SetPoint("TOPLEFT", 12, -10); title:SetText("Waypath+ errors  ·  Ctrl+A, Ctrl+C to copy")
     local close = CreateFrame("Button", nil, errFrame, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -2, -2)
     local clear = CreateFrame("Button", nil, errFrame, "UIPanelButtonTemplate")
     clear:SetSize(80, 20); clear:SetPoint("BOTTOMRIGHT", -12, 10); clear:SetText("Clear")
-    clear:SetScript("OnClick", function() if RetGearDB then RetGearDB.errors = {} end; RG.ShowErrors() end)
+    clear:SetScript("OnClick", function() if WaypathDB then WaypathDB.errors = {} end; RG.ShowErrors() end)
     local sf = CreateFrame("ScrollFrame", nil, errFrame, "UIPanelScrollFrameTemplate")
     sf:SetPoint("TOPLEFT", 12, -32); sf:SetPoint("BOTTOMRIGHT", -32, 38)
     local eb = CreateFrame("EditBox", nil, sf)
@@ -92,7 +92,7 @@ function RG.ShowErrors()
     eb:SetScript("OnEscapePressed", function() errFrame:Hide() end)
     sf:SetScrollChild(eb)
     errFrame.eb = eb
-    if UISpecialFrames then table.insert(UISpecialFrames, "RetGearErrors") end
+    if UISpecialFrames then table.insert(UISpecialFrames, "WaypathErrors") end
   end
   errFrame.eb:SetText(text)
   errFrame:Show()
@@ -257,7 +257,7 @@ local function doAbandon()
   step()
 end
 if StaticPopupDialogs then
-  StaticPopupDialogs.RETGEAR_ABANDON_GREY = {
+  StaticPopupDialogs.WAYPATH_ABANDON_GREY = {
     text = "%s", button1 = ACCEPT or "Abandon", button2 = CANCEL or "Cancel",
     OnAccept = function() doAbandon() end, OnCancel = function() pendingGrey = nil end,
     timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
@@ -273,7 +273,7 @@ function RG.AbandonGreyQuests()
     names[#names + 1] = "[" .. (q.level or "?") .. "] " .. q.title
   end
   local text = "Abandon " .. #list .. " grey quest" .. (#list > 1 and "s" or "") .. "? They give almost no XP.\n\n" .. table.concat(names, "\n")
-  if StaticPopup_Show then StaticPopup_Show("RETGEAR_ABANDON_GREY", text) else doAbandon() end
+  if StaticPopup_Show then StaticPopup_Show("WAYPATH_ABANDON_GREY", text) else doAbandon() end
 end
 
 -- ===========================================================================
@@ -356,7 +356,7 @@ function RG.EquipRetSet()
   if inCombat() then RG.Print("You can't change gear in combat."); return end
   local saved = RG.db.retGear
   RG.db.wearingHeal = nil
-  if not saved then RG.Print("No saved Retribution gear yet: RetGear saves it when it puts your healing set on."); return end
+  if not saved then RG.Print("No saved Retribution gear yet: Waypath+ saves it when it puts your healing set on."); return end
   local jobs = {}
   -- weapons first so a two-hander/one-hander swap lands cleanly
   for _, slot in ipairs({ 16, 17, 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 13, 14, 18 }) do
@@ -376,14 +376,14 @@ function RG.SwapGear()
 end
 
 if StaticPopupDialogs then
-  StaticPopupDialogs.RETGEAR_SPEC_SWAP = {
+  StaticPopupDialogs.WAYPATH_SPEC_SWAP = {
     text = "%s", button1 = YES or "Yes", button2 = NO or "No",
     OnAccept = function(_, data) if data == "heal" then RG.EquipHealSet() else RG.EquipRetSet() end end,
     timeout = 0, whileDead = false, hideOnEscape = true, preferredIndex = 3,
   }
 end
 local function checkRole()
-  if not RG.db or (RG.IsAlt and RG.IsAlt()) then return end
+  if not RG.db or (RG.IsAlt and RG.IsAlt()) or not RG.IsClass("PALADIN") then return end
   local role = RG.CurrentRole()
   if not role or role == "prot" then return end
   local last = RG.db.lastRole
@@ -396,7 +396,7 @@ local function checkRole()
   elseif role == "ret" and RG.db.wearingHeal then text = "You switched back to Retribution.\nPut your Ret gear back on?"
   else return end
   if StaticPopup_Show then
-    local dlg = StaticPopup_Show("RETGEAR_SPEC_SWAP", text)
+    local dlg = StaticPopup_Show("WAYPATH_SPEC_SWAP", text)
     if dlg then dlg.data = role end
   end
 end
@@ -424,12 +424,12 @@ end)
 -- ===========================================================================
 -- Slash commands
 -- ===========================================================================
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
   cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
   if cmd == "errors" or cmd == "error" then
-    if rest == "clear" then RetGearDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
+    if rest == "clear" then WaypathDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
     return
   elseif cmd == "gear" and (rest == "heal" or rest == "holy") then RG.EquipHealSet(); return
   elseif cmd == "gear" and rest == "ret" then RG.EquipRetSet(); return

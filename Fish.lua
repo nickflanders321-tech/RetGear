@@ -1,4 +1,4 @@
--- RetGear fishing (WoW Forever): where to fish for your skill, ranks, gear,
+-- Waypath+ fishing (WoW Forever): where to fish for your skill, ranks, gear,
 -- fish to cook, and a live fishing session (skill, lure, catches, zone check).
 -- Data: WoW Forever beta guides (build 1.60.1) and the QuestieDB Forever item,
 -- NPC and quest data. Zone skill levels are Classic's until Forever confirms them.
@@ -340,8 +340,8 @@ if C_Timer and C_Timer.NewTicker then
   C_Timer.NewTicker(30, function() if RG.db and RG.FishActive() and RG.QueueTracker and not (InCombatLockdown and InCombatLockdown()) then RG.QueueTracker() end end)
 end
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "fish" or cmd == "cook" then if RG.ShowTab then RG.ShowTab("fish") end return end

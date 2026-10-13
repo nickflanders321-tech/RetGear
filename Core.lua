@@ -1,14 +1,14 @@
--- RetGear core: reads item stats, scores them for Ret, compares against what
+-- Waypath+ core: reads item stats, scores them for Ret, compares against what
 -- you're wearing, and adds an upgrade line to every item tooltip.
 local ADDON, RG = ...
-_G.RetGear = RG
+_G.Waypath = RG
 
 -- Classic WoW text colors: quest-log gold, quest-complete green, error red, poor-quality grey
 local GOLD = "|cffffd100"
 local GREEN, RED, GREY = "|cff40c040", "|cffff3333", "|cffa0a0a0"
 RG.COLORS = { GOLD = GOLD, GREEN = GREEN, RED = RED, GREY = GREY }
 
-function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "RetGear|r " .. tostring(msg)) end
+function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "Waypath+|r " .. tostring(msg)) end
 -- Small confirmations (pins, arrow on/off) flash in the middle of the screen instead of filling chat.
 function RG.Notify(msg)
   if UIErrorsFrame and UIErrorsFrame.AddMessage then UIErrorsFrame:AddMessage(tostring(msg), 1, 0.82, 0) else RG.Print(msg) end
@@ -19,9 +19,28 @@ end
 -- ---------------------------------------------------------------------------
 -- Route entries that moved level: carry hand-ticked steps over to the new key.
 local MOVED_STEPS = { ["Arathi Highlands|30"] = "Arathi Highlands|33" }
+-- Coming from RetGear (the old name): take over its saved progress once. Its
+-- saved data is only readable while the old RetGear folder is still installed,
+-- so this runs on the first login with both, then turns RetGear off.
+local function oldAddonLoaded()
+  local f = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+  return f and f("RetGear")
+end
+local function migrateFromRetGear()
+  if not oldAddonLoaded() then return end
+  if not WaypathDB and type(RetGearDB) == "table" then
+    WaypathDB = RetGearDB
+    WaypathDB.migratedFrom = "RetGear"
+    RG.migrated = true
+  end
+  local disable = (C_AddOns and C_AddOns.DisableAddOn) or DisableAddOn
+  if disable then pcall(disable, "RetGear") end
+  RG.oldAddonOn = true
+end
 local function InitDB()
-  RetGearDB = RetGearDB or {}
-  local db = RetGearDB
+  pcall(migrateFromRetGear)
+  WaypathDB = WaypathDB or {}
+  local db = WaypathDB
   if db.stepsDone then
     for old, new in pairs(MOVED_STEPS) do
       for k, v in pairs(db.stepsDone) do
@@ -307,8 +326,8 @@ local function OnTooltip(tooltip)
   elseif delta and delta < -0.5 then right = RED .. string.format("%.0f", delta) .. "|r" .. GREY .. " vs worn|r"
   elseif delta then right = GREY .. "same as worn|r" end
   tooltip:AddLine(" ")
-  if right then tooltip:AddDoubleLine(icon .. GOLD .. "Ret score|r  " .. string.format("%.0f", score), right)
-  else tooltip:AddLine(icon .. GOLD .. "Ret score|r  " .. string.format("%.0f", score)) end
+  if right then tooltip:AddDoubleLine(icon .. GOLD .. RG.SCORE_NAME .. "|r  " .. string.format("%.0f", score), right)
+  else tooltip:AddLine(icon .. GOLD .. RG.SCORE_NAME .. "|r  " .. string.format("%.0f", score)) end
   local id = tonumber(link:match("item:(%d+)"))
   if id then
     local guide = RG.GuideByID and RG.GuideByID[id]
@@ -393,6 +412,14 @@ f:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" and arg1 == ADDON then
     InitDB()
   elseif event == "PLAYER_LOGIN" then
+    if RG.oldAddonOn and StaticPopupDialogs and StaticPopup_Show then
+      StaticPopupDialogs.WAYPATH_REPLACED = {
+        text = "RetGear is now |cffffd100Waypath+|r." .. (RG.migrated and "\n\nYour progress, settings and ticked steps came across." or "") .. "\n\nReload to switch the old RetGear off. You can then delete the RetGear folder from Interface\\AddOns.",
+        button1 = RELOADUI or "Reload", button2 = LATER or "Later",
+        OnAccept = function() ReloadUI() end, timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+      }
+      C_Timer.After(2, function() StaticPopup_Show("WAYPATH_REPLACED") end)
+    end
     -- ask the server for guide items a few at a time (the guide has ~170 items)
     local ids = {}
     for _, g in ipairs(RG.GUIDE) do if g.id then ids[#ids + 1] = g.id end end
@@ -401,13 +428,15 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
     local _, class = UnitClass("player")
     local _, race = UnitRace("player")
-    if not RG.db.main and class == "PALADIN" then RG.db.main = RG.PlayerKey() end
+    -- your main: the first character past level 10 that logs in with the add-on
+    if not RG.db.main and ((UnitLevel("player") or 1) >= 10 or class == "PALADIN") then RG.db.main = RG.PlayerKey() end
     if RG.IsAlt() then
-      RG.Print("Bank alt mode: buying and mailing for " .. GOLD .. (RG.MainName() or "your main") .. "|r. /rg mail shows the shopping list. (/rg main makes this character your main.)")
+      RG.Print("Bank alt mode: buying and mailing for " .. GOLD .. (RG.MainName() or "your main") .. "|r. /wp mail shows the shopping list. (/wp main makes this character your main.)")
       return
     end
-    if class == "PALADIN" and race ~= "Scourge" then RG.Print("Loaded. The leveling guide is set up for an Undead (Horde) paladin, so some quests may not be on your side.") end
-    if class ~= "PALADIN" then RG.Print("Loaded. It's tuned for Retribution Paladins, but the scores still work as a Strength DPS guide.") end
+    local cname = UnitClass("player") or "your class"
+    if not RG.ClassSupported then RG.Print("Loaded. " .. cname .. " talents and gear aren't in yet: the route, quests, arrow, travel and professions all work, and item scores use a general melee guide for now.")
+    elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it starts with the Undead zones, and from level 12 or so it's the same for every Horde race.") end
   elseif RG.IsAlt() then
     return
   elseif event == "PLAYER_LEVEL_UP" then
@@ -425,7 +454,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
     local go = {}
     for _, r in ipairs(RG.ROUTE or {}) do if r.from == lvl then go[#go + 1] = r.zone .. (r.kind == "dungeon" and " (dungeon)" or "") end end
-    if #go > 0 then RG.Print("Level " .. lvl .. ": time for " .. table.concat(go, ", ") .. ". /rg for the route.") end
+    if #go > 0 then RG.Print("Level " .. lvl .. ": time for " .. table.concat(go, ", ") .. ". /wp for the route.") end
     for _, t in ipairs(RG.TRAVEL or {}) do
       if t.lvl == lvl and not (t.fp and RG.KnowsFP(t.fp)) then RG.Print("Travel: " .. t.text) end
     end
@@ -470,8 +499,8 @@ end)
 -- ---------------------------------------------------------------------------
 -- Slash commands
 -- ---------------------------------------------------------------------------
-SLASH_RETGEAR1, SLASH_RETGEAR2 = "/rg", "/retgear"
-SlashCmdList.RETGEAR = function(msg)
+SLASH_WAYPATH1, SLASH_WAYPATH2, SLASH_WAYPATH3, SLASH_WAYPATH4 = "/waypath", "/wp", "/rg", "/retgear"
+SlashCmdList.WAYPATH = function(msg)
   msg = (msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
   local cmd, rest = msg:match("^(%S+)%s*(.*)$")
   cmd = cmd and cmd:lower() or ""
@@ -487,7 +516,7 @@ SlashCmdList.RETGEAR = function(msg)
     else
       RG.Print("Weights (AP = 1):")
       for k, v in pairs(RG.db.weights) do DEFAULT_CHAT_FRAME:AddMessage(string.format("   %s%s|r %s = %s", GOLD, k, RG.STAT_LABELS[k] or "", v)) end
-      RG.Print("Change one with /rg weight STR 2.5")
+      RG.Print("Change one with /wp weight STR 2.5")
     end
   elseif cmd == "reset" then
     RG.db.weights = {}; InitDB(); wipe(cache); RG.Print("Weights reset to the defaults.")
@@ -506,26 +535,26 @@ SlashCmdList.RETGEAR = function(msg)
   elseif cmd == "scan" then
     if RG.ScanAH then RG.ScanAH() end
   else
-    RG.Print("Commands (type /rg on its own to open the guide):")
+    RG.Print("Commands (type /wp on its own to open the guide):")
     for _, line in ipairs({
-      "|cffffd100Guide|r  /rg  ·  /rg setup  ·  /rg settings  ·  /rg tracker",
-      "|cffffd100Questing|r  /rg next  ·  /rg undo  ·  /rg way 45 60  ·  /rg auto  ·  /rg pace  ·  /rg session",
-      "|cffffd100Tabs|r  /rg dps  ·  /rg group  ·  /rg heal  ·  /rg fish  ·  /rg camp  ·  /rg gold  ·  /rg mail  ·  /rg talents",
-      "|cffffd100Group|r  /rg lfg Scarlet Monastery",
-      "|cffffd100Auction House|r  /rg scan  ·  /rg autoscan  ·  /rg track [item]  ·  /rg untrack [item]  ·  /rg alert [item] 25",
-      "|cffffd100Bags|r  /rg sort  ·  /rg sort bank",
-      "|cffffd100Selling|r  /rg profit  ·  /rg profit min 25  ·  /rg profit ignore [item]",
-      "|cffffd100Ret score|r  /rg weight STR 2.5  ·  /rg hitcap 9  ·  /rg talenthit 3  ·  /rg reset  ·  /rg tooltip",
-      "|cffffd100Characters|r  /rg main  ·  /rg dps reset",
+      "|cffffd100Guide|r  /wp  ·  /wp setup  ·  /wp settings  ·  /wp tracker",
+      "|cffffd100Questing|r  /wp next  ·  /wp undo  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
+      "|cffffd100Tabs|r  /wp dps  ·  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp talents",
+      "|cffffd100Group|r  /wp lfg Scarlet Monastery",
+      "|cffffd100Auction House|r  /wp scan  ·  /wp autoscan  ·  /wp track [item]  ·  /wp untrack [item]  ·  /wp alert [item] 25",
+      "|cffffd100Bags|r  /wp sort  ·  /wp sort bank",
+      "|cffffd100Selling|r  /wp profit  ·  /wp profit min 25  ·  /wp profit ignore [item]",
+      "|cffffd100" .. RG.SCORE_NAME .. "|r  /wp weight STR 2.5  ·  /wp hitcap 9  ·  /wp talenthit 3  ·  /wp reset  ·  /wp tooltip",
+      "|cffffd100Characters|r  /wp main  ·  /wp dps reset",
     }) do DEFAULT_CHAT_FRAME:AddMessage("   " .. line) end
   end
 end
 
 -- Addon compartment (the addons button by the minimap)
-function RetGear_OnAddonCompartmentClick() if RG.ToggleUI then RG.ToggleUI() end end
-function RetGear_OnAddonCompartmentEnter(_, frame)
+function Waypath_OnAddonCompartmentClick() if RG.ToggleUI then RG.ToggleUI() end end
+function Waypath_OnAddonCompartmentEnter(_, frame)
   GameTooltip:SetOwner(frame or UIParent, "ANCHOR_LEFT")
-  GameTooltip:SetText("RetGear"); GameTooltip:AddLine("Click to open the Ret gear guide.", 1, 1, 1)
+  GameTooltip:SetText("Waypath+"); GameTooltip:AddLine("Click to open the guide.", 1, 1, 1)
   GameTooltip:Show()
 end
-function RetGear_OnAddonCompartmentLeave() GameTooltip:Hide() end
+function Waypath_OnAddonCompartmentLeave() GameTooltip:Hide() end

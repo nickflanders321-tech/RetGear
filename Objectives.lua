@@ -1,4 +1,4 @@
--- RetGear quest objectives: where to finish each quest and where its objectives are.
+-- Waypath+ quest objectives: where to finish each quest and where its objectives are.
 -- Generated from QuestieDB's WoW Forever data (coordinates already converted to Forever's maps):
 -- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.
 -- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,

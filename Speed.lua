@@ -1,4 +1,4 @@
--- RetGear speed tools (ideas from RestedXP and other speed-leveling addons):
+-- Waypath+ speed tools (ideas from RestedXP and other speed-leveling addons):
 -- auto accept/turn-in with smart rewards, a quest-mob targeting macro and
 -- bar, quest item buttons, quest mob nameplate alerts, a waypoint arrow,
 -- leveling pace per level, and a bag-space reminder.
@@ -9,10 +9,10 @@ local GOLDC = { 1, 0.82, 0 }
 for _, o in ipairs({
   { key = "autoQuest",     label = "Auto accept and turn in quests (hold Shift to pause)", default = true },
   { key = "autoReward",    label = "Auto pick quest rewards when the choice is clear", default = true },
-  { key = "targetBar",     label = "Quest target bar and RetGearTarget macro", default = true },
+  { key = "targetBar",     label = "Quest target bar and WaypathTarget macro", default = true },
   { key = "questItems",    label = "Buttons for quest items I need to use", default = true },
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
-  { key = "arrow",         label = "Arrow to my map pin (/rg way 45 60)", default = true },
+  { key = "arrow",         label = "Arrow to my map pin (/wp way 45 60)", default = true },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
@@ -67,7 +67,7 @@ local function onComplete(retry)
   if r.unknown and not retry then C_Timer.After(0.6, function() onComplete(true) end); return end
   if r.unknown then return end
   local pick, why
-  if r.upI and (not r.healI or r.healI == r.upI) then pick, why = r.upI, string.format("+%.0f Ret score", r.up)
+  if r.upI and (not r.healI or r.healI == r.upI) then pick, why = r.upI, string.format("+%.0f %s", r.up, RG.SCORE_NAME)
   elseif not r.upI and not r.healI and r.goldI then pick, why = r.goldI, "sells for the most"
   end
   if pick then
@@ -322,7 +322,7 @@ function RG.NearestSpot(turnin)
 end
 local targetSet = {}
 
-local MACRO = "RetGearTarget"
+local MACRO = "WaypathTarget"
 local function updateMacro(list)
   if not (CreateMacro and EditMacro and GetMacroIndexByName) then return end
   local body = "/cleartarget\n"
@@ -331,7 +331,7 @@ local function updateMacro(list)
     if #body + #line > 250 then break end
     body = body .. line
   end
-  if #list == 0 then body = body .. "/run print(\"RetGear: no quest mobs to target\")" end
+  if #list == 0 then body = body .. "/run print(\"Waypath+: no quest mobs to target\")" end
   local idx = GetMacroIndexByName(MACRO)
   if idx and idx > 0 then EditMacro(idx, MACRO, nil, body)
   else pcall(CreateMacro, MACRO, "INV_Misc_Spyglass_03", body, nil) end
@@ -340,9 +340,9 @@ end
 local bar, targetBtns, itemBtns = nil, {}, {}
 local function buildBar()
   if bar then return end
-  bar = CreateFrame("Frame", "RetGearSpeedBar", UIParent, "BackdropTemplate")
+  bar = CreateFrame("Frame", "WaypathSpeedBar", UIParent, "BackdropTemplate")
   bar:SetSize(200, 30); bar:SetMovable(true); bar:SetClampedToScreen(true)
-  local pos = RetGearDB.speedBarPos
+  local pos = WaypathDB.speedBarPos
   if pos then bar:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else bar:SetPoint("CENTER", UIParent, "CENTER", 0, -230) end
   local handle = CreateFrame("Frame", nil, bar)
   handle:SetSize(12, 30); handle:SetPoint("LEFT"); handle:EnableMouse(true); handle:RegisterForDrag("LeftButton")
@@ -350,16 +350,16 @@ local function buildBar()
   handle:SetScript("OnDragStart", function() if not combat() then bar:StartMoving() end end)
   handle:SetScript("OnDragStop", function()
     bar:StopMovingOrSizing()
-    local p, _, _, x, y = bar:GetPoint(); RetGearDB.speedBarPos = { p, x, y }
+    local p, _, _, x, y = bar:GetPoint(); WaypathDB.speedBarPos = { p, x, y }
   end)
-  handle:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("RetGear quest bar"); GameTooltip:AddLine("Drag to move. Buttons: quest items to use, then quest mobs to target.", 1, 1, 1, true); GameTooltip:Show() end)
+  handle:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+ quest bar"); GameTooltip:AddLine("Drag to move. Buttons: quest items to use, then quest mobs to target.", 1, 1, 1, true); GameTooltip:Show() end)
   handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
 local function secureButton(list, i, kind)
   local b = list[i]
   if b then return b end
-  b = CreateFrame("Button", "RetGear" .. kind .. i, bar, "SecureActionButtonTemplate, BackdropTemplate")
+  b = CreateFrame("Button", "Waypath" .. kind .. i, bar, "SecureActionButtonTemplate, BackdropTemplate")
   b:SetSize(28, 28)
   b:RegisterForClicks("AnyUp", "AnyDown")
   RG.Backdrop(b, { 0.05, 0.05, 0.06, 0.9 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.6 })
@@ -452,7 +452,7 @@ local function nameplate(unit)
   if not t or RG.SafeUnit(UnitIsDead, unit) then return end
   if lastAlert[name] and GetTime() - lastAlert[name] < 180 then return end
   lastAlert[name] = GetTime()
-  RG.Print(GOLD .. "Quest mob nearby:|r " .. name .. (t.drop and (GREY .. " (drops " .. t.drop .. ")|r") or "") .. GREY .. (t.have and t.need and string.format("  (%d/%d)", t.have, t.need) or "") .. "  ·  press your RetGearTarget macro|r")
+  RG.Print(GOLD .. "Quest mob nearby:|r " .. name .. (t.drop and (GREY .. " (drops " .. t.drop .. ")|r") or "") .. GREY .. (t.have and t.need and string.format("  (%d/%d)", t.have, t.need) or "") .. "  ·  press your WaypathTarget macro|r")
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
 end
 
@@ -485,13 +485,13 @@ local function fmtTime(sec)
 end
 local function buildArrow()
   if arrow then return end
-  arrow = CreateFrame("Frame", "RetGearArrow", UIParent)
+  arrow = CreateFrame("Frame", "WaypathArrow", UIParent)
   arrow:SetSize(84, 84); arrow:SetMovable(true); arrow:EnableMouse(true); arrow:RegisterForDrag("LeftButton"); arrow:SetClampedToScreen(true)
-  arrow:SetScale(RetGearDB.arrowScale or 1)
-  local pos = RetGearDB.arrowPos
+  arrow:SetScale(WaypathDB.arrowScale or 1)
+  local pos = WaypathDB.arrowPos
   if pos then arrow:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else arrow:SetPoint("TOP", UIParent, "TOP", 0, -150) end
   arrow:SetScript("OnDragStart", arrow.StartMoving)
-  arrow:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, _, x, y = self:GetPoint(); RetGearDB.arrowPos = { p, x, y } end)
+  arrow:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, _, x, y = self:GetPoint(); WaypathDB.arrowPos = { p, x, y } end)
   -- disc and ring
   arrow.disc = arrow:CreateTexture(nil, "BACKGROUND"); arrow.disc:SetSize(64, 64); arrow.disc:SetPoint("CENTER")
   arrow.disc:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"); arrow.disc:SetVertexColor(0, 0, 0, 0.55)
@@ -519,8 +519,8 @@ local function buildArrow()
   end)
   arrow:EnableMouseWheel(true)
   arrow:SetScript("OnMouseWheel", function(self, delta)
-    local sc = math.max(0.6, math.min(1.8, (RetGearDB.arrowScale or 1) + delta * 0.1))
-    RetGearDB.arrowScale = sc; self:SetScale(sc)
+    local sc = math.max(0.6, math.min(1.8, (WaypathDB.arrowScale or 1) + delta * 0.1))
+    WaypathDB.arrowScale = sc; self:SetScale(sc)
   end)
   arrow:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
@@ -649,7 +649,7 @@ function RG.ArrowTo(wp)
     RG.ClearWaypoint()
     RG.Notify("Arrow off")
   else
-    if not RG.Opt("arrow") then RetGearDB.arrow = true end
+    if not RG.Opt("arrow") then WaypathDB.arrow = true end
     RG.PinWaypoint(wp, true)
     RG.Notify("Arrow on: " .. wp[4])
   end
@@ -763,20 +763,20 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
   end
 end)
 
-local base = SlashCmdList.RETGEAR
-SlashCmdList.RETGEAR = function(msg)
+local base = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   cmd = cmd and cmd:lower()
   if cmd == "way" then
     local x, y = (rest or ""):match("([%d%.]+)[,%s]+([%d%.]+)")
-    if x and y then RG.SetWaypoint(tonumber(x), tonumber(y)) else RG.Print("Usage: /rg way 45.2 60.8  (coordinates in your current zone)") end
+    if x and y then RG.SetWaypoint(tonumber(x), tonumber(y)) else RG.Print("Usage: /wp way 45.2 60.8  (coordinates in your current zone)") end
     return
   elseif cmd == "next" then
     local s2 = RG.NearestSpot(false) or RG.NearestSpot(true)
     if s2 then RG.PinWaypoint(s2.wp) else RG.Print("No quest objectives with a known location near you.") end
     return
   elseif cmd == "auto" then
-    RetGearDB.autoQuest = not RG.Opt("autoQuest"); paused = false
+    WaypathDB.autoQuest = not RG.Opt("autoQuest"); paused = false
     RG.Print("Auto accept and turn in " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)." or "off."))
     return
   elseif cmd == "undo" then
