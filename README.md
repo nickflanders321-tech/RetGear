@@ -75,6 +75,6 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 | `/rg dps reset` | Clear fight history |
 
 ## Keeping it current
-A weekly update checks the newest WoW Forever guides and refreshes the route, gear, gold tips, healing list, bank-alt quests and camping data. Each release is listed in `CHANGELOG.md`.
+Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, healing list, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.
 
 Gear guide items are scored from the cMaNGOS classic item database and checked against WoW Forever's item data (`tools/gear`). Waypoints and quest objectives come from [QuestieDB](https://github.com/Questie/QuestieDB)'s WoW Forever data; `tools/waypoints` and `tools/objectives` rebuild them. Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.
