@@ -184,7 +184,7 @@ local function item(n, y, text, opts)
   opts = opts or {}
   local b = line(n)
   b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
-  local indent = opts.box ~= nil and 16 or 8
+  local indent = opts.indent or (opts.box ~= nil and 16 or 8)
   b.right:SetFont("Fonts\\FRIZQT__.TTF", fontSize(10.5), ""); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
   b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize(11.5), "")
@@ -246,7 +246,7 @@ function RG.RefreshTracker()
     tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 8)
     return
   end
-  local MAXQ = 8
+  local MAXQ = 10
   -- 1. your quests: level, name, progress, distance
   local quests = RG.MyQuests and RG.MyQuests() or {}
   local new = RG.NearbyNewQuests and RG.NearbyNewQuests(2) or {}
@@ -256,21 +256,60 @@ function RG.RefreshTracker()
     local isFolded
     n = n + 1; y, isFolded = section(n, y, "Quests", "quests", GREY .. #quests .. "/" .. ((C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 20) .. (ready > 0 and ("  ·  " .. GREEN .. ready .. " ready|r") or "") .. "|r")
     if not isFolded then
-      for i = 1, math.min(MAXQ, #quests) do
-        local q = quests[i]
-        local status
-        if q.complete then status = GREEN .. "turn in|r"
-        elseif q.failed then status = "|cffff3333failed|r"
-        else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
-        local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
-        n = n + 1
-        y = item(n, y, RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
-          { single = true, right = status .. where, tip = questTip(q),
-            onClick = function() RG.OpenQuest(q.title, q.id) end,
-            onRightClick = q.wp and function() RG.PinWaypoint(q.wp) end or nil })
+      -- grouped by zone: the zone you're in first, then the nearest zones
+      local here = (GetRealZoneText and GetRealZoneText()) or (GetZoneText and GetZoneText()) or ""
+      local groups, byZone = {}, {}
+      for _, q in ipairs(quests) do
+        local z = q.zone or "Other"
+        local g = byZone[z]
+        if not g then g = { zone = z, list = {}, here = (z == here) }; byZone[z] = g; groups[#groups + 1] = g end
+        g.list[#g.list + 1] = q
+        if q.dist and (not g.dist or q.dist < g.dist) then g.dist = q.dist end
+        if q.complete then g.ready = (g.ready or 0) + 1 end
+        g.minLevel = math.min(g.minLevel or 99, q.level or 99)
       end
-      if #quests > MAXQ then
-        n = n + 1; y = item(n, y, GREY .. "+" .. (#quests - MAXQ) .. " more in your quest log|r", { single = true, onClick = function() if ToggleQuestLog then ToggleQuestLog() end end })
+      table.sort(groups, function(a2, b2)
+        if a2.here ~= b2.here then return a2.here end
+        if (a2.dist ~= nil) ~= (b2.dist ~= nil) then return a2.dist ~= nil end
+        if a2.dist and b2.dist and a2.dist ~= b2.dist then return a2.dist < b2.dist end
+        return a2.minLevel < b2.minLevel
+      end)
+      local shownQ, hidden = 0, 0
+      for _, g in ipairs(groups) do
+        if shownQ >= MAXQ then hidden = hidden + #g.list
+        else
+          local zf = RetGearDB.trackerFold and RetGearDB.trackerFold["zone:" .. g.zone]
+          n = n + 1
+          y = item(n, y, (zf and "+ " or "") .. "|cffc9a227" .. g.zone .. "|r" .. (g.here and (GREY .. "  (you're here)|r") or ""),
+            { single = true, indent = 2, right = GREY .. #g.list .. (g.ready and ("  ·  " .. GREEN .. g.ready .. " ready|r") or "") .. "|r",
+              tip = "Click to fold or show this zone's quests.",
+              onClick = function()
+                RetGearDB.trackerFold = RetGearDB.trackerFold or {}
+                RetGearDB.trackerFold["zone:" .. g.zone] = not RetGearDB.trackerFold["zone:" .. g.zone] or nil
+                RG.RefreshTracker()
+              end })
+          if not zf then
+            for _, q in ipairs(g.list) do
+              if shownQ >= MAXQ then hidden = hidden + 1
+              else
+                shownQ = shownQ + 1
+                local status
+                if q.complete then status = GREEN .. "turn in|r"
+                elseif q.failed then status = "|cffff3333failed|r"
+                else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
+                local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
+                n = n + 1
+                y = item(n, y, RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
+                  { single = true, indent = 12, right = status .. where, tip = questTip(q),
+                    onClick = function() RG.OpenQuest(q.title, q.id) end,
+                    onRightClick = q.wp and function() RG.PinWaypoint(q.wp) end or nil })
+              end
+            end
+          end
+        end
+      end
+      if hidden > 0 then
+        n = n + 1; y = item(n, y, GREY .. "+" .. hidden .. " more in your quest log|r", { single = true, indent = 12, onClick = function() if ToggleQuestLog then ToggleQuestLog() end end })
       end
     end
     y = y + 5

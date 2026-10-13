@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.21.2 (quests grouped by zone)
+- The tracker's Quests list is grouped by zone, as in your quest log: the zone you're in first ("you're here"), then the nearest zones. Each zone shows how many quests it has and how many are ready to turn in.
+- Click a zone name to fold its quests away (+ means folded); it stays folded.
+- Up to 10 quests show; the rest are counted with a link to your quest log.
+
 ## v0.21.1 (talents fix)
 - Fixed: the Talents tab said "open your talents once" forever. WoW Forever doesn't answer the usual "unspent talent points" call, so RetGear now tries every way it knows, and if none work it counts your points itself (one per level from 10, minus what's spent in your tree).
 - The tab refreshes as soon as you spend a point or level up, and clicking the unspent-points bar opens your talent window.
