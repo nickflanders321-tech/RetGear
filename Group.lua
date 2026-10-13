@@ -30,7 +30,7 @@ end
 local function partyUnits()
   local out = {}
   if IsInRaid and IsInRaid() then return out end
-  for i = 1, 4 do local u = "party" .. i; if UnitExists(u) then out[#out + 1] = u end end
+  for i = 1, 4 do local u = "party" .. i; if RG.SafeCall(UnitExists, u) then out[#out + 1] = u end end
   return out
 end
 
@@ -141,7 +141,7 @@ function RG.UnblessedParty()
   for _, u in ipairs(partyUnits()) do
     local has, blocked = myBlessingOn(u)
     if blocked then return {} end
-    if not UnitIsDeadOrGhost(u) and not has then out[#out + 1] = { unit = u, name = RG.SafeName(u) or u, suggest = RG.SuggestBlessing(u) } end
+    if not RG.SafeCall(UnitIsDeadOrGhost, u) and not has then out[#out + 1] = { unit = u, name = RG.SafeName(u) or u, suggest = RG.SuggestBlessing(u) } end
   end
   return out
 end

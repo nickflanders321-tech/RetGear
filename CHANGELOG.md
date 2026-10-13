@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.25.1 (target type fix)
+- Fixed: "attempt to compare local 'ctype' (a secret string value)" when targeting in combat. WoW Forever can hide your target's creature type from addons; the Exorcism alert now just stays quiet when it can't tell, instead of erroring.
+- Every other target and party check (attackable, dead, exists, creature type in the DPS coach, the Seal reminder, party lists) goes through the same protection.
+
 ## v0.25.0 (secret bank-alt guide)
 - **Secret guide: a bank alt in ten minutes.** Make a new Undead on your realm and log in: RetGear's tracker walks it from Deathknell to Brill, into Undercity, to the Auction House, bank and mailbox, makes the Undercity inn its home, and fills its bag slots, with the arrow pointing at each stop (auctioneer, bankers, Innkeeper Norman and the bag vendor, positioned from WoW Forever data).
 - Each step ticks itself: arriving in Brill and Undercity, opening the Auction House, bank and mailbox, setting your hearthstone, and filling four bags. When it's done, the tracker switches to the shopping list for your main.

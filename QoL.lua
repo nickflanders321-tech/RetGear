@@ -254,7 +254,7 @@ function RG.Reminders()
     local _, class = UnitClass("player")
     if class == "PALADIN" then
       if knows("Blessing of Might") and hasAura(BLESSINGS) == false then out[#out + 1] = { GOLD .. "Cast Blessing of Might on yourself|r" } end
-      if (knows("Seal of Command") or knows("Seal of Righteousness")) and hasAura(SEALS) == false and UnitExists("target") and UnitCanAttack("player", "target") then
+      if (knows("Seal of Command") or knows("Seal of Righteousness")) and hasAura(SEALS) == false and RG.SafeCall(UnitExists, "target") and RG.SafeCall(UnitCanAttack, "player", "target") then
         out[#out + 1] = { GOLD .. "Put a Seal up before you pull|r" .. GREY .. "  (Seal of Command)|r" }
       end
     end

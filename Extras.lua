@@ -95,9 +95,11 @@ local function knows(name)
 end
 local function exorcismAlert()
   if exo then exo:Hide() end
-  if not RG.Opt("exorcism") or not UnitExists("target") or UnitIsDead("target") or not UnitCanAttack("player", "target") then return end
-  local ok, ctype = pcall(UnitCreatureType, "target")
-  if not ok or (ctype ~= "Undead" and ctype ~= "Demon") then return end
+  local S = RG.SafeCall
+  if not RG.Opt("exorcism") or not S(UnitExists, "target") or S(UnitIsDead, "target") or not S(UnitCanAttack, "player", "target") then return end
+  -- creature type can be hidden from addons: then there's simply no alert
+  local ctype = S(UnitCreatureType, "target")
+  if ctype ~= "Undead" and ctype ~= "Demon" then return end
   if not knows("Exorcism") then return end
   if not exo then
     exo = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")

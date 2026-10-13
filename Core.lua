@@ -64,6 +64,13 @@ function RG.SafeUnit(fn, unit)
   return RG.Safe(a), RG.Safe(b)
 end
 function RG.SafeName(unit) return (RG.SafeUnit(UnitName, unit)) end
+-- Any unit query with any arguments: its first result, or nil if refused or hidden.
+function RG.SafeCall(fn, ...)
+  if not fn then return nil end
+  local ok, a = pcall(fn, ...)
+  if not ok then return nil end
+  return RG.Safe(a)
+end
 function RG.AurasLocked() return (InCombatLockdown and InCombatLockdown()) and true or false end
 function RG.FindAura(unit, filter, test)
   if RG.AurasLocked() then return nil, true end

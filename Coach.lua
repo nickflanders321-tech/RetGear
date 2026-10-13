@@ -28,7 +28,7 @@ local KEY_SPELLS = {
   { name = "Judgement",       tip = "Judge on cooldown" },
   { name = "Holy Strike",     tip = "Use Holy Strike on cooldown" },
   { name = "Crusader Strike", tip = "Use Crusader Strike on cooldown" },
-  { name = "Exorcism",        tip = "Exorcism on Undead and Demons", need = function() local t = UnitCreatureType and UnitCreatureType("target"); return t == "Undead" or t == "Demon" end },
+  { name = "Exorcism",        tip = "Exorcism on Undead and Demons", need = function() local t = RG.SafeCall(UnitCreatureType, "target"); return t == "Undead" or t == "Demon" end },
   { name = "Hammer of Wrath", tip = "Hammer of Wrath when the target is under 20%" },
 }
 
@@ -101,7 +101,7 @@ local function refreshBuffs()
 end
 local function hasSeal() return next(buffs.seal) ~= nil end
 local function hasMight() return buffs.might or nil end
-local function targetOK() return UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDead("target") end
+local function targetOK() local S = RG.SafeCall; return S(UnitExists, "target") and S(UnitCanAttack, "player", "target") and not S(UnitIsDead, "target") end
 
 -- ---------------------------------------------------------------------------
 -- Recording a fight
@@ -119,8 +119,8 @@ local function newFight()
     samples = 0, sealUp = 0, meleeSamples = 0, idle = {}, cd = {}, noMana = 0,
     minMana = 1, speed = mh, died = false,
     might = hasMight() ~= nil, camp = RG.CampState and RG.CampState() == "active" or false, stone = (GetWeaponEnchantInfo and GetWeaponEnchantInfo()) and true or false,
-    target = UnitExists("target") and RG.SafeName("target") or nil,
-    class = UnitExists("target") and RG.SafeUnit(UnitClassification, "target") or nil,
+    target = RG.SafeCall(UnitExists, "target") and RG.SafeName("target") or nil,
+    class = RG.SafeCall(UnitExists, "target") and RG.SafeUnit(UnitClassification, "target") or nil,
     instance = instType ~= "none" and instType or nil,
     level = UnitLevel("player"),
     groupSize = GetNumGroupMembers and GetNumGroupMembers() or 1, party = {}, aggro = 0,

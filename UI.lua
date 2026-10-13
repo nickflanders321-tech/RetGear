@@ -1354,7 +1354,7 @@ local function renderGroup()
     rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_DevotionAura")
     for i = 1, 4 do
       local u = "party" .. i
-      if UnitExists(u) then
+      if RG.SafeCall(UnitExists, u) then
         n = n + 1
         local mine = RG.MyBlessingOn and RG.MyBlessingOn(u)
         local _, class = RG.SafeUnit(UnitClass, u)
