@@ -473,7 +473,7 @@ SlashCmdList.RETGEAR = function(msg)
     RG.Print("Commands (type /rg on its own to open the guide):")
     for _, line in ipairs({
       "|cffffd100Guide|r  /rg  ·  /rg setup  ·  /rg settings  ·  /rg tracker",
-      "|cffffd100Questing|r  /rg next  ·  /rg way 45 60  ·  /rg auto  ·  /rg pace  ·  /rg session",
+      "|cffffd100Questing|r  /rg next  ·  /rg undo  ·  /rg way 45 60  ·  /rg auto  ·  /rg pace  ·  /rg session",
       "|cffffd100Tabs|r  /rg dps  ·  /rg group  ·  /rg heal  ·  /rg camp  ·  /rg gold  ·  /rg mail  ·  /rg talents",
       "|cffffd100Group|r  /rg lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /rg scan  ·  /rg autoscan  ·  /rg track [item]  ·  /rg untrack [item]  ·  /rg alert [item] 25",

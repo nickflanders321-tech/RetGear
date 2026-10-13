@@ -546,8 +546,8 @@ local function renderRoute()
           local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
           local srow = getRow(n)
           setStep(srow, i, (wp and RG.PIN or "") .. text, auto or RG.db.stepsDone[sk] or past, function()
-            RG.db.stepsDone[sk] = not RG.db.stepsDone[sk] or nil
-            RG.RefreshUI()
+            if RG.db.stepsDone[sk] then RG.db.stepsDone[sk] = nil; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end
+            elseif RG.TickStep then RG.TickStep(sk, text) else RG.db.stepsDone[sk] = true; RG.RefreshUI() end
           end, auto or (past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
           if wp then
             srow.onRightClick = function() RG.PinWaypoint(wp) end

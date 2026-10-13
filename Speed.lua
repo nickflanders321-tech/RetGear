@@ -567,6 +567,10 @@ SlashCmdList.RETGEAR = function(msg)
     RetGearDB.autoQuest = not RG.Opt("autoQuest"); paused = false
     RG.Print("Auto accept and turn in " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)." or "off."))
     return
+  elseif cmd == "undo" then
+    local t = RG.UndoTick and RG.UndoTick()
+    if t then RG.Print("Back on your list: " .. t) else RG.Print("Nothing to undo: no tasks ticked off by hand.") end
+    return
   elseif cmd == "pace" then
     local cur, last, avg = RG.Pace()
     RG.Print(string.format("This level: %s  ·  last level: %s  ·  average of last 5: %s", RG.FormatDuration(cur), last and RG.FormatDuration(last) or "not recorded yet", avg and RG.FormatDuration(avg) or "not recorded yet"))

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.20.5 (undo)
+- Ticked a task off on the tracker by mistake? An "Undo" line appears under the list for 10 minutes; click it to put the task back. `/rg undo` does the same any time (it remembers your last 10 ticks).
+- Ticks made on the Route tab count too, and clicking a ticked task there still unticks it.
+
 ## v0.20.4 (from your first screenshot)
 - Dungeons whose quests are all turned in now show "Quests done" on the Route tab, tick their steps off, and leave the tracker instead of saying "go now".
 - The selected bottom tab is easy to see: it's lit up and raised, instead of fading into the window.

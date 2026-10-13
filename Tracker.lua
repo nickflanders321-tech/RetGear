@@ -19,6 +19,38 @@ function RG.StepIsDone(entry, i)
   return false
 end
 
+-- Ticking a task by hand can be undone: the last few ticks are remembered.
+local UNDO_SHOW = 600   -- the tracker offers "Undo" for 10 minutes after a tick
+function RG.TickStep(sk, text)
+  RG.db.stepsDone = RG.db.stepsDone or {}
+  RG.db.stepsDone[sk] = true
+  RG.db.tickHistory = RG.db.tickHistory or {}
+  local h = RG.db.tickHistory
+  for i = #h, 1, -1 do if h[i].sk == sk then table.remove(h, i) end end
+  h[#h + 1] = { sk = sk, text = text, t = time() }
+  while #h > 10 do table.remove(h, 1) end
+  RG.RefreshTracker(); if RG.RefreshUI then RG.RefreshUI() end
+end
+-- Puts the most recent hand-ticked task back on the list. Returns its text.
+function RG.UndoTick()
+  local h = RG.db and RG.db.tickHistory
+  while h and #h > 0 do
+    local e = table.remove(h)
+    if RG.db.stepsDone and RG.db.stepsDone[e.sk] then
+      RG.db.stepsDone[e.sk] = nil
+      RG.RefreshTracker(); if RG.RefreshUI then RG.RefreshUI() end
+      return e.text
+    end
+  end
+end
+local function lastTick(prefix)
+  local h = RG.db.tickHistory
+  local e = h and h[#h]
+  if e and RG.db.stepsDone and RG.db.stepsDone[e.sk] and time() - (e.t or 0) <= UNDO_SHOW
+    and e.sk:sub(1, #prefix) == prefix then return e end
+end
+local function plain(text) return ((text or ""):gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+
 -- The route entry you're on: the questing zone for your level that still has
 -- open steps, falling back to any zone that fits.
 local function currentEntry()
@@ -192,11 +224,18 @@ function RG.RefreshTracker()
         local sk = key .. "#" .. i
         local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
         if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
-        y = item(n, y, (wp and RG.PIN or "") .. text, { box = false, tip = "Click to tick this off." .. (wp and ("\nRight-click: show " .. wp[4] .. " on the map.") or ""), onClick = function() RG.db.stepsDone[sk] = true; RG.RefreshTracker(); if RG.RefreshUI then RG.RefreshUI() end end,
+        y = item(n, y, (wp and RG.PIN or "") .. text, { box = false, tip = "Click to tick this off." .. (wp and ("\nRight-click: show " .. wp[4] .. " on the map.") or ""), onClick = function() RG.TickStep(sk, text) end,
           onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
       end
     end
     if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. Check the route for your next zone.|r") end
+    local u = lastTick(key .. "#")
+    if u then
+      local short = plain(u.text); if #short > 34 then short = short:sub(1, 32) .. "..." end
+      n = n + 1
+      y = item(n, y, GREY .. "Ticked: " .. short .. "|r  " .. GOLD .. "[Undo]|r", { tip = "Click to put this task back on your list.\n" .. GREY .. plain(u.text) .. "\n/rg undo does the same.|r",
+        onClick = function() RG.UndoTick() end })
+    end
     y = y + 6
   end
   -- dungeon prep

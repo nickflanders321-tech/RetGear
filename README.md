@@ -54,6 +54,7 @@ Your paladin is your **main**. Any other character runs in **bank alt mode**: it
 | `/rg dps` · `/rg heal` · `/rg camp` · `/rg gold` · `/rg mail` · `/rg talents` · `/rg settings` | Open that tab |
 | `/rg auto` | Auto accept / turn in on or off |
 | `/rg next` | Pin your nearest quest objective (or turn-in) |
+| `/rg undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
 | `/rg way 45 60` | Pin a spot in your zone and follow the arrow |
 | `/rg pace` | Time at this level, last level and your average |
 | `/rg session` | XP, quests, ore and gold this session |
