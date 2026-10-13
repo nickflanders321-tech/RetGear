@@ -6,6 +6,9 @@ local WHITE = "Interface\\Buttons\\WHITE8X8"
 local GOLDC = { 1, 0.82, 0 }
 local W = 300
 local tr, lines, collapsed
+-- marks the line the arrow is pointing at
+local ARROW = "|TInterface\\Minimap\\MinimapArrow:12:12|t"
+local function isTarget(wp) return RG.ArrowTarget and RG.ArrowTarget(wp) end
 
 function RG.StepIsDone(entry, i)
   local key = entry.zone .. "|" .. entry.from
@@ -111,6 +114,15 @@ local function line(i)
   b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   b:SetScript("OnClick", function(self, btn)
     if btn == "RightButton" and self.onRightClick then self.onRightClick(); return end
+    if self.onDoubleClick then
+      -- wait a moment so a double-click doesn't also do the single-click action
+      local now = GetTime()
+      if self.pending and now - self.pending < 0.3 then self.pending = nil; self.onDoubleClick(); return end
+      self.pending = now
+      local single = self.onClick
+      C_Timer.After(0.3, function() if self.pending == now then self.pending = nil; if single then single() end end end)
+      return
+    end
     if self.onClick then self.onClick() end
   end)
   b:SetScript("OnEnter", function(self) if self.tip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(self.tip, 1, 1, 1, 1, true); GameTooltip:Show() end end)
@@ -160,7 +172,7 @@ local function folded(key) return key and RetGearDB.trackerFold and RetGearDB.tr
 local function fontSize(base) return math.floor(base * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5) end
 local function section(n, y, label, key, right)
   local b = line(n)
-  b.onClick, b.onRightClick, b.tip = nil, nil, nil
+  b.onClick, b.onRightClick, b.tip, b.onDoubleClick = nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
   local isFolded = folded(key)
   if key then
@@ -184,6 +196,7 @@ local function item(n, y, text, opts)
   opts = opts or {}
   local b = line(n)
   b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
+  b.onDoubleClick = opts.wp and function() RG.ArrowTo(opts.wp) end or nil
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
   b.right:SetFont("Fonts\\FRIZQT__.TTF", fontSize(10.5), ""); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
@@ -213,7 +226,7 @@ local function questTip(q)
     end
   end
   if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
-  t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Right-click:|r show on the map") or "")
+  t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show on the map") or "")
   return t
 end
 
@@ -299,8 +312,8 @@ function RG.RefreshTracker()
                 else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
                 local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
                 n = n + 1
-                y = item(n, y, RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
-                  { single = true, indent = 12, right = status .. where, tip = questTip(q),
+                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
+                  { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp,
                     onClick = function() RG.OpenQuest(q.title, q.id) end,
                     onRightClick = q.wp and function() RG.PinWaypoint(q.wp) end or nil })
               end
@@ -321,8 +334,8 @@ function RG.RefreshTracker()
     if not isFolded then
       for _, q in ipairs(new) do
         n = n + 1
-        y = item(n, y, RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r",
-          tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map",
+        y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r", wp = q.wp,
+          tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map\n" .. GOLD .. "Double-click:|r arrow on / off",
           onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.PinWaypoint(q.wp) end })
       end
     end
@@ -347,7 +360,7 @@ function RG.RefreshTracker()
           local sk = key .. "#" .. i
           local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
           if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
-          y = item(n, y, (wp and RG.PIN or "") .. text, { box = false, tip = GOLD .. "Click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() RG.TickStep(sk, text) end,
+          y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() RG.TickStep(sk, text) end,
             onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
         end
       end
@@ -379,8 +392,8 @@ function RG.RefreshTracker()
           local q = missing[i]
           local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
           n = n + 1
-          y = item(n, y, RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", { single = true, right = GREY .. "pick up|r",
-            tip = "|cffffffff" .. q[1] .. "|r\n" .. GREY .. q[2] .. ", " .. q[3] .. "|r" .. (gw and ("\n\n" .. GOLD .. "Click:|r show " .. q[2] .. " on the map") or ""),
+          y = item(n, y, (isTarget(gw) and ARROW or "") .. RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", { single = true, right = GREY .. "pick up|r", wp = gw,
+            tip = "|cffffffff" .. q[1] .. "|r\n" .. GREY .. q[2] .. ", " .. q[3] .. "|r" .. (gw and ("\n\n" .. GOLD .. "Click:|r show " .. q[2] .. " on the map\n" .. GOLD .. "Double-click:|r arrow on / off") or ""),
             onClick = gw and function() RG.PinWaypoint(gw) end or nil, onRightClick = gw and function() RG.PinWaypoint(gw) end or nil })
         end
         if #missing > 3 then n = n + 1; y = item(n, y, GREY .. "+" .. (#missing - 3) .. " more on the Route tab|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end

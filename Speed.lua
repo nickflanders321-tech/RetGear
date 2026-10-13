@@ -479,7 +479,15 @@ local function buildArrow()
   arrow.tex = arrow:CreateTexture(nil, "ARTWORK"); arrow.tex:SetSize(42, 42); arrow.tex:SetPoint("TOP")
   arrow.tex:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3])
   arrow.dist = arrow:CreateFontString(nil, "OVERLAY"); arrow.dist:SetFont("Fonts\\ARIALN.TTF", 13, "OUTLINE"); arrow.dist:SetPoint("TOP", arrow.tex, "BOTTOM", 0, -2)
-  arrow:SetScript("OnMouseUp", function(_, btn) if btn == "RightButton" and C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint(); arrow:Hide() end end)
+  -- right-click or double-click the arrow to turn it off
+  local lastUp = 0
+  arrow:SetScript("OnMouseUp", function(_, btn)
+    if btn == "RightButton" then RG.ClearWaypoint(); return end
+    local now = GetTime()
+    if now - lastUp < 0.35 then lastUp = 0; RG.ClearWaypoint(); RG.Print(GREY .. "Arrow off.|r") else lastUp = now end
+  end)
+  arrow:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Drag to move. Double-click or right-click to turn the arrow off.", 1, 1, 1, 1, true); GameTooltip:Show() end)
+  arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
   local acc = 0
   arrow:SetScript("OnUpdate", function(self, dt)
     acc = acc + dt; if acc < 0.05 then return end; acc = 0
@@ -538,6 +546,28 @@ function RG.PinWaypoint(wp, quiet)
   lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
   if RG.RefreshArrow then RG.RefreshArrow() end
   if not quiet then RG.Print("Pinned " .. GOLD .. wp[4] .. "|r" .. GREY .. string.format(" (%.1f, %.1f). Follow the arrow.|r", wp[2], wp[3])) end
+end
+function RG.ClearWaypoint()
+  if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
+  if arrow then arrow:Hide() end
+end
+-- Double-click a quest, step or quest giver: arrow on to it, or off if it's already the target.
+function RG.ArrowTo(wp)
+  if not wp then return end
+  local cur = currentPin()
+  if cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) then
+    RG.ClearWaypoint()
+    RG.Print(GREY .. "Arrow off.|r")
+  else
+    if not RG.Opt("arrow") then RetGearDB.arrow = true end
+    RG.PinWaypoint(wp, true)
+    RG.Print("Arrow on: " .. GOLD .. wp[4] .. "|r" .. GREY .. "  (double-click again to turn it off)|r")
+  end
+  if RG.RefreshTracker then RG.RefreshTracker() end
+end
+function RG.ArrowTarget(wp)
+  local cur = currentPin()
+  return wp and cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) or false
 end
 -- Called by the tracker with the next unfinished step that has a waypoint.
 function RG.AutoPin(key, wp)

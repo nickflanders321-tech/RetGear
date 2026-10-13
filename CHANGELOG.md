@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.21.3 (double-click arrow)
+- Double-click a quest, new quest, route task or dungeon quest giver on the tracker to point the arrow at it; double-click it again to turn the arrow off. The line the arrow is pointing at is marked with a small arrow.
+- Double-click (or right-click) the arrow itself to turn it off. Hovering the arrow explains this.
+- Single clicks wait a moment so a double-click doesn't also open the quest log or tick a task.
+
 ## v0.21.2 (quests grouped by zone)
 - The tracker's Quests list is grouped by zone, as in your quest log: the zone you're in first ("you're here"), then the nearest zones. Each zone shows how many quests it has and how many are ready to turn in.
 - Click a zone name to fold its quests away (+ means folded); it stays folded.
