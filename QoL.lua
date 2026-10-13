@@ -274,7 +274,7 @@ function RG.ShowWelcome()
   local crest = f:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOP", 0, -34); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
   local ring = f:CreateTexture(nil, "OVERLAY"); ring:SetSize(74, 74); ring:SetPoint("CENTER", crest, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
   local t = f:CreateFontString(nil, "OVERLAY"); t:SetFont("Fonts\\MORPHEUS.TTF", 24, ""); t:SetPoint("TOP", crest, "BOTTOM", 0, -12); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); t:SetShadowColor(0, 0, 0, 1); t:SetShadowOffset(1, -1)
-  t:SetText("Welcome, " .. (UnitName("player") or "Paladin") .. "!")
+  t:SetText("Welcome, " .. (UnitName("player") or "adventurer") .. "!")
   local b = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); b:SetPoint("TOP", t, "BOTTOM", 0, -12); b:SetWidth(390); b:SetJustifyH("LEFT"); b:SetSpacing(2)
   b:SetWidth(410)
   b:SetText(GOLD .. "Waypath+|r walks you from level 1 to 60.\n\n"

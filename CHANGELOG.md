@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.44.0 (quality-of-life pass)
+- **What's new after an update:** the first login after updating prints the three biggest changes in chat, once. `/wp news` lists everything in the update.
+- **Professions on the tracker:** for each profession you have, one line shows the step you're on and the first material you're short of (for example "Tailoring 62 · Bolt of Woolen Cloth x33 · 99 more Wool Cloth"). Click it to open that profession's guide; double-click it and the arrow takes you to the best place to go. Turn it off in Settings.
+- **Next upgrade on the tracker:** click it to see where it drops or which quest gives it (right-click still opens the Gear guide).
+- **Quieter Auction House:** automatic scans no longer print to chat. Chat messages only appear when you start a scan yourself with the Scan button or `/wp scan`.
+- **Settings:** options that were stuck under "Other" now sit in their groups: new quests nearby and the auto-arrow under Leveling, herb alerts under Professions, and a new Group play group. The group helper's labels no longer mention paladins only.
+- No more paladin-only wording for other classes: the Group tab's title, the welcome screen and the bank-alt message.
+- Error reports (`/wp errors`) now include the add-on version; it was missing before.
+- Lighter combat-log handling in dungeons.
+
 ## v0.43.1 (no more cut-off text)
 - Long lines in the Waypath+ window wrap instead of ending in "...": every row grows to fit its whole description (route notes, fishing spots, gear sources, tips, profession steps), on every tab.
 - Section headers that don't fit on one line wrap too, and the footer at the bottom of the window takes a second line when it needs one.

@@ -11,6 +11,7 @@
 ## AddonCompartmentFuncOnLeave: Waypath_OnAddonCompartmentLeave
 
 Data.lua
+News.lua
 Classes\Paladin.lua
 Classes\PaladinGear.lua
 Classes\Warrior.lua

@@ -105,7 +105,7 @@ end
 
 local function buildPages()
   -- 1. Welcome
-  local p1 = newPage("Welcome, " .. (UnitName("player") or "Paladin") .. "!")
+  local p1 = newPage("Welcome, " .. (UnitName("player") or "adventurer") .. "!")
   local crest = p1:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOPLEFT", 4, -42); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
   local ring = p1:CreateTexture(nil, "OVERLAY"); ring:SetSize(74, 74); ring:SetPoint("CENTER", crest, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
   local intro = text(p1, "GameFontHighlight", GOLD .. "Waypath+|r walks you from level 1 to 60: the route and quests, the arrow, gear upgrades, professions, camping and gold.\n\nThis takes about a minute. Every choice can be changed later in Settings, or by running " .. GOLD .. "/wp setup|r again.", W - 140)

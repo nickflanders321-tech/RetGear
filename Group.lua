@@ -13,8 +13,8 @@ local band = (bit and bit.band) or function(a, b)
 end
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 
-table.insert(RG.OPTIONS, { key = "groupDuties", label = "Group helper: Blessings and Aura reminders in a party", default = true })
-table.insert(RG.OPTIONS, { key = "groupAlerts", label = "Group alerts: Purify/Cleanse and party member dying", default = true })
+table.insert(RG.OPTIONS, { key = "groupDuties", label = "Group helper in a party: buff and aura reminders, shared quests, LFG posts", default = true })
+table.insert(RG.OPTIONS, { key = "groupAlerts", label = "Group alerts: a party member to dispel, or one about to die", default = true })
 
 local function grouped() return (GetNumGroupMembers and GetNumGroupMembers() or 0) > 1 end
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
@@ -307,11 +307,9 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
   elseif event == "PLAYER_DEAD" then
     if run then run.myDeaths = run.myDeaths + 1 end
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" and run then
-    pcall(function()
-      local _, sub, _, _, _, _, _, _, _, dstFlags = CombatLogGetCurrentEventInfo()
-      if sub == "PARTY_KILL" then run.kills = run.kills + 1
-      elseif sub == "UNIT_DIED" and dstFlags and band(dstFlags, 0x400) ~= 0 and band(dstFlags, 0x7) ~= 0 then run.deaths = run.deaths + 1 end
-    end)
+    local ok, _, sub, _, _, _, _, _, _, _, dstFlags = pcall(CombatLogGetCurrentEventInfo)
+    if ok and sub == "PARTY_KILL" then run.kills = run.kills + 1
+    elseif ok and sub == "UNIT_DIED" and type(dstFlags) == "number" and band(dstFlags, 0x400) ~= 0 and band(dstFlags, 0x7) ~= 0 then run.deaths = run.deaths + 1 end
   end
 end)
 

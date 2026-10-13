@@ -568,10 +568,48 @@ function RG.RefreshTracker()
     n = n + 1; y, isFolded = section(n, y, "Next upgrade", "upgrade")
     if not isFolded then
       n = n + 1; y = item(n, y, "|cffffffff" .. name .. "|r", { single = true, right = GREEN .. string.format("+%.0f", up.d) .. "|r",
-        tip = "|cffffffff" .. name .. "|r  " .. GREEN .. string.format("+%.0f %s", up.d, RG.SCORE_NAME) .. "|r\n" .. GREY .. up.g.src .. ", " .. up.g.zone .. "|r\n\n" .. GOLD .. "Click:|r open the Gear guide",
-        onClick = function() if RG.ShowTab then RG.ShowTab("guide") end end })
+        tip = "|cffffffff" .. name .. "|r  " .. GREEN .. string.format("+%.0f %s", up.d, RG.SCORE_NAME) .. "|r\n" .. GREY .. up.g.src .. ", " .. up.g.zone .. "|r\n\n" .. GOLD .. "Click:|r where it drops or which quest gives it\n" .. GOLD .. "Right-click:|r open the Gear guide",
+        onClick = function() if RG.ShowItemSource then RG.ShowItemSource(up.g, { note = GREEN .. string.format("+%.0f", up.d) .. "|r" .. GREY .. " over what you wear|r" }) end end,
+        onRightClick = function() if RG.ShowTab then RG.ShowTab("guide") end end })
     end
     y = y + 5
+  end
+  -- 5b. professions: the step you're on and what you're short of
+  if RG.Opt("trackerProfs") and RG.ProfNow then
+    local entries = {}
+    for name, k in pairs(RG.Professions and RG.Professions() or {}) do
+      local now = RG.PROFESSIONS and RG.PROFESSIONS[name] and RG.ProfNow(name, k.rank)
+      if now and now.st and not now.done then
+        local text, short, firstShort
+        if now.craft then
+          short = 0
+          for _, e in ipairs(now.mats or {}) do
+            if not e.via and e.short > 0 then short = short + 1; firstShort = firstShort or e end
+          end
+          text = now.craft .. " x" .. (now.left or 0) .. (firstShort and (GREY .. "  ·  " .. firstShort.short .. " more " .. firstShort.name .. (short > 1 and (", +" .. (short - 1)) or "") .. "|r") or (GREEN .. "  ·  ready|r"))
+        else
+          text = (now.st.gather or now.st.skin or (now.st.fish and ("fish in " .. now.st.fish)) or "") .. GREY .. "  ·  to " .. now.st.to .. "|r"
+        end
+        entries[#entries + 1] = { name = name, rank = k.rank, text = text, now = now, order = now.craft and (firstShort and 0 or 1) or 2 }
+      end
+    end
+    if #entries > 0 then
+      table.sort(entries, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.name < b.name end)
+      local isFolded
+      n = n + 1; y, isFolded = section(n, y, "Professions", "profs")
+      if not isFolded then
+        for i = 1, math.min(3, #entries) do
+          local e = entries[i]
+          local places = RG.ProfPlaces and RG.ProfPlaces(e.name, e.now) or {}
+          local pl = places[1]
+          n = n + 1
+          y = item(n, y, "|cffffffff" .. e.name .. " " .. e.rank .. "|r  " .. e.text, { single = true, wp = pl and pl.wp,
+            tip = "|cffffffff" .. e.name .. "|r " .. e.rank .. "\n" .. e.text .. (pl and ("\n\n" .. GOLD .. "Double-click:|r arrow to " .. (pl.wp and pl.wp[4] or pl.title)) or "") .. "\n" .. GOLD .. "Click:|r open its guide",
+            onClick = function() if RG.ShowProf then RG.ShowProf(e.name) end end })
+        end
+      end
+      y = y + 5
+    end
   end
   -- 6. reminders: the most important few
   local rem = RG.Reminders and RG.Reminders() or {}
@@ -591,6 +629,7 @@ end
 
 -- Fade the tracker during fights so it doesn't cover the action.
 table.insert(RG.OPTIONS, { key = "trackerLocked", label = "Lock the tracker in place", default = false })
+table.insert(RG.OPTIONS, { key = "trackerProfs", label = "Show your professions' next step and missing materials on the tracker", default = true })
 table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = true })
 local fade = CreateFrame("Frame")
 fade:RegisterEvent("PLAYER_REGEN_DISABLED"); fade:RegisterEvent("PLAYER_REGEN_ENABLED")

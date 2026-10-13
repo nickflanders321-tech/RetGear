@@ -143,7 +143,7 @@ end
 local mailBtn
 local function attachAll()
   local main = RG.MainName()
-  if not main then RG.Print("No main set yet. Log in on your paladin first (or /wp main there).") return end
+  if not main then RG.Print("No main set yet. Log in on the character you level first (or /wp main there).") return end
   if MailFrameTab2 and MailFrameTab2.Click and not (SendMailFrame and SendMailFrame:IsShown()) then MailFrameTab2:Click() end
   if SendMailNameEditBox then SendMailNameEditBox:SetText(main) end
   if SendMailSubjectEditBox then SendMailSubjectEditBox:SetText("Quest items from your bank alt") end
@@ -231,6 +231,13 @@ SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "mail" or cmd == "alt" or cmd == "bank" then if RG.ShowTab then RG.ShowTab("mail") end return end
+  if cmd == "news" or cmd == "new" or cmd == "changes" then
+    local N = RG.NEWS
+    if not N then RG.Print("No release notes in this copy (" .. tostring(RG.VERSION) .. "). See CHANGELOG.md."); return end
+    RG.Print("What's new in " .. GOLD .. N.version .. "|r:")
+    for _, l in ipairs(N.lines or {}) do DEFAULT_CHAT_FRAME:AddMessage("   " .. (l:find("^%s") and "    " or (GOLD .. "•|r ")) .. (l:gsub("^%s+", ""))) end
+    return
+  end
   if cmd == "char" or cmd == "character" or cmd == "profile" then
     local what = ((msg or ""):match("^%s*%S+%s+(%S+)") or ""):lower()
     if what == "alt" or what == "bankalt" then RG.SetCharMode("alt"); ReloadUI()

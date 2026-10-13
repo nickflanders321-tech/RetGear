@@ -206,7 +206,7 @@ local function sendNext()
     if not canQuery then return end
   end
   local id = table.remove(queue, 1)
-  if not id then stop("Auction House prices updated."); return end
+  if not id then stop(announce and "Auction House prices updated." or nil); return end
   local name = RG.ItemInfo(id)
   if not name then RG.RequestItem(id); if #queue > 0 then queue[#queue + 1] = id end; return end
   pending, pendingAt = id, GetTime()
@@ -219,11 +219,12 @@ local function sendNext()
   end
   ours = false
 end
+local announce = false   -- chat lines only when you asked for the scan
 local function runItems()
   queue = staleIDs()
-  if #queue == 0 then RG.Print("Auction House prices are up to date."); return end
+  if #queue == 0 then if announce then RG.Print("Auction House prices are up to date.") end return end
   mode = "items"
-  RG.Print("Checking " .. #queue .. " price" .. (#queue > 1 and "s" or "") .. ". Search for anything yourself and Waypath+ steps aside.")
+  if announce then RG.Print("Checking " .. #queue .. " price" .. (#queue > 1 and "s" or "") .. ". Search for anything yourself and Waypath+ steps aside.") end
   runner:SetScript("OnUpdate", function()
     if pending then
       if GetTime() - pendingAt > 3 then record(pending, nil, 0); pending = nil end   -- nothing came back: none listed
@@ -241,6 +242,7 @@ function RG.ScanAH(manual)
   if not ahOpen() then RG.Print("Open the Auction House first, then /wp scan."); return end
   if mode then if manual then RG.Print("Already checking prices (" .. RG.AHScanState() .. ").") end return end
   wantedSet = nil
+  announce = manual and true or false
   if manual then yielded = false end
   local now = time()
   local canFull = now - (RG.db.lastFullScan or 0) > FULL_COOLDOWN
@@ -248,7 +250,7 @@ function RG.ScanAH(manual)
   if canFull and C_AuctionHouse and C_AuctionHouse.ReplicateItems then
     RG.db.lastFullScan = now
     mode = "full"
-    RG.Print("Full price scan: one request for the whole Auction House...")
+    if announce then RG.Print("Full price scan: one request for the whole Auction House...") end
     ours = true; pcall(C_AuctionHouse.ReplicateItems); ours = false
     -- if the server never answers, fall back to item searches
     C_Timer.After(20, function() if mode == "full" and not runner:GetScript("OnUpdate") then mode = nil; if ahOpen() then runItems() end end end)
@@ -259,7 +261,7 @@ function RG.ScanAH(manual)
     if canAll then
       RG.db.lastFullScan = now
       mode = "full"
-      RG.Print("Full price scan: one request for the whole Auction House (the game may pause for a moment)...")
+      if announce then RG.Print("Full price scan: one request for the whole Auction House (the game may pause for a moment)...") end
       ours = true; pcall(QueryAuctionItems, "", nil, nil, 0, nil, nil, true, false); ours = false
       return
     end

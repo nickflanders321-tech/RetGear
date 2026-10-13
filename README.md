@@ -89,6 +89,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp weight STR 2.5` · `/wp hitcap 9` · `/wp talenthit 3` · `/wp reset` | Tune the Ret score |
 | `/wp turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
 | `/wp greys` | Abandon unfinished grey quests (asks first) |
+| `/wp news` | What changed in the update you're running |
 | `/wp where <item>` | Where an item on your gear lists drops, or which quest gives it |
 | `/wp gear 2` · `/wp gear 1` | Equip your 2nd spec's set / put your main gear back on |
 | `/wp spec holy` (any spec name) | Make that spec your 2nd spec |

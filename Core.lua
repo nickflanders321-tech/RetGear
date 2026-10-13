@@ -2,6 +2,12 @@
 -- you're wearing, and adds an upgrade line to every item tooltip.
 local ADDON, RG = ...
 _G.Waypath = RG
+-- The version from the .toc (the release build fills it in; "dev" when run from a checkout)
+do
+  local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+  local ok, v = pcall(function() return meta and meta(ADDON, "Version") end)
+  RG.VERSION = (ok and type(v) == "string" and not v:find("@")) and v or "dev"
+end
 
 -- Classic WoW text colors: quest-log gold, quest-complete green, error red, poor-quality grey
 local GOLD = "|cffffd100"
@@ -50,7 +56,7 @@ local SHARED = {
   main = true, mainHave = true, mainLevel = true, mainBS = true, mailDone = true,
   errors = true, chars = true, profiles = true, profilesMigrated = true, migratedFrom = true, altGuide = true,
   trackerPos = true, trackerScale = true, trackerWidth = true, windowPos = true, arrowPos = true, arrowScale = true,
-  speedBarPos = true, mmAngle = true, textSize = true,
+  speedBarPos = true, mmAngle = true, textSize = true, seenVersion = true,
 }
 RG.SHARED_KEYS = SHARED
 local function charKey() return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "") end
@@ -82,6 +88,7 @@ end
 
 local function InitDB()
   pcall(migrateFromRetGear)
+  if WaypathDB == nil then RG.freshInstall = true end
   WaypathDB = WaypathDB or {}
   local db = setupProfiles(WaypathDB)
   RG.db = db
@@ -597,6 +604,25 @@ f:SetScript("OnEvent", function(_, event, arg1)
       if others == 0 then RG.SetCharMode("profile")
       else C_Timer.After(2.5, function() if RG.AskCharMode then RG.AskCharMode() end end) end
     end
+    -- after an update: what's new (once per version)
+    C_Timer.After(7, function()
+      local N = RG.NEWS
+      if not (N and N.version == RG.VERSION and RG.root) then return end
+      if RG.root.seenVersion == RG.VERSION then return end
+      RG.root.seenVersion = RG.VERSION
+      if RG.freshInstall then return end
+      RG.Print("Updated to " .. GOLD .. RG.VERSION .. "|r. What's new:")
+      local shown = 0
+      for _, l in ipairs(N.lines or {}) do
+        if not l:find("^%s") and shown < 3 then
+          shown = shown + 1
+          local short = l:match("^(.-[%.:])%s") or l
+          if #short > 140 then short = short:sub(1, 137) .. "..." end
+          DEFAULT_CHAT_FRAME:AddMessage("   " .. GOLD .. "•|r " .. short)
+        end
+      end
+      DEFAULT_CHAT_FRAME:AddMessage("   " .. GREY .. "/wp news for everything in this update|r")
+    end)
     if RG.oldAddonOn and StaticPopupDialogs and StaticPopup_Show then
       StaticPopupDialogs.WAYPATH_REPLACED = {
         text = "RetGear is now |cffffd100Waypath+|r." .. (RG.migrated and "\n\nYour progress, settings and ticked steps came across." or "") .. "\n\nReload to switch the old RetGear off. You can then delete the RetGear folder from Interface\\AddOns.",
