@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.47.0 (immersive fishing)
+- **Immersive fishing:** cast Fishing and your whole interface fades away, leaving just the water and a small display near the bottom of the screen:
+  - your Fishing skill (and points gained this session),
+  - a cast timer ("Watch your bobber · 14s"),
+  - fish caught, fish per hour, lure time left and whether every fish bites here,
+  - your last three catches, with icons and quality colors,
+  - "Got away: cast again" when a fish escapes, and whispers ("Whisper from Darmine: press Enter to read").
+- **Getting your interface back:** move, get into a fight, press Esc or Enter, or stop casting for about 25 seconds. If you don't use auto loot, the loot window still appears so you can click it, then everything fades again.
+- The "cast again" flash now shows even while the interface is hidden.
+- Turn it off in Settings (Professions, bags and gold) or with `/wp fishmode`.
+
 ## v0.46.0 (clearer route on the tracker)
 - **One quest per line:** the tracker's Route section no longer packs a whole step into one long sentence. It shows where you are (for example "The Den, Valley of Trials · levels 1-3" and "1/4 quests done"), then each quest with the one thing to do next:
   - **Hand in** Cutting Teeth, *to Gornek*

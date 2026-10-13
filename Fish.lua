@@ -389,8 +389,10 @@ local function recastAlert()
   if not RG.Opt("fishRecast") then return end
   if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960, "Master") end
   if not flash then
-    flash = CreateFrame("Frame", nil, UIParent)
-    flash:SetAllPoints(UIParent); flash:SetFrameStrata("FULLSCREEN_DIALOG"); flash:EnableMouse(false)
+    -- on the game world, so it still shows while immersive fishing hides the interface
+    local parent = WorldFrame or UIParent
+    flash = CreateFrame("Frame", nil, parent)
+    flash:SetAllPoints(parent); flash:SetFrameStrata("FULLSCREEN_DIALOG"); flash:EnableMouse(false)
     flash.t = flash:CreateTexture(nil, "BACKGROUND"); flash.t:SetAllPoints()
     flash.t:SetTexture("Interface\\FullScreenTextures\\LowHealth"); flash.t:SetBlendMode("ADD"); flash.t:SetVertexColor(0.3, 0.7, 1)
   end

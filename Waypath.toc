@@ -68,6 +68,7 @@ Mail.lua
 AltGuide.lua
 Camp.lua
 Fish.lua
+FishMode.lua
 Speed.lua
 Travel.lua
 NodeData.lua
