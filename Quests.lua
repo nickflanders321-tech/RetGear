@@ -178,3 +178,62 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
     queueRefresh()
   end
 end)
+
+-- ---------------------------------------------------------------------------
+-- Open a quest in the game's own quest log (by title and/or quest ID).
+-- Returns true if the quest is in your log and the log was opened to it.
+-- ---------------------------------------------------------------------------
+local function findInLog(key, qid)
+  if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo then
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+      local info = C_QuestLog.GetInfo(i)
+      if info and not info.isHeader and ((qid and info.questID == qid) or (key and info.title and norm(info.title) == key)) then return i, info.questID end
+    end
+  elseif GetNumQuestLogEntries and GetQuestLogTitle then
+    for i = 1, GetNumQuestLogEntries() do
+      local title, _, _, isHeader, _, _, _, id = GetQuestLogTitle(i)
+      if title and not isHeader and ((qid and id == qid) or (key and norm(title) == key)) then return i, id end
+    end
+  end
+end
+
+function RG.InLog(title, qid)
+  return findInLog(norm(title and (title:gsub("%s*%(.-%)$", ""))), qid) ~= nil
+end
+
+function RG.OpenQuest(title, qid)
+  local key = norm(title and (title:gsub("%s*%(.-%)$", "")))
+  local idx, id = findInLog(key, qid)
+  if not idx and ExpandQuestHeader then
+    -- the quest may sit under a collapsed zone header
+    pcall(ExpandQuestHeader, 0)
+    idx, id = findInLog(key, qid)
+  end
+  if not idx then return false end
+  qid = qid or id
+  local ok = pcall(function()
+    local frame = QuestLogFrame
+    if frame then
+      -- clicking the quest that's already open closes the log again
+      if frame:IsShown() and GetQuestLogSelection and GetQuestLogSelection() == idx then
+        if HideUIPanel then HideUIPanel(frame) else frame:Hide() end
+        return
+      end
+      if not frame:IsShown() then if ShowUIPanel then ShowUIPanel(frame) else frame:Show() end end
+      if QuestLog_SetSelection then QuestLog_SetSelection(idx) elseif SelectQuestLogEntry then SelectQuestLogEntry(idx) end
+      -- scroll the list so the quest is in view
+      local bar = QuestLogListScrollFrameScrollBar
+      local shown = QUESTS_DISPLAYED or 6
+      local h = QUESTLOG_QUEST_HEIGHT or 16
+      if bar and bar.SetValue then bar:SetValue(math.max(0, idx - math.floor(shown / 2) - 1) * h) end
+      if QuestLog_Update then QuestLog_Update() end
+    elseif qid and QuestMapFrame_OpenToQuestDetails then
+      QuestMapFrame_OpenToQuestDetails(qid)
+    elseif ToggleQuestLog then
+      if C_QuestLog and C_QuestLog.SetSelectedQuest and qid then C_QuestLog.SetSelectedQuest(qid) end
+      ToggleQuestLog()
+    end
+  end)
+  if not ok then RG.Print("Couldn't open the quest log right now (try again out of combat).") end
+  return true
+end

@@ -249,7 +249,10 @@ function RG.RefreshTracker()
       if s ~= "done" then
         n = n + 1
         local tag = s == "ready" and (GREEN .. "  turn in|r") or (s == "log" and (GREEN .. "  in log|r") or (GREY .. "  " .. q[3] .. "|r"))
-        y = item(n, y, "|cffffd100" .. q[1] .. "|r" .. tag, { tip = q[2] .. ", " .. q[3] })
+        local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
+        local title = q[1]
+        y = item(n, y, "|cffffd100" .. q[1] .. "|r" .. tag, { tip = q[2] .. ", " .. q[3] .. (s and "\nClick to open it in your quest log." or (gw and "\nClick to show " .. q[2] .. " on the map." or "")) .. (gw and s and ("\nRight-click: show " .. q[2] .. " on the map.") or ""),
+          onClick = function() if not RG.OpenQuest(title) and gw then RG.PinWaypoint(gw) end end, onRightClick = gw and function() RG.PinWaypoint(gw) end or nil })
       end
     end
     y = y + 6
@@ -263,13 +266,15 @@ function RG.RefreshTracker()
       if fin then
         n = n + 1
         y = item(n, y, RG.PIN .. GREEN .. "Turn in:|r " .. fin.quest .. GREY .. "  ·  " .. (fin.label ~= "" and fin.label or "") .. string.format("  ·  %d yd|r", fin.dist or 0),
-          { tip = "Click to show the turn-in on the map.", onClick = function() RG.PinWaypoint(fin.wp) end })
+          { tip = fin.quest .. "\nClick to open it in your quest log. Right-click: show the turn-in on the map.",
+            onClick = function() if not RG.OpenQuest(fin.quest) then RG.PinWaypoint(fin.wp) end end, onRightClick = function() RG.PinWaypoint(fin.wp) end })
       end
       if obj then
         n = n + 1
         local prog = obj.have and obj.need and string.format(" (%d/%d)", obj.have, obj.need) or ""
         y = item(n, y, RG.PIN .. "|cffffffff" .. obj.label .. prog .. "|r" .. GREY .. ((obj.src and obj.src ~= obj.label) and ("  ·  " .. obj.src) or "") .. string.format("  ·  %d yd|r", obj.dist or 0),
-          { tip = obj.quest .. "\nClick to show it on the map.  /rg next does the same.", onClick = function() RG.PinWaypoint(obj.wp) end })
+          { tip = obj.quest .. "\nClick to open it in your quest log. Right-click: show it on the map (/rg next does the same).",
+            onClick = function() if not RG.OpenQuest(obj.quest) then RG.PinWaypoint(obj.wp) end end, onRightClick = function() RG.PinWaypoint(obj.wp) end })
       end
       for _, q in ipairs(new) do
         n = n + 1

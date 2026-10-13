@@ -13,7 +13,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
 - **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
-- **Quests near you** (tracker): the nearest unfinished objective (including the mobs that drop your quest items), the nearest quest ready to turn in, and new quests you can pick up nearby, each with its distance. Click one, or type `/rg next`, to pin it.
+- **Quests near you** (tracker): the nearest unfinished objective (including the mobs that drop your quest items), the nearest quest ready to turn in, and new quests you can pick up nearby, each with its distance. Click a quest to open it in your quest log; right-click (or type `/rg next`) to pin it on the map.
 - **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/rg way 45 60` pins any spot.
 
 ## Done for you

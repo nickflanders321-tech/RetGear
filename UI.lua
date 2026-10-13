@@ -564,7 +564,12 @@ local function renderRoute()
           local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
           setItem(qr, nil, nil, (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
           qr.icon:SetTexture(136797)
-          if gw then qr.onClick = function() RG.PinWaypoint(gw) end; qr.tip = "Click to show " .. q[2] .. " on the map." end
+          local title = q[1]
+          if qs == "log" or qs == "ready" then
+            qr.onClick = function() RG.OpenQuest(title) end
+            qr.tip = "Click to open it in your quest log." .. (gw and ("\nRight-click: show " .. q[2] .. " on the map.") or "")
+            if gw then qr.onRightClick = function() RG.PinWaypoint(gw) end end
+          elseif gw then qr.onClick = function() RG.PinWaypoint(gw) end; qr.onRightClick = qr.onClick; qr.tip = "Click to show " .. q[2] .. " on the map." end
         end
       end
       if RG.CampForEntry and (now or not past) then
@@ -1076,7 +1081,15 @@ local function renderGroup()
       local pill = q.complete and (GREEN .. "Ready to turn in|r") or (groupTag and (GOLD .. q.tag .. "|r") or "")
       setItem(getRow(n), nil, nil, "|cffffd100" .. q.title .. "|r", sub, pill, (inGroup and #q.missing > 0) and (GOLD .. "Share|r") or "", nil, nil, true)
       rows[n].icon:SetTexture(136797)
-      if inGroup and #q.missing > 0 then local id = q.id; rows[n].onClick = function() RG.ShareQuest(id) end; rows[n].tip = "Click to share this quest with your party." end
+      local id, title = q.id, q.title
+      if inGroup and #q.missing > 0 then
+        rows[n].onClick = function() RG.ShareQuest(id) end
+        rows[n].onRightClick = function() RG.OpenQuest(title, id) end
+        rows[n].tip = "Click to share this quest with your party. Right-click: open it in your quest log."
+      else
+        rows[n].onClick = function() RG.OpenQuest(title, id) end
+        rows[n].tip = "Click to open it in your quest log."
+      end
     end
   end
   -- find a group
