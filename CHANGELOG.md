@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.46.0 (clearer route on the tracker)
+- **One quest per line:** the tracker's Route section no longer packs a whole step into one long sentence. It shows where you are (for example "The Den, Valley of Trials · levels 1-3" and "1/4 quests done"), then each quest with the one thing to do next:
+  - **Hand in** Cutting Teeth, *to Gornek*
+  - **Pick up** Your Place In The World, *from Kaltunk*
+  - **Do** Cutting Teeth, *3/10*
+  - **Later:** Sting of the Scorpid, *after Cutting Teeth*
+- Hand-ins come first, then pick-ups, then quests you're on, then ones that aren't open yet. Double-click any line for the arrow; the arrow starts on the first thing to do.
+- The header shows "step 1 of 2" instead of an unexplained "0/2", and a "Then:" line says what the next step is.
+- "New quests nearby" no longer repeats quests the route already lists.
+- The Route tab shows the same breakdown under each step.
+- Class quests say "pick up now" and "from Gornek" instead of "ready" and a bare name.
+
 ## v0.45.0 (fixes from your screenshots)
 - **Talents for every class:** the Talents tab now shows a leveling build for every class and spec (it used to be empty outside Paladin). It shows what to work toward, ranks as "x/target", and the next point to spend, all taken from the current Forever guides.
 - **Gear guide fits your character:** early-level items no longer come from another race's starting zone (no Tirisfal or Darkshore picks for an Orc), and quest, rare and vendor items from Alliance-only zones are gone for Horde.

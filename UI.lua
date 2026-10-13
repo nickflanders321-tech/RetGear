@@ -892,7 +892,12 @@ local function renderRoute()
           n = n + 1
           local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
           local srow = getRow(n)
-          setStep(srow, i, (wp and RG.PIN or "") .. text, isDone, function()
+          -- generated steps: a short title here, the quests one per row below
+          local ql, qd, qt, place, levels
+          if RG.StepQuestLines then ql, qd, qt, place, levels = RG.StepQuestLines(r, i) end
+          local shown = text
+          if ql and place then shown = place .. (levels and (" (" .. levels .. ")") or "") .. GREY .. "  ·  " .. qd .. "/" .. qt .. " quests done|r" end
+          setStep(srow, i, (wp and RG.PIN or "") .. shown, isDone, function()
             if RG.db.stepsDone[sk] then RG.db.stepsDone[sk] = nil; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end
             elseif RG.TickStep then RG.TickStep(sk, text) else RG.db.stepsDone[sk] = true; RG.RefreshUI() end
           end, auto or (e.past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
@@ -901,7 +906,25 @@ local function renderRoute()
             srow.tip = (srow.tip or "") .. "\n|cffffd100Right-click: show " .. wp[4] .. " on the map and follow the arrow|r"
           end
           -- quests this step names that are in your log: click to open them
-          if not isDone then
+          if not isDone and ql then
+            local VERB = { turnin = GREEN .. "Hand in|r ", pickup = "|cffffd100Pick up|r ", doing = "|cffffffffDo|r ", later = GREY .. "Later:|r " }
+            for _, l in ipairs(ql) do
+              n = n + 1
+              local qr = getRow(n)
+              local sub
+              if l.act == "turnin" then sub = GREEN .. "Done: take it to " .. (l.npc or "the quest giver") .. "|r"
+              elseif l.act == "pickup" then sub = GREY .. "Get it from " .. (l.npc or "a quest giver") .. "|r"
+              elseif l.act == "doing" then sub = GREY .. "In your quest log" .. (l.prog and (": " .. l.prog) or "") .. "|r"
+              else sub = GREY .. "Opens " .. l.npc .. "|r" end
+              setItem(qr, nil, nil, VERB[l.act] .. RG.LevelTag(l.level) .. (l.act == "later" and GREY or "|cffffffff") .. l.name .. "|r", sub, nil, "", nil, nil, true)
+              qr.icon:SetTexture(136797)
+              local lw = l.wp
+              qr.onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif lw then RG.PinWaypoint(lw) end end
+              qr.onRightClick = lw and function() RG.PinWaypoint(lw) end or nil
+              qr.onDoubleClick = lw and function() RG.ArrowTo(lw) end or nil
+              qr.tip = (l.act == "doing" and "Click to open it in your quest log." or (lw and ("Click: show " .. lw[4] .. " on the map\nDouble-click: arrow on / off") or "")) 
+            end
+          elseif not isDone then
             for _, q in ipairs(RG.QuestsInText and RG.QuestsInText(text) or {}) do
               n = n + 1
               local qr = getRow(n)

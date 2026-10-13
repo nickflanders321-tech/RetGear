@@ -71,6 +71,70 @@ local function currentEntry()
   return best and best.r
 end
 
+-- A generated route step split into its quests, each with the one thing to do
+-- next. Returns the list (hand-ins first, then pick-ups, then quests in your
+-- log, then ones that open later), how many are done, how many count, and the
+-- step's place and level range. nil for hand-written steps.
+--   { id, name, act = "turnin"|"pickup"|"doing"|"later", npc, wp, prog }
+local ACT_ORDER = { turnin = 1, pickup = 2, doing = 3, later = 4 }
+function RG.StepQuestLines(entry, i, myQuests)
+  local key = entry and (entry.zone .. "|" .. entry.from)
+  local ids = key and RG.STEP_QUESTS and RG.STEP_QUESTS[key] and RG.STEP_QUESTS[key][i]
+  if not (ids and RG.QDATA) then return nil end
+  local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted or function() return false end
+  local byId = {}
+  for _, q in ipairs(myQuests or (RG.MyQuests and RG.MyQuests()) or {}) do if q.id then byId[q.id] = q end end
+  local lvl = UnitLevel("player") or 1
+  local out, doneN, total = {}, 0, 0
+  for _, id in ipairs(ids) do
+    local d = RG.QDATA[id]
+    if d and d.n and (not RG.QuestForMe or RG.QuestForMe(d)) then
+      local done = isDone(id)
+      if not done and d.x then for _, x in ipairs(d.x) do if isDone(x) then done = true break end end end
+      total = total + 1
+      if done then doneN = doneN + 1
+      else
+        local q = byId[id]
+        local l = { id = id, name = d.n, level = d.l }
+        if q and q.complete then
+          l.act, l.npc = "turnin", d.e and d.e[4]
+          l.wp = d.e and { d.e[1], d.e[2], d.e[3], d.e[4] ~= "" and d.e[4] or d.n }
+        elseif q then
+          l.act, l.prog, l.wp = "doing", q.prog, q.wp
+        else
+          -- what's still in the way: an earlier quest, or your level
+          local need
+          if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then need = p break end end end
+          if not need and d.ps then
+            local any = false
+            for _, p in ipairs(d.ps) do if isDone(p) then any = true break end end
+            if not any then need = d.ps[1] end
+          end
+          if need then
+            local pd = RG.QDATA[need]
+            l.act, l.npc = "later", "after " .. ((pd and pd.n) or "an earlier quest")
+          elseif (d.r or 1) > lvl then
+            l.act, l.npc = "later", "at level " .. d.r
+          else
+            l.act, l.npc = "pickup", d.s and d.s[4]
+            l.wp = d.s and { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n }
+          end
+        end
+        out[#out + 1] = l
+      end
+    end
+  end
+  for k, l in ipairs(out) do l._k = k end
+  table.sort(out, function(a, b)
+    if a.act ~= b.act then return ACT_ORDER[a.act] < ACT_ORDER[b.act] end
+    return a._k < b._k
+  end)
+  local text = RG.STEPS[key] and RG.STEPS[key][i] or ""
+  local place, levels = text:gsub("^At ", ""):match("^(.-) %((levels? [%d%-]+)%)")
+  if place then place = place:gsub("^the ", "The ", 1) end
+  return out, doneN, total, place, levels
+end
+
 -- True once every quest for a dungeon is turned in (nothing left to collect or do there).
 -- Quests from the data whose earlier steps you haven't done yet don't count.
 function RG.QuestPrereqsMet(id)
@@ -350,7 +414,7 @@ function RG.RefreshTracker()
   end
   -- 1. your quests: level, name, progress, distance
   local quests = RG.MyQuests and RG.MyQuests() or {}
-  local new = RG.NearbyNewQuests and RG.NearbyNewQuests(2) or {}
+  local new = RG.NearbyNewQuests and RG.NearbyNewQuests(8) or {}
   if #quests > 0 then
     local ready = 0
     for _, q in ipairs(quests) do if q.complete then ready = ready + 1 end end
@@ -424,7 +488,25 @@ function RG.RefreshTracker()
     end
     y = y + 5
   end
-  -- 2. new quests to pick up nearby
+  -- 2. new quests to pick up nearby (not the ones the route already lists)
+  do
+    local r0 = currentEntry()
+    if r0 and #new > 0 then
+      local steps0 = RG.STEPS[r0.zone .. "|" .. r0.from] or {}
+      for i = 1, #steps0 do
+        if not RG.StepIsDone(r0, i) then
+          local ql = RG.StepQuestLines(r0, i, quests)
+          if ql then
+            local skip = {}
+            for _, l in ipairs(ql) do skip[l.id] = true end
+            for k = #new, 1, -1 do if new[k].id and skip[new[k].id] then table.remove(new, k) end end
+          end
+          break
+        end
+      end
+    end
+    for k = #new, 3, -1 do new[k] = nil end
+  end
   if #new > 0 then
     local isFolded
     n = n + 1; y, isFolded = section(n, y, "New quests nearby", "new")
@@ -445,9 +527,78 @@ function RG.RefreshTracker()
     local steps = RG.STEPS[key] or {}
     local doneN = 0
     for i = 1, #steps do if RG.StepIsDone(r, i) then doneN = doneN + 1 end end
+    -- the first open step, split into its quests when it's a generated one
+    local firstOpen
+    for i = 1, #steps do if not RG.StepIsDone(r, i) then firstOpen = i break end end
+    local qlines, qdone, qtotal, place, levels
+    if firstOpen then qlines, qdone, qtotal, place, levels = RG.StepQuestLines(r, firstOpen, quests) end
     local isFolded
-    n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", GREY .. doneN .. "/" .. #steps .. "|r")
-    if not isFolded then
+    local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
+    if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
+    n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
+    if not isFolded and qlines then
+      local sk = key .. "#" .. firstOpen
+      local wp = RG.StepWaypoint and RG.StepWaypoint(r, firstOpen)
+      -- where this step happens
+      n = n + 1
+      y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. "|cffc9a227" .. (place or r.zone) .. "|r" .. (levels and (GREY .. "  ·  " .. levels .. "|r") or ""),
+        { indent = 2, wp = wp, right = GREY .. qdone .. "/" .. qtotal .. " quests done|r",
+          tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in.\n\n" ..
+            (wp and (GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") .. GOLD .. "Shift-click:|r skip this step",
+          onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
+          onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+      -- the arrow goes to the first thing to do: a hand-in, else a pick-up, else the hub
+      if RG.AutoPin then
+        local first = qlines[1]
+        if first and first.wp and (first.act == "turnin" or first.act == "pickup") then RG.AutoPin(sk .. "@" .. first.act .. first.id, first.wp)
+        elseif wp then RG.AutoPin(sk, wp) end
+      end
+      local VERB = { turnin = GREEN .. "Hand in|r ", pickup = "|cffffd100Pick up|r ", doing = "|cffffffffDo|r ", later = GREY .. "Later:|r " }
+      local shownL = 0
+      for _, l in ipairs(qlines) do
+        if shownL < 6 then
+          shownL = shownL + 1
+          local nameCol = (l.act == "later") and GREY or "|cffffffff"
+          local rt
+          if l.act == "turnin" then rt = GREEN .. "to " .. (l.npc or "the quest giver") .. "|r"
+          elseif l.act == "pickup" then rt = GREY .. "from " .. (l.npc or "a quest giver") .. "|r"
+          elseif l.act == "doing" then rt = l.prog and ("|cffffffff" .. l.prog .. "|r") or (GREY .. "in your log|r")
+          else rt = GREY .. l.npc .. "|r" end
+          local tip
+          if l.act == "turnin" then tip = "Done: take it back to " .. (l.npc or "the quest giver") .. "."
+          elseif l.act == "pickup" then tip = "Get this quest from " .. (l.npc or "the quest giver") .. "."
+          elseif l.act == "doing" then tip = "In your quest log: finish its objectives."
+          else tip = "Not open yet: it becomes available " .. l.npc .. "." end
+          if l.wp then tip = tip .. "\n\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map" end
+          if l.act == "doing" then tip = tip .. (l.wp and "\n" or "\n\n") .. GOLD .. "Click:|r open the quest" end
+          n = n + 1
+          y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r",
+            { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
+              onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
+              onRightClick = l.wp and function() RG.PinWaypoint(l.wp) end or nil })
+        end
+      end
+      if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 12, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+      -- what comes after this step
+      local nextI
+      for i = firstOpen + 1, #steps do if not RG.StepIsDone(r, i) then nextI = i break end end
+      if nextI then
+        local _, _, nt, np, nl = RG.StepQuestLines(r, nextI, quests)
+        n = n + 1
+        y = item(n, y, GREY .. "Then: " .. (np or plain(steps[nextI]):sub(1, 40)) .. (nl and (", " .. nl) or "") .. (nt and (" (" .. nt .. " quests)") or "") .. "|r",
+          { single = true, indent = 2, tip = "The next step of this zone's route.\nThe Route tab has every step.", onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+      end
+      if RG.TravelSummary then
+        local tip = RG.TravelSummary(r.zone)
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats." }) end
+      end
+      local u = lastTick(key .. "#")
+      if u then
+        n = n + 1
+        y = item(n, y, GREY .. "Skipped a step|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put it back on your list.\n/wp undo does the same.",
+          onClick = function() RG.UndoTick() end })
+      end
+    elseif not isFolded then
       local shown = 0
       for i, text in ipairs(steps) do
         local done = RG.StepIsDone(r, i)
@@ -509,13 +660,13 @@ function RG.RefreshTracker()
     local cq = RG.ClassQuests(3)
     if #cq > 0 then
       local isFolded
-      n = n + 1; y, isFolded = section(n, y, "Class quests", "pala", cq[1].now and (GREEN .. "ready|r") or (GREY .. "at " .. cq[1].req .. "|r"))
+      n = n + 1; y, isFolded = section(n, y, "Class quests", "pala", cq[1].now and (GREEN .. "pick up now|r") or (GREY .. "at " .. cq[1].req .. "|r"))
       if not isFolded then
         for _, q in ipairs(cq) do
           local wp = q.wp
           n = n + 1
           y = item(n, y, (isTarget(wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. (q.now and "|cffffd100" or GREY) .. q.name .. "|r", { single = true, wp = wp,
-            right = q.now and (GREY .. (q.giver or "") .. "|r") or (GREY .. "level " .. q.req .. "|r"),
+            right = q.now and (GREY .. "from " .. (q.giver or "?") .. "|r") or (GREY .. "at level " .. q.req .. "|r"),
             tip = "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "?") .. (q.now and "" or (" at level " .. q.req)) .. "|r\n\n" .. GOLD .. "Click:|r show the quest giver on the map\n" .. GOLD .. "Double-click:|r arrow on / off",
             onClick = function() RG.PinWaypoint(wp) end })
         end
