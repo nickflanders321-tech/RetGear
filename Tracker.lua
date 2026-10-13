@@ -36,11 +36,19 @@ local function currentEntry()
   return best and best.r
 end
 
+-- True once every quest for a dungeon is turned in (nothing left to collect or do there).
+function RG.DungeonQuestsDone(dq)
+  if not (dq and dq.quests and #dq.quests > 0 and RG.QuestState) then return false end
+  for _, q in ipairs(dq.quests) do
+    if RG.QuestState((q[1]:gsub("%s*%(.-%)$", ""))) ~= "done" then return false end
+  end
+  return true
+end
 local function nextDungeon()
   local lvl = UnitLevel("player")
   for _, r in ipairs(RG.ROUTE) do
     local dq = r.kind == "dungeon" and RG.DUNGEON_QUESTS[r.zone]
-    if dq and lvl >= dq.prep and lvl <= r.to then return r, dq end
+    if dq and lvl >= dq.prep and lvl <= r.to and not RG.DungeonQuestsDone(dq) then return r, dq end
   end
 end
 

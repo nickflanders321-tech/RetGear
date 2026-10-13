@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.20.4 (from your first screenshot)
+- Dungeons whose quests are all turned in now show "Quests done" on the Route tab, tick their steps off, and leave the tracker instead of saying "go now".
+- The selected bottom tab is easy to see: it's lit up and raised, instead of fading into the window.
+- Leveling pace says "times for earlier levels appear after your next level-up" instead of "?" (and `/rg pace` says "not recorded yet").
+- `/rg help` no longer lists the old `/rg welcome` (it still works and opens setup).
+
 ## v0.20.3 (combat hardening)
 - The DPS coach's in-combat checks (cooldowns, range, usable, mana, threat) now treat any hidden ("secret") value as "can't tell" instead of risking an error, the same protection buffs got in v0.20.2.
 - Camp Benefits timer ignores a hidden expiry time instead of erroring.

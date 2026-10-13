@@ -50,12 +50,18 @@ local function parentOf(tab) return PARENT[tab] or tab end
 state.lastSub = {}
 
 local function setTabLook(b, on)
-  for _, t in ipairs(b.parts) do t:SetTexture(on and "Interface\\PaperDollInfoFrame\\UI-Character-ActiveTab" or "Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab") end
+  -- The Character-window "active" tab art blends into the frame on this client and
+  -- nearly vanishes, so every tab uses the inactive art and the open one is lit up.
+  for _, t in ipairs(b.parts) do
+    t:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab")
+    if on then t:SetVertexColor(1, 1, 1) else t:SetVertexColor(0.62, 0.62, 0.62) end
+  end
+  if b.glow then b.glow:SetShown(on) end
   b.text:SetFontObject(on and "GameFontHighlightSmall" or "GameFontNormalSmall")
-  b.text:SetPoint("CENTER", 0, on and -3 or 2)
+  b.text:ClearAllPoints(); b.text:SetPoint("CENTER", 0, on and 1 or 2)
+  b:ClearAllPoints(); b:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", b.x, on and 4 or 7)
   b:SetFrameLevel((frame:GetFrameLevel() or 1) + (on and 3 or 1))
 end
-
 
 -- Tooltip-style box (rows, tags, small buttons). edge = border size.
 local function backdrop(f, bg, edge, size)
@@ -453,7 +459,7 @@ local function renderRoute()
     local pr = getRow(n)
     local rate, eta = RG.XPRate and RG.XPRate()
     setItem(pr, nil, nil, "|cffffffffLeveling pace|r" .. GREY .. "   level " .. lvl .. ": " .. RG.FormatDuration(cur) .. " so far|r",
-      "Last level " .. RG.FormatDuration(last) .. GREY .. "  ·  average of last 5: " .. RG.FormatDuration(avg) .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
+      (last and ("Last level " .. RG.FormatDuration(last) .. GREY .. "  ·  average of last 5: " .. RG.FormatDuration(avg)) or (GREY .. "Times for earlier levels appear after your next level-up")) .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
       state.pace and (GREY .. "hide splits|r") or (GREY .. "show splits|r"), "", "gold", nil, true)
     pr.icon:SetTexture("Interface\\Icons\\INV_Misc_PocketWatch_01")
     pr.onClick = function() state.pace = not state.pace; RG.RefreshUI() end
@@ -502,8 +508,10 @@ local function renderRoute()
         status = (now and RG.KnowsFP(r.fp) == false) and fpPill or status
         sub = sub .. "  ·  " .. fpPill
       end
+      local dqDone = dq and RG.DungeonQuestsDone and RG.DungeonQuestsDone(dq)
       if dq then
-        if lvl >= dq.prep and lvl < dq.go then status = GOLD .. "Collect quests now|r"
+        if dqDone then status = GREEN .. "Quests done|r"
+        elseif lvl >= dq.prep and lvl < dq.go then status = GOLD .. "Collect quests now|r"
         elseif lvl >= dq.go and lvl <= r.to then status = GREEN .. "Go now|r" end
         sub = "Head over at level " .. dq.go .. GREY .. "  ·  " .. (dq.note or r.notes) .. "|r"
       end
@@ -517,11 +525,12 @@ local function renderRoute()
       if steps then
         for i, text in ipairs(steps) do
           local ok, why = RG.StepAuto and RG.StepAuto(r, text)
+          if not ok and dqDone then ok, why = true, "all of this dungeon's quests are turned in" end
           if ok then autoMap[i] = why end
           if ok or RG.db.stepsDone[key .. "#" .. i] or past then doneN = doneN + 1 end
         end
         meta = meta .. GREY .. "   ·   " .. doneN .. "/" .. #steps .. (open and "  ·  hide" or "") .. "|r"
-        if doneN == #steps and not now then status = GREEN .. "Done|r" end
+        if doneN == #steps and (not now or dqDone) then status = GREEN .. (dqDone and "Quests done" or "Done") .. "|r" end
       end
       setItem(row, nil, nil, titleText, sub, status, meta, accent)
       if steps then row.onClick = function() state.open[key] = not open; RG.RefreshUI() end end
@@ -1318,6 +1327,7 @@ local function build()
     local b = CreateFrame("Button", nil, frame)
     b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); b.text:SetText(d[2])
     local w = math.max(64, b.text:GetStringWidth() + 32)
+    b.x = x
     b:SetSize(w, 32); b:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", x, 7); x = x + w - 12
     local L = b:CreateTexture(nil, "BACKGROUND"); L:SetSize(20, 32); L:SetPoint("TOPLEFT"); L:SetTexCoord(0, 0.15625, 0, 1)
     local R = b:CreateTexture(nil, "BACKGROUND"); R:SetSize(20, 32); R:SetPoint("TOPRIGHT"); R:SetTexCoord(0.84375, 1, 0, 1)
@@ -1325,6 +1335,8 @@ local function build()
     b.parts = { L, M, R }
     local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight"); hl:SetBlendMode("ADD")
     hl:SetPoint("TOPLEFT", 10, -4); hl:SetPoint("BOTTOMRIGHT", -10, 4)
+    b.glow = b:CreateTexture(nil, "ARTWORK"); b.glow:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight"); b.glow:SetBlendMode("ADD")
+    b.glow:SetPoint("TOPLEFT", 10, -4); b.glow:SetPoint("BOTTOMRIGHT", -10, 4); b.glow:SetAlpha(0.7); b.glow:Hide()
     b:SetScript("OnClick", function()
       if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_TAB or 841) end
       local subs = GROUPS[d[1]]

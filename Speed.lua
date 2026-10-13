@@ -569,7 +569,7 @@ SlashCmdList.RETGEAR = function(msg)
     return
   elseif cmd == "pace" then
     local cur, last, avg = RG.Pace()
-    RG.Print(string.format("This level: %s  ·  last level: %s  ·  average of last 5: %s", RG.FormatDuration(cur), RG.FormatDuration(last), RG.FormatDuration(avg)))
+    RG.Print(string.format("This level: %s  ·  last level: %s  ·  average of last 5: %s", RG.FormatDuration(cur), last and RG.FormatDuration(last) or "not recorded yet", avg and RG.FormatDuration(avg) or "not recorded yet"))
     return
   end
   return base(msg)
