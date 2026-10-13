@@ -9,11 +9,10 @@ Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (
 A six-page **setup wizard** asks how much help you want (Full guidance, Balanced or Minimal), which professions you'll level, and which automation and extras to turn on. Run it again with `/rg setup` or from Settings.
 
 ## On your screen
-- **Tracker** (right side): your current route step and tasks, dungeon quests to collect, your next gear upgrade, and the 5 most important reminders (Blessing and Seal, camp buff, talents, trainer, bags, and more). Drag it anywhere; right-click the minimap button to hide it.
+- **Tracker** (right side): your quests, one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, right-click to show it on the map, and click a section header to fold it. Drag it anywhere; right-click the minimap button to hide it.
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
 - **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
-- **Quests near you** (tracker): the nearest unfinished objective (including the mobs that drop your quest items), the nearest quest ready to turn in, and new quests you can pick up nearby, each with its distance. Click a quest to open it in your quest log; right-click (or type `/rg next`) to pin it on the map.
 - **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/rg way 45 60` pins any spot.
 
 ## Done for you

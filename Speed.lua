@@ -211,6 +211,98 @@ function RG.NearbyNewQuests(max)
   return out
 end
 
+-- ---------------------------------------------------------------------------
+-- Quest levels and your quest list (for the tracker)
+-- ---------------------------------------------------------------------------
+-- Quest level by title, from the quest database (built once, on first use).
+local levelByName
+function RG.QuestLevel(title)
+  if not title then return nil end
+  if not levelByName then
+    levelByName = {}
+    for _, d in pairs(RG.QDATA or {}) do
+      if d.n and d.l then
+        local k = d.n:lower()
+        if not levelByName[k] or d.l < levelByName[k] then levelByName[k] = d.l end
+      end
+    end
+  end
+  return levelByName[(title:gsub("%s*%(.-%)$", "")):lower()]
+end
+
+-- The game's quest colors: red (far above you), orange, yellow, green, grey (no XP).
+function RG.QuestColor(level)
+  local lvl = UnitLevel("player") or 1
+  level = level or lvl
+  local d = level - lvl
+  if d >= 5 then return "|cffff1a1a" end
+  if d >= 3 then return "|cffff8040" end
+  if d >= -2 then return "|cffffff00" end
+  local grey = lvl <= 5 and 0 or (lvl <= 39 and (lvl - 5 - math.floor(lvl / 10)) or (lvl - 1 - math.floor(lvl / 5)))
+  if level > grey then return "|cff40c040" end
+  return "|cff808080"
+end
+-- "[30]" in the quest's color.
+function RG.LevelTag(level)
+  if not level or level <= 0 then return "" end
+  return RG.QuestColor(level) .. "[" .. level .. "]|r "
+end
+
+function RG.FormatYards(d)
+  if not d then return nil end
+  if d >= 1000 then return string.format("%.1fk yd", d / 1000) end
+  return string.format("%d yd", d)
+end
+
+-- Every quest in your log: level, progress, whether it's ready, and the
+-- nearest place to work on it (objective or turn-in) with its distance.
+-- Ready quests first, then nearest, then the rest by level.
+function RG.MyQuests()
+  local out = {}
+  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return out end
+  local c, px, py = playerWorld()
+  local near = {}
+  if c then
+    for _, sp in ipairs(RG.QuestSpots()) do
+      local c2, x, y = toWorld(sp.wp[1], sp.wp[2], sp.wp[3])
+      if c2 == c then
+        local dd = math.sqrt((x - px) ^ 2 + (y - py) ^ 2)
+        local cur = near[sp.quest]
+        if not cur or dd < cur.dist then near[sp.quest] = { dist = dd, wp = sp.wp, label = sp.label } end
+      end
+    end
+  end
+  local zone
+  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+    local info = C_QuestLog.GetInfo(i)
+    if info and info.isHeader then zone = info.title
+    elseif info and info.title and info.questID then
+      local complete = C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID) and true or false
+      local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}
+      local prog, total, doneN
+      total, doneN = #objs, 0
+      for _, o in ipairs(objs) do
+        if o.finished then doneN = doneN + 1
+        elseif not prog and o.numRequired and o.numRequired > 0 then prog = string.format("%d/%d", o.numFulfilled or 0, o.numRequired) end
+      end
+      if not prog and total > 1 and not complete then prog = doneN .. "/" .. total end
+      local n = near[info.title]
+      local qd = RG.QDATA and RG.QDATA[info.questID]
+      local level = (info.level and info.level > 0 and info.level) or (qd and qd.l) or RG.QuestLevel(info.title)
+      out[#out + 1] = { id = info.questID, title = info.title, level = level, complete = complete, failed = info.isFailed,
+        prog = prog, objs = objs, zone = zone, dist = n and n.dist, wp = n and n.wp, label = n and n.label,
+        group = (info.suggestedGroup or 0) > 1 }
+    end
+  end
+  table.sort(out, function(a, b)
+    if a.complete ~= b.complete then return a.complete end
+    if (a.dist ~= nil) ~= (b.dist ~= nil) then return a.dist ~= nil end
+    if a.dist and b.dist and a.dist ~= b.dist then return a.dist < b.dist end
+    return (a.level or 0) < (b.level or 0)
+  end)
+  return out
+end
+
 -- Nearest spot on your continent; turnin = true only looks at turn-ins.
 function RG.NearestSpot(turnin)
   local c, px, py = playerWorld()

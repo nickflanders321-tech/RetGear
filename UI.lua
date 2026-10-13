@@ -562,7 +562,7 @@ local function renderRoute()
           local qs = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
           local pill = qs == "done" and (GREEN .. "Done|r") or (qs == "ready" and (GREEN .. "Ready to turn in|r") or (qs == "log" and (GOLD .. "In your log|r") or ""))
           local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
-          setItem(qr, nil, nil, (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
+          setItem(qr, nil, nil, (qs == "done" and "" or RG.LevelTag(RG.QuestLevel(q[1]))) .. (qs == "done" and GREY or "|cffffd100") .. q[1] .. "|r", (gw and RG.PIN or "") .. q[2] .. GREY .. "  ·  " .. q[3] .. "|r", pill, pill == "" and (GREY .. "Quest|r") or "", qs == "done" and "green" or nil, nil, true)
           qr.icon:SetTexture(136797)
           local title = q[1]
           if qs == "log" or qs == "ready" then
@@ -1080,7 +1080,7 @@ local function renderGroup()
         sub = (#q.have > 0 and (GREEN .. "Has it: " .. table.concat(q.have, ", ") .. "|r") or "") .. ((#q.have > 0 and #q.missing > 0) and GREY .. "  ·  |r" or "") .. (#q.missing > 0 and (GOLD .. "Missing: " .. table.concat(q.missing, ", ") .. "|r") or "")
       else sub = GREY .. "Easier with a group. See Find a group below.|r" end
       local pill = q.complete and (GREEN .. "Ready to turn in|r") or (groupTag and (GOLD .. q.tag .. "|r") or "")
-      setItem(getRow(n), nil, nil, "|cffffd100" .. q.title .. "|r", sub, pill, (inGroup and #q.missing > 0) and (GOLD .. "Share|r") or "", nil, nil, true)
+      setItem(getRow(n), nil, nil, RG.LevelTag(q.level or RG.QuestLevel(q.title)) .. "|cffffd100" .. q.title .. "|r", sub, pill, (inGroup and #q.missing > 0) and (GOLD .. "Share|r") or "", nil, nil, true)
       rows[n].icon:SetTexture(136797)
       local id, title = q.id, q.title
       if inGroup and #q.missing > 0 then

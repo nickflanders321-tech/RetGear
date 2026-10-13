@@ -103,6 +103,9 @@ local function line(i)
   local b = CreateFrame("Button", nil, tr.body)
   b:SetWidth(W - 24)
   b.text = b:CreateFontString(nil, "OVERLAY"); b.text:SetFont("Fonts\\ARIALN.TTF", 13, ""); b.text:SetPoint("TOPLEFT", 16, 0); b.text:SetWidth(W - 44); b.text:SetJustifyH("LEFT"); b.text:SetWordWrap(true)
+  b.right = b:CreateFontString(nil, "OVERLAY"); b.right:SetFont("Fonts\\FRIZQT__.TTF", 10, ""); b.right:SetPoint("TOPRIGHT", 0, -1); b.right:SetJustifyH("RIGHT")
+  b.right:SetShadowColor(0, 0, 0, 1); b.right:SetShadowOffset(1, -1)
+  b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 0.82, 0, 0.08)
   b.box = b:CreateTexture(nil, "ARTWORK"); b.box:SetSize(10, 10); b.box:SetPoint("TOPLEFT", 1, -2)
   b.check = b:CreateTexture(nil, "OVERLAY"); b.check:SetSize(16, 16); b.check:SetPoint("CENTER", b.box, "CENTER", 1, 1); b.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
   b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -152,30 +155,66 @@ local function build()
   lines = {}
 end
 
-local function section(n, y, label)
+-- Sections fold with a click on their header (remembered between sessions).
+local function folded(key) return key and RetGearDB.trackerFold and RetGearDB.trackerFold[key] end
+local function fontSize(base) return math.floor(base * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5) end
+local function section(n, y, label, key, right)
   local b = line(n)
-  b.onClick, b.tip = nil, nil
+  b.onClick, b.onRightClick, b.tip = nil, nil, nil
   b.box:Hide(); b.check:Hide()
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", math.floor(12 * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5), "")
+  local isFolded = folded(key)
+  if key then
+    b.onClick = function()
+      RetGearDB.trackerFold = RetGearDB.trackerFold or {}
+      RetGearDB.trackerFold[key] = not RetGearDB.trackerFold[key] or nil
+      RG.RefreshTracker()
+    end
+    b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
+  end
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize(12), "")
+  b.text:SetWidth(W - 24); b.text:SetWordWrap(false)
   b.text:SetShadowColor(0, 0, 0, 1); b.text:SetShadowOffset(1, -1)
-  b.text:SetText(GOLD .. label .. "|r")
+  b.text:SetText((key and (GREY .. (isFolded and "+ " or "- ") .. "|r") or "") .. GOLD .. label .. "|r")
+  b.right:SetFont("Fonts\\FRIZQT__.TTF", fontSize(10), ""); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
-  return y + 19
+  return y + 18, isFolded
 end
+-- opts: onClick, onRightClick, tip, box (checkbox state), right (right-hand text), single (one line, cut with ...)
 local function item(n, y, text, opts)
   opts = opts or {}
   local b = line(n)
   b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", opts.box ~= nil and 16 or 8, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", math.floor(11.5 * ((RetGearDB.textSize or 1.2) / 1.2) + 0.5), "")
+  local indent = opts.box ~= nil and 16 or 8
+  b.right:SetFont("Fonts\\FRIZQT__.TTF", fontSize(10.5), ""); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
+  local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize(11.5), "")
+  b.text:SetWidth(W - 24 - indent - rw)
+  b.text:SetWordWrap(not opts.single)
+  if b.text.SetMaxLines then b.text:SetMaxLines(opts.single and 1 or 0) end
   b.text:SetShadowColor(0, 0, 0, 1); b.text:SetShadowOffset(1, -1)
   b.text:SetText(text)
   if opts.box ~= nil then
     b.box:Show(); b.box:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], opts.box and 0.9 or 0.35)
     b.check:SetShown(opts.box and true or false)
   else b.box:Hide(); b.check:Hide() end
-  local h = math.max(16, (b.text:GetStringHeight() or 14) + 4)
+  local h = opts.single and 15 or math.max(15, (b.text:GetStringHeight() or 14) + 2)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(h); b:Show()
-  return y + h + 2
+  return y + h + 1
+end
+
+-- Tooltip for a quest in your log.
+local function questTip(q)
+  local t = RG.LevelTag(q.level) .. "|cffffffff" .. q.title .. "|r"
+  if q.zone then t = t .. "\n" .. GREY .. q.zone .. "|r" end
+  if q.complete then t = t .. "\n" .. GREEN .. "Complete: ready to turn in|r"
+  else
+    for _, o in ipairs(q.objs or {}) do
+      if o.text and o.text ~= "" then t = t .. "\n" .. (o.finished and (GREY .. "  - " .. o.text .. "|r") or ("|cffffffff  - " .. o.text .. "|r")) end
+    end
+  end
+  if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
+  t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Right-click:|r show on the map") or "")
+  return t
 end
 
 function RG.RefreshTracker()
@@ -207,100 +246,133 @@ function RG.RefreshTracker()
     tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 8)
     return
   end
-  -- current route step
+  local MAXQ = 8
+  -- 1. your quests: level, name, progress, distance
+  local quests = RG.MyQuests and RG.MyQuests() or {}
+  local new = RG.NearbyNewQuests and RG.NearbyNewQuests(2) or {}
+  if #quests > 0 then
+    local ready = 0
+    for _, q in ipairs(quests) do if q.complete then ready = ready + 1 end end
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Quests", "quests", GREY .. #quests .. "/" .. ((C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 20) .. (ready > 0 and ("  ·  " .. GREEN .. ready .. " ready|r") or "") .. "|r")
+    if not isFolded then
+      for i = 1, math.min(MAXQ, #quests) do
+        local q = quests[i]
+        local status
+        if q.complete then status = GREEN .. "turn in|r"
+        elseif q.failed then status = "|cffff3333failed|r"
+        else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
+        local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
+        n = n + 1
+        y = item(n, y, RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
+          { single = true, right = status .. where, tip = questTip(q),
+            onClick = function() RG.OpenQuest(q.title, q.id) end,
+            onRightClick = q.wp and function() RG.PinWaypoint(q.wp) end or nil })
+      end
+      if #quests > MAXQ then
+        n = n + 1; y = item(n, y, GREY .. "+" .. (#quests - MAXQ) .. " more in your quest log|r", { single = true, onClick = function() if ToggleQuestLog then ToggleQuestLog() end end })
+      end
+    end
+    y = y + 5
+  end
+  -- 2. new quests to pick up nearby
+  if #new > 0 then
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "New quests nearby", "new")
+    if not isFolded then
+      for _, q in ipairs(new) do
+        n = n + 1
+        y = item(n, y, RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r",
+          tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map",
+          onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.PinWaypoint(q.wp) end })
+      end
+    end
+    y = y + 5
+  end
+  -- 3. route: the zone you're in and its next tasks
   local r = currentEntry()
   if r then
     local key = r.zone .. "|" .. r.from
     local steps = RG.STEPS[key] or {}
     local doneN = 0
     for i = 1, #steps do if RG.StepIsDone(r, i) then doneN = doneN + 1 end end
-    n = n + 1; y = section(n, y, r.zone .. "  ·  " .. doneN .. "/" .. #steps)
-    local shown = 0
-    for i, text in ipairs(steps) do
-      local done, why = RG.StepIsDone(r, i)
-      if not done and shown < 4 then
-        shown = shown + 1
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", GREY .. doneN .. "/" .. #steps .. "|r")
+    if not isFolded then
+      local shown = 0
+      for i, text in ipairs(steps) do
+        local done = RG.StepIsDone(r, i)
+        if not done and shown < 2 then
+          shown = shown + 1
+          n = n + 1
+          local sk = key .. "#" .. i
+          local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+          if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
+          y = item(n, y, (wp and RG.PIN or "") .. text, { box = false, tip = GOLD .. "Click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() RG.TickStep(sk, text) end,
+            onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+        end
+      end
+      if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+      local u = lastTick(key .. "#")
+      if u then
+        local short = plain(u.text); if #short > 30 then short = short:sub(1, 28) .. "..." end
         n = n + 1
-        local sk = key .. "#" .. i
-        local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
-        if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
-        y = item(n, y, (wp and RG.PIN or "") .. text, { box = false, tip = "Click to tick this off." .. (wp and ("\nRight-click: show " .. wp[4] .. " on the map.") or ""), onClick = function() RG.TickStep(sk, text) end,
-          onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+        y = item(n, y, GREY .. "Ticked: " .. short .. "|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put this task back on your list.\n" .. GREY .. plain(u.text) .. "\n/rg undo does the same.|r",
+          onClick = function() RG.UndoTick() end })
       end
     end
-    if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. Check the route for your next zone.|r") end
-    local u = lastTick(key .. "#")
-    if u then
-      local short = plain(u.text); if #short > 34 then short = short:sub(1, 32) .. "..." end
-      n = n + 1
-      y = item(n, y, GREY .. "Ticked: " .. short .. "|r  " .. GOLD .. "[Undo]|r", { tip = "Click to put this task back on your list.\n" .. GREY .. plain(u.text) .. "\n/rg undo does the same.|r",
-        onClick = function() RG.UndoTick() end })
-    end
-    y = y + 6
+    y = y + 5
   end
-  -- dungeon prep
+  -- 4. next dungeon: quests still to collect
   local dr, dq = nextDungeon()
   if dr then
-    local have, total = 0, #dq.quests
-    for _, q in ipairs(dq.quests) do local s = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", ""))); if s then have = have + 1 end end
-    n = n + 1; y = section(n, y, dr.zone .. "  ·  " .. (lvl >= dq.go and "go now" or ("go at " .. dq.go)))
+    local missing = {}
     for _, q in ipairs(dq.quests) do
-      local s = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
-      if s ~= "done" then
-        n = n + 1
-        local tag = s == "ready" and (GREEN .. "  turn in|r") or (s == "log" and (GREEN .. "  in log|r") or (GREY .. "  " .. q[3] .. "|r"))
-        local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
-        local title = q[1]
-        y = item(n, y, "|cffffd100" .. q[1] .. "|r" .. tag, { tip = q[2] .. ", " .. q[3] .. (s and "\nClick to open it in your quest log." or (gw and "\nClick to show " .. q[2] .. " on the map." or "")) .. (gw and s and ("\nRight-click: show " .. q[2] .. " on the map.") or ""),
-          onClick = function() if not RG.OpenQuest(title) and gw then RG.PinWaypoint(gw) end end, onRightClick = gw and function() RG.PinWaypoint(gw) end or nil })
+      local st = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
+      if not st then missing[#missing + 1] = q end
+    end
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, dr.zone, "dungeon", lvl >= dq.go and (GREEN .. "go now|r") or (GREY .. "go at " .. dq.go .. "|r"))
+    if not isFolded then
+      if #missing == 0 then n = n + 1; y = item(n, y, GREEN .. "All its quests are in your log.|r", { single = true })
+      else
+        for i = 1, math.min(3, #missing) do
+          local q = missing[i]
+          local gw = RG.WAYPOINTS and RG.WAYPOINTS.givers[q[2]]
+          n = n + 1
+          y = item(n, y, RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", { single = true, right = GREY .. "pick up|r",
+            tip = "|cffffffff" .. q[1] .. "|r\n" .. GREY .. q[2] .. ", " .. q[3] .. "|r" .. (gw and ("\n\n" .. GOLD .. "Click:|r show " .. q[2] .. " on the map") or ""),
+            onClick = gw and function() RG.PinWaypoint(gw) end or nil, onRightClick = gw and function() RG.PinWaypoint(gw) end or nil })
+        end
+        if #missing > 3 then n = n + 1; y = item(n, y, GREY .. "+" .. (#missing - 3) .. " more on the Route tab|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       end
     end
-    y = y + 6
+    y = y + 5
   end
-  -- nearest quest objective and turn-in (click to pin)
-  if RG.NearestSpot then
-    local obj, fin = RG.NearestSpot(false), RG.NearestSpot(true)
-    local new = RG.NearbyNewQuests and RG.NearbyNewQuests(2) or {}
-    if obj or fin or #new > 0 then
-      n = n + 1; y = section(n, y, "Quests near you")
-      if fin then
-        n = n + 1
-        y = item(n, y, RG.PIN .. GREEN .. "Turn in:|r " .. fin.quest .. GREY .. "  ·  " .. (fin.label ~= "" and fin.label or "") .. string.format("  ·  %d yd|r", fin.dist or 0),
-          { tip = fin.quest .. "\nClick to open it in your quest log. Right-click: show the turn-in on the map.",
-            onClick = function() if not RG.OpenQuest(fin.quest) then RG.PinWaypoint(fin.wp) end end, onRightClick = function() RG.PinWaypoint(fin.wp) end })
-      end
-      if obj then
-        n = n + 1
-        local prog = obj.have and obj.need and string.format(" (%d/%d)", obj.have, obj.need) or ""
-        y = item(n, y, RG.PIN .. "|cffffffff" .. obj.label .. prog .. "|r" .. GREY .. ((obj.src and obj.src ~= obj.label) and ("  ·  " .. obj.src) or "") .. string.format("  ·  %d yd|r", obj.dist or 0),
-          { tip = obj.quest .. "\nClick to open it in your quest log. Right-click: show it on the map (/rg next does the same).",
-            onClick = function() if not RG.OpenQuest(obj.quest) then RG.PinWaypoint(obj.wp) end end, onRightClick = function() RG.PinWaypoint(obj.wp) end })
-      end
-      for _, q in ipairs(new) do
-        n = n + 1
-        y = item(n, y, RG.PIN .. "|cffffd100!|r " .. "|cffffffff" .. q.name .. "|r" .. GREY .. string.format("  ·  level %d  ·  %s  ·  %d yd|r", q.lvl or 0, q.giver or "", q.dist or 0),
-          { tip = "New quest you can pick up. Click to show " .. (q.giver or "the quest giver") .. " on the map.", onClick = function() RG.PinWaypoint(q.wp) end })
-      end
-      y = y + 4
-    end
-  end
-  -- next upgrade
+  -- 5. next upgrade (one line)
   local up = nextUpgrade()
   if up then
     local name = RG.ItemInfo(up.g.id) or "item"
-    n = n + 1; y = section(n, y, "Next upgrade")
-    n = n + 1; y = item(n, y, name .. "  " .. GREEN .. string.format("+%.0f", up.d) .. "|r\n" .. GREY .. up.g.src .. ", " .. up.g.zone .. "|r", { tip = "Open the Gear guide with /rg for details." })
-    y = y + 6
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Next upgrade", "upgrade")
+    if not isFolded then
+      n = n + 1; y = item(n, y, "|cffffffff" .. name .. "|r", { single = true, right = GREEN .. string.format("+%.0f", up.d) .. "|r",
+        tip = "|cffffffff" .. name .. "|r  " .. GREEN .. string.format("+%.0f Ret score", up.d) .. "|r\n" .. GREY .. up.g.src .. ", " .. up.g.zone .. "|r\n\n" .. GOLD .. "Click:|r open the Gear guide",
+        onClick = function() if RG.ShowTab then RG.ShowTab("guide") end end })
+    end
+    y = y + 5
   end
-  -- reminders
+  -- 6. reminders: the most important few
   local rem = RG.Reminders and RG.Reminders() or {}
   if #rem > 0 then
-    -- most important first (lower number = more urgent; class buffs and seals are 3), top 5 only
     for i, rr in ipairs(rem) do rr.i = i end
     table.sort(rem, function(a, b) local pa, pb = a[3] or 3, b[3] or 3; if pa ~= pb then return pa < pb end return a.i < b.i end)
-    n = n + 1; y = section(n, y, "Reminders")
-    for i = 1, math.min(5, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2] }) end
-    if #rem > 5 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rem - 5) .. " more (turn reminders off in /rg settings)|r", { onClick = function() if RG.ShowTab then RG.ShowTab("settings") end end }) end
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Reminders", "reminders", #rem > 4 and (GREY .. #rem .. "|r") or nil)
+    if not isFolded then
+      for i = 1, math.min(4, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2] }) end
+      if #rem > 4 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rem - 4) .. " more  ·  turn reminders off in Settings|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("settings") end end }) end
+    end
   end
   tr.body:SetHeight(math.max(10, y))
   tr:SetHeight(42 + y + 8)

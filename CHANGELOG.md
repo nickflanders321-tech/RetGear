@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.21.0 (cleaner tracker, quest levels)
+- The tracker is reorganized around a **Quests** list: every quest in your log on one line with its **level** in the game's colors (grey, green, yellow, orange, red), progress and distance on the right. Ready-to-turn-in quests come first, then the nearest.
+- Click a quest to open it in your quest log, right-click to show it on the map, hover for all its objectives, its zone and the turn-in.
+- **New quests nearby**, the **Route** (2 tasks at a time), the next **dungeon** (only quests you still need to pick up), **Next upgrade** and **Reminders** (top 4) follow, each tidied to fewer, shorter lines.
+- Click any gold section header to fold that section away; it stays folded.
+- Quest levels also show on the Route tab's dungeon quests and the Group tab.
+
 ## v0.20.7 (hidden unit names fix)
 - Fixed: "attempted to index a table that cannot be indexed with secret keys" (Speed.lua) when a nameplate appeared. WoW Forever can hide other units' names from addons; the quest-mob nameplate alert now skips those instead of erroring.
 - The same protection now covers every other place RetGear reads another unit: your target's name in the DPS coach, party names, classes, levels and health on the Group tab and in alerts, and the combat log for the DPS coach and dungeon run reports. Anything hidden is skipped quietly.
