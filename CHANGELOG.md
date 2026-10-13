@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.44.2
+- "What's new" covers every update since the one you last saw, not just the latest. `/wp news` shows the last two updates, and `/wp news all` shows older ones.
+
 ## v0.44.1
 - The "what's new" notes are now included in the download, so the first login after an update shows what changed (v0.44.0's zip was built before its notes were added).
 

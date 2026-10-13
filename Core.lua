@@ -608,20 +608,24 @@ f:SetScript("OnEvent", function(_, event, arg1)
     C_Timer.After(7, function()
       local N = RG.NEWS
       if not (N and N.version == RG.VERSION and RG.root) then return end
-      if RG.root.seenVersion == RG.VERSION then return end
+      local seen = RG.root.seenVersion
+      if seen == RG.VERSION then return end
       RG.root.seenVersion = RG.VERSION
       if RG.freshInstall then return end
-      RG.Print("Updated to " .. GOLD .. RG.VERSION .. "|r. What's new:")
-      local shown = 0
-      for _, l in ipairs(N.lines or {}) do
-        if not l:find("^%s") and shown < 3 then
-          shown = shown + 1
-          local short = l:match("^(.-[%.:])%s") or l
-          if #short > 140 then short = short:sub(1, 137) .. "..." end
-          DEFAULT_CHAT_FRAME:AddMessage("   " .. GOLD .. "•|r " .. short)
-        end
+      -- the versions since the one you last saw (at most three of them)
+      local lines = {}
+      for i, sec in ipairs(N.sections or {}) do
+        if sec.v == seen or i > 3 then break end
+        for _, l in ipairs(sec.lines) do if not l:find("^%s") then lines[#lines + 1] = l end end
       end
-      DEFAULT_CHAT_FRAME:AddMessage("   " .. GREY .. "/wp news for everything in this update|r")
+      if #lines == 0 then return end
+      RG.Print("Updated to " .. GOLD .. RG.VERSION .. "|r. What's new:")
+      for i = 1, math.min(4, #lines) do
+        local short = lines[i]:match("^(.-[%.:])%s") or lines[i]
+        if #short > 140 then short = short:sub(1, 137) .. "..." end
+        DEFAULT_CHAT_FRAME:AddMessage("   " .. GOLD .. "•|r " .. short)
+      end
+      DEFAULT_CHAT_FRAME:AddMessage("   " .. GREY .. "/wp news for everything|r")
     end)
     if RG.oldAddonOn and StaticPopupDialogs and StaticPopup_Show then
       StaticPopupDialogs.WAYPATH_REPLACED = {

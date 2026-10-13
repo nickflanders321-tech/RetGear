@@ -234,8 +234,12 @@ SlashCmdList.WAYPATH = function(msg)
   if cmd == "news" or cmd == "new" or cmd == "changes" then
     local N = RG.NEWS
     if not N then RG.Print("No release notes in this copy (" .. tostring(RG.VERSION) .. "). See CHANGELOG.md."); return end
-    RG.Print("What's new in " .. GOLD .. N.version .. "|r:")
-    for _, l in ipairs(N.lines or {}) do DEFAULT_CHAT_FRAME:AddMessage("   " .. (l:find("^%s") and "    " or (GOLD .. "•|r ")) .. (l:gsub("^%s+", ""))) end
+    local all = ((msg or ""):match("^%s*%S+%s+(%S+)") or ""):lower() == "all"
+    for i, sec in ipairs(N.sections or {}) do
+      if i > (all and 99 or 2) then DEFAULT_CHAT_FRAME:AddMessage("   " .. GREY .. "/wp news all for older versions|r"); break end
+      RG.Print("What's new in " .. GOLD .. sec.v .. "|r:")
+      for _, l in ipairs(sec.lines) do DEFAULT_CHAT_FRAME:AddMessage("   " .. (l:find("^%s") and "    " or (GOLD .. "•|r ")) .. (l:gsub("^%s+", ""))) end
+    end
     return
   end
   if cmd == "char" or cmd == "character" or cmd == "profile" then
