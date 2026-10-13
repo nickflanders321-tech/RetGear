@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.28.0 (travel tips)
+- **Getting there:** whenever the guide sends you to another zone, RetGear works out the quickest way from where you are: your hearthstone (when it's ready), the flight paths you know, the Horde zeppelins (Undercity, Orgrimmar, Grom'gol), the Ratchet-Booty Bay boat and running across zone borders. It also reminds you to grab the flight path when you arrive.
+- Shown on the tracker under your current zone's tasks and under the next dungeon once it's time to go, and on the Route tab under each zone or dungeon you're heading to.
+- Turn it off in Settings (Travel tips).
+
 ## v0.27.0 (gear check)
 - **My gear → Gear check:** RetGear compares every item in the gear guide (your level -15 to +8) with what you're wearing right now and lists your 8 best upgrades, biggest first: the upgrade, which of your items it replaces, where it comes from, how much better it is (Ret score and %), and whether you can use it now or at what level.
 - **Dungeons with upgrades for you:** the top 5 dungeons ranked by how much they'd improve your gear, with each dungeon's upgrades and their bosses. Click one to pin the entrance on the map.

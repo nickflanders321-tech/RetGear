@@ -416,6 +416,10 @@ function RG.RefreshTracker()
         end
       end
       if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+      if shown > 0 and RG.TravelSummary then
+        local tip = RG.TravelSummary(r.zone)
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats." }) end
+      end
       local u = lastTick(key .. "#")
       if u then
         local short = plain(u.text); if #short > 30 then short = short:sub(1, 28) .. "..." end
@@ -462,6 +466,10 @@ function RG.RefreshTracker()
     local isFolded
     n = n + 1; y, isFolded = section(n, y, dr.zone, "dungeon", lvl >= dq.go and (GREEN .. "go now|r") or (GREY .. "go at " .. dq.go .. "|r"))
     if not isFolded then
+      if lvl >= dq.go and RG.TravelSummary then
+        local tip = RG.TravelSummary(dr.zone)
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip) end
+      end
       if #missing == 0 then n = n + 1; y = item(n, y, GREEN .. "All its quests are in your log.|r", { single = true })
       else
         for i = 1, math.min(3, #missing) do

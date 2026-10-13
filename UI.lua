@@ -635,6 +635,17 @@ local function renderRoute()
     if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = (e.steps and not e.done and "Click to open the steps. " or "") .. "Right-click: show " .. ew[4] .. " on the map." end
     row.icon:SetTexture(ICON[r.kind] or 134269)
     if e.done then return end
+    -- how to get there from where you are
+    if (now or open) and r.kind ~= "pala" and r.kind ~= "travel" and RG.TravelPlan and RG.Opt("travelTips") then
+      local legs, to = RG.TravelPlan(r.zone)
+      if legs and #legs > 0 then
+        local parts = {}
+        for i, l in ipairs(legs) do parts[#parts + 1] = (l.how == "tip" and GREY or "|cffffffff") .. i .. ". " .. l.text .. "|r" end
+        n = n + 1
+        setItem(getRow(n), nil, nil, GOLD .. "Getting to " .. to .. "|r", table.concat(parts, GREY .. "   |r"), "", "", "blue", nil, true)
+        rows[n].icon:SetTexture("Interface\\Icons\\Ability_Mount_Wyvern_01")
+      end
+    end
     -- unfinished steps (finished ones hidden behind a "show" line)
     if open then
       local showAll = state.showDone[e.key]
@@ -1378,7 +1389,7 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet" } },
   { "Professions, bags and gold", { "mineReminder", "sellJunk", "autoRepair", "bagReminder", "sortButton", "profitWatch", "autoScan" } },
   { "Interface", { "minimap", "sounds" } },

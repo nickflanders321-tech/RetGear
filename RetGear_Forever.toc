@@ -28,6 +28,7 @@ AltGuide.lua
 Camp.lua
 Fish.lua
 Speed.lua
+Travel.lua
 Setup.lua
 Group.lua
 Bags.lua
