@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.42.0 (faster Auction House scan that stays out of your way)
+- **Full scans:** when the server allows it (every 15 minutes), opening the Auction House sends one request for every auction and Waypath+ reads the prices it needs in the background, a chunk per frame. It takes a few seconds instead of a second or more per item. The modern Auction House's full scan doesn't touch your Browse list at all.
+- **Only out-of-date prices are checked:** between full scans, Waypath+ only looks up items whose price is more than 2 hours old, as fast as the server accepts searches (it used to wait 1.2 seconds per item and re-check everything every time). Reopening the AH right after a scan checks nothing.
+- **Your searches come first:** the moment you search for something yourself, Waypath+ stops its own searches for that visit, so the Auction House is yours straight away. Your searches still update its prices. `/wp scan` or the Scan button finishes the rest.
+- Every search (yours or Waypath+'s) now records the prices of every watched item it shows, and the Auction House tab shows the scan's progress (click to stop it) and when the last full scan ran.
+- Prices for all your professions' materials are kept, for the Professions tab's cost of what you're missing.
+
 ## v0.41.0 (profession guide)
 - **The Professions tab guides you through every profession.** Pick one of yours (or any of the twelve) and it shows:
   - **Now:** the craft for your skill and how many are left in this step, worked out from the guide's count and your current skill, so it counts down as you level.

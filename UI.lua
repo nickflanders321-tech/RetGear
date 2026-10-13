@@ -1042,6 +1042,16 @@ local function renderAH()
   local ids = RG.TrackedIDs()
   table.sort(ids, function(a, b) local ga, gb = RG.GuideByID[a], RG.GuideByID[b]; return (ga and ga.lvl or 99) < (gb and gb.lvl or 99) end)
   local n = 0
+  -- scan status
+  local st = RG.AHScanState and RG.AHScanState()
+  local last = RG.db.lastFullScan
+  local mins = last and math.floor((time() - last) / 60)
+  n = n + 1
+  setItem(getRow(n), nil, nil, st and (GOLD .. "Checking prices: " .. st .. "|r") or "|cffffffffPrices|r",
+    st and "Search for anything yourself and Waypath+ steps aside right away." or ((mins and ("Last full scan " .. (mins < 60 and (mins .. " min") or (math.floor(mins / 60) .. " h")) .. " ago.  ") or "") .. "Opening the AH checks only out-of-date prices, or does one full scan when the server allows it (every 15 min)."),
+    st and (GREY .. "click to stop|r") or "", "", st and "gold" or nil, nil, true)
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+  if st then rows[n].onClick = function() if RG.StopAHScan then RG.StopAHScan() end end end
   local gear, mats = {}, {}
   for _, id in ipairs(ids) do if RG.GuideByID[id] or RG.db.tracked[id] then gear[#gear + 1] = id else mats[#mats + 1] = id end end
   local function block(title, list)
@@ -1853,7 +1863,7 @@ local FOOTERS = {
   guide = "Click an item to see where it drops or which quest gives it  ·  Shift-click to link  ·  Ctrl-click to preview",
   gear  = "Click an item to see where it drops or which quest gives it  ·  scores are Attack Power equivalents (/wp weight)",
   prof  = "Double-click a place to point the arrow at it  ·  counts include your bank (open it once)  ·  opening a profession window reads its exact recipes",
-  ah    = "Opening the AH refreshes prices  ·  /wp alert [item] 25 pings you at 25g or less",
+  ah    = "Opening the AH refreshes out-of-date prices (a full scan when the server allows one)  ·  searching yourself pauses it  ·  /wp alert [item] 25 pings you at 25g or less",
   settings = "Everything here is saved for your account  ·  /wp tracker shows or hides the tracker",
   talents = "Talent names follow WoW Forever  ·  /wp talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
@@ -2074,7 +2084,7 @@ local function build()
   frame.search:Hide()
 
   frame.scan = panelButton(frame, "Scan prices", 110, 22)
-  frame.scan:SetScript("OnClick", function() RG.ScanAH() end)
+  frame.scan:SetScript("OnClick", function() RG.ScanAH(true) end)
 
   scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
   scroll:SetPoint("TOPLEFT", 18, -128); scroll:SetPoint("BOTTOMRIGHT", -38, 36)

@@ -106,51 +106,176 @@ local function record(id, price, count)
 end
 
 -- ---------------------------------------------------------------------------
--- Modern Auction House (C_AuctionHouse)
+-- Scanning
+--
+-- Fast and out of your way:
+--   1. A full scan when the server allows one (once every 15 minutes): one
+--      request returns every auction, and Waypath+ reads the prices it needs a
+--      chunk per frame. Modern AH: C_AuctionHouse.ReplicateItems (doesn't touch
+--      the Browse list at all). Classic AH: QueryAuctionItems "get all".
+--   2. Otherwise only items whose price is more than STALE old are looked up,
+--      one search each, as fast as the server takes them.
+--   3. The moment you search for something yourself, Waypath+ stops its own
+--      searches for this visit (your searches still update its prices), so the
+--      Auction House is yours. /wp scan or the Scan button finishes the rest.
 -- ---------------------------------------------------------------------------
-local queue, scanning, pending = {}, false, nil
-local ticker
+local STALE = 2 * 3600        -- re-check a price after 2 hours
+local FULL_COOLDOWN = 15 * 60 -- the server allows a full scan every 15 minutes
+local CHUNK = 800             -- auctions read per frame during a full scan
 
-local function nextQuery()
-  if #queue == 0 then
-    scanning = false; pending = nil
-    if ticker then ticker:Cancel(); ticker = nil end
-    RG.Print("Auction House prices updated.")
-    if RG.RefreshUI then RG.RefreshUI() end
+local queue, pending, pendingAt = {}, nil, 0
+local mode = nil              -- nil, "full", "items"
+local ours = false            -- true while Waypath+ itself sends a query
+local yielded = false         -- you searched yourself during this visit
+local runner = CreateFrame("Frame")
+local wantedSet
+
+local function wanted()
+  if wantedSet then return wantedSet end
+  wantedSet = {}
+  for _, id in ipairs(RG.ScanIDs()) do wantedSet[id] = true end
+  -- materials of every profession you have or plan, for the Professions tab's costs
+  for name in pairs(RG.Professions and RG.Professions() or {}) do
+    local P = RG.PROFESSIONS and RG.PROFESSIONS[name]
+    for _, id in ipairs(P and P.mats or {}) do wantedSet[id] = true end
+  end
+  return wantedSet
+end
+local function watched(id) return id and (wanted()[id] or isTracked(id)) end
+
+local function stop(msg)
+  queue, pending, mode = {}, nil, nil
+  runner:SetScript("OnUpdate", nil)
+  if msg then RG.Print(msg) end
+  if RG.RefreshUI then RG.RefreshUI() end
+end
+RG.StopAHScan = function() stop() end
+function RG.AHScanState()
+  if mode == "full" then return "reading the full scan" end
+  if mode == "items" then return #queue + (pending and 1 or 0) .. " items left" end
+  return nil
+end
+
+-- Which items still need a price: never seen, or older than STALE.
+local function staleIDs()
+  local out, now = {}, time()
+  for id in pairs(wanted()) do
+    local rec = RG.db.prices[id]
+    if not rec or now - rec.t > STALE then out[#out + 1] = id end
+  end
+  table.sort(out)
+  return out
+end
+
+-- Reading a full scan: lowest buyout per item, a chunk of auctions per frame.
+local function readFull(total, getInfo, isModern)
+  local best, count = {}, {}
+  local i = isModern and 0 or 1
+  local last = isModern and total - 1 or total
+  mode = "full"
+  runner:SetScript("OnUpdate", function()
+    local stopAt = math.min(last, i + CHUNK - 1)
+    for k = i, stopAt do
+      local id, stack, buyout = getInfo(k)
+      if id and buyout and buyout > 0 and watched(id) then
+        local per = buyout / math.max(1, stack or 1)
+        if not best[id] or per < best[id] then best[id] = per end
+        count[id] = (count[id] or 0) + 1
+      end
+    end
+    i = stopAt + 1
+    if i > last then
+      runner:SetScript("OnUpdate", nil)
+      local n = 0
+      for id in pairs(wanted()) do
+        if best[id] then record(id, math.floor(best[id]), count[id]); n = n + 1 else record(id, nil, 0) end
+      end
+      mode = nil
+      RG.Print("Auction House prices updated: " .. n .. " items from a full scan (" .. total .. " auctions).")
+      if RG.RefreshUI then RG.RefreshUI() end
+    end
+  end)
+end
+
+-- One search per stale item, sent as soon as the server is ready for it.
+local function sendNext()
+  local modern = C_AuctionHouse and C_AuctionHouse.SendBrowseQuery
+  if modern and C_AuctionHouse.IsThrottledMessageSystemReady and not C_AuctionHouse.IsThrottledMessageSystemReady() then return end
+  if not modern then
+    local canQuery = CanSendAuctionQuery and CanSendAuctionQuery()
+    if not canQuery then return end
+  end
+  local id = table.remove(queue, 1)
+  if not id then stop("Auction House prices updated."); return end
+  local name = RG.ItemInfo(id)
+  if not name then RG.RequestItem(id); if #queue > 0 then queue[#queue + 1] = id end; return end
+  pending, pendingAt = id, GetTime()
+  ours = true
+  if modern then
+    local sorts = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
+    pcall(C_AuctionHouse.SendBrowseQuery, { searchString = '"' .. name .. '"', sorts = sorts, filters = {}, itemClassFilters = {} })
+  else
+    pcall(QueryAuctionItems, name, nil, nil, 0, nil, nil, false, true)
+  end
+  ours = false
+end
+local function runItems()
+  queue = staleIDs()
+  if #queue == 0 then RG.Print("Auction House prices are up to date."); return end
+  mode = "items"
+  RG.Print("Checking " .. #queue .. " price" .. (#queue > 1 and "s" or "") .. ". Search for anything yourself and Waypath+ steps aside.")
+  runner:SetScript("OnUpdate", function()
+    if pending then
+      if GetTime() - pendingAt > 3 then record(pending, nil, 0); pending = nil end   -- nothing came back: none listed
+      return
+    end
+    sendNext()
+  end)
+end
+
+local function ahOpen()
+  return (AuctionHouseFrame and AuctionHouseFrame:IsShown()) or (AuctionFrame and AuctionFrame:IsShown())
+end
+
+function RG.ScanAH(manual)
+  if not ahOpen() then RG.Print("Open the Auction House first, then /wp scan."); return end
+  if mode then if manual then RG.Print("Already checking prices (" .. RG.AHScanState() .. ").") end return end
+  wantedSet = nil
+  if manual then yielded = false end
+  local now = time()
+  local canFull = now - (RG.db.lastFullScan or 0) > FULL_COOLDOWN
+  -- 1. full scan
+  if canFull and C_AuctionHouse and C_AuctionHouse.ReplicateItems then
+    RG.db.lastFullScan = now
+    mode = "full"
+    RG.Print("Full price scan: one request for the whole Auction House...")
+    ours = true; pcall(C_AuctionHouse.ReplicateItems); ours = false
+    -- if the server never answers, fall back to item searches
+    C_Timer.After(20, function() if mode == "full" and not runner:GetScript("OnUpdate") then mode = nil; if ahOpen() then runItems() end end end)
     return
   end
-  if C_AuctionHouse.IsThrottledMessageSystemReady and not C_AuctionHouse.IsThrottledMessageSystemReady() then return end
-  local id = table.remove(queue, 1)
-  local name = RG.ItemInfo(id)
-  if not name then RG.RequestItem(id); queue[#queue + 1] = id; return end
-  pending = id
-  local sorts = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
-  C_AuctionHouse.SendBrowseQuery({ searchString = '"' .. name .. '"', sorts = sorts, filters = {}, itemClassFilters = {} })
-  -- If nothing comes back, call it "none listed".
-  C_Timer.After(2.5, function() if pending == id then record(id, nil, 0); pending = nil end end)
-end
-
-function RG.ScanAH()
-  if not (C_AuctionHouse and C_AuctionHouse.SendBrowseQuery) then
-    if RG.LegacyScan then return RG.LegacyScan() end
-    RG.Print("Open the Auction House first."); return
+  if canFull and QueryAuctionItems and CanSendAuctionQuery and not C_AuctionHouse then
+    local canQuery, canAll = CanSendAuctionQuery()
+    if canAll then
+      RG.db.lastFullScan = now
+      mode = "full"
+      RG.Print("Full price scan: one request for the whole Auction House (the game may pause for a moment)...")
+      ours = true; pcall(QueryAuctionItems, "", nil, nil, 0, nil, nil, true, false); ours = false
+      return
+    end
   end
-  if not (AuctionHouseFrame and AuctionHouseFrame:IsShown()) then RG.Print("Open the Auction House first, then /wp scan."); return end
-  if scanning then return end
-  queue = RG.ScanIDs()
-  if #queue == 0 then return end
-  scanning = true
-  RG.Print("Checking prices for " .. #queue .. " items...")
-  ticker = C_Timer.NewTicker(1.2, function() if not pending then nextQuery() end end)
+  -- 2. only what's out of date
+  runItems()
 end
 
+-- Prices from whatever is on the Browse list (yours or ours).
 local function readBrowse()
   local results = C_AuctionHouse.GetBrowseResults and C_AuctionHouse.GetBrowseResults()
   if not results then return end
   local found = {}
   for _, r in ipairs(results) do
     local id = r.itemKey and r.itemKey.itemID
-    if id and isTracked(id) and r.minPrice and r.minPrice > 0 then
+    if id and watched(id) and r.minPrice and r.minPrice > 0 then
       if not found[id] or r.minPrice < found[id].p then found[id] = { p = r.minPrice, n = r.totalQuantity } end
     end
   end
@@ -158,62 +283,81 @@ local function readBrowse()
   if pending and found[pending] then pending = nil
   elseif pending and C_AuctionHouse.HasFullBrowseResults and C_AuctionHouse.HasFullBrowseResults() then record(pending, nil, 0); pending = nil end
 end
-
--- ---------------------------------------------------------------------------
--- Older-style Auction House (in case the client uses the Classic AH)
--- ---------------------------------------------------------------------------
-local legacyQueue, legacyPending = {}, nil
-function RG.LegacyScan()
-  if not (QueryAuctionItems and AuctionFrame and AuctionFrame:IsShown()) then RG.Print("Open the Auction House first."); return end
-  legacyQueue = RG.ScanIDs()
-  RG.Print("Checking prices for " .. #legacyQueue .. " items...")
-  local t
-  t = C_Timer.NewTicker(1.0, function()
-    if legacyPending then return end
-    if #legacyQueue == 0 then t:Cancel(); RG.Print("Auction House prices updated."); return end
-    local canQuery = CanSendAuctionQuery and CanSendAuctionQuery()
-    if not canQuery then return end
-    local id = table.remove(legacyQueue, 1)
-    local name = RG.ItemInfo(id)
-    if not name then return end
-    legacyPending = id
-    QueryAuctionItems(name, nil, nil, 0, nil, nil, false, true)
-  end)
-end
 local function readLegacy()
-  if not legacyPending then return end
-  local best, count = nil, 0
-  local n = GetNumAuctionItems("list")
-  for i = 1, n do
+  if mode == "full" and not runner:GetScript("OnUpdate") then
+    local _, total = GetNumAuctionItems("list")
+    readFull(total or GetNumAuctionItems("list"), function(i)
+      local _, _, stack, _, _, _, _, _, _, buyout, _, _, _, _, _, _, itemID = GetAuctionItemInfo("list", i)
+      return itemID, stack, buyout
+    end, false)
+    return
+  end
+  local best, count = {}, {}
+  for i = 1, (GetNumAuctionItems("list") or 0) do
     local _, _, stack, _, _, _, _, _, _, buyout, _, _, _, _, _, _, itemID = GetAuctionItemInfo("list", i)
-    if itemID == legacyPending and buyout and buyout > 0 then
+    if itemID and buyout and buyout > 0 and watched(itemID) then
       local per = buyout / math.max(1, stack or 1)
-      count = count + 1
-      if not best or per < best then best = per end
+      if not best[itemID] or per < best[itemID] then best[itemID] = per end
+      count[itemID] = (count[itemID] or 0) + 1
     end
   end
-  record(legacyPending, best and math.floor(best) or nil, count)
-  legacyPending = nil
+  for id, p in pairs(best) do record(id, math.floor(p), count[id]) end
+  if pending then
+    if not best[pending] then record(pending, nil, 0) end
+    pending = nil
+  end
+end
+local function readReplicate()
+  if not (C_AuctionHouse and C_AuctionHouse.GetNumReplicateItems) or runner:GetScript("OnUpdate") then return end
+  local total = C_AuctionHouse.GetNumReplicateItems() or 0
+  readFull(total, function(i)
+    local _, _, stack, _, _, _, _, _, _, buyout, _, _, _, _, _, _, itemID = C_AuctionHouse.GetReplicateItemInfo(i)
+    return itemID, stack, buyout
+  end, true)
+end
+
+-- You searched yourself: Waypath+ stops its searches for this visit.
+local function userSearched()
+  if ours then return end
+  if mode == "items" then
+    yielded = true
+    stop("Price check paused while you shop (your searches still update prices). /wp scan finishes it.")
+  elseif mode == "full" and not (C_AuctionHouse and C_AuctionHouse.ReplicateItems) then
+    -- a Classic full scan shares the Browse list with your search: let your search win
+    yielded = true
+    stop()
+  end
+end
+if hooksecurefunc then
+  if C_AuctionHouse then
+    for _, fn in ipairs({ "SendBrowseQuery", "SendSearchQuery", "SearchForItemKeys", "SendSellSearchQuery", "SearchForFavorites" }) do
+      if C_AuctionHouse[fn] then hooksecurefunc(C_AuctionHouse, fn, userSearched) end
+    end
+  end
+  if QueryAuctionItems then hooksecurefunc("QueryAuctionItems", userSearched) end
 end
 
 -- ---------------------------------------------------------------------------
 -- Events
 -- ---------------------------------------------------------------------------
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE" }) do
+for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE", "REPLICATE_ITEM_LIST_UPDATE" }) do
   pcall(f.RegisterEvent, f, e)
 end
 f:SetScript("OnEvent", function(_, event)
   if event == "AUCTION_HOUSE_SHOW" then
-    if RG.Opt("autoScan") then C_Timer.After(1.5, RG.ScanAH) end
+    yielded = false
+    if RG.Opt("autoScan") then C_Timer.After(0.5, function() if ahOpen() and not yielded then RG.ScanAH() end end) end
   elseif event == "AUCTION_HOUSE_CLOSED" then
-    queue = {}; legacyQueue = {}; pending = nil; legacyPending = nil
-    if ticker then ticker:Cancel(); ticker = nil end
-    scanning = false
+    -- a full scan that's already being read keeps going; searches stop
+    if mode == "items" then stop() end
+    pending = nil
   elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" or event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then
     readBrowse()
   elseif event == "AUCTION_ITEM_LIST_UPDATE" then
     readLegacy()
+  elseif event == "REPLICATE_ITEM_LIST_UPDATE" then
+    if mode == "full" then readReplicate() end
   end
 end)
 

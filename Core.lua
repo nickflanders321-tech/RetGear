@@ -628,7 +628,7 @@ SlashCmdList.WAYPATH = function(msg)
     local id = tonumber(rest:match("item:(%d+)") or rest)
     if id then RG.db.tracked[id] = nil; RG.Print("Stopped tracking item " .. id .. ".") end
   elseif cmd == "scan" then
-    if RG.ScanAH then RG.ScanAH() end
+    if RG.ScanAH then RG.ScanAH(true) end
   else
     RG.Print("Commands (type /wp on its own to open the guide):")
     for _, line in ipairs({
