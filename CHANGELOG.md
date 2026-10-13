@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.35.0 (DPS coach removed)
+- **The DPS coach is gone:** no more fight recording, DPS tab, after-fight chat reports or "last fight" reminders. Its saved fight history is cleared on login, which also makes your saved data smaller.
+- Dungeon run reports on the Group tab keep time, kills, deaths, XP per hour and loot (they no longer show DPS).
+
 ## v0.34.0 (RetGear is now Waypath+)
 - **New name: Waypath+.** It's growing past Ret Paladins, so it gets a name that fits every class. The command is now `/wp` (`/waypath`; `/rg` still works).
 - **Moving over keeps everything:** install the `Waypath` folder next to the old `RetGear` one and log in once. Your progress, settings, ticked steps, prices and fishing history are copied across, RetGear is switched off, and a pop-up asks you to reload. Then delete the `RetGear` folder. Key bindings need setting again (Esc > Options > Keybindings > AddOns > Waypath+), and the quest-target macro is now `WaypathTarget`.

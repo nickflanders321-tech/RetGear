@@ -12,9 +12,9 @@ local wiz
 local ALL_KEYS = {}
 local function allKeys() if #ALL_KEYS == 0 then for _, o in ipairs(RG.OPTIONS) do ALL_KEYS[#ALL_KEYS + 1] = o.key end end return ALL_KEYS end
 RG.PRESETS = {
-  full = { label = "Full guidance", desc = "Everything on: route, arrow, auto quests, coach reports, reminders and alerts. Best while you learn the game.", off = {} },
+  full = { label = "Full guidance", desc = "Everything on: route, arrow, auto quests, reminders and alerts. Best while you learn the game.", off = {} },
   balanced = { label = "Balanced", desc = "All the help, less chatter: no fight reports in chat, no quest-mob pings, fewer pop-ups.",
-    off = { "coachChat", "nameplateAlert", "levelBanner", "wellFed" } },
+    off = { "nameplateAlert", "levelBanner", "wellFed" } },
   minimal = { label = "Minimal", desc = "Tracker, tooltips and vendor safety only. You drive; Waypath+ stays quiet.",
     on = { "tracker", "tooltip", "upgradeToast", "sellJunk", "autoRepair", "profitWatch", "autoScan", "minimap", "arrow", "bagReminder", "rewardPicker", "healSet" } },
 }
@@ -160,7 +160,6 @@ local function buildPages()
   local p5 = newPage("Extras")
   local extras = {
     { "healSet", "Collect a healing set for dual spec", "Dual spec unlocks at 40. Waypath+ tracks your best healing gear and never sells it." },
-    { "coach", "DPS coach", "Records fights and tells you the biggest thing to fix. Chat reports follow your preset." },
     { "profitWatch", "Protect items worth more on the AH", "Gold coin on the bag slot, kept out of junk sales, warning at vendors." },
     { "newQuests", "Show new quests near me", "Turn this off if you also run Questie, so you don't see them twice." },
     { "groupDuties", "Group helper", "In a party: who needs a Blessing, Aura reminder, dispel and \"dying\" alerts, shared quests and LFG posts." },
@@ -184,8 +183,8 @@ local function buildPages()
       .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "Healing set:|r " .. (RG.Opt("healSet") and "collecting" or "off") .. "\n\n"
       .. GOLD .. "Worth remembering|r\n"
       .. GOLD .. "/wp|r  the full guide        " .. GOLD .. "/wp next|r  pin your nearest objective\n"
-      .. GOLD .. "/wp dps|r  last fight          " .. GOLD .. "/wp camp|r  camp, fishing, cooking\n"
-      .. GOLD .. "/wp setup|r  run this again    " .. GOLD .. "/wp group|r  group play\n"
+      .. GOLD .. "/wp group|r  group play         " .. GOLD .. "/wp camp|r  camp, fishing, cooking\n"
+      .. GOLD .. "/wp setup|r  run this again    " .. GOLD .. "/wp fish|r  fishing\n"
       .. GOLD .. "Right-click|r a route step to pin it")
   end)
 end

@@ -1068,81 +1068,6 @@ local function ago(t)
   if m < 1 then return "just now" elseif m < 60 then return m .. "m ago" elseif m < 1440 then return math.floor(m / 60) .. "h ago" end
   return math.floor(m / 1440) .. "d ago"
 end
-local function renderDPS()
-  local n = 0
-  if not RG.IsClass("PALADIN") then n = n + 1; setHeader(getRow(n), "The DPS coach is Paladin-only for now"); return n end
-  local fights = RG.db.fights or {}
-  if #fights == 0 then
-    n = n + 1; setHeader(getRow(n), "No fights recorded yet")
-    n = n + 1
-    setItem(getRow(n), nil, nil, "|cffffffffGo hit something|r", "Every fight longer than 8 seconds is recorded. Waypath+ shows your DPS, where it came from, and the biggest thing to fix.", "", "", "gold")
-    rows[n].icon:SetTexture("Interface\\Icons\\Ability_DualWield")
-    return n
-  end
-  state.fightIdx = math.min(state.fightIdx or 1, #fights)
-  local f = fights[state.fightIdx]
-  local best = RG.BestDPS(f.level)
-  -- headline
-  n = n + 1
-  local title = string.format("%s%s|r  ·  %s%.0f DPS|r", "|cffffffff", f.target or "Fight", GOLD, f.dps)
-  local sub = string.format("%ds  ·  %s  ·  level %d%s", math.floor(f.dur), ago(f.t), f.level or 0, f.instance and "  ·  dungeon" or "")
-  if f.share then sub = sub .. string.format("  ·  %s%d%% of the group's damage, #%d of %d|r", GOLD, math.floor(f.share * 100 + 0.5), f.rank or 1, f.ranked or 1) end
-  local eff = f.efficiency or 1
-  local effCol = eff >= 0.9 and GREEN or (eff >= 0.75 and GOLD or RED)
-  setItem(getRow(n), nil, nil, title, sub, effCol .. string.format("%d%% efficient", math.floor(eff * 100 + 0.5)) .. "|r",
-    (f.potential or 0) >= 1 and (GREEN .. string.format("+%.0f DPS possible", f.potential) .. "|r") or (best and (GREY .. string.format("best %.0f", best) .. "|r") or ""), "gold")
-  rows[n].icon:SetTexture("Interface\\Icons\\Ability_DualWield")
-  -- what to fix
-  n = n + 1; setHeader(getRow(n), (#(f.tips or {}) > 0) and "What to fix, biggest first" or "Nothing to fix in this fight")
-  for _, t in ipairs(f.tips or {}) do
-    n = n + 1
-    setItem(getRow(n), nil, nil, "|cffffffff" .. t.text .. "|r", t.fix or "", t.lost >= 0.5 and (GREEN .. string.format("+%.0f DPS", t.lost) .. "|r") or (GOLD .. "Fix|r"), "", t.lost >= 3 and "gold" or nil, nil, true)
-  end
-  -- uptimes
-  n = n + 1; setHeader(getRow(n), "Uptime")
-  if f.sealPct then n = n + 1; setBar(getRow(n), "Seal up", f.sealPct, 1, f.sealPct >= 0.9 and T.green or T.red, string.format("%d%%", math.floor(f.sealPct * 100 + 0.5)), 0.9) end
-  if f.swingPct then n = n + 1; setBar(getRow(n), "Swinging", f.swingPct, 1, f.swingPct >= 0.85 and T.green or T.red, string.format("%d%%  ·  %d swings", math.floor(f.swingPct * 100 + 0.5), f.swings or 0), 0.85) end
-  if (f.swings or 0) > 0 then
-    local sw = f.swings
-    n = n + 1; setBar(getRow(n), "Missed / dodged / parried", (f.miss + f.dodge + f.parry) / sw, 0.3, T.goldDim,
-      string.format("%d%% / %d%% / %d%%", math.floor(f.miss / sw * 100 + 0.5), math.floor(f.dodge / sw * 100 + 0.5), math.floor(f.parry / sw * 100 + 0.5)))
-  end
-  -- damage breakdown
-  n = n + 1; setHeader(getRow(n), "Where your damage came from")
-  local list = {}
-  for name, a in pairs(f.abilities or {}) do list[#list + 1] = { name = name, a = a } end
-  table.sort(list, function(x, y) return x.a.dmg > y.a.dmg end)
-  local top = list[1] and list[1].a.dmg or 1
-  for _, e in ipairs(list) do
-    n = n + 1
-    local pct = f.total > 0 and e.a.dmg / f.total or 0
-    local col = e.name == "Melee" and T.gold or (e.name:find("^Seal") and T.purple or (e.name:find("^Judgement") and T.blue or T.green))
-    setBar(getRow(n), string.format("%s  %d%%", e.name, math.floor(pct * 100 + 0.5)), e.a.dmg, top, col,
-      string.format("%.0f DPS  ·  %d hits  ·  %d%% crit", e.a.dmg / f.dur, e.a.hits, math.floor(e.a.crits / math.max(1, e.a.hits) * 100 + 0.5)))
-  end
-  -- patterns
-  local pats, seen = RG.CoachPatterns(10)
-  if #pats > 0 and seen >= 3 then
-    n = n + 1; setHeader(getRow(n), "Keeps happening (last " .. seen .. " fights)")
-    for i = 1, math.min(4, #pats) do
-      local p = pats[i]
-      n = n + 1
-      setItem(getRow(n), nil, nil, "|cffffffff" .. p.key:gsub("X%%", "some"):gsub("X sec", "a while") .. "|r", p.fix or "", GOLD .. p.count .. " of " .. seen .. " fights|r", p.avgLost >= 0.5 and (GREEN .. string.format("~+%.0f DPS each", p.avgLost) .. "|r") or "", nil, nil, true)
-    end
-  end
-  -- history
-  n = n + 1; setHeader(getRow(n), "Recent fights  ·  click one to see it")
-  for i = 1, math.min(12, #fights) do
-    local h = fights[i]
-    n = n + 1
-    local r = getRow(n)
-    local e2 = h.efficiency or 1
-    setItem(r, nil, nil, (i == state.fightIdx and GOLD or "|cffffffff") .. (h.target or "Fight") .. "|r", string.format("%ds  ·  %s  ·  level %d", math.floor(h.dur), ago(h.t), h.level or 0),
-      string.format("%s%.0f DPS|r", i == state.fightIdx and GOLD or "|cffffffff", h.dps), (e2 >= 0.9 and GREEN or (e2 >= 0.75 and GOLD or RED)) .. string.format("%d%%", math.floor(e2 * 100 + 0.5)) .. "|r", i == state.fightIdx and "gold" or nil, nil, true)
-    r.onClick = function() state.fightIdx = i; scroll:SetVerticalScroll(0); RG.RefreshUI() end
-  end
-  return n
-end
 
 local function renderMail()
   local n = 0
@@ -1410,7 +1335,7 @@ end
 
 local SETTING_GROUPS = {
   { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
-  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet", "specSwap", "bagArrows" } },
+  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishSound", "fishRecast", "profitWatch", "autoScan" } },
   { "Interface", { "minimap", "sounds", "quietErrors" } },
 }
@@ -1501,8 +1426,7 @@ local function renderGroup()
     local r = runs[i]
     n = n + 1
     setItem(getRow(n), nil, nil, "|cffa58bd8" .. r.name .. "|r" .. GREY .. "   level " .. (r.level or "?") .. "  ·  " .. ago(r.t) .. "|r",
-      string.format("%s  ·  %d kills  ·  %d deaths  ·  %.1fk XP/hr%s%s", RG.FormatDuration and RG.FormatDuration(r.dur) or "", r.kills or 0, r.deaths or 0, (r.xpHr or 0) / 1000,
-        r.dps and string.format("  ·  %.0f DPS", r.dps) or "", r.share and string.format(" (%d%% of damage)", math.floor(r.share * 100 + 0.5)) or ""),
+      string.format("%s  ·  %d kills  ·  %d deaths  ·  %.1fk XP/hr", RG.FormatDuration and RG.FormatDuration(r.dur) or "", r.kills or 0, r.deaths or 0, (r.xpHr or 0) / 1000),
       (#(r.loot or {}) > 0) and (GREEN .. #r.loot .. " loot|r") or "", "", nil, nil, true)
     rows[n].icon:SetTexture(136058)
     if r.loot and #r.loot > 0 then rows[n].tip = "Loot: " .. table.concat(r.loot, ", ") end
@@ -1583,7 +1507,6 @@ local TITLES = {
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   group = { "Group play", "How grouping is going, your paladin duties, shared quests and finding a group" },
-  dps   = { "DPS coach", "Every fight recorded, and the biggest thing to fix" },
   heal  = { "Healing set", "Holy gear to save for dual spec at 40, and where to find it" },
 }
 local FOOTERS = {
@@ -1599,7 +1522,6 @@ local FOOTERS = {
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
   mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
   group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /wp lfg Scarlet Monastery posts your own",
-  dps   = "Efficiency = your DPS vs what you'd do with every fix  ·  /wp dps reset clears history",
   heal  = "Pieces in your healing set are never sold by Waypath+  ·  Forever loot is still being mapped; the list updates weekly",
 }
 
@@ -1644,7 +1566,6 @@ function RG.RefreshUINow()
   elseif state.tab == "talents" then n = renderTalents()
   elseif state.tab == "gold" then n = renderGold()
   elseif state.tab == "heal" then n = renderHeal()
-  elseif state.tab == "dps" then n = renderDPS()
   elseif state.tab == "group" then n = renderGroup()
   elseif state.tab == "mail" then n = renderMail()
   elseif state.tab == "camp" then n = renderCamp()
@@ -1747,7 +1668,7 @@ local function build()
 
   -- Character-window style tabs along the bottom edge
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "dps", "DPS" }, { "group", "Group" },
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "group", "Group" },
     { "heal", "Healing" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
   local x = 12
   for _, d in ipairs(defs) do

@@ -80,7 +80,7 @@ local run
 local function startRun()
   local name, instType = GetInstanceInfo and GetInstanceInfo()
   if instType ~= "party" then return end
-  run = { name = name or "Dungeon", t = time(), start = GetTime(), xp = 0, kills = 0, deaths = 0, myDeaths = 0, loot = {}, fight0 = RG.db.fights and RG.db.fights[1], size = GetNumGroupMembers and GetNumGroupMembers() or 1, level = UnitLevel("player") }
+  run = { name = name or "Dungeon", t = time(), start = GetTime(), xp = 0, kills = 0, deaths = 0, myDeaths = 0, loot = {}, size = GetNumGroupMembers and GetNumGroupMembers() or 1, level = UnitLevel("player") }
   RG.Print(GOLD .. run.name .. "|r: run started. Waypath+ will report when you leave.")
 end
 local function finishRun()
@@ -88,21 +88,11 @@ local function finishRun()
   local r = run; run = nil
   r.dur = GetTime() - r.start; r.start = nil
   if r.dur < 120 then return end -- zoned in and out
-  -- fights recorded during the run
-  local dps, n, share = 0, 0, nil
-  for _, f in ipairs(RG.db.fights or {}) do
-    if f == r.fight0 then break end
-    if f.instance then dps = dps + f.dps; n = n + 1; if f.share then share = (share or 0) + f.share end end
-  end
-  r.fight0 = nil
-  r.dps = n > 0 and dps / n or nil
-  r.share = (share and n > 0) and share / n or nil
   r.xpHr = r.dur > 0 and r.xp / r.dur * 3600 or 0
   table.insert(db().runs, 1, r)
   for i = #RG.db.runs, 16, -1 do RG.db.runs[i] = nil end
-  RG.Print(string.format("%s%s|r run: %s, %d kills, %d deaths, %s XP (%.1fk/hr)%s%s",
-    GOLD, r.name, RG.FormatDuration and RG.FormatDuration(r.dur) or (math.floor(r.dur / 60) .. "m"), r.kills, r.deaths, BreakUpLargeNumbers and BreakUpLargeNumbers(r.xp) or r.xp, r.xpHr / 1000,
-    r.dps and string.format(", %.0f DPS", r.dps) or "", r.share and string.format(" (%d%% of the group's damage)", math.floor(r.share * 100 + 0.5)) or ""))
+  RG.Print(string.format("%s%s|r run: %s, %d kills, %d deaths, %s XP (%.1fk/hr)",
+    GOLD, r.name, RG.FormatDuration and RG.FormatDuration(r.dur) or (math.floor(r.dur / 60) .. "m"), r.kills, r.deaths, BreakUpLargeNumbers and BreakUpLargeNumbers(r.xp) or r.xp, r.xpHr / 1000))
   if #r.loot > 0 then RG.Print("  Loot: " .. table.concat(r.loot, " ")) end
   if RG.RefreshUI then RG.RefreshUI() end
 end

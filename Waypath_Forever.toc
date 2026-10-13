@@ -30,7 +30,6 @@ Auction.lua
 Profit.lua
 Gold.lua
 Heal.lua
-Coach.lua
 Mail.lua
 AltGuide.lua
 Camp.lua

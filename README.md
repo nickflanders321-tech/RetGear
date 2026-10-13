@@ -2,7 +2,7 @@
 
 An all-in-one leveling companion for World of Warcraft: Forever: your route with an arrow, a quest tracker, travel tips, gear upgrades, professions and gold. (Formerly **RetGear**.)
 
-**What's covered so far:** the full guide (talents, gear, class quests, rotation, DPS coach, healing set) is written for **Retribution Paladins**, the route starts in the **Undead** zones, and the profession guides cover **Mining, Blacksmithing, Fishing and Cooking**. Every other class and race already gets the route from level 12 on, the quest tracker, arrow, travel tips, bags and gold tools; their own talents, gear lists and starting zones are being added class by class. Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`.
+**What's covered so far:** the full guide (talents, gear, class quests, rotation, healing set) is written for **Retribution Paladins**, the route starts in the **Undead** zones, and the profession guides cover **Mining, Blacksmithing, Fishing and Cooking**. Every other class and race already gets the route from level 12 on, the quest tracker, arrow, travel tips, bags and gold tools; their own talents, gear lists and starting zones are being added class by class. Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`.
 
 ## Install
 Copy the `Waypath` folder into `World of Warcraft\_forever_\Interface\AddOns\` (during the beta it's `_forever_beta_`), then restart the game. Type `/wp` (or `/waypath`) or click the minimap button.
@@ -29,7 +29,6 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Bags sorted** with one click: the Sort button on your bags and bank.
 - **Junk is sold and gear repaired** at vendors, but anything worth more on the AH is kept.
 - **AH prices** are checked every time you open the Auction House (Auctionator and TSM prices are used too).
-- **Every fight is recorded** by the DPS coach, including your share of the group's damage and any aggro you pull off the tank.
 - **Dual-spec gear swap**: switch to Holy and Waypath+ offers to put on your healing set; switch back and it re-equips your Ret gear (also a Swap row on the Healing tab).
 - **In a party**: reminders for un-blessed party members and a missing Aura, center-screen alerts when someone needs Purify/Cleanse or is about to die, and a report after every dungeon run.
 
@@ -42,7 +41,6 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **Gear guide** | About 160 Ret upgrades for every slot, levels 8-60: Horde quest rewards, dungeon boss drops, vendors and your own Blacksmithing crafts, grouped by slot near your level |
 | **My gear** | Gear check (your 8 best upgrades from the guide vs what you wear, and the dungeons with the most upgrades for you), score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
-| **DPS** | Last fight: DPS, efficiency, damage by ability, uptime, and what to fix first with the DPS each fix is worth; problems that keep repeating; fight history |
 | **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
 | **Healing** | Holy set for dual spec at 40: your best healing piece per slot (worn, bags, bank) and a 40-60 hunting list. Your healing set is never sold |
 | **Professions** → *Mining & smithing* | Where to mine, Blacksmithing 1-300 plan, smithing upgrades, smelt-or-sell |
@@ -66,7 +64,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 |---|---|
 | `/wp` | Open or close the window |
 | `/wp group` · `/wp lfg Scarlet Monastery` | Group tab · post an LFG message |
-| `/wp dps` · `/wp heal` · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp talents` · `/wp settings` | Open that tab |
+| `/wp heal` · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp talents` · `/wp settings` | Open that tab |
 | `/wp auto` | Auto accept / turn in on or off |
 | `/wp next` | Pin your nearest quest objective (or turn-in) |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
@@ -87,7 +85,6 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp setup` | Run the setup wizard again |
 | `/wp tracker` · `/wp tooltip` | Show or hide the tracker / tooltip line / welcome screen |
 | `/wp main` | Make this character your main |
-| `/wp dps reset` | Clear fight history |
 
 ## Keeping it current
 Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, healing list, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.

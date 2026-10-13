@@ -41,6 +41,8 @@ local function InitDB()
   pcall(migrateFromRetGear)
   WaypathDB = WaypathDB or {}
   local db = WaypathDB
+  -- the DPS coach was removed: drop its saved fight history
+  db.fights, db.spellAvg, db.coach, db.coachChat = nil, nil, nil, nil
   if db.stepsDone then
     for old, new in pairs(MOVED_STEPS) do
       for k, v in pairs(db.stepsDone) do
@@ -539,13 +541,13 @@ SlashCmdList.WAYPATH = function(msg)
     for _, line in ipairs({
       "|cffffd100Guide|r  /wp  ·  /wp setup  ·  /wp settings  ·  /wp tracker",
       "|cffffd100Questing|r  /wp next  ·  /wp undo  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
-      "|cffffd100Tabs|r  /wp dps  ·  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp talents",
+      "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp talents",
       "|cffffd100Group|r  /wp lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /wp scan  ·  /wp autoscan  ·  /wp track [item]  ·  /wp untrack [item]  ·  /wp alert [item] 25",
       "|cffffd100Bags|r  /wp sort  ·  /wp sort bank",
       "|cffffd100Selling|r  /wp profit  ·  /wp profit min 25  ·  /wp profit ignore [item]",
       "|cffffd100" .. RG.SCORE_NAME .. "|r  /wp weight STR 2.5  ·  /wp hitcap 9  ·  /wp talenthit 3  ·  /wp reset  ·  /wp tooltip",
-      "|cffffd100Characters|r  /wp main  ·  /wp dps reset",
+      "|cffffd100Characters|r  /wp main",
     }) do DEFAULT_CHAT_FRAME:AddMessage("   " .. line) end
   end
 end
