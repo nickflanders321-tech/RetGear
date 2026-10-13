@@ -54,6 +54,16 @@ end
 -- caught the same way.
 local isSecret = issecretvalue or function() return false end
 RG.IsSecret = isSecret
+-- Unit info (names, health, class) can also come back "secret" on this client,
+-- e.g. for nameplates or in combat. These return nil instead of a hidden value.
+function RG.Safe(v) if v == nil or isSecret(v) then return nil end return v end
+function RG.SafeUnit(fn, unit)
+  if not fn then return nil end
+  local ok, a, b = pcall(fn, unit)
+  if not ok then return nil end
+  return RG.Safe(a), RG.Safe(b)
+end
+function RG.SafeName(unit) return (RG.SafeUnit(UnitName, unit)) end
 function RG.AurasLocked() return (InCombatLockdown and InCombatLockdown()) and true or false end
 function RG.FindAura(unit, filter, test)
   if RG.AurasLocked() then return nil, true end

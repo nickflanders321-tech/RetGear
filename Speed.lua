@@ -355,9 +355,9 @@ RG.RefreshSpeedBar = refreshBar
 local lastAlert = {}
 local function nameplate(unit)
   if not RG.Opt("nameplateAlert") or (RG.IsAlt and RG.IsAlt()) then return end
-  local name = UnitName(unit)
+  local name = RG.SafeName(unit)
   local t = name and targetSet[name]
-  if not t or UnitIsDead(unit) then return end
+  if not t or RG.SafeUnit(UnitIsDead, unit) then return end
   if lastAlert[name] and GetTime() - lastAlert[name] < 180 then return end
   lastAlert[name] = GetTime()
   RG.Print(GOLD .. "Quest mob nearby:|r " .. name .. (t.drop and (GREY .. " (drops " .. t.drop .. ")|r") or "") .. GREY .. (t.have and t.need and string.format("  (%d/%d)", t.have, t.need) or "") .. "  ·  press your RetGearTarget macro|r")

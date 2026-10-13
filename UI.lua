@@ -1056,12 +1056,13 @@ local function renderGroup()
       if UnitExists(u) then
         n = n + 1
         local mine = RG.MyBlessingOn and RG.MyBlessingOn(u)
-        local _, class = UnitClass(u)
-        local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        local name = (cc and string.format("|cff%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255) or "|cffffffff") .. (UnitName(u) or u) .. "|r"
-        local hp = UnitHealthMax(u) > 0 and math.floor(UnitHealth(u) / UnitHealthMax(u) * 100) or 0
-        setItem(getRow(n), nil, nil, name .. GREY .. "   level " .. (UnitLevel(u) or "?") .. "|r", mine and ("Has your " .. mine) or ("Suggested: " .. RG.SuggestBlessing(u)),
-          mine and (GREEN .. "Blessed|r") or (GOLD .. "Needs a Blessing|r"), GREY .. hp .. "% health|r", mine and "green" or nil, nil, true)
+        local _, class = RG.SafeUnit(UnitClass, u)
+        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        local name = (cc and string.format("|cff%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255) or "|cffffffff") .. (RG.SafeName(u) or u) .. "|r"
+        local hpNow, hpMax = RG.SafeUnit(UnitHealth, u), RG.SafeUnit(UnitHealthMax, u)
+        local hp = (hpNow and hpMax and hpMax > 0) and math.floor(hpNow / hpMax * 100) or nil
+        setItem(getRow(n), nil, nil, name .. GREY .. "   level " .. (RG.SafeUnit(UnitLevel, u) or "?") .. "|r", mine and ("Has your " .. mine) or ("Suggested: " .. RG.SuggestBlessing(u)),
+          mine and (GREEN .. "Blessed|r") or (GOLD .. "Needs a Blessing|r"), (hp and (GREY .. hp .. "% health|r") or ""), mine and "green" or nil, nil, true)
         rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_FistOfJustice")
       end
     end

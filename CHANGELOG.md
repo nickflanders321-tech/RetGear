@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.20.7 (hidden unit names fix)
+- Fixed: "attempted to index a table that cannot be indexed with secret keys" (Speed.lua) when a nameplate appeared. WoW Forever can hide other units' names from addons; the quest-mob nameplate alert now skips those instead of erroring.
+- The same protection now covers every other place RetGear reads another unit: your target's name in the DPS coach, party names, classes, levels and health on the Group tab and in alerts, and the combat log for the DPS coach and dungeon run reports. Anything hidden is skipped quietly.
+
 ## v0.20.6 (open quests in your quest log)
 - Clicking a quest in RetGear now opens it in the game's quest log, already selected and scrolled into view: "Quests near you" on the tracker, dungeon quests on the tracker and Route tab, and quests on the Group tab. Click it again to close the log.
 - Right-click still shows the quest (or its giver/turn-in) on the map. Quests not in your log yet show their quest giver on the map instead.

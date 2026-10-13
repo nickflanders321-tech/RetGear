@@ -119,8 +119,8 @@ local function newFight()
     samples = 0, sealUp = 0, meleeSamples = 0, idle = {}, cd = {}, noMana = 0,
     minMana = 1, speed = mh, died = false,
     might = hasMight() ~= nil, camp = RG.CampState and RG.CampState() == "active" or false, stone = (GetWeaponEnchantInfo and GetWeaponEnchantInfo()) and true or false,
-    target = UnitExists("target") and UnitName("target") or nil,
-    class = UnitExists("target") and UnitClassification and UnitClassification("target") or nil,
+    target = UnitExists("target") and RG.SafeName("target") or nil,
+    class = UnitExists("target") and RG.SafeUnit(UnitClassification, "target") or nil,
     instance = instType ~= "none" and instType or nil,
     level = UnitLevel("player"),
     groupSize = GetNumGroupMembers and GetNumGroupMembers() or 1, party = {}, aggro = 0,
@@ -320,6 +320,40 @@ end
 -- ---------------------------------------------------------------------------
 -- Events
 -- ---------------------------------------------------------------------------
+-- One combat-log event for the fight being recorded.
+local function onCombatLog()
+  local _, sub, _, src, srcName, srcFlags, _, dst, _, _, _, a12, a13, a14, a15, _, _, a18, a19, _, a21 = CombatLogGetCurrentEventInfo()
+  myGUID = myGUID or UnitGUID("player")
+  -- your own Seal / Might going up or down (Judgement uses the Seal up)
+  if (sub == "SPELL_AURA_APPLIED" or sub == "SPELL_AURA_REFRESH" or sub == "SPELL_AURA_REMOVED") and dst == myGUID then
+    pcall(function()
+      local up = sub ~= "SPELL_AURA_REMOVED"
+      if isSeal(a13) then buffs.seal[a13] = up or nil elseif isMight(a13) then buffs.might = up end
+    end)
+  end
+  if src ~= myGUID then
+    -- party members' damage, for your share of the group's damage
+    if (cur.groupSize or 1) > 1 and srcFlags and band(srcFlags, 0x6) ~= 0 and srcName then
+      local amt = (sub == "SWING_DAMAGE" and a12) or ((sub == "SPELL_DAMAGE" or sub == "SPELL_PERIODIC_DAMAGE" or sub == "RANGE_DAMAGE") and a15) or nil
+      if amt and amt > 0 then cur.party[srcName] = (cur.party[srcName] or 0) + amt end
+    end
+    return
+  end
+  if sub == "SWING_DAMAGE" then
+    cur.swings = cur.swings + 1; cur.swingHits = cur.swingHits + 1; cur.swingDmg = cur.swingDmg + (a12 or 0)
+    if a18 then cur.crits = cur.crits + 1 end
+    if a19 then cur.glance = cur.glance + 1 end
+    addDmg("Melee", a12, a18)
+  elseif sub == "SWING_MISSED" then
+    cur.swings = cur.swings + 1
+    if a12 == "MISS" then cur.miss = cur.miss + 1 elseif a12 == "DODGE" then cur.dodge = cur.dodge + 1 elseif a12 == "PARRY" then cur.parry = cur.parry + 1 end
+  elseif sub == "SPELL_DAMAGE" or sub == "SPELL_PERIODIC_DAMAGE" or sub == "RANGE_DAMAGE" then
+    addDmg(a13 or "Spell", a15, a21)
+  elseif sub == "SPELL_CAST_SUCCESS" and a13 then
+    cur.casts[a13] = (cur.casts[a13] or 0) + 1
+  end
+end
+
 local f = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_DEAD", "UNIT_AURA" }) do pcall(f.RegisterEvent, f, e) end
 f:SetScript("OnEvent", function(_, event, unit)
@@ -339,36 +373,7 @@ f:SetScript("OnEvent", function(_, event, unit)
   elseif event == "PLAYER_DEAD" then
     if cur then cur.died = true end
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" and cur then
-    local _, sub, _, src, srcName, srcFlags, _, dst, _, _, _, a12, a13, a14, a15, _, _, a18, a19, _, a21 = CombatLogGetCurrentEventInfo()
-    myGUID = myGUID or UnitGUID("player")
-    -- your own Seal / Might going up or down (Judgement uses the Seal up)
-    if (sub == "SPELL_AURA_APPLIED" or sub == "SPELL_AURA_REFRESH" or sub == "SPELL_AURA_REMOVED") and dst == myGUID then
-      pcall(function()
-        local up = sub ~= "SPELL_AURA_REMOVED"
-        if isSeal(a13) then buffs.seal[a13] = up or nil elseif isMight(a13) then buffs.might = up end
-      end)
-    end
-    if src ~= myGUID then
-      -- party members' damage, for your share of the group's damage
-      if (cur.groupSize or 1) > 1 and srcFlags and band(srcFlags, 0x6) ~= 0 and srcName then
-        local amt = (sub == "SWING_DAMAGE" and a12) or ((sub == "SPELL_DAMAGE" or sub == "SPELL_PERIODIC_DAMAGE" or sub == "RANGE_DAMAGE") and a15) or nil
-        if amt and amt > 0 then cur.party[srcName] = (cur.party[srcName] or 0) + amt end
-      end
-      return
-    end
-    if sub == "SWING_DAMAGE" then
-      cur.swings = cur.swings + 1; cur.swingHits = cur.swingHits + 1; cur.swingDmg = cur.swingDmg + (a12 or 0)
-      if a18 then cur.crits = cur.crits + 1 end
-      if a19 then cur.glance = cur.glance + 1 end
-      addDmg("Melee", a12, a18)
-    elseif sub == "SWING_MISSED" then
-      cur.swings = cur.swings + 1
-      if a12 == "MISS" then cur.miss = cur.miss + 1 elseif a12 == "DODGE" then cur.dodge = cur.dodge + 1 elseif a12 == "PARRY" then cur.parry = cur.parry + 1 end
-    elseif sub == "SPELL_DAMAGE" or sub == "SPELL_PERIODIC_DAMAGE" or sub == "RANGE_DAMAGE" then
-      addDmg(a13 or "Spell", a15, a21)
-    elseif sub == "SPELL_CAST_SUCCESS" and a13 then
-      cur.casts[a13] = (cur.casts[a13] or 0) + 1
-    end
+    pcall(onCombatLog)  -- any hidden ("secret") combat-log value just skips the event
   end
 end)
 

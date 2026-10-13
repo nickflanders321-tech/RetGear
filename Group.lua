@@ -112,8 +112,8 @@ end
 -- ---------------------------------------------------------------------------
 local MIGHT_CLASSES = { WARRIOR = true, ROGUE = true, PALADIN = true }
 function RG.SuggestBlessing(unit)
-  local _, class = UnitClass(unit)
-  if MIGHT_CLASSES[class] then return "Blessing of Might" end
+  local _, class = RG.SafeUnit(UnitClass, unit)
+  if class and MIGHT_CLASSES[class] then return "Blessing of Might" end
   if knows("Blessing of Wisdom") then return "Blessing of Wisdom" end
   return "Blessing of Might"
 end
@@ -141,7 +141,7 @@ function RG.UnblessedParty()
   for _, u in ipairs(partyUnits()) do
     local has, blocked = myBlessingOn(u)
     if blocked then return {} end
-    if not UnitIsDeadOrGhost(u) and not has then out[#out + 1] = { unit = u, name = UnitName(u), suggest = RG.SuggestBlessing(u) } end
+    if not UnitIsDeadOrGhost(u) and not has then out[#out + 1] = { unit = u, name = RG.SafeName(u) or u, suggest = RG.SuggestBlessing(u) } end
   end
   return out
 end
@@ -175,7 +175,7 @@ function RG.GroupQuestInfo()
         complete = C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID) }
       for _, u in ipairs(units) do
         local on = onQuest(u, info.questID, i)
-        if on == true then e.have[#e.have + 1] = UnitName(u) elseif on == false then e.missing[#e.missing + 1] = UnitName(u) end
+        if on == true then e.have[#e.have + 1] = RG.SafeName(u) or u elseif on == false then e.missing[#e.missing + 1] = RG.SafeName(u) or u end
       end
       list[#list + 1] = e
     end
@@ -236,20 +236,20 @@ local function checkDispel(unit)
     local t = a.dispelName
     local spell = (t == "Magic" and cleanse and "Cleanse") or ((t == "Poison" or t == "Disease") and (cleanse and "Cleanse" or "Purify")) or nil
     if spell and throttle(unit .. t, 8) then
-      center(string.format("%s: %s %s (%s)", spell, UnitName(unit) or unit, "has " .. (a.name or t), t))
+      center(string.format("%s: %s %s (%s)", spell, RG.SafeName(unit) or unit, "has " .. (a.name or t), t))
       return true
     end
   end)
 end
 local function checkHealth(unit)
   if not RG.Opt("groupAlerts") or not inCombat() then return end
-  local hp, max = UnitHealth(unit), UnitHealthMax(unit)
-  if not max or max == 0 or UnitIsDeadOrGhost(unit) then return end
+  local hp, max = RG.SafeUnit(UnitHealth, unit), RG.SafeUnit(UnitHealthMax, unit)
+  if not hp or not max or max == 0 or RG.SafeUnit(UnitIsDeadOrGhost, unit) then return end
   if hp / max < 0.25 and throttle("hp" .. unit, 20) then
     local saves = {}
     if knows("Lay on Hands") then saves[#saves + 1] = "Lay on Hands" end
     if knows("Blessing of Protection") then saves[#saves + 1] = "Blessing of Protection" end
-    if #saves > 0 then center(string.format("%s is dying! %s", UnitName(unit) or unit, table.concat(saves, " or "))) end
+    if #saves > 0 then center(string.format("%s is dying! %s", RG.SafeName(unit) or unit, table.concat(saves, " or "))) end
   end
 end
 
@@ -314,9 +314,11 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
   elseif event == "PLAYER_DEAD" then
     if run then run.myDeaths = run.myDeaths + 1 end
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" and run then
-    local _, sub, _, src, _, srcFlags, _, dst, _, dstFlags = CombatLogGetCurrentEventInfo()
-    if sub == "PARTY_KILL" then run.kills = run.kills + 1
-    elseif sub == "UNIT_DIED" and dstFlags and band(dstFlags, 0x400) ~= 0 and band(dstFlags, 0x7) ~= 0 then run.deaths = run.deaths + 1 end
+    pcall(function()
+      local _, sub, _, _, _, _, _, _, _, dstFlags = CombatLogGetCurrentEventInfo()
+      if sub == "PARTY_KILL" then run.kills = run.kills + 1
+      elseif sub == "UNIT_DIED" and dstFlags and band(dstFlags, 0x400) ~= 0 and band(dstFlags, 0x7) ~= 0 then run.deaths = run.deaths + 1 end
+    end)
   end
 end)
 
