@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.32.0 (new arrow)
+- **Redesigned waypoint arrow:** a dark disc with a gold ring, the destination's name above it, and an arrow that turns smoothly instead of snapping.
+- **Color tells you where to go:** green when you're facing your target, gold when it's off to the side, red when it's behind you (with "It's behind you" underneath).
+- **Distance and time:** yards to go plus how long it takes at your current speed.
+- **Far targets:** when your target is in another zone, the arrow shows the fastest first step (for example the zeppelin to take); on another continent it shows the travel step instead of an arrow.
+- **Arriving:** a green check mark, a glow and a chime, then the arrow fades out and clears the pin.
+- A quick glow when the target changes, mouse wheel over the arrow to resize it (remembered), and a tooltip explaining the colors.
+
 ## v0.31.0 (quality-of-life sweep)
 - **Key bindings** (Esc > Options > Keybindings > AddOns > RetGear): open or close the guide, pin your nearest quest objective, arrow on/off, show/hide the tracker, undo your last ticked task, sort your bags.
 - **The guide window remembers** where you dragged it and which tab you had open, across reloads and logins.

@@ -468,44 +468,134 @@ local function worldPos(mapID, pos)
   if not wp then return nil end
   return cont, wp.x, wp.y
 end
+-- The arrow: a dark disc with a gold ring, an arrow that turns smoothly and goes
+-- green when you face your target (gold when close to it, red when it's behind
+-- you), the destination's name, distance and time to get there, travel steps
+-- when it's in another zone, and a check mark when you arrive.
+local function lerp(a, b, t) return a + (b - a) * t end
+local function angleColor(rel)
+  -- rel: 0 = straight ahead, pi = behind. green -> gold -> red
+  local t = math.min(1, math.abs(rel) / math.pi)
+  if t < 0.35 then local k = t / 0.35; return lerp(0.25, 1, k), lerp(1, 0.82, k), lerp(0.3, 0.1, k) end
+  local k = (t - 0.35) / 0.65; return 1, lerp(0.82, 0.25, k), lerp(0.1, 0.2, k)
+end
+local function fmtTime(sec)
+  if not sec or sec <= 0 or sec > 5999 then return nil end
+  return string.format("%d:%02d", math.floor(sec / 60), math.floor(sec % 60))
+end
 local function buildArrow()
   if arrow then return end
   arrow = CreateFrame("Frame", "RetGearArrow", UIParent)
-  arrow:SetSize(56, 70); arrow:SetMovable(true); arrow:EnableMouse(true); arrow:RegisterForDrag("LeftButton"); arrow:SetClampedToScreen(true)
+  arrow:SetSize(84, 84); arrow:SetMovable(true); arrow:EnableMouse(true); arrow:RegisterForDrag("LeftButton"); arrow:SetClampedToScreen(true)
+  arrow:SetScale(RetGearDB.arrowScale or 1)
   local pos = RetGearDB.arrowPos
-  if pos then arrow:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else arrow:SetPoint("TOP", UIParent, "TOP", 0, -160) end
+  if pos then arrow:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else arrow:SetPoint("TOP", UIParent, "TOP", 0, -150) end
   arrow:SetScript("OnDragStart", arrow.StartMoving)
   arrow:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, _, x, y = self:GetPoint(); RetGearDB.arrowPos = { p, x, y } end)
-  arrow.tex = arrow:CreateTexture(nil, "ARTWORK"); arrow.tex:SetSize(42, 42); arrow.tex:SetPoint("TOP")
+  -- disc and ring
+  arrow.disc = arrow:CreateTexture(nil, "BACKGROUND"); arrow.disc:SetSize(64, 64); arrow.disc:SetPoint("CENTER")
+  arrow.disc:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"); arrow.disc:SetVertexColor(0, 0, 0, 0.55)
+  arrow.ring = arrow:CreateTexture(nil, "BORDER"); arrow.ring:SetSize(108, 108); arrow.ring:SetPoint("TOPLEFT", arrow.disc, "TOPLEFT", -1, 1)
+  arrow.ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder"); arrow.ring:SetVertexColor(1, 0.9, 0.6, 0.9)
+  arrow.glow = arrow:CreateTexture(nil, "ARTWORK"); arrow.glow:SetSize(62, 62); arrow.glow:SetPoint("CENTER")
+  arrow.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border"); arrow.glow:SetBlendMode("ADD"); arrow.glow:SetAlpha(0)
+  -- the arrow itself
+  arrow.tex = arrow:CreateTexture(nil, "OVERLAY"); arrow.tex:SetSize(46, 46); arrow.tex:SetPoint("CENTER")
   arrow.tex:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3])
-  arrow.dist = arrow:CreateFontString(nil, "OVERLAY"); arrow.dist:SetFont("Fonts\\ARIALN.TTF", 13, "OUTLINE"); arrow.dist:SetPoint("TOP", arrow.tex, "BOTTOM", 0, -2)
-  -- right-click or double-click the arrow to turn it off
+  arrow.check = arrow:CreateTexture(nil, "OVERLAY"); arrow.check:SetSize(34, 34); arrow.check:SetPoint("CENTER")
+  arrow.check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready"); arrow.check:Hide()
+  -- text: destination above, distance and time below, travel hint under that
+  arrow.label = arrow:CreateFontString(nil, "OVERLAY"); arrow.label:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE"); arrow.label:SetPoint("BOTTOM", arrow, "TOP", 0, -4)
+  arrow.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); arrow.label:SetWidth(220); arrow.label:SetWordWrap(false)
+  arrow.dist = arrow:CreateFontString(nil, "OVERLAY"); arrow.dist:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE"); arrow.dist:SetPoint("TOP", arrow, "BOTTOM", 0, 6)
+  arrow.hint = arrow:CreateFontString(nil, "OVERLAY"); arrow.hint:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE"); arrow.hint:SetPoint("TOP", arrow.dist, "BOTTOM", 0, -2)
+  arrow.hint:SetTextColor(0.8, 0.8, 0.8); arrow.hint:SetWidth(240); arrow.hint:SetWordWrap(true)
+  -- right-click or double-click to turn it off; mouse wheel to resize
   local lastUp = 0
   arrow:SetScript("OnMouseUp", function(_, btn)
     if btn == "RightButton" then RG.ClearWaypoint(); return end
     local now = GetTime()
     if now - lastUp < 0.35 then lastUp = 0; RG.ClearWaypoint(); RG.Notify("Arrow off") else lastUp = now end
   end)
-  arrow:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Drag to move. Double-click or right-click to turn the arrow off.", 1, 1, 1, 1, true); GameTooltip:Show() end)
+  arrow:EnableMouseWheel(true)
+  arrow:SetScript("OnMouseWheel", function(self, delta)
+    local sc = math.max(0.6, math.min(1.8, (RetGearDB.arrowScale or 1) + delta * 0.1))
+    RetGearDB.arrowScale = sc; self:SetScale(sc)
+  end)
+  arrow:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:SetText("Waypoint arrow", GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:AddLine("Green: you're facing it. Red: it's behind you.", 1, 1, 1, true)
+    GameTooltip:AddLine("Drag: move  ·  Mouse wheel: resize", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine("Double-click or right-click: turn it off", 0.7, 0.7, 0.7)
+    GameTooltip:Show()
+  end)
   arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  -- a quick pulse whenever the target changes
+  arrow.pulse = 0
+  local shown, lastKey, arrivedAt = 0, nil, nil
   local acc = 0
   arrow:SetScript("OnUpdate", function(self, dt)
-    acc = acc + dt; if acc < 0.05 then return end; acc = 0
+    if self.pulse > 0 then self.pulse = math.max(0, self.pulse - dt * 2); self.glow:SetAlpha(self.pulse * 0.8) end
+    if arrivedAt then
+      local t = GetTime() - arrivedAt
+      self:SetAlpha(math.max(0, 1 - math.max(0, t - 1.2) * 2))
+      if t > 1.7 then arrivedAt = nil; self.check:Hide(); self.tex:Show(); self:SetAlpha(1); if C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide() end
+      return
+    end
+    acc = acc + dt; if acc < 0.03 then return end
+    local step = acc; acc = 0
     local wp = C_Map.GetUserWaypoint and C_Map.GetUserWaypoint()
     local mapID = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     local ppos = mapID and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
     local facing = GetPlayerFacing and GetPlayerFacing()
+    if RG.IsSecret and RG.IsSecret(facing) then facing = nil end
     if not (wp and ppos and facing) then self:Hide(); return end
+    local key = wp.uiMapID .. ":" .. math.floor(wp.position.x * 1000) .. ":" .. math.floor(wp.position.y * 1000)
+    if key ~= lastKey then lastKey = key; self.pulse = 1 end
+    local label = lastPlaced and samePin({ map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }, lastPlaced) and lastLabel or nil
+    if not label and C_Map.GetMapInfo then local info = C_Map.GetMapInfo(wp.uiMapID); label = info and info.name end
+    self.label:SetText(label or "")
     local c1, px, py = worldPos(mapID, ppos)
     local c2, tx, ty = worldPos(wp.uiMapID, wp.position)
-    if not (c1 and c2 and c1 == c2) then self.dist:SetText(GREY .. "other continent|r"); return end
+    if not (c1 and c2 and c1 == c2) then
+      -- another continent: point the way with travel steps instead
+      self.tex:SetVertexColor(0.6, 0.6, 0.6); self.dist:SetText(GREY .. "another continent|r")
+      local info = C_Map.GetMapInfo and C_Map.GetMapInfo(wp.uiMapID)
+      local legs = info and RG.TravelPlan and RG.TravelPlan(info.name)
+      self.hint:SetText(legs and legs[1] and ("Next: " .. legs[1].text) or "")
+      return
+    end
     local dx, dy = tx - px, ty - py -- x = north, y = west
     local d = math.sqrt(dx * dx + dy * dy)
-    if d < 8 then RG.Notify("Arrived"); if C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide(); return end
-    local bearing = math.atan2(dy, dx)
-    self.tex:SetRotation(bearing - facing)
-    local label = lastPlaced and samePin({ map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }, lastPlaced) and lastLabel or nil
-    self.dist:SetText((label and (label .. "\n") or "") .. string.format("%d yd", d))
+    if d < 10 then
+      arrivedAt = GetTime()
+      self.tex:Hide(); self.check:Show(); self.glow:SetAlpha(0.9)
+      self.dist:SetText(GREEN .. "Arrived|r"); self.hint:SetText("")
+      if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960) end
+      return
+    end
+    -- smooth turning
+    local target = math.atan2(dy, dx) - facing
+    local diff = (target - shown + math.pi) % (2 * math.pi) - math.pi
+    shown = shown + diff * math.min(1, step * 12)
+    self.tex:SetRotation(shown)
+    local rel = (target + math.pi) % (2 * math.pi) - math.pi
+    self.tex:SetVertexColor(angleColor(rel))
+    -- distance and time to arrive at your current speed
+    local speed = GetUnitSpeed and GetUnitSpeed("player") or 0
+    if RG.IsSecret and RG.IsSecret(speed) then speed = 0 end
+    local eta = speed > 0.5 and fmtTime(d / speed) or nil
+    self.dist:SetText(string.format("%d yd", d) .. (eta and (GREY .. "  ·  " .. eta .. "|r") or ""))
+    -- in another zone: the first travel step
+    local hint = ""
+    if wp.uiMapID ~= mapID and d > 600 and RG.TravelPlan and C_Map.GetMapInfo then
+      local info = C_Map.GetMapInfo(wp.uiMapID)
+      local legs = info and RG.TravelPlan(info.name)
+      if legs and legs[1] and legs[1].how ~= "walk" then hint = "Fastest: " .. legs[1].text end
+    end
+    if hint == "" and math.abs(rel) > 2.6 then hint = "It's behind you" end
+    self.hint:SetText(hint)
   end)
 end
 local refreshArrow
