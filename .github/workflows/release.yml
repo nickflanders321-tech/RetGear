@@ -44,7 +44,6 @@ jobs:
           cp *.toc *.lua *.xml README.md .release/Waypath/
           for d in Classes Races Routes Professions; do cp -r "$d" .release/Waypath/; done
           sed -i "s/@project-version@/$v/g" .release/Waypath/*.toc
-          (cd .release && zip -qr "Waypath-$v.zip" Waypath)
           awk -v h="## $v" '$0==h || index($0, h" ")==1 {f=1;next} /^## /{f=0} f' CHANGELOG.md > release-notes.md
           [ -s release-notes.md ] || echo "Waypath+ $v" > release-notes.md
           # in-game "what's new" (News.lua) from the same notes
@@ -64,6 +63,7 @@ jobs:
               f.write("} }\n")
           PY
           cat .release/Waypath/News.lua | head -5
+          (cd .release && zip -qr "Waypath-$v.zip" Waypath)
           ls -la .release
       - name: Publish the GitHub release
         if: steps.tag.outputs.skip == 'false'

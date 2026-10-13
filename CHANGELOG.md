@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.44.1
+- The "what's new" notes are now included in the download, so the first login after an update shows what changed (v0.44.0's zip was built before its notes were added).
+
 ## v0.44.0 (quality-of-life pass)
 - **What's new after an update:** the first login after updating prints the three biggest changes in chat, once. `/wp news` lists everything in the update.
 - **Professions on the tracker:** for each profession you have, one line shows the step you're on and the first material you're short of (for example "Tailoring 62 · Bolt of Woolen Cloth x33 · 99 more Wool Cloth"). Click it to open that profession's guide; double-click it and the arrow takes you to the best place to go. Turn it off in Settings.
