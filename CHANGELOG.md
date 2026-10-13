@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.26.0 (paladin class quests)
+- The Forsaken paladin class quest line is now part of the route, from WoW Forever beta guides:
+  - **Deathknell (1-5):** A Difficult Path, Rediscovering the Light, Coming to Terms and Continue Your Training, with map pins.
+  - **Bandarion Keep (10+):** your paladin hub in the Whispering Wood; come back each time you train.
+  - **Wolf's Bane (20):** the class weapon chain, step by step: rescue Lumina Windsinger on Fenris Isle, collect the Enchanted Silver Ingot (Shadowfang Keep), Purified Kor Gem (Blackfathom Deeps, after Olric Frostvale's quest) and Whitestone Oak Lumber (Deadmines), have Orrt in Tarren Mill forge the Moonsilver Blade, then defeat Old Fire Eye. Shadowfang Keep and Blackfathom Deeps remind you to grab the materials.
+  - **A Trusty Steed (40)** and **Justice and Retribution (60)** for your warhorse and charger.
+- The tracker shows the next class-quest step for your level, and the steps tick themselves when the quests are done.
+- Gear guide: Wolf's Bane (slow 3.4, +10 Strength, +9 Stamina, holy proc) is flagged at level 20, plus a Bandarion Keep tip at 10. It has no item ID in the Forever data yet, so it shows as a tip.
+- Note: QuestieDB's WoW Forever data doesn't include the Horde paladin quests yet; the twice-weekly update will add map pins and IDs when it does.
+
 ## v0.25.1 (target type fix)
 - Fixed: "attempt to compare local 'ctype' (a secret string value)" when targeting in combat. WoW Forever can hide your target's creature type from addons; the Exorcism alert now just stays quiet when it can't tell, instead of erroring.
 - Every other target and party check (attackable, dead, exists, creature type in the DPS coach, the Seal reminder, party lists) goes through the same protection.

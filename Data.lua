@@ -52,7 +52,8 @@ RG.DEFAULT_HIT_CAP = 9
 RG.GUIDE = {
   { tip = true, lvl = 1,  text = "Undead paladins start in Deathknell, Tirisfal Glades. Your class quests run out of Bandarion Keep in the Whispering Wood, north Tirisfal." },
   { tip = true, lvl = 8,  text = "Until your first quest two-hander, buy the slowest 2H axe, mace or sword you can afford from the weapon vendors in Brill or Undercity, or the Auction House." },
-  { tip = true, lvl = 20, text = "Check Bandarion Keep for new class quests around level 20. The Horde paladin quest rewards in Forever aren't documented yet; if one gives a two-hander, it's likely a big upgrade." },
+  { tip = true, lvl = 10, text = "Bandarion Keep (Whispering Wood, north-west Tirisfal) is your paladin hub from level 10. Check it whenever you train." },
+  { tip = true, lvl = 20, text = "Wolf's Bane, your level 20 paladin quest weapon (Fenris Isle, Silverpine): slow 3.4 speed, +10 Strength, +9 Stamina and a holy blast proc. It needs materials from Shadowfang Keep, Blackfathom Deeps and the Deadmines; worth it over most quest weapons until Razorfen Kraul. Beta stats, may change." },
   -- ===== Two-handed weapons (the biggest upgrade path for Ret) =====
   { id = 6214,  slot = "2H",  lvl = 11, how = "Crafted", src = "Blacksmithing", zone = "Your own craft (copper)", bs = 65 },
   { id = 7230,  slot = "2H",  lvl = 18, how = "Dungeon", src = "Mr. Smite", zone = "The Deadmines (Westfall, a long trip for Horde)" },
@@ -132,13 +133,15 @@ RG.MATS = {
 -- kind: "zone" = questing zone, "dungeon" = dungeon to run at that level,
 -- "pala" = paladin milestone.
 RG.ROUTE = {
+  { from = 1,  to = 5,  kind = "pala",    zone = "Paladin", hub = "Deathknell class quests", notes = "Forsaken paladin starter quests in the Deathknell chapel: they teach Holy Light and send you to Brill." },
+  { from = 10, to = 19, kind = "pala",    zone = "Paladin", hub = "Bandarion Keep", notes = "The Forsaken paladin home in the Whispering Wood, north-west Tirisfal. Most of your class quests come from here." },
   { from = 1,  to = 6,  kind = "zone",    zone = "Tirisfal Glades", hub = "Deathknell", notes = "Undead start. Do every quest here, then run to Brill." },
   { from = 6,  to = 12, kind = "zone",    zone = "Tirisfal Glades", hub = "Brill", notes = "Brill quests, then Bandarion Keep (Whispering Wood) for paladin class quests. Learn Mining and Blacksmithing in Undercity." },
   { from = 10, to = 20, kind = "zone",    zone = "Silverpine Forest", hub = "The Sepulcher", fp = "The Sepulcher", notes = "Main 10-20 zone. Copper and Tin along the road." },
   { from = 13, to = 18, kind = "dungeon", zone = "Ragefire Chasm", hub = "Orgrimmar", notes = "Take the zeppelin from outside Undercity." },
   { from = 17, to = 24, kind = "dungeon", zone = "Wailing Caverns", hub = "The Barrens", notes = "Grab the dungeon quests at the Crossroads first." },
   { from = 18, to = 26, kind = "zone",    zone = "The Barrens", hub = "The Crossroads / Camp Taurajo", fp = "Crossroads", notes = "Lots of quests. Weapons of Choice at Camp Taurajo gives Demolition Hammer." },
-  { from = 20, to = 20, kind = "pala",    zone = "Paladin", hub = "Level 20", notes = "Take Seal of Command in the Retribution tree and check Bandarion Keep for new class quests." },
+  { from = 20, to = 26, kind = "pala",    zone = "Paladin", hub = "Wolf's Bane (level 20)", notes = "Your class weapon quest: a slow holy-proc weapon from three dungeon materials. Take Seal of Command at 20." },
   { from = 22, to = 30, kind = "dungeon", zone = "Shadowfang Keep", hub = "Silverpine Forest", notes = "Close to home for Undead." },
   { from = 22, to = 27, kind = "zone",    zone = "Stonetalon Mountains", hub = "Sun Rock Retreat", fp = "Sun Rock Retreat", notes = "Tin and a little Iron." },
   { from = 24, to = 32, kind = "dungeon", zone = "Blackfathom Deeps", hub = "Ashenvale", notes = "Aku'mai drops Strike of the Hydra." },
@@ -151,7 +154,7 @@ RG.ROUTE = {
   { from = 33, to = 45, kind = "dungeon", zone = "Scarlet Monastery", hub = "Tirisfal Glades", notes = "Right in your backyard. Herod (Armory) drops Ravager; Mograine (Cathedral) drops Mograine's Might." },
   { from = 32, to = 42, kind = "zone",    zone = "Stranglethorn Vale", hub = "Grom'gol Base Camp", fp = "Grom'gol", notes = "Nesingwary hunting quests. Iron and Mithril up north." },
   { from = 36, to = 42, kind = "zone",    zone = "Dustwallow Marsh", hub = "Brackenwall Village", fp = "Brackenwall", notes = "" },
-  { from = 40, to = 40, kind = "pala",    zone = "Paladin", hub = "Level 40", notes = "Paladin warhorse. Blacksmiths can pick a specialization (Axesmith for Arcanite Reaper)." },
+  { from = 40, to = 40, kind = "pala",    zone = "Paladin", hub = "Level 40", notes = "A Trusty Steed: your Forsaken Warhorse. Blacksmiths can pick a specialization (Axesmith for Arcanite Reaper)." },
   { from = 40, to = 45, kind = "zone",    zone = "Badlands", hub = "Kargath", fp = "Kargath", notes = "Mithril. Uldaman is here." },
   { from = 41, to = 51, kind = "dungeon", zone = "Uldaman", hub = "Badlands", notes = "Archaedas drops Stoneslayer." },
   { from = 40, to = 45, kind = "zone",    zone = "Swamp of Sorrows", hub = "Stonard", fp = "Stonard", notes = "Threat From the Sea gives Tok'kar's Murloc Chopper." },
@@ -168,7 +171,7 @@ RG.ROUTE = {
   { from = 55, to = 60, kind = "zone",    zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Rich Thorium." },
   { from = 55, to = 60, kind = "zone",    zone = "Western & Eastern Plaguelands", hub = "The Bulwark / Light's Hope", fp = "Light's Hope", notes = "Tirion Fordring's chain ends in Mark of Fordring." },
   { from = 56, to = 60, kind = "dungeon", zone = "Stratholme, Scholomance, Dire Maul, LBRS/UBRS", hub = "Level 58-60", notes = "Pre-raid gear: Rivendare's Runeblade, Treant's Bane, Truestrike Shoulders." },
-  { from = 60, to = 60, kind = "pala",    zone = "Paladin", hub = "Level 60", notes = "Epic Charger quest chain (the Retribution path for Horde paladins)." },
+  { from = 60, to = 60, kind = "pala",    zone = "Paladin", hub = "Level 60", notes = "Justice and Retribution: the Forsaken Charger epic mount chain (the Retribution path for Horde paladins)." },
 }
 
 -- Dungeon quests to collect before each run (Horde), and the level to head
@@ -265,7 +268,21 @@ RG.TRAVEL = {
 
 -- Step-by-step to-do lists for each route entry, keyed by "zone|from".
 -- Shown under the route step when you open it; tick each one off as you go.
+-- Forsaken paladin class quests (names from WoW Forever beta guides), so the route can tick them off.
+RG.CLASS_QUESTS = { "A Difficult Path", "Rediscovering the Light", "Coming to Terms", "Continue Your Training", "Wolf's Bane", "A Trusty Steed", "Justice and Retribution" }
+
 RG.STEPS = {
+  ["Paladin|1"] = {
+    "A Difficult Path: Shadow Priest Sarvis in the Deathknell chapel gives you a Consecrated Scroll. Read it and meet Aramis Hammerhand in the chapel.",
+    "Rediscovering the Light (level 2): use Holy Light on five Injured Deathguard beside the Deathknell chapel, then return to Aramis Hammerhand. Do it before Night Web's Hollow.",
+    "Coming to Terms (level 4): find the Frightened Paladin in the hills west of the chapel, offer aid, and go back to Aramis Hammerhand.",
+    "Continue Your Training (level 4): report to Shari Stilwell in Brill.",
+  },
+  ["Paladin|10"] = {
+    "At level 10, head into the Whispering Wood in north-west Tirisfal to Bandarion Keep, the Forsaken paladin hold.",
+    "Take every class quest there. Players report a Lesson in Divinity chain with Murlocs at the Gates and The Tarnished; follow whatever the keep offers.",
+    "Come back to Bandarion Keep each time you train new paladin spells: new class quests unlock as you level.",
+  },
   ["Tirisfal Glades|1"] = {
     "When you rise from your grave, talk to Undertaker Mordo, then take his quest to Shadow Priest Sarvis in the Deathknell chapel.",
     "Pick up every quest in the chapel and the houses around the village.",
@@ -312,13 +329,18 @@ RG.STEPS = {
   },
   ["Paladin|20"] = {
     "Put your first 10 talent points into Retribution so you can take Seal of Command at level 20.",
-    "Play it with your slowest two-hander: keep Seal of Command up and Judgement when your mana allows.",
-    "Go back to Bandarion Keep and check for new class quests.",
+    "Wolf's Bane starts on Fenris Isle in Silverpine: rescue Lumina Windsinger and bring her to safety. Trevan then explains the weapon and its three materials.",
+    "Enchanted Silver Ingot: drops in Shadowfang Keep. Do it with your SFK run.",
+    "Purified Kor Gem: Blackfathom Deeps. First take Olric Frostvale's quest in Ashenvale, or the gem won't drop.",
+    "Whitestone Oak Lumber: The Deadmines in Westfall. A long trip for Horde: group up and do it in one go.",
+    "Bring the three materials to Orrt in Tarren Mill to forge the Moonsilver Blade, then Lumina Windsinger empowers it.",
+    "Finish by defeating Old Fire Eye near the Gilneas gates in south Silverpine. Wolf's Bane is yours: slow (3.4), +10 Strength, +9 Stamina and a holy blast that hits wolves and worgen three times as hard.",
   },
   ["Shadowfang Keep|22"] = {
     "Pick up the quests at The Sepulcher and in Undercity first (listed below).",
     "The keep is the castle on the hill above Pyrewood Village in south Silverpine.",
     "Archmage Arugal is the last boss; finish Arugal Must Die there.",
+    "Paladins: grab the Enchanted Silver Ingot for Wolf's Bane while you're here.",
   },
   ["Stonetalon Mountains|22"] = {
     "Run west from the Crossroads to Sun Rock Retreat and grab the flight path.",
@@ -329,6 +351,7 @@ RG.STEPS = {
     "Grab the quests at Zoram'gar Outpost on the Ashenvale coast and in Thunder Bluff (listed below).",
     "The entrance is in the ruins on the Zoram Strand, on Ashenvale's west coast.",
     "Aku'mai at the end drops Strike of the Hydra.",
+    "Paladins: take Olric Frostvale's quest in Ashenvale first, then collect the Purified Kor Gem here for Wolf's Bane.",
   },
   ["Hillsbrad Foothills|25"] = {
     "From The Sepulcher, follow the road south-east to Tarren Mill and grab the flight path.",
@@ -378,7 +401,7 @@ RG.STEPS = {
     "Visit Tabetha's hut; her quests point you toward Uldaman and Zul'Farrak.",
   },
   ["Paladin|40"] = {
-    "Train your warhorse; travel gets much faster from here.",
+    "A Trusty Steed: get your Forsaken Warhorse (riding training plus the class quest); travel gets much faster from here.",
     "At Blacksmithing 250 you can specialize. Axesmith leads to Arcanite Reaper.",
   },
   ["Badlands|40"] = {
@@ -460,7 +483,7 @@ RG.STEPS = {
     "Farm the pre-raid gear in the Gear guide tab: Rivendare's Runeblade, Treant's Bane, Truestrike Shoulders.",
   },
   ["Paladin|60"] = {
-    "Start the epic Charger quest chain (the Retribution path for Horde paladins).",
+    "Justice and Retribution: start the epic Forsaken Charger chain (the Retribution path for Horde paladins). The steps aren't published yet; check Bandarion Keep.",
     "Keep farming dungeons for pre-raid gear while you work on it.",
   },
 }

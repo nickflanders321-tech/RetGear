@@ -95,6 +95,7 @@ local function questNames()
   for _, dq in pairs(RG.DUNGEON_QUESTS or {}) do for _, q in ipairs(dq.quests) do set[q[1]:gsub("%s*%(.-%)$", "")] = true end end
   for _, g in ipairs(RG.GUIDE or {}) do if g.how == "Quest" and g.src then set[(g.src:gsub("%s*%(.-%)$", ""))] = true end end
   for k in pairs(RG.QUEST_IDS) do set[k] = true end
+  for _, n in ipairs(RG.CLASS_QUESTS or {}) do set[n] = true end
   QUEST_NAMES = {}
   for n in pairs(set) do if #n > 6 then QUEST_NAMES[#QUEST_NAMES + 1] = n end end
   table.sort(QUEST_NAMES, function(a, b) return #a > #b end)

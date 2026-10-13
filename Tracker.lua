@@ -426,6 +426,31 @@ function RG.RefreshTracker()
     end
     y = y + 5
   end
+  -- 3b. paladin class quests: the next step of the class chain for your level
+  for _, pr in ipairs(RG.ROUTE) do
+    if pr.kind == "pala" and lvl >= pr.from and lvl <= pr.to then
+      local pkey = pr.zone .. "|" .. pr.from
+      local psteps = RG.STEPS[pkey] or {}
+      local left, first, firstI = 0, nil, nil
+      for i, text in ipairs(psteps) do
+        if not RG.StepIsDone(pr, i) then left = left + 1; if not first then first, firstI = text, i end end
+      end
+      if first then
+        local isFolded
+        n = n + 1; y, isFolded = section(n, y, "Class quests: " .. pr.hub, "pala", GREY .. left .. " to do|r")
+        if not isFolded then
+          local sk = pkey .. "#" .. firstI
+          local wp = RG.StepWaypoint and RG.StepWaypoint(pr, firstI)
+          n = n + 1
+          y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. first, { box = false, wp = wp,
+            tip = GOLD .. "Click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or "") .. "\nThe Route tab has the whole chain.",
+            onClick = function() RG.TickStep(sk, first) end, onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+        end
+        y = y + 5
+      end
+      break
+    end
+  end
   -- 4. next dungeon: quests still to collect
   local dr, dq = nextDungeon()
   if dr then

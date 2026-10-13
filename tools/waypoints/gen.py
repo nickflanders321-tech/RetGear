@@ -39,6 +39,7 @@ PLACES = {
   "Stonard": "Breyk", "Gadgetzan": "Bulkrek Ragefist", "Camp Mojache": "Shyn", "Revantusk Village": "Gorkas",
   "Thorium Point": "Grisha", "Marshal's Refuge": "Gryfe", "Bloodvenom Post": "Brakkar", "Flame Crest": "Vahgruk",
   "Everlook": "Yugrek", "Light's Hope": "Georgia", "Thunder Bluff": "Tal", "Tidefury Cove": "Nat Pagle",
+  "Fenris Isle": "Thule Ravenclaw", "Deathknell chapel": "Shadow Priest Sarvis",
 }
 ROLES = [("flight path", 8), ("flight master", 8), ("innkeeper", 128), ("make it your home", 128), ("hearthstone", 128)]
 def anchor_point(name, zones):
