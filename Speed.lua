@@ -511,7 +511,7 @@ end
 local refreshArrow
 function RG.RefreshArrow() if refreshArrow then refreshArrow() end end
 refreshArrow = function()
-  if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt()) then if arrow then arrow:Hide() end return end
+  if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
   local has = C_Map and C_Map.HasUserWaypoint and C_Map.HasUserWaypoint()
   if has then buildArrow(); arrow:Show() elseif arrow then arrow:Hide() end
 end

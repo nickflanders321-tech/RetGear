@@ -273,6 +273,18 @@ function RG.RefreshTracker()
   -- bank alt: just the shopping list for your main
   if RG.IsAlt and RG.IsAlt() then
     tr.lvl:SetText("Bank alt for " .. (RG.MainName() or "your main"))
+    -- secret guide: walk a new alt to the Auction House
+    local gl, gdone, gtotal = nil, 0, 0
+    if RG.AltGuideLines then gl, gdone, gtotal = RG.AltGuideLines() end
+    if gl then
+      local isFolded
+      n = n + 1; y, isFolded = section(n, y, "Bank alt setup", "altguide", GREY .. gdone .. "/" .. gtotal .. "|r")
+      if not isFolded then
+        for _, l in ipairs(gl) do n = n + 1; y = item(n, y, l[1], { onClick = l[2], tip = l[3] }) end
+        n = n + 1; y = item(n, y, GREY .. "Hide this guide|r", { single = true, onClick = function() RG.AltGuideHide() end, tip = "/rg bankalt brings it back." })
+      end
+      y = y + 5
+    end
     local list = RG.ShoppingList and RG.ShoppingList() or {}
     n = n + 1; y = section(n, y, #list > 0 and "Buy and mail" or "Nothing to send right now")
     for i = 1, math.min(6, #list) do

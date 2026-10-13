@@ -46,6 +46,8 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **Settings** | Every helper, grouped, on or off |
 
 ## Bank alt
+No bank alt yet? Make a new Undead on the same realm and log in: a secret guide on the tracker walks it to the Undercity Auction House, bank and mailbox with the arrow (`/rg bankalt` shows it on your main too).
+
 Your paladin is your **main**. Any other character runs in **bank alt mode**: it won't touch your main's data, its tracker shows the shopping list, clicking an item searches the AH, and a button at the mailbox attaches everything and addresses it to your main. `/rg main` changes which character is your main.
 
 ## Commands

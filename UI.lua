@@ -1067,6 +1067,35 @@ local function renderMail()
       or "These quests use items you can buy. Have your bank alt buy them and mail them here. Log in on the alt to see the same list.",
     alt and (GOLD .. "Main: " .. main .. "|r") or (GREY .. "Main: " .. (RG.db.main and main or "not set") .. "|r"), "", "gold")
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Letter_15")
+  -- secret bank-alt guide: open on an alt still setting up, folded on your main (/rg bankalt opens it)
+  if RG.ALT_STEPS then
+    local open = state.altGuide
+    if open == nil then open = RG.altGuideOpen or (alt and RG.AltGuideActive and RG.AltGuideActive()) or false end
+    n = n + 1
+    local done, total = 0, #RG.ALT_STEPS
+    if alt and RG.AltGuideProgress then done = RG.AltGuideProgress() end
+    setItem(getRow(n), nil, nil, GOLD .. "Secret: a bank alt in ten minutes|r", open and GREY .. RG.ALT_INTRO .. "|r" or (GREY .. "Make a new Undead and RetGear walks it to the Undercity Auction House with the arrow. Click to see the steps.|r"),
+      alt and (done >= total and (GREEN .. "Done|r") or (GOLD .. done .. "/" .. total .. "|r")) or (GREY .. (open and "hide" or "show") .. "|r"), "", "gold", nil, not open)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Key_03")
+    rows[n].onClick = function() state.altGuide = not open; RG.altGuideOpen = nil; RG.RefreshUI() end
+    if open then
+      for i, s in ipairs(RG.ALT_STEPS) do
+        n = n + 1
+        local isDone = alt and RG.AltStepDone and RG.AltStepDone(i) or false
+        local wp = s.wp
+        setStep(getRow(n), i, (wp and RG.PIN or "") .. GOLD .. s.title .. ":|r " .. s.text, isDone, function() if wp then RG.PinWaypoint(wp) end end, isDone and "done on this character" or nil)
+        if wp then rows[n].tip = "Click to point the arrow at " .. wp[4] .. "." end
+      end
+      for _, line in ipairs(RG.ALT_LEVELING) do
+        n = n + 1; setStep(getRow(n), "", GREY .. line .. "|r", false, nil)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+      end
+      if not alt then
+        n = n + 1; setStep(getRow(n), "", GREY .. "On your main, everything is already linked: once the alt logs in, RetGear treats it as your bank alt and shows the shopping list there.|r", false, nil)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+      end
+    end
+  end
   -- shopping list
   local list = RG.ShoppingList()
   local total, unknown = 0, 0

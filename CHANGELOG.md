@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.25.0 (secret bank-alt guide)
+- **Secret guide: a bank alt in ten minutes.** Make a new Undead on your realm and log in: RetGear's tracker walks it from Deathknell to Brill, into Undercity, to the Auction House, bank and mailbox, makes the Undercity inn its home, and fills its bag slots, with the arrow pointing at each stop (auctioneer, bankers, Innkeeper Norman and the bag vendor, positioned from WoW Forever data).
+- Each step ticks itself: arriving in Brill and Undercity, opening the Auction House, bank and mailbox, setting your hearthstone, and filling four bags. When it's done, the tracker switches to the shopping list for your main.
+- Includes the fastest way to level it if you want to (you don't need to: level 1 can use the Auction House, bank and mail), and why to log out in the inn.
+- On your main: `/rg bankalt` (or the "Secret" row at the top of Gold & AH → Bank alt) shows the steps. On the alt, "Hide this guide" puts it away and `/rg bankalt` brings it back.
+
 ## v0.24.1 (arrow switch)
 - Arrow on/off switch in the tracker's header (the small arrow next to the book): gold when the waypoint arrow is on, grey when it's off. Your map pin stays; only the arrow hides. Double-clicking a quest still turns it back on.
 
