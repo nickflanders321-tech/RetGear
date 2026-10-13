@@ -274,17 +274,45 @@ end
 -- ---------------------------------------------------------------------------
 -- Tabs
 -- ---------------------------------------------------------------------------
+-- Gear guide order: the two-hander first (your biggest upgrade), then head to toe.
+local GUIDE_SLOTS = { "2H", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
+local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon" }
 local function guideRows()
   local list, lvl = {}, UnitLevel("player")
-  local brackets = { { 1, 19, "Levels 1-19" }, { 20, 29, "Levels 20-29" }, { 30, 39, "Levels 30-39" }, { 40, 49, "Levels 40-49" }, { 50, 57, "Levels 50-57" }, { 58, 60, "Levels 58-60 · pre-raid" } }
-  for _, b in ipairs(brackets) do
-    local items = {}
-    for _, g in ipairs(RG.GUIDE) do
-      if g.lvl >= b[1] and g.lvl <= b[2] and (not state.near or (g.lvl <= lvl + 6 and g.lvl >= lvl - 12)) then items[#items + 1] = g end
+  if state.near then
+    -- near your level: per slot, what's coming in the next few levels (up to 4 each)
+    local lo, hi = lvl - 3, lvl + 8
+    local tips = {}
+    for _, g in ipairs(RG.GUIDE) do if g.tip and g.lvl >= lo - 5 and g.lvl <= hi then tips[#tips + 1] = g end end
+    if #tips > 0 then list[#list + 1] = { header = "Tips" }; for _, g in ipairs(tips) do list[#list + 1] = { g = g } end end
+    for _, slot in ipairs(GUIDE_SLOTS) do
+      local items = {}
+      for _, g in ipairs(RG.GUIDE) do
+        if g.id and g.slot == slot and g.lvl >= lo and g.lvl <= hi and RG.OwnState(g.id) ~= "equipped" then items[#items + 1] = g end
+      end
+      table.sort(items, function(a, b) if a.lvl ~= b.lvl then return a.lvl < b.lvl end return (a.score or 0) > (b.score or 0) end)
+      if #items > 0 then
+        list[#list + 1] = { header = (GUIDE_SLOT_LABEL[slot] or slot) .. GREY .. "   levels " .. math.max(1, lo) .. "-" .. hi .. "|r" }
+        for i = 1, math.min(4, #items) do list[#list + 1] = { g = items[i] } end
+      end
     end
-    if #items > 0 then
-      list[#list + 1] = { header = b[3] }
-      for _, g in ipairs(items) do list[#list + 1] = { g = g } end
+  else
+    -- the whole guide: by level bracket, then slot
+    local brackets = { { 1, 19, "Levels 1-19" }, { 20, 29, "Levels 20-29" }, { 30, 39, "Levels 30-39" }, { 40, 49, "Levels 40-49" }, { 50, 57, "Levels 50-57" }, { 58, 60, "Levels 58-60 · pre-raid" } }
+    local order = {}
+    for i, sl in ipairs(GUIDE_SLOTS) do order[sl] = i end
+    for _, b in ipairs(brackets) do
+      local items = {}
+      for _, g in ipairs(RG.GUIDE) do if g.lvl >= b[1] and g.lvl <= b[2] then items[#items + 1] = g end end
+      table.sort(items, function(x, y)
+        local ox, oy = x.tip and 0 or (order[x.slot] or 99), y.tip and 0 or (order[y.slot] or 99)
+        if ox ~= oy then return ox < oy end
+        return x.lvl < y.lvl
+      end)
+      if #items > 0 then
+        list[#list + 1] = { header = b[3] }
+        for _, g in ipairs(items) do list[#list + 1] = { g = g } end
+      end
     end
   end
   return list
@@ -337,7 +365,7 @@ local function renderGuide()
   return #list
 end
 
-local SLOT_GUIDE = { [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [7] = "Legs", [9] = "Wrist", [10] = "Hands", [11] = "Ring", [12] = "Ring", [13] = "Trinket", [14] = "Trinket", [15] = "Back", [16] = "2H" }
+local SLOT_GUIDE = { [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hands", [11] = "Ring", [12] = "Ring", [13] = "Trinket", [14] = "Trinket", [15] = "Back", [16] = "2H" }
 local function renderGear()
   local n, total = 0, 0
   local hit, cap = RG.CurrentHit(), RG.db.hitCap
@@ -357,7 +385,11 @@ local function renderGear()
     for _, g in ipairs(RG.GUIDE) do
       if g.id and SLOT_GUIDE[slot] == g.slot and g.lvl <= lvl + 6 and not RG.OwnState(g.id) then
         local d = RG.GuideDelta(g)
-        if d and d > 0.5 and (not nextUp or g.lvl < nextUp.g.lvl) then nextUp = { g = g, d = d } end
+        -- prefer the biggest upgrade you can use within 3 levels, else the soonest one
+        if d and d > 0.5 then
+          local soon = g.lvl <= lvl + 3
+          if not nextUp or (soon and (not nextUp.soon or d > nextUp.d)) or (not soon and not nextUp.soon and g.lvl < nextUp.g.lvl) then nextUp = { g = g, d = d, soon = soon } end
+        end
       end
     end
     local id = link and tonumber(link:match("item:(%d+)"))
@@ -372,14 +404,18 @@ local function renderGear()
   end
   setBar(scoreRow, "Ret gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
   -- pre-raid checklist: the level 52+ picks from the gear guide, one row per item
-  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · level 52 to 60")
-  for _, g in ipairs(RG.GUIDE) do
-    if g.id and g.lvl >= 52 then
+  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · best dungeon and quest pieces, level 52 to 60")
+  for _, slot in ipairs(GUIDE_SLOTS) do
+    local best = {}
+    for _, g in ipairs(RG.GUIDE) do if g.id and g.slot == slot and g.lvl >= 52 then best[#best + 1] = g end end
+    table.sort(best, function(a, b) return (a.score or 999) > (b.score or 999) end)
+    for i = 1, math.min((slot == "Ring" or slot == "Trinket") and 2 or 1, #best) do
+      local g = best[i]
       n = n + 1
       local name, link2, quality = itemName(g.id)
       local own = RG.OwnState(g.id)
       local pill = own == "equipped" and (GREEN .. "Equipped|r") or (own == "owned" and (GOLD .. "In your bags|r") or (GREY .. "Not yet|r"))
-      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. g.slot .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
+      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
     end
   end
   return n
@@ -857,7 +893,7 @@ local function renderGold()
   return n
 end
 
-local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784 }
+local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784, Dungeon = 136058, Vendor = 133784, ["Rare mob"] = 133639 }
 local function renderHeal()
   local n = 0
   local lvl = UnitLevel("player")

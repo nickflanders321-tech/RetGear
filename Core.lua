@@ -372,7 +372,12 @@ f:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" and arg1 == ADDON then
     InitDB()
   elseif event == "PLAYER_LOGIN" then
-    for _, g in ipairs(RG.GUIDE) do if g.id then RG.RequestItem(g.id) end end
+    -- ask the server for guide items a few at a time (the guide has ~170 items)
+    local ids = {}
+    for _, g in ipairs(RG.GUIDE) do if g.id then ids[#ids + 1] = g.id end end
+    for i = 1, #ids, 20 do
+      C_Timer.After((i - 1) / 20 * 0.5, function() for j = i, math.min(i + 19, #ids) do RG.RequestItem(ids[j]) end end)
+    end
     local _, class = UnitClass("player")
     local _, race = UnitRace("player")
     if not RG.db.main and class == "PALADIN" then RG.db.main = RG.PlayerKey() end

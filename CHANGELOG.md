@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.24.0 (gear guide for every slot)
+- The Gear guide grew from 32 items to about 160, covering every slot: two-hander, head, neck, shoulders, back, chest, wrists, hands, **waist** and **feet** (new), legs, rings and trinkets, levels 8-60.
+- New items are picked from data, not guesswork: every item in WoW Forever that a Ret paladin can use, scored with RetGear's Ret weights (Strength, Attack Power, crit, hit, weapon DPS), keeping the upgrade path for each slot plus the best quest reward and the best dungeon drop every 5 levels.
+- Only things an Undead paladin can actually get: Horde quest rewards, 5-player dungeon bosses, Horde vendors. No raid items, raid quests or PvP gear; caster pieces without melee stats are skipped.
+- With "Near my level" ticked, the guide is grouped by slot and shows what's coming in your next 8 levels (up to 4 per slot), so you see the next upgrade for every slot at a glance. Untick it for the whole guide by level bracket, sorted by slot.
+- My gear: each slot's "next" now prefers the biggest upgrade you can use within 3 levels, and Waist and Feet get suggestions too. The pre-raid checklist shows the best piece per slot (two rings, two trinkets).
+- New tool: `tools/gear` rebuilds the list (see its README).
+
 ## v0.23.1 (open guide quests in your log)
 - Route tab: when a step names a quest that's in your quest log, a line for that quest appears right under the step (with its level and "In your log" or "Ready to turn in"). Click it to open the quest in your quest log.
 - Bank-alt quests on the Route tab open in your quest log when you have them (otherwise the Bank alt tab, as before).
