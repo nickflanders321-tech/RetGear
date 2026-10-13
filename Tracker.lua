@@ -258,7 +258,9 @@ function RG.RefreshTracker()
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
   local rate, eta = RG.XPRate and RG.XPRate()
-  tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "")
+  local rested = GetXPExhaustion and GetXPExhaustion()
+  if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
+  tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "") .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or "")
     .. (rate and string.format("  ·  %.1fk/hr  ·  %s", rate / 1000, RG.FormatETA(eta) or "") or ""))
   tr.xp:SetWidth(math.max(1, (W - 12) * ((max and max > 0) and xp / max or 1)))
   if tr.arrowBtn then

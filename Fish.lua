@@ -347,3 +347,84 @@ SlashCmdList.RETGEAR = function(msg)
   if cmd == "fish" or cmd == "cook" then if RG.ShowTab then RG.ShowTab("fish") end return end
   return base(msg)
 end
+
+-- ---------------------------------------------------------------------------
+-- Fishing sound mode: the game doesn't tell addons when a fish bites, so the
+-- next best thing is to make the bobber's own splash impossible to miss.
+-- While you fish: sound effects to full, music and ambience off, sound on in
+-- the background. Your settings come back 30 seconds after your last cast.
+-- When a cast ends without a catch, a ding and a quick flash say "cast again".
+-- ---------------------------------------------------------------------------
+table.insert(RG.OPTIONS, { key = "fishSound", label = "Loud bobber splash while fishing (music and ambience muted)", default = true })
+table.insert(RG.OPTIONS, { key = "fishRecast", label = "Ding and screen flash when my bobber is gone (cast again)", default = true })
+local FISHING_IDS = { [7620] = true, [7731] = true, [7732] = true, [18248] = true, [33095] = true, [51294] = true, [131474] = true }
+local function isFishing(spellID)
+  if RG.IsSecret and RG.IsSecret(spellID) then return false end
+  if spellID and FISHING_IDS[spellID] then return true end
+  local ok, name = pcall(function()
+    if C_Spell and C_Spell.GetSpellInfo then local i = C_Spell.GetSpellInfo(spellID); return i and i.name end
+    return GetSpellInfo and GetSpellInfo(spellID)
+  end)
+  return ok and name == "Fishing"
+end
+local SOUND_CVARS = { Sound_SFXVolume = "1.0", Sound_MusicVolume = "0", Sound_AmbienceVolume = "0", Sound_EnableSoundWhenGameIsInBG = "1" }
+local saved, lastCast, castEndedAt, lootedAt
+local function soundOn()
+  if saved or not RG.Opt("fishSound") or not GetCVar or not SetCVar then return end
+  saved = {}
+  for k, v in pairs(SOUND_CVARS) do
+    local ok, cur = pcall(GetCVar, k)
+    if ok and cur then saved[k] = cur; pcall(SetCVar, k, v) end
+  end
+end
+local function soundOff()
+  if not saved then return end
+  for k, v in pairs(saved) do pcall(SetCVar, k, v) end
+  saved = nil
+end
+RG.FishSoundRestore = soundOff
+
+local flash
+local function recastAlert()
+  if not RG.Opt("fishRecast") then return end
+  if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960, "Master") end
+  if not flash then
+    flash = CreateFrame("Frame", nil, UIParent)
+    flash:SetAllPoints(UIParent); flash:SetFrameStrata("FULLSCREEN_DIALOG"); flash:EnableMouse(false)
+    flash.t = flash:CreateTexture(nil, "BACKGROUND"); flash.t:SetAllPoints()
+    flash.t:SetTexture("Interface\\FullScreenTextures\\LowHealth"); flash.t:SetBlendMode("ADD"); flash.t:SetVertexColor(0.3, 0.7, 1)
+  end
+  local t = 0
+  flash:SetAlpha(0.9); flash:Show()
+  flash:SetScript("OnUpdate", function(self, dt)
+    t = t + dt
+    self:SetAlpha(math.max(0, 0.9 - t * 1.5))
+    if t > 0.6 then self:Hide(); self:SetScript("OnUpdate", nil) end
+  end)
+  if UIErrorsFrame then UIErrorsFrame:AddMessage("Bobber gone: cast again", 0.4, 0.8, 1) end
+end
+
+local sev = CreateFrame("Frame")
+for _, e in ipairs({ "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP", "LOOT_OPENED", "PLAYER_LOGOUT", "PLAYER_REGEN_DISABLED" }) do pcall(sev.RegisterEvent, sev, e) end
+sev:SetScript("OnEvent", function(_, event, unit, _, spellID)
+  if event == "PLAYER_LOGOUT" then soundOff() return end
+  if event == "PLAYER_REGEN_DISABLED" then soundOff() return end -- in a fight: back to normal sound
+  if event == "LOOT_OPENED" then lootedAt = GetTime() return end
+  if unit ~= "player" or not isFishing(spellID) then return end
+  if event == "UNIT_SPELLCAST_CHANNEL_START" then
+    lastCast = GetTime(); castEndedAt = nil
+    soundOn()
+  elseif event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+    castEndedAt = GetTime()
+    local ended = castEndedAt
+    -- no loot window right after the cast ended: the fish got away or the bobber timed out
+    C_Timer.After(1.2, function()
+      if castEndedAt == ended and not (lootedAt and lootedAt >= ended - 0.5) and not (InCombatLockdown and InCombatLockdown()) then recastAlert() end
+    end)
+  end
+end)
+if C_Timer and C_Timer.NewTicker then
+  C_Timer.NewTicker(5, function()
+    if saved and lastCast and GetTime() - lastCast > 30 and not (castEndedAt == nil) then soundOff() end
+  end)
+end

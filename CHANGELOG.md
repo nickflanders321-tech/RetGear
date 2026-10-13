@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.29.0 (leveling efficiency + fishing alerts)
+- **Route checked against WoW Forever quest data:** every zone's Horde quest levels were measured from the Forever database. Arathi Highlands moves from 30 to **33-40** (its quests are 34-42 in Forever; at 30 they were orange and red). Your ticked Arathi steps carry over.
+- **New dungeon: Ruins of Lordaeron (16-22)**, right above Undercity, with its four Horde quests (The Wrath of Rath'mael, Light's Justice, The New Plague, A Frightened Request), the Unending Torment chain, entrance pin, boss tips, and its two-hander rewards (Forsaken Greataxe, Monstrous Cleaver) flagged in the gear guide.
+- **Efficiency reminders** on the tracker: 3+ quests ready to turn in (hand them in before heading out), grey quests in your log (almost no XP: abandon or turn in on the way), several red quests (leave for later or group), and a low-priority nudge to log out in an inn or by your campfire for rested XP. The tracker header shows "rested" while you have rested XP. Turn off in Settings (Efficiency tips).
+- **Fishing: loud bobber splash.** The game doesn't tell addons when a fish bites, so RetGear makes the bobber's own splash unmissable: while you fish, sound effects go to full and music and ambience are muted (and sound keeps playing if you tab out). Your settings come back 30 seconds after your last cast, when combat starts, or when you log out.
+- **Fishing: "cast again" alert.** When a cast ends without a catch (the fish got away or the bobber timed out), you hear a ding and the screen flashes blue.
+- Both fishing options are in Settings.
+
 ## v0.28.0 (travel tips)
 - **Getting there:** whenever the guide sends you to another zone, RetGear works out the quickest way from where you are: your hearthstone (when it's ready), the flight paths you know, the Horde zeppelins (Undercity, Orgrimmar, Grom'gol), the Ratchet-Booty Bay boat and running across zone borders. It also reminds you to grab the flight path when you arrive.
 - Shown on the tracker under your current zone's tasks and under the next dungeon once it's time to go, and on the Route tab under each zone or dungeon you're heading to.

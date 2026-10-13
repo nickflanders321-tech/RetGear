@@ -58,7 +58,7 @@ local RIDES = {
 }
 -- Dungeons and combined route names -> the zone you travel to.
 local DESTINATION = {
-  ["Ragefire Chasm"] = "Orgrimmar", ["Wailing Caverns"] = "The Barrens", ["Shadowfang Keep"] = "Silverpine Forest", ["Blackfathom Deeps"] = "Ashenvale",
+  ["Ragefire Chasm"] = "Orgrimmar", ["Ruins of Lordaeron"] = "Tirisfal Glades", ["Excavation Site: Wetlands"] = "Wetlands", ["Wailing Caverns"] = "The Barrens", ["Shadowfang Keep"] = "Silverpine Forest", ["Blackfathom Deeps"] = "Ashenvale",
   ["Razorfen Kraul"] = "The Barrens", ["Razorfen Downs"] = "The Barrens", ["Scarlet Monastery"] = "Tirisfal Glades", ["Uldaman"] = "Badlands",
   ["Zul'Farrak"] = "Tanaris", ["Maraudon"] = "Desolace", ["Blackrock Depths"] = "Searing Gorge", ["Gnomeregan"] = "Dun Morogh",
   ["The Deadmines"] = "Westfall", ["Sunken Temple"] = "Swamp of Sorrows", ["Dire Maul"] = "Feralas",
@@ -158,4 +158,44 @@ function RG.TravelSummary(target)
   local parts = {}
   for _, l in ipairs(legs) do parts[#parts + 1] = (l.how == "tip" and GREY or "") .. l.text .. (l.how == "tip" and "|r" or "") end
   return table.concat(parts, GOLD .. "  >  |r"), to, legs
+end
+
+-- ---------------------------------------------------------------------------
+-- Leveling efficiency reminders
+-- ---------------------------------------------------------------------------
+table.insert(RG.OPTIONS, { key = "efficiency", label = "Efficiency tips: no-XP quests, batch turn-ins, rested XP", default = true })
+local baseReminders = RG.Reminders
+function RG.Reminders()
+  local out = baseReminders and baseReminders() or {}
+  if (RG.IsAlt and RG.IsAlt()) or not RG.Opt("efficiency") or not RG.MyQuests then return out end
+  local lvl = UnitLevel("player")
+  if lvl >= 60 then return out end
+  local grey, ready, readyZones, red = 0, 0, {}, 0
+  for _, q in ipairs(RG.MyQuests()) do
+    local c = RG.QuestColor(q.level)
+    if q.complete then
+      ready = ready + 1
+      local z = q.zone or "?"; readyZones[z] = (readyZones[z] or 0) + 1
+    elseif c == "|cff808080" then grey = grey + 1
+    elseif c == "|cffff1a1a" and not q.group then red = red + 1 end
+  end
+  local openLog = function() if ToggleQuestLog then ToggleQuestLog() end end
+  -- turn-ins: three or more waiting means a trip back is worth it now
+  if ready >= 3 then
+    local bestZ, bestN = nil, 0
+    for z, c in pairs(readyZones) do if c > bestN then bestZ, bestN = z, c end end
+    out[#out + 1] = { GREEN .. ready .. " quests ready to turn in|r" .. GREY .. ": hand them in" .. (bestZ and bestZ ~= "?" and (" (" .. bestN .. " in " .. bestZ .. ")") or "") .. " before you head out|r", openLog, 4 }
+  end
+  if grey >= 1 then
+    out[#out + 1] = { GOLD .. grey .. " grey quest" .. (grey > 1 and "s" or "") .. " in your log|r" .. GREY .. ": almost no XP. Turn in if you're passing, otherwise abandon|r", openLog, 6 }
+  end
+  if red >= 2 then
+    out[#out + 1] = { GOLD .. red .. " red quests|r" .. GREY .. ": 5+ levels above you. Leave them for later or bring a group|r", openLog, 7 }
+  end
+  -- rested XP: log out at an inn or a campfire
+  if GetXPExhaustion and not GetXPExhaustion() and IsResting and not IsResting() and UnitXP("player") > 0 then
+    -- (only a hint when the session is long; shown as a low-priority line)
+    out[#out + 1] = { GREY .. "No rested XP: log out in an inn or by your campfire to earn it|r", nil, 9 }
+  end
+  return out
 end

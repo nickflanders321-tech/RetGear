@@ -1389,9 +1389,9 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet" } },
-  { "Professions, bags and gold", { "mineReminder", "sellJunk", "autoRepair", "bagReminder", "sortButton", "profitWatch", "autoScan" } },
+  { "Professions, bags and gold", { "mineReminder", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishSound", "fishRecast", "profitWatch", "autoScan" } },
   { "Interface", { "minimap", "sounds" } },
 }
 local function renderGroup()

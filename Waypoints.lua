@@ -5,7 +5,7 @@
 local _, RG = ...
 RG.WAYPOINTS = {
   steps = {
-    ["Arathi Highlands|30"] = { [1] = { 1417, 73.0, 32.7, "Hammerfall" }, [2] = { 1417, 73.0, 32.7, "Hammerfall" } },
+    ["Arathi Highlands|33"] = { [1] = { 1417, 73.0, 32.7, "Hammerfall" }, [2] = { 1417, 73.0, 32.7, "Hammerfall" } },
     ["Ashenvale|25"] = { [1] = { 1440, 73.2, 61.6, "Splintertree Post" }, [3] = { 1440, 12.2, 33.8, "Zoram'gar Outpost" } },
     ["Badlands|40"] = { [1] = { 1418, 4.0, 44.8, "Kargath" } },
     ["Blackfathom Deeps|24"] = { [1] = { 1440, 12.2, 33.8, "Zoram'gar Outpost" }, [2] = { 1440, 14.5, 14.2, "Blackfathom Deeps entrance" } },
@@ -21,6 +21,7 @@ RG.WAYPOINTS = {
     ["Paladin|20"] = { [2] = { 1421, 65.7, 23.7, "Fenris Isle" }, [6] = { 1424, 60.1, 18.6, "Tarren Mill" } },
     ["Ragefire Chasm|13"] = { [2] = { 1454, 52.6, 49.0, "Ragefire Chasm entrance" } },
     ["Razorfen Kraul|29"] = { [1] = { 1458, 56.0, 37.5, "Undercity" }, [2] = { 1413, 42.9, 90.2, "Razorfen Kraul entrance" } },
+    ["Ruins of Lordaeron|16"] = { [1] = { 1420, 61.7, 52.0, "Brill" }, [2] = { 1458, 72.5, 11.3, "Ruins of Lordaeron entrance" } },
     ["Scarlet Monastery|33"] = { [1] = { 1458, 56.0, 37.5, "Undercity" }, [2] = { 1420, 82.6, 33.8, "Scarlet Monastery entrance" } },
     ["Searing Gorge|48"] = { [1] = { 1427, 34.8, 30.9, "Thorium Point" }, [3] = { 1427, 34.8, 30.9, "Thorium Point" } },
     ["Shadowfang Keep|22"] = { [1] = { 1421, 45.6, 42.6, "The Sepulcher" }, [2] = { 1421, 44.8, 67.8, "Shadowfang Keep entrance" } },
@@ -75,6 +76,7 @@ RG.WAYPOINTS = {
     ["Selendra"] = { 1443, 26.9, 77.7, "Selendra" },
     ["Splintertree Post"] = { 1440, 73.2, 61.6, "Splintertree Post" },
     ["Tabetha"] = { 1445, 46.1, 57.1, "Tabetha" },
+    ["Theodore Griffs"] = { 1458, 46.3, 71.9, "Theodore Griffs" },
     ["Thrall"] = { 1454, 31.7, 37.8, "Thrall" },
     ["Thunderheart"] = { 1418, 3.3, 48.3, "Thunderheart" },
     ["Tran'rek"] = { 1446, 51.6, 26.8, "Tran'rek" },

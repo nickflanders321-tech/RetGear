@@ -52,6 +52,7 @@ RG.DEFAULT_HIT_CAP = 9
 RG.GUIDE = {
   { tip = true, lvl = 1,  text = "Undead paladins start in Deathknell, Tirisfal Glades. Your class quests run out of Bandarion Keep in the Whispering Wood, north Tirisfal." },
   { tip = true, lvl = 8,  text = "Until your first quest two-hander, buy the slowest 2H axe, mace or sword you can afford from the weapon vendors in Brill or Undercity, or the Auction House." },
+  { tip = true, lvl = 16, text = "Ruins of Lordaeron (16-22, above Undercity): The Wrath of Rath'mael rewards the Forsaken Greataxe and Unending Torment the Monstrous Cleaver, both two-handers. The Lordaeron Captain (Horde only) drops the Haunting Blade (2H sword) and Phantom Armor (mail chest); The Baron drops Abomination Bones (mail chest, +8 Strength). Beta data, no item IDs yet." },
   { tip = true, lvl = 10, text = "Bandarion Keep (Whispering Wood, north-west Tirisfal) is your paladin hub from level 10. Check it whenever you train." },
   { tip = true, lvl = 20, text = "Wolf's Bane, your level 20 paladin quest weapon (Fenris Isle, Silverpine): slow 3.4 speed, +10 Strength, +9 Stamina and a holy blast proc. It needs materials from Shadowfang Keep, Blackfathom Deeps and the Deadmines; worth it over most quest weapons until Razorfen Kraul. Beta stats, may change." },
   -- ===== Two-handed weapons (the biggest upgrade path for Ret) =====
@@ -138,6 +139,7 @@ RG.ROUTE = {
   { from = 1,  to = 6,  kind = "zone",    zone = "Tirisfal Glades", hub = "Deathknell", notes = "Undead start. Do every quest here, then run to Brill." },
   { from = 6,  to = 12, kind = "zone",    zone = "Tirisfal Glades", hub = "Brill", notes = "Brill quests, then Bandarion Keep (Whispering Wood) for paladin class quests. Learn Mining and Blacksmithing in Undercity." },
   { from = 10, to = 20, kind = "zone",    zone = "Silverpine Forest", hub = "The Sepulcher", fp = "The Sepulcher", notes = "Main 10-20 zone. Copper and Tin along the road." },
+  { from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon right above Undercity. Four quests for you, two of them give two-handers." },
   { from = 13, to = 18, kind = "dungeon", zone = "Ragefire Chasm", hub = "Orgrimmar", notes = "Take the zeppelin from outside Undercity." },
   { from = 17, to = 24, kind = "dungeon", zone = "Wailing Caverns", hub = "The Barrens", notes = "Grab the dungeon quests at the Crossroads first." },
   { from = 18, to = 26, kind = "zone",    zone = "The Barrens", hub = "The Crossroads / Camp Taurajo", fp = "Crossroads", notes = "Lots of quests. Weapons of Choice at Camp Taurajo gives Demolition Hammer." },
@@ -149,7 +151,7 @@ RG.ROUTE = {
   { from = 25, to = 30, kind = "zone",    zone = "Ashenvale", hub = "Splintertree Post", fp = "Splintertree Post", notes = "" },
   { from = 29, to = 38, kind = "dungeon", zone = "Razorfen Kraul", hub = "The Barrens", notes = "Overlord Ramtusk drops Corpsemaker." },
   { from = 30, to = 35, kind = "zone",    zone = "Thousand Needles", hub = "Freewind Post", fp = "Freewind Post", notes = "Iron starts showing up." },
-  { from = 30, to = 38, kind = "zone",    zone = "Arathi Highlands", hub = "Hammerfall", fp = "Hammerfall", notes = "Great Iron and Gold mining." },
+  { from = 33, to = 40, kind = "zone",    zone = "Arathi Highlands", hub = "Hammerfall", fp = "Hammerfall", notes = "Great Iron and Gold mining. Its quests are 34-42 in Forever, so come at 33, not 30." },
   { from = 32, to = 40, kind = "zone",    zone = "Desolace", hub = "Shadowprey Village", fp = "Shadowprey", notes = "Iron. Kolkar and centaur quests." },
   { from = 33, to = 45, kind = "dungeon", zone = "Scarlet Monastery", hub = "Tirisfal Glades", notes = "Right in your backyard. Herod (Armory) drops Ravager; Mograine (Cathedral) drops Mograine's Might." },
   { from = 32, to = 42, kind = "zone",    zone = "Stranglethorn Vale", hub = "Grom'gol Base Camp", fp = "Grom'gol", notes = "Nesingwary hunting quests. Iron and Mithril up north." },
@@ -178,6 +180,12 @@ RG.ROUTE = {
 -- over. go = when to start going; prep = when to start picking up quests.
 -- Quest givers are from the original game; Forever may move some of them.
 RG.DUNGEON_QUESTS = {
+  ["Ruins of Lordaeron"] = { go = 16, prep = 15, note = "Enter at 16 to be able to take every quest. Run out rather than hearthing: Captain Truman at the entrance takes the Head of the Baron.", quests = {
+    { "The Wrath of Rath'mael", "Deathguard Kristof", "Tirisfal Glades, tents between Brill and Undercity" },
+    { "Light's Justice", "Morbin Lightbane", "Undercity, Royal Quarter" },
+    { "The New Plague", "Theodore Griffs", "Undercity, The Apothecarium" },
+    { "A Frightened Request", "Tabitha Heartweaver", "Silverpine Forest, The Sepulcher" },
+  } },
   ["Ragefire Chasm"] = { go = 15, prep = 13, quests = {
     { "Hidden Enemies", "Thrall", "Orgrimmar, Grommash Hold" },
     { "Slaying the Beast", "Neeru Fireblade", "Orgrimmar, Cleft of Shadow" },
@@ -309,6 +317,14 @@ RG.STEPS = {
     "Smelt your ore into bars and keep crafting Blacksmithing items to raise your skill.",
     "At level 17-18, ride the zeppelin from the tower outside Undercity to Orgrimmar.",
   },
+  ["Ruins of Lordaeron|16"] = {
+    "Pick up the four quests first (listed below): Deathguard Kristof in the tents between Brill and Undercity, Morbin Lightbane and Theodore Griffs in Undercity, Tabitha Heartweaver at The Sepulcher.",
+    "The entrance is in the surface ruins above Undercity: go through the front gate, and the portal is up a short flight of stairs before the keep.",
+    "Bosses: Witherfang, The Baron, Viktor the Vile (light the fireplace to start him), The Abandoned, Bjork and Rath'mael. The Lordaeron Captain on the west side is Horde-only.",
+    "Loot the Abominable Head from The Baron (about 13% drop): it starts Unending Torment, whose reward can be the Monstrous Cleaver two-hander.",
+    "Light's Justice needs 25 Intact Limbs, which only undead drop, so don't skip the undead packs.",
+    "The Wrath of Rath'mael rewards the Forsaken Greataxe, a two-hander. Run out of the dungeon when you're done.",
+  },
   ["Ragefire Chasm|13"] = {
     "Pick up the quests listed below before you go.",
     "The entrance is in the Cleft of Shadow inside Orgrimmar.",
@@ -373,7 +389,7 @@ RG.STEPS = {
     "Grab the Freewind Post flight path and quests: centaur, harpies and Grimtotem.",
     "The Shimmering Flats in the south-east have the goblin racer quests.",
   },
-  ["Arathi Highlands|30"] = {
+  ["Arathi Highlands|33"] = {
     "Head east from Tarren Mill into Arathi and follow the road to Hammerfall in the far east. Grab the flight path.",
     "Take the Hammerfall quests: Boulderfist ogres, Witherbark trolls, and the Syndicate.",
     "Arathi is one of the best Iron and Gold mining zones. Fill your bags.",

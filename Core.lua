@@ -13,9 +13,19 @@ function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "RetGear|r " .. tos
 -- ---------------------------------------------------------------------------
 -- Saved settings
 -- ---------------------------------------------------------------------------
+-- Route entries that moved level: carry hand-ticked steps over to the new key.
+local MOVED_STEPS = { ["Arathi Highlands|30"] = "Arathi Highlands|33" }
 local function InitDB()
   RetGearDB = RetGearDB or {}
   local db = RetGearDB
+  if db.stepsDone then
+    for old, new in pairs(MOVED_STEPS) do
+      for k, v in pairs(db.stepsDone) do
+        local i = k:match("^" .. old:gsub("%p", "%%%0") .. "#(%d+)$")
+        if i then db.stepsDone[new .. "#" .. i] = v; db.stepsDone[k] = nil end
+      end
+    end
+  end
   db.weights = db.weights or {}
   for k, v in pairs(RG.DEFAULT_WEIGHTS) do if db.weights[k] == nil then db.weights[k] = v end end
   if db.hitCap == nil then db.hitCap = RG.DEFAULT_HIT_CAP end
