@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.24.1 (arrow switch)
+- Arrow on/off switch in the tracker's header (the small arrow next to the book): gold when the waypoint arrow is on, grey when it's off. Your map pin stays; only the arrow hides. Double-clicking a quest still turns it back on.
+
 ## v0.24.0 (gear guide for every slot)
 - The Gear guide grew from 32 items to about 160, covering every slot: two-hander, head, neck, shoulders, back, chest, wrists, hands, **waist** and **feet** (new), legs, rings and trinkets, levels 8-60.
 - New items are picked from data, not guesswork: every item in WoW Forever that a Ret paladin can use, scored with RetGear's Ret weights (Strength, Attack Power, crit, hit, weapon DPS), keeping the upgrade path for each slot plus the best quest reward and the best dungeon drop every 5 levels.

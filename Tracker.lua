@@ -156,6 +156,25 @@ local function build()
   tr.min = hdrBtn("-", -8, function() RetGearDB.trackerCollapsed = not RetGearDB.trackerCollapsed; RG.RefreshTracker() end, "Collapse or expand")
   local g = hdrBtn("", -30, function() if RG.ToggleUI then RG.ToggleUI() end end, "Open the full guide")
   local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(14, 14); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\Icons\\INV_Misc_Book_09"); gi:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  -- arrow on/off switch
+  local ab = CreateFrame("Button", nil, tr); ab:SetSize(20, 20); ab:SetPoint("TOPRIGHT", -52, -8)
+  ab.icon = ab:CreateTexture(nil, "OVERLAY"); ab.icon:SetSize(16, 16); ab.icon:SetPoint("CENTER"); ab.icon:SetTexture("Interface\\Minimap\\MinimapArrow")
+  ab:SetScript("OnClick", function(self)
+    RetGearDB.arrow = not RG.Opt("arrow")
+    if RG.RefreshArrow then RG.RefreshArrow() end
+    RG.Print("Arrow " .. (RG.Opt("arrow") and (GREEN .. "on|r") or (GREY .. "off|r")) .. ".")
+    if PlaySound and SOUNDKIT and RG.Opt("sounds") then pcall(PlaySound, SOUNDKIT.U_CHAT_SCROLL_BUTTON or 1115) end
+    RG.RefreshTracker()
+    if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
+  end)
+  ab:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    GameTooltip:SetText("Arrow: " .. (RG.Opt("arrow") and "on" or "off"))
+    GameTooltip:AddLine("Click to turn the waypoint arrow " .. (RG.Opt("arrow") and "off" or "on") .. ".", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  ab:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  tr.arrowBtn = ab
 
   -- XP bar under the header
   local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(4); xpBg:SetPoint("TOPLEFT", 6, -32); xpBg:SetPoint("TOPRIGHT", -6, -32)
@@ -242,6 +261,11 @@ function RG.RefreshTracker()
   tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "")
     .. (rate and string.format("  ·  %.1fk/hr  ·  %s", rate / 1000, RG.FormatETA(eta) or "") or ""))
   tr.xp:SetWidth(math.max(1, (W - 12) * ((max and max > 0) and xp / max or 1)))
+  if tr.arrowBtn then
+    local on = RG.Opt("arrow")
+    tr.arrowBtn.icon:SetDesaturated(not on)
+    if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
+  end
   if RetGearDB.trackerCollapsed then tr.body:Hide(); tr:SetHeight(40); tr.min.t:SetText("+"); return end
   tr.body:Show(); tr.min.t:SetText("-")
 
