@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.27.0 (gear check)
+- **My gear → Gear check:** RetGear compares every item in the gear guide (your level -15 to +8) with what you're wearing right now and lists your 8 best upgrades, biggest first: the upgrade, which of your items it replaces, where it comes from, how much better it is (Ret score and %), and whether you can use it now or at what level.
+- **Dungeons with upgrades for you:** the top 5 dungeons ranked by how much they'd improve your gear, with each dungeon's upgrades and their bosses. Click one to pin the entrance on the map.
+- Rings and trinkets are compared against your weaker one; two-handers count your current main and off hand together.
+
 ## v0.26.0 (paladin class quests)
 - The Forsaken paladin class quest line is now part of the route, from WoW Forever beta guides:
   - **Deathknell (1-5):** A Difficult Path, Rediscovering the Light, Coming to Terms and Continue Your Training, with map pins.

@@ -373,8 +373,64 @@ local function renderGear()
   n = n + 1; local scoreRow = getRow(n)
   n = n + 1
   setBar(getRow(n), "Hit chance", math.min(hit, cap), cap, hit >= cap and T.green or T.gold, string.format("%s%.0f%%|r / %d%% cap", hit >= cap and GREEN or "|cffffffff", hit, cap))
-  n = n + 1; setHeader(getRow(n), "Equipped")
+  -- gear check: every guide item compared with what you wear right now
   local lvl = UnitLevel("player")
+  local ups, loading = {}, 0
+  for _, g in ipairs(RG.GUIDE) do
+    if g.id and g.lvl <= lvl + 8 and g.lvl >= lvl - 15 and not RG.OwnState(g.id) then
+      local d, slot, new, old = RG.GuideDelta(g)
+      if d == nil then loading = loading + 1
+      elseif d > 0.5 then ups[#ups + 1] = { g = g, d = d, slot = slot, now = g.lvl <= lvl, pct = (old and old > 0) and (d / old * 100) or nil } end
+    end
+  end
+  table.sort(ups, function(a, b) if a.now ~= b.now then return a.now end return a.d > b.d end)
+  n = n + 1; setHeader(getRow(n), "Gear check  ·  your best upgrades from the guide" .. (loading > 0 and (GREY .. "   (" .. loading .. " items still loading)|r") or ""))
+  if #ups == 0 then
+    n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Nothing in the guide beats your gear for the next 8 levels.|r", "Keep an eye on quest rewards: the Equip pop-up tells you when one is better.", "", "", "green", nil, true)
+  end
+  for i = 1, math.min(8, #ups) do
+    local u = ups[i]
+    n = n + 1
+    local name, link2, quality = itemName(u.g.id)
+    local worn = u.slot and GetInventoryItemLink("player", u.slot)
+    local wornName = worn and (RG.ItemInfo(worn) or "your item") or "an empty slot"
+    setItem(getRow(n), u.g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[u.g.slot] or u.g.slot) .. "|r",
+      GREY .. "Replaces " .. wornName .. "  ·  " .. u.g.src .. (u.g.zone ~= "" and (", " .. u.g.zone) or "") .. "|r",
+      (u.now and GREEN or GOLD) .. "+" .. string.format("%.0f", u.d) .. (u.pct and string.format(" (%d%%)", math.floor(u.pct + 0.5)) or "") .. "|r",
+      u.now and (GREEN .. "Usable now|r") or (GREY .. "Level " .. u.g.lvl .. "|r"), u.now and "gold" or nil, quality, true)
+  end
+  -- which dungeons are worth running for you
+  local dung = {}
+  for _, u in ipairs(ups) do
+    if u.g.how == "Dungeon" and u.g.zone ~= "" then
+      local e = dung[u.g.zone] or { zone = u.g.zone, total = 0, items = {}, lvl = 99 }
+      dung[u.g.zone] = e
+      e.total = e.total + u.d; e.lvl = math.min(e.lvl, u.g.lvl)
+      e.items[#e.items + 1] = u
+    end
+  end
+  local dl = {}
+  for _, e in pairs(dung) do dl[#dl + 1] = e end
+  table.sort(dl, function(a, b) return a.total > b.total end)
+  if #dl > 0 then
+    n = n + 1; setHeader(getRow(n), "Dungeons with upgrades for you")
+    for i = 1, math.min(5, #dl) do
+      local e = dl[i]
+      table.sort(e.items, function(a, b) return a.d > b.d end)
+      local parts = {}
+      for j = 1, math.min(4, #e.items) do
+        local it = e.items[j]
+        parts[#parts + 1] = (RG.ItemInfo(it.g.id) or "item") .. " " .. GREEN .. string.format("+%.0f", it.d) .. "|r" .. GREY .. " (" .. it.g.src .. ")|r"
+      end
+      n = n + 1
+      setItem(getRow(n), nil, nil, "|cffA58BD8" .. e.zone .. "|r" .. GREY .. "   " .. #e.items .. " upgrade" .. (#e.items > 1 and "s" or "") .. "|r", table.concat(parts, GREY .. "  ·  |r"),
+        GREEN .. "+" .. string.format("%.0f", e.total) .. " total|r", e.lvl > lvl and (GREY .. "from level " .. e.lvl .. "|r") or "", nil, nil, true)
+      rows[n].icon:SetTexture(136058)
+      local ew = RG.WAYPOINTS and RG.WAYPOINTS.dungeons[e.zone]
+      if ew then rows[n].onClick = function() RG.PinWaypoint(ew) end; rows[n].tip = "Click to show the " .. e.zone .. " entrance on the map." end
+    end
+  end
+  n = n + 1; setHeader(getRow(n), "Equipped")
   for _, slot in ipairs(RG.SLOT_ORDER) do
     local link = GetInventoryItemLink("player", slot)
     n = n + 1

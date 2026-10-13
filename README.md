@@ -32,7 +32,7 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 |---|---|
 | **Route** | Undead Horde path from Deathknell to 60 in four foldable sections: **Now** (your zones and dungeons, with only the steps left to do), **Coming up** (next 5 levels), **Later** and **Done**. Dungeon quests to collect, flight paths, travel, paladin milestones, buy-and-mail quests, camping/fishing steps, and your leveling pace |
 | **Gear guide** | About 160 Ret upgrades for every slot, levels 8-60: Horde quest rewards, dungeon boss drops, vendors and your own Blacksmithing crafts, grouped by slot near your level |
-| **My gear** | Score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
+| **My gear** | Gear check (your 8 best upgrades from the guide vs what you wear, and the dungeons with the most upgrades for you), score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
 | **DPS** | Last fight: DPS, efficiency, damage by ability, uptime, and what to fix first with the DPS each fix is worth; problems that keep repeating; fight history |
 | **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
