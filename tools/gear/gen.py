@@ -296,7 +296,7 @@ def sources(iid):
             if gv:
                 n = FN.get(str(gv[0])); giver = n and n.get("name")
             out.append({"how": "Quest", "lvl": q.get("level") or q.get("reqLevel") or 0, "req": q.get("reqLevel") or 0,
-                        "src": q["name"] + (" (" + giver + ")" if giver else ""), "zone": zname or "", "quest": q["name"]})
+                        "src": q["name"] + (" (" + giver + ")" if giver else ""), "zone": zname or "", "quest": q["name"], "q": int(qid)})
     drops = L(f.get("npcDrops"))
     if 0 < len(drops) <= 4:
         for nid in drops:
@@ -307,9 +307,9 @@ def sources(iid):
             if d:
                 if d in RAIDS or d in HORDE_FAR: continue
                 if (n.get("rank") or 0) < 1: continue
-                out.append({"how": "Dungeon", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": d})
+                out.append({"how": "Dungeon", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": d, "bl": n.get("maxLevel") or 0})
             elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z):
-                out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or ""})
+                out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
     for vid in L(f.get("vendors")):
         n = FN.get(str(vid))
         sub = (n.get("sub") or "") if n else ""
@@ -347,7 +347,8 @@ def pick(C, lvl_from=5):
         lvl = max(req, int(s0.get("req") or 0)) if s0["how"] == "Quest" else req
         if lvl < max(5, lvl_from - 2): continue
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
-                            "how": s0["how"], "src": s0["src"], "zone": s0["zone"]})
+                            "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
+                            "also": [x for x in src[1:3]]})
     picked = []
     start = (lvl_from // 5) * 5
     for slot, lst in cands.items():
@@ -372,8 +373,18 @@ def pick(C, lvl_from=5):
     return picked
 
 def entry(c):
-    return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d, gen = true },  -- %s\n" % (
-        c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), c["name"])
+    extra = ""
+    if c.get("q"): extra += ", q = %d" % c["q"]
+    if c.get("bl"): extra += ", bl = %d" % c["bl"]
+    # other places it comes from (a second quest, a dungeon boss, a vendor)
+    also = []
+    for x in c.get("also") or []:
+        if x["how"] == c["how"] and x["src"] == c["src"]: continue
+        also.append("{ how = %s, src = %s, zone = %s%s%s }" % (lua_str(x["how"]), lua_str(x["src"]), lua_str(x.get("zone") or ""),
+                    (", q = %d" % x["q"]) if x.get("q") else "", (", bl = %d" % x["bl"]) if x.get("bl") else ""))
+    if also: extra += ", also = { " + ", ".join(also) + " }"
+    return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d%s, gen = true },  -- %s\n" % (
+        c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), extra, c["name"])
 
 CLASSES = {}
 for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):

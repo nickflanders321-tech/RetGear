@@ -73,4 +73,5 @@ Nodes.lua
 Setup.lua
 Group.lua
 Bags.lua
+SourceInfo.lua
 UI.lua

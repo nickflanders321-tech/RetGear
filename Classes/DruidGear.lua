@@ -5,128 +5,128 @@
 local _, RG = ...
 RG.CLASS_GEAR = RG.CLASS_GEAR or {}
 RG.CLASS_GEAR.DRUID = {
-  { id = 4939, slot = "2H", lvl = 6, how = "Quest", src = "Skull Rock (Margoz)", zone = "Durotar", score = 65, gen = true },  -- Steady Bastard Sword
-  { id = 4964, slot = "2H", lvl = 7, how = "Quest", src = "Supervisor Fizsprocket (Morin Cloudstalker)", zone = "Mulgore", score = 70, gen = true },  -- Goblin Smasher
-  { id = 3440, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 78, gen = true },  -- Bonecracker
-  { id = 5340, slot = "2H", lvl = 10, how = "Quest", src = "Apothecary Zamah (Apothecary Helbrim)", zone = "The Barrens", score = 83, gen = true },  -- Cauldron Stirrer
-  { id = 2976, slot = "Hands", lvl = 10, how = "Rare mob", src = "Pyrewood Tailor", zone = "Silverpine Forest", score = 4, gen = true },  -- Hunting Gloves
-  { id = 10637, slot = "Hands", lvl = 10, how = "Quest", src = "Sample for Helbrim (Apothecary Zinge)", zone = "Undercity", score = 4, gen = true },  -- Brewer's Gloves
-  { id = 4909, slot = "Legs", lvl = 10, how = "Quest", src = "Rites of the Earthmother (Cairne Bloodhoof)", zone = "Mulgore", score = 8, gen = true },  -- Kodo Hunter's Leggings
-  { id = 3586, slot = "2H", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 93, gen = true },  -- Logsplitter
-  { id = 15424, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 102, gen = true },  -- Axe of Orgrimmar
-  { id = 14149, slot = "Back", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 8, gen = true },  -- Subterranean Cape
-  { id = 11853, slot = "Feet", lvl = 13, how = "Quest", src = "Stolen Silver (Gazrog)", zone = "The Barrens", score = 6, gen = true },  -- Rambling Boots
-  { id = 1944, slot = "Hands", lvl = 13, how = "Dungeon", src = "Goblin Craftsman", zone = "The Deadmines", score = 6, gen = true },  -- Metalworking Gloves
-  { id = 5327, slot = "Legs", lvl = 13, how = "Quest", src = "The Escape (Wizzlecrank's Shredder)", zone = "The Barrens", score = 12, gen = true },  -- Greasy Tinker's Pants
-  { id = 10400, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Overseer", zone = "The Deadmines", score = 12, gen = true },  -- Blackened Defias Leggings
-  { id = 4778, slot = "2H", lvl = 14, how = "Vendor", src = "Kizz Bluntstrike", zone = "Stranglethorn Vale", score = 112, gen = true },  -- Heavy Spiked Mace
-  { id = 10413, slot = "Hands", lvl = 14, how = "Dungeon", src = "Druid of the Fang", zone = "Wailing Caverns", score = 10, gen = true },  -- Gloves of the Fang
-  { id = 19970, slot = "2H", lvl = 15, how = "Quest", src = "Master Angler (Riggle Bassbait)", zone = "", score = 140, gen = true },  -- Arcanite Fishing Pole
-  { id = 5314, slot = "Back", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 6, gen = true },  -- Boar Hunter's Cape
-  { id = 4788, slot = "Feet", lvl = 15, how = "Vendor", src = "Defias Profiteer", zone = "Westfall", score = 10, gen = true },  -- Agile Boots
-  { id = 5299, slot = "Hands", lvl = 15, how = "Quest", src = "Cry of the Thunderhawk (Jorn Skyseer)", zone = "The Barrens", score = 7, gen = true },  -- Gloves of the Moon
-  { id = 6480, slot = "Legs", lvl = 15, how = "Quest", src = "Deviate Hides (Nalpak)", zone = "Wailing Caverns", score = 10, gen = true },  -- Slick Deviate Leggings
-  { id = 5351, slot = "Ring", lvl = 15, how = "Quest", src = "Hezrul Bloodmark (Regthar Deathgate)", zone = "The Barrens", score = 6, gen = true },  -- Bounty Hunter's Ring
-  { id = 1306, slot = "Wrist", lvl = 15, how = "Quest", src = "Earthen Arise (Mor'rogal)", zone = "Stonetalon Mountains", score = 5, gen = true },  -- Wolfmane Wristguards
-  { id = 14565, slot = "Legs", lvl = 16, how = "Dungeon", src = "Mutanus the Devourer", zone = "Wailing Caverns", score = 14, gen = true },  -- Prospector's Woolies
-  { id = 6449, slot = "Back", lvl = 17, how = "Dungeon", src = "Skum", zone = "Wailing Caverns", score = 12, gen = true },  -- Glowing Lizardscale Cloak
-  { id = 3752, slot = "Chest", lvl = 17, how = "Quest", src = "The Rescue (Krusk)", zone = "Hillsbrad Foothills", score = 10, gen = true },  -- Grunt Vest
-  { id = 1156, slot = "Ring", lvl = 17, how = "Dungeon", src = "Gilnid", zone = "The Deadmines", score = 5, gen = true },  -- Lavishly Jeweled Ring
-  { id = 10403, slot = "Waist", lvl = 17, how = "Dungeon", src = "Captain Greenskin", zone = "The Deadmines", score = 10, gen = true },  -- Blackened Defias Belt
-  { id = 7230, slot = "2H", lvl = 18, how = "Dungeon", src = "Mr. Smite", zone = "The Deadmines", score = 188, gen = true },  -- Smite's Mighty Hammer
-  { id = 10411, slot = "Feet", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 10, gen = true },  -- Footpads of the Fang
-  { id = 5970, slot = "Hands", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 9, gen = true },  -- Serpent Gloves
-  { id = 10410, slot = "Legs", lvl = 18, how = "Dungeon", src = "Lord Cobrahn", zone = "Wailing Caverns", score = 30, gen = true },  -- Leggings of the Fang
-  { id = 6505, slot = "2H", lvl = 19, how = "Quest", src = "Leaders of the Fang (Nara Wildmane)", zone = "Wailing Caverns", score = 168, gen = true },  -- Crescent Staff
-  { id = 10399, slot = "Chest", lvl = 19, how = "Dungeon", src = "Edwin VanCleef", zone = "The Deadmines", score = 18, gen = true },  -- Blackened Defias Armor
-  { id = 23171, slot = "2H", lvl = 20, how = "Dungeon", src = "Sever", zone = "Shadowfang Keep", score = 196, gen = true },  -- The Axe of Severing
-  { id = 5193, slot = "Back", lvl = 20, how = "Dungeon", src = "Edwin VanCleef", zone = "The Deadmines", score = 13, gen = true },  -- Cape of the Brotherhood
-  { id = 17694, slot = "Ring", lvl = 20, how = "Quest", src = "Allegiance to the Old Gods (Je'neu Sancrea)", zone = "Blackfathom Deeps", score = 12, gen = true },  -- Band of the Fist
-  { id = 12998, slot = "Shoulder", lvl = 20, how = "Rare mob", src = "Brontus", zone = "The Barrens", score = 2, gen = true },  -- Magician's Mantle
-  { id = 4794, slot = "Wrist", lvl = 20, how = "Vendor", src = "Vexspindle", zone = "The Barrens", score = 9, gen = true },  -- Wolf Bracers
-  { id = 3741, slot = "Feet", lvl = 21, how = "Quest", src = "Elixir of Pain (Apothecary Lydon)", zone = "Hillsbrad Foothills", score = 16, gen = true },  -- Stomping Boots
-  { id = 6321, slot = "Ring", lvl = 21, how = "Dungeon", src = "Baron Silverlaine", zone = "Shadowfang Keep", score = 15, gen = true },  -- Silverlaine's Family Seal
-  { id = 10657, slot = "Shoulder", lvl = 21, how = "Quest", src = "In Nightmares (Falla Sagewind)", zone = "The Barrens", score = 2, gen = true },  -- Talbar Mantle
-  { id = 6670, slot = "Chest", lvl = 22, how = "Quest", src = "The Den (Braelyn Firehand)", zone = "Stonetalon Mountains", score = 22, gen = true },  -- Panther Armor
-  { id = 16977, slot = "Feet", lvl = 22, how = "Quest", src = "Warsong Supplies (Locke Okarr)", zone = "Ashenvale", score = 18, gen = true },  -- Warsong Boots
-  { id = 16987, slot = "Waist", lvl = 22, how = "Quest", src = "Bloodfury Bloodline (Maggran Earthbinder)", zone = "Stonetalon Mountains", score = 14, gen = true },  -- Screecher Belt
-  { id = 6902, slot = "Wrist", lvl = 22, how = "Dungeon", src = "Old Serra'kis", zone = "Blackfathom Deeps", score = 9, gen = true },  -- Bands of Serra'kis
-  { id = 3748, slot = "Shoulder", lvl = 23, how = "Dungeon", src = "Wolf Master Nandos", zone = "Shadowfang Keep", score = 6, gen = true },  -- Feline Mantle
-  { id = 16659, slot = "Waist", lvl = 23, how = "Quest", src = "Je'neu of the Earthen Ring (Mastok Wrilehiss)", zone = "Ashenvale", score = 21, gen = true },  -- Deftkin Belt
-  { id = 15462, slot = "Wrist", lvl = 23, how = "Quest", src = "Protect Kanati Greycloud (Kanati Greycloud)", zone = "Thousand Needles", score = 10, gen = true },  -- Loamflake Bracers
-  { id = 15464, slot = "2H", lvl = 24, how = "Quest", src = "Arikara (Magatha Grimtotem)", zone = "Thousand Needles", score = 166, gen = true },  -- Brute Hammer
-  { id = 6909, slot = "2H", lvl = 26, how = "Dungeon", src = "Aku'mai", zone = "Blackfathom Deeps", score = 205, gen = true },  -- Strike of the Hydra
-  { id = 10654, slot = "Hands", lvl = 26, how = "Quest", src = "Horde Presence (Kadrak)", zone = "The Barrens", score = 13, gen = true },  -- Jutebraid Gloves
-  { id = 6689, slot = "2H", lvl = 27, how = "Dungeon", src = "Earthcaller Halmgar", zone = "Razorfen Kraul", score = 217, gen = true },  -- Wind Spirit Staff
-  { id = 6688, slot = "Head", lvl = 27, how = "Dungeon", src = "Earthcaller Halmgar", zone = "Razorfen Kraul", score = 3, gen = true },  -- Whisperwind Headdress
-  { id = 6697, slot = "Shoulder", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 8, gen = true },  -- Batwing Mantle
-  { id = 9449, slot = "2H", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 274, gen = true },  -- Manual Crowd Pummeler
-  { id = 6690, slot = "Legs", lvl = 29, how = "Dungeon", src = "Agathelos the Raging", zone = "Razorfen Kraul", score = 34, gen = true },  -- Ferine Leggings
-  { id = 7690, slot = "Hands", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 23, gen = true },  -- Ebon Vise
-  { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 6, gen = true },  -- Embalmed Shroud
-  { id = 7686, slot = "Ring", lvl = 30, how = "Dungeon", src = "Ironspine", zone = "Scarlet Monastery", score = 26, gen = true },  -- Ironspine's Eye
-  { id = 18585, slot = "Ring", lvl = 30, how = "Quest", src = "Service to the Horde (Zor Lonetree)", zone = "Dustwallow Marsh", score = 20, gen = true },  -- Band of Allegiance
-  { id = 9459, slot = "2H", lvl = 32, how = "Dungeon", src = "Mekgineer Thermaplugg", zone = "Gnomeregan", score = 300, gen = true },  -- Thermaplugg's Left Arm
-  { id = 4107, slot = "Hands", lvl = 32, how = "Quest", src = "Tiger Mastery (Ajeck Rouack)", zone = "Stranglethorn Vale", score = 30, gen = true },  -- Tiger Hunter Gloves
-  { id = 6720, slot = "Head", lvl = 32, how = "Quest", src = "Frostmaw (Melor Stonehoof)", zone = "Thunder Bluff", score = 21, gen = true },  -- Spirit Hunter Headdress
-  { id = 9624, slot = "Legs", lvl = 32, how = "Quest", src = "Rig Wars (Nogg)", zone = "Gnomeregan", score = 44, gen = true },  -- Triprunner Dungarees
-  { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 32, gen = true },  -- Swine Fists
-  { id = 10758, slot = "2H", lvl = 35, how = "Dungeon", src = "Ragglesnout", zone = "Razorfen Downs", score = 341, gen = true },  -- X'caliboar
-  { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, gen = true },  -- Worn Running Boots
-  { id = 4109, slot = "Feet", lvl = 36, how = "Quest", src = "Excelsior (Drizzlik)", zone = "Stranglethorn Vale", score = 32, gen = true },  -- Excelsior Boots
-  { id = 10769, slot = "Neck", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 2, gen = true },  -- Glowing Eye of Mordresh
-  { id = 19508, slot = "Wrist", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 16, gen = true },  -- Branded Leather Bracers
-  { id = 4114, slot = "Back", lvl = 37, how = "Quest", src = "Keep An Eye Out (Dizzy One-Eye)", zone = "Stranglethorn Vale", score = 15, gen = true },  -- Darktide Cape
-  { id = 10774, slot = "Shoulder", lvl = 37, how = "Dungeon", src = "Glutton", zone = "Razorfen Downs", score = 28, gen = true },  -- Fleshhide Shoulders
-  { id = 4430, slot = "Neck", lvl = 38, how = "Quest", src = "The Crown of Will (Melisara)", zone = "Hillsbrad Foothills", score = 20, gen = true },  -- Ethereal Talisman
-  { id = 9705, slot = "Waist", lvl = 38, how = "Quest", src = "Army of the Black Dragon (Tharg)", zone = "Dustwallow Marsh", score = 26, gen = true },  -- Tharg's Shoelace
-  { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 5, gen = true },  -- Triune Amulet
-  { id = 9632, slot = "Hands", lvl = 40, how = "Quest", src = "The Mark of Quality (Jangdor Swiftstrider)", zone = "Feralas", score = 38, gen = true },  -- Jangdor's Handcrafted Gloves
-  { id = 9416, slot = "2H", lvl = 42, how = "Dungeon", src = "Grimlok", zone = "Uldaman", score = 383, gen = true },  -- Grimlok's Charge
-  { id = 12470, slot = "Feet", lvl = 42, how = "Dungeon", src = "Zerillis", zone = "Zul'Farrak", score = 46, gen = true },  -- Sandstalker Ankleguards
-  { id = 20643, slot = "Head", lvl = 42, how = "Quest", src = "Oran's Gratitude (Oran Snakewrithe)", zone = "The Hinterlands", score = 46, gen = true },  -- Undercity Reservist's Cap
-  { id = 7888, slot = "Neck", lvl = 42, how = "Quest", src = "Necklace Recovery, Take 3 (Dran Droffers)", zone = "Uldaman", score = 5, gen = true },  -- Jarkal's Enhancing Necklace
-  { id = 9533, slot = "Ring", lvl = 42, how = "Quest", src = "Divino-matic Rod (Chief Engineer Bilgewhizzle)", zone = "Zul'Farrak", score = 28, gen = true },  -- Masons Fraternity Ring
-  { id = 14660, slot = "Shoulder", lvl = 42, how = "Dungeon", src = "Theka the Martyr", zone = "Zul'Farrak", score = 30, gen = true },  -- Scorpashi Shoulder Pads
-  { id = 17778, slot = "Waist", lvl = 42, how = "Quest", src = "Vyletongue Corruption (Vark Battlescar)", zone = "Maraudon", score = 30, gen = true },  -- Sagebrush Girdle
-  { id = 9480, slot = "2H", lvl = 43, how = "Dungeon", src = "Theka the Martyr", zone = "Zul'Farrak", score = 401, gen = true },  -- Eyegouger
-  { id = 19042, slot = "Chest", lvl = 43, how = "Quest", src = "Improved Quality (Jangdor Swiftstrider)", zone = "Feralas", score = 32, gen = true },  -- Jangdor's Handcrafted Tunic
-  { id = 9647, slot = "Shoulder", lvl = 43, how = "Quest", src = "Rescue OOX-22/FE! (Homing Robot OOX-22/FE)", zone = "Feralas", score = 40, gen = true },  -- Failed Flying Experiment
-  { id = 19127, slot = "Chest", lvl = 45, how = "Quest", src = "WANTED: Overseer Maltorius", zone = "Searing Gorge", score = 39, gen = true },  -- Charred Leather Tunic
-  { id = 9479, slot = "Head", lvl = 45, how = "Dungeon", src = "Chief Ukorz Sandscalp", zone = "Zul'Farrak", score = 55, gen = true },  -- Embrace of the Lycan
-  { id = 17742, slot = "Chest", lvl = 46, how = "Dungeon", src = "Meshlok the Harvester", zone = "Maraudon", score = 54, gen = true },  -- Fungus Shroud Armor
-  { id = 19159, slot = "Neck", lvl = 46, how = "Quest", src = "Wanted: Vile Priestess Hexx and Her Minions", zone = "The Hinterlands", score = 34, gen = true },  -- Woven Ivy Necklace
-  { id = 17749, slot = "Shoulder", lvl = 46, how = "Dungeon", src = "Razorlash", zone = "Maraudon", score = 36, gen = true },  -- Phytoskin Spaulders
-  { id = 19120, slot = "Trinket", lvl = 46, how = "Quest", src = "Job Opening: Guard Captain of Revantusk Village", zone = "The Hinterlands", score = 38, gen = true },  -- Rune of the Guard Captain
-  { id = 11626, slot = "Back", lvl = 48, how = "Dungeon", src = "High Interrogator Gerstahn", zone = "Blackrock Depths", score = 40, gen = true },  -- Blackveil Cape
-  { id = 22274, slot = "Chest", lvl = 50, how = "Quest", src = "A Better Ingredient (Torwa Pathfinder)", zone = "", score = 70, gen = true },  -- Grizzled Pelt
-  { id = 12793, slot = "Chest", lvl = 50, how = "Dungeon", src = "Plugger Spazzring", zone = "Blackrock Depths", score = 65, gen = true },  -- Mixologist's Tunic
-  { id = 11686, slot = "Waist", lvl = 50, how = "Dungeon", src = "Eviscerator", zone = "Blackrock Depths", score = 50, gen = true },  -- Girdle of Beastial Fury
-  { id = 11816, slot = "2H", lvl = 51, how = "Dungeon", src = "General Angerforge", zone = "Blackrock Depths", score = 443, gen = true },  -- Angerforge's Battle Axe
-  { id = 15789, slot = "Back", lvl = 51, how = "Quest", src = "Strange Sources (Donova Snowden)", zone = "Winterspring", score = 25, gen = true },  -- Deep River Cloak
-  { id = 12114, slot = "Hands", lvl = 51, how = "Quest", src = "Disharmony of Fire (Thunderheart)", zone = "Blackrock Depths", score = 48, gen = true },  -- Nightfall Gloves
-  { id = 13404, slot = "Head", lvl = 52, how = "Dungeon", src = "The Unforgiven", zone = "Stratholme", score = 61, gen = true },  -- Mask of the Unforgiven
-  { id = 22255, slot = "Ring", lvl = 52, how = "Dungeon", src = "Warbringer Construct", zone = "Blackrock Depths", score = 41, gen = true },  -- Magma Forged Band
-  { id = 22241, slot = "Shoulder", lvl = 52, how = "Dungeon", src = "Warder Stilgiss", zone = "Blackrock Depths", score = 59, gen = true },  -- Dark Warder's Pauldrons
-  { id = 16714, slot = "Wrist", lvl = 52, how = "Dungeon", src = "Crimson Inquisitor", zone = "Stratholme", score = 17, gen = true },  -- Wildheart Bracers
-  { id = 18324, slot = "2H", lvl = 53, how = "Dungeon", src = "Hydrospawn", zone = "Dire Maul", score = 469, gen = true },  -- Waveslicer
-  { id = 21319, slot = "Hands", lvl = 53, how = "Quest", src = "Winterfall Activity (Salfa)", zone = "Timbermaw Hold", score = 50, gen = true },  -- Gloves of the Pathfinder
-  { id = 18725, slot = "2H", lvl = 54, how = "Dungeon", src = "Magistrate Barthilas", zone = "Stratholme", score = 480, gen = true },  -- Peacemaker
-  { id = 18328, slot = "Back", lvl = 54, how = "Dungeon", src = "Alzzin the Wildshaper", zone = "Dire Maul", score = 29, gen = true },  -- Shadewood Cloak
-  { id = 12553, slot = "Feet", lvl = 54, how = "Dungeon", src = "Princess Moira Bronzebeard", zone = "Blackrock Depths", score = 53, gen = true },  -- Swiftwalker Boots
-  { id = 16712, slot = "Hands", lvl = 54, how = "Dungeon", src = "Shadow Hunter Vosh'gajin", zone = "Blackrock Spire", score = 51, gen = true },  -- Shadowcraft Gloves
-  { id = 22659, slot = "Neck", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 49, gen = true },  -- Medallion of the Dawn
-  { id = 13252, slot = "Waist", lvl = 55, how = "Dungeon", src = "Quartermaster Zigris", zone = "Blackrock Spire", score = 58, gen = true },  -- Cloudrunner Girdle
-  { id = 22668, slot = "Wrist", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 55, gen = true },  -- Bracers of Subterfuge
-  { id = 13957, slot = "Hands", lvl = 56, how = "Dungeon", src = "Kirtonos the Herald", zone = "Scholomance", score = 55, gen = true },  -- Gargoyle Slashers
-  { id = 16709, slot = "Legs", lvl = 56, how = "Dungeon", src = "Baron Rivendare", zone = "Stratholme", score = 79, gen = true },  -- Shadowcraft Pants
-  { id = 12757, slot = "Chest", lvl = 57, how = "Quest", src = "Breastplate of Bloodthirst", zone = "Winterspring", score = 74, gen = true },  -- Breastplate of Bloodthirst
-  { id = 16707, slot = "Head", lvl = 57, how = "Dungeon", src = "Darkmaster Gandling", zone = "Scholomance", score = 74, gen = true },  -- Shadowcraft Cap
-  { id = 18375, slot = "Wrist", lvl = 57, how = "Dungeon", src = "Prince Tortheldrin", zone = "Dire Maul", score = 48, gen = true },  -- Bracers of the Eclipse
-  { id = 18520, slot = "2H", lvl = 58, how = "Dungeon", src = "King Gordok", zone = "Dire Maul", score = 511, gen = true },  -- Barbarous Blade
-  { id = 18420, slot = "2H", lvl = 58, how = "Quest", src = "The Treasure of the Shen'dralar (Shen'dralar Ancient)", zone = "Dire Maul", score = 511, gen = true },  -- Bonecrusher
-  { id = 13340, slot = "Back", lvl = 58, how = "Dungeon", src = "Baron Rivendare", zone = "Stratholme", score = 50, gen = true },  -- Cape of the Black Baron
-  { id = 13965, slot = "Trinket", lvl = 58, how = "Quest", src = "For The Horde! (Thrall)", zone = "Blackrock Spire", score = 40, gen = true },  -- Blackhand's Breadth
-  { id = 22632, slot = "2H", lvl = 60, how = "Quest", src = "Atiesh, Greatstaff of the Guardian (Anachronos)", zone = "", score = 938, gen = true },  -- Atiesh, Greatstaff of the Guardian
-  { id = 19491, slot = "Neck", lvl = 60, how = "Quest", src = "1200 Tickets - Amulet of the Darkmoon (Gelvas Grimegate)", zone = "", score = 62, gen = true },  -- Amulet of the Darkmoon
+  { id = 4939, slot = "2H", lvl = 6, how = "Quest", src = "Skull Rock (Margoz)", zone = "Durotar", score = 65, q = 827, gen = true },  -- Steady Bastard Sword
+  { id = 4964, slot = "2H", lvl = 7, how = "Quest", src = "Supervisor Fizsprocket (Morin Cloudstalker)", zone = "Mulgore", score = 70, q = 765, gen = true },  -- Goblin Smasher
+  { id = 3440, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 78, q = 408, gen = true },  -- Bonecracker
+  { id = 5340, slot = "2H", lvl = 10, how = "Quest", src = "Apothecary Zamah (Apothecary Helbrim)", zone = "The Barrens", score = 83, q = 853, gen = true },  -- Cauldron Stirrer
+  { id = 2976, slot = "Hands", lvl = 10, how = "Rare mob", src = "Pyrewood Tailor", zone = "Silverpine Forest", score = 4, bl = 15, gen = true },  -- Hunting Gloves
+  { id = 10637, slot = "Hands", lvl = 10, how = "Quest", src = "Sample for Helbrim (Apothecary Zinge)", zone = "Undercity", score = 4, q = 1358, gen = true },  -- Brewer's Gloves
+  { id = 4909, slot = "Legs", lvl = 10, how = "Quest", src = "Rites of the Earthmother (Cairne Bloodhoof)", zone = "Mulgore", score = 8, q = 776, gen = true },  -- Kodo Hunter's Leggings
+  { id = 3586, slot = "2H", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 93, q = 99, gen = true },  -- Logsplitter
+  { id = 15424, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 102, q = 5730, gen = true },  -- Axe of Orgrimmar
+  { id = 14149, slot = "Back", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 8, bl = 16, gen = true },  -- Subterranean Cape
+  { id = 11853, slot = "Feet", lvl = 13, how = "Quest", src = "Stolen Silver (Gazrog)", zone = "The Barrens", score = 6, q = 3281, gen = true },  -- Rambling Boots
+  { id = 1944, slot = "Hands", lvl = 13, how = "Dungeon", src = "Goblin Craftsman", zone = "The Deadmines", score = 6, bl = 19, gen = true },  -- Metalworking Gloves
+  { id = 5327, slot = "Legs", lvl = 13, how = "Quest", src = "The Escape (Wizzlecrank's Shredder)", zone = "The Barrens", score = 12, q = 863, gen = true },  -- Greasy Tinker's Pants
+  { id = 10400, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Overseer", zone = "The Deadmines", score = 12, bl = 18, also = { { how = "Dungeon", src = "Defias Taskmaster", zone = "The Deadmines", bl = 19 } }, gen = true },  -- Blackened Defias Leggings
+  { id = 4778, slot = "2H", lvl = 14, how = "Vendor", src = "Kizz Bluntstrike", zone = "Stranglethorn Vale", score = 112, also = { { how = "Vendor", src = "Wallace the Blind", zone = "Silverpine Forest" }, { how = "Vendor", src = "Lizzarik", zone = "The Barrens" } }, gen = true },  -- Heavy Spiked Mace
+  { id = 10413, slot = "Hands", lvl = 14, how = "Dungeon", src = "Druid of the Fang", zone = "Wailing Caverns", score = 10, bl = 20, gen = true },  -- Gloves of the Fang
+  { id = 19970, slot = "2H", lvl = 15, how = "Quest", src = "Master Angler (Riggle Bassbait)", zone = "", score = 140, q = 8193, gen = true },  -- Arcanite Fishing Pole
+  { id = 5314, slot = "Back", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 6, q = 899, gen = true },  -- Boar Hunter's Cape
+  { id = 4788, slot = "Feet", lvl = 15, how = "Vendor", src = "Defias Profiteer", zone = "Westfall", score = 10, also = { { how = "Vendor", src = "Alexandre Lefevre", zone = "Silverpine Forest" }, { how = "Vendor", src = "Pizznukle", zone = "The Barrens" } }, gen = true },  -- Agile Boots
+  { id = 5299, slot = "Hands", lvl = 15, how = "Quest", src = "Cry of the Thunderhawk (Jorn Skyseer)", zone = "The Barrens", score = 7, q = 913, gen = true },  -- Gloves of the Moon
+  { id = 6480, slot = "Legs", lvl = 15, how = "Quest", src = "Deviate Hides (Nalpak)", zone = "Wailing Caverns", score = 10, q = 1486, gen = true },  -- Slick Deviate Leggings
+  { id = 5351, slot = "Ring", lvl = 15, how = "Quest", src = "Hezrul Bloodmark (Regthar Deathgate)", zone = "The Barrens", score = 6, q = 852, gen = true },  -- Bounty Hunter's Ring
+  { id = 1306, slot = "Wrist", lvl = 15, how = "Quest", src = "Earthen Arise (Mor'rogal)", zone = "Stonetalon Mountains", score = 5, q = 6481, gen = true },  -- Wolfmane Wristguards
+  { id = 14565, slot = "Legs", lvl = 16, how = "Dungeon", src = "Mutanus the Devourer", zone = "Wailing Caverns", score = 14, bl = 22, gen = true },  -- Prospector's Woolies
+  { id = 6449, slot = "Back", lvl = 17, how = "Dungeon", src = "Skum", zone = "Wailing Caverns", score = 12, bl = 21, gen = true },  -- Glowing Lizardscale Cloak
+  { id = 3752, slot = "Chest", lvl = 17, how = "Quest", src = "The Rescue (Krusk)", zone = "Hillsbrad Foothills", score = 10, q = 498, gen = true },  -- Grunt Vest
+  { id = 1156, slot = "Ring", lvl = 17, how = "Dungeon", src = "Gilnid", zone = "The Deadmines", score = 5, bl = 20, gen = true },  -- Lavishly Jeweled Ring
+  { id = 10403, slot = "Waist", lvl = 17, how = "Dungeon", src = "Captain Greenskin", zone = "The Deadmines", score = 10, bl = 20, gen = true },  -- Blackened Defias Belt
+  { id = 7230, slot = "2H", lvl = 18, how = "Dungeon", src = "Mr. Smite", zone = "The Deadmines", score = 188, bl = 20, gen = true },  -- Smite's Mighty Hammer
+  { id = 10411, slot = "Feet", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 10, bl = 21, gen = true },  -- Footpads of the Fang
+  { id = 5970, slot = "Hands", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 9, bl = 21, gen = true },  -- Serpent Gloves
+  { id = 10410, slot = "Legs", lvl = 18, how = "Dungeon", src = "Lord Cobrahn", zone = "Wailing Caverns", score = 30, bl = 20, gen = true },  -- Leggings of the Fang
+  { id = 6505, slot = "2H", lvl = 19, how = "Quest", src = "Leaders of the Fang (Nara Wildmane)", zone = "Wailing Caverns", score = 168, q = 914, gen = true },  -- Crescent Staff
+  { id = 10399, slot = "Chest", lvl = 19, how = "Dungeon", src = "Edwin VanCleef", zone = "The Deadmines", score = 18, bl = 21, gen = true },  -- Blackened Defias Armor
+  { id = 23171, slot = "2H", lvl = 20, how = "Dungeon", src = "Sever", zone = "Shadowfang Keep", score = 196, bl = 25, gen = true },  -- The Axe of Severing
+  { id = 5193, slot = "Back", lvl = 20, how = "Dungeon", src = "Edwin VanCleef", zone = "The Deadmines", score = 13, bl = 21, gen = true },  -- Cape of the Brotherhood
+  { id = 17694, slot = "Ring", lvl = 20, how = "Quest", src = "Allegiance to the Old Gods (Je'neu Sancrea)", zone = "Blackfathom Deeps", score = 12, q = 6565, gen = true },  -- Band of the Fist
+  { id = 12998, slot = "Shoulder", lvl = 20, how = "Rare mob", src = "Brontus", zone = "The Barrens", score = 2, bl = 27, gen = true },  -- Magician's Mantle
+  { id = 4794, slot = "Wrist", lvl = 20, how = "Vendor", src = "Vexspindle", zone = "The Barrens", score = 9, also = { { how = "Vendor", src = "Kris Legace", zone = "Hillsbrad Foothills" } }, gen = true },  -- Wolf Bracers
+  { id = 3741, slot = "Feet", lvl = 21, how = "Quest", src = "Elixir of Pain (Apothecary Lydon)", zone = "Hillsbrad Foothills", score = 16, q = 501, gen = true },  -- Stomping Boots
+  { id = 6321, slot = "Ring", lvl = 21, how = "Dungeon", src = "Baron Silverlaine", zone = "Shadowfang Keep", score = 15, bl = 24, gen = true },  -- Silverlaine's Family Seal
+  { id = 10657, slot = "Shoulder", lvl = 21, how = "Quest", src = "In Nightmares (Falla Sagewind)", zone = "The Barrens", score = 2, q = 3369, gen = true },  -- Talbar Mantle
+  { id = 6670, slot = "Chest", lvl = 22, how = "Quest", src = "The Den (Braelyn Firehand)", zone = "Stonetalon Mountains", score = 22, q = 1089, gen = true },  -- Panther Armor
+  { id = 16977, slot = "Feet", lvl = 22, how = "Quest", src = "Warsong Supplies (Locke Okarr)", zone = "Ashenvale", score = 18, q = 6571, gen = true },  -- Warsong Boots
+  { id = 16987, slot = "Waist", lvl = 22, how = "Quest", src = "Bloodfury Bloodline (Maggran Earthbinder)", zone = "Stonetalon Mountains", score = 14, q = 6283, gen = true },  -- Screecher Belt
+  { id = 6902, slot = "Wrist", lvl = 22, how = "Dungeon", src = "Old Serra'kis", zone = "Blackfathom Deeps", score = 9, bl = 26, gen = true },  -- Bands of Serra'kis
+  { id = 3748, slot = "Shoulder", lvl = 23, how = "Dungeon", src = "Wolf Master Nandos", zone = "Shadowfang Keep", score = 6, bl = 25, gen = true },  -- Feline Mantle
+  { id = 16659, slot = "Waist", lvl = 23, how = "Quest", src = "Je'neu of the Earthen Ring (Mastok Wrilehiss)", zone = "Ashenvale", score = 21, q = 824, gen = true },  -- Deftkin Belt
+  { id = 15462, slot = "Wrist", lvl = 23, how = "Quest", src = "Protect Kanati Greycloud (Kanati Greycloud)", zone = "Thousand Needles", score = 10, q = 4966, gen = true },  -- Loamflake Bracers
+  { id = 15464, slot = "2H", lvl = 24, how = "Quest", src = "Arikara (Magatha Grimtotem)", zone = "Thousand Needles", score = 166, q = 5088, gen = true },  -- Brute Hammer
+  { id = 6909, slot = "2H", lvl = 26, how = "Dungeon", src = "Aku'mai", zone = "Blackfathom Deeps", score = 205, bl = 28, gen = true },  -- Strike of the Hydra
+  { id = 10654, slot = "Hands", lvl = 26, how = "Quest", src = "Horde Presence (Kadrak)", zone = "The Barrens", score = 13, q = 3514, gen = true },  -- Jutebraid Gloves
+  { id = 6689, slot = "2H", lvl = 27, how = "Dungeon", src = "Earthcaller Halmgar", zone = "Razorfen Kraul", score = 217, bl = 32, gen = true },  -- Wind Spirit Staff
+  { id = 6688, slot = "Head", lvl = 27, how = "Dungeon", src = "Earthcaller Halmgar", zone = "Razorfen Kraul", score = 3, bl = 32, gen = true },  -- Whisperwind Headdress
+  { id = 6697, slot = "Shoulder", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 8, bl = 32, gen = true },  -- Batwing Mantle
+  { id = 9449, slot = "2H", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 274, bl = 32, gen = true },  -- Manual Crowd Pummeler
+  { id = 6690, slot = "Legs", lvl = 29, how = "Dungeon", src = "Agathelos the Raging", zone = "Razorfen Kraul", score = 34, bl = 33, gen = true },  -- Ferine Leggings
+  { id = 7690, slot = "Hands", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 23, bl = 33, gen = true },  -- Ebon Vise
+  { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 6, bl = 33, gen = true },  -- Embalmed Shroud
+  { id = 7686, slot = "Ring", lvl = 30, how = "Dungeon", src = "Ironspine", zone = "Scarlet Monastery", score = 26, bl = 33, gen = true },  -- Ironspine's Eye
+  { id = 18585, slot = "Ring", lvl = 30, how = "Quest", src = "Service to the Horde (Zor Lonetree)", zone = "Dustwallow Marsh", score = 20, q = 7541, gen = true },  -- Band of Allegiance
+  { id = 9459, slot = "2H", lvl = 32, how = "Dungeon", src = "Mekgineer Thermaplugg", zone = "Gnomeregan", score = 300, bl = 34, gen = true },  -- Thermaplugg's Left Arm
+  { id = 4107, slot = "Hands", lvl = 32, how = "Quest", src = "Tiger Mastery (Ajeck Rouack)", zone = "Stranglethorn Vale", score = 30, q = 188, gen = true },  -- Tiger Hunter Gloves
+  { id = 6720, slot = "Head", lvl = 32, how = "Quest", src = "Frostmaw (Melor Stonehoof)", zone = "Thunder Bluff", score = 21, q = 1136, gen = true },  -- Spirit Hunter Headdress
+  { id = 9624, slot = "Legs", lvl = 32, how = "Quest", src = "Rig Wars (Nogg)", zone = "Gnomeregan", score = 44, q = 2841, gen = true },  -- Triprunner Dungarees
+  { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 32, bl = 40, gen = true },  -- Swine Fists
+  { id = 10758, slot = "2H", lvl = 35, how = "Dungeon", src = "Ragglesnout", zone = "Razorfen Downs", score = 341, bl = 40, gen = true },  -- X'caliboar
+  { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, bl = 40, gen = true },  -- Worn Running Boots
+  { id = 4109, slot = "Feet", lvl = 36, how = "Quest", src = "Excelsior (Drizzlik)", zone = "Stranglethorn Vale", score = 32, q = 628, gen = true },  -- Excelsior Boots
+  { id = 10769, slot = "Neck", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 2, bl = 39, gen = true },  -- Glowing Eye of Mordresh
+  { id = 19508, slot = "Wrist", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 16, bl = 40, gen = true },  -- Branded Leather Bracers
+  { id = 4114, slot = "Back", lvl = 37, how = "Quest", src = "Keep An Eye Out (Dizzy One-Eye)", zone = "Stranglethorn Vale", score = 15, q = 576, gen = true },  -- Darktide Cape
+  { id = 10774, slot = "Shoulder", lvl = 37, how = "Dungeon", src = "Glutton", zone = "Razorfen Downs", score = 28, bl = 40, gen = true },  -- Fleshhide Shoulders
+  { id = 4430, slot = "Neck", lvl = 38, how = "Quest", src = "The Crown of Will (Melisara)", zone = "Hillsbrad Foothills", score = 20, q = 521, gen = true },  -- Ethereal Talisman
+  { id = 9705, slot = "Waist", lvl = 38, how = "Quest", src = "Army of the Black Dragon (Tharg)", zone = "Dustwallow Marsh", score = 26, q = 1168, gen = true },  -- Tharg's Shoelace
+  { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 5, bl = 42, gen = true },  -- Triune Amulet
+  { id = 9632, slot = "Hands", lvl = 40, how = "Quest", src = "The Mark of Quality (Jangdor Swiftstrider)", zone = "Feralas", score = 38, q = 2822, gen = true },  -- Jangdor's Handcrafted Gloves
+  { id = 9416, slot = "2H", lvl = 42, how = "Dungeon", src = "Grimlok", zone = "Uldaman", score = 383, bl = 45, gen = true },  -- Grimlok's Charge
+  { id = 12470, slot = "Feet", lvl = 42, how = "Dungeon", src = "Zerillis", zone = "Zul'Farrak", score = 46, bl = 45, gen = true },  -- Sandstalker Ankleguards
+  { id = 20643, slot = "Head", lvl = 42, how = "Quest", src = "Oran's Gratitude (Oran Snakewrithe)", zone = "The Hinterlands", score = 46, q = 8273, gen = true },  -- Undercity Reservist's Cap
+  { id = 7888, slot = "Neck", lvl = 42, how = "Quest", src = "Necklace Recovery, Take 3 (Dran Droffers)", zone = "Uldaman", score = 5, q = 2341, gen = true },  -- Jarkal's Enhancing Necklace
+  { id = 9533, slot = "Ring", lvl = 42, how = "Quest", src = "Divino-matic Rod (Chief Engineer Bilgewhizzle)", zone = "Zul'Farrak", score = 28, q = 2768, gen = true },  -- Masons Fraternity Ring
+  { id = 14660, slot = "Shoulder", lvl = 42, how = "Dungeon", src = "Theka the Martyr", zone = "Zul'Farrak", score = 30, bl = 46, gen = true },  -- Scorpashi Shoulder Pads
+  { id = 17778, slot = "Waist", lvl = 42, how = "Quest", src = "Vyletongue Corruption (Vark Battlescar)", zone = "Maraudon", score = 30, q = 7029, gen = true },  -- Sagebrush Girdle
+  { id = 9480, slot = "2H", lvl = 43, how = "Dungeon", src = "Theka the Martyr", zone = "Zul'Farrak", score = 401, bl = 46, also = { { how = "Dungeon", src = "Sandfury Executioner", zone = "Zul'Farrak", bl = 46 }, { how = "Dungeon", src = "Nekrum Gutchewer", zone = "Zul'Farrak", bl = 46 } }, gen = true },  -- Eyegouger
+  { id = 19042, slot = "Chest", lvl = 43, how = "Quest", src = "Improved Quality (Jangdor Swiftstrider)", zone = "Feralas", score = 32, q = 7734, gen = true },  -- Jangdor's Handcrafted Tunic
+  { id = 9647, slot = "Shoulder", lvl = 43, how = "Quest", src = "Rescue OOX-22/FE! (Homing Robot OOX-22/FE)", zone = "Feralas", score = 40, q = 2767, gen = true },  -- Failed Flying Experiment
+  { id = 19127, slot = "Chest", lvl = 45, how = "Quest", src = "WANTED: Overseer Maltorius", zone = "Searing Gorge", score = 39, q = 7701, gen = true },  -- Charred Leather Tunic
+  { id = 9479, slot = "Head", lvl = 45, how = "Dungeon", src = "Chief Ukorz Sandscalp", zone = "Zul'Farrak", score = 55, bl = 48, gen = true },  -- Embrace of the Lycan
+  { id = 17742, slot = "Chest", lvl = 46, how = "Dungeon", src = "Meshlok the Harvester", zone = "Maraudon", score = 54, bl = 48, gen = true },  -- Fungus Shroud Armor
+  { id = 19159, slot = "Neck", lvl = 46, how = "Quest", src = "Wanted: Vile Priestess Hexx and Her Minions", zone = "The Hinterlands", score = 34, q = 7861, gen = true },  -- Woven Ivy Necklace
+  { id = 17749, slot = "Shoulder", lvl = 46, how = "Dungeon", src = "Razorlash", zone = "Maraudon", score = 36, bl = 48, gen = true },  -- Phytoskin Spaulders
+  { id = 19120, slot = "Trinket", lvl = 46, how = "Quest", src = "Job Opening: Guard Captain of Revantusk Village", zone = "The Hinterlands", score = 38, q = 7862, gen = true },  -- Rune of the Guard Captain
+  { id = 11626, slot = "Back", lvl = 48, how = "Dungeon", src = "High Interrogator Gerstahn", zone = "Blackrock Depths", score = 40, bl = 52, gen = true },  -- Blackveil Cape
+  { id = 22274, slot = "Chest", lvl = 50, how = "Quest", src = "A Better Ingredient (Torwa Pathfinder)", zone = "", score = 70, q = 9053, gen = true },  -- Grizzled Pelt
+  { id = 12793, slot = "Chest", lvl = 50, how = "Dungeon", src = "Plugger Spazzring", zone = "Blackrock Depths", score = 65, bl = 55, gen = true },  -- Mixologist's Tunic
+  { id = 11686, slot = "Waist", lvl = 50, how = "Dungeon", src = "Eviscerator", zone = "Blackrock Depths", score = 50, bl = 54, gen = true },  -- Girdle of Beastial Fury
+  { id = 11816, slot = "2H", lvl = 51, how = "Dungeon", src = "General Angerforge", zone = "Blackrock Depths", score = 443, bl = 57, gen = true },  -- Angerforge's Battle Axe
+  { id = 15789, slot = "Back", lvl = 51, how = "Quest", src = "Strange Sources (Donova Snowden)", zone = "Winterspring", score = 25, q = 4842, gen = true },  -- Deep River Cloak
+  { id = 12114, slot = "Hands", lvl = 51, how = "Quest", src = "Disharmony of Fire (Thunderheart)", zone = "Blackrock Depths", score = 48, q = 3907, gen = true },  -- Nightfall Gloves
+  { id = 13404, slot = "Head", lvl = 52, how = "Dungeon", src = "The Unforgiven", zone = "Stratholme", score = 61, bl = 57, gen = true },  -- Mask of the Unforgiven
+  { id = 22255, slot = "Ring", lvl = 52, how = "Dungeon", src = "Warbringer Construct", zone = "Blackrock Depths", score = 41, bl = 54, also = { { how = "Dungeon", src = "Watchman Doomgrip", zone = "Blackrock Depths", bl = 55 } }, gen = true },  -- Magma Forged Band
+  { id = 22241, slot = "Shoulder", lvl = 52, how = "Dungeon", src = "Warder Stilgiss", zone = "Blackrock Depths", score = 59, bl = 56, gen = true },  -- Dark Warder's Pauldrons
+  { id = 16714, slot = "Wrist", lvl = 52, how = "Dungeon", src = "Crimson Inquisitor", zone = "Stratholme", score = 17, bl = 60, also = { { how = "Dungeon", src = "Shrieking Banshee", zone = "Stratholme", bl = 58 }, { how = "Dungeon", src = "Wailing Banshee", zone = "Stratholme", bl = 59 } }, gen = true },  -- Wildheart Bracers
+  { id = 18324, slot = "2H", lvl = 53, how = "Dungeon", src = "Hydrospawn", zone = "Dire Maul", score = 469, bl = 57, gen = true },  -- Waveslicer
+  { id = 21319, slot = "Hands", lvl = 53, how = "Quest", src = "Winterfall Activity (Salfa)", zone = "Timbermaw Hold", score = 50, q = 8464, gen = true },  -- Gloves of the Pathfinder
+  { id = 18725, slot = "2H", lvl = 54, how = "Dungeon", src = "Magistrate Barthilas", zone = "Stratholme", score = 480, bl = 58, gen = true },  -- Peacemaker
+  { id = 18328, slot = "Back", lvl = 54, how = "Dungeon", src = "Alzzin the Wildshaper", zone = "Dire Maul", score = 29, bl = 58, gen = true },  -- Shadewood Cloak
+  { id = 12553, slot = "Feet", lvl = 54, how = "Dungeon", src = "Princess Moira Bronzebeard", zone = "Blackrock Depths", score = 53, bl = 58, gen = true },  -- Swiftwalker Boots
+  { id = 16712, slot = "Hands", lvl = 54, how = "Dungeon", src = "Shadow Hunter Vosh'gajin", zone = "Blackrock Spire", score = 51, bl = 58, gen = true },  -- Shadowcraft Gloves
+  { id = 22659, slot = "Neck", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 49, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Medallion of the Dawn
+  { id = 13252, slot = "Waist", lvl = 55, how = "Dungeon", src = "Quartermaster Zigris", zone = "Blackrock Spire", score = 58, bl = 59, gen = true },  -- Cloudrunner Girdle
+  { id = 22668, slot = "Wrist", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 55, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Bracers of Subterfuge
+  { id = 13957, slot = "Hands", lvl = 56, how = "Dungeon", src = "Kirtonos the Herald", zone = "Scholomance", score = 55, bl = 60, gen = true },  -- Gargoyle Slashers
+  { id = 16709, slot = "Legs", lvl = 56, how = "Dungeon", src = "Baron Rivendare", zone = "Stratholme", score = 79, bl = 62, gen = true },  -- Shadowcraft Pants
+  { id = 12757, slot = "Chest", lvl = 57, how = "Quest", src = "Breastplate of Bloodthirst", zone = "Winterspring", score = 74, q = 5068, gen = true },  -- Breastplate of Bloodthirst
+  { id = 16707, slot = "Head", lvl = 57, how = "Dungeon", src = "Darkmaster Gandling", zone = "Scholomance", score = 74, bl = 61, gen = true },  -- Shadowcraft Cap
+  { id = 18375, slot = "Wrist", lvl = 57, how = "Dungeon", src = "Prince Tortheldrin", zone = "Dire Maul", score = 48, bl = 61, gen = true },  -- Bracers of the Eclipse
+  { id = 18520, slot = "2H", lvl = 58, how = "Dungeon", src = "King Gordok", zone = "Dire Maul", score = 511, bl = 62, gen = true },  -- Barbarous Blade
+  { id = 18420, slot = "2H", lvl = 58, how = "Quest", src = "The Treasure of the Shen'dralar (Shen'dralar Ancient)", zone = "Dire Maul", score = 511, q = 7877, gen = true },  -- Bonecrusher
+  { id = 13340, slot = "Back", lvl = 58, how = "Dungeon", src = "Baron Rivendare", zone = "Stratholme", score = 50, bl = 62, gen = true },  -- Cape of the Black Baron
+  { id = 13965, slot = "Trinket", lvl = 58, how = "Quest", src = "For The Horde! (Thrall)", zone = "Blackrock Spire", score = 40, q = 4974, gen = true },  -- Blackhand's Breadth
+  { id = 22632, slot = "2H", lvl = 60, how = "Quest", src = "Atiesh, Greatstaff of the Guardian (Anachronos)", zone = "", score = 938, q = 9269, gen = true },  -- Atiesh, Greatstaff of the Guardian
+  { id = 19491, slot = "Neck", lvl = 60, how = "Quest", src = "1200 Tickets - Amulet of the Darkmoon (Gelvas Grimegate)", zone = "", score = 62, q = 7981, gen = true },  -- Amulet of the Darkmoon
 }

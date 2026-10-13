@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.40.0 (where does this drop?)
+- **Click any item in My gear** (your upgrades, or a slot you're wearing) and a small window shows where to get it:
+  - **Dungeon drops:** the dungeon, the boss that drops it and its level, the level to run it from, how many dungeon quests you have there, and a button to put the entrance on your map.
+  - **Quest rewards:** the quest, who starts it and where (zone and coordinates), the level you can take it at and the quest's level, where you turn it in, what to do first, and whether it's in your log, done, or not open to your race or class. A button puts the quest giver on your map.
+  - **Vendors and rare mobs:** who and where, with a map button. Crafted and Auction House items show the craft or the price.
+  - When an item comes from more than one place, the other sources are listed too.
+- The same window opens from the Gear guide and the 2nd Spec gear list (right-click a guide item whose quest is in your log to open the quest). Shift-click still links and Ctrl-click still previews. `/wp where <item>` opens it too.
+- Gear lists now record each item's quest and boss level, and the waypoints include every gear vendor and rare mob.
+
 ## v0.39.0 (2nd spec for every class)
 - **The Healing tab is now the 2nd Spec tab**, for every class. Pick any spec of your class as your second spec: all 28, tanks, healers and damage (Druids get Cat and Bear separately). Paladins keep Holy until they pick something else.
 - **Spec & build:** the spec's WoW Forever talent build (the newest beta builds, level 30), the talents to work toward, its stat priority, how to play it, and what's new for it in Forever. From the mobalytics.gg verified Forever spec guides; the twice-weekly update swaps in level 60 builds once they're published.

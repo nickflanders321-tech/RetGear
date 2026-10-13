@@ -369,16 +369,8 @@ local function renderGuide()
       local qIn = qsrc and RG.InLog and RG.InLog(qsrc)
       if qIn and not own then right2 = GOLD .. "Quest in your log|r" end
       setItem(r, g.id, link, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. (g.approx and "~" or "") .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, accent, quality)
-      if qIn then
-        r.onClick = function(self)
-          if IsModifiedClick and (IsModifiedClick("CHATLINK") or IsModifiedClick("DRESSUP")) then
-            local insert = ChatEdit_InsertLink or (ChatFrameUtil and ChatFrameUtil.InsertLink)
-            if IsModifiedClick("CHATLINK") and insert and link then insert(link) elseif DressUpItemLink and link then DressUpItemLink(link) end
-            return
-          end
-          RG.OpenQuest(qsrc)
-        end
-      end
+      r.onClick = function() RG.ShowItemSource(g, d and d > 0.5 and { note = GREEN .. string.format("+%.0f", d) .. "|r" .. GREY .. " over what you wear|r" } or nil) end
+      if qIn then r.onRightClick = function() RG.OpenQuest(qsrc) end end
     end
   end
   return #list + off
@@ -432,6 +424,7 @@ local function renderGear()
       GREY .. "Replaces " .. wornName .. "  ·  " .. u.g.src .. (u.g.zone ~= "" and (", " .. u.g.zone) or "") .. "|r",
       (u.now and GREEN or GOLD) .. "+" .. string.format("%.0f", u.d) .. (u.pct and string.format(" (%d%%)", math.floor(u.pct + 0.5)) or "") .. "|r",
       u.now and (GREEN .. "Usable now|r") or (GREY .. "Level " .. u.g.lvl .. "|r"), u.now and "gold" or nil, quality, true)
+    rows[n].onClick = function() RG.ShowItemSource(u.g, { note = GREEN .. string.format("+%.0f", u.d) .. "|r" .. GREY .. " over " .. wornName .. "|r" }) end
   end
   -- which dungeons are worth running for you
   local dung = {}
@@ -490,6 +483,13 @@ local function renderGear()
       sub = sub .. GREY .. "  ·  next: |r" .. nm .. GREY .. " · " .. nextUp.g.zone .. "|r"
     end
     setItem(r, id, link, link or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
+    local slotName = RG.SLOT_NAMES[slot]
+    if nextUp then
+      r.onClick = function() RG.ShowItemSource(nextUp.g, { note = GOLD .. "Next upgrade for your " .. slotName .. ":|r " .. GREEN .. string.format("+%.0f", nextUp.d) .. "|r" }) end
+      r.tip = nil
+    elseif id then
+      r.onClick = function() RG.ShowItemSource(id, { note = GREY .. "You're wearing this. Nothing on your list beats it yet.|r" }) end
+    end
     if not link then r.icon:SetTexture(136516); r.icon:SetDesaturated(true) else r.icon:SetDesaturated(false) end
   end
   setBar(scoreRow, (RG.SCORE_NAME or "Upgrade score"):gsub(" score$", "") .. " gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
@@ -1200,6 +1200,7 @@ local function renderHeal()
         setItem(r, nextG and nextG.id or nil, nil, GREY .. slot .. ": nothing yet|r", hunt and (GOLD .. "Look for: |r" .. hunt) or (GREY .. "Any piece with " .. s.stats:match("^[^,]+") .. " will do|r"), "", "", nil, nil, true)
         if not nextG then r.icon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot") end
       end
+      if nextG then r.onClick = function() RG.ShowItemSource(nextG, { note = GOLD .. "Next for your " .. s.name .. " " .. slot .. "|r" }) end end
     end
   end
   -- the hunting list, in 5-level steps, each named after where most of it comes from
@@ -1236,6 +1237,7 @@ local function renderHeal()
           local sub = g.src .. GREY .. "  ·  " .. g.zone .. "  ·  " .. g.slot .. (g.note and ("  ·  " .. g.note) or "") .. "|r"
           setItem(getRow(n), g.id, link, name, sub, pill, g.ah and RG.PriceText(g.id) or (GREY .. s.name .. " " .. string.format("%.0f", score) .. "|r"), own and "green" or nil, quality)
           if not link then rows[n].icon:SetTexture(HOW_ICON[g.how] or 134400) end
+          rows[n].onClick = function() RG.ShowItemSource(g) end
         end
       end
     end
@@ -1710,8 +1712,8 @@ local TITLES = {
 }
 local FOOTERS = {
   route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  click a gold heading to fold it  ·  finished steps are hidden",
-  guide = "Shift-click to link  ·  Ctrl-click to preview  ·  green means better than what you wear",
-  gear  = "Scores are Attack Power equivalents  ·  tune them with /wp weight",
+  guide = "Click an item to see where it drops or which quest gives it  ·  Shift-click to link  ·  Ctrl-click to preview",
+  gear  = "Click an item to see where it drops or which quest gives it  ·  scores are Attack Power equivalents (/wp weight)",
   prof  = "Ore and bar prices refresh when you open the Auction House",
   ah    = "Opening the AH refreshes prices  ·  /wp alert [item] 25 pings you at 25g or less",
   settings = "Everything here is saved for your account  ·  /wp tracker shows or hides the tracker",

@@ -45,7 +45,7 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 |---|---|
 | **Route** | Undead Horde path from Deathknell to 60 in four foldable sections: **Now** (your zones and dungeons, with only the steps left to do), **Coming up** (next 5 levels), **Later** and **Done**. Dungeon quests to collect, flight paths, travel, paladin milestones, buy-and-mail quests, camping/fishing steps, and your leveling pace |
 | **Gear guide** | About 160 Ret upgrades for every slot, levels 8-60: Horde quest rewards, dungeon boss drops, vendors and your own Blacksmithing crafts, grouped by slot near your level |
-| **My gear** | Gear check (your 8 best upgrades from the guide vs what you wear, and the dungeons with the most upgrades for you), score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist |
+| **My gear** | Gear check (your 8 best upgrades from the guide vs what you wear, and the dungeons with the most upgrades for you), score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist. Click an item to see the dungeon and boss that drop it, or the quest (who starts it, where, at what level), with a map button |
 | **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
 | **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
 | **2nd Spec** | Pick any spec of your class (all 28: tanks, healers and damage). **Spec & build**: its WoW Forever talent build, stats, tips and what's new in Forever. **Gear to collect**: your best piece per slot for it (worn, bags, bank), and what to hunt for from level 30, by dungeon. Dual spec unlocks at 40; your 2nd set is never sold |
@@ -86,6 +86,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp weight STR 2.5` · `/wp hitcap 9` · `/wp talenthit 3` · `/wp reset` | Tune the Ret score |
 | `/wp turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
 | `/wp greys` | Abandon unfinished grey quests (asks first) |
+| `/wp where <item>` | Where an item on your gear lists drops, or which quest gives it |
 | `/wp gear 2` · `/wp gear 1` | Equip your 2nd spec's set / put your main gear back on |
 | `/wp spec holy` (any spec name) | Make that spec your 2nd spec |
 | `/wp errors` · `/wp errors clear` | Waypath+'s caught errors, in a window you can copy from · clear them |
