@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.33.0 (quality of life)
+- **Upgrade arrows on your bag icons:** a green arrow on anything that's a Ret upgrade you can wear now, and a small Holy icon on pieces for your healing set (level 30+). Turn off in Settings.
+- **Turn-in run:** with two or more quests ready, click the "Turn-in run" line at the top of the tracker's Quests (or the "quests ready" reminder, or `/rg turnin`). The arrow goes to the nearest turn-in, then the next as you hand each one in, until they're all done.
+- **Abandon grey quests:** click the grey-quests reminder (or Settings > Tools, or `/rg greys`). It lists them and asks before dropping anything.
+- **Tracker size and lock:** Ctrl + mouse wheel over the tracker resizes it, Shift + mouse wheel makes it wider or narrower, and "Lock the tracker in place" in Settings stops it being dragged. Hover the tracker's title for a reminder. "Move the tracker back" also resets the size.
+- **Search in Settings:** type in the box at the top right of the Settings tab to find an option.
+- **Dual-spec gear swap:** when you switch to Holy, RetGear offers to equip your healing set (best piece from your bags for each slot) and remembers your Ret gear; switching back offers to put it back on. Also the Swap row on the Healing tab, Settings > Tools, and `/rg gear heal` / `/rg gear ret`. Never during combat.
+- **Error catcher:** if RetGear itself hits an error, it no longer pops up a Lua error box. It's saved quietly and you get one chat note; `/rg errors` shows them in a window you can copy for a bug report. Other addons' errors are untouched.
+
 ## v0.32.0 (new arrow)
 - **Redesigned waypoint arrow:** a dark disc with a gold ring, the destination's name above it, and an arrow that turns smoothly instead of snapping.
 - **Color tells you where to go:** green when you're facing your target, gold when it's off to the side, red when it's behind you (with "It's behind you" underneath).

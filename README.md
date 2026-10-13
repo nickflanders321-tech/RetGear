@@ -9,10 +9,11 @@ Copy the `RetGear` folder into `World of Warcraft\_forever_\Interface\AddOns\` (
 A six-page **setup wizard** asks how much help you want (Full guidance, Balanced or Minimal), which professions you'll level, and which automation and extras to turn on. Run it again with `/rg setup` or from Settings.
 
 ## On your screen
-- **Tracker** (right side): your quests grouped by zone (the zone you're in first), one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, double-click it to turn the arrow to it on or off, right-click to show it on the map, and click a section header to fold it. Drag it anywhere; right-click the minimap button to hide it.
+- **Tracker** (right side): your quests grouped by zone (the zone you're in first), one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, double-click it to turn the arrow to it on or off, right-click to show it on the map, and click a section header to fold it. Drag it anywhere (or lock it in Settings), Ctrl + mouse wheel over it to resize, Shift + mouse wheel to make it wider or narrower; right-click the minimap button to hide it. With two or more quests ready, a **Turn-in run** line sends the arrow to each turn-in in turn, nearest first.
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `RetGearTarget` macro does the same from a key.
 - **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a **Holy score** for your dual-spec healing set, and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Fishing panel** (tracker): while you hold a fishing pole, your skill and catches per point, whether fish get away in this zone, your lure timer, fish per hour this session, and raw fish to cook.
+- **Bag icons**: a green arrow on items that are Ret upgrades, a small Holy icon on healing-set pieces.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Ore alerts**: a heads-up when you walk near a spot where a vein you can mine (and that still gives skill) spawns, with direction and distance.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
@@ -25,6 +26,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Junk is sold and gear repaired** at vendors, but anything worth more on the AH is kept.
 - **AH prices** are checked every time you open the Auction House (Auctionator and TSM prices are used too).
 - **Every fight is recorded** by the DPS coach, including your share of the group's damage and any aggro you pull off the tank.
+- **Dual-spec gear swap**: switch to Holy and RetGear offers to put on your healing set; switch back and it re-equips your Ret gear (also a Swap row on the Healing tab).
 - **In a party**: reminders for un-blessed party members and a missing Aura, center-screen alerts when someone needs Purify/Cleanse or is about to die, and a report after every dungeon run.
 
 ## The window (`/rg`)
@@ -74,6 +76,10 @@ Esc > Options > Keybindings > AddOns > RetGear: open the guide, pin your nearest
 | `/rg alert [item] 25` | Tell me when it's listed for 25 gold or less |
 | `/rg scan` · `/rg autoscan` | Re-check prices at the AH · turn the automatic scan on or off |
 | `/rg weight STR 2.5` · `/rg hitcap 9` · `/rg talenthit 3` · `/rg reset` | Tune the Ret score |
+| `/rg turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
+| `/rg greys` | Abandon unfinished grey quests (asks first) |
+| `/rg gear heal` · `/rg gear ret` | Equip your healing set / put your Ret gear back on |
+| `/rg errors` · `/rg errors clear` | RetGear's caught errors, in a window you can copy from · clear them |
 | `/rg setup` | Run the setup wizard again |
 | `/rg tracker` · `/rg tooltip` | Show or hide the tracker / tooltip line / welcome screen |
 | `/rg main` | Make this character your main |

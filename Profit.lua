@@ -197,6 +197,7 @@ local function eachBagButton(fn)
     end
   end
 end
+RG.EachBagButton = eachBagButton
 function RG.UpdateBagMarks()
   local skip = on() and RG.ProfitSkip() or {}
   pcall(eachBagButton, function(b, bag, slot) mark(b, skip[bag .. ":" .. slot]) end)

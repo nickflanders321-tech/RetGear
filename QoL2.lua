@@ -1,0 +1,440 @@
+-- RetGear quality of life, part two:
+--   * upgrade arrows on bag icons (Ret upgrades, healing-set pieces)
+--   * error catcher: RetGear's own errors are logged quietly (/rg errors)
+--   * turn-in run: the arrow chains through every quest that's ready
+--   * abandon grey quests in one click (asks first)
+--   * dual-spec gear swap: offers your healing set when you switch to Holy
+local _, RG = ...
+local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
+table.insert(RG.OPTIONS, { key = "bagArrows", label = "Mark upgrades on bag icons (green arrow: Ret, light: healing set)", default = true })
+table.insert(RG.OPTIONS, { key = "specSwap", label = "Offer to swap gear when I change spec (Holy / Retribution)", default = true })
+table.insert(RG.OPTIONS, { key = "quietErrors", label = "Catch RetGear errors quietly (see them with /rg errors)", default = true })
+
+local function notify(msg) if RG.Notify then RG.Notify(msg) else RG.Print(msg) end end
+local function inCombat() return InCombatLockdown and InCombatLockdown() end
+
+-- ===========================================================================
+-- 1. Error catcher
+-- ===========================================================================
+local MAX_ERRORS = 25
+local told = false
+local function recordError(msg)
+  if not RetGearDB then return end
+  RetGearDB.errors = RetGearDB.errors or {}
+  local list = RetGearDB.errors
+  msg = tostring(msg)
+  for _, e in ipairs(list) do
+    if e.msg == msg then e.count = (e.count or 1) + 1; e.t = time and time() or 0; return end
+  end
+  local stack = debugstack and debugstack(3, 12, 0) or ""
+  table.insert(list, 1, { msg = msg, stack = stack, count = 1, t = time and time() or 0, v = RG.VERSION })
+  while #list > MAX_ERRORS do table.remove(list) end
+  if not told then
+    told = true
+    if C_Timer then C_Timer.After(0.1, function()
+      RG.Print(GOLD .. "RetGear hit an error|r" .. GREY .. " (it kept running). Type|r /rg errors " .. GREY .. "to see and copy it for a bug report.|r")
+    end) end
+  end
+end
+RG.RecordError = recordError
+
+if seterrorhandler and geterrorhandler then
+  local original = geterrorhandler()
+  local busy = false
+  seterrorhandler(function(msg, ...)
+    if not busy and type(msg) == "string" and msg:find("RetGear", 1, true) then
+      busy = true
+      pcall(recordError, msg)
+      busy = false
+      local quiet = true
+      if RG.Opt and RG.db then local ok, v = pcall(RG.Opt, "quietErrors"); if ok then quiet = v end end
+      if quiet then return end
+    end
+    if original then return original(msg, ...) end
+  end)
+end
+
+local errFrame
+function RG.ShowErrors()
+  local list = (RetGearDB and RetGearDB.errors) or {}
+  local lines = { "RetGear " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught", "" }
+  for i, e in ipairs(list) do
+    lines[#lines + 1] = string.format("#%d  x%d  %s%s", i, e.count or 1, e.v and ("v" .. e.v .. "  ") or "", e.t and date and date("%Y-%m-%d %H:%M", e.t) or "")
+    lines[#lines + 1] = e.msg or "?"
+    if e.stack and e.stack ~= "" then lines[#lines + 1] = e.stack end
+    lines[#lines + 1] = ""
+  end
+  if #list == 0 then lines[#lines + 1] = "No errors. Nice." end
+  local text = table.concat(lines, "\n")
+  if not errFrame then
+    errFrame = CreateFrame("Frame", "RetGearErrors", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    errFrame:SetSize(560, 380); errFrame:SetPoint("CENTER")
+    errFrame:SetFrameStrata("DIALOG"); errFrame:SetMovable(true); errFrame:EnableMouse(true)
+    errFrame:RegisterForDrag("LeftButton")
+    errFrame:SetScript("OnDragStart", errFrame.StartMoving)
+    errFrame:SetScript("OnDragStop", errFrame.StopMovingOrSizing)
+    if errFrame.SetBackdrop then
+      errFrame:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+      errFrame:SetBackdropColor(0.05, 0.05, 0.07, 0.95); errFrame:SetBackdropBorderColor(0.6, 0.5, 0.2, 1)
+    end
+    local title = errFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", 12, -10); title:SetText("RetGear errors  ·  Ctrl+A, Ctrl+C to copy")
+    local close = CreateFrame("Button", nil, errFrame, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT", -2, -2)
+    local clear = CreateFrame("Button", nil, errFrame, "UIPanelButtonTemplate")
+    clear:SetSize(80, 20); clear:SetPoint("BOTTOMRIGHT", -12, 10); clear:SetText("Clear")
+    clear:SetScript("OnClick", function() if RetGearDB then RetGearDB.errors = {} end; RG.ShowErrors() end)
+    local sf = CreateFrame("ScrollFrame", nil, errFrame, "UIPanelScrollFrameTemplate")
+    sf:SetPoint("TOPLEFT", 12, -32); sf:SetPoint("BOTTOMRIGHT", -32, 38)
+    local eb = CreateFrame("EditBox", nil, sf)
+    eb:SetMultiLine(true); eb:SetAutoFocus(false); eb:SetFontObject(ChatFontNormal or GameFontHighlightSmall)
+    eb:SetWidth(500)
+    eb:SetScript("OnEscapePressed", function() errFrame:Hide() end)
+    sf:SetScrollChild(eb)
+    errFrame.eb = eb
+    if UISpecialFrames then table.insert(UISpecialFrames, "RetGearErrors") end
+  end
+  errFrame.eb:SetText(text)
+  errFrame:Show()
+  errFrame.eb:SetFocus(); errFrame.eb:HighlightText()
+end
+
+-- ===========================================================================
+-- 2. Upgrade arrows on bag icons
+-- ===========================================================================
+local marks = {}
+local function getMark(b)
+  local m = marks[b]
+  if not m then
+    m = {}
+    m.up = b:CreateTexture(nil, "OVERLAY", nil, 6)
+    m.up:SetSize(15, 15); m.up:SetPoint("TOPLEFT", b, "TOPLEFT", 1, -1)
+    m.up:SetTexture("Interface\\Buttons\\UI-MicroStream-Green")
+    m.up:SetTexCoord(0, 1, 1, 0) -- point up
+    m.heal = b:CreateTexture(nil, "OVERLAY", nil, 6)
+    m.heal:SetSize(13, 13); m.heal:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 2, 2)
+    m.heal:SetTexture("Interface\\Icons\\Spell_Holy_HolyBolt")
+    m.heal:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    marks[b] = m
+  end
+  return m
+end
+local cache = {}
+local function judge(link)
+  local c = cache[link]
+  if c and GetTime() - c.t < 5 then return c.up, c.heal end
+  local up, heal = false, false
+  local loc = RG.EquipLoc(link)
+  if loc and RG.EQUIP_SLOTS and RG.EQUIP_SLOTS[loc] then
+    local _, _, _, _, minLevel = RG.ItemInfo(link)
+    if (minLevel or 0) <= (UnitLevel("player") or 1) then
+      local ok, d = pcall(RG.Compare, link)
+      up = ok and d and d >= 1 or false
+    end
+    if RG.HealDelta and (UnitLevel("player") or 1) >= 30 then
+      local id = tonumber(link:match("item:(%d+)"))
+      local okK, keep = pcall(RG.IsHealKeeper, id)
+      local okD, hd = pcall(RG.HealDelta, link)
+      heal = (okK and keep) or (okD and hd and hd > 0.5) or false
+    end
+  end
+  cache[link] = { t = GetTime(), up = up, heal = heal }
+  return up, heal
+end
+local function linkAt(bag, slot)
+  local C = C_Container
+  if C and C.GetContainerItemLink then return C.GetContainerItemLink(bag, slot) end
+  if GetContainerItemLink then return GetContainerItemLink(bag, slot) end
+end
+function RG.UpdateBagArrows()
+  if not (RG.db and RG.EachBagButton) then return end
+  local enabled = RG.Opt("bagArrows") and not (RG.IsAlt and RG.IsAlt())
+  pcall(RG.EachBagButton, function(b, bag, slot)
+    local link = enabled and bag and slot and linkAt(bag, slot)
+    local up, heal = false, false
+    if link then up, heal = judge(link) end
+    if up or heal or marks[b] then
+      local m = getMark(b)
+      m.up:SetShown(up and true or false)
+      m.heal:SetShown(heal and true or false)
+    end
+  end)
+end
+local function queueArrows() if C_Timer then C_Timer.After(0.1, function() pcall(RG.UpdateBagArrows) end) end end
+if hooksecurefunc then
+  for _, fn in ipairs({ "ToggleBag", "OpenBag", "OpenAllBags", "ToggleAllBags", "OpenBackpack", "ToggleBackpack", "ContainerFrame_Update" }) do
+    if _G[fn] then hooksecurefunc(fn, queueArrows) end
+  end
+end
+
+-- ===========================================================================
+-- 3. Turn-in run
+-- ===========================================================================
+local run = nil
+local function readyQuests()
+  local out = {}
+  for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+    if q.complete and q.wp then out[#out + 1] = q end
+  end
+  return out -- MyQuests sorts ready ones first, nearest first
+end
+RG.ReadyQuests = readyQuests
+function RG.TurnInRunActive() return run ~= nil end
+local function runNext()
+  if not run then return end
+  local list = readyQuests()
+  if #list == 0 then
+    run = nil
+    notify("Turn-in run done: " .. GREEN .. "every ready quest handed in|r")
+    if RG.ClearWaypoint then RG.ClearWaypoint() end
+  else
+    local q = list[1]
+    run.current = q.id
+    RG.PinWaypoint(q.wp, true)
+    notify("Turn in " .. GOLD .. q.title .. "|r" .. (#list > 1 and (GREY .. "  (" .. (#list - 1) .. " more after this)|r") or ""))
+  end
+  if RG.RefreshTracker then RG.RefreshTracker() end
+end
+function RG.TurnInRun()
+  if run then
+    run = nil
+    notify("Turn-in run stopped")
+    if RG.RefreshTracker then RG.RefreshTracker() end
+    return
+  end
+  local list = readyQuests()
+  if #list == 0 then notify("No ready quests with a known turn-in spot"); return end
+  run = { started = GetTime() }
+  RG.Print(GOLD .. "Turn-in run:|r " .. #list .. " quest" .. (#list > 1 and "s" or "") .. " ready. The arrow takes you to each one, nearest first.")
+  runNext()
+end
+
+-- ===========================================================================
+-- 4. Abandon grey quests
+-- ===========================================================================
+local GREY_CODE = "|cff808080"
+local function greyQuests()
+  local out = {}
+  for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+    if not q.complete and RG.QuestColor(q.level) == GREY_CODE then out[#out + 1] = q end
+  end
+  return out
+end
+RG.GreyQuests = greyQuests
+local function abandonOne(q)
+  local Q = C_QuestLog
+  if Q and Q.SetSelectedQuest and Q.SetAbandonQuest and Q.AbandonQuest then
+    Q.SetSelectedQuest(q.id); Q.SetAbandonQuest(); Q.AbandonQuest(); return true
+  end
+  if SelectQuestLogEntry and SetAbandonQuest and AbandonQuest then
+    local idx = Q and Q.GetLogIndexForQuestID and Q.GetLogIndexForQuestID(q.id)
+    if not idx and GetNumQuestLogEntries and GetQuestLogTitle then
+      for i = 1, GetNumQuestLogEntries() do
+        local title, _, _, isHeader = GetQuestLogTitle(i)
+        if not isHeader and title == q.title then idx = i; break end
+      end
+    end
+    if idx then SelectQuestLogEntry(idx); SetAbandonQuest(); AbandonQuest(); return true end
+  end
+  return false
+end
+local pendingGrey
+local function doAbandon()
+  local list = pendingGrey or {}
+  pendingGrey = nil
+  local i, dropped = 0, 0
+  local function step()
+    i = i + 1
+    local q = list[i]
+    if not q then
+      RG.Print("Abandoned " .. dropped .. " grey quest" .. (dropped == 1 and "" or "s") .. ".")
+      if RG.RefreshTracker then RG.RefreshTracker() end
+      return
+    end
+    if pcall(abandonOne, q) then dropped = dropped + 1 end
+    C_Timer.After(0.35, step)
+  end
+  step()
+end
+if StaticPopupDialogs then
+  StaticPopupDialogs.RETGEAR_ABANDON_GREY = {
+    text = "%s", button1 = ACCEPT or "Abandon", button2 = CANCEL or "Cancel",
+    OnAccept = function() doAbandon() end, OnCancel = function() pendingGrey = nil end,
+    timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+  }
+end
+function RG.AbandonGreyQuests()
+  local list = greyQuests()
+  if #list == 0 then notify("No unfinished grey quests in your log"); return end
+  pendingGrey = list
+  local names = {}
+  for i, q in ipairs(list) do
+    if i > 8 then names[#names + 1] = "and " .. (#list - 8) .. " more"; break end
+    names[#names + 1] = "[" .. (q.level or "?") .. "] " .. q.title
+  end
+  local text = "Abandon " .. #list .. " grey quest" .. (#list > 1 and "s" or "") .. "? They give almost no XP.\n\n" .. table.concat(names, "\n")
+  if StaticPopup_Show then StaticPopup_Show("RETGEAR_ABANDON_GREY", text) else doAbandon() end
+end
+
+-- ===========================================================================
+-- 5. Dual-spec gear swap
+-- ===========================================================================
+local SLOT_FOR = { Head = { 1 }, Neck = { 2 }, Shoulder = { 3 }, Back = { 15 }, Chest = { 5 }, Wrist = { 9 }, Hands = { 10 },
+  Waist = { 6 }, Legs = { 7 }, Feet = { 8 }, Ring = { 11, 12 }, Trinket = { 13, 14 }, ["Main Hand"] = { 16 }, ["Two-Hand"] = { 16 },
+  ["Off Hand"] = { 17 }, Relic = { 18 } }
+local GROUP_ORDER = { "Main Hand", "Two-Hand", "Off Hand", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket", "Relic" }
+
+-- Which tree has the most points: "heal" (Holy), "ret", or "prot".
+function RG.CurrentRole()
+  local t = RG.ReadTalents and RG.ReadTalents()
+  if not t then return nil end
+  local by = {}
+  for _, v in pairs(t) do if v.tab then by[v.tab] = (by[v.tab] or 0) + (tonumber(v.rank) or 0) end end
+  local best, bestN = nil, 0
+  for tab, n in pairs(by) do if n > bestN then best, bestN = tab, n end end
+  if not best or bestN < 5 then return nil end
+  return ({ "heal", "prot", "ret" })[best]
+end
+
+local function equipQueue(jobs, done)
+  local equip = (C_Item and C_Item.EquipItemByName) or EquipItemByName
+  local i = 0
+  local function step()
+    i = i + 1
+    local j = jobs[i]
+    if not j then if done then done() end; return end
+    if inCombat() then RG.Print("Gear swap paused: you're in combat. Run it again after the fight."); return end
+    pcall(equip, j[1], j[2])
+    C_Timer.After(0.3, step)
+  end
+  step()
+end
+
+local function idAt(slot) return GetInventoryItemID and GetInventoryItemID("player", slot) end
+
+function RG.EquipHealSet()
+  if inCombat() then RG.Print("You can't change gear in combat."); return end
+  if not RG.HealSet then return end
+  if RG.HealInvalidate then RG.HealInvalidate() end
+  local set = RG.HealSet()
+  -- remember what you wear now (only if it isn't the healing set already)
+  if not RG.db.wearingHeal then
+    local saved = {}
+    for slot = 1, 18 do saved[slot] = GetInventoryItemLink("player", slot) or false end
+    RG.db.retGear = saved
+  end
+  local jobs, inBank = {}, 0
+  for _, group in ipairs(GROUP_ORDER) do
+    local list, slots = set[group], SLOT_FOR[group]
+    if list and slots then
+      -- slots already holding one of the set's pieces stay as they are
+      local used = {}
+      for _, p in ipairs(list) do
+        if p.where == "worn" then
+          for _, s in ipairs(slots) do if not used[s] and idAt(s) == p.id then used[s] = true; break end end
+        end
+      end
+      for _, p in ipairs(list) do
+        if p.where == "bags" then
+          local target
+          for _, s in ipairs(slots) do if not used[s] then target = s; break end end
+          if target then used[target] = true; jobs[#jobs + 1] = { p.link, target } end
+        elseif p.where == "bank" then inBank = inBank + 1 end
+      end
+    end
+  end
+  RG.db.wearingHeal = true
+  if #jobs == 0 then
+    RG.Print("Healing set: nothing to change" .. (inBank > 0 and (" (" .. inBank .. " piece" .. (inBank > 1 and "s are" or " is") .. " in your bank)") or "") .. ".")
+    return
+  end
+  RG.Print(GOLD .. "Equipping your healing set|r (" .. #jobs .. " piece" .. (#jobs > 1 and "s" or "") .. ")" .. (inBank > 0 and (GREY .. ". " .. inBank .. " more in your bank.|r") or "."))
+  equipQueue(jobs, function() notify(GREEN .. "Healing set on|r") end)
+end
+
+function RG.EquipRetSet()
+  if inCombat() then RG.Print("You can't change gear in combat."); return end
+  local saved = RG.db.retGear
+  RG.db.wearingHeal = nil
+  if not saved then RG.Print("No saved Retribution gear yet: RetGear saves it when it puts your healing set on."); return end
+  local jobs = {}
+  -- weapons first so a two-hander/one-hander swap lands cleanly
+  for _, slot in ipairs({ 16, 17, 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 13, 14, 18 }) do
+    local link = saved[slot]
+    if link then
+      local id = tonumber(link:match("item:(%d+)"))
+      if id and idAt(slot) ~= id then jobs[#jobs + 1] = { link, slot } end
+    end
+  end
+  if #jobs == 0 then RG.Print("Retribution gear: nothing to change."); return end
+  RG.Print(GOLD .. "Equipping your Retribution gear|r (" .. #jobs .. " piece" .. (#jobs > 1 and "s" or "") .. ").")
+  equipQueue(jobs, function() notify(GREEN .. "Retribution gear on|r") end)
+end
+
+function RG.SwapGear()
+  if RG.db.wearingHeal then RG.EquipRetSet() else RG.EquipHealSet() end
+end
+
+if StaticPopupDialogs then
+  StaticPopupDialogs.RETGEAR_SPEC_SWAP = {
+    text = "%s", button1 = YES or "Yes", button2 = NO or "No",
+    OnAccept = function(_, data) if data == "heal" then RG.EquipHealSet() else RG.EquipRetSet() end end,
+    timeout = 0, whileDead = false, hideOnEscape = true, preferredIndex = 3,
+  }
+end
+local function checkRole()
+  if not RG.db or (RG.IsAlt and RG.IsAlt()) then return end
+  local role = RG.CurrentRole()
+  if not role or role == "prot" then return end
+  local last = RG.db.lastRole
+  if last ~= role and inCombat() then RG.pendingRoleSwap = true; return end
+  RG.db.lastRole = role
+  if not last or last == role or not RG.Opt("specSwap") then return end
+  if (UnitLevel("player") or 1) < 10 then return end
+  local text
+  if role == "heal" and not RG.db.wearingHeal then text = "You switched to Holy.\nEquip your healing set?"
+  elseif role == "ret" and RG.db.wearingHeal then text = "You switched back to Retribution.\nPut your Ret gear back on?"
+  else return end
+  if StaticPopup_Show then
+    local dlg = StaticPopup_Show("RETGEAR_SPEC_SWAP", text)
+    if dlg then dlg.data = role end
+  end
+end
+
+-- ===========================================================================
+-- Events
+-- ===========================================================================
+local ev = CreateFrame("Frame")
+for _, e in ipairs({ "PLAYER_LOGIN", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "QUEST_TURNED_IN", "ACTIVE_TALENT_GROUP_CHANGED", "PLAYER_TALENT_UPDATE", "CHARACTER_POINTS_CHANGED", "PLAYER_REGEN_ENABLED" }) do pcall(ev.RegisterEvent, ev, e) end
+ev:SetScript("OnEvent", function(_, event)
+  if not RG.db then return end
+  if event == "BAG_UPDATE_DELAYED" or event == "PLAYER_EQUIPMENT_CHANGED" then
+    wipe(cache); queueArrows()
+  elseif event == "QUEST_TURNED_IN" then
+    if run then C_Timer.After(1, runNext) end
+  elseif event == "PLAYER_LOGIN" then
+    C_Timer.After(5, function() local r = RG.CurrentRole(); if r and r ~= "prot" then RG.db.lastRole = RG.db.lastRole or r end end)
+  elseif event == "PLAYER_REGEN_ENABLED" then
+    if RG.pendingRoleSwap then RG.pendingRoleSwap = nil; C_Timer.After(1, checkRole) end
+  else
+    RG.Debounce("roleCheck", 1, checkRole)
+  end
+end)
+
+-- ===========================================================================
+-- Slash commands
+-- ===========================================================================
+local base = SlashCmdList.RETGEAR
+SlashCmdList.RETGEAR = function(msg)
+  local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
+  cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
+  if cmd == "errors" or cmd == "error" then
+    if rest == "clear" then RetGearDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
+    return
+  elseif cmd == "gear" and (rest == "heal" or rest == "holy") then RG.EquipHealSet(); return
+  elseif cmd == "gear" and rest == "ret" then RG.EquipRetSet(); return
+  elseif cmd == "turnin" or cmd == "turnins" then RG.TurnInRun(); return
+  elseif cmd == "greys" or cmd == "grey" then RG.AbandonGreyQuests(); return
+  end
+  return base(msg)
+end

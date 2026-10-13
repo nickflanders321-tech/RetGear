@@ -184,10 +184,10 @@ function RG.Reminders()
   if ready >= 3 then
     local bestZ, bestN = nil, 0
     for z, c in pairs(readyZones) do if c > bestN then bestZ, bestN = z, c end end
-    out[#out + 1] = { GREEN .. ready .. " quests ready to turn in|r" .. GREY .. ": hand them in" .. (bestZ and bestZ ~= "?" and (" (" .. bestN .. " in " .. bestZ .. ")") or "") .. " before you head out|r", openLog, 4 }
+    out[#out + 1] = { GREEN .. ready .. " quests ready to turn in|r" .. GREY .. ": hand them in" .. (bestZ and bestZ ~= "?" and (" (" .. bestN .. " in " .. bestZ .. ")") or "") .. " before you head out. Click: turn-in run|r", function() if RG.TurnInRun then RG.TurnInRun() else openLog() end end, 4 }
   end
   if grey >= 1 then
-    out[#out + 1] = { GOLD .. grey .. " grey quest" .. (grey > 1 and "s" or "") .. " in your log|r" .. GREY .. ": almost no XP. Turn in if you're passing, otherwise abandon|r", openLog, 6 }
+    out[#out + 1] = { GOLD .. grey .. " grey quest" .. (grey > 1 and "s" or "") .. " in your log|r" .. GREY .. ": almost no XP. Click to abandon the unfinished ones|r", function() if RG.AbandonGreyQuests then RG.AbandonGreyQuests() else openLog() end end, 6 }
   end
   if red >= 2 then
     out[#out + 1] = { GOLD .. red .. " red quests|r" .. GREY .. ": 5+ levels above you. Leave them for later or bring a group|r", openLog, 7 }

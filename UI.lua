@@ -973,6 +973,16 @@ local function renderHeal()
     or (ds and "You have dual spec. Swap at your class trainer, then put on your healing set." or "Unlocked! Visit your class trainer in a capital city to learn it.")
   setItem(getRow(n), nil, nil, "|cffF58CBADual spec: Holy|r", dsText, ds and (GREEN .. "Ready|r") or (lvl >= 40 and (GOLD .. "Go learn it|r") or (GREY .. "Level 40|r")), "", "gold")
   rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_HolyBolt")
+  -- one-click swap
+  if total > 0 then
+    n = n + 1
+    local wearing = RG.db.wearingHeal
+    setItem(getRow(n), nil, nil, wearing and "|cffffffffPut your Ret gear back on|r" or "|cffffffffEquip your healing set|r",
+      wearing and "Re-equips the Retribution gear you wore before the swap." or "Puts on the best healing piece from your bags for each slot and remembers your Ret gear. Also: /rg gear heal, /rg gear ret.",
+      GOLD .. "Swap|r", "", "gold")
+    rows[n].icon:SetTexture(wearing and "Interface\\Icons\\Spell_Holy_AuraOfLight" or "Interface\\Icons\\Spell_Holy_FlashHeal")
+    rows[n].onClick = function() if RG.SwapGear then RG.SwapGear() end end
+  end
   -- your set, slot by slot
   local filled = 0
   for _, g in pairs(set) do filled = filled + #g end
@@ -1390,10 +1400,10 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
-  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "levelBanner", "autoQuest", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "coach", "coachChat", "healSet", "specSwap", "bagArrows" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishSound", "fishRecast", "profitWatch", "autoScan" } },
-  { "Interface", { "minimap", "sounds" } },
+  { "Interface", { "minimap", "sounds", "quietErrors" } },
 }
 local function renderGroup()
   local n = 0
@@ -1503,6 +1513,18 @@ local function renderSettings()
   local other = {}
   for _, o in ipairs(RG.OPTIONS or {}) do if not used[o.key] then other[#other + 1] = o end end
   if #other > 0 then ordered[#ordered + 1] = { "Other", other } end
+  -- search box: keep only options whose label (or group) matches
+  local q = state.search and state.search:lower():gsub("^%s+", ""):gsub("%s+$", "") or ""
+  if q ~= "" then
+    local hits = 0
+    for _, grp in ipairs(ordered) do
+      local gmatch = grp[1]:lower():find(q, 1, true)
+      local keep = {}
+      for _, o in ipairs(grp[2]) do if gmatch or o.label:lower():find(q, 1, true) then keep[#keep + 1] = o end end
+      grp[2] = keep; hits = hits + #keep
+    end
+    if hits == 0 then n = n + 1; setHeader(getRow(n), "No settings match \"" .. state.search .. "\"") end
+  end
   for _, grp in ipairs(ordered) do
    if #grp[2] > 0 then
     n = n + 1; setHeader(getRow(n), grp[1])
@@ -1529,7 +1551,10 @@ local function renderSettings()
   end
   action("Run setup again", "Help level, professions, automation and extras, in six short pages", function() if RG.ShowSetup then RG.ShowSetup() end end)
   action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
-  action("Move the tracker back", "Puts the on-screen tracker back on the right side", function() RetGearDB.trackerPos = nil; if RetGearTracker then RetGearTracker:ClearAllPoints(); RetGearTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end end)
+  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() RetGearDB.trackerPos = nil; RetGearDB.trackerScale = nil; RetGearDB.trackerWidth = nil; if RetGearTracker then RetGearTracker:ClearAllPoints(); RetGearTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
+  action("Abandon grey quests", "Drops quests too low to give useful XP (asks first)", function() if RG.AbandonGreyQuests then RG.AbandonGreyQuests() end end)
+  action("Equip healing set / Ret set", "Swap between your healing gear and your Retribution gear", function() if RG.SwapGear then RG.SwapGear() end end)
+  action("Show RetGear errors", (RetGearDB.errors and #RetGearDB.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)
   return n
 end
 
@@ -1618,6 +1643,7 @@ function RG.RefreshUINow()
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
   frame.near:SetShown(state.tab == "guide")
+  if frame.search then frame.search:SetShown(state.tab == "settings") end
   frame.scan:SetShown(state.tab == "ah")
   -- stack rows with their own heights
   local y = 0
@@ -1760,6 +1786,20 @@ local function build()
   frame.near.label = frame.near:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level")
   frame.near:SetScript("OnClick", function(self) state.near = self:GetChecked(); RG.RefreshUI() end)
+  -- settings search
+  frame.search = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+  frame.search:SetSize(150, 20); frame.search:SetPoint("TOPRIGHT", -40, -88)
+  frame.search:SetAutoFocus(false)
+  frame.search.hint = frame.search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  frame.search.hint:SetPoint("LEFT", 4, 0); frame.search.hint:SetText("Search settings")
+  frame.search:SetScript("OnTextChanged", function(self)
+    local t = self:GetText() or ""
+    self.hint:SetShown(t == "")
+    if state.search ~= t then state.search = t; RG.RefreshUI() end
+  end)
+  frame.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
+  frame.search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+  frame.search:Hide()
 
   frame.scan = panelButton(frame, "Scan prices", 110, 22)
   frame.scan:SetScript("OnClick", function() RG.ScanAH() end)

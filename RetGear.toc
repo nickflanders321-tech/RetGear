@@ -16,6 +16,7 @@ Objectives.lua
 Core.lua
 Quests.lua
 QoL.lua
+QoL2.lua
 Tracker.lua
 Extras.lua
 Auction.lua

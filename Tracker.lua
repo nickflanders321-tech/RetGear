@@ -138,11 +138,32 @@ local function build()
   local pos = RetGearDB.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   tr:RegisterForDrag("LeftButton")
-  tr:SetScript("OnDragStart", tr.StartMoving)
+  tr:SetScript("OnDragStart", function(self) if not RG.Opt("trackerLocked") then self:StartMoving() end end)
+  -- Ctrl + mouse wheel: size  ·  Shift + mouse wheel: width
+  tr:EnableMouseWheel(true)
+  tr:SetScript("OnMouseWheel", function(self, delta)
+    if IsControlKeyDown and IsControlKeyDown() then
+      RetGearDB.trackerScale = math.max(0.6, math.min(1.6, (RetGearDB.trackerScale or 1) + delta * 0.05))
+    elseif IsShiftKeyDown and IsShiftKeyDown() then
+      RetGearDB.trackerWidth = math.max(240, math.min(460, (RetGearDB.trackerWidth or 300) + delta * 20))
+    else return end
+    RG.RefreshTracker()
+  end)
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RetGearDB.trackerPos = { p, rp, x, y } end)
 
   local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight"); crest:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   tr.title = tr:CreateFontString(nil, "OVERLAY", "GameFontNormal"); tr.title:SetPoint("LEFT", crest, "RIGHT", 6, 0); tr.title:SetText("RetGear")
+  -- hover the header for the tracker's controls
+  local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(120, 26)
+  hint:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("RetGear tracker", GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move", 1, 1, 1)
+    GameTooltip:AddLine("Ctrl + mouse wheel: bigger or smaller", 1, 1, 1)
+    GameTooltip:AddLine("Shift + mouse wheel: wider or narrower", 1, 1, 1)
+    GameTooltip:AddLine("Click a gold heading to fold it", 0.7, 0.7, 0.7)
+    GameTooltip:Show()
+  end)
+  hint:SetScript("OnLeave", function() GameTooltip:Hide() end)
   tr.lvl = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.lvl:SetPoint("LEFT", tr.title, "RIGHT", 8, 0); tr.lvl:SetTextColor(0.75, 0.75, 0.75)
 
   local function hdrBtn(label, x, fn, tip)
@@ -254,7 +275,10 @@ function RG.RefreshTracker()
   if not RG.Opt("tracker") then if tr then tr:Hide() end return end
   if not tr then build() end
   tr:Show()
-  for _, b in ipairs(lines) do b:Hide() end
+  -- size and width (Ctrl / Shift + mouse wheel)
+  W = RetGearDB.trackerWidth or 300
+  tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RetGearDB.trackerScale or 1)
+  for _, b in ipairs(lines) do b:Hide(); b:SetWidth(W - 24) end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
   local rate, eta = RG.XPRate and RG.XPRate()
@@ -322,6 +346,15 @@ function RG.RefreshTracker()
     local isFolded
     n = n + 1; y, isFolded = section(n, y, "Quests", "quests", GREY .. #quests .. "/" .. ((C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 20) .. (ready > 0 and ("  ·  " .. GREEN .. ready .. " ready|r") or "") .. "|r")
     if not isFolded then
+      -- turn-in run: the arrow chains through every ready quest, nearest first
+      local readyWp = RG.ReadyQuests and #RG.ReadyQuests() or 0
+      local running = RG.TurnInRunActive and RG.TurnInRunActive()
+      if readyWp >= 2 or running then
+        n = n + 1
+        y = item(n, y, (running and (GREEN .. "Turn-in run on|r" .. GREY .. ": " .. readyWp .. " left (click to stop)|r") or (GREEN .. "Turn-in run|r" .. GREY .. ": " .. readyWp .. " quests ready, nearest first|r")),
+          { single = true, indent = 2, tip = "Click: the arrow takes you to each ready quest in turn, nearest first, and moves on as you hand them in.",
+            onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
+      end
       -- grouped by zone: the zone you're in first, then the nearest zones
       local here = (GetRealZoneText and GetRealZoneText()) or (GetZoneText and GetZoneText()) or ""
       local groups, byZone = {}, {}
@@ -517,6 +550,7 @@ function RG.RefreshTracker()
 end
 
 -- Fade the tracker during fights so it doesn't cover the action.
+table.insert(RG.OPTIONS, { key = "trackerLocked", label = "Lock the tracker in place", default = false })
 table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = true })
 local fade = CreateFrame("Frame")
 fade:RegisterEvent("PLAYER_REGEN_DISABLED"); fade:RegisterEvent("PLAYER_REGEN_ENABLED")
