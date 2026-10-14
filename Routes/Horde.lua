@@ -117,7 +117,7 @@ H.dungeons = {
   }, note = "Corruption of Earth and Seed leads toward Princess Theradras." },
   ["Blackrock Depths"] = { go = 53, prep = 51, quests = {
     { "Disharmony of Fire", "Thunderheart", "Badlands, Kargath" },
-    { "The Lost Thunderbrew Recipe", "Vivian Lagrave", "Badlands, Kargath" },
+    { "Lost Thunderbrew Recipe", "Shadowmage Vivian Lagrave", "Badlands, Kargath" },
     { "Dark Iron Legacy", "Franclorn Forgewright (ghost)", "Blackrock Mountain" },
     { "Ribbly Screwspigot", "Yuka Screwspigot", "Burning Steppes, Flame Crest" },
     { "The Heart of the Mountain", "Maxwort Uberglint", "Burning Steppes, Flame Crest" },
@@ -129,7 +129,7 @@ H.dungeons = {
     { "Pusillin and the Elder Azj'Tordin (Dire Maul)", "Azj'Tordin", "Feralas, Lariss Pavilion" },
     { "The Restless Souls (Stratholme)", "Egan", "Eastern Plaguelands" },
     { "Houses of the Holy (Stratholme)", "Leonid Barthalomew", "Eastern Plaguelands, Light's Hope Chapel" },
-    { "Scholomance key chain", "High Executor Derrington", "Western Plaguelands, The Bulwark" },
+    { "Scholomance (starts the key chain)", "High Executor Derrington", "Western Plaguelands, The Bulwark" },
     { "Barov Family Fortune (Scholomance)", "Alexi Barov", "Western Plaguelands, The Bulwark" },
   } },
 }

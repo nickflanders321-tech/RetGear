@@ -58,17 +58,25 @@ local function plain(text) return ((text or ""):gsub("|T.-|t", ""):gsub("|c%x%x%
 -- open steps, falling back to any zone that fits.
 local function currentEntry()
   local lvl = UnitLevel("player")
-  local best
+  local function open(r)
+    local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
+    for i = 1, #steps do if not RG.StepIsDone(r, i) then return true end end
+    return false
+  end
+  -- 1. the first questing zone (in route order) for your level that still has work
+  -- 2. else the next one coming up within 3 levels
+  -- 3. else the zone for your level, finished (the tracker says so)
+  local done
   for _, r in ipairs(RG.ROUTE) do
     if r.kind == "zone" and lvl >= r.from and lvl <= r.to then
-      local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
-      local open = 0
-      for i = 1, #steps do if not RG.StepIsDone(r, i) then open = open + 1 end end
-      if open > 0 and (not best or r.from < best.r.from) then best = { r = r, open = open } end
-      if not best then best = { r = r, open = 0 } end
+      if open(r) then return r end
+      done = done or r
     end
   end
-  return best and best.r
+  for _, r in ipairs(RG.ROUTE) do
+    if r.kind == "zone" and r.from > lvl and r.from <= lvl + 3 and open(r) then return r end
+  end
+  return done
 end
 
 -- A generated route step split into its quests, each with the one thing to do
@@ -88,7 +96,7 @@ function RG.StepQuestLines(entry, i, myQuests)
   local out, doneN, total = {}, 0, 0
   for _, id in ipairs(ids) do
     local d = RG.QDATA[id]
-    if d and d.n and (not RG.QuestForMe or RG.QuestForMe(d)) then
+    if d and d.n and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) then
       local done = isDone(id)
       if not done and d.x then for _, x in ipairs(d.x) do if isDone(x) then done = true break end end end
       total = total + 1
@@ -117,6 +125,7 @@ function RG.StepQuestLines(entry, i, myQuests)
             l.act, l.npc = "later", "at level " .. d.r
           else
             l.act, l.npc = "pickup", d.s and d.s[4]
+            l.noGiver = not d.s
             l.wp = d.s and { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n }
           end
         end
@@ -562,7 +571,7 @@ function RG.RefreshTracker()
           local nameCol = (l.act == "later") and GREY or "|cffffffff"
           local rt
           if l.act == "turnin" then rt = GREEN .. "to " .. (l.npc or "the quest giver") .. "|r"
-          elseif l.act == "pickup" then rt = GREY .. "from " .. (l.npc or "a quest giver") .. "|r"
+          elseif l.act == "pickup" then rt = GREY .. (l.npc and ("from " .. l.npc) or "starts from an item or object") .. "|r"
           elseif l.act == "doing" then rt = l.prog and ("|cffffffff" .. l.prog .. "|r") or (GREY .. "in your log|r")
           else rt = GREY .. l.npc .. "|r" end
           local tip

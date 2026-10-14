@@ -93,18 +93,24 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         n, sp = spawns_of('npc', i)
         pts = rep_points(sp, zone, 1)
         if pts: start = (pts[0], n); break
-    if not objs and not end and not start: continue
+    if not objs and not end and not start and not name: continue
     nq += 1; nobj += len(objs)
     parts = []
     if end: parts.append('e={%d,%.1f,%.1f,%s}' % (end[0][0], end[0][1], end[0][2], lstr(end[1] or '')))
-    if start and not ((sflags or 0) & 1):  # repeatable quests aren't offered as "new"
+    # s = where to pick it up (only for quests offered as "new": not repeatables)
+    if start and not ((sflags or 0) & 1):
         parts.append('s={%d,%.1f,%.1f,%s}' % (start[0][0], start[0][1], start[0][2], lstr(start[1] or '')))
-        parts.append('n=%s' % lstr(name or '?'))
+    # name, levels and prerequisites for every quest, even ones that start from an
+    # item or object or whose giver has no map position (steps, chains and dungeon
+    # lists still need to know them)
+    if name:
+        parts.append('n=%s' % lstr(name))
         parts.append('r=%d' % (reqlvl or 1))
         parts.append('l=%d' % (qlvl or reqlvl or 1))
         if preG: parts.append('pg={%s}' % ','.join(str(x) for x in preG))
         if preS: parts.append('ps={%s}' % ','.join(str(x) for x in preS))
         if excl: parts.append('x={%s}' % ','.join(str(x) for x in excl))
+    if (sflags or 0) & 1: parts.append('rep=true')
     if ra: parts.append('ra="%s"' % ra)
     if cl: parts.append('cl="%s"' % cl)
     if cl and len(cl) <= 4: parts.append('cq=true')   # a real class quest (not a "most classes" variant)

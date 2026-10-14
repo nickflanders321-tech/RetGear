@@ -74,6 +74,7 @@ RG.WAYPOINTS = {
     ["Rahauro"] = { 1456, 70.1, 29.5, "Rahauro" },
     ["Sage Korolusk"] = { 1444, 74.4, 44.0, "Sage Korolusk" },
     ["Selendra"] = { 1443, 26.9, 77.7, "Selendra" },
+    ["Shadowmage Vivian Lagrave"] = { 1418, 2.9, 47.8, "Shadowmage Vivian Lagrave" },
     ["Splintertree Post"] = { 1440, 73.2, 61.6, "Splintertree Post" },
     ["Tabetha"] = { 1445, 46.1, 57.1, "Tabetha" },
     ["Tabitha Heartweaver"] = { 1421, 44.5, 43.0, "Tabitha Heartweaver" },

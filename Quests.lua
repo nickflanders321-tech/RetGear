@@ -124,7 +124,9 @@ function RG.StepAuto(entry, text)
         local left = 0
         local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
         for _, id in ipairs(sq[i]) do
-          local ok = isDone and isDone(id)
+          -- repeatable quests are never marked done by the game: they don't hold a step open
+          local rq = RG.QDATA and RG.QDATA[id]
+          local ok = (rq and rq.rep) or (isDone and isDone(id))
           -- one of a pair of either/or quests counts for both
           local d = not ok and RG.QDATA and RG.QDATA[id]
           if d and d.x and isDone then for _, x in ipairs(d.x) do if isDone(x) then ok = true break end end end

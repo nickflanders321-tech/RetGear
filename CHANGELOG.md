@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.51.0 (data accuracy pass)
+- **250 more quests recognized:** quests that start from an item or object, repeatable quests and quests whose giver has no map position now keep their name, level and earlier steps. Route steps, dungeon lists, quest chains and "where does this item come from" now know about them (for example Willix the Importer, Blackfathom Villainy and The Platinum Discs).
+- **The tracker follows your real next zone:** once a zone's route is finished, the tracker moves on to the next unfinished zone for your level instead of saying "All done here".
+- **Correct map pins after class-only steps:** where a route step is only for one class (like "Paladins: ..."), the pins for the steps after it were one off for every other class. Fixed.
+- **Immersive fishing hides the minimap too,** so quest and tracking dots don't float over the water.
+- Route steps that include a repeatable quest no longer wait for it to be "completed" (the game never marks repeatables done).
+- Dungeon lists: "Lost Thunderbrew Recipe" now matches the quest's real name and giver (Shadowmage Vivian Lagrave), so it is recognized and pinned.
+
 ## v0.50.0 (fixes from in-game testing)
 - **Immersive fishing shows its text again:** the display was only showing the cast bar. Your skill, "Watch your bobber", catches and whispers now appear as intended.
 - **No more fishing poles or wrong weapons in gear lists:** a bug let classes see weapons they can't use (Paladins were offered staves and fishing poles). Every class's gear guide and every 2nd-spec list has been rebuilt.

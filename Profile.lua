@@ -127,14 +127,19 @@ end
 -- Lines for one class ("Paladins: ...") only show for that class.
 local CLASS_PLURAL = { Warriors = "WARRIOR", Paladins = "PALADIN", Hunters = "HUNTER", Rogues = "ROGUE", Priests = "PRIEST",
   Shamans = "SHAMAN", Mages = "MAGE", Warlocks = "WARLOCK", Druids = "DRUID" }
+-- Map pins (Waypoints.lua) are numbered by a step's place in the data file, so
+-- RG.STEP_ORIG remembers where each kept line sat before the others were removed.
+local stepOrig = {}
 for key, list in pairs(steps) do
-  local keep, changed = {}, false
-  for _, text in ipairs(list) do
+  local keep, orig, changed = {}, {}, false
+  for i, text in ipairs(list) do
     local who = type(text) == "string" and text:match("^(%a+): ")
-    if who and CLASS_PLURAL[who] and CLASS_PLURAL[who] ~= RG.PLAYER_CLASS then changed = true else keep[#keep + 1] = text end
+    if who and CLASS_PLURAL[who] and CLASS_PLURAL[who] ~= RG.PLAYER_CLASS then changed = true
+    else keep[#keep + 1] = text; orig[#keep] = i end
   end
-  if changed and not stepQuests[key] then steps[key] = keep end
+  if changed and not stepQuests[key] then steps[key] = keep; stepOrig[key] = orig end
 end
+RG.STEP_ORIG = stepOrig
 RG.ROUTE, RG.TRAVEL, RG.STEPS = route, travel, steps
 RG.STEP_QUESTS, RG.STEP_WP = stepQuests, stepWp
 -- Dungeon quests: the hand-written list for each dungeon plus every other quest

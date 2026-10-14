@@ -652,8 +652,10 @@ function RG.StepWaypoint(entry, i)
   local gw = entry and RG.STEP_WP and RG.STEP_WP[entry.zone .. "|" .. entry.from]
   if gw and gw[i] then return gw[i] end
   local W = RG.WAYPOINTS
-  local list = W and entry and W.steps[entry.zone .. "|" .. entry.from]
-  return list and list[i]
+  local key = entry and (entry.zone .. "|" .. entry.from)
+  local list = W and key and W.steps[key]
+  local orig = key and RG.STEP_ORIG and RG.STEP_ORIG[key]
+  return list and list[(orig and orig[i]) or i]
 end
 function RG.WaypointForText(text)
   local W = RG.WAYPOINTS
