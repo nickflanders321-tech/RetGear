@@ -6,7 +6,6 @@ local _, RG = ...
 RG.CLASS_GEAR = RG.CLASS_GEAR or {}
 RG.CLASS_GEAR.PRIEST = {
   { id = 3446, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 1, q = 408, gen = true },  -- Darkwood Staff
-  { id = 5346, slot = "Ranged", lvl = 9, how = "Quest", src = "Centaur Bracers (Regthar Deathgate)", zone = "The Barrens", score = 28, q = 855, gen = true },  -- Orcish Battle Bow
   { id = 5340, slot = "2H", lvl = 10, how = "Quest", src = "Apothecary Zamah (Apothecary Helbrim)", zone = "The Barrens", score = 2, q = 853, gen = true },  -- Cauldron Stirrer
   { id = 4771, slot = "Back", lvl = 10, how = "Rare mob", src = "Elder Mystic Razorsnout", zone = "The Barrens", score = 1, bl = 15, gen = true },  -- Harvest Cloak
   { id = 10821, slot = "Back", lvl = 10, how = "Quest", src = "Mura Runetotem (Tonga Runetotem)", zone = "The Barrens", score = 1, q = 3301, gen = true },  -- Sower's Cloak
@@ -94,7 +93,6 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 10771, slot = "Waist", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 10, bl = 39, gen = true },  -- Deathmage Sash
   { id = 6789, slot = "Back", lvl = 37, how = "Quest", src = "Khan Hratha (Warug)", zone = "Desolace", score = 6, q = 1381, gen = true },  -- Ceremonial Centaur Blanket
   { id = 4979, slot = "Wrist", lvl = 37, how = "Quest", src = "Stone Is Better than Cloth (Lucien Tosselwrench)", zone = "Badlands", score = 6, q = 716, gen = true },  -- Enchanted Stonecloth Bracers
-  { id = 7723, slot = "2H", lvl = 39, how = "Dungeon", src = "Scarlet Commander Mograine", zone = "Scarlet Monastery", score = 16, bl = 42, gen = true },  -- Mograine's Might
   { id = 7720, slot = "Head", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 19, bl = 42, gen = true },  -- Whitemane's Chapeau
   { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 10, bl = 42, gen = true },  -- Triune Amulet
   { id = 10824, slot = "Neck", lvl = 39, how = "Quest", src = "Bring the End (Andrew Brownell)", zone = "Razorfen Downs", score = 9, q = 3341, gen = true },  -- Amberglow Talisman

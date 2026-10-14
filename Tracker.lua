@@ -356,7 +356,8 @@ function RG.RefreshTracker()
   for _, b in ipairs(lines) do b:Hide(); b:SetWidth(W - 24) end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
-  local rate, eta = RG.XPRate and RG.XPRate()
+  local rate, eta
+  if RG.XPRate then rate, eta = RG.XPRate() end
   local rested = GetXPExhaustion and GetXPExhaustion()
   if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
   tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "") .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or "")

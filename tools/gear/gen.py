@@ -129,7 +129,8 @@ def zone_name(z):
 # Classes: weights, weapon model and proficiencies come from Classes/<Class>.lua
 # ---------------------------------------------------------------------------
 def lua_table(src, name):
-    m = re.search(r'^\w\.%s = \{(.*?)^\}' % name, src, re.S | re.M) or re.search(r'^\w\.%s = \{(.*?)\}' % name, src, re.S | re.M)
+    # a one-line table first ("P.weapons = { 0, 1, 4 }"), then a multi-line one closed by a "}" line
+    m = re.search(r'^\w\.%s = \{([^\n]*)\}[^\n]*$' % name, src, re.M) or re.search(r'^\w\.%s = \{(.*?)^\}' % name, src, re.S | re.M)
     return m.group(1) if m else ''
 def read_class(path):
     src = open(path, encoding='utf-8').read()
@@ -216,6 +217,7 @@ def eligible(d, C):
     slots = MODEL_SLOTS[C["model"]]
     slot = None
     if cls == 2:
+        if sub == 20: return None   # fishing poles are never a weapon upgrade
         if sub not in C["weapons"]: return None
         if inv == 17: slot = "2H"
         elif inv in (13, 21): slot = "Main Hand"

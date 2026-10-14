@@ -60,9 +60,18 @@ def npc(id_):
     sp = at(e, 2) or {}
     return at(e, 1), (sp if isinstance(sp, dict) else {})
 
+# Alliance cities and zones without Horde quest givers (area IDs): a giver who only
+# stands there is Alliance even when the data doesn't mark its faction.
+ALLIANCE_AREAS = {1, 12, 38, 40, 44, 141, 148, 1519, 1537, 1657, 11, 10}
 def alliance_only(givers):
     givers = givers or []
-    return bool(givers) and all((at(D['npcs'].get(str(i)) or [], 3) or 'AH') == 'A' for i in givers)
+    def ally(i):
+        e = D['npcs'].get(str(i)) or []
+        if (at(e, 3) or 'AH') == 'A': return True
+        sp = at(e, 2) or {}
+        zones = {int(z) for z in sp.keys()} if isinstance(sp, dict) else set()
+        return bool(zones) and zones <= ALLIANCE_AREAS
+    return bool(givers) and all(ally(i) for i in givers)
 
 npc_by_name = {}
 for nid, e in D['npcs'].items():

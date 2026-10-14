@@ -97,7 +97,6 @@ RG.CLASS_GEAR.MAGE = {
   { id = 10771, slot = "Waist", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 11, bl = 39, gen = true },  -- Deathmage Sash
   { id = 6789, slot = "Back", lvl = 37, how = "Quest", src = "Khan Hratha (Warug)", zone = "Desolace", score = 5, q = 1381, gen = true },  -- Ceremonial Centaur Blanket
   { id = 4979, slot = "Wrist", lvl = 37, how = "Quest", src = "Stone Is Better than Cloth (Lucien Tosselwrench)", zone = "Badlands", score = 6, q = 716, gen = true },  -- Enchanted Stonecloth Bracers
-  { id = 7723, slot = "2H", lvl = 39, how = "Dungeon", src = "Scarlet Commander Mograine", zone = "Scarlet Monastery", score = 12, bl = 42, gen = true },  -- Mograine's Might
   { id = 10762, slot = "Chest", lvl = 39, how = "Dungeon", src = "Amnennar the Coldbringer", zone = "Razorfen Downs", score = 12, bl = 41, gen = true },  -- Robes of the Lich
   { id = 7720, slot = "Head", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 17, bl = 42, gen = true },  -- Whitemane's Chapeau
   { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 9, bl = 42, gen = true },  -- Triune Amulet

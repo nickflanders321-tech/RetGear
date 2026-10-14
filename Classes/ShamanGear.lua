@@ -23,13 +23,13 @@ RG.CLASS_GEAR.SHAMAN = {
   { id = 15452, slot = "Wrist", lvl = 13, how = "Quest", src = "Returning the Lost Satchel (Maur Grimtotem)", zone = "Ragefire Chasm", score = 1, q = 5724, gen = true },  -- Featherbead Bracers
   { id = 4778, slot = "2H", lvl = 14, how = "Vendor", src = "Kizz Bluntstrike", zone = "Stranglethorn Vale", score = 203, also = { { how = "Vendor", src = "Wallace the Blind", zone = "Silverpine Forest" }, { how = "Vendor", src = "Lizzarik", zone = "The Barrens" } }, gen = true },  -- Heavy Spiked Mace
   { id = 10413, slot = "Hands", lvl = 14, how = "Dungeon", src = "Druid of the Fang", zone = "Wailing Caverns", score = 7, bl = 20, gen = true },  -- Gloves of the Fang
-  { id = 19970, slot = "2H", lvl = 15, how = "Quest", src = "Master Angler (Riggle Bassbait)", zone = "", score = 245, q = 8193, gen = true },  -- Arcanite Fishing Pole
   { id = 5314, slot = "Back", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 3, q = 899, gen = true },  -- Boar Hunter's Cape
   { id = 4788, slot = "Feet", lvl = 15, how = "Vendor", src = "Alexandre Lefevre", zone = "Silverpine Forest", score = 5, also = { { how = "Vendor", src = "Pizznukle", zone = "The Barrens" } }, gen = true },  -- Agile Boots
   { id = 5310, slot = "Legs", lvl = 15, how = "Quest", src = "The Guns of Northwatch (Captain Thalo'thas Brightsun)", zone = "The Barrens", score = 8, q = 891, gen = true },  -- Sea Dog Britches
   { id = 5351, slot = "Ring", lvl = 15, how = "Quest", src = "Hezrul Bloodmark (Regthar Deathgate)", zone = "The Barrens", score = 3, q = 852, gen = true },  -- Bounty Hunter's Ring
   { id = 6477, slot = "Waist", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 2, q = 899, gen = true },  -- Grassland Sash
   { id = 1306, slot = "Wrist", lvl = 15, how = "Quest", src = "Earthen Arise (Mor'rogal)", zone = "Stonetalon Mountains", score = 3, q = 6481, gen = true },  -- Wolfmane Wristguards
+  { id = 872, slot = "2H", lvl = 16, how = "Dungeon", src = "Rhahk'Zor", zone = "The Deadmines", score = 219, bl = 19, gen = true },  -- Rockslicer
   { id = 6449, slot = "Back", lvl = 17, how = "Dungeon", src = "Skum", zone = "Wailing Caverns", score = 6, bl = 21, gen = true },  -- Glowing Lizardscale Cloak
   { id = 3752, slot = "Chest", lvl = 17, how = "Quest", src = "The Rescue (Krusk)", zone = "Hillsbrad Foothills", score = 10, q = 498, gen = true },  -- Grunt Vest
   { id = 5195, slot = "Hands", lvl = 17, how = "Dungeon", src = "Sneed", zone = "The Deadmines", score = 9, bl = 20, gen = true },  -- Gold-flecked Gloves

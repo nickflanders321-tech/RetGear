@@ -78,7 +78,8 @@ end
 -- ---------------------------------------------------------------------------
 local run
 local function startRun()
-  local name, instType = GetInstanceInfo and GetInstanceInfo()
+  local name, instType
+  if GetInstanceInfo then name, instType = GetInstanceInfo() end
   if instType ~= "party" then return end
   run = { name = name or "Dungeon", t = time(), start = GetTime(), xp = 0, kills = 0, deaths = 0, myDeaths = 0, loot = {}, size = GetNumGroupMembers and GetNumGroupMembers() or 1, level = UnitLevel("player") }
   RG.Print(GOLD .. run.name .. "|r: run started. Waypath+ will report when you leave.")
@@ -287,7 +288,8 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
     addXP()
     if run and before then local gained = (UnitXP("player") >= before) and (UnitXP("player") - before) or 0; run.xp = run.xp + gained end
   elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
-    local inInst, instType = IsInInstance and IsInInstance()
+    local inInst, instType
+    if IsInInstance then inInst, instType = IsInInstance() end
     if inInst and instType == "party" then
       local name = GetInstanceInfo and GetInstanceInfo()
       if not run or run.name ~= name then if run then finishRun() end; startRun() end

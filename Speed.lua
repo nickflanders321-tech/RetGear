@@ -44,7 +44,8 @@ local function onGreeting()
     if complete then SelectActiveQuest(i); return end
   end
   for i = 1, (GetNumAvailableQuests and GetNumAvailableQuests() or 0) do
-    local trivial, _, repeatable = GetAvailableQuestInfo and GetAvailableQuestInfo(i)
+    local trivial, _, repeatable
+    if GetAvailableQuestInfo then trivial, _, repeatable = GetAvailableQuestInfo(i) end
     if not trivial and not repeatable then SelectAvailableQuest(i); return end
   end
 end

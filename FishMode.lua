@@ -34,7 +34,7 @@ local whisper, whisperAt
 -- ---------------------------------------------------------------------------
 -- Display
 -- ---------------------------------------------------------------------------
-local hud, fader
+local hud, fader, refreshFailed
 local function font(fs, size, flags) fs:SetFont("Fonts\\FRIZQT__.TTF", size, flags or ""); fs:SetShadowColor(0, 0, 0, 1); fs:SetShadowOffset(1, -1) end
 local function build()
   if hud then return end
@@ -73,7 +73,12 @@ local function build()
       self.bar:SetWidth(math.max(1, 220 * left / (castEnd - castStart)))
       self.bar:Show()
     else self.bar:Hide() end
-    if acc >= 0.25 then acc = 0; RG.FishModeRefresh() end
+    -- a failed refresh is logged once (/wp errors) and never blanks the display again
+    if acc >= 0.25 then
+      acc = 0
+      local ok, err = pcall(RG.FishModeRefresh)
+      if not ok and not refreshFailed then refreshFailed = true; if RG.RecordError then RG.RecordError(err) end end
+    end
   end)
 end
 
@@ -139,9 +144,10 @@ local function setStatus(text, color) status, statusColor, statusAt = text, colo
 
 function RG.FishModeRefresh()
   if not hud then return end
-  local skill, max = RG.FishSkill and RG.FishSkill()
+  local skill, max
+  if RG.FishSkill then skill, max = RG.FishSkill() end
   local title = GOLD .. "Fishing|r"
-  if skill then title = title .. "  |cffffffff" .. skill .. "|r" .. GREY .. " / " .. max .. "|r" end
+  if skill then title = title .. "  |cffffffff" .. skill .. "|r" .. ((max and max > 0) and (GREY .. " / " .. max .. "|r") or "") end
   local s = RG.FishSession and RG.FishSession()
   if s and s.gained and s.gained > 0 then title = title .. GREEN .. "  +" .. s.gained .. "|r" end
   hud.title:SetText(title)

@@ -10,7 +10,6 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 10820, slot = "Waist", lvl = 10, how = "Quest", src = "Mura Runetotem (Tonga Runetotem)", zone = "The Barrens", score = 1, q = 3301, gen = true },  -- Jackseed Belt
   { id = 5337, slot = "Hands", lvl = 11, how = "Quest", src = "Stolen Booty (Gazlowe)", zone = "The Barrens", score = 2, q = 888, gen = true },  -- Wayfaring Gloves
   { id = 5242, slot = "Ranged", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 59, q = 99, gen = true },  -- Cinder Wand
-  { id = 4777, slot = "2H", lvl = 13, how = "Vendor", src = "Wallace the Blind", zone = "Silverpine Forest", score = 3, also = { { how = "Vendor", src = "Lizzarik", zone = "The Barrens" }, { how = "Vendor", src = "Vrang Wildgore", zone = "The Barrens" } }, gen = true },  -- Ironwood Maul
   { id = 15444, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 3, q = 5730, gen = true },  -- Staff of Orgrimmar
   { id = 4782, slot = "Chest", lvl = 13, how = "Vendor", src = "Halija Whitestrider", zone = "The Barrens", score = 4, also = { { how = "Vendor", src = "Andrea Boynton", zone = "Silverpine Forest" }, { how = "Vendor", src = "Kiknikle", zone = "The Barrens" } }, gen = true },  -- Solstice Robe
   { id = 14150, slot = "Chest", lvl = 13, how = "Dungeon", src = "Jergosh the Invoker", zone = "Ragefire Chasm", score = 3, bl = 16, gen = true },  -- Robe of Evocation
@@ -23,7 +22,7 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 14148, slot = "Wrist", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 1, bl = 16, gen = true },  -- Crystalline Cuffs
   { id = 15452, slot = "Wrist", lvl = 13, how = "Quest", src = "Returning the Lost Satchel (Maur Grimtotem)", zone = "Ragefire Chasm", score = 1, q = 5724, gen = true },  -- Featherbead Bracers
   { id = 6341, slot = "Off Hand", lvl = 14, how = "Dungeon", src = "Fel Steed", zone = "Shadowfang Keep", score = 2, bl = 20, gen = true },  -- Eerie Stable Lantern
-  { id = 5318, slot = "2H", lvl = 15, how = "Quest", src = "Serena Bloodfeather (Darsok Swiftdagger)", zone = "The Barrens", score = 4, q = 876, gen = true },  -- Zhovur Axe
+  { id = 5306, slot = "2H", lvl = 15, how = "Quest", src = "Cry of the Thunderhawk (Jorn Skyseer)", zone = "The Barrens", score = 3, q = 913, gen = true },  -- Wind Rider Staff
   { id = 10919, slot = "Hands", lvl = 15, how = "Quest", src = "Dig Rat Stew (Grub)", zone = "", score = 2, q = 862, also = { { how = "Quest", src = "Serpentbloom (Apothecary Zamah)", zone = "Wailing Caverns", q = 962 } }, gen = true },  -- Apothecary Gloves
   { id = 5310, slot = "Legs", lvl = 15, how = "Quest", src = "The Guns of Northwatch (Captain Thalo'thas Brightsun)", zone = "The Barrens", score = 2, q = 891, gen = true },  -- Sea Dog Britches
   { id = 5321, slot = "Main Hand", lvl = 15, how = "Quest", src = "Serena Bloodfeather (Darsok Swiftdagger)", zone = "The Barrens", score = 2, q = 876, gen = true },  -- Elegant Shortsword
@@ -35,7 +34,7 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 6465, slot = "Chest", lvl = 17, how = "Dungeon", src = "Lord Cobrahn", zone = "Wailing Caverns", score = 4, bl = 20, gen = true },  -- Robe of the Moccasin
   { id = 5198, slot = "Ranged", lvl = 17, how = "Dungeon", src = "Cookie", zone = "The Deadmines", score = 112, bl = 20, gen = true },  -- Cookie's Stirring Rod
   { id = 1156, slot = "Ring", lvl = 17, how = "Dungeon", src = "Gilnid", zone = "The Deadmines", score = 2, bl = 20, gen = true },  -- Lavishly Jeweled Ring
-  { id = 5194, slot = "2H", lvl = 18, how = "Dungeon", src = "Sneed", zone = "The Deadmines", score = 9, bl = 20, gen = true },  -- Taskmaster Axe
+  { id = 5201, slot = "2H", lvl = 18, how = "Dungeon", src = "Captain Greenskin", zone = "The Deadmines", score = 9, bl = 20, gen = true },  -- Emberstone Staff
   { id = 4792, slot = "Back", lvl = 18, how = "Vendor", src = "Halija Whitestrider", zone = "The Barrens", score = 2, gen = true },  -- Spirit Cloak
   { id = 5970, slot = "Hands", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 2, bl = 21, gen = true },  -- Serpent Gloves
   { id = 6633, slot = "Main Hand", lvl = 18, how = "Dungeon", src = "Razorclaw the Butcher", zone = "Shadowfang Keep", score = 1, bl = 22, gen = true },  -- Butcher's Slicer
@@ -98,7 +97,6 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 10771, slot = "Waist", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 10, bl = 39, gen = true },  -- Deathmage Sash
   { id = 4979, slot = "Wrist", lvl = 37, how = "Quest", src = "Stone Is Better than Cloth (Lucien Tosselwrench)", zone = "Badlands", score = 6, q = 716, gen = true },  -- Enchanted Stonecloth Bracers
   { id = 9703, slot = "Back", lvl = 38, how = "Quest", src = "Identifying the Brood (Draz'Zilb)", zone = "Dustwallow Marsh", score = 6, q = 1169, gen = true },  -- Scorched Cape
-  { id = 7723, slot = "2H", lvl = 39, how = "Dungeon", src = "Scarlet Commander Mograine", zone = "Scarlet Monastery", score = 18, bl = 42, gen = true },  -- Mograine's Might
   { id = 10762, slot = "Chest", lvl = 39, how = "Dungeon", src = "Amnennar the Coldbringer", zone = "Razorfen Downs", score = 16, bl = 41, gen = true },  -- Robes of the Lich
   { id = 7720, slot = "Head", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 18, bl = 42, gen = true },  -- Whitemane's Chapeau
   { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 10, bl = 42, gen = true },  -- Triune Amulet
@@ -138,7 +136,6 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 12605, slot = "Ranged", lvl = 51, how = "Dungeon", src = "Jed Runewatcher", zone = "Blackrock Spire", score = 273, bl = 59, gen = true },  -- Serpentine Skuller
   { id = 22256, slot = "Hands", lvl = 52, how = "Dungeon", src = "Warbringer Construct", zone = "Blackrock Depths", score = 29, bl = 54, also = { { how = "Dungeon", src = "Watchman Doomgrip", zone = "Blackrock Depths", bl = 55 } }, gen = true },  -- Mana Shaping Handwraps
   { id = 13396, slot = "Ranged", lvl = 52, how = "Dungeon", src = "Skul", zone = "Stratholme", score = 293, bl = 58, gen = true },  -- Skul's Ghastly Touch
-  { id = 22208, slot = "2H", lvl = 53, how = "Dungeon", src = "Magmus", zone = "Blackrock Depths", score = 33, bl = 57, gen = true },  -- Lavastone Hammer
   { id = 21318, slot = "Hands", lvl = 53, how = "Quest", src = "Winterfall Activity (Salfa)", zone = "Timbermaw Hold", score = 22, q = 8464, gen = true },  -- Earth Warder's Gloves
   { id = 11832, slot = "Trinket", lvl = 53, how = "Dungeon", src = "Ambassador Flamelash", zone = "Blackrock Depths", score = 12, bl = 57, gen = true },  -- Burst of Knowledge
   { id = 11822, slot = "Feet", lvl = 54, how = "Dungeon", src = "Golem Lord Argelmach", zone = "Blackrock Depths", score = 29, bl = 57, gen = true },  -- Omnicast Boots

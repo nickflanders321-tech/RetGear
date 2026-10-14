@@ -254,7 +254,6 @@ RG.GEN_DUNGEONS = {
     { id = 6562, n = "Trouble in the Deeps", g = "Tsunaman", at = "Stonetalon Mountains", w = { 1442, 47.4, 64.2, "Tsunaman" }, l = 22, r = 17 },
     { id = 6563, n = "The Essence of Aku'Mai", g = "Je'neu Sancrea", at = "Ashenvale", w = { 1440, 11.6, 34.3, "Je'neu Sancrea" }, l = 22, r = 17 },
     { id = 6564, n = "Allegiance to the Old Gods", g = "", at = "starts from an item", w = nil, l = 22, r = 17 },
-    { id = 1198, n = "In Search of Thaelrid", g = "Dawnwatcher Shaedlass", at = "Darnassus", w = { 1457, 55.4, 25.0, "Dawnwatcher Shaedlass" }, l = 24, r = 18 },
     { id = 1740, n = "The Orb of Soran'ruk", g = "Doan Karhan", at = "The Barrens", w = { 1413, 49.3, 57.2, "Doan Karhan" }, l = 25, r = 20, cl = "L" },
     { id = 6565, n = "Allegiance to the Old Gods", g = "Je'neu Sancrea", at = "Ashenvale", w = { 1440, 11.6, 34.3, "Je'neu Sancrea" }, l = 26, r = 17 },
     { id = 6561, n = "Blackfathom Villainy", g = "", at = "starts from an item", w = nil, l = 27, r = 18 },

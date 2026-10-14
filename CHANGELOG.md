@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.50.0 (fixes from in-game testing)
+- **Immersive fishing shows its text again:** the display was only showing the cast bar. Your skill, "Watch your bobber", catches and whispers now appear as intended.
+- **No more fishing poles or wrong weapons in gear lists:** a bug let classes see weapons they can't use (Paladins were offered staves and fishing poles). Every class's gear guide and every 2nd-spec list has been rebuilt.
+- **Upgrades while fishing:** with a fishing pole in your hands, upgrades are compared with the weapon you normally wear, not an empty slot.
+- **No Alliance quests in dungeon lists:** quests given out in Alliance cities (such as "In Search of Thaelrid") are gone from Horde dungeon lists.
+- **Long lines no longer end in "...":** route steps, travel tips and descriptions now get room for every line.
+- Time-to-level on the tracker and the "why this ticked itself off" reason on route steps work again.
+- Shorter tab footers that fit, and "about 3 catches per point" instead of a symbol that didn't display.
+
 ## v0.49.1
 - Waypath+ is now on CurseForge (WoW Forever, project 1743915). Updates there arrive as Beta releases.
 

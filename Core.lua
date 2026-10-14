@@ -437,6 +437,42 @@ function RG.CurrentHit()
 end
 
 -- Compare an item with what you'd replace. Returns delta, replacedSlot, newScore, oldScore.
+-- While you hold a fishing pole (or nothing) your real weapon is in your bags:
+-- upgrades are measured against the last weapon you wore, as long as you still have it.
+local function isPole(l)
+  if not l then return false end
+  local info = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+  if not info then return false end
+  local _, _, _, _, _, classID, subID = info(l)
+  return classID == 2 and subID == 20
+end
+RG.IsFishingPole = isPole
+local function rememberWeapons()
+  if not RG.db then return end
+  local mh = GetInventoryItemLink("player", 16)
+  if mh and not isPole(mh) then
+    RG.db.lastWeapons = { [16] = mh, [17] = GetInventoryItemLink("player", 17) }
+  end
+end
+RG.RememberWeapons = rememberWeapons
+local function wornLink(slot)
+  local l = GetInventoryItemLink("player", slot)
+  if slot ~= 16 and slot ~= 17 then return l end
+  local mh = GetInventoryItemLink("player", 16)
+  if mh and not isPole(mh) then return l end
+  local lw = RG.db and RG.db.lastWeapons
+  local keep = lw and lw[slot]
+  if keep and GetItemCount and (GetItemCount(keep) or 0) > 0 then return keep end
+  if slot == 16 and isPole(mh) then return nil end
+  return l
+end
+RG.WornLink = wornLink
+do
+  local f = CreateFrame("Frame")
+  pcall(f.RegisterEvent, f, "PLAYER_EQUIPMENT_CHANGED"); pcall(f.RegisterEvent, f, "PLAYER_ENTERING_WORLD")
+  f:SetScript("OnEvent", function() pcall(rememberWeapons) end)
+end
+
 function RG.Compare(link)
   local loc = RG.EquipLoc(link)
   local slots = loc and RG.EQUIP_SLOTS[loc]
@@ -446,12 +482,12 @@ function RG.Compare(link)
   local curHit = RG.CurrentHit()
   local best
   for _, slot in ipairs(slots) do
-    local old = GetInventoryItemLink("player", slot)
+    local old = wornLink(slot)
     local oldScore, oldHit = 0, 0
     if old then oldHit = RG.GetStats(old).HIT; oldScore = RG.Score(old, nil, slot) end
     -- Two-hander replaces main hand and off hand together.
     if loc == "INVTYPE_2HWEAPON" then
-      local off = GetInventoryItemLink("player", 17)
+      local off = wornLink(17)
       if off then oldScore = oldScore + RG.Score(off, nil, 17); oldHit = oldHit + RG.GetStats(off).HIT end
     end
     local hitWithout = curHit - oldHit

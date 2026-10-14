@@ -260,7 +260,7 @@ function RG.FishTrackerLines()
     return out, nil
   end
   local per = RG.FishCatchesPerPoint(skill)
-  out[#out + 1] = { "|cffffffffSkill " .. skill .. "/" .. max .. "|r" .. GREY .. "  ·  ~" .. per .. " catch" .. (per > 1 and "es" or "") .. " per point|r", nil, open,
+  out[#out + 1] = { "|cffffffffSkill " .. skill .. "/" .. max .. "|r" .. GREY .. "  ·  about " .. per .. " catch" .. (per > 1 and "es" or "") .. " per point|r", nil, open,
     "Your Fishing skill. At " .. skill .. " it takes about " .. per .. " catch" .. (per > 1 and "es" or "") .. " for each point." }
   if skill >= max and max < 300 then
     local r = RG.FishNextRank()

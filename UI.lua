@@ -73,6 +73,25 @@ local function backdrop(f, bg, edge, size)
   f:SetBackdropColor(unpack(bg)); f:SetBackdropBorderColor(unpack(edge))
 end
 local function font(fs, path, size, flags) fs:SetFont(path, size, flags or "") end
+-- Wraps a font string to `width` and gives it room for every line. Re-setting the
+-- text makes the client lay it out again at the final width, and the line count
+-- from the text's one-line width backs up GetStringHeight (which can report a
+-- single line for text that was laid out before it was allowed to wrap).
+local function fitText(fs, width)
+  fs:SetWidth(width); fs:SetWordWrap(true)
+  if fs.SetMaxLines then fs:SetMaxLines(0) end
+  local txt = fs:GetText() or ""
+  fs:SetText(""); fs:SetText(txt)
+  local h = fs:GetStringHeight() or 0
+  if txt ~= "" and fs.GetUnboundedStringWidth and width > 20 then
+    local uw = fs:GetUnboundedStringWidth() or 0
+    local _, size = fs:GetFont()
+    local lines = math.max(1, math.ceil(uw * 1.08 / width))   -- whole words need a little slack
+    h = math.max(h, lines * (size or 12) * 1.22)
+  end
+  fs:SetHeight(math.max(1, h))
+  return h
+end
 local function gradient(tex, orient, a, b)
   if tex.SetGradient and CreateColor then tex:SetGradient(orient, CreateColor(unpack(a)), CreateColor(unpack(b)))
   elseif tex.SetGradientAlpha then tex:SetGradientAlpha(orient, unpack(a), unpack(b)) end
@@ -189,10 +208,10 @@ local function setHeader(r, text)
   r.head:SetText(text); r.head:SetTextColor(unpack(T.gold)); r.head:SetShadowColor(0, 0, 0, 1); r.head:SetShadowOffset(1, -1); r.head:Show(); r.headLine:Show()
   -- a header too long for one line wraps (and drops its rule line) instead of running off the edge
   local maxW = (W - 56) - 8
-  r.head:SetWidth(0); r.head:SetWordWrap(false)
+  r.head:SetWidth(0); r.head:SetHeight(0); r.head:SetWordWrap(false)
   if (r.head:GetStringWidth() or 0) > maxW then
-    r.head:SetWidth(maxW); r.head:SetWordWrap(true); r.headLine:Hide()
-    r.h = math.max(r.h, math.ceil((r.head:GetStringHeight() or 0) + 12))
+    r.headLine:Hide()
+    r.h = math.max(r.h, math.ceil(fitText(r.head, maxW) + 12))
   end
   r:Show()
 end
@@ -234,15 +253,11 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   -- keep titles clear of the right column
   local rightW = math.max(kind and r.pill:GetWidth() or 0, r.meta:IsShown() and r.meta:GetStringWidth() or 0)
   local leftX = (small and 34 or 8) + size + 10
-  r.title:SetWidth(math.max(120, (W - 56) - leftX - rightW - 26))
-  r.sub:SetWidth(math.max(120, (W - 56) - leftX - (r.meta:IsShown() and r.meta:GetStringWidth() or 0) - 26))
   -- long text wraps and the row grows to fit it (nothing is cut off with "...")
-  r.title:SetWordWrap(true); r.sub:SetWordWrap(true)
-  if r.title.SetMaxLines then r.title:SetMaxLines(0) end
-  if r.sub.SetMaxLines then r.sub:SetMaxLines(0) end
-  local th = r.title:GetStringHeight() or 0
+  local th = fitText(r.title, math.max(120, (W - 56) - leftX - rightW - 26))
   local hasSub = sub and sub ~= ""
-  local shh = hasSub and (r.sub:GetStringHeight() or 0) or 0
+  local shh = fitText(r.sub, math.max(120, (W - 56) - leftX - (r.meta:IsShown() and r.meta:GetStringWidth() or 0) - 26))
+  if not hasSub then shh = 0 end
   local gap = hasSub and 2 or 0
   local content = th + gap + shh
   local pad = small and 5 or 7
@@ -291,10 +306,8 @@ local function setStep(r, num, text, done, onClick, auto)
   r.icon:SetShown(done and true or false)
   font(r.title, FONT_NUM, sz(13))
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r.iconBorder, "TOPRIGHT", 10, 1)
-  r.title:SetWidth((W - 56) - 34 - box - 10 - 18)
-  r.title:SetWordWrap(true)
   r.title:SetText((done and GREY or "|cffffffff") .. ((num ~= nil and num ~= "") and (num .. ".  ") or "") .. text .. "|r"); r.title:Show()
-  local th = r.title.GetStringHeight and r.title:GetStringHeight() or sz(14)
+  local th = fitText(r.title, (W - 56) - 34 - box - 10 - 18)
   r.h = math.max(sz(32), (th or sz(14)) + sz(16))
   r.onClick = onClick
   if auto then r.tip = "Done: " .. auto .. "\n|cffa0a0a0(detected from your game)|r"
@@ -448,7 +461,7 @@ local function renderGear()
     local u = ups[i]
     n = n + 1
     local name, link2, quality = itemName(u.g.id)
-    local worn = u.slot and GetInventoryItemLink("player", u.slot)
+    local worn = u.slot and ((RG.WornLink and RG.WornLink(u.slot)) or GetInventoryItemLink("player", u.slot))
     local wornName = worn and (RG.ItemInfo(worn) or "your item") or "an empty slot"
     setItem(getRow(n), u.g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[u.g.slot] or u.g.slot) .. "|r",
       GREY .. "Replaces " .. wornName .. "  ·  " .. u.g.src .. (u.g.zone ~= "" and (", " .. u.g.zone) or "") .. "|r",
@@ -809,7 +822,8 @@ local function renderRoute()
     e.auto, e.doneN = {}, 0
     if e.steps then
       for i, text in ipairs(e.steps) do
-        local ok, why = RG.StepAuto and RG.StepAuto(r, text)
+        local ok, why
+        if RG.StepAuto then ok, why = RG.StepAuto(r, text) end
         if not ok and e.dqDone then ok, why = true, "all of this dungeon's quests are turned in" end
         if ok then e.auto[i] = why end
         if ok or RG.db.stepsDone[e.key .. "#" .. i] or e.past then e.doneN = e.doneN + 1 end
@@ -1023,7 +1037,8 @@ local function renderRoute()
   -- leveling pace: one line (click for splits)
   if RG.Pace and not (RG.IsAlt and RG.IsAlt()) then
     local cur, last, avg = RG.Pace()
-    local _, eta = RG.XPRate and RG.XPRate()
+    local eta
+    if RG.XPRate then eta = select(2, RG.XPRate()) end
     n = n + 1
     local pr = getRow(n)
     setItem(pr, nil, nil, "|cffffffffLevel " .. lvl .. "|r" .. GREY .. "   " .. RG.FormatDuration(cur) .. " so far" .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
@@ -1867,23 +1882,23 @@ local TITLES = {
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   group = { "Group play", "How grouping is going, your class duties, shared quests and finding a group" },
-  spec  = { "2nd spec", "Pick any spec of your class: its WoW Forever build, stats and tips" },
+  spec  = { "2nd spec", "Pick any spec of your class: its stats, how to play it and its gear" },
   heal  = { "2nd spec gear", "Gear to start collecting for your 2nd spec, and where to find it" },
 }
 local FOOTERS = {
-  route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  click a gold heading to fold it  ·  finished steps are hidden",
+  route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  finished steps are hidden",
   guide = "Click an item to see where it drops or which quest gives it  ·  Shift-click to link  ·  Ctrl-click to preview",
-  gear  = "Click an item to see where it drops or which quest gives it  ·  scores are Attack Power equivalents (/wp weight)",
-  prof  = "Double-click a place to point the arrow at it  ·  counts include your bank (open it once)  ·  opening a profession window reads its exact recipes",
-  ah    = "Opening the AH refreshes out-of-date prices (a full scan when the server allows one)  ·  searching yourself pauses it  ·  /wp alert [item] 25 pings you at 25g or less",
-  settings = "Settings are saved for this character (prices and window positions are shared)  ·  /wp tracker shows or hides the tracker",
+  gear  = "Click an item to see where it drops or which quest gives it  ·  /wp weight tunes the score",
+  prof  = "Double-click a place for the arrow  ·  counts include your bank (open it once)",
+  ah    = "Opening the AH refreshes old prices  ·  your own searches pause the scan  ·  /wp alert [item] 25",
+  settings = "Settings are saved per character (prices and window positions are shared)",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
-  fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so Waypath+ knows your recipes  ·  /wp fish",
+  fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
   mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
   group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /wp lfg Scarlet Monastery posts your own",
-  spec  = "Dual spec unlocks at level 40 at your class trainer  ·  builds follow the newest WoW Forever spec guides  ·  /wp spec",
-  heal  = "Pieces in your 2nd set are never sold by Waypath+  ·  Forever loot is still being mapped; the list updates twice a week  ·  /wp heal",
+  spec  = "Dual spec unlocks at level 40 at your class trainer  ·  /wp spec",
+  heal  = "Pieces in your 2nd set are never sold  ·  the list updates twice a week  ·  /wp heal",
 }
 
 local function updateHeader()
