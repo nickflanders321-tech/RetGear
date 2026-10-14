@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.51.1
+- **Fixed the "Waypath has been blocked from an action" pop-up.** Immersive fishing no longer hides the minimap: the game doesn't allow add-ons to do that. (If you saw the pop-up, "Ignore" was safe.)
+- If the game ever blocks something again, `/wp errors` now names exactly what was blocked and the game build, for bug reports.
+
 ## v0.51.0 (data accuracy pass)
 - **250 more quests recognized:** quests that start from an item or object, repeatable quests and quests whose giver has no map position now keep their name, level and earlier steps. Route steps, dungeon lists, quest chains and "where does this item come from" now know about them (for example Willix the Importer, Blackfathom Villainy and The Platinum Discs).
 - **The tracker follows your real next zone:** once a zone's route is finished, the tracker moves on to the next unfinished zone for your level instead of saying "All done here".

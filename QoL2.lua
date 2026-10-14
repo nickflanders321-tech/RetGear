@@ -38,6 +38,19 @@ local function recordError(msg)
 end
 RG.RecordError = recordError
 
+-- When the game blocks something Waypath+ tried (the "blocked from an action only
+-- available to the Blizzard UI" pop-up), note exactly what it was, with the game
+-- build, so a bug report names it. Blizzard changes which actions add-ons may take.
+do
+  local bf = CreateFrame("Frame")
+  for _, e in ipairs({ "ADDON_ACTION_FORBIDDEN", "ADDON_ACTION_BLOCKED" }) do pcall(bf.RegisterEvent, bf, e) end
+  bf:SetScript("OnEvent", function(_, event, addon, func)
+    if type(addon) ~= "string" or not addon:find("Waypath", 1, true) then return end
+    local build = GetBuildInfo and select(2, GetBuildInfo()) or "?"
+    pcall(recordError, "The game blocked Waypath+ from calling " .. tostring(func) .. (event == "ADDON_ACTION_BLOCKED" and " during combat" or "") .. " (game build " .. tostring(build) .. ")")
+  end)
+end
+
 if seterrorhandler and geterrorhandler then
   local original = geterrorhandler()
   local busy = false

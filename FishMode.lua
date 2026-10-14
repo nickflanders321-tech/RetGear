@@ -185,19 +185,6 @@ function RG.FishModeRefresh()
   if active and not peeking and lastActivity and now - lastActivity > IDLE_EXIT and not (castEnd and now < castEnd) then RG.FishModeExit() end
 end
 
--- Minimap blips (quest and tracking dots) ignore fading, so the minimap is hidden
--- while you fish and shown again afterwards (never touched in combat).
-local hidMinimap = false
-local function minimapOff()
-  if Minimap and Minimap:IsShown() and not (InCombatLockdown and InCombatLockdown()) then
-    if pcall(Minimap.Hide, Minimap) then hidMinimap = true end
-  end
-end
-local function minimapOn()
-  if hidMinimap and Minimap and not (InCombatLockdown and InCombatLockdown()) then pcall(Minimap.Show, Minimap) end
-  hidMinimap = false
-end
-
 function RG.FishModeEnter()
   if not RG.Opt("fishImmersive") or (RG.IsAlt and RG.IsAlt()) then return end
   if InCombatLockdown and InCombatLockdown() then return end
@@ -206,7 +193,6 @@ function RG.FishModeEnter()
   active, peeking = true, false
   whisper = nil
   showCast(true)
-  minimapOff()
   fadeTo(true)
 end
 function RG.FishModeExit()
@@ -214,7 +200,6 @@ function RG.FishModeExit()
   active, peeking = false, false
   castStart, castEnd, whisper = nil, nil, nil
   showCast(false)
-  minimapOn()
   fadeTo(false)
 end
 -- show the interface for a moment (a loot window you need to click), stay in fishing mode
@@ -288,7 +273,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3)
   elseif event == "PLAYER_STARTED_MOVING" or event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_DEAD" then
     RG.FishModeExit()
   elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_LOGOUT" then
-    if active then active = false; if UIParent then UIParent:SetAlpha(1) end; if hud then hud:Hide() end; showCast(false); minimapOn() end
+    if active then active = false; if UIParent then UIParent:SetAlpha(1) end; if hud then hud:Hide() end; showCast(false) end
   end
 end)
 -- Esc (game menu) and Enter (chat) bring the interface back
