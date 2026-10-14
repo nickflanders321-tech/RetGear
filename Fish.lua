@@ -55,6 +55,10 @@ RG.FISH_GEAR = {
   { kind = "lure", id = 6532,  bonus = 75,  mins = 10, skill = 100, how = "Fishing vendors, 2s 50c" },
   { kind = "lure", id = 7307,  bonus = 75,  mins = 10, skill = 100, how = "Drops from Rotted One, Duskwood" },
   { kind = "lure", id = 6533,  bonus = 100, mins = 5,  skill = 100, how = "Fishing vendors (Shankys, Kilxx, Lizbeth Cromwell), 2s 50c" },
+  -- WoW Forever's own fishing items (beta reports; sources not published yet)
+  { kind = "lure", id = 268880, bonus = 25, mins = 10, how = "WoW Forever lure; where to get it isn't published yet" },
+  { kind = "lure", id = 286732, bonus = 30, mins = 30, how = "Quest reward: Bottles and Baubles (WoW Forever)" },
+  { kind = "gear", id = 259846, bonus = 25, mins = 10, how = "Worn hat: +25 for 10 min, usable every 10 min (WoW Forever; where to get it isn't published yet)" },
   { kind = "gear", id = 19972, bonus = 5, how = "Extravaganza: Keefer's Angelfish" },
   { kind = "gear", id = 19969, bonus = 5, how = "Extravaganza: Brownell's Blue Striped Racer" },
   { kind = "gear", id = 19971, bonus = 5, skill = 150, how = "Extravaganza: Dezian Queenfish (permanent pole upgrade)" },

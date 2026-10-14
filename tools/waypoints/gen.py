@@ -127,6 +127,9 @@ dsrc = dsrc[:dsrc.index('if Expansions.Current')]
 dungeons = {}
 for name, z, x, y in re.findall(r'\{"([^"]+)",[^\n]*?\{\{(\d+),\s*([\d.]+),\s*([\d.]+)\}', dsrc):
     if int(z) in ui and name not in dungeons: dungeons[name] = (ui[int(z)], float(x), float(y), name + " entrance")
+# route names that differ from the game's dungeon names
+for alias, real in (("Excavation Site", "Excavation Site: Wetlands"),):
+    if real in dungeons and alias not in dungeons: dungeons[alias] = dungeons[real]
 hubs = {}
 for m in re.finditer(r'from = (\d+),\s*to = \d+,\s*kind = "\w+",\s*zone = "([^"]+)", hub = "([^"]*)"(?:, fp = "([^"]*)")?', data):
     frm, zone, hub, fp = m.groups()

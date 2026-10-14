@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.55.0
+- **Route steps for five more dungeons:** Excavation Site (Wetlands), City of Dalaran, Gnomeregan, Razorfen Downs and the Temple of Atal'Hakkar now have step-by-step guidance on the route: the quests to collect first, where the entrance is (with a map pin), the boss order, and the quests to hand in. Gnomeregan explains the Goblin Transponder Horde use to get in, and Dalaran lists the Tarren Mill key chain.
+- **Honest fishing numbers:** the Fishing tab now says plainly that zone skill levels are Classic's until WoW Forever publishes its own, instead of presenting them as confirmed.
+- **New WoW Forever fishing gear:** "Secret" Bait, the Shiny Silver Coin and the Wide-Brimmed Fishing Hat are listed with their bonuses (where to get them isn't published yet).
+
 ## v0.54.0
 - **Everything fishing can bring up, on the Fishing tab:** a new "Everything fishing can bring up" section lists the catches for the zone you're standing in, with the chance per catch. Open the groups below it (fish, chests and crates, materials, potions, gear, junk) to see every catch in the game: which zones and pools give it, the Fishing skill it starts at, and what each chest, crate, trunk, clam and bottle holds. Hover a row for every zone; click a pool to put it on your map.
 - A "Pools, schools, wreckage and fishing spots" group shows what each pool gives and where they are, including WoW Forever's new fishing locations.

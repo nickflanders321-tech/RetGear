@@ -1581,7 +1581,7 @@ local function renderFish()
     local pill = z.status == "all" and (GREEN .. "Every fish bites|r") or (z.status == "some" and (GOLD .. "Some get away|r") or (RED .. "Too low|r"))
     setItem(getRow(n), nil, nil, "|cffffffff" .. z.zone .. "|r" .. GREY .. string.format("   fishing starts at %d, every fish bites at %d|r", math.max(1, z.min), z.full),
       string.format("Your skill %d%s%s = %d.%s", z.skill, z.pole > 0 and (" + pole " .. z.pole) or "", z.lure and (" + lure " .. z.lure) or "", z.eff,
-        z.status ~= "all" and (" A lure (+25 to +100) closes the gap.") or ""), pill, "", z.status == "all" and "green" or nil)
+        z.status ~= "all" and (" A lure (+25 to +100) closes the gap.") or "") .. GREY .. "  Zone skill levels are Classic's: WoW Forever hasn't published its own yet.|r", pill, "", z.status == "all" and "green" or nil)
   else
     setItem(getRow(n), nil, nil, "|cffffffff" .. (zoneName ~= "" and zoneName or "This zone") .. "|r", "No fishing level known for this zone.", "", "")
   end

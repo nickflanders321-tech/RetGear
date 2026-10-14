@@ -7,17 +7,22 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
-1. **Dungeons without route steps:** Excavation Site (26-31), City of Dalaran (28-33),
-   Gnomeregan (29-38), Razorfen Downs (37-46), The Temple of Atal'Hakkar (50-56). Add
-   where the entrance is, which quests to collect first and what to watch for
-   (Routes/Horde.lua `H.steps` and `H.dungeons`).
-2. **Zone without route steps:** Riverglades (36-44), a new WoW Forever zone. Add its
-   steps once Horde guides cover it.
+1. **Riverglades (36-44) has no route steps:** QuestieDB's Forever data has only one
+   Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship
+   from Tanaris to Powderfuse Port, Horde flight point Rog'mar, Krol'dok Stronghold is a
+   40-45 dungeon. Add steps as soon as Horde quest data or a guide names the hubs.
+2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
+   Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
+   guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
+   (Prison Break In ... Heart of Disruption) and the Atal'Hakkar statue order in game.
 3. **Professions 225-300 use the Classic route** (Alchemy, Blacksmithing, Enchanting,
    Engineering, First Aid, Leatherworking, Tailoring). Replace with WoW Forever's route as
    soon as wow-professions.com or wowtbc.gg publish it.
 4. **Fishing zone skill levels are Classic's** (Fish.lua `RG.FISH_ZONES`, 45 zones), and
-   pole and lure bonuses are Classic values. Update from Forever data or guides.
+   pole and lure bonuses are Classic values (every guide checked on 2026-10-14 says Forever's
+   zone skills are unconfirmed; the Fishing tab says so). Update when a guide or the live
+   game confirms them. New Forever lures/hat ("Secret" Bait, Shiny Silver Coin, Wide-Brimmed
+   Fishing Hat) have no published source yet.
 5. **Route steps without a map pin:** 64 of 122 hand-written steps have one. Improve the
    matching in tools/waypoints/gen.py, or name the NPC or place in the step text.
 6. **Gear guide gaps at level 20:** most classes have no Head piece listed before 20, and
@@ -38,6 +43,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Done
 
+- v0.55.0: route steps for Excavation Site, City of Dalaran, Gnomeregan, Razorfen Downs and
+  the Temple of Atal'Hakkar (with entrance pins); fishing tab flags Classic-based zone skills
+  and lists WoW Forever's new lures and hat.
+- v0.54.0: Fishing tab lists everything fishing can bring up (tools/fishloot).
 - v0.51.0: quest data keeps names, levels and prerequisites for every quest; the tracker
   follows the next unfinished zone; map pins stay aligned after class-only steps.
 - v0.50.0: weapon lists read correctly for every class (no staves or fishing poles for
