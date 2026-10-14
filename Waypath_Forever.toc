@@ -9,7 +9,7 @@
 ## X-Curse-Project-ID: 1743915
 ## X-Website: https://github.com/nickflanders321-tech/RetGear
 ## Category: Quests
-## IconTexture: Interface\Icons\INV_Misc_Map_01
+## IconTexture: Interface\AddOns\Waypath\Media\Logo
 ## AddonCompartmentFunc: Waypath_OnAddonCompartmentClick
 ## AddonCompartmentFuncOnEnter: Waypath_OnAddonCompartmentEnter
 ## AddonCompartmentFuncOnLeave: Waypath_OnAddonCompartmentLeave

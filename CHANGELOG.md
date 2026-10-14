@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.53.1
+- **The Waypath+ logo replaces the paladin icon everywhere:** the window, the tracker, the minimap button, the welcome and setup screens, pop-ups, chat messages and the add-on list now show the Waypath+ waypoint logo for every class.
+
 ## v0.53.0
 - **Fresh WoW Forever quest data:** quest givers, objective spots and route steps updated from the latest WoW Forever database. Zephras Isle steps now point to Yorana Windyreed for her quests instead of Valanaar, Thunder Bluff's "Stalk With The Earthmother" is on the Mulgore route, and many map pins (Shen'dar Village, Valanaar, Elegael Thornpaw and others) are more precise.
 - The Barrens fishing pin now names the Oily Blackmouth School pools.

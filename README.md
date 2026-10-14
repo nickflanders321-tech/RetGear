@@ -1,6 +1,6 @@
 # Waypath+
 
-<img src="media/logo.png" width="160" alt="Waypath+ logo">
+<img src="tools/art/logo.png" width="160" alt="Waypath+ logo">
 
 An all-in-one leveling companion for World of Warcraft: Forever (Horde): your route with an arrow, a quest tracker, travel tips, gear upgrades, a 2nd spec, professions, fishing and gold.
 

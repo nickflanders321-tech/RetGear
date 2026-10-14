@@ -9,4 +9,3 @@ ignore:
   - .github
   - tools
   - "*.md"
-  - media

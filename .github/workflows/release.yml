@@ -57,7 +57,7 @@ jobs:
           v="${{ steps.tag.outputs.v }}"
           mkdir -p .release/Waypath
           cp *.toc *.lua *.xml README.md LICENSE .release/Waypath/
-          for d in Classes Races Routes Professions; do cp -r "$d" .release/Waypath/; done
+          for d in Classes Races Routes Professions Media; do cp -r "$d" .release/Waypath/; done
           sed -i "s/@project-version@/$v/g" .release/Waypath/*.toc
           awk -v h="## $v" '$0==h || index($0, h" ")==1 {f=1;next} /^## /{f=0} f' CHANGELOG.md > release-notes.md
           [ -s release-notes.md ] || echo "Waypath+ $v" > release-notes.md

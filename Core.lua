@@ -550,7 +550,7 @@ local function OnTooltip(tooltip)
   if not loc or not RG.EQUIP_SLOTS[loc] then return end
   local score = RG.Score(link)
   local delta = RG.Compare(link)
-  local icon = "|TInterface\\Icons\\Spell_Holy_AuraOfLight:14:14:0:0:64:64:5:59:5:59|t "
+  local icon = RG.LOGO_INLINE
   local right
   if delta and delta > 0.5 then right = GREEN .. string.format("+%.0f upgrade", delta) .. "|r"
   elseif delta and delta < -0.5 then right = RED .. string.format("%.0f", delta) .. "|r" .. GREY .. " vs worn|r"

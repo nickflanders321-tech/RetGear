@@ -389,7 +389,7 @@ local function renderGuide()
     if e.header then setHeader(r, e.header)
     elseif e.g.tip then
       setItem(r, nil, nil, GOLD .. "Tip|r" .. GREY .. "  ·  level " .. e.g.lvl .. "|r", e.g.text, "", "", "gold")
-      r.icon:SetTexture(135920)
+      r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
     else
       local g = e.g
       local name, link, quality = itemName(g.id)
@@ -2009,10 +2009,8 @@ local function build()
   RG.DialogHeader(frame, "Waypath+", 320)
 
   -- crest, framed like an action button
-  local crest = frame:CreateTexture(nil, "ARTWORK"); crest:SetSize(40, 40); crest:SetPoint("TOPLEFT", 22, -24)
-  crest:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
-  local crestRing = frame:CreateTexture(nil, "OVERLAY"); crestRing:SetSize(68, 68); crestRing:SetPoint("CENTER", crest, "CENTER", 0, 0)
-  crestRing:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+  local crest = frame:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOPLEFT", 20, -22)
+  crest:SetTexture(RG.LOGO_LARGE)
 
   frame.subtitle = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); frame.subtitle:SetPoint("TOPLEFT", crest, "TOPRIGHT", 14, -2)
   frame.subtitle:SetJustifyH("LEFT")
