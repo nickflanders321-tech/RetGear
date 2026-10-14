@@ -1,4 +1,4 @@
-## Interface: 16001, 16000, 16002, 16003, 16005, 16010, 16100
+## Interface: 16000, 16001, 16002, 16003, 16004, 16005, 16006, 16007, 16008, 16009, 16010, 16100, 16101, 16102, 16200
 ## Title: Waypath|cffD4B46A+|r
 ## Notes: Leveling guide and helper for WoW Forever: your route with an arrow, quest tracker, travel tips, gear upgrades, professions and gold.
 ## Author: Nick (Darmine Doggy Doors)
@@ -83,3 +83,4 @@ Bags.lua
 SourceInfo.lua
 ProfGuide.lua
 UI.lua
+Compat.lua

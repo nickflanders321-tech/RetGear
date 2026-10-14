@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.52.0
+- **Ready for game updates:** the first time you log in after Blizzard patches the game, Waypath+ checks that everything it uses is still there. If a patch changed something, it tells you which features are affected instead of failing quietly, and notes it in `/wp errors`. `/wp check` runs the check any time.
+- Waypath+ now also loads on upcoming WoW Forever versions (1.60.x through 1.62) without being marked "out of date".
+- Fixes are now watched for around the clock: a new game build, new WoW Forever quest data or a bug report starts an update within about an hour.
+
 ## v0.51.1
 - **Fixed the "Waypath has been blocked from an action" pop-up.** Immersive fishing no longer hides the minimap: the game doesn't allow add-ons to do that. (If you saw the pop-up, "Ignore" was safe.)
 - If the game ever blocks something again, `/wp errors` now names exactly what was blocked and the game build, for bug reports.
