@@ -1,19 +1,18 @@
 # Waypath+
 
-An all-in-one leveling companion for World of Warcraft: Forever: your route with an arrow, a quest tracker, travel tips, gear upgrades, professions and gold. (Formerly **RetGear**.)
+An all-in-one leveling companion for World of Warcraft: Forever (Horde): your route with an arrow, a quest tracker, travel tips, gear upgrades, talents, a 2nd spec, professions, fishing and gold.
 
-**What's covered so far:**
+> **Beta.** Works on English game clients (enUS/enGB). Found a bug? Type `/wp errors`, copy the text and post it on the [issue tracker](https://github.com/nickflanders321-tech/RetGear/issues).
+
+**What's covered:**
 - **Questing, for every Horde race and class:** Orc, Troll, Tauren, Undead and Skyborne each get their own starting zones (Valley of Trials and Durotar; Camp Narache and Mulgore; Deathknell, Brill and Silverpine; Zephras Isle), then the shared Horde route to 60 with travel tips from their home city. Starting-zone steps are built from WoW Forever's quest data, stop by stop, and tick themselves off. Every class sees its own class quests (including Forever's new ones, like the Forsaken paladin chain, Orc mages and Troll warlocks) on the tracker, and each dungeon lists the quests that race and class can take.
 - **Gear, for every class:** each class has its own stat weights and gear guide (Arms Warrior, Beast Mastery Hunter, Combat Rogue, Shadow Priest, Enhancement Shaman, Frost Mage, Affliction Warlock, Feral Druid, Retribution Paladin), limited to the armor and weapons it can use. Tooltips, upgrade pop-ups, bag arrows, quest reward picks and each dungeon's "drops for you" all use it.
-- **Talents and rotation:** Retribution Paladin so far; other classes are next.
+- **Talents and rotation, for every class:** a leveling build from current WoW Forever guides, with what to work toward, ranks as "x/target" and the next point to spend.
+- **2nd spec, for every class and spec:** pick any spec as your 2nd and get its gear list, tooltip scores and a one-click gear swap.
 - **Professions, all twelve:** Mining, Herbalism, Skinning, Blacksmithing, Engineering, Alchemy, Leatherworking, Tailoring, Enchanting, Cooking, Fishing and First Aid each have a 1-300 plan (WoW Forever's beta routes, Classic routes where Forever's aren't out yet), the closest trainer for your race and every rank's trainer after that, their camp objects, and gold tips. Herbs get the same "node nearby" alerts as ore, and both use WoW Forever's spawn data for where to gather.
 
-Class data lives in `Classes/`, races in `Races/`, the faction route in `Routes/` and professions in `Professions/`. `tools/audit` checks every race and class on each change.
-
 ## Install
-Copy the `Waypath` folder into `World of Warcraft\_forever_\Interface\AddOns\` (during the beta it's `_forever_beta_`), then restart the game. Type `/wp` (or `/waypath`) or click the minimap button.
-
-**Coming from RetGear?** Leave the old `RetGear` folder in place for your first login with Waypath+: it copies your progress, settings and ticked steps across, switches RetGear off and asks you to reload. Then delete the `RetGear` folder. Key bindings need setting again (they're under Waypath+ now), and the quest-target macro is now `WaypathTarget`.
+Install from CurseForge (pick WoW Forever), or copy the `Waypath` folder into `World of Warcraft\_forever_\Interface\AddOns\`, then restart the game. Type `/wp` (or `/waypath`) or click the minimap button.
 
 ## First launch
 A six-page **setup wizard** asks how much help you want (Full guidance, Balanced or Minimal), which professions you'll level, and which automation and extras to turn on. Run it again with `/wp setup` or from Settings.
@@ -21,9 +20,10 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 ## On your screen
 - **Tracker** (right side): your quests grouped by zone (the zone you're in first), one line each with their level (in the game's colors), progress and distance; new quests nearby; your route tasks; the next dungeon's quests to pick up; your next gear upgrade; and the most important reminders. Click a quest to open it in your quest log, double-click it to turn the arrow to it on or off, right-click to show it on the map, and click a section header to fold it. Drag it anywhere (or lock it in Settings), Ctrl + mouse wheel over it to resize, Shift + mouse wheel to make it wider or narrower; right-click the minimap button to hide it. With two or more quests ready, a **Turn-in run** line sends the arrow to each turn-in in turn, nearest first.
 - **Quest bar**: click to target the quest mobs you still need, and use quest items in one click. The `WaypathTarget` macro does the same from a key.
-- **Tooltips**: a **Ret score** on every item (and whether it's an upgrade), a score for your **2nd spec** (Holy, Protection, Restoration, any spec you pick), and a gold coin line when an item sells for more on the AH than at a vendor.
+- **Tooltips**: an upgrade score for your spec on every item (and whether it's an upgrade), a score for your **2nd spec** (Holy, Protection, Restoration, any spec you pick), and a gold coin line when an item sells for more on the AH than at a vendor.
 - **Fishing panel** (tracker): while you hold a fishing pole, your skill and catches per point, whether fish get away in this zone, your lure timer, fish per hour this session, and raw fish to cook.
-- **Bag icons**: a green arrow on items that are Ret upgrades, your 2nd spec's icon on pieces for your 2nd set.
+- **Immersive fishing**: cast Fishing and the interface fades away, leaving a Cast button and a small display with your skill, a cast timer, your catches and whispers. Move, press Esc or Enter, or stop casting to bring it back (`/wp fishmode` turns it off).
+- **Bag icons**: a green arrow on items that are upgrades for you, your 2nd spec's icon on pieces for your 2nd set.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Ore alerts**: a heads-up when you walk near a spot where a vein you can mine (and that still gives skill) spawns, with direction and distance.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
@@ -86,7 +86,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp track [item]` · `/wp untrack [item]` | Watch an item's AH price |
 | `/wp alert [item] 25` | Tell me when it's listed for 25 gold or less |
 | `/wp scan` · `/wp autoscan` | Re-check prices at the AH · turn the automatic scan on or off |
-| `/wp weight STR 2.5` · `/wp hitcap 9` · `/wp talenthit 3` · `/wp reset` | Tune the Ret score |
+| `/wp weight STR 2.5` · `/wp hitcap 9` · `/wp talenthit 3` · `/wp reset` | Tune your upgrade score |
 | `/wp turnin` | Start or stop a turn-in run (the arrow chains through your ready quests) |
 | `/wp greys` | Abandon unfinished grey quests (asks first) |
 | `/wp news` | What changed in the update you're running |
@@ -103,3 +103,16 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 Twice a week (Monday and Thursday mornings), an automatic update checks the newest WoW Forever guides and refreshes the quest route, gear guide, gold tips, 2nd spec builds and gear, bank-alt quests and camping/fishing data. It also rebuilds the map waypoints, quest objectives and the gear guide from the latest WoW Forever data, so changes Blizzard makes show up even before guides catch up. Each release is listed in `CHANGELOG.md`.
 
 Gear guide items are scored from the cMaNGOS classic item database and checked against WoW Forever's item data (`tools/gear`). Waypoints, quest objectives, starting-zone steps and dungeon quests come from [QuestieDB](https://github.com/Questie/QuestieDB)'s merged WoW Forever data (`tools/qdb`); `tools/waypoints`, `tools/objectives` and `tools/routes` rebuild them. Data sources include Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com and Warcraft Wiki. Several dungeon drops are Classic-era until Forever's loot tables are confirmed.
+
+## Reporting bugs
+Waypath+ catches its own errors instead of interrupting you. Type `/wp errors` to see them in a window you can copy from, and post them with your race, class and level on the [issue tracker](https://github.com/nickflanders321-tech/RetGear/issues).
+
+## Language
+Quest, zone, profession and spell names are matched in English, so Waypath+ is made for English game clients (enUS/enGB). On other clients it says so once at login; route steps, quests and professions may not be recognized there.
+
+## License and credits
+Waypath+ is free software under the GNU General Public License v3 (see `LICENSE`).
+- Quest, objective and spawn data: [QuestieDB](https://github.com/Questie/QuestieDB) (GPL-3.0), WoW Forever data merged by the Questie team.
+- Item stats: [cMaNGOS classic-db](https://github.com/cmangos/classic-db) (GPL-3.0).
+- Guides and research: Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com, wowtbc.gg and Warcraft Wiki.
+

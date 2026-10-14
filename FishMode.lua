@@ -62,7 +62,7 @@ local function build()
     hud.feed[i] = f
   end
   hud.hint = hud:CreateFontString(nil, "OVERLAY"); font(hud.hint, 9); hud.hint:SetPoint("BOTTOM", hud, "BOTTOM", 0, -6)
-  hud.hint:SetText(GREY .. "Move, Esc or Enter to bring your interface back|r")
+  hud.hint:SetText(GREY .. "Move, Esc or Enter brings your interface back|r")
   local acc = 0
   hud:SetScript("OnUpdate", function(self, dt)
     acc = acc + dt
@@ -77,6 +77,41 @@ local function build()
   end)
 end
 
+-- The Cast button: your action bars fade with the rest of the interface, so
+-- the display brings its own. It's a secure spell button (a real click casts
+-- Fishing), kept on the game world like the display. Shown and hidden only
+-- out of combat, as the game requires for buttons that cast.
+local castBtn
+local function buildCast()
+  if castBtn or not CreateFrame then return castBtn end
+  local ok, b = pcall(CreateFrame, "Button", "WaypathFishCast", WorldFrame or UIParent, "SecureActionButtonTemplate")
+  if not ok or not b then return nil end
+  castBtn = b
+  b:SetSize(52, 52); b:SetPoint("BOTTOM", WorldFrame or UIParent, "BOTTOM", 0, 52)
+  b:SetFrameStrata("HIGH")
+  b:RegisterForClicks("AnyUp", "AnyDown")
+  b:SetAttribute("type", "spell"); b:SetAttribute("spell", "Fishing")
+  b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetAllPoints(); b.icon:SetTexture("Interface\\Icons\\Trade_Fishing"); b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  b.edge = b:CreateTexture(nil, "BACKGROUND"); b.edge:SetPoint("TOPLEFT", -2, 2); b.edge:SetPoint("BOTTOMRIGHT", 2, -2); b.edge:SetColorTexture(0.83, 0.71, 0.42, 0.9)
+  b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.18)
+  b.label = b:CreateFontString(nil, "OVERLAY"); font(b.label, 12, "OUTLINE"); b.label:SetPoint("TOP", b, "BOTTOM", 0, -4); b.label:SetText(GOLD .. "Cast|r")
+  b:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:AddLine("Cast Fishing", 1, 1, 1)
+    GameTooltip:AddLine("Click to cast. Your usual Fishing key still works too.", 0.7, 0.7, 0.7, true); GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  b:SetAlpha(0); b:Hide()
+  return b
+end
+local function showCast(on)
+  if InCombatLockdown and InCombatLockdown() then return end
+  local b = buildCast()
+  if not b then return end
+  if on then b:Show() else b:Hide() end
+end
+RG.FishCastButton = function() return castBtn end
+
 -- UIParent fades out while the display fades in (and back), on one timer
 local function fadeTo(target)
   build()
@@ -90,6 +125,7 @@ local function fadeTo(target)
     local p = math.min(1, t / FADE)
     if UIParent then UIParent:SetAlpha(from + ((target and 0 or 1) - from) * p) end
     hud:SetAlpha(hudFrom + ((target and 1 or 0) - hudFrom) * p)
+    if castBtn and castBtn:IsShown() then castBtn:SetAlpha(hud:GetAlpha() or 1) end
     if p >= 1 then
       self:SetScript("OnUpdate", nil)
       if not target then hud:Hide() end
@@ -150,12 +186,14 @@ function RG.FishModeEnter()
   if active and not peeking then return end
   active, peeking = true, false
   whisper = nil
+  showCast(true)
   fadeTo(true)
 end
 function RG.FishModeExit()
   if not active then return end
   active, peeking = false, false
   castStart, castEnd, whisper = nil, nil, nil
+  showCast(false)
   fadeTo(false)
 end
 -- show the interface for a moment (a loot window you need to click), stay in fishing mode
@@ -166,6 +204,7 @@ local function peek()
   if fader then fader:SetScript("OnUpdate", nil) end
   if UIParent then UIParent:SetAlpha(1) end
   hud:Show(); hud:SetAlpha(1)
+  if castBtn then castBtn:SetAlpha(1) end
 end
 local function unpeek()
   if not (active and peeking) then return end
@@ -228,7 +267,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3)
   elseif event == "PLAYER_STARTED_MOVING" or event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_DEAD" then
     RG.FishModeExit()
   elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_LOGOUT" then
-    if active then active = false; if UIParent then UIParent:SetAlpha(1) end; if hud then hud:Hide() end end
+    if active then active = false; if UIParent then UIParent:SetAlpha(1) end; if hud then hud:Hide() end; showCast(false) end
   end
 end)
 -- Esc (game menu) and Enter (chat) bring the interface back

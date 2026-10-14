@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.48.0 (ready for CurseForge)
+- **Cast button while fishing:** immersive fishing now shows a big Fishing button under the display, since your action bars are hidden. Click it to cast; your usual Fishing key still works too.
+- **Uses less memory:** only your own class's gear lists and your own race's starting route stay loaded (about a quarter less memory).
+- **Non-English game clients** get a one-time note at login that Waypath+ is made for English clients.
+- Waypath+ is now open source under the GNU GPL v3, with credits for QuestieDB and cMaNGOS in the README.
+- Packaging fixes for CurseForge: the add-on folder is always named Waypath, and only WoW Forever's game versions are listed.
+
 ## v0.47.0 (immersive fishing)
 - **Immersive fishing:** cast Fishing and your whole interface fades away, leaving just the water and a small display near the bottom of the screen:
   - your Fishing skill (and points gained this session),

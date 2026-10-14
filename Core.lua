@@ -604,6 +604,14 @@ f:SetScript("OnEvent", function(_, event, arg1)
       if others == 0 then RG.SetCharMode("profile")
       else C_Timer.After(2.5, function() if RG.AskCharMode then RG.AskCharMode() end end) end
     end
+    -- quest, zone and profession names are matched in English: say so once on other clients
+    local loc = GetLocale and GetLocale()
+    if loc and loc ~= "enUS" and loc ~= "enGB" and RG.root and not RG.root.localeWarned then
+      RG.root.localeWarned = true
+      C_Timer.After(9, function()
+        RG.Print("Waypath+ is made for English game clients. On this client (" .. loc .. ") route steps, quest names, professions and fishing may not be recognized. Everything else still works.")
+      end)
+    end
     -- after an update: what's new (once per version)
     C_Timer.After(7, function()
       local N = RG.NEWS

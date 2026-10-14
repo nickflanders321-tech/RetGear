@@ -15,6 +15,14 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      # CurseForge upload: set the CF_API_KEY secret and the CF_PROJECT_ID variable
+      # (Settings > Secrets and variables > Actions). CF_RELEASE_TYPE (alpha, beta
+      # or release; beta by default) and CF_GAME_VERSION (1.60.1 by default) are optional.
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
+      CF_RELEASE_TYPE: ${{ vars.CF_RELEASE_TYPE || 'beta' }}
+      CF_GAME_VERSION: ${{ vars.CF_GAME_VERSION || '1.60.1' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +49,7 @@ jobs:
         run: |
           v="${{ steps.tag.outputs.v }}"
           mkdir -p .release/Waypath
-          cp *.toc *.lua *.xml README.md .release/Waypath/
+          cp *.toc *.lua *.xml README.md LICENSE .release/Waypath/
           for d in Classes Races Routes Professions; do cp -r "$d" .release/Waypath/; done
           sed -i "s/@project-version@/$v/g" .release/Waypath/*.toc
           awk -v h="## $v" '$0==h || index($0, h" ")==1 {f=1;next} /^## /{f=0} f' CHANGELOG.md > release-notes.md
@@ -81,3 +89,19 @@ jobs:
           body_path: release-notes.md
           files: .release/Waypath-*.zip
           fail_on_unmatched_files: true
+      - name: Upload to CurseForge
+        if: steps.tag.outputs.skip == 'false' && env.CF_API_KEY != '' && env.CF_PROJECT_ID != ''
+        run: |
+          v="${{ steps.tag.outputs.v }}"
+          ids=$(curl -sSf -H "X-Api-Token: $CF_API_KEY" https://wow.curseforge.com/api/game/versions | python3 -c '
+          import json, os, sys
+          want = [w.strip() for w in os.environ["CF_GAME_VERSION"].split(",")]
+          print(json.dumps(sorted({g["id"] for g in json.load(sys.stdin) if g.get("name") in want})))')
+          echo "CurseForge game versions for $CF_GAME_VERSION: $ids"
+          [ "$ids" != "[]" ] || { echo "No CurseForge game version named $CF_GAME_VERSION"; exit 1; }
+          meta=$(python3 -c '
+          import json, sys
+          print(json.dumps({"changelog": open("release-notes.md", encoding="utf-8").read(), "changelogType": "markdown",
+            "displayName": "Waypath+ " + sys.argv[1], "gameVersions": json.loads(sys.argv[2]), "releaseType": sys.argv[3]}))' "$v" "$ids" "$CF_RELEASE_TYPE")
+          curl -sSf -H "X-Api-Token: $CF_API_KEY" -F "metadata=$meta" -F "file=@.release/Waypath-$v.zip" \
+            "https://wow.curseforge.com/api/projects/$CF_PROJECT_ID/upload-file"

@@ -209,3 +209,14 @@ for name, p in pairs(P) do
   end
 end
 RG.MATS = mats
+
+-- Only this character's class and race data is ever used: let the rest go so
+-- the other eight classes' gear lists and other races' starting routes don't
+-- sit in memory. (The data audit keeps everything.)
+if not RG.KEEP_ALL_DATA then
+  for _, t in ipairs({ RG.CLASS_GEAR, RG.SPEC_GEAR, RG.SPEC_HAND }) do
+    for cls in pairs(t or {}) do if cls ~= RG.PLAYER_CLASS then t[cls] = nil end end
+  end
+  for letter in pairs(RG.GEN_STEPS or {}) do if letter ~= RG.RACE_LETTER then RG.GEN_STEPS[letter] = nil end end
+  collectgarbage("collect")
+end

@@ -1,6 +1,11 @@
-package-as: RetGear
+package-as: Waypath
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
 
 ignore:
-  - CHANGELOG.md
   - VERSION
   - .github
+  - tools
+  - "*.md"

@@ -1,10 +1,13 @@
-## Interface: 16001, 16000, 16002, 16003, 16005, 16010, 16100, 120105, 120100, 120001
+## Interface: 16001, 16000, 16002, 16003, 16005, 16010, 16100
 ## Title: Waypath|cffD4B46A+|r
 ## Notes: Leveling guide and helper for WoW Forever: your route with an arrow, quest tracker, travel tips, gear upgrades, professions and gold.
 ## Author: Nick (Darmine Doggy Doors)
 ## Version: @project-version@
 ## SavedVariables: WaypathDB
-## OptionalDeps: RetGear, Auctionator, TradeSkillMaster
+## OptionalDeps: Auctionator, TradeSkillMaster
+## X-License: GPL-3.0
+## X-Website: https://github.com/nickflanders321-tech/RetGear
+## Category: Quests
 ## IconTexture: Interface\Icons\INV_Misc_Map_01
 ## AddonCompartmentFunc: Waypath_OnAddonCompartmentClick
 ## AddonCompartmentFuncOnEnter: Waypath_OnAddonCompartmentEnter
