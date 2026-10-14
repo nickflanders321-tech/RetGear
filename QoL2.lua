@@ -72,7 +72,7 @@ function RG.ShowErrors()
   local list = (WaypathDB and WaypathDB.errors) or {}
   local lines = { "Waypath+ " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught", "" }
   for i, e in ipairs(list) do
-    lines[#lines + 1] = string.format("#%d  x%d  %s%s", i, e.count or 1, e.v and ("v" .. e.v .. "  ") or "", e.t and date and date("%Y-%m-%d %H:%M", e.t) or "")
+    lines[#lines + 1] = string.format("#%d  x%d  %s%s", i, e.count or 1, e.v and (tostring(e.v):gsub("^v?", "v") .. "  ") or "", e.t and date and date("%Y-%m-%d %H:%M", e.t) or "")
     lines[#lines + 1] = e.msg or "?"
     if e.stack and e.stack ~= "" then lines[#lines + 1] = e.stack end
     lines[#lines + 1] = ""
