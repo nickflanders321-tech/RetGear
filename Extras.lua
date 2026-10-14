@@ -1,5 +1,5 @@
 -- Waypath+ extras: quest reward picker, Exorcism alerts, weapon stone reminder,
--- XP per hour and session summary, character-screen scores, talent planner.
+-- XP per hour and session summary, character-screen scores, talent points.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
@@ -247,7 +247,7 @@ local function updatePaperdoll()
 end
 
 -- ===========================================================================
--- 6. Talent planner
+-- 6. Talent points (unspent-point reminder only)
 -- ===========================================================================
 -- Talent APIs differ between clients, so each way of reading talents is tried
 -- in turn; RG.talentSource remembers which one worked (shown by /wp talents check).
@@ -286,6 +286,10 @@ local function traitUnspent()
   end
   return total
 end
+-- The game's own talent screen
+function RG.OpenTalentFrame()
+  if ToggleTalentFrame then pcall(ToggleTalentFrame) elseif PlayerTalentFrame_Toggle then pcall(PlayerTalentFrame_Toggle) end
+end
 function RG.UnspentTalents()
   local p = try(UnitCharacterPoints, "player")
   if RG.IsSecret and RG.IsSecret(p) then p = nil end
@@ -322,21 +326,11 @@ function RG.TalentCheck()
   local u = RG.UnspentTalents()
   DEFAULT_CHAT_FRAME:AddMessage("   result: " .. tostring(u) .. " unspent (" .. (RG.talentSource or "no method worked") .. ")")
 end
-function RG.NextTalent()
-  local tree = RG.ReadTalents()
-  if not tree then return RG.TALENT_PRIORITY[1], nil end
-  for _, t in ipairs(RG.TALENT_PRIORITY) do
-    local info = tree[t.name]
-    if info and info.rank < math.min(t.target or info.max, info.max) and info.available then return t, info end
-  end
-  return nil
-end
 local function talentReminder()
   if not RG.Opt("talentReminder") then return nil end
   local pts = RG.UnspentTalents()
   if not pts or pts <= 0 then return nil end
-  local t = RG.NextTalent()
-  return GOLD .. "Spend " .. pts .. " talent point" .. (pts > 1 and "s" or "") .. "|r" .. (t and (GREY .. "  (next: " .. t.name .. ")|r") or "")
+  return GOLD .. "Spend " .. pts .. " talent point" .. (pts > 1 and "s" or "") .. "|r"
 end
 
 -- Add our reminders to the tracker's list.
@@ -344,7 +338,7 @@ local baseReminders = RG.Reminders
 function RG.Reminders()
   local out = baseReminders and baseReminders() or {}
   local s = stoneReminder(); if s then out[#out + 1] = { s } end
-  local t = talentReminder(); if t then out[#out + 1] = { t, function() if RG.ShowTab then RG.ShowTab("talents") end end } end
+  local t = talentReminder(); if t then out[#out + 1] = { t, function() RG.OpenTalentFrame() end } end
   return out
 end
 
@@ -385,7 +379,7 @@ SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   if cmd and cmd:lower() == "session" then RG.SessionSummary(); return end
   if cmd and cmd:lower() == "talents" then
-    if (msg or ""):lower():find("check") then RG.TalentCheck() elseif RG.ShowTab then RG.ShowTab("talents") end
+    if (msg or ""):lower():find("check") then RG.TalentCheck() else RG.OpenTalentFrame() end
     return
   end
   return base(msg)

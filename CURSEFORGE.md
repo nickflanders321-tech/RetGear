@@ -1,6 +1,6 @@
 # Waypath+
 
-**An all-in-one leveling companion for WoW Forever (Horde).** Your route with an arrow, a clean quest tracker, talents, gear upgrades, a 2nd spec for every class, all twelve professions, fishing and gold, in one add-on.
+**An all-in-one leveling companion for WoW Forever (Horde).** Your route with an arrow, a clean quest tracker, gear upgrades, a 2nd spec for every class, all twelve professions, fishing and gold, in one add-on.
 
 > **Beta.** English game clients (enUS/enGB). Please report anything odd: type `/wp errors`, copy the text and post it on the [issue tracker](https://github.com/nickflanders321-tech/RetGear/issues).
 
@@ -14,10 +14,9 @@
 - **Class quests** for every class, including Forever's new ones, and the quests to collect before each dungeon.
 - **Travel tips:** the quickest way to your next zone using your hearthstone, flight paths, zeppelins and boats.
 
-## Gear and talents
+## Gear
 - **Upgrade scores on every tooltip,** weighted for your class and spec, with green arrows on upgrades in your bags and an Equip button when you loot one.
 - **A gear guide for every class:** what to collect at each level and exactly where it comes from. Click any item to see the dungeon and boss, or the quest, its zone and level.
-- **Talents for every class:** a leveling build from current WoW Forever guides, what to work toward and where your next point goes.
 - **2nd spec, any class, any spec:** pick Holy, Protection, Restoration, Feral, anything; get its gear list, tooltip scores and a one-click gear swap.
 
 ## Professions
@@ -53,7 +52,7 @@ Screenshot list for the CurseForge "Images" tab (take them in game, 1920x1080, U
 1. Tracker in the Valley of Trials: Route section with Pick up / Do / Hand in lines and the arrow.
 2. Route tab open on a starting zone, one step expanded.
 3. Gear guide tab, then an item clicked to show its source window.
-4. Talents tab for a non-paladin class (e.g. Mage) showing "Work toward" and x/target ranks.
+4. My gear tab with an item clicked to show where it drops.
 5. 2nd Spec tab with a spec picked and its gear list.
 6. Professions tab with a step, materials still needed and a farming spot.
 7. Immersive fishing: interface faded, fishing display showing a catch.

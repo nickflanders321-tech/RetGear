@@ -220,7 +220,6 @@ for _, race in ipairs(RACE_ORDER) do
     if not RG.ActiveClass.weights or not next(RG.ActiveClass.weights) then fail(combo, "no stat weights") end
     if #gearGaps > 4 then fail(combo, "gear guide gaps: " .. table.concat(gearGaps, ", ")) end
     r.gear = items .. " items" .. (#gearGaps > 0 and (" (gaps: " .. table.concat(gearGaps, " ") .. ")") or "")
-    r.talents = #RG.TALENT_PRIORITY > 0 and (#RG.TALENT_PRIORITY .. "") or "not yet"
     -- 7. professions: every one has a closest trainer for this race
     local profOK = 0
     for name, P in pairs(RG.PROFESSIONS) do
@@ -261,16 +260,16 @@ for _, race in ipairs(RACE_ORDER) do
   end
 end
 
-local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Talents", "Professions with a trainer nearby", "2nd specs ready" }
+local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Professions with a trainer nearby", "2nd specs ready" }
 if MARKDOWN then
   print("| " .. table.concat(head, " | ") .. " |")
   print("|" .. string.rep("---|", #head))
 end
 for _, r in ipairs(rows) do
-  local cells = { r.combo, r.start, r.steps, r.wp .. "%", r.gaps, r.cq, r.dq, r.bad, r.gear, r.talents, r.profs, r.specs }
+  local cells = { r.combo, r.start, r.steps, r.wp .. "%", r.gaps, r.cq, r.dq, r.bad, r.gear, r.profs, r.specs }
   if MARKDOWN then print("| " .. table.concat(cells, " | ") .. " |")
-  else print(string.format("%-18s %-26s steps %3d  wp %3d%%  gaps %d  class quests %-16s dungeon quests %3d  problems %d  gear %s  talents %s  2nd specs %s",
-    r.combo, r.start, r.steps, r.wp, r.gaps, r.cq, r.dq, r.bad, r.gear, r.talents, r.specs)) end
+  else print(string.format("%-18s %-26s steps %3d  wp %3d%%  gaps %d  class quests %-16s dungeon quests %3d  problems %d  gear %s  2nd specs %s",
+    r.combo, r.start, r.steps, r.wp, r.gaps, r.cq, r.dq, r.bad, r.gear, r.specs)) end
 end
 if #failures > 0 then
   io.stderr:write("\n" .. #failures .. " problem(s):\n")

@@ -1,13 +1,14 @@
 # Waypath+
 
-An all-in-one leveling companion for World of Warcraft: Forever (Horde): your route with an arrow, a quest tracker, travel tips, gear upgrades, talents, a 2nd spec, professions, fishing and gold.
+<img src="media/logo.png" width="160" alt="Waypath+ logo">
+
+An all-in-one leveling companion for World of Warcraft: Forever (Horde): your route with an arrow, a quest tracker, travel tips, gear upgrades, a 2nd spec, professions, fishing and gold.
 
 > **Beta.** Works on English game clients (enUS/enGB). Found a bug? Type `/wp errors`, copy the text and post it on the [issue tracker](https://github.com/nickflanders321-tech/RetGear/issues).
 
 **What's covered:**
 - **Questing, for every Horde race and class:** Orc, Troll, Tauren, Undead and Skyborne each get their own starting zones (Valley of Trials and Durotar; Camp Narache and Mulgore; Deathknell, Brill and Silverpine; Zephras Isle), then the shared Horde route to 60 with travel tips from their home city. Starting-zone steps are built from WoW Forever's quest data, stop by stop, and tick themselves off. Every class sees its own class quests (including Forever's new ones, like the Forsaken paladin chain, Orc mages and Troll warlocks) on the tracker, and each dungeon lists the quests that race and class can take.
 - **Gear, for every class:** each class has its own stat weights and gear guide (Arms Warrior, Beast Mastery Hunter, Combat Rogue, Shadow Priest, Enhancement Shaman, Frost Mage, Affliction Warlock, Feral Druid, Retribution Paladin), limited to the armor and weapons it can use. Tooltips, upgrade pop-ups, bag arrows, quest reward picks and each dungeon's "drops for you" all use it.
-- **Talents and rotation, for every class:** a leveling build from current WoW Forever guides, with what to work toward, ranks as "x/target" and the next point to spend.
 - **2nd spec, for every class and spec:** pick any spec as your 2nd and get its gear list, tooltip scores and a one-click gear swap.
 - **Professions, all twelve:** Mining, Herbalism, Skinning, Blacksmithing, Engineering, Alchemy, Leatherworking, Tailoring, Enchanting, Cooking, Fishing and First Aid each have a 1-300 plan (WoW Forever's beta routes, Classic routes where Forever's aren't out yet), the closest trainer for your race and every rank's trainer after that, their camp objects, and gold tips. Herbs get the same "node nearby" alerts as ore, and both use WoW Forever's spawn data for where to gather.
 
@@ -46,9 +47,8 @@ Styled like the classic WoW interface: the stone-and-gold dialog frame, Characte
 | **Route** | Undead Horde path from Deathknell to 60 in four foldable sections: **Now** (your zones and dungeons, with only the steps left to do), **Coming up** (next 5 levels), **Later** and **Done**. Dungeon quests to collect, flight paths, travel, paladin milestones, buy-and-mail quests, camping/fishing steps, and your leveling pace |
 | **Gear guide** | About 160 Ret upgrades for every slot, levels 8-60: Horde quest rewards, dungeon boss drops, vendors and your own Blacksmithing crafts, grouped by slot near your level |
 | **My gear** | Gear check (your 8 best upgrades from the guide vs what you wear, and the dungeons with the most upgrades for you), score per slot, hit % vs cap, next upgrade for each slot, pre-raid checklist. Click an item to see the dungeon and boss that drop it, or the quest (who starts it, where, at what level), with a map button |
-| **Talents** | Next talent point (WoW Forever talents) and the leveling priority |
 | **Group** | Solo vs grouped XP/hr, your paladin duties (who needs a Blessing, Aura), shared quests with a Share click, LFG posts for the right dungeon or group quest, and dungeon run reports |
-| **2nd Spec** | Pick any spec of your class (all 28: tanks, healers and damage). **Spec & build**: its WoW Forever talent build, stats, tips and what's new in Forever. **Gear to collect**: your best piece per slot for it (worn, bags, bank), and what to hunt for from level 30, by dungeon. Dual spec unlocks at 40; your 2nd set is never sold |
+| **2nd Spec** | Pick any spec of your class (all 28: tanks, healers and damage). **Spec**: its stats, how to play it and what's new in Forever. **Gear to collect**: your best piece per slot for it (worn, bags, bank), and what to hunt for from level 30, by dungeon. Dual spec unlocks at 40; your 2nd set is never sold |
 | **Professions** → *Professions* | Every profession's 1-300 route (WoW Forever guides). For each of yours: where you are, how many crafts are left in the step, **how many more of each material you need** (bags and bank counted, plus what crafted reagents like bolts and bars take), and **where to go**: the best herb and ore clusters, beasts to skin and fishing pools for your skill, the mobs, nodes and vendors for what you're short of, and your next trainer. **Double-click a place and the arrow takes you there.** Opening a profession window reads its exact recipes. Also smelt-or-sell, smithing upgrades and material prices |
 | **Professions** → *Fishing & cooking* | Your Fishing and Cooking skill, next rank and how to get it, whether every fish bites in your zone, where to fish for your skill (Horde), raw fish in your bags that still level Cooking, fish to catch and cook (recipes, day/night and seasonal fish), poles, lures and gear you own, the Stranglethorn Fishing Extravaganza, and your catch history |
 | **Professions** → *Camping* | Camp Benefits timer, which object to place (Sharpening Wheel vs Fish Bowl from your stats), campfires and camp objects, and the camping and cooking steps along your route |
@@ -73,13 +73,13 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 |---|---|
 | `/wp` | Open or close the window |
 | `/wp group` · `/wp lfg Scarlet Monastery` | Group tab · post an LFG message |
-| `/wp spec` · `/wp heal` (2nd spec gear) · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp talents` · `/wp settings` | Open that tab |
+| `/wp spec` · `/wp heal` (2nd spec gear) · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp settings` | Open that tab |
 | `/wp auto` | Auto accept / turn in on or off |
 | `/wp next` | Pin your nearest quest objective (or turn-in) |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
 | `/wp way 45 60` | Pin a spot in your zone and follow the arrow |
 | `/wp pace` | Time at this level, last level and your average |
-| `/wp talents check` | Show how talent points are read on this client (send it to me if talents look wrong) |
+| `/wp talents` · `/wp talents check` | Open the game's talent screen · show how unspent talent points are read on this client (for bug reports) |
 | `/wp sort` · `/wp sort bank` | Sort your bags or bank (also the Sort button on your bags) |
 | `/wp session` | XP, quests, ore and gold this session |
 | `/wp profit` | Bag items to sell on the AH; `/wp profit min 25` sets the threshold in silver; `/wp profit ignore [item]` stops flagging an item |

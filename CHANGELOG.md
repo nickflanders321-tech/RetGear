@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.49.0
+- **Talents tab removed.** The game's own talent screen does that job better, and builds go out of date as WoW Forever's trees change. The tracker still reminds you when you have points to spend; click the reminder (or type `/wp talents`) to open the game's talent screen.
+- The 2nd Spec page keeps each spec's stats, how to play it and what's new in Forever, without the talent build.
+- New Waypath+ logo.
+
 ## v0.48.0 (ready for CurseForge)
 - **Cast button while fishing:** immersive fishing now shows a big Fishing button under the display, since your action bars are hidden. Click it to cast; your usual Fishing key still works too.
 - **Uses less memory:** only your own class's gear lists and your own race's starting route stay loaded (about a quarter less memory).

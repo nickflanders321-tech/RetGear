@@ -60,38 +60,11 @@ RG.EQUIP_SLOTS.INVTYPE_RANGEDRIGHT = { 18 }
 RG.EQUIP_SLOTS.INVTYPE_THROWN = { 18 }
 if C.model == "DW" or C.token == "HUNTER" then RG.EQUIP_SLOTS.INVTYPE_WEAPON = { 16, 17 } end
 RG.DEFAULT_HIT_CAP = C.hitCap or 9
--- Class quests, talents, rotation and class milestones only come from your own
--- class: another class's would be wrong. Weights and the gear guide do fall
--- back (a rough melee guide is better than none until your class has its own).
+-- Class quests and class milestones only come from your own class: another
+-- class's would be wrong. Weights and the gear guide do fall back (a rough
+-- melee guide is better than none until your class has its own).
 local own = RG.ClassSupported and C or {}
-RG.ClassHasTalents = own.talents and #own.talents > 0
 RG.CLASS_QUESTS = own.classQuests or {}
-RG.TALENT_PRIORITY = own.talents or {}
-RG.ROTATION = own.rotation or {}
--- Classes without a hand-written talent order use their leveling spec's build
--- from the WoW Forever guides (Classes/Specs.lua): "Frost 21: Improved Frostbolt 5, ..."
-if not RG.ClassHasTalents and RG.ClassSupported and RG.SPECS then
-  for _, s in ipairs(RG.SPECS[RG.PLAYER_CLASS] or {}) do
-    if s.main then
-      local list = {}
-      for _, line in ipairs(s.build or {}) do
-        local tree, body = line:match("^(%a[%a ]-) %d+: (.+)$")
-        for part in (body or ""):gmatch("[^,]+") do
-          part = part:gsub("^%s+", ""):gsub("%s+$", "")
-          local name, pts = part:match("^(.-)%s+(%d+)$")
-          name, pts = name or part, tonumber(pts) or 1
-          if name ~= "" then
-            list[#list + 1] = { name = name, target = pts, why = (tree and (tree .. " tree") or "") .. "  ·  " .. pts .. " point" .. (pts > 1 and "s" or "") .. " in the " .. s.name .. " build" }
-          end
-        end
-      end
-      if #list > 0 then
-        RG.TALENT_PRIORITY, RG.ClassHasTalents, RG.TALENT_GUIDE = list, true, s
-        if #RG.ROTATION == 0 then RG.ROTATION = s.tips or {} end
-      end
-    end
-  end
-end
 -- What item scores are called on tooltips and toasts ("Ret score").
 RG.SCORE_NAME = own.scoreName and (own.scoreName .. " score") or "Upgrade score"
 

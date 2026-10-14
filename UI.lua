@@ -44,7 +44,7 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
 local GROUPS = { prof = { "prof", "fish", "camp" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
-local SUBLABEL = { prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec & build", heal = "Gear to collect" }
+local SUBLABEL = { prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -1140,60 +1140,6 @@ local function renderAH()
   return n
 end
 
-local function renderTalents()
-  local n = 0
-  local pts = RG.UnspentTalents and RG.UnspentTalents()
-  local tree = RG.ReadTalents and RG.ReadTalents()
-  local nextT = RG.NextTalent and RG.NextTalent()
-  n = n + 1
-  setBar(getRow(n), "Unspent talent points", pts or 0, math.max(pts or 0, 1), pts and pts > 0 and T.gold or T.green,
-    pts == nil and (GREY .. "can't read · /wp talents check|r") or (pts > 0 and (GOLD .. pts .. " to spend|r") or (GREEN .. "all spent|r")))
-  rows[n].tip = (pts == nil and "This client didn't report your talent points.\nType /wp talents check and send me the result.\n\n" or "")
-    .. "Click to open your talents" .. (RG.talentSource and ("\n" .. GREY .. "Read via " .. RG.talentSource .. "|r") or "")
-  rows[n].onClick = function() if ToggleTalentFrame then pcall(ToggleTalentFrame) elseif PlayerTalentFrame_Toggle then pcall(PlayerTalentFrame_Toggle) end end
-  if nextT then
-    n = n + 1
-    setItem(getRow(n), nil, nil, GOLD .. "Next: " .. nextT.name .. "|r", nextT.why, pts and pts > 0 and (GREEN .. "Take it now|r") or "", "", "gold")
-    rows[n].icon:SetTexture(135891)
-  end
-  local cls = RG.ActiveClass or {}
-  if not RG.ClassHasTalents then
-    n = n + 1; setHeader(getRow(n), "Talent builds for your class are coming in a later update")
-    return n
-  end
-  local G = RG.TALENT_GUIDE
-  n = n + 1; setHeader(getRow(n), (cls.spec or "Your") .. " talents, in order" .. (G and "  ·  WoW Forever beta build (level 30)" or ""))
-  if G and G.goal then
-    n = n + 1
-    setItem(getRow(n), nil, nil, GOLD .. "Work toward:|r " .. G.goal, GREY .. "From the newest Forever guide; level 60 builds come with the twice-weekly update once they're published. Other specs: 2nd Spec tab.|r", "", "", nil, nil, true)
-    rows[n].icon:SetTexture(G.icon or 135891)
-  end
-  for i, t in ipairs(RG.TALENT_PRIORITY) do
-    n = n + 1
-    local info = tree and tree[t.name]
-    local right, accent
-    if info then
-      local want = math.min(t.target or info.max, info.max)
-      if info.rank >= want then right = GREEN .. info.rank .. "/" .. want .. "|r"; accent = "green"
-      elseif info.rank > 0 then right = GOLD .. info.rank .. "/" .. want .. "|r"
-      else right = GREY .. "0/" .. want .. (info.available and "" or " · locked") .. "|r" end
-    else right = tree and (GREY .. "not in your tree|r") or (t.target and (GREY .. t.target .. " pt" .. (t.target > 1 and "s" or "") .. "|r") or "") end
-    local done = info and info.rank >= math.min(t.target or info.max, info.max)
-    setItem(getRow(n), nil, nil, (done and GREY or "|cffffffff") .. i .. ".  " .. t.name .. "|r", t.why, right, "", accent)
-    rows[n].icon:SetTexture(135891)
-  end
-  n = n + 1; setHeader(getRow(n), "What to press while leveling")
-  for i, line in ipairs(RG.ROTATION) do
-    n = n + 1; setStep(getRow(n), i, line, false, nil)
-    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
-  end
-  for _, note in ipairs(cls.talentNotes or {}) do
-    n = n + 1; setHeader(getRow(n), note[1])
-    n = n + 1; setStep(getRow(n), "", note[2], false, nil)
-    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
-  end
-  return n
-end
 
 local GOLD_ICON = {
   ["Auction House"] = "Interface\\Icons\\INV_Misc_Coin_01",
@@ -1316,18 +1262,6 @@ local function renderSpec()
     setItem(getRow(n), nil, nil, "|cffffffff" .. cur.name .. " gear to collect|r", soon > 0 and (soon .. " piece" .. (soon > 1 and "s" or "") .. " you can get within 5 levels, slot by slot, with where they drop.") or "Your set, slot by slot, and what to hunt for next.", GOLD .. "Open|r", "", "gold")
     specIcon(rows[n], cur)
     rows[n].onClick = function() state.tab = "heal"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
-  end
-  -- the build
-  n = n + 1; setHeader(getRow(n), cur.name .. " build  ·  WoW Forever (beta, level 30)")
-  for _, line in ipairs(cur.build or {}) do
-    n = n + 1
-    setItem(getRow(n), nil, nil, "|cffffffff" .. line .. "|r", "", "", "", nil, nil, true)
-    specIcon(rows[n], cur)
-  end
-  if cur.goal then
-    n = n + 1
-    setItem(getRow(n), nil, nil, GOLD .. "Work toward:|r " .. cur.goal, "", "", "", nil, nil, true)
-    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
   end
   n = n + 1
   setItem(getRow(n), nil, nil, GOLD .. "Stats:|r " .. cur.stats, "", "", "", nil, nil, true)
@@ -1928,7 +1862,6 @@ local TITLES = {
   prof  = { "Professions", "Where you are in each profession, what you still need, and where to go for it" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
   settings = { "Settings", "Turn Waypath+'s helpers on or off" },
-  talents = { "Talents", "What to take next, read from your talent tree" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
@@ -1944,7 +1877,6 @@ local FOOTERS = {
   prof  = "Double-click a place to point the arrow at it  ·  counts include your bank (open it once)  ·  opening a profession window reads its exact recipes",
   ah    = "Opening the AH refreshes out-of-date prices (a full scan when the server allows one)  ·  searching yourself pauses it  ·  /wp alert [item] 25 pings you at 25g or less",
   settings = "Settings are saved for this character (prices and window positions are shared)  ·  /wp tracker shows or hides the tracker",
-  talents = "Talent names follow WoW Forever  ·  /wp talents opens this tab",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
   fish  = "Zone skill levels are Classic's until WoW Forever confirms them  ·  open your Cooking window once so Waypath+ knows your recipes  ·  /wp fish",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
@@ -1992,7 +1924,6 @@ function RG.RefreshUINow()
   elseif state.tab == "route" then n = renderRoute()
   elseif state.tab == "prof" then n = renderProf()
   elseif state.tab == "settings" then n = renderSettings()
-  elseif state.tab == "talents" then n = renderTalents()
   elseif state.tab == "gold" then n = renderGold()
   elseif state.tab == "heal" then n = renderHeal()
   elseif state.tab == "spec" then n = renderSpec()
@@ -2098,7 +2029,7 @@ local function build()
 
   -- Character-window style tabs along the bottom edge
   tabs = {}
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "talents", "Talents" }, { "group", "Group" },
+  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "group", "Group" },
     { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
   local x = 12
   for _, d in ipairs(defs) do

@@ -659,7 +659,6 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
     local cname = UnitClass("player") or "your class"
     if not RG.ClassSupported then RG.Print("Loaded. " .. cname .. " isn't set up yet: the route, quests, arrow, travel and professions all work, and item scores use a general melee guide for now.")
-    elseif not RG.ClassHasTalents then RG.Print("Loaded. " .. cname .. " gear scores and the gear guide are ready; talent builds come in a later update.")
     elseif RG.PLAYER_FACTION == "Alliance" then RG.Print("Loaded. The leveling route is Horde-only for now; Alliance routes are coming. Quest tracking, the arrow, bags and gold all work.")
     elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it picks up from level 12, which is the same for every Horde race.") end
   elseif RG.IsAlt() then
@@ -764,7 +763,7 @@ SlashCmdList.WAYPATH = function(msg)
     for _, line in ipairs({
       "|cffffd100Guide|r  /wp  ·  /wp setup  ·  /wp settings  ·  /wp tracker",
       "|cffffd100Questing|r  /wp next  ·  /wp undo  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
-      "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp talents",
+      "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail",
       "|cffffd100Group|r  /wp lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /wp scan  ·  /wp autoscan  ·  /wp track [item]  ·  /wp untrack [item]  ·  /wp alert [item] 25",
       "|cffffd100Bags|r  /wp sort  ·  /wp sort bank",
