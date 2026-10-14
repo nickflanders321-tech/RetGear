@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.52.1
+- **Upgrades while fishing, take two:** with a fishing pole in your hands and no weapon remembered yet, upgrades are compared with the best weapon in your bags, and the list says "Replaces your fishing pole" instead of "an empty slot".
+- The item window's "Show ... on my map" button fits inside the window again (long place names shorten to "Show on my map").
+- The error list shows versions as v0.48.0 (it said vv0.48.0).
+
 ## v0.52.0
 - **Ready for game updates:** the first time you log in after Blizzard patches the game, Waypath+ checks that everything it uses is still there. If a patch changed something, it tells you which features are affected instead of failing quietly, and notes it in `/wp errors`. `/wp check` runs the check any time.
 - Waypath+ now also loads on upcoming WoW Forever versions (1.60.x through 1.62) without being marked "out of date".

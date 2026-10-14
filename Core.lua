@@ -463,8 +463,37 @@ local function wornLink(slot)
   local lw = RG.db and RG.db.lastWeapons
   local keep = lw and lw[slot]
   if keep and GetItemCount and (GetItemCount(keep) or 0) > 0 then return keep end
-  if slot == 16 and isPole(mh) then return nil end
+  if slot == 16 and isPole(mh) then return RG.BestBagWeapon and RG.BestBagWeapon() or nil end
   return l
+end
+-- The best main-hand weapon in your bags (used while a fishing pole is in your hands
+-- and no weapon was remembered yet). Cached until your bags change.
+local bagBest, bagDirty = nil, true
+function RG.BestBagWeapon()
+  if not bagDirty then return bagBest end
+  bagDirty, bagBest = false, nil
+  local C = C_Container
+  local numSlots = (C and C.GetContainerNumSlots) or GetContainerNumSlots
+  local itemLink = (C and C.GetContainerItemLink) or GetContainerItemLink
+  if not (numSlots and itemLink) then return nil end
+  local best, bestScore
+  for bag = 0, 4 do
+    for slot = 1, (numSlots(bag) or 0) do
+      local l = itemLink(bag, slot)
+      local loc = l and RG.EquipLoc(l)
+      if loc and (loc == "INVTYPE_2HWEAPON" or loc == "INVTYPE_WEAPON" or loc == "INVTYPE_WEAPONMAINHAND") and not isPole(l) and (not RG.CanUse or RG.CanUse(l)) then
+        local sc = RG.Score(l, nil, 16) or 0
+        if not bestScore or sc > bestScore then best, bestScore = l, sc end
+      end
+    end
+  end
+  bagBest = best
+  return best
+end
+do
+  local bf = CreateFrame("Frame")
+  pcall(bf.RegisterEvent, bf, "BAG_UPDATE_DELAYED")
+  bf:SetScript("OnEvent", function() bagDirty = true end)
 end
 RG.WornLink = wornLink
 do

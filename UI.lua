@@ -462,7 +462,9 @@ local function renderGear()
     n = n + 1
     local name, link2, quality = itemName(u.g.id)
     local worn = u.slot and ((RG.WornLink and RG.WornLink(u.slot)) or GetInventoryItemLink("player", u.slot))
-    local wornName = worn and (RG.ItemInfo(worn) or "your item") or "an empty slot"
+    local mhNow = GetInventoryItemLink("player", 16)
+    local wornName = worn and (RG.ItemInfo(worn) or "your item")
+      or ((u.slot == 16 and RG.IsFishingPole and RG.IsFishingPole(mhNow)) and "your fishing pole" or "an empty slot")
     setItem(getRow(n), u.g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[u.g.slot] or u.g.slot) .. "|r",
       GREY .. "Replaces " .. wornName .. "  ·  " .. u.g.src .. (u.g.zone ~= "" and (", " .. u.g.zone) or "") .. "|r",
       (u.now and GREEN or GOLD) .. "+" .. string.format("%.0f", u.d) .. (u.pct and string.format(" (%d%%)", math.floor(u.pct + 0.5)) or "") .. "|r",

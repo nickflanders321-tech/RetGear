@@ -282,6 +282,11 @@ function RG.ShowItemSource(g, opts)
     win.map:SetText("No map location"); win.map:Disable()
   end
   win.link2:SetShown(link ~= nil)
+  -- the map button fits its label (a long place name falls back to "Show on my map")
+  local room = (win:GetWidth() - 32) - (link and (110 + 8) or 0)
+  local function textW() local f = win.map.GetFontString and win.map:GetFontString(); return (f and f:GetStringWidth() or 0) + 28 end
+  if textW() > room and firstWp then win.map:SetText("Show on my map") end
+  win.map:SetWidth(math.min(room, math.max(140, textW())))
   win:SetHeight(-(y - 4) + 24 + 18)
   if not win.placed then
     win:ClearAllPoints()
