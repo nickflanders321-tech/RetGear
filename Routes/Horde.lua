@@ -78,7 +78,7 @@ H.dungeons = {
   ["Blackfathom Deeps"] = { go = 25, prep = 23, quests = {
     { "The Essence of Aku'Mai", "Je'neu Sancrea", "Ashenvale, Zoram'gar Outpost" },
     { "Amongst the Ruins", "Je'neu Sancrea", "Ashenvale, Zoram'gar Outpost" },
-    { "Blackfathom Villainy", "Bashana Runetotem", "Thunder Bluff, Elder Rise" },
+    { "Blackfathom Villainy", "Argent Guard Thaelrid", "Blackfathom Deeps, inside (hand in to Bashana Runetotem, Thunder Bluff)" },
   } },
   ["Excavation Site"] = { go = 27, prep = 25, quests = {} },
   ["City of Dalaran"] = { go = 29, prep = 27, quests = {} },

@@ -46,7 +46,6 @@ RG.WAYPOINTS = {
     ["Auld Stonespire"] = { 1456, 36.0, 59.9, "Auld Stonespire" },
     ["Azj'Tordin"] = { 1444, 76.9, 37.4, "Azj'Tordin" },
     ["Barnil Stonepot, Nesingwary's camp"] = { 1434, 35.7, 10.5, "Barnil Stonepot" },
-    ["Bashana Runetotem"] = { 1456, 71.1, 34.2, "Bashana Runetotem" },
     ["Cavindra"] = { 1443, 31.9, 63.8, "Cavindra" },
     ["Chief Engineer Bilgewhizzle"] = { 1446, 52.5, 28.5, "Chief Engineer Bilgewhizzle" },
     ["Crane Operator Bigglefuzz"] = { 1413, 63.1, 37.6, "Crane Operator Bigglefuzz" },
