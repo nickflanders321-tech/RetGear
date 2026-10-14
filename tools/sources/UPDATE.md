@@ -101,6 +101,7 @@ python3 tools/gear/gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb . --s
 lua5.1 tools/waypoints/dump.lua $C/foreverNpcDB.lua /tmp/npcs.tsv && python3 tools/waypoints/gen.py /tmp/qdb /tmp/npcs.tsv .
 cp /tmp/veins.tsv /tmp/objects.tsv && lua5.1 tools/profs/items_dump.lua $C /tmp/items.tsv
 python3 tools/profs/gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb /tmp/npcs.tsv /tmp/objects.tsv . /tmp/items.tsv
+lua5.1 tools/fishloot/dump.lua $C /tmp/fl_obj.tsv /tmp/fl_items.tsv && python3 tools/fishloot/gen.py /tmp/classic.sql /tmp/qdb /tmp/fl_obj.tsv /tmp/fl_items.tsv .
 ```
 
 Fix wrong output with hand-written entries or generator filters, never by editing generated

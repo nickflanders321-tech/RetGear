@@ -151,6 +151,42 @@ function RG.FishZone()
   return { zone = (RG.FISH_SUBZONES[sub] and sub or zone), full = full, min = full - 95, eff = eff, status = status, skill = skill, pole = pole, lure = lureLeft and lure }, zone
 end
 
+-- Everything fishing can bring up (data in FishLoot.lua, generated): one entry per item with
+-- the zones and pools it comes from, its best chance and the lowest skill it starts at.
+local lootIdx
+function RG.FishLootIndex()
+  if lootIdx then return lootIdx end
+  local L = RG.FISH_LOOT
+  if not L then return nil end
+  local byId = {}
+  local function get(id) local e = byId[id]; if not e then e = { id = id, zones = {}, pools = {}, best = 0 }; byId[id] = e end; return e end
+  for zone, lst in pairs(L.zones) do
+    for _, c in ipairs(lst) do
+      local e = get(c[1]); e.zones[#e.zones + 1] = { zone, c[2] }
+      if c[2] > e.best then e.best = c[2] end
+      local full = RG.FISH_ZONES[zone]
+      if full then local need = math.max(1, full - 95); if not e.skill or need < e.skill then e.skill = need end end
+    end
+  end
+  for _, p in ipairs(L.pools) do
+    for _, c in ipairs(p.items) do
+      local e = get(c[1]); e.pools[#e.pools + 1] = { p, c[2] }
+      if c[2] > e.best then e.best = c[2] end
+    end
+  end
+  local byKind = {}
+  for id, e in pairs(byId) do
+    table.sort(e.zones, function(a, b) if a[2] ~= b[2] then return a[2] > b[2] end return a[1] < b[1] end)
+    local info = L.info[id]
+    e.name, e.kind = info and info[1] or ("Item " .. id), info and info[2] or "material"
+    byKind[e.kind] = byKind[e.kind] or {}
+    table.insert(byKind[e.kind], e)
+  end
+  for _, lst in pairs(byKind) do table.sort(lst, function(a, b) if a.best ~= b.best then return a.best > b.best end return a.name < b.name end) end
+  lootIdx = { byId = byId, byKind = byKind }
+  return lootIdx
+end
+
 -- Is it day or night on the server (for Nightfin / Sunscale)?
 function RG.FishNight()
   local h = GetGameTime and GetGameTime() or 12

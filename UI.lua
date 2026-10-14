@@ -1662,6 +1662,113 @@ local function renderFish()
     n = n + 1; setStep(getRow(n), "", line, false, nil)
     rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
+  -- everything fishing can bring up
+  local FL = RG.FISH_LOOT
+  local idx = FL and RG.FishLootIndex()
+  if idx then
+    state.fishOpen = state.fishOpen or {}
+    local function note(text)
+      n = n + 1; setStep(getRow(n), "", text, false, nil)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    end
+    local function lootName(id)
+      local name, link, quality = RG.ItemInfo(id)
+      if not name then
+        RG.RequestItem(id)
+        local info = FL.info[id]
+        return GREY .. (info and info[1] or ("Item " .. id)) .. "|r", nil, info and info[3]
+      end
+      local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
+      return (c and c.hex or "|cffffffff") .. name .. "|r", link, quality
+    end
+    local function plain(id) local info = FL.info[id]; return info and info[1] or ("Item " .. id) end
+    local function pct(p) return p >= 10 and string.format("%d%%", math.floor(p + 0.5)) or (p >= 1 and string.format("%.1f%%", p) or string.format("%.2f%%", p)) end
+    local function pillFor(p) return (p >= 20 and GREEN or (p >= 5 and GOLD or GREY)) .. pct(p) .. "|r" end
+    local function holds(id, limit)
+      local c = FL.contents[id]
+      if not c then return nil end
+      local t = {}
+      for i = 1, math.min(limit, #c) do t[#t + 1] = plain(c[i][1]) .. " " .. pct(c[i][2]) end
+      return table.concat(t, ", ") .. (#c > limit and (", +" .. (#c - limit) .. " more") or "")
+    end
+    -- item row: where it comes from, at what skill, and what a container holds
+    local function lootRow(e, chance)
+      local nm, link, quality = lootName(e.id)
+      local where = {}
+      for i = 1, math.min(3, #e.zones) do where[#where + 1] = e.zones[i][1] .. " " .. pct(e.zones[i][2]) end
+      local extra = #e.zones - 3
+      local sub = (#where > 0 and ("Where: " .. table.concat(where, ", ") .. (extra > 0 and (" and " .. extra .. " more zone" .. (extra > 1 and "s" or "")) or "")) or "")
+      if #e.pools > 0 then sub = sub .. (sub ~= "" and "  ·  " or "") .. "Pool: " .. e.pools[1][1].name .. (#e.pools > 1 and (" +" .. (#e.pools - 1)) or "") end
+      if e.skill then sub = sub .. "  ·  starts at skill " .. e.skill end
+      local h = holds(e.id, 6)
+      if h then sub = sub .. "\nHolds: " .. h end
+      n = n + 1
+      setItem(getRow(n), e.id, link, nm, sub, pillFor(chance or e.best), "", nil, quality, true)
+      local tip = { "Where it comes from (chance per catch):" }
+      for _, z in ipairs(e.zones) do
+        local full = RG.FISH_ZONES[z[1]]
+        tip[#tip + 1] = z[1] .. "  " .. pct(z[2]) .. (full and ("  (skill " .. math.max(1, full - 95) .. "+, every fish bites at " .. full .. ")") or "")
+      end
+      for _, p in ipairs(e.pools) do tip[#tip + 1] = "Pool: " .. p[1].name .. "  " .. pct(p[2]) .. "  (" .. p[1].spots[1][4] .. ")" end
+      local hh = holds(e.id, 20)
+      if hh then tip[#tip + 1] = "\nHolds: " .. hh end
+      rows[n].tip = table.concat(tip, "\n")
+      local pool = e.pools[1] and e.pools[1][1]
+      if pool and pool.spots[1] then local wp = pool.spots[1]; rows[n].onClick = function() RG.PinWaypoint(wp) end end
+    end
+    n = n + 1; setHeader(getRow(n), "Everything fishing can bring up")
+    note(GREY .. "Chances are per catch, from the game's fishing loot tables (WoW Forever's own numbers aren't published). Hover a row for every zone; click a pool to pin it on your map.|r")
+    -- this zone
+    local here = FL.zones[zoneName or ""]
+    if here then
+      note("|cffffffffIn " .. zoneName .. " you can catch:|r")
+      for _, c in ipairs(here) do
+        local e = idx.byId[c[1]]
+        if e then lootRow(e, c[2]) end
+      end
+    else
+      note(GREY .. "Stand in a zone with water to see what it gives. The groups below cover every zone.|r")
+    end
+    -- groups, closed until you open them
+    local CATS = { { "fish", "Fish and cooking ingredients" }, { "container", "Chests, crates, trunks, clams and bottles" },
+      { "material", "Materials, water and other catches" }, { "misc", "Potions and miscellaneous" }, { "gear", "Gear" }, { "junk", "Junk" } }
+    for _, cat in ipairs(CATS) do
+      local lst = idx.byKind[cat[1]]
+      if lst and #lst > 0 then
+        local open = state.fishOpen[cat[1]]
+        n = n + 1
+        setStep(getRow(n), "", GOLD .. (open and "- " or "+ ") .. cat[2] .. "|r" .. GREY .. "  (" .. #lst .. ")  ·  click to " .. (open and "hide" or "show") .. "|r", false,
+          function() state.fishOpen[cat[1]] = not open; RG.RefreshUI() end)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+        if open then for _, e in ipairs(lst) do lootRow(e) end end
+      end
+    end
+    -- pools
+    local open = state.fishOpen.pools
+    n = n + 1
+    setStep(getRow(n), "", GOLD .. (open and "- " or "+ ") .. "Pools, schools, wreckage and fishing spots|r" .. GREY .. "  (" .. #FL.pools .. ")  ·  click to " .. (open and "hide" or "show") .. "|r", false,
+      function() state.fishOpen.pools = not open; RG.RefreshUI() end)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    if open then
+      for _, p in ipairs(FL.pools) do
+        local first = p.items[1]
+        local gives = {}
+        for i = 1, math.min(4, #p.items) do gives[#gives + 1] = plain(p.items[i][1]) .. " " .. pct(p.items[i][2]) end
+        local where = {}
+        for i = 1, math.min(3, #p.spots) do where[#where + 1] = p.spots[i][4] end
+        n = n + 1
+        local spot = p.spots[1]
+        setItem(getRow(n), first and first[1] or nil, nil, "|cffffffff" .. p.name .. "|r", "Gives: " .. table.concat(gives, ", ") .. (#p.items > 4 and (", +" .. (#p.items - 4) .. " more") or "") .. "\nWhere: " .. table.concat(where, "; "),
+          first and pillFor(first[2]) or "", "", nil, nil, true)
+        local tip = { "Gives (chance per catch):" }
+        for _, c in ipairs(p.items) do tip[#tip + 1] = plain(c[1]) .. "  " .. pct(c[2]) end
+        tip[#tip + 1] = "\nWhere:"
+        for _, sp in ipairs(p.spots) do tip[#tip + 1] = sp[4] end
+        rows[n].tip = table.concat(tip, "\n") .. "\n\nClick to show the nearest cluster on the map."
+        rows[n].onClick = function() RG.PinWaypoint(spot) end
+      end
+    end
+  end
   -- sell
   n = n + 1; setHeader(getRow(n), "Fish other professions buy")
   for _, f in ipairs(RG.FISH_SELL) do

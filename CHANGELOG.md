@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.54.0
+- **Everything fishing can bring up, on the Fishing tab:** a new "Everything fishing can bring up" section lists the catches for the zone you're standing in, with the chance per catch. Open the groups below it (fish, chests and crates, materials, potions, gear, junk) to see every catch in the game: which zones and pools give it, the Fishing skill it starts at, and what each chest, crate, trunk, clam and bottle holds. Hover a row for every zone; click a pool to put it on your map.
+- A "Pools, schools, wreckage and fishing spots" group shows what each pool gives and where they are, including WoW Forever's new fishing locations.
+- Chances come from the classic fishing tables (WoW Forever hasn't published its own), and the tab says so.
+
 ## v0.53.1
 - **The Waypath+ logo replaces the paladin icon everywhere:** the window, the tracker, the minimap button, the welcome and setup screens, pop-ups, chat messages and the add-on list now show the Waypath+ waypoint logo for every class.
 

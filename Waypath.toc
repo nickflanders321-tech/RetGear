@@ -72,6 +72,7 @@ Mail.lua
 AltGuide.lua
 Camp.lua
 Fish.lua
+FishLoot.lua
 FishMode.lua
 Speed.lua
 Travel.lua
