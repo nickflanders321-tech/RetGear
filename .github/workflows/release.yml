@@ -16,9 +16,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      # CurseForge upload: set the CF_API_KEY secret and the CF_PROJECT_ID variable
-      # (Settings > Secrets and variables > Actions). CF_RELEASE_TYPE (alpha, beta
-      # or release; beta by default) and CF_GAME_VERSION (1.60.1 by default) are optional.
+      # CurseForge upload: set the CF_API_KEY secret (Settings > Secrets and variables >
+      # Actions). The project ID comes from X-Curse-Project-ID in Waypath.toc (or a
+      # CF_PROJECT_ID variable). CF_RELEASE_TYPE (alpha, beta or release; beta by
+      # default) and CF_GAME_VERSION (1.60.1 by default) are optional variables.
       CF_API_KEY: ${{ secrets.CF_API_KEY }}
       CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
       CF_RELEASE_TYPE: ${{ vars.CF_RELEASE_TYPE || 'beta' }}
@@ -35,6 +36,12 @@ jobs:
           v="v$(tr -d '[:space:]' < VERSION)"
           echo "v=$v" >> "$GITHUB_OUTPUT"
           if gh release view "$v" >/dev/null 2>&1; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              # run by hand: rebuild this version and (re)upload it to CurseForge only
+              echo "Release $v exists: rebuilding it for CurseForge only."
+              echo "exists=true" >> "$GITHUB_OUTPUT"; echo "skip=false" >> "$GITHUB_OUTPUT"
+              git checkout -q "$v"; exit 0
+            fi
             echo "Release $v already exists, nothing to do."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if ! git rev-parse "$v" >/dev/null 2>&1; then
@@ -81,7 +88,7 @@ jobs:
           (cd .release && zip -qr "Waypath-$v.zip" Waypath)
           ls -la .release
       - name: Publish the GitHub release
-        if: steps.tag.outputs.skip == 'false'
+        if: steps.tag.outputs.skip == 'false' && steps.tag.outputs.exists != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.v }}
@@ -90,9 +97,11 @@ jobs:
           files: .release/Waypath-*.zip
           fail_on_unmatched_files: true
       - name: Upload to CurseForge
-        if: steps.tag.outputs.skip == 'false' && env.CF_API_KEY != '' && env.CF_PROJECT_ID != ''
+        if: steps.tag.outputs.skip == 'false' && env.CF_API_KEY != ''
         run: |
           v="${{ steps.tag.outputs.v }}"
+          [ -n "$CF_PROJECT_ID" ] || CF_PROJECT_ID=$(sed -n 's/^## X-Curse-Project-ID: *\([0-9]*\).*/\1/p' Waypath.toc | head -1)
+          [ -n "$CF_PROJECT_ID" ] || { echo "No CurseForge project ID"; exit 1; }
           ids=$(curl -sSf -H "X-Api-Token: $CF_API_KEY" https://wow.curseforge.com/api/game/versions | python3 -c '
           import json, os, sys
           want = [w.strip() for w in os.environ["CF_GAME_VERSION"].split(",")]

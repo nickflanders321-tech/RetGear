@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.49.1
+- Waypath+ is now on CurseForge (WoW Forever, project 1743915). Updates there arrive as Beta releases.
+
 ## v0.49.0
 - **Talents tab removed.** The game's own talent screen does that job better, and builds go out of date as WoW Forever's trees change. The tracker still reminds you when you have points to spend; click the reminder (or type `/wp talents`) to open the game's talent screen.
 - The 2nd Spec page keeps each spec's stats, how to play it and what's new in Forever, without the talent build.
