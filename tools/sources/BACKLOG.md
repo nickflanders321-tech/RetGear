@@ -39,6 +39,7 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Open questions
 
+- Guides disagree on Thousand Needles (Forever Era 25-35, Decarebia 20-30, Endgame Tools 23-40) and Arathi Highlands (all say 30-40, but Forever's own quest data starts at 33). Our windows: Horde TN 26-35, Arathi 33-40 (2026-10-16).
 - None yet. Add guide disagreements here (what each source says, and the date).
 
 ## Done

@@ -139,3 +139,15 @@ The release workflow builds the zip, the GitHub release and the CurseForge uploa
 
 A short summary for the owner: the new version, what got more accurate, complete or fixed,
 new sources found, backlog progress and what's next, or plainly that nothing changed.
+
+
+## Route windows and guide comparison (added v0.67)
+
+`tools/sources/evidence.json` holds each guide's published level range per zone (with source and date).
+Every update: refresh it from the sources in SOURCES.md, then run `python3 tools/sources/compare.py`.
+It prints our start/end level for every Horde and Alliance zone next to the median of the guides and
+marks any that are 5+ levels apart. A guide range is a zone's whole range; ours is the window to come
+and quest, so a narrower window is normal. Move a window only when most guides agree (change the
+route entry in Routes/Horde.lua or Routes/Alliance.lua AND the zone's tuple in tools/routes/gen.py
+HORDE_ZONES / ALLIANCE_ZONES, then run tools/watch/regenerate.sh). Write real disagreements in
+BACKLOG.md under "Open questions".

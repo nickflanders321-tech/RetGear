@@ -33,15 +33,15 @@ RACE_BITS['X'] = HORDE_ALL    # X = steps shared by every Horde race
 # Routes/Alliance.lua use the same names and starting levels as their keys ("Zone|from").
 ALLIANCE_ZONES = [
     ('Westfall', 10, 18, [40]), ('Loch Modan', 10, 18, [38]), ('Darkshore', 12, 21, [148]),
-    ('Redridge Mountains', 15, 24, [44]), ('Stonetalon Mountains', 21, 27, [406]), ('Duskwood', 22, 30, [10]),
-    ('Ashenvale', 20, 30, [331]), ('Wetlands', 21, 31, [11]), ('Hillsbrad Foothills', 27, 35, [267]),
-    ('Dustwallow Marsh', 33, 38, [15]), ('Thousand Needles', 30, 42, [400]), ('Desolace', 33, 41, [405]),
+    ('Redridge Mountains', 15, 24, [44]), ('Stonetalon Mountains', 18, 27, [406]), ('Duskwood', 22, 30, [10]),
+    ('Ashenvale', 20, 30, [331]), ('Wetlands', 21, 31, [11]), ('Hillsbrad Foothills', 22, 35, [267]),
+    ('Dustwallow Marsh', 35, 45, [15]), ('Thousand Needles', 30, 42, [400]), ('Desolace', 31, 41, [405]),
     ('Arathi Highlands', 33, 40, [45]), ('Stranglethorn Vale', 32, 48, [33]), ('Swamp of Sorrows', 35, 42, [8]),
     ('Badlands', 37, 44, [3]), ('Alterac Mountains', 33, 40, [36]), ("Shen'Dralas", 38, 43, [16651]),
     ('Feralas', 41, 48, [357]), ('The Hinterlands', 43, 49, [47]), ('Searing Gorge', 45, 50, [51]),
-    ('Tanaris', 44, 52, [440]), ("Un'Goro Crater", 50, 55, [490]), ('Felwood', 50, 56, [361]),
-    ('Burning Steppes', 50, 55, [46]), ('Blasted Lands', 50, 58, [4]), ('Western Plaguelands', 51, 58, [28]),
-    ('Azshara', 52, 58, [16]), ('Winterspring', 53, 59, [618]), ('Silithus', 56, 60, [1377]),
+    ('Tanaris', 41, 50, [440]), ("Un'Goro Crater", 50, 55, [490]), ('Felwood', 50, 56, [361]),
+    ('Burning Steppes', 50, 58, [46]), ('Blasted Lands', 50, 58, [4]), ('Western Plaguelands', 51, 58, [28]),
+    ('Azshara', 47, 55, [16]), ('Winterspring', 53, 59, [618]), ('Silithus', 55, 60, [1377]),
     ('Eastern Plaguelands', 54, 60, [139]),
 ]
 
@@ -50,14 +50,14 @@ ALLIANCE_ZONES = [
 # Horde zones after the starting zones, keyed like Routes/Horde.lua ("Zone|from"): (name, from, to, [area ids], min quest level).
 # Quests below the minimum level belong to an earlier leg (The Barrens 12-20 is each race's own).
 HORDE_ZONES = [
-    ('The Barrens', 18, 26, [17], 20), ('Stonetalon Mountains', 22, 27, [406], 0), ('Hillsbrad Foothills', 25, 30, [267], 0),
-    ('Ashenvale', 25, 30, [331], 0), ('Thousand Needles', 30, 35, [400], 0), ('Arathi Highlands', 33, 40, [45], 0),
-    ('Desolace', 32, 40, [405], 0), ('Stranglethorn Vale', 32, 42, [33], 0), ('Dustwallow Marsh', 36, 42, [15], 0),
-    ('Badlands', 40, 45, [3], 0), ('Swamp of Sorrows', 40, 45, [8], 0), ('Tanaris', 43, 48, [440], 0),
-    ('Feralas', 44, 50, [357], 0), ('The Hinterlands', 47, 52, [47], 0), ('Searing Gorge', 48, 54, [51], 0),
-    ("Un'Goro Crater", 50, 55, [490], 0), ('Felwood', 51, 55, [361], 0), ('Burning Steppes', 53, 58, [46], 0),
-    ('Winterspring', 55, 60, [618], 0), ('Western & Eastern Plaguelands', 55, 60, [28, 139], 0),
-    ('Azshara', 52, 58, [16], 0), ('Silithus', 56, 60, [1377], 0),
+    ('The Barrens', 18, 26, [17], 20), ('Stonetalon Mountains', 18, 27, [406], 0), ('Hillsbrad Foothills', 21, 31, [267], 0),
+    ('Ashenvale', 22, 30, [331], 0), ('Thousand Needles', 26, 35, [400], 0), ('Arathi Highlands', 33, 40, [45], 0),
+    ('Desolace', 31, 40, [405], 0), ('Stranglethorn Vale', 32, 45, [33], 0), ('Dustwallow Marsh', 36, 45, [15], 0),
+    ('Badlands', 38, 45, [3], 0), ('Swamp of Sorrows', 38, 45, [8], 0), ('Tanaris', 41, 50, [440], 0),
+    ('Feralas', 42, 50, [357], 0), ('The Hinterlands', 44, 52, [47], 0), ('Searing Gorge', 48, 54, [51], 0),
+    ("Un'Goro Crater", 50, 55, [490], 0), ('Felwood', 51, 55, [361], 0), ('Burning Steppes', 50, 58, [46], 0),
+    ('Winterspring', 55, 60, [618], 0), ('Western & Eastern Plaguelands', 52, 60, [28, 139], 0),
+    ('Azshara', 50, 58, [16], 0), ('Silithus', 55, 60, [1377], 0),
 ]
 HORDE_ANCHORS = {
     406: [('Sun Rock Retreat', 'Innkeeper Jayka')], 267: [('Tarren Mill', 'Innkeeper Shay')],
