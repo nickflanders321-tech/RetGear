@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.67.1
+- **No more accidental skips:** steps tick themselves when you finish them in game. Ticking one by hand now needs Shift-click (on the Route tab and on the tracker), so a stray click can't mark a step done. Clicking a step you ticked still un-ticks it, and Undo is still offered.
+- Fixed dungeons showing "Quests done" on a new character: quests you can't take yet no longer count as finished.
+
 ## v0.67.0
 - **Zone level windows now follow the guides.** Six current WoW Forever guides were compared (The Forever Era, WoW Handbook, Endgame Tools, wowforeverbuilds, Decarebia). Horde zones now start earlier where the guides do (Stonetalon 18, Hillsbrad 21, Ashenvale 22, Thousand Needles 26, Tanaris 41, Feralas 42, Hinterlands 44, Burning Steppes 50, Azshara 50, Silithus 55) and run later where they do (Stranglethorn to 45, Dustwallow to 45). Alliance Hillsbrad, Dustwallow, Desolace, Tanaris, Burning Steppes, Azshara and Silithus were corrected the same way. The Smart route and the tracker use these windows.
 - **New dungeons in the route:** The Hall of Thanes (Alliance, 13-18, under Ironforge), The Drowned City (35-40), Krol'dok Stronghold (40-55), Alcaz Prison (48-53), Blackmaw Hold (55-60) and The Shaper's Terrace (58-60). Entrances that no guide has confirmed yet say so.

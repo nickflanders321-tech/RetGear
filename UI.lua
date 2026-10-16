@@ -293,7 +293,7 @@ local function setBar(r, label, value, max, color, valueText, mark)
   r:Show()
 end
 
--- A numbered to-do line under a route step. Wraps long text; click to tick it off.
+-- A numbered to-do line under a route step. Wraps long text; Shift-click to tick it off by hand.
 local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
@@ -314,7 +314,7 @@ local function setStep(r, num, text, done, onClick, auto)
   r.h = math.max(sz(32), (th or sz(14)) + sz(16))
   r.onClick = onClick
   if auto then r.tip = "Done: " .. auto .. "\n|cffa0a0a0(detected from your game)|r"
-  elseif done then r.tip = "Ticked by you. Click to untick." else r.tip = "Click to tick this off." end
+  elseif done then r.tip = "Ticked by you. Click to untick." else r.tip = "This ticks itself when you finish it.\n|cffffd100Shift-click|r to skip it by hand." end
   r:Show()
 end
 
@@ -961,8 +961,11 @@ local function renderRoute()
           local shown = text
           if ql and place then shown = place .. (levels and (" (" .. levels .. ")") or "") .. GREY .. "  ·  " .. qd .. "/" .. qt .. " quests done|r" end
           setStep(srow, i, (wp and RG.PIN or "") .. shown, isDone, function()
+            -- steps tick themselves from your quest log; a hand tick needs Shift so a stray click can't skip a step
             if RG.db.stepsDone[sk] then RG.db.stepsDone[sk] = nil; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end
-            elseif RG.TickStep then RG.TickStep(sk, text) else RG.db.stepsDone[sk] = true; RG.RefreshUI() end
+            elseif IsShiftKeyDown and IsShiftKeyDown() then
+              if RG.TickStep then RG.TickStep(sk, text) else RG.db.stepsDone[sk] = true; RG.RefreshUI() end
+            end
           end, auto or (e.past and not RG.db.stepsDone[sk] and "you've outleveled this part of the route" or nil))
           if wp then
             srow.onRightClick = function() RG.PinWaypoint(wp) end
@@ -2042,7 +2045,7 @@ local TITLES = {
   heal  = { "2nd spec gear", "Gear to start collecting for your 2nd spec, and where to find it" },
 }
 local FOOTERS = {
-  route = "Click a zone to open its tasks  ·  click a task to tick it off  ·  finished steps are hidden",
+  route = "Click a zone to open its tasks  ·  steps tick themselves  ·  Shift-click to skip one  ·  finished steps are hidden",
   guide = "Click an item to see where it drops or which quest gives it  ·  Shift-click to link  ·  Ctrl-click to preview",
   gear  = "Click an item to see where it drops or which quest gives it  ·  /wp weight tunes the score",
   prof  = "Double-click a place for the arrow  ·  counts include your bank (open it once)",

@@ -164,10 +164,12 @@ function RG.QuestPrereqsMet(id)
 end
 function RG.DungeonQuestsDone(dq)
   if not (dq and dq.quests and #dq.quests > 0 and RG.QuestState) then return false end
+  local anyDone = false
   for _, q in ipairs(dq.quests) do
-    if RG.QuestState((q[1]:gsub("%s*%(.-%)$", ""))) ~= "done" and (not q.id or RG.QuestPrereqsMet(q.id)) then return false end
+    if RG.QuestState((q[1]:gsub("%s*%(.-%)$", ""))) == "done" then anyDone = true
+    elseif not q.id or RG.QuestPrereqsMet(q.id) then return false end
   end
-  return true
+  return anyDone   -- quests you can't take yet don't count as finished
 end
 local function nextDungeon()
   local lvl = UnitLevel("player")
@@ -663,7 +665,7 @@ function RG.RefreshTracker()
           local sk = key .. "#" .. i
           local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
           if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
-          y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() RG.TickStep(sk, text) end,
+          y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, text) end end,
             onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
         end
       end
@@ -701,8 +703,8 @@ function RG.RefreshTracker()
           local wp = RG.StepWaypoint and RG.StepWaypoint(pr, firstI)
           n = n + 1
           y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. first, { box = false, wp = wp,
-            tip = GOLD .. "Click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or "") .. "\nThe Route tab has the whole chain.",
-            onClick = function() RG.TickStep(sk, first) end, onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+            tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or "") .. "\nThe Route tab has the whole chain.",
+            onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, first) end end, onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
         end
         y = y + 5
       end
