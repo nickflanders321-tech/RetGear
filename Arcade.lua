@@ -1257,6 +1257,8 @@ local function build()
     RG.ArcadeRefresh(true)
   end)
   frame.sell:SetPoint("BOTTOM", 200, 23)
+  frame.arena = gbtn(frame, "The Arena", 110, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
+  frame.arena:SetPoint("BOTTOM", -335, 23)
   -- fit small screens
   local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
   if type(ph) == "number" and ph > 0 and ph < WINH + 30 then frame:SetScale(math.max(0.6, (ph - 30) / WINH)) end
@@ -1392,6 +1394,10 @@ function RG.ArcadeRefresh(keepMsg)
   frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or ("Break a seal  ·  " .. PACK_PRICE))
   frame.buy:SetEnabled(afford() and true or false)
 end
+
+RG.ArcadeUI = { makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+  MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
+  owned = owned, iconFor = iconFor, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
 function RG.ShowArcade()
   if not frame then build() end

@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.86.0
+- Cards: "The Arena", a Hearthstone-style duel played with the cards you have found. Reach it from the cards window or with /wp arena. 30 health, a growing pool of mana crystals (up to 10), 30-card decks, a hand of 10, seven minions a side, an opening-hand swap, hero powers for all nine classes, weapons, armour, fatigue and the Lucky Coin for whoever goes second.
+- Cards: every card plays by its own fixed rules, worked out from the card itself. NPCs and Raiders are minions (their creature type decides what they can do: beasts rush, undead leave deathrattles, dragonkin breathe fire, giants taunt), Items become weapons and spells, Places become area spells. Keywords: Taunt, Charge, Rush, Divine Shield, Stealth, Windfury, Lifesteal, Poisonous, Battlecry, Deathrattle, end-of-turn effects, Freeze and Silence. The print (rare, holo, full art) is cosmetic.
+- Cards: a computer opponent at three levels (Apprentice, Adept, Archmage) that tries every move and looks at how the board would end up. A win pays coins (4, 8 or 14, plus 8 for your first win each day); a loss pays one.
+- Cards: a deck builder with three deck slots, cost, type and name filters, a big card preview and an auto-fill. You can only use cards you own (two copies, one for Legendary and Artifact cards); a few basic cards are always available so a new collection can still make a deck.
+- Art: new board, mana crystals, stat badges and minion frames (tools/arcade/art_battle.py). Rules engine in Battle.lua, screens in ArcadeBattle.lua.
+
 ## v0.85.0
 - Cards: a full visual overhaul in a dark-fantasy, tabletop-RPG style. The card window is now "The Hoard", a night-sky grimoire with a slowly turning magic circle, drifting motes, gold corner trim, a title plate and text tabs (Collection, Sets, Today, Trade, Ledger).
 - Cards: real trading-card frames. Name banner, art window, type line with a rarity gem, a parchment text box with the card's description, a power plate and a collector number. The frame takes the colour of the card's rarity; the four prints look different: plain, rare (soft glow), holo (a rainbow foil sweeps across, a turning rune circle, glints) and full art (radiant rays and a larger picture).

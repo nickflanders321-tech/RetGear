@@ -84,7 +84,9 @@ FlightPaths.lua
 Flights.lua
 ArcadeCards.lua
 ArcadeGear.lua
+Battle.lua
 Arcade.lua
+ArcadeBattle.lua
 FishMode.lua
 Path.lua
 Speed.lua
