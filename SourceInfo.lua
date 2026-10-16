@@ -170,10 +170,7 @@ local function makeWin()
   win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
   win:SetScript("OnDragStart", win.StartMoving); win:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); self.placed = true end)
   win:SetClampedToScreen(true)
-  if win.SetBackdrop then
-    win:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 16, edgeSize = 24, insets = { left = 6, right = 6, top = 6, bottom = 6 } })
-    win:SetBackdropColor(0.05, 0.045, 0.04, 0.97)
-  end
+  RG.DialogBackdrop(win)
   win.iconBorder = win:CreateTexture(nil, "ARTWORK"); win.iconBorder:SetSize(40, 40); win.iconBorder:SetPoint("TOPLEFT", 16, -16)
   win.iconBorder:SetColorTexture(0.6, 0.55, 0.4, 0.9)
   win.icon = win:CreateTexture(nil, "OVERLAY"); win.icon:SetPoint("TOPLEFT", win.iconBorder, 2, -2); win.icon:SetPoint("BOTTOMRIGHT", win.iconBorder, -2, 2)

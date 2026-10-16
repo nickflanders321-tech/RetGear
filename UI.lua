@@ -8,8 +8,9 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 -- Theme
 -- ---------------------------------------------------------------------------
 local T = {
-  bg      = { 0.078, 0.078, 0.078, 0.97 },
-  panel   = { 0.106, 0.106, 0.106, 0.9 },
+  bg      = { 0.051, 0.067, 0.09, 0.97 },
+  panel   = { 0.071, 0.094, 0.129, 1 },
+  raised  = { 0.122, 0.157, 0.2, 1 },
   edge    = { 0.17, 0.17, 0.17, 1 },
   line    = { 0.17, 0.17, 0.17, 1 },
   gold    = RG.ACCENT,                    -- the accent (teal in the Graphite look)
@@ -20,7 +21,7 @@ local T = {
   blue    = { 0.0, 0.44, 0.87 },          -- rare blue
   text    = { 0.93, 0.93, 0.93 },
   dim     = { 0.55, 0.55, 0.55 },
-  row     = { 0.106, 0.106, 0.106 },
+  row     = { 0.071, 0.094, 0.129 },
   rowEdge = { 0.17, 0.17, 0.17 },
 }
 local TOOLTIP_BG, TOOLTIP_EDGE = "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border"
@@ -58,21 +59,12 @@ local function setTabLook(b, on)
   if on then b.text:SetTextColor(unpack(T.text)) else b.text:SetTextColor(unpack(T.dim)) end
 end
 
--- Tooltip-style box (rows, tags, small buttons). edge = border size.
-local function backdrop(f, bg, edge, size)
-  if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
+-- Rounded card (rows, tags, small buttons). The edge colour is no longer drawn; the fill is the look.
+local function backdrop(f, bg, edge, size, radius)
   size = size or 12
-  if size <= 9 then
-    -- chips, small buttons and bars: a flat box with a one pixel border
-    f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
-    f:SetBackdropColor(unpack(bg)); f:SetBackdropBorderColor(unpack(edge))
-    if rawget(f, "rgLine") then f.rgLine:Hide() end
-  else
-    -- list rows: no box, just a hairline under the row
-    f:SetBackdrop(nil)
-    if not rawget(f, "rgLine") then f.rgLine = f:CreateTexture(nil, "BACKGROUND"); f.rgLine:SetHeight(1); f.rgLine:SetPoint("BOTTOMLEFT", 0, 0); f.rgLine:SetPoint("BOTTOMRIGHT", 0, 0) end
-    f.rgLine:SetColorTexture(T.line[1], T.line[2], T.line[3], (edge and edge[4] and edge[4] < 0.6) and 0.5 or 1); f.rgLine:Show()
-  end
+  radius = radius or (size <= 9 and 5 or 9)
+  if rawget(f, "rgLine") then f.rgLine:Hide() end
+  RG.Round(f, bg[1], bg[2], bg[3], bg[4] or 1, radius)
 end
 local function font(fs, path, size, flags) if not fs:SetFont(path, size, flags or "") then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end end
 -- Wraps a font string to `width` and gives it room for every line. Re-setting the
@@ -119,10 +111,10 @@ local function pillKind(s)
   return "muted"
 end
 local PILL = {
-  green = { bg = { 0.25, 0.75, 0.25, 0.14 }, edge = { 0.25, 0.75, 0.25, 0.75 } },
-  gold  = { bg = { 1, 0.82, 0, 0.14 }, edge = { 1, 0.82, 0, 0.75 } },
-  red   = { bg = { 1, 0.2, 0.2, 0.14 }, edge = { 1, 0.2, 0.2, 0.75 } },
-  muted = { bg = { 0.1, 0.1, 0.1, 0.8 },   edge = { 0.5, 0.5, 0.5, 0.6 } },
+  green = { bg = { 0.2, 0.55, 0.3, 0.45 }, edge = { 0.25, 0.75, 0.25, 0.75 } },
+  gold  = { bg = { 0.17, 0.5, 0.47, 0.5 }, edge = { 1, 0.82, 0, 0.75 } },
+  red   = { bg = { 0.6, 0.2, 0.2, 0.5 }, edge = { 1, 0.2, 0.2, 0.75 } },
+  muted = { bg = { 0.15, 0.19, 0.25, 1 },   edge = { 0.5, 0.5, 0.5, 0.6 } },
 }
 
 -- ---------------------------------------------------------------------------
@@ -133,10 +125,10 @@ local function getRow(i)
   local r = CreateFrame("Button", nil, content, "BackdropTemplate")
   r:SetWidth(W - 56)
   r.hl = r:CreateTexture(nil, "HIGHLIGHT"); r.hl:SetPoint("TOPLEFT", 3, -3); r.hl:SetPoint("BOTTOMRIGHT", -3, 3)
-  r.hl:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight"); r.hl:SetBlendMode("ADD"); r.hl:SetAlpha(0.45)
+  r.hl:SetColorTexture(1, 1, 1, 0.05)
 
   -- accent stripe on the left edge (current zone, equipped, etc.)
-  r.stripe = r:CreateTexture(nil, "ARTWORK"); r.stripe:SetPoint("TOPLEFT", 3, -3); r.stripe:SetPoint("BOTTOMLEFT", 3, 3); r.stripe:SetWidth(3)
+  r.stripe = r:CreateTexture(nil, "ARTWORK"); r.stripe:SetPoint("TOPLEFT", 6, -11); r.stripe:SetPoint("BOTTOMLEFT", 6, 11); r.stripe:SetWidth(3)
 
   -- icon with a quality-colored border
   r.iconBorder = r:CreateTexture(nil, "ARTWORK"); r.iconBorder:SetSize(32, 32); r.iconBorder:SetPoint("LEFT", 8, 0)
@@ -206,14 +198,16 @@ end
 local function setHeader(r, text)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind, r.h = "head", HEAD_H()
-  font(r.head, FONT_BODY, sz(12.5))
+  font(r.head, FONT_TITLE, sz(11))
   r:SetBackdrop(nil); r.hl:Hide()
-  r.head:SetText(text); r.head:SetTextColor(unpack(T.gold)); r.head:SetShadowColor(0, 0, 0, 1); r.head:SetShadowOffset(1, -1); r.head:Show(); r.headLine:Show()
-  -- a header too long for one line wraps (and drops its rule line) instead of running off the edge
+  -- small caps-style section label (only when the text has no colour codes to break)
+  local label = text
+  if not label:find("|", 1, true) then label = label:upper() end
+  r.head:SetText(label); r.head:SetTextColor(unpack(T.dim)); r.head:SetShadowColor(0, 0, 0, 0); r.head:ClearAllPoints(); r.head:SetPoint("BOTTOMLEFT", 4, 6); r.head:Show()
+  -- a header too long for one line wraps instead of running off the edge
   local maxW = (W - 56) - 8
   r.head:SetWidth(0); r.head:SetHeight(0); r.head:SetWordWrap(false)
   if (r.head:GetStringWidth() or 0) > maxW then
-    r.headLine:Hide()
     r.h = math.max(r.h, math.ceil(fitText(r.head, maxW) + 12))
   end
   r:Show()
@@ -223,7 +217,9 @@ end
 local function setItem(r, id, link, title, sub, right, right2, accent, quality, small)
   hideAll(r); r.itemID, r.link = id, link
   r.kind, r.h = small and "sub" or "item", small and SUB_H() or ROW_H()
-  backdrop(r, small and { T.row[1], T.row[2], T.row[3], 0.85 } or T.panel, accent == "gold" and { T.gold[1], T.gold[2], T.gold[3], 0.9 } or (accent == "green" and { T.green[1], T.green[2], T.green[3], 0.9 } or T.edge), small and 10 or 12)
+  local fill = small and { 0.09, 0.12, 0.165, 1 } or T.panel
+  if accent == "gold" then fill = { 0.07, 0.15, 0.17, 1 } elseif accent == "green" then fill = { 0.075, 0.15, 0.115, 1 } end
+  backdrop(r, fill, nil, small and 10 or 12)
   r.hl:Show()
   local size = small and sz(22) or sz(32)
   r.iconBorder:SetSize(size, size)
@@ -247,7 +243,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   local kind = pillKind(right)
   if kind then
     r.pillText:SetText(right); r.pill:SetWidth(r.pillText:GetStringWidth() + 18)
-    backdrop(r.pill, PILL[kind].bg, PILL[kind].edge, 8)
+    backdrop(r.pill, PILL[kind].bg, PILL[kind].edge, 8, math.floor(sz(18) / 2))
     r.pill:ClearAllPoints(); r.pill:SetPoint(small and "RIGHT" or "TOPRIGHT", -10, small and 0 or -6)
     r.pill:Show()
   end
@@ -280,7 +276,7 @@ local function setBar(r, label, value, max, color, valueText, mark)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind, r.h = "bar", BAR_H()
   font(r.barLabel, FONT_BODY, sz(12)); font(r.barValue, FONT_NUM, sz(13))
-  backdrop(r, T.panel, T.edge, 12); r.hl:Hide()
+  backdrop(r, T.panel, nil, 12); r.hl:Hide()
   r.barLabel:SetText(label); r.barLabel:Show()
   r.barValue:SetText(valueText or ""); r.barValue:Show()
   r.barBg:Show()
@@ -297,15 +293,17 @@ end
 local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
-  backdrop(r, { T.row[1], T.row[2], T.row[3], done and 0.6 or 0.85 }, { T.rowEdge[1], T.rowEdge[2], T.rowEdge[3], done and 0.4 or 0.7 }, 10)
+  backdrop(r, { 0.09, 0.12, 0.165, done and 0.55 or 1 }, nil, 10)
   r.hl:Show()
   local box = sz(16)
   r.iconBorder:SetSize(box, box); r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("TOPLEFT", 34, -sz(9))
   local bc = auto and T.green or T.gold
   -- the classic checkbox: an empty box, with a gold check (green when the game ticked it)
-  r.iconBorder:SetTexture("Interface\\Buttons\\UI-CheckBox-Up"); r.iconBorder:SetVertexColor(1, 1, 1, 1); r.iconBorder:SetTexCoord(0, 1, 0, 1); r.iconBorder:Show()
-  r.icon:SetTexture("Interface\\Buttons\\UI-CheckBox-Check"); r.icon:SetTexCoord(0, 1, 0, 1)
-  r.icon:SetVertexColor(auto and 0.4 or 1, auto and 1 or 1, auto and 0.4 or 1, 1)
+  local MEDIA = "Interface\\AddOns\\Waypath\\Media\\"
+  r.iconBorder:SetTexture(MEDIA .. (done and "Disc" or "Ring")); r.iconBorder:SetTexCoord(0, 1, 0, 1); r.iconBorder:Show()
+  if done then r.iconBorder:SetVertexColor(bc[1], bc[2], bc[3], 1) else r.iconBorder:SetVertexColor(0.3, 0.37, 0.46, 1) end
+  r.icon:SetTexture(MEDIA .. "Check"); r.icon:SetTexCoord(0, 1, 0, 1)
+  r.icon:SetVertexColor(0.04, 0.09, 0.1, 1)
   r.icon:SetShown(done and true or false)
   font(r.title, FONT_NUM, sz(13))
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r.iconBorder, "TOPRIGHT", 10, 1)
@@ -2133,7 +2131,7 @@ function RG.RefreshUINow()
     for i = #subs, 1, -1 do
       local b = frame.subBtns[subs[i]]
       local on = subs[i] == state.tab
-      backdrop(b, on and { 0.1, 0.22, 0.21, 1 } or { 0.12, 0.12, 0.12, 1 }, on and { T.gold[1], T.gold[2], T.gold[3], 1 } or T.edge, 8)
+      backdrop(b, on and { 0.11, 0.3, 0.29, 1 } or T.panel, nil, 8, 12)
       font(b.text, FONT_BODY, 12); b.text:SetTextColor(unpack(on and T.gold or T.text))
       b:ClearAllPoints()
       if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -18, -116) end
@@ -2148,12 +2146,12 @@ end
 local function panelButton(parent, text, w, h)
   local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
   b:SetSize(w, h or 22)
-  backdrop(b, { 0.12, 0.12, 0.12, 1 }, T.edge, 8)
+  backdrop(b, T.raised, nil, 8, 7)
   b.label = b:CreateFontString(nil, "OVERLAY"); font(b.label, FONT_BODY, 12); b.label:SetPoint("CENTER", 0, 0); b.label:SetTextColor(unpack(T.text))
   b.SetText = function(self, t) self.label:SetText(t) end
   b.GetText = function(self) return self.label:GetText() end
-  b:SetScript("OnEnter", function(self) self:SetBackdropBorderColor(unpack(T.gold)); self.label:SetTextColor(unpack(T.gold)) end)
-  b:SetScript("OnLeave", function(self) self:SetBackdropBorderColor(unpack(T.edge)); self.label:SetTextColor(unpack(T.text)) end)
+  b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.17, 0.22, 0.28, 1); self.label:SetTextColor(unpack(T.gold)) end)
+  b:SetScript("OnLeave", function(self) self:SetBackdropColor(T.raised[1], T.raised[2], T.raised[3], 1); self.label:SetTextColor(unpack(T.text)) end)
   b:SetText(text)
   return b
 end
@@ -2215,19 +2213,26 @@ local function build()
   local plus = sizeBtn("A+", 0.1, close)
   sizeBtn("A-", -0.1, plus)
 
-  -- tab strip: flat labels, an accent line under the open one
+  -- tab strip: a rounded track with the open tab as a raised pill
   tabs = {}
+  local strip = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+  strip:SetPoint("TOPLEFT", 12, -42); strip:SetPoint("TOPRIGHT", -12, -42); strip:SetHeight(34)
+  strip:SetFrameLevel((frame:GetFrameLevel() or 1) + 1)
+  RG.Round(strip, 0.07, 0.092, 0.127, 1, 12)
   local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "group", "Group" },
     { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
-  local x = 14
+  local x = 16
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
+    b:SetFrameLevel((frame:GetFrameLevel() or 1) + 4)
     b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12.5); b.text:SetText(d[2]); b.text:SetPoint("CENTER", 0, 0)
-    local w = b.text:GetStringWidth() + 26
+    local w = b.text:GetStringWidth() + 20
     b.x = x
-    b:SetSize(w, 30); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -44); x = x + w
-    b.under = b:CreateTexture(nil, "OVERLAY"); b.under:SetHeight(2); b.under:SetPoint("BOTTOMLEFT", 8, 0); b.under:SetPoint("BOTTOMRIGHT", -8, 0)
-    b.under:SetColorTexture(unpack(T.gold)); b.under:Hide()
+    b:SetSize(w, 26); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -46); x = x + w + 2
+    local bg = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    bg:SetFrameLevel((frame:GetFrameLevel() or 1) + 3)
+    bg:SetAllPoints(b); RG.Round(bg, 0.122, 0.157, 0.2, 1, 9); bg:Hide()
+    b.under = bg
     b:SetScript("OnEnter", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.text)) end end)
     b:SetScript("OnLeave", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.dim)) end end)
     b:SetScript("OnClick", function()
@@ -2237,14 +2242,13 @@ local function build()
     end)
     tabs[d[1]] = b
   end
-  local tabLine = frame:CreateTexture(nil, "ARTWORK"); tabLine:SetHeight(1); tabLine:SetPoint("TOPLEFT", 1, -74); tabLine:SetPoint("TOPRIGHT", -1, -74); tabLine:SetColorTexture(unpack(T.line))
 
   -- who you are, and a thin XP bar
-  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_BODY, 12); frame.subtitle:SetPoint("TOPLEFT", 18, -84); frame.subtitle:SetJustifyH("LEFT"); frame.subtitle:SetTextColor(unpack(T.text))
+  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_BODY, 12); frame.subtitle:SetPoint("TOPLEFT", 18, -86); frame.subtitle:SetJustifyH("LEFT"); frame.subtitle:SetTextColor(unpack(T.text))
   frame.xp = CreateFrame("StatusBar", nil, frame)
-  frame.xp:SetPoint("TOPLEFT", 18, -104); frame.xp:SetPoint("TOPRIGHT", -18, -104); frame.xp:SetHeight(3)
+  frame.xp:SetPoint("TOPLEFT", 18, -105); frame.xp:SetPoint("TOPRIGHT", -18, -105); frame.xp:SetHeight(5)
   frame.xp:SetStatusBarTexture(WHITE)
-  local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.17, 0.17, 0.17, 1)
+  local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.1, 0.13, 0.17, 1)
   frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("TOPRIGHT", -18, -86); frame.xpText:SetTextColor(unpack(T.dim))
 
   -- section title
@@ -2310,7 +2314,7 @@ local function build()
   content = CreateFrame("Frame", nil, scroll); content:SetSize(W - 56, 10)
   scroll:SetScrollChild(content)
 
-  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(unpack(T.line))
+  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(1, 1, 1, 0.05)
   footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 7)
   -- long footers wrap onto a second line instead of running off the window
   footer:SetWidth(W - 44); footer:SetHeight(22); footer:SetJustifyH("LEFT"); footer:SetJustifyV("MIDDLE"); footer:SetWordWrap(true)

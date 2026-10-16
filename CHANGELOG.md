@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.70.0
+- **A new look for everything.** Rounded cards and pills replace the boxed outlines; the window, tracker, pop-ups, setup wizard and source windows share one deep blue-black palette with a teal accent.
+- **Route window:** the tab strip is now a rounded segmented control, section labels are small and quiet, steps use round checkboxes, and sub-tabs, buttons and status pills are rounded.
+- **Tracker:** a rounded panel with a cleaner font, round tick circles, quieter uppercase section labels, more breathing room between lines and an inset XP bar with the pace underneath.
+- Adds four small textures (Media/Round, Ring, Disc, Check) and `RG.Round` for rounded panels.
+
 ## v0.69.3
 - Clicking a quest that is ready to turn in now points the arrow at the hand-in instead of opening the quest log. Right-click opens the quest log; double-click still switches the arrow on or off.
 

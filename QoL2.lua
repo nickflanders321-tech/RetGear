@@ -88,10 +88,7 @@ function RG.ShowErrors()
     errFrame:RegisterForDrag("LeftButton")
     errFrame:SetScript("OnDragStart", errFrame.StartMoving)
     errFrame:SetScript("OnDragStop", errFrame.StopMovingOrSizing)
-    if errFrame.SetBackdrop then
-      errFrame:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
-      errFrame:SetBackdropColor(0.05, 0.05, 0.07, 0.95); errFrame:SetBackdropBorderColor(0.6, 0.5, 0.2, 1)
-    end
+    RG.DialogBackdrop(errFrame)
     local title = errFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 12, -10); title:SetText("Waypath+ errors  ·  Ctrl+A, Ctrl+C to copy")
     local close = CreateFrame("Button", nil, errFrame, "UIPanelCloseButton")

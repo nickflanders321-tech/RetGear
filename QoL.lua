@@ -27,20 +27,34 @@ end
 local function sound(id) if RG.Opt("sounds") and PlaySound and id then pcall(PlaySound, id) end end
 local SND = SOUNDKIT or {}
 
--- Flat panel: near-black with a one pixel border.
-local function backdrop(f, bg, edge)
+-- Rounded panel. Media/Round.tga is a solid white nine-slice with rounded outer corners; the backdrop's
+-- edge and fill are tinted the same colour, so the frame reads as one filled, rounded card.
+local WHITE8 = "Interface\\Buttons\\WHITE8X8"
+local ROUND = "Interface\\AddOns\\Waypath\\Media\\Round"
+function RG.Round(f, r, g, b, a, radius)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
-  f:SetBackdropColor(bg[1] * 0.4 + 0.06, bg[2] * 0.4 + 0.06, bg[3] * 0.4 + 0.06, bg[4] or 1)   -- neutral near-black whatever tint was asked for
-  f:SetBackdropBorderColor(0.22, 0.22, 0.22, 1)
+  radius = radius or 8
+  if not rawget(f, "rgRound") then
+    f.rgRound = radius
+    local setC, setB = f.SetBackdropColor, f.SetBackdropBorderColor
+    f.SetBackdropColor = function(self, cr, cg, cb, ca) setC(self, cr, cg, cb, ca); setB(self, cr, cg, cb, ca) end
+    f.SetBackdropBorderColor = function() end   -- the fill is the whole look; old border tints are ignored
+  elseif f.rgRound ~= radius then f.rgRound = radius end
+  f:SetBackdrop({ bgFile = WHITE8, edgeFile = ROUND, edgeSize = radius, insets = { left = radius, right = radius, top = radius, bottom = radius } })
+  f:SetBackdropColor(r, g, b, a or 1)
 end
--- Classic dialog frame: the stone-and-gold border used by Blizzard's popups.
--- The Graphite look: a flat near-black window with a one pixel border.
-function RG.DialogBackdrop(f)
+-- Old call shape: bg = {r,g,b,a}. Outline-only boxes (clear fill) keep the flat 1px border.
+local function backdrop(f, bg, edge, radius)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
-  f:SetBackdropColor(0.078, 0.078, 0.078, 0.97); f:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+  if (bg[4] or 1) <= 0.01 then
+    f:SetBackdrop({ bgFile = WHITE8, edgeFile = WHITE8, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+    f:SetBackdropColor(0, 0, 0, 0); f:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4] or 1)
+    return
+  end
+  RG.Round(f, bg[1] * 0.4 + 0.045, bg[2] * 0.4 + 0.055, bg[3] * 0.4 + 0.075, bg[4] or 1, radius or 8)   -- cool near-black whatever tint was asked for
 end
+-- The window: a deep rounded panel.
+function RG.DialogBackdrop(f) RG.Round(f, 0.051, 0.067, 0.09, 0.97, 14) end
 -- Window title, top left. (Returns nil for the old banner texture, then the text.)
 function RG.DialogHeader(f, text)
   local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "semibold", 15); t:SetPoint("TOPLEFT", 18, -14); t:SetText(text); t:SetTextColor(0.93, 0.93, 0.93)
