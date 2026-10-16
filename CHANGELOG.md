@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.88.0
+- Gear guide: a "Best upgrades you can get now" block at the top lists the pieces that would improve you most (a quest already in your log counts extra), then the rest of the guide follows.
+- Gear guide: near your level, each slot is now sorted by how much the piece would actually improve you instead of by level, pieces you carry come first, and upgrade rows say what they replace ("replaces ..." or "fills an empty slot").
+- Gear guide: new "Upgrades only" tick hides pieces you already beat or wear, keeping the ones still out of reach and the tips.
+
 ## v0.87.0
 - Setup: new characters now pick their main spec ("What do you level as?") instead of Waypath+ assuming it. The choice drives stat weights, the weapon model, the Gear guide, the score name on tooltips and the paladin seal and blessing reminders (those only show for melee and tank specs).
 - Spec tab: a "Your main spec" section lets you change it any time (it says "not confirmed yet" until you pick). Your 2nd spec can no longer be the same as your main. Existing characters get a one-time chat reminder to pick one.

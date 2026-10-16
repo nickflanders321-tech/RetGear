@@ -42,7 +42,7 @@ local function BAR_H() return sz(44) end
 
 local frame, scroll, content, tabs, footer, sectionTitle
 local rows = {}
-local state = { tab = "route", near = true, open = {} }
+local state = { tab = "route", near = true, onlyUp = false, open = {} }
 local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
@@ -323,6 +323,24 @@ end
 -- Gear guide order: the two-hander first (your biggest upgrade), then head to toe.
 local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
 local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand" }
+-- "Upgrades only": hide pieces you already beat; keep tips, things you cannot use yet, and ones still loading
+local function guideKeep(g, lvl)
+  if not state.onlyUp or g.tip or not g.id then return true end
+  local own = RG.OwnState(g.id)
+  if own == "equipped" then return false end
+  if g.lvl > lvl then return true end
+  local _, link = GetItemInfo(g.id)
+  if not link then return true end
+  local d = RG.GuideDelta(g)
+  return d == nil or d > 0.5
+end
+local function guideRank(g)   -- bigger = better: real gain first, then what you already carry, then the rest
+  if not g.id then return 0 end
+  local own = RG.OwnState(g.id)
+  if own == "equipped" then return -1000 end
+  local d = g.lvl <= UnitLevel("player") and RG.GuideDelta(g) or nil
+  return (d or -50) + (own == "owned" and 5 or 0)
+end
 local function guideRows()
   local list, lvl = {}, UnitLevel("player")
   if state.near then
@@ -334,9 +352,11 @@ local function guideRows()
     for _, slot in ipairs(GUIDE_SLOTS) do
       local items = {}
       for _, g in ipairs(RG.GUIDE) do
-        if g.id and g.slot == slot and g.lvl >= lo and g.lvl <= hi and RG.OwnState(g.id) ~= "equipped" then items[#items + 1] = g end
+        if g.id and g.slot == slot and g.lvl >= lo and g.lvl <= hi and RG.OwnState(g.id) ~= "equipped" and guideKeep(g, lvl) then items[#items + 1] = g end
       end
-      table.sort(items, function(a, b) if a.lvl ~= b.lvl then return a.lvl < b.lvl end return (a.score or 0) > (b.score or 0) end)
+      local rank = {}
+      for _, g in ipairs(items) do rank[g] = guideRank(g) end
+      table.sort(items, function(a, b) if rank[a] ~= rank[b] then return rank[a] > rank[b] end return a.lvl < b.lvl end)
       if #items > 0 then
         list[#list + 1] = { header = (GUIDE_SLOT_LABEL[slot] or slot) .. GREY .. "   levels " .. math.max(1, lo) .. "-" .. hi .. "|r" }
         for i = 1, math.min(4, #items) do list[#list + 1] = { g = items[i] } end
@@ -349,7 +369,7 @@ local function guideRows()
     for i, sl in ipairs(GUIDE_SLOTS) do order[sl] = i end
     for _, b in ipairs(brackets) do
       local items = {}
-      for _, g in ipairs(RG.GUIDE) do if g.lvl >= b[1] and g.lvl <= b[2] then items[#items + 1] = g end end
+      for _, g in ipairs(RG.GUIDE) do if g.lvl >= b[1] and g.lvl <= b[2] and guideKeep(g, lvl) then items[#items + 1] = g end end
       table.sort(items, function(x, y)
         local ox, oy = x.tip and 0 or (order[x.slot] or 99), y.tip and 0 or (order[y.slot] or 99)
         if ox ~= oy then return ox < oy end
@@ -364,10 +384,61 @@ local function guideRows()
   return list
 end
 
+local function fillGuideItem(r, g, lvl)
+      local name, link, quality = itemName(g.id)
+      local own = RG.OwnState(g.id)
+      local d = link and RG.GuideDelta(g)
+      local right, accent
+      if own == "equipped" then right = GREEN .. "Equipped|r"; accent = "green"
+      elseif own == "owned" then right = GOLD .. "In your bags|r"
+      elseif g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs then
+        local sk = RG.Skill("Blacksmithing")
+        right = GREY .. "Smithing " .. g.bs .. (sk and (" · you " .. sk) or "") .. "|r"
+      elseif g.lvl > lvl then right = GREY .. "Level " .. (g.approx and "~" or "") .. g.lvl .. "|r"
+      elseif d then
+        if d > 0.5 then right = GREEN .. "Upgrade " .. string.format("+%.0f", d) .. "|r"; accent = "gold"
+        else right = GREY .. "Not an upgrade|r" end
+      else right = GREY .. "Loading|r" end
+      local right2 = g.ah and RG.PriceText(g.id) or (GREY .. g.how .. "|r")
+      if g.bs and (RG.Skill("Blacksmithing") or 0) >= g.bs and not own then right2 = GREEN .. "You can make this|r" end
+      local qsrc = g.how == "Quest" and g.src and g.src:gsub("%s*%(.-%)$", "")
+      local qIn = qsrc and RG.InLog and RG.InLog(qsrc)
+      if qIn and not own then right2 = GOLD .. "Quest in your log|r" end
+      local repl = ""
+      if d and d > 0.5 and link then
+        local _, slot = RG.Compare(link)
+        local worn = slot and GetInventoryItemLink("player", slot)
+        local wn = worn and GetItemInfo(worn)
+        repl = GREY .. "  ·  " .. (wn and ("replaces " .. wn) or "fills an empty slot") .. "|r"
+      end
+      setItem(r, g.id, link, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. (g.approx and "~" or "") .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r" .. repl, right, right2, accent, quality)
+      r.onClick = function() RG.ShowItemSource(g, d and d > 0.5 and { note = GREEN .. string.format("+%.0f", d) .. "|r" .. GREY .. " over what you wear|r" } or nil) end
+      if qIn then r.onRightClick = function() RG.OpenQuest(qsrc) end end
+end
+
 local function renderGuide()
   local list = guideRows()
   local lvl = UnitLevel("player")
   if #list == 0 then list = { { header = "Nothing near your level · untick Near my level" } } end
+  -- the best pieces you could go and get right now
+  do
+    local best = {}
+    for _, g in ipairs(RG.GUIDE) do
+      if g.id and not g.tip and g.lvl <= lvl and not RG.OwnState(g.id) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) then
+        local _, link = GetItemInfo(g.id)
+        local d = link and RG.GuideDelta(g)
+        if d and d > 0.5 then best[#best + 1] = { g = g, d = d + ((g.how == "Quest" and g.src and RG.InLog and RG.InLog((g.src:gsub("%s*%(.-%)$", "")))) and 3 or 0) } end
+      end
+    end
+    table.sort(best, function(a, b) return a.d > b.d end)
+    if #best > 0 then
+      local top = { { header = "Best upgrades you can get now" } }
+      for i = 1, math.min(4, #best) do top[#top + 1] = { g = best[i].g } end
+      top[#top + 1] = { header = state.near and "Coming up near your level" or "The whole guide" }
+      for _, e in ipairs(list) do top[#top + 1] = e end
+      list = top
+    end
+  end
   -- your 2nd spec: a link to its gear list
   local off = 0
   local s2 = RG.SecondSpecActive and RG.SecondSpecActive()
@@ -393,29 +464,7 @@ local function renderGuide()
       setItem(r, nil, nil, GOLD .. "Tip|r" .. GREY .. "  ·  level " .. e.g.lvl .. "|r", e.g.text, "", "", "gold")
       r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
     else
-      local g = e.g
-      local name, link, quality = itemName(g.id)
-      local own = RG.OwnState(g.id)
-      local d = link and RG.GuideDelta(g)
-      local right, accent
-      if own == "equipped" then right = GREEN .. "Equipped|r"; accent = "green"
-      elseif own == "owned" then right = GOLD .. "In your bags|r"
-      elseif g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs then
-        local sk = RG.Skill("Blacksmithing")
-        right = GREY .. "Smithing " .. g.bs .. (sk and (" · you " .. sk) or "") .. "|r"
-      elseif g.lvl > lvl then right = GREY .. "Level " .. (g.approx and "~" or "") .. g.lvl .. "|r"
-      elseif d then
-        if d > 0.5 then right = GREEN .. "Upgrade " .. string.format("+%.0f", d) .. "|r"; accent = "gold"
-        else right = GREY .. "Not an upgrade|r" end
-      else right = GREY .. "Loading|r" end
-      local right2 = g.ah and RG.PriceText(g.id) or (GREY .. g.how .. "|r")
-      if g.bs and (RG.Skill("Blacksmithing") or 0) >= g.bs and not own then right2 = GREEN .. "You can make this|r" end
-      local qsrc = g.how == "Quest" and g.src and g.src:gsub("%s*%(.-%)$", "")
-      local qIn = qsrc and RG.InLog and RG.InLog(qsrc)
-      if qIn and not own then right2 = GOLD .. "Quest in your log|r" end
-      setItem(r, g.id, link, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. (g.approx and "~" or "") .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, accent, quality)
-      r.onClick = function() RG.ShowItemSource(g, d and d > 0.5 and { note = GREEN .. string.format("+%.0f", d) .. "|r" .. GREY .. " over what you wear|r" } or nil) end
-      if qIn then r.onRightClick = function() RG.OpenQuest(qsrc) end end
+      fillGuideItem(r, e.g, lvl)
     end
   end
   return #list + off
@@ -2381,6 +2430,7 @@ function RG.RefreshUINow()
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
   frame.near:SetShown(state.tab == "guide")
+  if frame.onlyUp then frame.onlyUp:SetShown(state.tab == "guide") end
   if state.searchFor ~= state.tab then
     state.searchFor = state.tab; state.search = ""
     if frame.search then frame.search:SetText("") end
@@ -2578,6 +2628,12 @@ local function build()
   frame.near.label = RG.NewText(frame.near, "GameFontNormalSmall")
   frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level")
   frame.near:SetScript("OnClick", function(self) state.near = self:GetChecked(); RG.RefreshUI() end)
+  frame.onlyUp = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+  frame.onlyUp:SetSize(24, 24); frame.onlyUp:SetPoint("TOPRIGHT", -232, -116)
+  frame.onlyUp:SetChecked(state.onlyUp)
+  frame.onlyUp.label = RG.NewText(frame.onlyUp, "GameFontNormalSmall")
+  frame.onlyUp.label:SetPoint("LEFT", frame.onlyUp, "RIGHT", 2, 0); frame.onlyUp.label:SetText("Upgrades only")
+  frame.onlyUp:SetScript("OnClick", function(self) state.onlyUp = self:GetChecked() and true or false; RG.RefreshUI() end)
   -- settings search
   frame.search = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
   frame.search:SetSize(150, 20); frame.search:SetPoint("TOPRIGHT", -24, -118)
