@@ -648,10 +648,15 @@ function RG.NowLines()
     if obj.wp then
       tip = tip .. "\n\n" .. GOLD .. "Click:|r arrow to it\n" .. GOLD .. "Right-click:|r skip to the next stop\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Key:|r bind \"Next objective\" in Key Bindings, or /wp next"
     end
-    out[#out + 1] = { text = head, opts = { single = true, indent = 2, right = obj.tag and (obj.tagColor .. obj.tag .. "|r  " .. (dtext(obj.dist) or "")) or dtext(obj.dist), tip = tip, wp = obj.wp,
+    out[#out + 1] = { text = head, opts = { indent = 2, right = dtext(obj.dist), tip = tip, wp = obj.wp,
       onClick = function() if obj.wp then RG.Follow(obj.wp) end end,
       onRightClick = (obj.stop and obj.count and obj.count > 1) and function() RG.SkipStop(obj.stop); RG.SyncObjective(RG.Objective(true)); RG.RefreshTracker() end
         or (obj.kind == "goal" and function() RG.RemoveGoal(1) end) or nil } }
+    -- how good it is, in a line of its own so the objective can use the full width
+    if obj.tag then
+      out[#out + 1] = { text = obj.tagColor .. obj.tag .. "|r" .. GREY .. " · " .. ((obj.tagNote or ""):match("^[^;]*")) .. "|r", opts = { indent = 14, tip = tip, wp = obj.wp,
+        onClick = function() if obj.wp then RG.Follow(obj.wp) end end } }
+    end
     -- the one thing in the way, or the live objective list
     local shown = 0
     for _, rq in ipairs(obj.reqs or {}) do
@@ -661,7 +666,7 @@ function RG.NowLines()
       end
     end
     if obj.nextText then
-      out[#out + 1] = { text = GREY .. "Then: " .. obj.nextText .. "|r", opts = { single = true, indent = 2, wp = obj.nextWp,
+      out[#out + 1] = { text = GREY .. "Then: " .. obj.nextText .. "|r", opts = { indent = 2, wp = obj.nextWp,
         right = (obj.count and obj.count > 1) and (GREY .. (obj.index or 1) .. "/" .. obj.count .. "|r") or nil,
         tip = "Your next stop.\n\n" .. GOLD .. "Double-click:|r arrow to it", onClick = function() if RG.ShowTab then RG.ShowTab("plan") end end } }
     end

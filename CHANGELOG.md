@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.84.1
+- Tracker: the Now line and the line after it wrap instead of being cut off at 300 pixels wide; the rating (Great, Okay, ...) sits on its own line.
+
 ## v0.84.0
 - One objective for everything. The arrow, the tracker's new **Now** line, the collapsed tracker and the new **Quest plan** tab all follow the same current objective, so they never disagree. After a reload or relog the arrow goes back to it.
 - Quest planner: the quests in your log (and the route's next pick-ups) are ordered into a trip. Objectives and hand-ins that are close together share one stop, hand-ins wait for their objectives, and the arrow keeps heading for a stop until another is clearly closer. The Quest plan tab shows every stop and the walking time; right-click a stop to skip it for 10 minutes.
