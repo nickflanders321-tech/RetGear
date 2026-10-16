@@ -132,7 +132,7 @@ function RG.AltGuideLines()
     if not isDone and #out < 3 then
       local wp = s.wp
       out[#out + 1] = { (i == nextI and GOLD or "|cffffffff") .. s.title .. "|r" .. GREY .. ": " .. s.text .. "|r", function() if wp then RG.PinWaypoint(wp) end end,
-        (wp and ("Click: point the arrow at " .. wp[4] .. ".") or "") }
+        (wp and ("Click: point the arrow at " .. wp[4] .. ".") or ""), wp }
     end
   end
   return out, done, total

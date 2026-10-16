@@ -83,6 +83,13 @@ local function currentEntry()
   return done
 end
 
+-- the map point of the first step still to do in a route entry (nil when it has none)
+local function destWp(r)
+  if not (r and RG.STEPS and RG.StepWaypoint) then return nil end
+  local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
+  for i = 1, #steps do if not RG.StepIsDone(r, i) then return RG.StepWaypoint(r, i) end end
+  return RG.StepWaypoint(r, 1)
+end
 function RG.CurrentRouteEntry() local ok, r = pcall(currentEntry); return ok and r or nil end
 
 -- A generated route step split into its quests, each with the one thing to do
@@ -442,7 +449,7 @@ function RG.RefreshTracker()
       local isFolded
       n = n + 1; y, isFolded = section(n, y, "Bank alt setup", "altguide", GREY .. gdone .. "/" .. gtotal .. "|r")
       if not isFolded then
-        for _, l in ipairs(gl) do n = n + 1; y = item(n, y, l[1], { onClick = l[2], tip = l[3] }) end
+        for _, l in ipairs(gl) do n = n + 1; y = item(n, y, (isTarget(l[4]) and ARROW or "") .. l[1], { onClick = l[2], tip = l[3] .. (l[4] and ("\n" .. GOLD .. "Double-click:|r arrow on / off") or ""), wp = l[4] }) end
         n = n + 1; y = item(n, y, GREY .. "Hide this guide|r", { single = true, onClick = function() RG.AltGuideHide() end, tip = "/wp bankalt brings it back." })
       end
       y = y + 5
@@ -659,11 +666,11 @@ function RG.RefreshTracker()
         local _, _, nt, np, nl = RG.StepQuestLines(r, nextI, quests)
         n = n + 1
         y = item(n, y, GREY .. "Then: " .. (np or plain(steps[nextI]):sub(1, 40)) .. (nl and (", " .. nl) or "") .. (nt and (" (" .. nt .. " quests)") or "") .. "|r",
-          { single = true, indent = 2, tip = "The next step of this zone's route.\nThe Route tab has every step.", onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+          { single = true, indent = 2, wp = RG.StepWaypoint and RG.StepWaypoint(r, nextI), tip = "The next step of this zone's route.\nThe Route tab has every step.\n\n" .. GOLD .. "Double-click:|r arrow to it", onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
       end
       if RG.TravelSummary then
         local tip = RG.TravelSummary(r.zone)
-        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats." }) end
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Double-click:|r arrow to the first stop in " .. r.zone }) end
       end
       local u = lastTick(key .. "#")
       if u then
@@ -688,7 +695,7 @@ function RG.RefreshTracker()
       if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       if shown > 0 and RG.TravelSummary then
         local tip = RG.TravelSummary(r.zone)
-        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats." }) end
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Double-click:|r arrow to the first stop in " .. r.zone }) end
       end
       local u = lastTick(key .. "#")
       if u then
@@ -760,7 +767,7 @@ function RG.RefreshTracker()
     if not isFolded then
       if lvl >= dq.go and RG.TravelSummary then
         local tip = RG.TravelSummary(dr.zone)
-        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip) end
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(dr), tip = "Double-click: arrow to " .. dr.zone }) end
       end
       if #missing == 0 then n = n + 1; y = item(n, y, GREEN .. "All its quests are in your log.|r", { single = true })
       else
@@ -793,6 +800,7 @@ function RG.RefreshTracker()
     if not isFolded then
       n = n + 1; y = item(n, y, "|cffffffff" .. name .. "|r", { single = true, right = GREEN .. string.format("+%.0f", up.d) .. "|r",
         tip = "|cffffffff" .. name .. "|r  " .. GREEN .. string.format("+%.0f %s", up.d, RG.SCORE_NAME) .. "|r\n" .. GREY .. up.g.src .. ", " .. up.g.zone .. "|r\n\n" .. GOLD .. "Click:|r where it drops or which quest gives it\n" .. GOLD .. "Right-click:|r open the Gear guide",
+        wp = RG.WaypointForText and RG.WaypointForText(up.g.src or ""),
         onClick = function() if RG.ShowItemSource then RG.ShowItemSource(up.g, { note = GREEN .. string.format("+%.0f", up.d) .. "|r" .. GREY .. " over what you wear|r" }) end end,
         onRightClick = function() if RG.ShowTab then RG.ShowTab("guide") end end })
     end
@@ -843,7 +851,7 @@ function RG.RefreshTracker()
     local isFolded
     n = n + 1; y, isFolded = section(n, y, "Reminders", "reminders", GREY .. #rem .. "|r")
     if not isFolded then
-      for i = 1, math.min(4, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2] }) end
+      for i = 1, math.min(4, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2], wp = rr[4], tip = rr[4] and (GOLD .. "Double-click:|r arrow on / off") or nil }) end
       if #rem > 4 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rem - 4) .. " more  ·  turn reminders off in Settings|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("settings") end end }) end
     end
   end

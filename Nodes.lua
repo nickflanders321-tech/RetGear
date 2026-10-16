@@ -145,7 +145,7 @@ function RG.Reminders()
   local n = nearest
   if n then
     local wp = n.wp
-    out[#out + 1] = { "|T" .. n.kind.icon .. ":14:14|t " .. GOLD .. (n.ore or "Node") .. "|r" .. GREY .. string.format(" %s %d yd %s (click to pin)|r", n.kind.word, n.dist, n.dir), function() RG.PinWaypoint(wp) end, 3 }
+    out[#out + 1] = { "|T" .. n.kind.icon .. ":14:14|t " .. GOLD .. (n.ore or "Node") .. "|r" .. GREY .. string.format(" %s %d yd %s (click to pin)|r", n.kind.word, n.dist, n.dir), function() RG.PinWaypoint(wp) end, 3, wp }
   end
   return out
 end

@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.69.2
+- **Double-click works on every tracker line that has a place.** Added to: the "Then:" next step, "Getting there:" (arrow to the first stop of the zone or dungeon), the next upgrade (when its source NPC is known), the bank-alt setup steps and ore/herb reminders. Lines that already had it (quests, pick-ups, hand-ins, route stops, professions) keep it. Their tooltips say so.
+
 ## v0.69.1
 - **Double-click a quest that is ready to turn in and the arrow guides you to the hand-in.** Ready quests now always know their hand-in NPC from the quest data (even when it is on another continent), so every green "turn in" row on the tracker can be double-clicked. Right-click shows the spot on the map.
 
