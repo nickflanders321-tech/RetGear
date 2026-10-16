@@ -89,6 +89,10 @@ local function check()
   nearest = nil
   if RG.IsAlt and RG.IsAlt() then return end
   if (InCombatLockdown and InCombatLockdown()) or (IsInInstance and IsInInstance()) then return end
+  -- nothing to look for (no gathering profession, or the alerts are off): skip the map calls
+  local wantAny = false
+  for _, kind in ipairs(KINDS) do if RG.Opt(kind.opt) and RG.Skill and RG.Skill(kind.prof) then wantAny = true; break end end
+  if not wantAny then return end
   local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
   if not map then return end
   local pos = C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")

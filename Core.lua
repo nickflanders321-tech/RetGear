@@ -2,6 +2,7 @@
 -- you're wearing, and adds an upgrade line to every item tooltip.
 local ADDON, RG = ...
 _G.Waypath = RG
+if RG.PruneQuests then RG.PruneQuests() end   -- drop quests this race or class can never take (Objectives.lua has loaded)
 -- The version from the .toc (the release build fills it in; "dev" when run from a checkout)
 do
   local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata

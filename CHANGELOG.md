@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.64.0
+- Lighter on memory: quests your race or class can never take, the other faction's route and other races' definitions are dropped after login (about 18% less memory).
+- The ore and herb alert check does nothing when you have no gathering profession or the alerts are off.
+
 ## v0.63.3
 - Fixed the quest tracker losing the text of some lines (section headings and several rows were blank): it is back on the game's own font.
 - The header line no longer runs into the XP numbers: it now shows just your level, race and spec.

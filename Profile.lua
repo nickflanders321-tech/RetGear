@@ -226,5 +226,18 @@ if not RG.KEEP_ALL_DATA then
   end
   for letter in pairs(RG.GEN_STEPS or {}) do if letter ~= RG.RACE_LETTER and letter ~= "F" then RG.GEN_STEPS[letter] = nil end end
   if faction == "Alliance" then RG.GEN_DUNGEONS = nil else RG.GEN_DUNGEONS_A = nil end
+  -- (Objectives.lua loads after this file and calls RG.PruneQuests when it is done)
+  -- the other faction's route and the other races' definitions
+  for f in pairs(RG.ROUTES) do if f ~= faction then RG.ROUTES[f] = nil end end
+  for tok in pairs(RG.RACES) do if RG.RACES[tok] ~= R then RG.RACES[tok] = nil end end
+  collectgarbage("collect")
+end
+
+-- Quests another race or class can never take (about a third of the quest table).
+function RG.PruneQuests()
+  if RG.KEEP_ALL_DATA or not RG.QDATA then return end
+  for id, d in pairs(RG.QDATA) do
+    if (d.ra and not d.ra:find(RG.RACE_LETTER, 1, true)) or (d.cl and not d.cl:find(RG.CLASS_LETTER, 1, true)) then RG.QDATA[id] = nil end
+  end
   collectgarbage("collect")
 end
