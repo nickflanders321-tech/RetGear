@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.86.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v0.86.0
 - Cards: "The Arena", a Hearthstone-style duel played with the cards you have found. Reach it from the cards window or with /wp arena. 30 health, a growing pool of mana crystals (up to 10), 30-card decks, a hand of 10, seven minions a side, an opening-hand swap, hero powers for all nine classes, weapons, armour, fatigue and the Lucky Coin for whoever goes second.
 - Cards: every card plays by its own fixed rules, worked out from the card itself. NPCs and Raiders are minions (their creature type decides what they can do: beasts rush, undead leave deathrattles, dragonkin breathe fire, giants taunt), Items become weapons and spells, Places become area spells. Keywords: Taunt, Charge, Rush, Divine Shield, Stealth, Windfury, Lifesteal, Poisonous, Battlecry, Deathrattle, end-of-turn effects, Freeze and Silence. The print (rare, holo, full art) is cosmetic.
