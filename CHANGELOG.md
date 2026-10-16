@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.85.0
+- Cards: a full visual overhaul in a dark-fantasy, tabletop-RPG style. The card window is now "The Hoard", a night-sky grimoire with a slowly turning magic circle, drifting motes, gold corner trim, a title plate and text tabs (Collection, Sets, Today, Trade, Ledger).
+- Cards: real trading-card frames. Name banner, art window, type line with a rarity gem, a parchment text box with the card's description, a power plate and a collector number. The frame takes the colour of the card's rarity; the four prints look different: plain, rare (soft glow), holo (a rainbow foil sweeps across, a turning rune circle, glints) and full art (radiant rays and a larger picture).
+- Cards: rarity names follow the tabletop tradition: Mundane, Uncommon, Renowned, Epic, Legendary and Artifact (Raiders). Empty binder slots show a dark silhouette and the collector number.
+- Cards: the pack opening starts with a wax seal you click to break; the five face-down cards are then dealt out and turned over one at a time, with a burst of light behind rare pulls. Card backs show a magic circle around a twenty-sided die.
+- Cards: a larger card view with the card's name, description, set, power and the four prints; new fonts (Cinzel and Marcellus, both open source) and gold-trimmed buttons. All the artwork is drawn by tools/arcade/art.py and ships in Media/Arcade.
+
 ## v0.84.1
 - Tracker: the Now line and the line after it wrap instead of being cut off at 300 pixels wide; the rating (Great, Okay, ...) sits on its own line.
 

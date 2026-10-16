@@ -7,9 +7,9 @@ local _, RG = ...
 
 local KIND = { "Item", "NPC", "Place", "Raider" }
 local TIER = {  -- how rare the subject itself is: draw weight, name colour
-  { "Everyday", 44, { 0.8, 0.8, 0.8 } }, { "Notable", 26, { 0.3, 0.85, 0.3 } }, { "Famous", 14, { 0.3, 0.55, 1 } },
+  { "Mundane", 44, { 0.78, 0.78, 0.8 } }, { "Uncommon", 26, { 0.3, 0.85, 0.3 } }, { "Renowned", 14, { 0.3, 0.55, 1 } },
   { "Epic", 12, { 0.7, 0.35, 0.95 } }, { "Legendary", 4, { 1, 0.6, 0.1 } },
-  { "Super rare", 3, { 1, 0.2, 0.35 } },   -- the Raiders
+  { "Artifact", 3, { 1, 0.2, 0.35 } },   -- the Raiders
 }
 local FINISH = {  -- finish names, draw weights, power bonus, sell price
   { "Common", 70, 0, 1 }, { "Rare", 22, 6, 3 }, { "Holo", 6, 16, 10 }, { "Full art", 2, 30, 30 },
@@ -504,6 +504,211 @@ local function ensureModel(w)
   end)
   return m
 end
+-- ---------------------------------------------------------------------------
+-- Look: a dark grimoire, parchment cards, gold trim (textures: Media/Arcade, drawn by tools/arcade/art.py)
+-- ---------------------------------------------------------------------------
+local MEDIA = "Interface\\AddOns\\Waypath\\Media\\Arcade\\"
+local FDIR = "Interface\\AddOns\\Waypath\\Media\\Fonts\\"
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+local FONT = { title = FDIR .. "Cinzel-ExtraBold.ttf", head = FDIR .. "Cinzel-SemiBold.ttf", body = FDIR .. "Marcellus-Regular.ttf" }
+local CARD_V = 358 / 512               -- the card fills the top 358 rows of its 512-row textures
+local GOLDC = { 0.96, 0.82, 0.45 }
+local GOLDHEX = "|cfff5d273"
+local INK = { 0.17, 0.11, 0.08 }       -- text on parchment
+local KINDCOL = { { 1, 0.6, 0.25 }, { 0.35, 0.9, 0.55 }, { 0.35, 0.65, 1 }, { 0.75, 0.45, 1 } }
+local U = { name = { 13, 10, 243, 40 }, art = { 16, 44, 240, 200 }, type = { 13, 204, 243, 225 }, text = { 16, 229, 240, 327 } }
+
+local function lv(f) local l = f.GetFrameLevel and f:GetFrameLevel(); return type(l) == "number" and l or 1 end
+local function setfont(f, key, size, flags)
+  size = math.max(6, math.floor(size * 2 + 0.5) / 2)
+  local ok = f:SetFont(FONT[key] or FONT.body, size, flags or "")
+  if not ok and RG.FONTS then ok = f:SetFont(RG.FONTS.regular, size, flags or "") end
+  if not ok then f:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
+end
+local function fs(parent, key, size, layer, flags)
+  local t = parent:CreateFontString(nil, layer or "OVERLAY")
+  setfont(t, key, size, flags)
+  t:SetShadowColor(0, 0, 0, 0.8); t:SetShadowOffset(1, -1)
+  return t
+end
+local function fitText(t, text, maxW, size, minSize, key)
+  local sz = math.max(size, minSize)
+  setfont(t, key, sz)
+  t:SetText(text)
+  for _ = 1, 8 do
+    local wd = t:GetStringWidth()
+    if type(wd) ~= "number" or wd <= maxW or sz <= minSize then break end
+    sz = sz - 0.5; setfont(t, key, sz)
+  end
+end
+
+-- gold-trimmed button
+local function gbtn(parent, label, w, h, fn, big)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  b:SetSize(w, h or 24)
+  b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
+  b.label = fs(b, "head", big and 13 or 11); b.label:SetPoint("CENTER", 0, 0)
+  b.enabled, b.active = true, false
+  function b:Paint(hover)
+    local r, g, bl, a = 0.09, 0.07, 0.17, 0.95
+    if self.active then r, g, bl = 0.22, 0.16, 0.06 end
+    if hover and self.enabled then r, g, bl = r + 0.07, g + 0.05, bl + 0.1 end
+    self:SetBackdropColor(r, g, bl, a)
+    if not self.enabled then self:SetBackdropBorderColor(0.3, 0.27, 0.22, 0.8); self.label:SetTextColor(0.45, 0.43, 0.5)
+    elseif self.active or hover then self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1); self.label:SetTextColor(1, 0.95, 0.75)
+    else self:SetBackdropBorderColor(0.6, 0.5, 0.28, 0.9); self.label:SetTextColor(0.9, 0.84, 0.62) end
+  end
+  function b:SetText(t) self.label:SetText(t) end
+  function b:SetEnabled(on) self.enabled = on and true or false; self:Paint(false) end
+  function b:SetActive(on) self.active = on and true or false; self:Paint(false) end
+  b:SetScript("OnEnter", function(self) self:Paint(true) end)
+  b:SetScript("OnLeave", function(self) self:Paint(false) end)
+  b:SetScript("OnClick", function(self, ...) if self.enabled and fn then fn(self, ...) end end)
+  b:SetText(label or ""); b:Paint(false)
+  return b
+end
+-- a text tab with an underline
+local function gtab(parent, label, w, fn)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetSize(w, 24)
+  b.label = fs(b, "head", 12); b.label:SetPoint("CENTER", 0, 1); b.label:SetText(label)
+  b.line = b:CreateTexture(nil, "OVERLAY"); b.line:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 1); b.line:SetHeight(2)
+  b.line:SetPoint("BOTTOMLEFT", 8, 0); b.line:SetPoint("BOTTOMRIGHT", -8, 0)
+  function b:SetActive(on) self.on = on and true or false; self.line:SetShown(self.on); if self.on then self.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]) else self.label:SetTextColor(0.62, 0.58, 0.78) end end
+  b:SetScript("OnEnter", function(self) if not self.on then self.label:SetTextColor(0.9, 0.85, 1) end end)
+  b:SetScript("OnLeave", function(self) self:SetActive(self.on) end)
+  b:SetScript("OnClick", function() if fn then fn() end end)
+  b:SetActive(false)
+  return b
+end
+local function tintTex(tex, c, a) tex:SetVertexColor(c[1], c[2], c[3], a or 1) end
+
+-- ---------------------------------------------------------------------------
+-- Animation: holo and full-art cards shimmer, covers glow
+-- ---------------------------------------------------------------------------
+local anim = {}   -- widget -> function(widget, clock)
+local ticker = CreateFrame("Frame")
+local clock = 0
+ticker:SetScript("OnUpdate", function(_, dt)
+  if not next(anim) then return end
+  clock = clock + dt
+  for w, fn in pairs(anim) do
+    if w:IsShown() then fn(w, clock) else anim[w] = nil end
+  end
+end)
+RG.ArcadeTicker = ticker
+local function cardAnim(w, t)
+  local fx = w.fxset
+  if not fx then return end
+  local u = w.u
+  if fx.foil > 0 and w.foil then
+    local period = 3.2
+    local k = ((t / period) + w.phase) % 1
+    w.foil:ClearAllPoints(); w.foil:SetPoint("LEFT", w.fx, "LEFT", (-1.5 + 2.0 * k) * w.cw, 0)
+    w.foil:SetAlpha(fx.foil * (0.75 + 0.25 * math.sin(t * 2 + w.phase * 6)))
+  end
+  if fx.aura > 0 then w.aura:SetAlpha(fx.aura * (0.7 + 0.3 * math.sin(t * 1.6 + w.phase * 6))) end
+  if fx.spin and w.rune.SetRotation then w.rune:SetRotation((t * 0.12 + w.phase * 6) % 6.2832) end
+  if fx.rays and w.rays.SetRotation then w.rays:SetRotation((-t * 0.06 + w.phase * 6) % 6.2832) end
+  if fx.sparks then
+    for i, sp in ipairs(w.sparks) do
+      local a = 0.5 + 0.5 * math.sin(t * (2.2 + i * 0.7) + w.phase * 9 + i * 2)
+      sp:SetAlpha(a * a)
+    end
+  end
+end
+
+-- ---------------------------------------------------------------------------
+-- A card
+-- ---------------------------------------------------------------------------
+local FX = {   -- by finish: aura, foil, rune brightness, spin, rays, sparks
+  [1] = { aura = 0, foil = 0, rune = 0.2 },
+  [2] = { aura = 0.3, foil = 0, rune = 0.32 },
+  [3] = { aura = 0.42, foil = 0.5, rune = 0.5, spin = true, sparks = true },
+  [4] = { aura = 0.62, foil = 0.75, rune = 0.62, spin = true, sparks = true, rays = 0.6 },
+}
+for i = 1, 4 do FX[i].finish = i end
+
+local function makeCard(parent, w)
+  local h = math.floor(w * 358 / 256 + 0.5)
+  local u = w / 256
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(w, h); f:EnableMouse(true)
+  f.cw, f.ch, f.u, f.phase = w, h, u, math.random()
+  local base = lv(f)
+  local function box(fr, b, into)
+    fr:SetPoint("TOPLEFT", into or f, "TOPLEFT", b[1] * u, -b[2] * u); fr:SetPoint("BOTTOMRIGHT", into or f, "TOPLEFT", b[3] * u, -b[4] * u)
+  end
+  -- under everything: the aura, the card body, the empty slot
+  f.aura = f:CreateTexture(nil, "BACKGROUND", nil, -8); f.aura:SetTexture(MEDIA .. "Glow"); f.aura:SetBlendMode("ADD")
+  f.aura:SetPoint("TOPLEFT", f, "TOPLEFT", -0.24 * w, 0.17 * h); f.aura:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0.24 * w, -0.17 * h); f.aura:Hide()
+  f.body = f:CreateTexture(nil, "BACKGROUND", nil, 0); f.body:SetTexture(MEDIA .. "Body"); f.body:SetTexCoord(0, 1, 0, CARD_V); f.body:SetAllPoints(f)
+  f.slot = f:CreateTexture(nil, "BACKGROUND", nil, 1); f.slot:SetTexture(MEDIA .. "Slot"); f.slot:SetTexCoord(0, 1, 0, CARD_V); f.slot:SetAllPoints(f); f.slot:Hide()
+  -- the art window
+  f.artClip = CreateFrame("Frame", nil, f); box(f.artClip, U.art); f.artClip:SetFrameLevel(base + 1)
+  if f.artClip.SetClipsChildren then f.artClip:SetClipsChildren(true) end
+  local aw, ah = (U.art[3] - U.art[1]) * u, (U.art[4] - U.art[2]) * u
+  f.aw, f.ah = aw, ah
+  f.glow = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 1); f.glow:SetTexture(MEDIA .. "Glow"); f.glow:SetBlendMode("ADD"); f.glow:SetAllPoints(f.artClip)
+  f.rays = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 2); f.rays:SetTexture(MEDIA .. "Rays"); f.rays:SetBlendMode("ADD")
+  f.rays:SetSize(aw * 1.5, aw * 1.5); f.rays:SetPoint("CENTER", f.artClip, "CENTER", 0, 0); f.rays:Hide()
+  f.rune = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 3); f.rune:SetTexture(MEDIA .. "Rune"); f.rune:SetBlendMode("ADD")
+  f.rune:SetSize(ah * 1.08, ah * 1.08); f.rune:SetPoint("CENTER", f.artClip, "CENTER", 0, 0)
+  f.iconBack = f.artClip:CreateTexture(nil, "ARTWORK", nil, 0); f.iconBack:SetColorTexture(0.08, 0.06, 0.1, 0.9)
+  f.iconEdge = f.artClip:CreateTexture(nil, "ARTWORK", nil, 1); f.iconEdge:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.95)
+  f.art = f.artClip:CreateTexture(nil, "ARTWORK", nil, 2); f.art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  -- foil sweeps across the whole card, above the model
+  f.fx = CreateFrame("Frame", nil, f); f.fx:SetAllPoints(f); f.fx:SetFrameLevel(base + 3)
+  if f.fx.SetClipsChildren then f.fx:SetClipsChildren(true) end
+  f.foil = f.fx:CreateTexture(nil, "OVERLAY"); f.foil:SetTexture(MEDIA .. "Foil"); f.foil:SetBlendMode("ADD"); f.foil:SetSize(w * 2.2, h * 1.02); f.foil:Hide()
+  f.foil:SetPoint("LEFT", f.fx, "LEFT", -w, 0)
+  -- frame, text, gem
+  f.top = CreateFrame("Frame", nil, f); f.top:SetAllPoints(f); f.top:SetFrameLevel(base + 4)
+  f.frameTex = f.top:CreateTexture(nil, "ARTWORK"); f.frameTex:SetTexture(MEDIA .. "Frame"); f.frameTex:SetTexCoord(0, 1, 0, CARD_V); f.frameTex:SetAllPoints(f)
+  f.gem = f.top:CreateTexture(nil, "OVERLAY"); f.gem:SetTexture(MEDIA .. "Gem"); f.gem:SetSize(17 * u, 17 * u)
+  f.gem:SetPoint("CENTER", f, "TOPLEFT", 229 * u, -214.5 * u)
+  f.name = fs(f.top, "head", 15 * u); f.name:SetPoint("TOPLEFT", f, "TOPLEFT", 21 * u, -13 * u); f.name:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 235 * u, -37 * u)
+  f.name:SetJustifyH("CENTER"); f.name:SetJustifyV("MIDDLE"); f.name:SetWordWrap(false); f.name:SetTextColor(0.98, 0.94, 0.82)
+  f.type = fs(f.top, "head", 10 * u); f.type:SetPoint("TOPLEFT", f, "TOPLEFT", 20 * u, -206 * u); f.type:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 210 * u, -223 * u)
+  f.type:SetJustifyH("CENTER"); f.type:SetJustifyV("MIDDLE"); f.type:SetWordWrap(false); f.type:SetTextColor(0.85, 0.8, 0.7)
+  f.text = fs(f.top, "body", 12 * u); f.text:SetShadowColor(0, 0, 0, 0)
+  f.text:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * u, -236 * u); f.text:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 232 * u, -322 * u)
+  f.text:SetJustifyH("LEFT"); f.text:SetJustifyV("TOP"); f.text:SetTextColor(INK[1], INK[2], INK[3])
+  f.pow = fs(f.top, "title", 17 * u); f.pow:SetPoint("CENTER", f, "TOPLEFT", 208 * u, -327 * u); f.pow:SetTextColor(1, 0.92, 0.7)
+  f.powLabel = fs(f.top, "head", 6.5 * u); f.powLabel:SetPoint("CENTER", f, "TOPLEFT", 207 * u, -314 * u); f.powLabel:SetTextColor(0.75, 0.7, 0.62); f.powLabel:SetText("POWER")
+  f.num = fs(f.top, "head", 8 * u); f.num:SetPoint("LEFT", f, "TOPLEFT", 18 * u, -342 * u); f.num:SetTextColor(0.62, 0.58, 0.78)
+  f.fin = fs(f.top, "head", 8 * u); f.fin:SetPoint("RIGHT", f, "TOPLEFT", 158 * u, -342 * u); f.fin:SetTextColor(0.62, 0.58, 0.78); f.fin:SetJustifyH("RIGHT")
+  f.count = fs(f.top, "title", 13 * u, "OVERLAY", "OUTLINE"); f.count:SetPoint("TOPRIGHT", f, "TOPLEFT", 235 * u, -49 * u); f.count:SetTextColor(1, 0.95, 0.7)
+  f.pin = f.top:CreateTexture(nil, "OVERLAY"); f.pin:SetTexture("Interface\\Cooldown\\star4"); f.pin:SetBlendMode("ADD"); f.pin:SetSize(20 * u, 20 * u)
+  f.pin:SetPoint("TOPLEFT", f, "TOPLEFT", 20 * u, -48 * u); f.pin:SetVertexColor(1, 0.85, 0.3); f.pin:Hide()
+  f.sparks = {}
+  local pos = { { 62, 80 }, { 196, 110 }, { 120, 60 } }
+  for i, p in ipairs(pos) do
+    local sp = f.top:CreateTexture(nil, "OVERLAY", nil, 3); sp:SetTexture("Interface\\Cooldown\\star4"); sp:SetBlendMode("ADD")
+    sp:SetSize((14 + i * 3) * u, (14 + i * 3) * u); sp:SetPoint("CENTER", f, "TOPLEFT", p[1] * u, -p[2] * u); sp:Hide(); f.sparks[i] = sp
+  end
+  f.hl = f.top:CreateTexture(nil, "OVERLAY", nil, 5); f.hl:SetColorTexture(1, 1, 1, 0); f.hl:SetBlendMode("ADD"); f.hl:SetPoint("TOPLEFT", f, "TOPLEFT", 4 * u, -4 * u); f.hl:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -4 * u, 4 * u)
+  f:SetScript("OnMouseUp", function(self, btn) if self.onCard and self.card then self.onCard(self, btn) end end)
+  f:SetScript("OnEnter", function(self)
+    if self.hover ~= false then self.hl:SetAlpha(0.09) end
+    local c = self.card
+    if not c or self.noTip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    if not self.known then GameTooltip:AddLine("Not found yet", 0.6, 0.6, 0.6)
+    else
+      local t = TIER[c.tier][3]
+      GameTooltip:AddLine(c.name, t[1], t[2], t[3])
+      GameTooltip:AddLine(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1] .. "  ·  " .. FINISH[self.finish][1], 1, 1, 1)
+      GameTooltip:AddLine(c.text, 0.75, 0.75, 0.75, true)
+      GameTooltip:AddLine("Power " .. power(c, self.finish), 0.7, 0.9, 0.7)
+      if self.copies and self.copies > 1 then GameTooltip:AddLine("You own " .. self.copies, 0.7, 0.7, 0.7) end
+    end
+    GameTooltip:Show()
+  end)
+  f:SetScript("OnLeave", function(self) self.hl:SetAlpha(0); GameTooltip:Hide() end)
+  return f
+end
+
 local function dressModel(w, c, finish)
   local m = ensureModel(w)
   if not m then return false end
@@ -511,122 +716,97 @@ local function dressModel(w, c, finish)
   if not dir then m:Hide() return false end
   local g = c.sex == 3 and "Female" or "Male"
   m.cls = c.class
-  m:ClearAllPoints()
-  if finish == 4 then m:SetPoint("TOPLEFT", 3, -3); m:SetPoint("BOTTOMRIGHT", -3, 3)
-  else m:SetPoint("TOPLEFT", 6, -16); m:SetPoint("BOTTOMRIGHT", -6, w.ch * 0.30) end
+  m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
+  m:SetFrameLevel(lv(w) + 2)
   local ok = pcall(m.SetModel, m, "Character\\" .. dir .. "\\" .. g .. "\\" .. dir .. g .. ".m2")
   if not ok then m:Hide() return false end
   m:Show()
   return true
 end
 
-local holos = {}   -- visible holo/full-art widgets, animated together
-local ticker = CreateFrame("Frame")
-local clock = 0
-ticker:SetScript("OnUpdate", function(_, dt)
-  if not next(holos) then return end
-  clock = clock + dt
-  for w in pairs(holos) do
-    if w:IsShown() then
-      local h = (clock * 0.5 + w.phase) % 1
-      local r, g, b = 0.5 + 0.5 * math.sin(h * 6.283), 0.5 + 0.5 * math.sin(h * 6.283 + 2.09), 0.5 + 0.5 * math.sin(h * 6.283 + 4.19)
-      w.shine:SetVertexColor(r, g, b, w.finish == 4 and 0.28 or 0.38)
-      w.edge:SetVertexColor(r, g, b, 1)
-      local sp = rawget(w, "spark")
-      if sp then sp:SetAlpha(0.45 + 0.45 * math.sin(clock * 3 + w.phase * 6)); sp:SetVertexColor(1, 1, 1) end
-    else holos[w] = nil end
-  end
-end)
-
-local function makeCard(parent, w, h)
-  local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-  f:SetSize(w, h); f:EnableMouse(true); f.cw, f.ch = w, h
-  RG.Round(f, 0.12, 0.12, 0.12, 1, 8)
-  f.edge = f:CreateTexture(nil, "BORDER"); f.edge:SetPoint("TOPLEFT", -2, 2); f.edge:SetPoint("BOTTOMRIGHT", 2, -2); f.edge:SetColorTexture(1, 1, 1, 1)
-  f.art = f:CreateTexture(nil, "ARTWORK"); f.art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  f.shine = f:CreateTexture(nil, "OVERLAY"); f.shine:SetPoint("TOPLEFT", 3, -3); f.shine:SetPoint("BOTTOMRIGHT", -3, 3); f.shine:SetColorTexture(1, 1, 1, 1); f.shine:SetBlendMode("ADD")
-  f.bar = f:CreateTexture(nil, "OVERLAY", nil, 2); f.bar:SetPoint("BOTTOMLEFT", 3, 3); f.bar:SetPoint("BOTTOMRIGHT", -3, 3); f.bar:SetHeight(h * 0.3); f.bar:SetColorTexture(0, 0, 0, 0.7)
-  f.name = RG.NewText(f, "GameFontHighlightSmall"); f.name:SetPoint("BOTTOM", 0, 6); f.name:SetWidth(w - 10); f.name:SetHeight(h * 0.26); f.name:SetJustifyV("MIDDLE")
-  f.kind = RG.NewText(f, "GameFontNormalSmall"); f.kind:SetPoint("TOPLEFT", 6, -5)
-  f.count = RG.NewText(f, "GameFontNormalSmall"); f.count:SetPoint("TOPRIGHT", -6, -5)
-  f.spark = f:CreateTexture(nil, "OVERLAY", nil, 5); f.spark:SetTexture("Interface\\Cooldown\\star4"); f.spark:SetBlendMode("ADD")
-  f.spark:SetSize(math.max(16, w * 0.3), math.max(16, w * 0.3)); f.spark:SetPoint("TOPRIGHT", 4, 4); f.spark:Hide()
-  f.pin = RG.NewText(f, "GameFontNormal"); f.pin:SetPoint("BOTTOMLEFT", 5, 4); f.pin:SetText("|cffffd100*|r"); f.pin:Hide()
-  f.phase = math.random()
-  f:SetScript("OnMouseUp", function(self, btn)
-    if self.onCard and self.card then self.onCard(self, btn) end
-  end)
-  f:SetScript("OnEnter", function(self)
-    local c = self.card
-    if not c then return end
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    if not self.known then GameTooltip:AddLine("Not found yet", 0.6, 0.6, 0.6)
-    else
-      local t = TIER[c.tier][3]
-      GameTooltip:AddLine(c.name, t[1], t[2], t[3])
-      GameTooltip:AddLine(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1] .. "  ·  " .. FINISH[self.finish][1], 1, 1, 1)
-      GameTooltip:AddLine(c.text, 0.75, 0.75, 0.75)
-      GameTooltip:AddLine("Power " .. power(c, self.finish), 0.7, 0.9, 0.7)
-      if self.copies and self.copies > 1 then GameTooltip:AddLine("You own " .. self.copies, 0.7, 0.7, 0.7) end
-    end
-    GameTooltip:Show()
-  end)
-  f:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  return f
-end
-
 -- card: the card; finish: 1-4 or nil (nothing owned); copies: how many you own
 local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
-  holos[w] = nil
+  anim[w] = nil
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
-  w.spark:Hide()
-  local pinned = false
-  do
-    local a = WaypathDB and WaypathDB.arcade
-    if a and card and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then pinned = true end end end
-  end
-  if pinned then w.pin:Show() else w.pin:Hide() end
+  w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
+  for _, sp in ipairs(w.sparks) do sp:Hide() end
   if not card then w:Hide() return end
   w:Show()
+  local u = w.u
+  local a = WaypathDB and WaypathDB.arcade
   local t = TIER[card.tier][3]
+  w.num:SetText(string.format("#%04d", card.id or 0))
+  w.art:ClearAllPoints(); w.iconBack:ClearAllPoints(); w.iconEdge:ClearAllPoints()
+  local function placeIcon(sz)
+    w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(sz * u, sz * u)
+    w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize((sz + 7) * u, (sz + 7) * u)
+    w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
+  end
   w.art:SetTexture(iconFor(card))
-  w.art:ClearAllPoints()
   if not finish then
-    w.edge:SetVertexColor(0.2, 0.2, 0.2, 1); w.shine:Hide(); w.art:SetDesaturated(true); w.art:SetVertexColor(0.25, 0.25, 0.25)
-    w.art:SetPoint("TOP", 0, -(w.ch * 0.16)); w.art:SetSize(w.cw * 0.45, w.cw * 0.45)
-    local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
-    w.name:SetText("???"); w.name:SetTextColor(0.4, 0.4, 0.4); w.kind:SetText(""); w.count:SetText(""); w.bar:Show()
+    -- an empty slot in the binder: a silhouette and the collector number
+    w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+    w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
+    w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
+    w.num:SetTextColor(0.5, 0.45, 0.6)
     return
   end
-  w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1)
-  if card.kind == 4 then
-    if dressModel(w, card, finish) then w.art:SetTexture(nil) end
-  else local mdl = rawget(w, "model"); if mdl then mdl:Hide() end end
-  w.name:SetText(card.name); w.name:SetTextColor(t[1], t[2], t[3])
-  w.kind:SetText(KIND[card.kind]); w.kind:SetTextColor(0.7, 0.7, 0.7)
-  w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
-  if finish == 4 then   -- full art: the picture fills the card
-    w.art:SetPoint("TOPLEFT", 3, -3); w.art:SetPoint("BOTTOMRIGHT", -3, 3)
-    w.bar:Show(); w.shine:Show(); holos[w] = true; w.spark:Show()
+  w.body:Show(); w.frameTex:Show(); w.slot:Hide(); w.gem:Show(); w.glow:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
+  w.num:SetTextColor(0.62, 0.58, 0.78)
+  local fx = FX[finish]
+  w.fxset = fx
+  local kc = KINDCOL[card.kind] or KINDCOL[1]
+  w.glow:SetVertexColor(kc[1], kc[2], kc[3], 0.55)
+  tintTex(w.frameTex, t, finish == 1 and 0.82 or 1)
+  tintTex(w.gem, t, 1)
+  tintTex(w.rune, t, fx.rune)
+  tintTex(w.aura, t, 1)
+  w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
+  local full = finish == 4
+  if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  else placeIcon(full and 120 or 84) end
+  if fx.rays then tintTex(w.rays, { 1, 0.86, 0.5 }, fx.rays); w.rays:Show() end
+  if fx.foil > 0 then w.foil:Show() end
+  if fx.aura > 0 then w.aura:Show(); w.aura:SetAlpha(fx.aura) end
+  if fx.sparks then for _, sp in ipairs(w.sparks) do sp:Show(); tintTex(sp, { 1, 0.95, 0.8 }, 0.8) end end
+  -- text
+  fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head")
+  setfont(w.type, "head", math.max(7, 10 * u))
+  w.type:SetText(KIND[card.kind] .. "  ·  " .. TIER[card.tier][1])
+  setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
+  setfont(w.num, "head", math.max(6.5, 8 * u))
+  local big = w.cw >= 190
+  w.text:SetShown(true)
+  if big then
+    setfont(w.text, "body", 12.5 * u)
+    w.text:SetText((card.text or "") .. "\n\n|cff6b4a2e" .. FINISH[finish][1] .. " print|r")
   else
-    local s = math.min(w.cw * 0.5, w.ch * 0.42)
-    w.art:SetPoint("TOP", 0, -(w.ch * 0.16)); w.art:SetSize(s, s)
-    w.bar:Show()
-    if finish == 3 then w.shine:Show(); holos[w] = true; w.spark:Show() else w.shine:Hide() end
+    setfont(w.text, "head", math.max(8, 13 * u)); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("MIDDLE")
+    w.text:SetText(TIER[card.tier][1] .. "\n|cff6b4a2e" .. FINISH[finish][1] .. "|r")
   end
-  if finish == 1 then w.edge:SetVertexColor(0.45, 0.45, 0.45, 1)
-  elseif finish == 2 then w.edge:SetVertexColor(1, 0.82, 0.25, 1) end
+  if big then w.text:SetJustifyH("LEFT"); w.text:SetJustifyV("TOP") end
+  w.pow:SetText(power(card, finish)); setfont(w.pow, "title", math.max(8.5, 17 * u))
+  w.powLabel:SetShown(w.cw >= 120)
+  setfont(w.powLabel, "head", math.max(5.5, 6.5 * u))
+  w.fin:SetText(w.cw >= 120 and FINISH[finish][1]:upper() or "")
+  w.num:SetShown(w.cw >= 100)
+  w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
+  if a and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then w.pin:Show() end end end
+  if fx.foil > 0 or fx.aura > 0 or fx.spin then anim[w] = cardAnim end
 end
 
 -- ---------------------------------------------------------------------------
 -- Window
 -- ---------------------------------------------------------------------------
 local frame, cells, reveal, detail
-local COLS, ROWS, CW, CH = 6, 4, 104, 118
+local COLS, ROWS, CELLW = 6, 3, 104
+local GRIDX, GRIDY = 118, 150
+local WINW, WINH = 790, 730
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
 local SHOWS = { "All", "Owned", "Missing", "Extras" }
 local SORTS = { "Collection", "Rarity", "Name", "Power" }
+local FNAME = { "Common", "Rare", "Holo", "Full art" }
 
 local function isPinned(a, c)
   for _, k in ipairs(a.showcase or {}) do if k == (c.key or c.name) then return true end end
@@ -663,24 +843,43 @@ local function playSound(finish, tier)
   if id then pcall(PlaySound, id) end
 end
 
--- a face-down card: click it and the back slides shut to show the card under it
+-- a dark panel with gold trim, used by the pop-ups
+local function darkPanel(f, w, h)
+  f:SetSize(w, h)
+  f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 2 })
+  f:SetBackdropColor(0.04, 0.03, 0.09, 0.98); f:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
+  local night = f:CreateTexture(nil, "BACKGROUND", nil, 1); night:SetTexture(MEDIA .. "Night"); night:SetPoint("TOPLEFT", 2, -2); night:SetPoint("BOTTOMRIGHT", -2, 2); night:SetAlpha(0.9)
+  local corners = {}
+  for i = 1, 4 do
+    local c = f:CreateTexture(nil, "OVERLAY"); c:SetTexture(MEDIA .. "Corner"); c:SetSize(46, 46)
+    local right, bottom = (i == 2 or i == 4), (i == 3 or i == 4)
+    c:SetPoint((bottom and "BOTTOM" or "TOP") .. (right and "RIGHT" or "LEFT"), right and -3 or 3, bottom and 3 or -3)
+    c:SetTexCoord(right and 1 or 0, right and 0 or 1, bottom and 1 or 0, bottom and 0 or 1)
+    corners[i] = c
+  end
+  return night
+end
+
+-- a face-down card: click it and the back turns over
 local function makeCover(card)
-  local c = CreateFrame("Button", nil, card, "BackdropTemplate")
-  c:SetPoint("CENTER"); c:SetSize(card.cw, card.ch); local lvl = card:GetFrameLevel(); c:SetFrameLevel((type(lvl) == "number" and lvl or 1) + 10)
-  RG.Round(c, 0.09, 0.14, 0.15, 1, 8)
-  c.edge = c:CreateTexture(nil, "BACKGROUND"); c.edge:SetPoint("TOPLEFT", -2, 2); c.edge:SetPoint("BOTTOMRIGHT", 2, -2); c.edge:SetColorTexture(0.31, 0.82, 0.77, 1)
-  c.shine = c.edge; c.finish = 3; c.phase = math.random()
-  c.logo = c:CreateTexture(nil, "ARTWORK"); c.logo:SetSize(card.cw * 0.5, card.cw * 0.5); c.logo:SetPoint("CENTER", 0, 8)
-  c.logo:SetTexture(RG.LOGO or "Interface\\Icons\\INV_Misc_Book_09"); c.logo:SetAlpha(0.9)
-  c.hint = RG.NewText(c, "GameFontNormalSmall"); c.hint:SetPoint("BOTTOM", 0, 10); c.hint:SetText("Click to flip"); c.hint:SetTextColor(0.5, 0.8, 0.77)
-  c.glow = c:CreateTexture(nil, "OVERLAY"); c.glow:SetAllPoints(); c.glow:SetColorTexture(1, 1, 1, 0); c.glow:SetBlendMode("ADD")
-  c:SetScript("OnEnter", function(self) self.glow:SetAlpha(0.12) end)
-  c:SetScript("OnLeave", function(self) self.glow:SetAlpha(0) end)
+  local c = CreateFrame("Button", nil, card)
+  c:SetPoint("CENTER"); c:SetSize(card.cw, card.ch); c:SetFrameLevel(lv(card) + 10)
+  c.cw, c.ch, c.phase = card.cw, card.ch, math.random()
+  c.glow = c:CreateTexture(nil, "BACKGROUND", nil, -8); c.glow:SetTexture(MEDIA .. "Glow"); c.glow:SetBlendMode("ADD")
+  c.glow:SetPoint("TOPLEFT", c, "TOPLEFT", -0.3 * card.cw, 0.22 * card.ch); c.glow:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0.3 * card.cw, -0.22 * card.ch); c.glow:Hide()
+  c.tex = c:CreateTexture(nil, "ARTWORK"); c.tex:SetTexture(MEDIA .. "Back"); c.tex:SetTexCoord(0, 1, 0, CARD_V); c.tex:SetAllPoints(c)
+  c.shine = c:CreateTexture(nil, "OVERLAY"); c.shine:SetColorTexture(1, 1, 1, 1); c.shine:SetBlendMode("ADD"); c.shine:SetAlpha(0); c.shine:SetPoint("TOPLEFT", 3, -3); c.shine:SetPoint("BOTTOMRIGHT", -3, 3)
+  c:SetScript("OnEnter", function(self) self.shine:SetAlpha(0.1) end)
+  c:SetScript("OnLeave", function(self) self.shine:SetAlpha(0) end)
   card.cover = c
   return c
 end
+local function coverAnim(c, t)
+  local h = (t * 0.35 + c.phase) % 1
+  local r, g, b = 0.6 + 0.4 * math.sin(h * 6.283), 0.6 + 0.4 * math.sin(h * 6.283 + 2.09), 0.6 + 0.4 * math.sin(h * 6.283 + 4.19)
+  c.glow:SetVertexColor(r, g, b, 0.55 + 0.25 * math.sin(t * 3 + c.phase * 5))
+end
 
-local FNAME = { "Common", "Rare", "Holo", "Full art" }
 local function summarize()
   local best, bi
   for i, g in ipairs(reveal.got) do
@@ -690,37 +889,42 @@ local function summarize()
   local g = reveal.got[bi]
   local new = 0
   for _, x in ipairs(reveal.got) do if x.new then new = new + 1 end end
-  local line = "Best pull: |cffffd100" .. g.card.name .. "|r (" .. FNAME[g.finish] .. ")  ·  " .. new .. " new"
-  if reveal.notes and #reveal.notes > 0 then line = line .. "\n|cff55ff55" .. table.concat(reveal.notes, "  ·  ") .. "|r" end
+  local line = "Best pull: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")   ·   " .. new .. " new"
+  if reveal.notes and #reveal.notes > 0 then line = line .. "\n|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
   reveal.sum:SetText(line)
+end
+
+local function burstAt(card, strength)
+  reveal.burst:ClearAllPoints(); reveal.burst:SetPoint("CENTER", card, "CENTER", 0, 0)
+  local s = card.cw * (2.6 + strength * 0.5)
+  reveal.burst:SetSize(s, s)
+  local t = card.fxset and TIER[card.card.tier][3] or { 1, 0.85, 0.5 }
+  tintTex(reveal.burst, { math.min(1, t[1] + 0.3), math.min(1, t[2] + 0.3), math.min(1, t[3] + 0.3) }, 1)
+  reveal.burstLeft, reveal.burstMax = 1.1 + 0.3 * strength, 1.1 + 0.3 * strength
+  reveal.burstSpin = 0
+  reveal.burst:Show()
 end
 
 local function flip(i)
   local card = reveal.cards[i]
   local c = card.cover
-  if not c or c.flipping == true or not c:IsShown() then return end
-  c.flipping = true; holos[c] = nil
+  if not c or c.flipping == true or not c:IsShown() or reveal.phase then return end
+  c.flipping = true; anim[c] = nil
   local t = 0
   c:SetScript("OnUpdate", function(self, dt)
     t = t + dt
     local k = 1 - t / 0.25
     if k > 0.02 then
-      self:SetWidth(math.max(1, card.cw * k)); self.logo:SetAlpha(0.9 * k); self.hint:SetAlpha(k)
+      self:SetWidth(math.max(1, card.cw * k))
     else
       self:SetScript("OnUpdate", nil); self:Hide(); self.flipping = false
       local g = reveal.got[i]
       reveal.flipped = reveal.flipped + 1
-      card.new:SetText(g.new and "|cff55ff55New!|r" or "")
+      card.new:SetText(g.new and (GOLDHEX .. "NEW|r") or "")
       local big = g.card.tier == 6 and 3 or (g.finish >= 3 and 2 or (g.finish == 2 and 1 or 0))
       playSound(g.finish, g.card.tier)
-      if big > 0 then
-        card.flash:SetAlpha(0.35 + 0.3 * big); card.flashLeft = 0.6 + 0.3 * big
-        card:SetScript("OnUpdate", function(f, d)
-          f.flashLeft = f.flashLeft - d
-          if f.flashLeft <= 0 then f.flash:SetAlpha(0); f:SetScript("OnUpdate", nil) else f.flash:SetAlpha(math.min(0.95, f.flashLeft * 0.9)) end
-        end)
-      end
-      if reveal.flipped >= #reveal.got then reveal.all:Hide(); reveal.ok:SetText("Done"); summarize() end
+      if big > 0 then burstAt(card, big) end
+      if reveal.flipped >= #reveal.got then reveal.all:Hide(); reveal.ok:SetText("Done"); reveal.title:SetText("The seal is spent"); summarize() end
     end
   end)
 end
@@ -730,48 +934,106 @@ local function afford()
   return a and (((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
 end
 
+local RW, RCARD, RGAP = 790, 132, 14
+local function dealPositions(i)
+  local total = PACK_SIZE * RCARD + (PACK_SIZE - 1) * RGAP
+  return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -64
+end
+
+local function startDeal()
+  reveal.phase = "deal"; reveal.dealT = 0
+  reveal.seal:Hide(); reveal.sealGlow:Hide()
+  reveal.title:SetText("Turn each card")
+  for i = 1, PACK_SIZE do reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
+end
+
 local function showReveal(got, notes)
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
-    reveal:SetSize(PACK_SIZE * 138 + 30, 310); reveal:SetPoint("CENTER", 0, 60); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
-    RG.DialogBackdrop(reveal)
+    reveal:SetPoint("CENTER", 0, 40); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
+    darkPanel(reveal, RW, 420)
+    local plate = reveal:CreateTexture(nil, "ARTWORK"); plate:SetTexture(MEDIA .. "Plate"); plate:SetSize(300, 38); plate:SetPoint("TOP", 0, -10)
+    reveal.title = fs(reveal, "title", 16); reveal.title:SetPoint("CENTER", plate, "CENTER", 0, 0); reveal.title:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    reveal.fxFrame = CreateFrame("Frame", nil, reveal); reveal.fxFrame:SetAllPoints(reveal); reveal.fxFrame:SetFrameLevel(lv(reveal) + 1)
+    reveal.burst = reveal.fxFrame:CreateTexture(nil, "ARTWORK"); reveal.burst:SetTexture(MEDIA .. "Rays"); reveal.burst:SetBlendMode("ADD"); reveal.burst:Hide()
+    reveal.phase, reveal.burstLeft, reveal.burstMax, reveal.burstSpin, reveal.dealT = false, 0, 1, 0, 0
     reveal.cards = {}
     for i = 1, PACK_SIZE do
-      local c = makeCard(reveal, 128, 150); c:SetPoint("TOPLEFT", 14 + (i - 1) * 138, -34); reveal.cards[i] = c
-      c.new = RG.NewText(c, "GameFontNormal"); c.new:SetPoint("BOTTOM", c, "TOP", 0, 2)
-      c.flash = c:CreateTexture(nil, "OVERLAY", nil, 6); c.flash:SetPoint("TOPLEFT", -6, 6); c.flash:SetPoint("BOTTOMRIGHT", 6, -6); c.flash:SetColorTexture(1, 1, 1, 1); c.flash:SetBlendMode("ADD"); c.flash:SetAlpha(0)
+      local c = makeCard(reveal, RCARD); c:SetFrameLevel(lv(reveal) + 3); c.noTip = true
+      local x, y = dealPositions(i)
+      c:SetPoint("TOPLEFT", reveal, "TOPLEFT", x, y); reveal.cards[i] = c
+      c.new = fs(c, "title", 12, "OVERLAY"); c.new:SetPoint("BOTTOM", c, "TOP", 0, 4)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
     end
-    reveal.title = RG.NewText(reveal, "GameFontNormal"); reveal.title:SetPoint("TOP", 0, -12)
-    reveal.sum = RG.NewText(reveal, "GameFontHighlight"); reveal.sum:SetPoint("TOP", 0, -196); reveal.sum:SetWidth(PACK_SIZE * 138 - 20)
-    local function rb(label, x, w, fn)
-      local o = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); o:SetSize(w, 24); o:SetPoint("BOTTOM", x, 14); o:SetText(label); o:SetScript("OnClick", fn); return o
-    end
-    reveal.all = rb("Flip all", -150, 120, function()
+    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(150, 150); reveal.seal:SetPoint("CENTER", 0, -10); reveal.seal:SetFrameLevel(lv(reveal) + 30)
+    reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
+    reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0.7)
+    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seal"); sealTex:SetAllPoints(reveal.seal)
+    reveal.sealTex = sealTex
+    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Click to break the seal"); reveal.sealHint:SetTextColor(0.9, 0.8, 0.6)
+    reveal.seal:EnableMouse(true); reveal.seal:SetScript("OnMouseUp", function() if reveal.phase == "seal" then startDeal() end end)
+    reveal.sum = fs(reveal, "body", 14); reveal.sum:SetPoint("TOP", 0, -276); reveal.sum:SetWidth(RW - 80); reveal.sum:SetTextColor(0.9, 0.86, 0.74)
+    reveal.all = gbtn(reveal, "Turn all", 120, 26, function()
       for i = 1, PACK_SIZE do
         local function go() if reveal:IsShown() then flip(i) end end
         if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5, go) else go() end
       end
     end)
-    reveal.again = rb("Open another", 0, 140, function()
-      if frame and frame.buy then frame.buy._scripts.OnClick(frame.buy) end
-    end)
-    reveal.ok = rb("Skip", 150, 120, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
+    reveal.all:SetPoint("BOTTOM", -150, 18)
+    reveal.again = gbtn(reveal, "Break another seal", 170, 26, function() if frame and frame.buyNow then frame.buyNow() end end, true)
+    reveal.again:SetPoint("BOTTOM", 0, 18)
+    reveal.ok = gbtn(reveal, "Skip", 120, 26, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
+    reveal.ok:SetPoint("BOTTOM", 150, 18)
     tinsert(UISpecialFrames, "WaypathArcadePack")
+    -- one update loop: the seal pulses, the cards are dealt, the burst fades
+    reveal:SetScript("OnUpdate", function(self, dt)
+      local t = GetTime and GetTime() or 0
+      if self.phase == "seal" then
+        local k = 1 + 0.05 * math.sin(t * 4)
+        self.seal:SetSize(150 * k, 150 * k)
+        self.sealGlow:SetAlpha(0.55 + 0.3 * math.sin(t * 5))
+      elseif self.phase == "deal" then
+        self.dealT = self.dealT + dt
+        local all = true
+        for i = 1, PACK_SIZE do
+          local k = math.max(0, math.min(1, (self.dealT - (i - 1) * 0.09) / 0.4))
+          local e = 1 - (1 - k) ^ 3
+          local x, y = dealPositions(i)
+          local cx = (RW - RCARD) / 2
+          local c = self.cards[i]
+          c:ClearAllPoints(); c:SetPoint("TOPLEFT", self, "TOPLEFT", cx + (x - cx) * e, y)
+          c:SetAlpha(e)
+          if k < 1 then all = false end
+        end
+        if all then self.phase = false end
+      end
+      if self.burstLeft and self.burstLeft > 0 then
+        self.burstLeft = self.burstLeft - dt
+        local k = math.max(0, self.burstLeft / self.burstMax)
+        self.burst:SetAlpha(k * k)
+        self.burstSpin = (self.burstSpin or 0) + dt * 0.5
+        if self.burst.SetRotation then self.burst:SetRotation(self.burstSpin) end
+        if self.burstLeft <= 0 then self.burst:Hide() end
+      end
+    end)
   end
   reveal.got, reveal.flipped, reveal.notes = got, 0, notes
-  reveal.title:SetText("Click each card to flip it")
+  reveal.title:SetText("Break the seal")
   reveal.sum:SetText("")
   reveal.all:Show(); reveal.ok:SetText("Skip")
+  reveal.burst:Hide(); reveal.burstLeft = 0
   reveal:Show()
+  reveal.phase = "seal"
+  reveal.seal:Show(); reveal.sealGlow:Show(); reveal.seal:SetSize(150, 150)
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
     paint(w, g.card, g.finish, 1)
-    w.new:SetText(""); w.flash:SetAlpha(0); w:SetScript("OnUpdate", nil)
+    w.new:SetText("")
     local c = w.cover
-    c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c.logo:SetAlpha(0.9); c.hint:SetAlpha(1); c:Show()
-    if g.finish >= 3 or g.card.tier == 6 then holos[c] = true; c.hint:SetText("Something shiny...") else holos[c] = nil; c.edge:SetColorTexture(0.31, 0.82, 0.77, 1); c.edge:SetVertexColor(1, 1, 1, 1); c.hint:SetText("Click to flip") end
+    c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c:Show()
+    if g.finish >= 3 or g.card.tier == 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
+    w:SetAlpha(0)
   end
   reveal.again:SetEnabled(afford() and true or false)
 end
@@ -792,19 +1054,17 @@ local function refreshDetail()
   local f = detail.finish
   if (slot[f] or 0) == 0 then f = bestFinish(a, c.id) or 1; detail.finish = f end
   paint(detail.card, c, bestFinish(a, c.id) and f or nil, owned(a, c.id))
-  local lines = {
-    "|cffffd100" .. c.name .. "|r",
-    KIND[c.kind] .. "  ·  " .. TIER[c.tier][1],
-    "|cffbbbbbb" .. (c.text or "") .. "|r",
-    "Set: " .. setOf(c),
-    "Power " .. power(c, f) .. (a.duelCard == (c.key or c.name) and "  ·  |cff55ff55your duel card|r" or ""),
-  }
-  detail.text:SetText(table.concat(lines, "\n"))
+  local t = TIER[c.tier][3]
+  detail.name:SetText(c.name); detail.name:SetTextColor(t[1], t[2], t[3])
+  detail.kind:SetText(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1])
+  detail.flavor:SetText(c.text or "")
+  detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r\nPower: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
+    .. "\nOwned: |cffffffff" .. owned(a, c.id) .. "|r")
   for k = 1, 4 do
     local n = slot[k] or 0
     local b = detail.prints[k]
     b:SetText(FNAME[k] .. " x" .. n)
-    b:SetEnabled(n > 0 and k ~= f)
+    b:SetEnabled(n > 0); b:SetActive(k == f)
   end
   detail.pin:SetText(isPinned(a, c) and "Remove from showcase" or "Add to showcase")
   detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
@@ -816,46 +1076,50 @@ local function openDetail(c)
   if not (a and c and owned(a, c.id) > 0) then return end
   if not detail then
     detail = CreateFrame("Frame", "WaypathArcadeCard", UIParent, "BackdropTemplate")
-    detail:SetSize(480, 320); detail:SetPoint("CENTER", 120, 0); detail:SetFrameStrata("FULLSCREEN_DIALOG")
-    RG.DialogBackdrop(detail)
+    detail:SetPoint("CENTER", 100, 0); detail:SetFrameStrata("FULLSCREEN_DIALOG")
+    darkPanel(detail, 640, 420)
     tinsert(UISpecialFrames, "WaypathArcadeCard")
-    detail.card = makeCard(detail, 190, 250); detail.card:SetPoint("TOPLEFT", 20, -24)
-    detail.text = RG.NewText(detail, "GameFontHighlight"); detail.text:SetPoint("TOPLEFT", 232, -26); detail.text:SetWidth(232); detail.text:SetJustifyH("LEFT"); detail.text:SetSpacing(4)
-    local close = CreateFrame("Button", nil, detail, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", -4, -4)
+    detail.card = makeCard(detail, 230); detail.card:SetPoint("TOPLEFT", 30, -40); detail.card:SetFrameLevel(lv(detail) + 3); detail.card.noTip = true
+    local X0 = 290
+    detail.name = fs(detail, "title", 20); detail.name:SetPoint("TOPLEFT", X0, -36); detail.name:SetWidth(320); detail.name:SetJustifyH("LEFT"); detail.name:SetWordWrap(true)
+    detail.kind = fs(detail, "head", 12); detail.kind:SetPoint("TOPLEFT", detail.name, "BOTTOMLEFT", 0, -4); detail.kind:SetTextColor(0.7, 0.66, 0.85)
+    local rule = detail:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(320, 14); rule:SetPoint("TOPLEFT", detail.kind, "BOTTOMLEFT", 0, -6)
+    detail.flavor = fs(detail, "body", 14); detail.flavor:SetPoint("TOPLEFT", rule, "BOTTOMLEFT", 0, -6); detail.flavor:SetWidth(320); detail.flavor:SetJustifyH("LEFT"); detail.flavor:SetTextColor(0.86, 0.82, 0.7); detail.flavor:SetSpacing(3)
+    detail.info = fs(detail, "body", 13); detail.info:SetPoint("TOPLEFT", detail.flavor, "BOTTOMLEFT", 0, -10); detail.info:SetWidth(320); detail.info:SetJustifyH("LEFT"); detail.info:SetTextColor(0.7, 0.68, 0.85); detail.info:SetSpacing(3)
+    local close = gbtn(detail, "X", 26, 24, function() detail:Hide() end); close:SetPoint("TOPRIGHT", -14, -14)
     detail.prints = {}
     for k = 1, 4 do
-      local b = CreateFrame("Button", nil, detail, "UIPanelButtonTemplate"); b:SetSize(108, 22); b:SetPoint("TOPLEFT", 232 + ((k - 1) % 2) * 112, -140 - math.floor((k - 1) / 2) * 26)
-      b:SetScript("OnClick", function() detail.finish = k; refreshDetail() end)
+      local b = gbtn(detail, "", 80, 24, function() detail.finish = k; refreshDetail() end)
+      b:SetPoint("BOTTOMLEFT", X0 + (k - 1) * 82, 118)
       detail.prints[k] = b
     end
-    local function ab(label, x, y, fn)
-      local b = CreateFrame("Button", nil, detail, "UIPanelButtonTemplate"); b:SetSize(108, 24); b:SetPoint("TOPLEFT", x, y); b:SetText(label); b:SetScript("OnClick", fn); return b
-    end
-    detail.pin = ab("Showcase", 232, -204, function()
+    detail.pin = gbtn(detail, "Showcase", 160, 26, function()
       local on = RG.ArcadePin(detail.data); say(on and (detail.data.name .. " added to your showcase.") or (detail.data.name .. " removed from your showcase.")); refreshDetail(); RG.ArcadeRefresh(true)
     end)
-    detail.pin:SetSize(224, 24)
-    detail.duel = ab("Use for duels", 232, -232, function()
+    detail.pin:SetPoint("BOTTOMLEFT", X0, 80)
+    detail.duel = gbtn(detail, "Use for duels", 160, 26, function()
       local a2 = store(); a2.duelCard = detail.data.key or detail.data.name; say(detail.data.name .. " will fight your duels."); refreshDetail()
     end)
-    detail.link = ab("Link in chat", 344, -232, function()
+    detail.duel:SetPoint("BOTTOMLEFT", X0 + 164, 80)
+    detail.link = gbtn(detail, "Link in chat", 160, 26, function()
       local c2 = detail.data
       local text = "[Waypath card: " .. c2.name .. " (" .. FNAME[detail.finish] .. ")]"
       if ChatEdit_InsertLink then pcall(ChatEdit_InsertLink, text) elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox then DEFAULT_CHAT_FRAME.editBox:Insert(text) end
     end)
-    detail.offer = ab("Offer to group", 232, -260, function()
+    detail.link:SetPoint("BOTTOMLEFT", X0, 44)
+    detail.offer = gbtn(detail, "Offer to group", 160, 26, function()
       local ok, msg = RG.ArcadeOffer(detail.data, detail.finish); say(msg)
     end)
-    detail.offer:SetSize(224, 24)
+    detail.offer:SetPoint("BOTTOMLEFT", X0 + 164, 44)
   end
   detail.data, detail.finish = c, bestFinish(a, c.id) or 1
   detail:Show(); refreshDetail()
 end
 
 -- ---------------------------------------------------------------------------
--- Window
+-- Main window
 -- ---------------------------------------------------------------------------
-local MODES = { { "cards", "Cards" }, { "sets", "Sets" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Stats" } }
+local MODES = { { "cards", "Collection" }, { "sets", "Sets" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Ledger" } }
 
 local function cell_click(self, btn)
   local c = self.card
@@ -870,86 +1134,132 @@ end
 
 local function build()
   frame = CreateFrame("Frame", "WaypathArcade", UIParent, "BackdropTemplate")
-  frame:SetSize(COLS * CW + 44, ROWS * CH + 118 + 150); frame:SetPoint("CENTER"); frame:SetFrameStrata("DIALOG")
+  frame:SetPoint("CENTER"); frame:SetFrameStrata("DIALOG")
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving); frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-  RG.DialogBackdrop(frame)
+  frame.night = darkPanel(frame, WINW, WINH)
+  frame:SetClampedToScreen(true)
   tinsert(UISpecialFrames, "WaypathArcade")
-  frame.title = RG.NewText(frame, "GameFontNormalLarge"); frame.title:SetPoint("TOPLEFT", 22, -16); frame.title:SetText("Azeroth cards")
-  frame.coins = RG.NewText(frame, "GameFontNormal"); frame.coins:SetPoint("TOPRIGHT", -44, -20)
-  frame.sub = RG.NewText(frame, "GameFontHighlightSmall"); frame.sub:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -4); frame.sub:SetTextColor(0.6, 0.6, 0.6); frame.sub:SetJustifyH("LEFT")
-  local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", -4, -4)
-
-  local function sbtn(parent, label, x, y, w, fn)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate"); b:SetSize(w, 22); b:SetPoint("TOPLEFT", x, y); b:SetText(label); b:SetScript("OnClick", fn); return b
+  -- a slowly turning circle behind the cards, and drifting motes
+  frame.circle = frame:CreateTexture(nil, "BACKGROUND", nil, 3); frame.circle:SetTexture(MEDIA .. "Rune"); frame.circle:SetBlendMode("ADD")
+  frame.circle:SetSize(640, 640); frame.circle:SetPoint("CENTER", frame, "CENTER", 0, -30); frame.circle:SetVertexColor(0.9, 0.72, 0.38, 0.09)
+  frame.motes = {}
+  for i = 1, 12 do
+    local m = frame:CreateTexture(nil, "BACKGROUND", nil, 4); m:SetTexture("Interface\\Cooldown\\star4"); m:SetBlendMode("ADD"); m:SetSize(10 + (i % 3) * 5, 10 + (i % 3) * 5)
+    m.px, m.py, m.sp = math.random(), math.random(), 0.01 + math.random() * 0.02
+    frame.motes[i] = m
   end
-  -- row 1: what to show
+  frame.open = 1
+  frame:SetScript("OnShow", function(self) self.open = 0; self:SetAlpha(0) end)
+  frame:SetScript("OnUpdate", function(self, dt)
+    local t = GetTime and GetTime() or 0
+    if self.open and self.open < 1 then self.open = math.min(1, self.open + dt / 0.35); self:SetAlpha(self.open) end
+    if self.circle.SetRotation then self.circle:SetRotation((t * 0.025) % 6.2832) end
+    for _, m in ipairs(self.motes) do
+      m.py = m.py + m.sp * dt; if m.py > 1 then m.py = 0; m.px = math.random() end
+      m:ClearAllPoints(); m:SetPoint("CENTER", self, "BOTTOMLEFT", (m.px + 0.015 * math.sin(t * 0.7 + m.px * 9)) * WINW, m.py * WINH)
+      m:SetAlpha(0.5 * math.sin(m.py * 3.1416) * (0.6 + 0.4 * math.sin(t * 2 + m.px * 20)))
+    end
+  end)
+  -- title plate
+  local plate = frame:CreateTexture(nil, "ARTWORK"); plate:SetTexture(MEDIA .. "Plate"); plate:SetSize(380, 48); plate:SetPoint("TOP", 0, -12)
+  frame.title = fs(frame, "title", 22); frame.title:SetPoint("CENTER", plate, "CENTER", 0, 0); frame.title:SetText("THE HOARD"); frame.title:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  frame.tagline = fs(frame, "body", 12); frame.tagline:SetPoint("TOP", plate, "BOTTOM", 0, -4); frame.tagline:SetText("a collector's grimoire"); frame.tagline:SetTextColor(0.62, 0.58, 0.8)
+  frame.coinIcon = frame:CreateTexture(nil, "ARTWORK"); frame.coinIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01"); frame.coinIcon:SetSize(20, 20); frame.coinIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93); frame.coinIcon:SetPoint("TOPLEFT", 30, -22)
+  frame.coins = fs(frame, "head", 14); frame.coins:SetPoint("LEFT", frame.coinIcon, "RIGHT", 6, 0)
+  frame.free = fs(frame, "head", 10); frame.free:SetPoint("TOPLEFT", frame.coinIcon, "BOTTOMLEFT", 0, -3); frame.free:SetTextColor(0.5, 0.88, 0.6)
+  local close = gbtn(frame, "X", 28, 24, function() frame:Hide() end); close:SetPoint("TOPRIGHT", -18, -18)
+  local rule = frame:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(360, 14); rule:SetPoint("TOP", frame.tagline, "BOTTOM", 0, -4)
+  frame.sub = fs(frame, "body", 12); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -2); frame.sub:SetTextColor(0.78, 0.74, 0.9); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
+
+  -- tabs
+  frame.modes = {}
+  local tw = 112
+  for i, m in ipairs(MODES) do
+    local t = gtab(frame, m[2]:upper(), tw, function() view.mode = m[1]; view.set = (m[1] == "cards") and view.set or nil; RG.ArcadeRefresh(true) end)
+    t:SetPoint("TOP", frame, "TOP", (i - 3) * (tw + 6), -128)
+    frame.modes[m[1]] = t
+  end
+  -- filters
   frame.filters = {}
   local labels = { [0] = "All", "Items", "NPCs", "Places", "Raiders" }
   for k = 0, 4 do
-    frame.filters[k] = sbtn(frame, labels[k], 22 + k * 62, -64, 60, function() view.kind = k; view.page = 1; view.showcase = false; view.mode = "cards"; RG.ArcadeRefresh(true) end)
+    frame.filters[k] = gbtn(frame, labels[k], 58, 22, function() view.kind = k; view.page = 1; view.showcase = false; view.mode = "cards"; RG.ArcadeRefresh(true) end)
+    frame.filters[k]:SetPoint("TOPLEFT", 34 + k * 62, -160)
   end
-  frame.showcase = sbtn(frame, "Showcase", 22 + 5 * 62, -64, 76, function() view.showcase = not view.showcase; view.kind = 0; view.page = 1; view.mode = "cards"; RG.ArcadeRefresh(true) end)
-  -- row 2: search, sort, show; and the screens
-  frame.searchBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate"); frame.searchBox:SetSize(110, 20); frame.searchBox:SetPoint("TOPLEFT", 30, -90)
+  frame.showcase = gbtn(frame, "Showcase", 78, 22, function() view.showcase = not view.showcase; view.kind = 0; view.page = 1; view.mode = "cards"; RG.ArcadeRefresh(true) end)
+  frame.showcase:SetPoint("TOPLEFT", 34 + 5 * 62, -160)
+  frame.sortBtn = gbtn(frame, "Sort: Collection", 124, 22, function() view.sort = view.sort % #SORTS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.sortBtn:SetPoint("TOPRIGHT", -34, -160)
+  frame.showBtn = gbtn(frame, "Show: All", 100, 22, function() view.show = view.show % #SHOWS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.showBtn:SetPoint("RIGHT", frame.sortBtn, "LEFT", -6, 0)
+  frame.searchBox = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
+  frame.searchBox:SetSize(124, 22); frame.searchBox:SetPoint("RIGHT", frame.showBtn, "LEFT", -6, 0)
+  frame.searchBox:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); frame.searchBox:SetBackdropColor(0.03, 0.02, 0.07, 0.95); frame.searchBox:SetBackdropBorderColor(0.45, 0.38, 0.25, 0.9)
+  setfont(frame.searchBox, "body", 12); frame.searchBox:SetTextColor(0.95, 0.9, 0.78); frame.searchBox:SetTextInsets(8, 6, 0, 0)
   frame.searchBox:SetAutoFocus(false); frame.searchBox:SetMaxLetters(30)
   frame.searchBox:SetScript("OnTextChanged", function(self) local t = self:GetText() or ""; if t ~= view.search then view.search = t; view.page = 1; RG.ArcadeRefresh(true) end end)
   frame.searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  frame.searchHint = RG.NewText(frame, "GameFontDisableSmall"); frame.searchHint:SetPoint("LEFT", frame.searchBox, "LEFT", 6, 0); frame.searchHint:SetText("Search")
-  frame.sortBtn = sbtn(frame, "Sort: Collection", 146, -89, 112, function() view.sort = view.sort % #SORTS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
-  frame.showBtn = sbtn(frame, "Show: All", 262, -89, 90, function() view.show = view.show % #SHOWS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
-  frame.modes = {}
-  for i, m in ipairs(MODES) do
-    frame.modes[m[1]] = sbtn(frame, m[2], 372 + (i - 1) * 54, -89, 52, function() view.mode = m[1]; view.set = (m[1] == "cards") and view.set or nil; RG.ArcadeRefresh(true) end)
-  end
+  frame.searchHint = fs(frame.searchBox, "body", 12); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.5, 0.46, 0.62)
 
+  -- the binder
   cells = {}
+  local gx0 = (WINW - ((COLS - 1) * GRIDX + CELLW)) / 2
   for i = 1, COLS * ROWS do
-    local c = makeCard(frame, CW - 8, CH - 8)
-    c:SetPoint("TOPLEFT", 26 + ((i - 1) % COLS) * CW, -122 - math.floor((i - 1) / COLS) * CH)
+    local c = makeCard(frame, CELLW)
+    c:SetFrameLevel(lv(frame) + 3)
+    c:SetPoint("TOPLEFT", frame, "TOPLEFT", gx0 + ((i - 1) % COLS) * GRIDX, -196 - math.floor((i - 1) / COLS) * GRIDY)
     c.onCard = cell_click
     cells[i] = c
   end
-  -- the text screens (Sets, Today, Trade, Stats)
-  frame.panel = RG.NewText(frame, "GameFontHighlight"); frame.panel:SetPoint("TOPLEFT", 28, -126); frame.panel:SetWidth(COLS * CW - 12); frame.panel:SetJustifyH("LEFT"); frame.panel:SetJustifyV("TOP"); frame.panel:SetSpacing(5)
+  frame.cells = cells
+  -- the text screens (Sets, Today, Trade, Ledger)
+  frame.panel = fs(frame, "body", 14); frame.panel:SetPoint("TOPLEFT", 40, -200); frame.panel:SetWidth(WINW - 80); frame.panel:SetJustifyH("LEFT"); frame.panel:SetJustifyV("TOP"); frame.panel:SetSpacing(6)
+  frame.panel:SetTextColor(0.9, 0.86, 0.74)
   frame.rows = {}
   for i = 1, 14 do
     local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
-    b:SetSize(COLS * CW - 12, 24); b:SetPoint("TOPLEFT", 28, -126 - (i - 1) * 28)
-    RG.Round(b, 0.14, 0.14, 0.14, 1, 6)
-    b.left = RG.NewText(b, "GameFontHighlight"); b.left:SetPoint("LEFT", 8, 0); b.left:SetJustifyH("LEFT")
-    b.right = RG.NewText(b, "GameFontNormal"); b.right:SetPoint("RIGHT", -8, 0); b.right:SetJustifyH("RIGHT")
-    b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.2, 0.2, 0.2, 1) end)
-    b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.14, 0.14, 0.14, 1) end)
+    b:SetSize(WINW - 80, 26); b:SetPoint("TOPLEFT", 40, -200 - (i - 1) * 30)
+    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.07, 0.05, 0.14, 0.9); b:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8)
+    b.left = fs(b, "body", 14); b.left:SetPoint("LEFT", 10, 0); b.left:SetJustifyH("LEFT")
+    b.right = fs(b, "head", 12); b.right:SetPoint("RIGHT", -10, 0); b.right:SetJustifyH("RIGHT"); b.right:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.13, 0.09, 0.22, 0.95); self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) end)
+    b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.07, 0.05, 0.14, 0.9); self:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8) end)
     b:SetScript("OnClick", function(self) if self.act then self.act() end end)
     frame.rows[i] = b
   end
 
-  local function btn(label, x, y, w, fn)
-    local o = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate"); o:SetSize(w, 26); o:SetPoint("BOTTOM", x, y); o:SetText(label); o:SetScript("OnClick", fn)
-    return o
-  end
-  frame.msg = RG.NewText(frame, "GameFontHighlight"); frame.msg:SetPoint("BOTTOM", 0, 84); frame.msg:SetWidth(COLS * CW - 20)
-  frame.prev = btn("<", -60, 52, 40, function() view.page = view.page - 1; RG.ArcadeRefresh(true) end)
-  frame.next = btn(">", 60, 52, 40, function() view.page = view.page + 1; RG.ArcadeRefresh(true) end)
-  frame.pageText = RG.NewText(frame, "GameFontNormal"); frame.pageText:SetPoint("BOTTOM", 0, 58)
-  frame.buy = btn("Open pack", -150, 16, 150, function()
+  -- footer
+  frame.msg = fs(frame, "body", 13); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
+  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
+  frame.prev:SetPoint("BOTTOM", 230, 58)
+  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
+  frame.next:SetPoint("BOTTOM", 330, 58)
+  frame.pageText = fs(frame, "head", 12); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.78, 0.74, 0.9)
+  frame.buyNow = function()
     local got, free, notes = RG.ArcadeOpenPack()
     if not got then say(free or "") return end
     playSound(2)
     showReveal(got, notes); RG.ArcadeRefresh(true)
-  end)
-  frame.duel = btn("Duel for coins", 0, 16, 150, function()
+  end
+  frame.buy = gbtn(frame, "Break a seal", 220, 34, function() frame.buyNow() end, true)
+  frame.buy:SetPoint("BOTTOM", 0, 20)
+  frame.duel = gbtn(frame, "Duel for coins", 150, 28, function()
     local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
     if win == nil then say(mine or "") return end
     say((win and ("Won! +" .. prize .. " coins.") or "Lost.") .. " " .. mine.name .. " (" .. FNAME[mf] .. ") vs " .. foe.name .. " (" .. FNAME[ff] .. ")" .. (goal and ("  ·  " .. goal) or ""))
     RG.ArcadeRefresh(true)
   end)
-  frame.sell = btn("Sell extras", 150, 16, 150, function()
+  frame.duel:SetPoint("BOTTOM", -200, 23)
+  frame.sell = gbtn(frame, "Sell extras", 150, 28, function()
     local n, coins, g = RG.ArcadeSellExtras()
     say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
     RG.ArcadeRefresh(true)
   end)
+  frame.sell:SetPoint("BOTTOM", 200, 23)
+  -- fit small screens
+  local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
+  if type(ph) == "number" and ph > 0 and ph < WINH + 30 then frame:SetScale(math.max(0.6, (ph - 30) / WINH)) end
 end
 
 local function categoryLine(a)
@@ -964,7 +1274,8 @@ function RG.ArcadeRefresh(keepMsg)
   if not (frame and frame:IsShown()) then return end
   local a, own, total, prints = RG.ArcadeStats()
   dailyCheck()
-  frame.coins:SetText("|cffffd100" .. (a.coins or 0) .. "|r coins")
+  frame.coins:SetText(GOLDHEX .. (a.coins or 0) .. "|r")
+  frame.free:SetText((a.free or 0) > 0 and ((a.free) .. " free seal" .. (a.free > 1 and "s" or "")) or "")
   frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  " .. (a.wins or 0) .. " duel wins\n" .. categoryLine(a))
   if keepMsg ~= true then frame.msg:SetText("") end
   local cards = view.mode == "cards"
@@ -973,9 +1284,9 @@ function RG.ArcadeRefresh(keepMsg)
   frame.searchBox:SetShown(cards); frame.searchHint:SetShown(cards and (view.search or "") == "")
   frame.sortBtn:SetShown(cards); frame.showBtn:SetShown(cards)
   frame.sortBtn:SetText("Sort: " .. SORTS[view.sort]); frame.showBtn:SetText("Show: " .. SHOWS[view.show])
-  for k, b in pairs(frame.filters) do b:SetEnabled(not (cards and not view.showcase and k == view.kind)) end
-  frame.showcase:SetEnabled(not (cards and view.showcase))
-  for k, b in pairs(frame.modes) do b:SetEnabled(k ~= view.mode) end
+  for k, b in pairs(frame.filters) do b:SetShown(cards); b:SetActive(cards and not view.showcase and k == view.kind) end
+  frame.showcase:SetShown(cards); frame.showcase:SetActive(cards and view.showcase)
+  for k, t in pairs(frame.modes) do t:SetActive(k == view.mode) end
   frame.prev:SetShown(cards); frame.next:SetShown(cards); frame.pageText:SetShown(cards)
   showRows(0)
 
@@ -989,60 +1300,58 @@ function RG.ArcadeRefresh(keepMsg)
     end
     frame.pageText:SetText(view.page .. " / " .. pages .. (view.set and ("  ·  " .. view.set) or "") .. (view.showcase and "  ·  showcase" or ""))
     frame.prev:SetEnabled(view.page > 1); frame.next:SetEnabled(view.page < pages)
-    if #list == 0 then frame.panel:SetText("|cff999999Nothing matches. Change the search or the filters.|r") end
+    if #list == 0 then frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -260); frame.panel:SetText("|cff9a96b0Nothing matches. Change the search or the filters.|r") end
   elseif view.mode == "sets" then
     local sets = getSets()
-    local shown = math.min(14, #sets)
-    local pg = view.setPage or 0
     local per = 14
+    local pages = math.max(1, math.ceil(#sets / per))
+    local pg = math.max(0, math.min(view.setPage or 0, pages - 1)); view.setPage = pg
     local first = pg * per
-    frame.panel:SetText("Complete a set to earn a coin reward. Click a set to browse it.   |cff999999(" .. #sets .. " sets; use the arrows to turn the page)|r")
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -124)
+    frame.panel:SetText("Complete a set to earn a coin reward. Click a set to browse it.   |cff9a96b0(" .. #sets .. " sets)|r")
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -196)
     showRows(math.max(0, math.min(per, #sets - first)))
     for i = 1, per do
       local s = sets[first + i]
       local b = frame.rows[i]
-      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 28, -150 - (i - 1) * 26)
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -224 - (i - 1) * 29)
       if s then
         local have = setProgress(a, s)
         local done = have >= #s.cards
-        b.left:SetText((done and "|cff55ff55" or "|cffffffff") .. s.name .. "|r")
-        b.right:SetText(have .. "/" .. #s.cards .. (done and ("  |cff55ff55done|r") or ("  +" .. s.reward)))
+        b.left:SetText((done and "|cff7be08a" or "|cfff4ecd8") .. s.name .. "|r")
+        b.right:SetText(have .. "/" .. #s.cards .. (done and ("   |cff7be08adone|r") or ("   +" .. s.reward)))
         b.act = function() view.set = s.name; view.mode = "cards"; view.kind = 0; view.page = 1; view.show = 1; RG.ArcadeRefresh(true) end
       end
     end
     frame.prev:Show(); frame.next:Show(); frame.pageText:Show()
-    local pages = math.max(1, math.ceil(#sets / per))
     frame.pageText:SetText((pg + 1) .. " / " .. pages)
     frame.prev:SetEnabled(pg > 0); frame.next:SetEnabled(pg + 1 < pages)
   elseif view.mode == "today" then
     local g = todaysGoals(a)
-    local lines = { "|cffffd100Today|r", "" }
-    lines[#lines + 1] = "Free packs waiting: |cffffffff" .. (a.free or 0) .. "|r  (one new pack every day, up to 3 saved)"
+    local lines = { GOLDHEX .. "Today|r", "" }
+    lines[#lines + 1] = "Free seals waiting: |cffffffff" .. (a.free or 0) .. "|r   (one new seal every day, up to 3 saved)"
     lines[#lines + 1] = "Pity: |cffffffff" .. (a.pity or 0) .. "|r of " .. PITY .. " packs without a holo or full art"
     lines[#lines + 1] = "Quest, kill and skill coins today: |cffffffff" .. ((a.day == today()) and (a.dayCoins or 0) or 0) .. "|r of " .. DAY_CAP
-    lines[#lines + 1] = "Duel win streak: |cffffffff" .. (a.streak or 0) .. "|r  (each win in a row pays +1, up to +4)"
+    lines[#lines + 1] = "Duel win streak: |cffffffff" .. (a.streak or 0) .. "|r   (each win in a row pays +1, up to +4)"
     lines[#lines + 1] = ""
-    lines[#lines + 1] = "|cffffd100Goals|r"
+    lines[#lines + 1] = GOLDHEX .. "Goals|r"
     for _, id in ipairs(g.pick) do
       for _, d in ipairs(GOALS) do
         if d[1] == id then
           local done = g.done[id]
-          lines[#lines + 1] = (done and "|cff55ff55" or "|cffffffff") .. d[2] .. "|r  " .. math.min(g.prog[id] or 0, d[3]) .. "/" .. d[3] .. "  ·  +" .. d[4] .. " coins" .. (done and "  done" or "")
+          lines[#lines + 1] = (done and "|cff7be08a" or "|cfff4ecd8") .. d[2] .. "|r   " .. math.min(g.prog[id] or 0, d[3]) .. "/" .. d[3] .. "   ·   +" .. d[4] .. " coins" .. (done and "   done" or "")
         end
       end
     end
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -130)
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -204)
     frame.panel:SetText(table.concat(lines, "\n"))
   elseif view.mode == "trade" then
-    local lines = { "|cffffd100Trade with your party|r", "", "Offer an extra copy from its card (Offer to group). Someone in your group answers with one of their own extras and the swap happens when you both agree.", "Raiders can't be traded." }
-    if trade.incoming then lines[#lines + 1] = ""; lines[#lines + 1] = "|cff55ff55" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r Pick one of your extras below to answer." end
+    local lines = { GOLDHEX .. "Trade with your party|r", "", "Offer an extra copy from its card (Offer to group). Someone in your group answers with one of their own extras and the swap happens when you both agree.", "Raiders can't be traded." }
+    if trade.incoming then lines[#lines + 1] = ""; lines[#lines + 1] = "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r Pick one of your extras below to answer." end
     if trade.out then lines[#lines + 1] = ""; lines[#lines + 1] = "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer." end
     if trade.pending then lines[#lines + 1] = ""; lines[#lines + 1] = "Answer sent. Waiting for " .. trade.pending.from .. "." end
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -126)
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -204)
     local ptext = table.concat(lines, "\n")
     frame.panel:SetText(ptext)
-    -- your extras, to answer an offer or start one
     local extras = {}
     for _, c in ipairs(CARDS) do
       if c.kind ~= 4 then
@@ -1055,32 +1364,32 @@ function RG.ArcadeRefresh(keepMsg)
     for i = 1, n do
       local e = extras[i]
       local b = frame.rows[i]
-      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 28, -300 - (i - 1) * 28)
-      b.left:SetText(e.c.name .. "  |cff999999(" .. FNAME[e.f] .. ")|r"); b.right:SetText("x" .. e.n .. " extra")
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -400 - (i - 1) * 29)
+      b.left:SetText(e.c.name .. "  |cff9a96b0(" .. FNAME[e.f] .. ")|r"); b.right:SetText("x" .. e.n .. " extra")
       b.act = function()
         local ok, msg
         if trade.incoming then ok, msg = RG.ArcadeAcceptOffer(e.c, e.f) else ok, msg = RG.ArcadeOffer(e.c, e.f) end
         say(msg); RG.ArcadeRefresh(true)
       end
     end
-    if #extras == 0 then frame.panel:SetText(ptext .. "\n\n|cff999999You have no extra copies to trade yet.|r") end
+    if #extras == 0 then frame.panel:SetText(ptext .. "\n\n|cff9a96b0You have no extra copies to trade yet.|r") end
   elseif view.mode == "stats" then
     local st = a.stats or {}
     local r = a.rarest
-    local lines = { "|cffffd100Statistics|r", "",
-      "Packs opened: |cffffffff" .. (a.packs or 0) .. "|r",
+    local lines = { GOLDHEX .. "The Ledger|r", "",
+      "Seals broken: |cffffffff" .. (a.packs or 0) .. "|r",
       "Rarest pull: |cffffffff" .. (r and (r.name .. " (" .. FNAME[r.finish] .. ")") or "none yet") .. "|r",
       "Duels: |cffffffff" .. (a.wins or 0) .. " won, " .. (a.losses or 0) .. " lost|r",
-      "", "|cffffd100Coins earned|r",
+      "", GOLDHEX .. "Coins earned|r",
       string.format("XP %d  ·  level-ups %d  ·  quests %d  ·  kills %d", st.xp or 0, st.level or 0, st.quest or 0, st.kill or 0),
       string.format("Skill-ups %d  ·  duels %d  ·  goals %d  ·  sets %d", st.skill or 0, st.duel or 0, st.goal or 0, st.sets or 0),
       "", "Characters met: |cffffffff" .. (function() local n = 0; for _ in pairs(a.raiders or {}) do n = n + 1 end return n end)() .. "|r",
     }
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -130)
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -204)
     frame.panel:SetText(table.concat(lines, "\n"))
   end
   local free = a.free or 0
-  frame.buy:SetText(free > 0 and ("Free pack (" .. free .. ")") or ("Open pack (" .. PACK_PRICE .. ")"))
+  frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or ("Break a seal  ·  " .. PACK_PRICE))
   frame.buy:SetEnabled(afford() and true or false)
 end
 
