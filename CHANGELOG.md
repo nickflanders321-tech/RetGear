@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.63.3
+- Fixed the quest tracker losing the text of some lines (section headings and several rows were blank): it is back on the game's own font.
+- The header line no longer runs into the XP numbers: it now shows just your level, race and spec.
+
 ## v0.63.2
 - The arrow is green when you are facing the target (amber to the side, soft red when it is behind you).
 

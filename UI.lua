@@ -2052,9 +2052,6 @@ local function updateHeader()
   local p = RG.Professions()
   local cls = RG.ActiveClass or {}
   local bits = { "Level " .. lvl .. " " .. (UnitRace("player") or "") .. " " .. ((RG.ClassSupported and cls.spec) and (cls.spec .. " " .. (cls.name or "")) or (UnitClass("player") or "")) }
-  for _, prof in ipairs({ "Mining", "Blacksmithing", "Fishing", "Cooking" }) do
-    if p[prof] then bits[#bits + 1] = prof .. " " .. p[prof].rank end
-  end
   frame.subtitle:SetText(table.concat(bits, "  ·  "))
   local xp, max = UnitXP and UnitXP("player") or 0, UnitXPMax and UnitXPMax("player") or 0
   local rested = GetXPExhaustion and GetXPExhaustion() or nil
