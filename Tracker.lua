@@ -374,7 +374,11 @@ local function questTip(q)
     end
   end
   if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
-  t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show on the map") or "")
+  if q.complete and q.wp then
+    t = t .. "\n\n" .. GOLD .. "Click:|r arrow to the hand-in\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r open in your quest log"
+  else
+    t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show on the map") or "")
+  end
   return t
 end
 
@@ -543,8 +547,9 @@ function RG.RefreshTracker()
                 n = n + 1
                 y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
                   { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp,
-                    onClick = function() RG.OpenQuest(q.title, q.id) end,
-                    onRightClick = q.wp and function() RG.PinWaypoint(q.wp) end or nil })
+                    -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
+                    onClick = function() if q.complete and q.wp then RG.PinWaypoint(q.wp) else RG.OpenQuest(q.title, q.id) end end,
+                    onRightClick = (q.complete and q.wp) and function() RG.OpenQuest(q.title, q.id) end or (q.wp and function() RG.PinWaypoint(q.wp) end or nil) })
               end
             end
           end

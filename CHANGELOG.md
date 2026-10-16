@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.69.3
+- Clicking a quest that is ready to turn in now points the arrow at the hand-in instead of opening the quest log. Right-click opens the quest log; double-click still switches the arrow on or off.
+
 ## v0.69.2
 - **Double-click works on every tracker line that has a place.** Added to: the "Then:" next step, "Getting there:" (arrow to the first stop of the zone or dungeon), the next upgrade (when its source NPC is known), the bank-alt setup steps and ore/herb reminders. Lines that already had it (quests, pick-ups, hand-ins, route stops, professions) keep it. Their tooltips say so.
 
