@@ -541,6 +541,17 @@ local function buildArrow()
   -- the arrow itself
   arrow.tex = arrow:CreateTexture(nil, "OVERLAY"); arrow.tex:SetSize(46, 46); arrow.tex:SetPoint("CENTER")
   arrow.tex:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  -- 3D look: the arrow is extruded (a stack of darker copies below it) over a soft shadow, with a highlight on top
+  arrow.shadow = arrow:CreateTexture(nil, "ARTWORK", nil, -2); arrow.shadow:SetSize(46, 46); arrow.shadow:SetPoint("CENTER", 5, -9)
+  arrow.shadow:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.shadow:SetVertexColor(0, 0, 0, 0.45)
+  arrow.ext = {}
+  for i = 1, 6 do
+    local t = arrow:CreateTexture(nil, "ARTWORK", nil, -1)
+    t:SetSize(46, 46); t:SetPoint("CENTER", 0, -i * 1.2); t:SetTexture("Interface\\Minimap\\MinimapArrow")
+    arrow.ext[i] = t
+  end
+  arrow.shine = arrow:CreateTexture(nil, "OVERLAY", nil, 2); arrow.shine:SetSize(46, 46); arrow.shine:SetPoint("CENTER", 0, 1)
+  arrow.shine:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.shine:SetVertexColor(1, 1, 1, 0.22); arrow.shine:SetBlendMode("ADD")
   arrow.check = arrow:CreateTexture(nil, "OVERLAY"); arrow.check:SetSize(34, 34); arrow.check:SetPoint("CENTER")
   arrow.check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready"); arrow.check:Hide()
   -- text: destination above, distance and time below, travel hint under that
@@ -574,7 +585,21 @@ local function buildArrow()
   arrow.pulse = 0
   local shown, lastKey, arrivedAt = 0, nil, nil
   local acc = 0
+  local function sync3d(self)
+    local on = RG.db.arrow3d ~= false and self.tex:IsShown()
+    local r, g, b = self.tex:GetVertexColor()
+    self.shadow:SetShown(on); self.shine:SetShown(on)
+    if on then
+      self.shadow:SetRotation(self.rot or 0); self.shine:SetRotation(self.rot or 0)
+      -- the shadow always falls the same way on screen, whichever way the arrow points
+    end
+    for i, t in ipairs(self.ext) do
+      t:SetShown(on)
+      if on then t:SetRotation(self.rot or 0); local k = 0.78 - i * 0.07; t:SetVertexColor((r or 1) * k, (g or 1) * k, (b or 1) * k) end
+    end
+  end
   arrow:SetScript("OnUpdate", function(self, dt)
+    sync3d(self)
     if self.pulse > 0 then self.pulse = math.max(0, self.pulse - dt * 2); self.glow:SetAlpha(self.pulse * 0.8) end
     if arrivedAt then
       local t = GetTime() - arrivedAt
@@ -627,7 +652,7 @@ local function buildArrow()
     local target = math.atan2(dy, dx) - facing
     local diff = (target - shown + math.pi) % (2 * math.pi) - math.pi
     shown = shown + diff * math.min(1, step * 12)
-    self.tex:SetRotation(shown)
+    self.tex:SetRotation(shown); self.rot = shown
     local rel = (target + math.pi) % (2 * math.pi) - math.pi
     self.tex:SetVertexColor(angleColor(rel))
     -- distance and time to arrive at your current speed

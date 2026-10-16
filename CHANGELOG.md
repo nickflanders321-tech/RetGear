@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.61.0
+- **3D arrow:** the waypoint arrow is now a solid, thick arrow with depth, a shadow and a highlight, and it still turns smoothly and changes colour as you face the target. Prefer the flat arrow? Type /wp arrow3d off.
+
 ## v0.60.0
 - **Dark look:** a flat, cooler, less cluttered theme sits beside the classic one. Click "Look" in the window's top bar, or type /wp theme dark or /wp theme classic. Your choice is remembered.
 

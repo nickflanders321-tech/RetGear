@@ -799,6 +799,8 @@ SlashCmdList.WAYPATH = function(msg)
     if RG.ToggleUI then RG.ToggleUI() end
   elseif cmd == "theme" then
     if RG.SetTheme and RG.SetTheme(rest) then RG.Print("Look: " .. rest) else RG.Print("/wp theme classic | dark") end
+  elseif cmd == "arrow3d" then
+    RG.db.arrow3d = (rest ~= "off"); RG.Print("3D arrow " .. (RG.db.arrow3d and "on" or "off"))
   elseif cmd == "trail" then
     if rest == "reset" then RG.TrailReset(); RG.Print("Learned paths cleared.")
     elseif rest == "off" or rest == "on" then RG.db.trail = (rest == "on"); RG.Print("Learned paths " .. rest .. ".")
