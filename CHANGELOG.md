@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.83.2
+- Fix: the game could block the world map's quest pins ("SetPassThroughButtons during combat") because Waypath+ placed or cleared the map pin in combat. Pins and clears now wait until combat ends.
+
 ## v0.83.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

@@ -603,7 +603,7 @@ local function buildArrow()
     if arrivedAt then
       local t = GetTime() - arrivedAt
       self:SetAlpha(math.max(0, 1 - math.max(0, t - 1.2) * 2))
-      if t > 1.7 then arrivedAt = nil; self.check:Hide(); self.tex:Show(); self:SetAlpha(1); if C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide() end
+      if t > 1.7 then arrivedAt = nil; self.check:Hide(); self.tex:Show(); self:SetAlpha(1); if not (InCombatLockdown and InCombatLockdown()) and C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide() end
       return
     end
     acc = acc + dt; if acc < 0.03 then return end
@@ -720,8 +720,19 @@ local function currentPin()
   local wp = C_Map and C_Map.GetUserWaypoint and C_Map.GetUserWaypoint()
   return wp and { map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }
 end
+-- The game's map code reacts to a new pin by running protected calls; if that is triggered from our
+-- (insecure) code in combat it gets blocked. So pins and clears wait until combat ends.
+local deferredPin, deferredClear
+local combatWatch = CreateFrame("Frame")
+combatWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
+combatWatch:SetScript("OnEvent", function()
+  if deferredClear then deferredClear = nil; deferredPin = nil; RG.ClearWaypoint() end
+  if deferredPin then local d = deferredPin; deferredPin = nil; RG.PinWaypoint(d[1], d[2]) end
+end)
+local function inCombat() return InCombatLockdown and InCombatLockdown() end
 function RG.PinWaypoint(wp, quiet)
   if not (wp and C_Map and C_Map.SetUserWaypoint and UiMapPoint) then RG.Print("This client doesn't support map pins.") return end
+  if inCombat() then deferredPin = { wp, quiet }; deferredClear = nil; if not quiet then RG.Notify("Pin for " .. wp[4] .. " is set as soon as combat ends") end return end
   local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(wp[1], wp[2] / 100, wp[3] / 100))
   if not ok then if not quiet then RG.Print("Can't pin " .. wp[4] .. " from here.") end return end
   if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
@@ -732,6 +743,7 @@ function RG.PinWaypoint(wp, quiet)
   if not quiet then RG.Notify("Pinned " .. wp[4] .. ": follow the arrow") end
 end
 function RG.ClearWaypoint()
+  if inCombat() then deferredClear = true; return end
   local api = spfApi()
   if api and api.Cancel then pcall(api.Cancel, "Waypath+") end
   if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
@@ -767,6 +779,7 @@ end
 
 function RG.SetWaypoint(x, y)
   if not (C_Map and C_Map.SetUserWaypoint and UiMapPoint) then RG.Print("This client doesn't support map pins.") return end
+  if inCombat() then RG.Print("Can't place a pin during combat.") return end
   local mapID = C_Map.GetBestMapForUnit("player")
   if not mapID or (C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(mapID)) then RG.Print("Can't place a pin here.") return end
   C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(mapID, x / 100, y / 100))
