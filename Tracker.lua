@@ -385,6 +385,14 @@ local function item(n, y, text, opts)
   return y + h + 3
 end
 
+-- Right-click on a tracker line: point the arrow at it (turning the arrow on if it was off).
+function RG.Follow(wp)
+  if not wp then return end
+  if not RG.Opt("arrow") then RG.db.arrow = true; if RG.RefreshArrow then RG.RefreshArrow() end end
+  RG.PinWaypoint(wp)
+  if RG.RefreshTracker then RG.RefreshTracker() end
+end
+
 -- Tooltip for a quest in your log.
 local function questTip(q)
   local t = RG.LevelTag(q.level) .. "|cffffffff" .. q.title .. "|r"
@@ -397,9 +405,9 @@ local function questTip(q)
   end
   if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
   if q.complete and q.wp then
-    t = t .. "\n\n" .. GOLD .. "Click:|r arrow to the hand-in\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r open in your quest log"
+    t = t .. "\n\n" .. GOLD .. "Click / right-click:|r arrow to the hand-in\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Shift-click:|r open in your quest log"
   else
-    t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show on the map") or "")
+    t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Right-click:|r the arrow follows this quest\n" .. GOLD .. "Double-click:|r arrow on / off") or "")
   end
   return t
 end
@@ -571,8 +579,11 @@ function RG.RefreshTracker()
                 y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
                   { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
-                    onClick = function() if q.complete and q.wp then RG.PinWaypoint(q.wp) else RG.OpenQuest(q.title, q.id) end end,
-                    onRightClick = (q.complete and q.wp) and function() RG.OpenQuest(q.title, q.id) end or (q.wp and function() RG.PinWaypoint(q.wp) end or nil) })
+                    onClick = function()
+                      if q.complete and q.wp and not (IsShiftKeyDown and IsShiftKeyDown()) then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end
+                    end,
+                    -- right-click: the arrow follows this quest
+                    onRightClick = q.wp and function() RG.Follow(q.wp) end or nil })
               end
             end
           end
@@ -611,7 +622,7 @@ function RG.RefreshTracker()
         n = n + 1
         y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r", wp = q.wp,
           tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map\n" .. GOLD .. "Double-click:|r arrow on / off",
-          onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.PinWaypoint(q.wp) end })
+          onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.Follow(q.wp) end })
       end
     end
     y = y + 5
@@ -652,7 +663,7 @@ function RG.RefreshTracker()
           tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in.\n\n" ..
             (wp and (GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") .. GOLD .. "Shift-click:|r skip this step",
           onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
-          onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+          onRightClick = wp and function() RG.Follow(wp) end or nil })
       -- the arrow goes to the first thing to do: a hand-in, else a pick-up, else the hub
       if RG.AutoPin then
         local first = qlines[1]
@@ -683,7 +694,7 @@ function RG.RefreshTracker()
           y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r",
             { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
               onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
-              onRightClick = l.wp and function() RG.PinWaypoint(l.wp) end or nil })
+              onRightClick = l.wp and function() RG.Follow(l.wp) end or nil })
         end
       end
       if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 12, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
@@ -717,7 +728,7 @@ function RG.RefreshTracker()
           local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
           if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
           y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, text) end end,
-            onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+            onRightClick = wp and function() RG.Follow(wp) end or nil })
         end
       end
       if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
@@ -755,7 +766,7 @@ function RG.RefreshTracker()
           n = n + 1
           y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. first, { box = false, wp = wp,
             tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or "") .. "\nThe Route tab has the whole chain.",
-            onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, first) end end, onRightClick = wp and function() RG.PinWaypoint(wp) end or nil })
+            onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, first) end end, onRightClick = wp and function() RG.Follow(wp) end or nil })
         end
         y = y + 5
       end
@@ -805,7 +816,7 @@ function RG.RefreshTracker()
           n = n + 1
           y = item(n, y, (isTarget(gw) and ARROW or "") .. RG.LevelTag(RG.QuestLevel(q[1])) .. "|cffffd100" .. q[1] .. "|r", { single = true, right = GREY .. "pick up|r", wp = gw,
             tip = "|cffffffff" .. q[1] .. "|r\n" .. GREY .. q[2] .. ", " .. q[3] .. "|r" .. (gw and ("\n\n" .. GOLD .. "Click:|r show " .. q[2] .. " on the map\n" .. GOLD .. "Double-click:|r arrow on / off") or ""),
-            onClick = gw and function() RG.PinWaypoint(gw) end or nil, onRightClick = gw and function() RG.PinWaypoint(gw) end or nil })
+            onClick = gw and function() RG.PinWaypoint(gw) end or nil, onRightClick = gw and function() RG.Follow(gw) end or nil })
         end
         if #missing > 3 then n = n + 1; y = item(n, y, GREY .. "+" .. (#missing - 3) .. " more on the Route tab|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       end

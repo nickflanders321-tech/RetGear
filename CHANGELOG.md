@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.70.5
+- **Right-click a quest in the tracker and the arrow follows it** (turning the arrow on if it was off). Right-click works the same on route steps, pick-ups and hand-ins. To open a ready quest in your quest log, Shift-click it.
+
 ## v0.70.4
 - **A lighter, smaller tracker.** The panel is now see-through by default (50%) so you can see the world behind it; hold **Alt and scroll over it** to make it more or less see-through. Text and spacing are tighter, so it takes up less of the screen, and text has a soft shadow to stay readable.
 
