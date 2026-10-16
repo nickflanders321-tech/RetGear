@@ -19,11 +19,11 @@ Standing rules: no talent advice, never hide or move protected Blizzard frames.
 
 ## 3. Make it feel finished
 - **Step pager and search box:** flip through route steps one at a time; search quests, items and NPCs.
-- ~~**Header buttons:**~~ (done v0.74.0)
-- ~~**Report this step:**~~ (done v0.74.0)
-- ~~**First-run tour:**~~ (done v0.74.0)
+- ~~**Header buttons:**~~ (done v0.73.0) quick toggles for arrow, tracker and sounds in the window header.
+- ~~**Report this step:**~~ (done v0.73.0) a button on every generated step that files a correction to the data pipeline.
+- ~~**First-run tour:** a three-screen intro that shows the arrow, the tracker and Shift-click.~~ (done v0.74.0)
 - **Themes:** charcoal and mint (default), plus light and high-contrast options for readability.
-- ~~**Localisation scaffolding:**~~ (done v0.74.0)
+- ~~**Localisation scaffolding:** move strings into a table so other languages can be added.~~ (done v0.74.0)
 
 ## 4. Make it social and shareable
 - **Group quest sharing:** show which of your party's quests overlap and where to meet.
@@ -40,5 +40,5 @@ Standing rules: no talent advice, never hide or move protected Blizzard frames.
 ## 6. More depth in what you already have
 - **Fishing:** fish-pool locations on the map, a sell-or-cook recommendation per catch and a Fishing Extravaganza timer.
 - **Cooking and first aid:** cheapest path per skill range with arrow to trainers and vendors.
-- ~~**Gathering:**~~ (done v0.74.0)
-- ~~**Travel:**~~ (done v0.74.0)
+- ~~**Gathering:** a route over nodes in your zone, with herb and ore value per node.~~ (done v0.74.0)
+- ~~**Travel:** best flight path, boat and portal route with the cost and the time.~~ (done v0.74.0)
