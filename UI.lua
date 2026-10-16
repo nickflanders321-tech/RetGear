@@ -8,27 +8,28 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 -- Theme
 -- ---------------------------------------------------------------------------
 local T = {
-  bg      = { 0.05, 0.045, 0.04, 0.97 },
-  panel   = { 0.09, 0.08, 0.07, 0.92 },   -- row background (tooltip texture tinted)
-  edge    = { 0.55, 0.5, 0.42, 0.85 },    -- tooltip border, classic grey-gold
-  gold    = { 1, 0.82, 0 },               -- NORMAL_FONT_COLOR
-  goldDim = { 0.62, 0.5, 0.14 },
-  green   = { 0.25, 0.75, 0.25 },
-  red     = { 1, 0.2, 0.2 },
+  bg      = { 0.078, 0.078, 0.078, 0.97 },
+  panel   = { 0.106, 0.106, 0.106, 0.9 },
+  edge    = { 0.17, 0.17, 0.17, 1 },
+  line    = { 0.17, 0.17, 0.17, 1 },
+  gold    = RG.ACCENT,                    -- the accent (teal in the Graphite look)
+  goldDim = { 0.2, 0.5, 0.47 },
+  green   = { 0.37, 0.82, 0.54 },
+  red     = { 0.95, 0.38, 0.38 },
   purple  = { 0.64, 0.21, 0.93 },         -- epic purple
   blue    = { 0.0, 0.44, 0.87 },          -- rare blue
-  text    = { 1, 1, 1 },
-  dim     = { 0.62, 0.62, 0.62 },
-  row     = { 0.07, 0.065, 0.06 },
-  rowEdge = { 0.45, 0.42, 0.36 },
+  text    = { 0.93, 0.93, 0.93 },
+  dim     = { 0.55, 0.55, 0.55 },
+  row     = { 0.106, 0.106, 0.106 },
+  rowEdge = { 0.17, 0.17, 0.17 },
 }
 local TOOLTIP_BG, TOOLTIP_EDGE = "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border"
 local STATUSBAR = "Interface\\TargetingFrame\\UI-StatusBar"
-local FONT_TITLE = "Fonts\\MORPHEUS.TTF"
-local FONT_BODY  = "Fonts\\FRIZQT__.TTF"
-local FONT_NUM   = "Fonts\\ARIALN.TTF"
+local FONT_TITLE = RG.FONTS.semibold
+local FONT_BODY  = RG.FONTS.medium
+local FONT_NUM   = RG.FONTS.regular
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local W, H = 780, 620
+local W, H = 780, 640
 -- Text size: 1.0 = original, saved per account. A- / A+ in the header change it.
 local function TS() return (RG.db and RG.db.textSize) or 1.2 end
 local function sz(n) return math.floor(n * TS() + 0.5) end
@@ -53,28 +54,27 @@ local function parentOf(tab) return PARENT[tab] or tab end
 state.lastSub = {}
 
 local function setTabLook(b, on)
-  -- The Character-window "active" tab art blends into the frame on this client and
-  -- nearly vanishes, so every tab uses the inactive art and the open one is lit up.
-  for _, t in ipairs(b.parts) do
-    t:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab")
-    if on then t:SetVertexColor(1, 1, 1) else t:SetVertexColor(0.62, 0.62, 0.62) end
-  end
-  if b.glow then b.glow:SetShown(on) end
-  b.text:SetFontObject(on and "GameFontHighlightSmall" or "GameFontNormalSmall")
-  b.text:ClearAllPoints(); b.text:SetPoint("CENTER", 0, on and 1 or 2)
-  b:ClearAllPoints(); b:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", b.x, on and 4 or 7)
-  b:SetFrameLevel((frame:GetFrameLevel() or 1) + (on and 3 or 1))
+  b.under:SetShown(on)
+  if on then b.text:SetTextColor(unpack(T.text)) else b.text:SetTextColor(unpack(T.dim)) end
 end
 
 -- Tooltip-style box (rows, tags, small buttons). edge = border size.
 local function backdrop(f, bg, edge, size)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
   size = size or 12
-  local inset = size >= 12 and 3 or 2
-  f:SetBackdrop({ bgFile = TOOLTIP_BG, edgeFile = TOOLTIP_EDGE, tile = true, tileSize = 16, edgeSize = size, insets = { left = inset, right = inset, top = inset, bottom = inset } })
-  f:SetBackdropColor(unpack(bg)); f:SetBackdropBorderColor(unpack(edge))
+  if size <= 9 then
+    -- chips, small buttons and bars: a flat box with a one pixel border
+    f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+    f:SetBackdropColor(unpack(bg)); f:SetBackdropBorderColor(unpack(edge))
+    if rawget(f, "rgLine") then f.rgLine:Hide() end
+  else
+    -- list rows: no box, just a hairline under the row
+    f:SetBackdrop(nil)
+    if not rawget(f, "rgLine") then f.rgLine = f:CreateTexture(nil, "BACKGROUND"); f.rgLine:SetHeight(1); f.rgLine:SetPoint("BOTTOMLEFT", 0, 0); f.rgLine:SetPoint("BOTTOMRIGHT", 0, 0) end
+    f.rgLine:SetColorTexture(T.line[1], T.line[2], T.line[3], (edge and edge[4] and edge[4] < 0.6) and 0.5 or 1); f.rgLine:Show()
+  end
 end
-local function font(fs, path, size, flags) fs:SetFont(path, size, flags or "") end
+local function font(fs, path, size, flags) if not fs:SetFont(path, size, flags or "") then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end end
 -- Wraps a font string to `width` and gives it room for every line. Re-setting the
 -- text makes the client lay it out again at the final width, and the line count
 -- from the text's one-line width backs up GetStringHeight (which can report a
@@ -198,6 +198,7 @@ end
 
 local function hideAll(r)
   r.onClick = nil; r.onRightClick = nil; r.tip = nil; r.onDoubleClick = nil
+  if rawget(r, "rgLine") then r.rgLine:Hide() end
   r.title:SetWordWrap(false); r.sub:SetWordWrap(false)
   for _, k in ipairs({ "iconBorder", "icon", "title", "sub", "pill", "meta", "head", "headLine", "barBg", "barFill", "barMark", "barLabel", "barValue", "stripe" }) do r[k]:Hide() end
 end
@@ -2057,7 +2058,7 @@ local function updateHeader()
   frame.subtitle:SetText(table.concat(bits, "  ·  "))
   local xp, max = UnitXP and UnitXP("player") or 0, UnitXPMax and UnitXPMax("player") or 0
   local rested = GetXPExhaustion and GetXPExhaustion() or nil
-  if rested and rested > 0 then frame.xp:SetStatusBarColor(0.0, 0.39, 0.88) else frame.xp:SetStatusBarColor(0.58, 0.0, 0.55) end
+  if rested and rested > 0 then frame.xp:SetStatusBarColor(0.25, 0.55, 0.95) else frame.xp:SetStatusBarColor(unpack(T.gold)) end
   if max and max > 0 and lvl < (GetMaxPlayerLevel and GetMaxPlayerLevel() or 60) then
     frame.xp:SetMinMaxValues(0, max); frame.xp:SetValue(xp)
     frame.xpText:SetText(string.format("XP %d / %d  (%d%%)%s", xp, max, math.floor(xp / max * 100), rested and rested > 0 and "  ·  rested" or ""))
@@ -2116,21 +2117,28 @@ function RG.RefreshUINow()
     for i = #subs, 1, -1 do
       local b = frame.subBtns[subs[i]]
       local on = subs[i] == state.tab
-      backdrop(b, on and { 0.25, 0.2, 0.05, 0.9 } or { T.row[1], T.row[2], T.row[3], 0.85 }, on and { T.gold[1], T.gold[2], T.gold[3], 1 } or { 0.5, 0.47, 0.4, 0.8 }, 10)
-      b.text:SetFontObject(on and "GameFontHighlightSmall" or "GameFontNormalSmall")
+      backdrop(b, on and { 0.1, 0.22, 0.21, 1 } or { 0.12, 0.12, 0.12, 1 }, on and { T.gold[1], T.gold[2], T.gold[3], 1 } or T.edge, 8)
+      font(b.text, FONT_BODY, 12); b.text:SetTextColor(unpack(on and T.gold or T.text))
       b:ClearAllPoints()
-      if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -22, -86) end
+      if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -18, -116) end
       b:Show(); anchor = b
     end
   end
   frame.scan:ClearAllPoints()
-  if anchor then frame.scan:SetPoint("RIGHT", anchor, "LEFT", -10, 0) else frame.scan:SetPoint("TOPRIGHT", -20, -86) end
+  if anchor then frame.scan:SetPoint("RIGHT", anchor, "LEFT", -10, 0) else frame.scan:SetPoint("TOPRIGHT", -18, -116) end
 end
 
 -- Classic red Blizzard button
 local function panelButton(parent, text, w, h)
-  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  b:SetSize(w, h or 22); b:SetText(text)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  b:SetSize(w, h or 22)
+  backdrop(b, { 0.12, 0.12, 0.12, 1 }, T.edge, 8)
+  b.label = b:CreateFontString(nil, "OVERLAY"); font(b.label, FONT_BODY, 12); b.label:SetPoint("CENTER", 0, 0); b.label:SetTextColor(unpack(T.text))
+  b.SetText = function(self, t) self.label:SetText(t) end
+  b.GetText = function(self) return self.label:GetText() end
+  b:SetScript("OnEnter", function(self) self:SetBackdropBorderColor(unpack(T.gold)); self.label:SetTextColor(unpack(T.gold)) end)
+  b:SetScript("OnLeave", function(self) self:SetBackdropBorderColor(unpack(T.edge)); self.label:SetTextColor(unpack(T.text)) end)
+  b:SetText(text)
   return b
 end
 
@@ -2148,73 +2156,66 @@ local function build()
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "WaypathFrame")
 
-  -- gold title banner
-  RG.DialogHeader(frame, "Waypath+", 320)
+  -- title bar: logo, name, text size, close
+  local logo = frame:CreateTexture(nil, "ARTWORK"); logo:SetSize(20, 20); logo:SetPoint("TOPLEFT", 16, -12); logo:SetTexture(RG.LOGO_LARGE)
+  local _, title = RG.DialogHeader(frame, "Waypath+", 0)
+  title:ClearAllPoints(); title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
 
-  -- crest, framed like an action button
-  local crest = frame:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOPLEFT", 20, -22)
-  crest:SetTexture(RG.LOGO_LARGE)
-
-  frame.subtitle = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); frame.subtitle:SetPoint("TOPLEFT", crest, "TOPRIGHT", 14, -2)
-  frame.subtitle:SetJustifyH("LEFT")
-
-  local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-  close:SetPoint("TOPRIGHT", -6, -6)
+  local close = CreateFrame("Button", nil, frame)
+  close:SetSize(26, 26); close:SetPoint("TOPRIGHT", -10, -9)
+  close.x = close:CreateFontString(nil, "OVERLAY"); font(close.x, FONT_BODY, 20); close.x:SetPoint("CENTER", 0, 1); close.x:SetText("\195\151"); close.x:SetTextColor(unpack(T.dim))
+  close:SetScript("OnEnter", function(self) self.x:SetTextColor(unpack(T.gold)) end)
+  close:SetScript("OnLeave", function(self) self.x:SetTextColor(unpack(T.dim)) end)
   close:SetScript("OnClick", function() frame:Hide() end)
   local function sizeBtn(label, delta, anchor)
-    local b = panelButton(frame, label, 34, 20)
-    b:SetPoint("RIGHT", anchor, "LEFT", -4, 0)
+    local b = panelButton(frame, label, 30, 20)
+    b:SetPoint("RIGHT", anchor, "LEFT", -6, 0)
     b:SetScript("OnClick", function()
       RG.db.textSize = math.max(0.9, math.min(1.7, (RG.db.textSize or 1.2) + delta))
       RG.RefreshUI()
     end)
-    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText(delta > 0 and "Bigger text" or "Smaller text"); GameTooltip:Show() end)
-    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    local enter, leave = b:GetScript("OnEnter"), b:GetScript("OnLeave")
+    b:SetScript("OnEnter", function(self) enter(self); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText(delta > 0 and "Bigger text" or "Smaller text"); GameTooltip:Show() end)
+    b:SetScript("OnLeave", function(self) leave(self); GameTooltip:Hide() end)
     return b
   end
   local plus = sizeBtn("A+", 0.1, close)
   sizeBtn("A-", -0.1, plus)
 
-  -- classic XP bar: purple, blue while rested
-  frame.xp = CreateFrame("StatusBar", nil, frame, "BackdropTemplate")
-  frame.xp:SetPoint("TOPLEFT", crest, "BOTTOMRIGHT", 14, 14); frame.xp:SetPoint("RIGHT", frame, "RIGHT", -24, 0); frame.xp:SetHeight(12)
-  frame.xp:SetStatusBarTexture(STATUSBAR)
-  backdrop(frame.xp, { 0, 0, 0, 0.6 }, { 0.6, 0.55, 0.45, 0.9 }, 8)
-  frame.xpText = frame.xp:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); frame.xpText:SetPoint("CENTER", 0, 0)
-
-  local div = frame:CreateTexture(nil, "ARTWORK"); div:SetHeight(1); div:SetPoint("TOPLEFT", 16, -74); div:SetPoint("TOPRIGHT", -16, -74)
-  div:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.35)
-
-  -- Character-window style tabs along the bottom edge
+  -- tab strip: flat labels, an accent line under the open one
   tabs = {}
   local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "group", "Group" },
     { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
-  local x = 12
+  local x = 14
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)
-    b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); b.text:SetText(d[2])
-    local w = math.max(64, b.text:GetStringWidth() + 32)
+    b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12.5); b.text:SetText(d[2]); b.text:SetPoint("CENTER", 0, 0)
+    local w = b.text:GetStringWidth() + 26
     b.x = x
-    b:SetSize(w, 32); b:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", x, 7); x = x + w - 12
-    local L = b:CreateTexture(nil, "BACKGROUND"); L:SetSize(20, 32); L:SetPoint("TOPLEFT"); L:SetTexCoord(0, 0.15625, 0, 1)
-    local R = b:CreateTexture(nil, "BACKGROUND"); R:SetSize(20, 32); R:SetPoint("TOPRIGHT"); R:SetTexCoord(0.84375, 1, 0, 1)
-    local M = b:CreateTexture(nil, "BACKGROUND"); M:SetPoint("TOPLEFT", L, "TOPRIGHT"); M:SetPoint("BOTTOMRIGHT", R, "BOTTOMLEFT"); M:SetTexCoord(0.15625, 0.84375, 0, 1)
-    b.parts = { L, M, R }
-    local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight"); hl:SetBlendMode("ADD")
-    hl:SetPoint("TOPLEFT", 10, -4); hl:SetPoint("BOTTOMRIGHT", -10, 4)
-    b.glow = b:CreateTexture(nil, "ARTWORK"); b.glow:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight"); b.glow:SetBlendMode("ADD")
-    b.glow:SetPoint("TOPLEFT", 10, -4); b.glow:SetPoint("BOTTOMRIGHT", -10, 4); b.glow:SetAlpha(0.7); b.glow:Hide()
+    b:SetSize(w, 30); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -44); x = x + w
+    b.under = b:CreateTexture(nil, "OVERLAY"); b.under:SetHeight(2); b.under:SetPoint("BOTTOMLEFT", 8, 0); b.under:SetPoint("BOTTOMRIGHT", -8, 0)
+    b.under:SetColorTexture(unpack(T.gold)); b.under:Hide()
+    b:SetScript("OnEnter", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.text)) end end)
+    b:SetScript("OnLeave", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.dim)) end end)
     b:SetScript("OnClick", function()
-      if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_TAB or 841) end
       local subs = GROUPS[d[1]]
       state.tab = subs and (state.lastSub[d[1]] or subs[1]) or d[1]
       scroll:SetVerticalScroll(0); RG.RefreshUINow()
     end)
     tabs[d[1]] = b
   end
+  local tabLine = frame:CreateTexture(nil, "ARTWORK"); tabLine:SetHeight(1); tabLine:SetPoint("TOPLEFT", 1, -74); tabLine:SetPoint("TOPRIGHT", -1, -74); tabLine:SetColorTexture(unpack(T.line))
+
+  -- who you are, and a thin XP bar
+  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_BODY, 12); frame.subtitle:SetPoint("TOPLEFT", 18, -84); frame.subtitle:SetJustifyH("LEFT"); frame.subtitle:SetTextColor(unpack(T.text))
+  frame.xp = CreateFrame("StatusBar", nil, frame)
+  frame.xp:SetPoint("TOPLEFT", 18, -104); frame.xp:SetPoint("TOPRIGHT", -18, -104); frame.xp:SetHeight(3)
+  frame.xp:SetStatusBarTexture(WHITE)
+  local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.17, 0.17, 0.17, 1)
+  frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("TOPRIGHT", -18, -86); frame.xpText:SetTextColor(unpack(T.dim))
 
   -- section title
-  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_BODY, 16); sectionTitle:SetPoint("TOPLEFT", 22, -86); sectionTitle:SetTextColor(unpack(T.gold))
+  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_BODY, 16); sectionTitle:SetPoint("TOPLEFT", 18, -118); sectionTitle:SetTextColor(unpack(T.gold))
   sectionTitle:SetShadowColor(0, 0, 0, 1); sectionTitle:SetShadowOffset(1, -1)
   frame.sectionSub = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
 
@@ -2223,7 +2224,7 @@ local function build()
   for _, subs in pairs(GROUPS) do
     for _, sub in ipairs(subs) do
       local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
-      b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"); b.text:SetPoint("CENTER"); b.text:SetText(SUBLABEL[sub])
+      b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12); b.text:SetPoint("CENTER"); b.text:SetText(SUBLABEL[sub])
       b:SetSize(b.text:GetStringWidth() + 26, 24)
       b:SetScript("OnClick", function() state.tab = sub; scroll:SetVerticalScroll(0); RG.RefreshUINow() end)
       frame.subBtns[sub] = b
@@ -2231,14 +2232,14 @@ local function build()
   end
 
   frame.near = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-  frame.near:SetSize(24, 24); frame.near:SetPoint("TOPRIGHT", -112, -86)
+  frame.near:SetSize(24, 24); frame.near:SetPoint("TOPRIGHT", -112, -116)
   frame.near:SetChecked(state.near)
   frame.near.label = frame.near:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level")
   frame.near:SetScript("OnClick", function(self) state.near = self:GetChecked(); RG.RefreshUI() end)
   -- settings search
   frame.search = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
-  frame.search:SetSize(150, 20); frame.search:SetPoint("TOPRIGHT", -40, -88)
+  frame.search:SetSize(150, 20); frame.search:SetPoint("TOPRIGHT", -24, -118)
   frame.search:SetAutoFocus(false)
   frame.search.hint = frame.search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   frame.search.hint:SetPoint("LEFT", 4, 0); frame.search.hint:SetText("Search settings")
@@ -2255,11 +2256,19 @@ local function build()
   frame.scan:SetScript("OnClick", function() RG.ScanAH(true) end)
 
   scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-  scroll:SetPoint("TOPLEFT", 18, -128); scroll:SetPoint("BOTTOMRIGHT", -38, 36)
+  scroll:SetPoint("TOPLEFT", 18, -158); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
+  pcall(function()   -- slim scroll bar: no arrow buttons, a thin grey thumb
+    local sb = scroll.ScrollBar
+    if not sb then return end
+    for _, k in ipairs({ "ScrollUpButton", "ScrollDownButton" }) do if sb[k] then sb[k]:Hide(); sb[k]:SetAlpha(0); sb[k]:EnableMouse(false) end end
+    local th = sb.GetThumbTexture and sb:GetThumbTexture()
+    if th then th:SetTexture(WHITE); th:SetVertexColor(0.35, 0.35, 0.35, 1); th:SetWidth(5) end
+    if sb.SetWidth then sb:SetWidth(8) end
+  end)
   content = CreateFrame("Frame", nil, scroll); content:SetSize(W - 56, 10)
   scroll:SetScrollChild(content)
 
-  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.25)
+  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(unpack(T.line))
   footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 7)
   -- long footers wrap onto a second line instead of running off the window
   footer:SetWidth(W - 44); footer:SetHeight(22); footer:SetJustifyH("LEFT"); footer:SetJustifyV("MIDDLE"); footer:SetWordWrap(true)

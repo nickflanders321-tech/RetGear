@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.63.0
+- **New Graphite look:** the classic ornate frames are gone. Waypath+ is now flat near-black with thin lines, a single teal accent and the Inter typeface (SIL Open Font License, included). Tabs run along the top, list items are separated by hairlines instead of boxes, buttons and the scroll bar are slim, and the quest tracker, setup and toasts match.
+- **Cleaner arrow:** no more dark disc or gold ring. The solid 3D arrow floats on its own, larger, with a crisp name above and distance below in Inter, and gives a small pop when its target changes.
+
 ## v0.62.0
 - **Proper pathing with Shortest Path Forever:** if you install the free add-on Shortest Path Forever (by cjber), Waypath+ now hands every pin to it. It plans a real walking route around mountains, cliffs and cave mouths (and boats, zeppelins and flights) from a baked map of the world, and its arrow and tracker guide you. Our own arrow steps aside while it's guiding. Turn it off in Settings if you prefer ours. Without it, the arrow still learns your walked paths as before.
 

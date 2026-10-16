@@ -10,8 +10,15 @@ do
 end
 
 -- Classic WoW text colors: quest-log gold, quest-complete green, error red, poor-quality grey
-local GOLD = "|cffffd100"
+local GOLD = "|cff4fd1c5"   -- the accent (Graphite look: teal)
 local GREEN, RED, GREY = "|cff40c040", "|cffff3333", "|cffa0a0a0"
+-- Inter (SIL OFL) ships in Media/Fonts; fall back to the game's own fonts if it can't load.
+RG.FONTS = { regular = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-Regular.ttf", medium = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-Medium.ttf", semibold = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-SemiBold.ttf" }
+function RG.Font(fs, weight, size, flags)
+  local ok = fs:SetFont(RG.FONTS[weight] or RG.FONTS.regular, size, flags or "")
+  if not ok then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
+end
+RG.ACCENT = { 0.31, 0.82, 0.77 }
 RG.COLORS = { GOLD = GOLD, GREEN = GREEN, RED = RED, GREY = GREY }
 
 function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "Waypath+|r " .. tostring(msg)) end

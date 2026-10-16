@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 1, 0.82, 0 }
+local GOLDC = { 0.31, 0.82, 0.77 }
 
 -- Settings with their defaults. The Settings tab shows these as checkboxes.
 RG.OPTIONS = {
@@ -27,35 +27,24 @@ end
 local function sound(id) if RG.Opt("sounds") and PlaySound and id then pcall(PlaySound, id) end end
 local SND = SOUNDKIT or {}
 
--- Classic tooltip-style frame: dark tooltip background with the beveled tooltip
--- border. Small frames (under 40px) get a thinner border so icons stay visible.
+-- Flat panel: near-black with a one pixel border.
 local function backdrop(f, bg, edge)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  local small = (f.GetHeight and (f:GetHeight() or 0) > 0 and f:GetHeight() < 40)
-  f:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 16, edgeSize = small and 10 or 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
-  f:SetBackdropColor(bg[1], bg[2], bg[3], bg[4] or 1)
-  f:SetBackdropBorderColor(edge[1], edge[2], edge[3], math.max(edge[4] or 1, 0.75))
+  f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+  f:SetBackdropColor(bg[1] * 0.4 + 0.06, bg[2] * 0.4 + 0.06, bg[3] * 0.4 + 0.06, bg[4] or 1)   -- neutral near-black whatever tint was asked for
+  f:SetBackdropBorderColor(0.22, 0.22, 0.22, 1)
 end
 -- Classic dialog frame: the stone-and-gold border used by Blizzard's popups.
+-- The Graphite look: a flat near-black window with a one pixel border.
 function RG.DialogBackdrop(f)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  f:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } })
-  f:SetBackdropColor(1, 1, 1, 1); f:SetBackdropBorderColor(1, 1, 1, 1)
-  -- solid dark layer underneath, so text stays readable even if a client lacks the dialog texture
-  if type(rawget(f, "rgSolid")) ~= "table" then
-    f.rgSolid = f:CreateTexture(nil, "BACKGROUND", nil, -8)
-    f.rgSolid:SetPoint("TOPLEFT", 11, -12); f.rgSolid:SetPoint("BOTTOMRIGHT", -12, 11)
-    f.rgSolid:SetColorTexture(0.04, 0.035, 0.03, 0.92)
-  end
+  f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+  f:SetBackdropColor(0.078, 0.078, 0.078, 0.97); f:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
 end
--- Gold title banner across the top edge of a dialog (UI-DialogBox-Header).
-function RG.DialogHeader(f, text, width)
-  local h = f:CreateTexture(nil, "ARTWORK"); h:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-  h:SetSize(width or 300, 64); h:SetPoint("TOP", 0, 12)
-  local t = f:CreateFontString(nil, "OVERLAY", "GameFontNormal"); t:SetPoint("TOP", h, "TOP", 0, -14); t:SetText(text)
-  return h, t
+-- Window title, top left. (Returns nil for the old banner texture, then the text.)
+function RG.DialogHeader(f, text)
+  local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "semibold", 15); t:SetPoint("TOPLEFT", 18, -14); t:SetText(text); t:SetTextColor(0.93, 0.93, 0.93)
+  return nil, t
 end
 RG.Backdrop = backdrop
 
@@ -273,7 +262,7 @@ function RG.ShowWelcome()
   RG.DialogHeader(f, "Waypath+", 300)
   local crest = f:CreateTexture(nil, "ARTWORK"); crest:SetSize(52, 52); crest:SetPoint("TOP", 0, -30); crest:SetTexture(RG.LOGO_LARGE)
   local ring = f:CreateTexture(nil, "OVERLAY"); ring:SetSize(74, 74); ring:SetPoint("CENTER", crest, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-  local t = f:CreateFontString(nil, "OVERLAY"); t:SetFont("Fonts\\MORPHEUS.TTF", 24, ""); t:SetPoint("TOP", crest, "BOTTOM", 0, -12); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); t:SetShadowColor(0, 0, 0, 1); t:SetShadowOffset(1, -1)
+  local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "semibold", 24); t:SetPoint("TOP", crest, "BOTTOM", 0, -12); t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); t:SetShadowColor(0, 0, 0, 1); t:SetShadowOffset(1, -1)
   t:SetText("Welcome, " .. (UnitName("player") or "adventurer") .. "!")
   local b = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight"); b:SetPoint("TOP", t, "BOTTOM", 0, -12); b:SetWidth(390); b:SetJustifyH("LEFT"); b:SetSpacing(2)
   b:SetWidth(410)

@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 1, 0.82, 0 }
+local GOLDC = { 0.31, 0.82, 0.77 }
 local W = 300
 local tr, lines, collapsed
 -- marks the line the arrow is pointing at
@@ -193,8 +193,8 @@ local function line(i)
   if lines[i] then return lines[i] end
   local b = CreateFrame("Button", nil, tr.body)
   b:SetWidth(W - 24)
-  b.text = b:CreateFontString(nil, "OVERLAY"); b.text:SetFont("Fonts\\ARIALN.TTF", 13, ""); b.text:SetPoint("TOPLEFT", 16, 0); b.text:SetWidth(W - 44); b.text:SetJustifyH("LEFT"); b.text:SetWordWrap(true)
-  b.right = b:CreateFontString(nil, "OVERLAY"); b.right:SetFont("Fonts\\FRIZQT__.TTF", 10, ""); b.right:SetPoint("TOPRIGHT", 0, -1); b.right:SetJustifyH("RIGHT")
+  b.text = b:CreateFontString(nil, "OVERLAY"); RG.Font(b.text, "medium", (13) * 0.93); b.text:SetPoint("TOPLEFT", 16, 0); b.text:SetWidth(W - 44); b.text:SetJustifyH("LEFT"); b.text:SetWordWrap(true)
+  b.right = b:CreateFontString(nil, "OVERLAY"); RG.Font(b.right, "medium", (10) * 0.93); b.right:SetPoint("TOPRIGHT", 0, -1); b.right:SetJustifyH("RIGHT")
   b.right:SetShadowColor(0, 0, 0, 1); b.right:SetShadowOffset(1, -1)
   b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 0.82, 0, 0.08)
   b.box = b:CreateTexture(nil, "ARTWORK"); b.box:SetSize(10, 10); b.box:SetPoint("TOPLEFT", 1, -2)
@@ -256,7 +256,7 @@ local function build()
 
   local function hdrBtn(label, x, fn, tip)
     local b = CreateFrame("Button", nil, tr); b:SetSize(20, 20); b:SetPoint("TOPRIGHT", x, -8)
-    b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\ARIALN.TTF", 15, ""); b.t:SetPoint("CENTER"); b.t:SetText(label); b.t:SetTextColor(0.6, 0.6, 0.6)
+    b.t = b:CreateFontString(nil, "OVERLAY"); RG.Font(b.t, "medium", (15) * 0.93); b.t:SetPoint("CENTER"); b.t:SetText(label); b.t:SetTextColor(0.6, 0.6, 0.6)
     b:SetScript("OnClick", fn)
     b:SetScript("OnEnter", function(self) self.t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(tip); GameTooltip:Show() end)
     b:SetScript("OnLeave", function(self) self.t:SetTextColor(0.6, 0.6, 0.6); GameTooltip:Hide() end)
@@ -311,11 +311,11 @@ local function section(n, y, label, key, right)
     end
     b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
   end
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize(12), "")
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); RG.Font(b.text, "medium", (fontSize(12)) * 0.93)
   b.text:SetWidth(W - 24); b.text:SetWordWrap(false)
   b.text:SetShadowColor(0, 0, 0, 1); b.text:SetShadowOffset(1, -1)
   b.text:SetText((key and (GREY .. (isFolded and "+ " or "- ") .. "|r") or "") .. GOLD .. label .. "|r")
-  b.right:SetFont("Fonts\\FRIZQT__.TTF", fontSize(10), ""); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
+  RG.Font(b.right, "medium", (fontSize(10)) * 0.93); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
   return y + 18, isFolded
 end
@@ -326,9 +326,9 @@ local function item(n, y, text, opts)
   b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
   b.onDoubleClick = opts.wp and function() RG.ArrowTo(opts.wp) end or nil
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
-  b.right:SetFont("Fonts\\FRIZQT__.TTF", fontSize(10.5), ""); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
+  RG.Font(b.right, "medium", (fontSize(10.5)) * 0.93); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); b.text:SetFont("Fonts\\FRIZQT__.TTF", fontSize(11.5), "")
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); RG.Font(b.text, "medium", (fontSize(11.5)) * 0.93)
   b.text:SetWidth(W - 24 - indent - rw)
   b.text:SetWordWrap(not opts.single)
   if b.text.SetMaxLines then b.text:SetMaxLines(opts.single and 1 or 0) end

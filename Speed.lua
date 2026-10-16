@@ -4,7 +4,7 @@
 -- leveling pace per level, and a bag-space reminder.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
-local GOLDC = { 1, 0.82, 0 }
+local GOLDC = { 0.31, 0.82, 0.77 }
 
 for _, o in ipairs({
   { key = "autoQuest",     label = "Auto accept and turn in quests (hold Shift to pause)", default = true },
@@ -526,36 +526,31 @@ end
 local function buildArrow()
   if arrow then return end
   arrow = CreateFrame("Frame", "WaypathArrow", UIParent)
-  arrow:SetSize(84, 84); arrow:SetMovable(true); arrow:EnableMouse(true); arrow:RegisterForDrag("LeftButton"); arrow:SetClampedToScreen(true)
+  arrow:SetSize(110, 110); arrow:SetMovable(true); arrow:EnableMouse(true); arrow:RegisterForDrag("LeftButton"); arrow:SetClampedToScreen(true)
   arrow:SetScale(RG.db.arrowScale or 1)
   local pos = RG.db.arrowPos
   if pos then arrow:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else arrow:SetPoint("TOP", UIParent, "TOP", 0, -150) end
   arrow:SetScript("OnDragStart", arrow.StartMoving)
   arrow:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, _, x, y = self:GetPoint(); RG.db.arrowPos = { p, x, y } end)
   -- disc and ring
-  arrow.disc = arrow:CreateTexture(nil, "BACKGROUND"); arrow.disc:SetSize(64, 64); arrow.disc:SetPoint("CENTER")
-  arrow.disc:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"); arrow.disc:SetVertexColor(0, 0, 0, 0.55)
-  arrow.ring = arrow:CreateTexture(nil, "BORDER"); arrow.ring:SetSize(108, 108); arrow.ring:SetPoint("TOPLEFT", arrow.disc, "TOPLEFT", -1, 1)
-  arrow.ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder"); arrow.ring:SetVertexColor(1, 0.9, 0.6, 0.9)
-  arrow.glow = arrow:CreateTexture(nil, "ARTWORK"); arrow.glow:SetSize(62, 62); arrow.glow:SetPoint("CENTER")
-  arrow.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border"); arrow.glow:SetBlendMode("ADD"); arrow.glow:SetAlpha(0)
+  arrow.glow = arrow:CreateTexture(nil, "ARTWORK"); arrow.glow:SetAlpha(0)   -- kept for old callers; the arrow has no disc or ring any more
   -- the arrow itself
-  arrow.tex = arrow:CreateTexture(nil, "OVERLAY"); arrow.tex:SetSize(46, 46); arrow.tex:SetPoint("CENTER")
+  arrow.tex = arrow:CreateTexture(nil, "OVERLAY"); arrow.tex:SetSize(62, 62); arrow.tex:SetPoint("CENTER")
   arrow.tex:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3])
   -- 3D look: a pre-rendered solid arrow (tools/media/arrow3d.py), one sprite-sheet frame per heading,
   -- tinted like the flat arrow, with a highlight added on top
-  arrow.sheet = arrow:CreateTexture(nil, "OVERLAY"); arrow.sheet:SetSize(78, 78); arrow.sheet:SetPoint("CENTER", 0, 2)
+  arrow.sheet = arrow:CreateTexture(nil, "OVERLAY"); arrow.sheet:SetSize(100, 100); arrow.sheet:SetPoint("CENTER", 0, 0)
   arrow.sheet:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3D")
-  arrow.spec = arrow:CreateTexture(nil, "OVERLAY", nil, 2); arrow.spec:SetSize(78, 78); arrow.spec:SetPoint("CENTER", 0, 2)
+  arrow.spec = arrow:CreateTexture(nil, "OVERLAY", nil, 2); arrow.spec:SetSize(100, 100); arrow.spec:SetPoint("CENTER", 0, 0)
   arrow.spec:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3DSpec"); arrow.spec:SetBlendMode("ADD")
-  arrow.check = arrow:CreateTexture(nil, "OVERLAY"); arrow.check:SetSize(34, 34); arrow.check:SetPoint("CENTER")
+  arrow.check = arrow:CreateTexture(nil, "OVERLAY"); arrow.check:SetSize(44, 44); arrow.check:SetPoint("CENTER")
   arrow.check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready"); arrow.check:Hide()
   -- text: destination above, distance and time below, travel hint under that
-  arrow.label = arrow:CreateFontString(nil, "OVERLAY"); arrow.label:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE"); arrow.label:SetPoint("BOTTOM", arrow, "TOP", 0, -4)
-  arrow.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); arrow.label:SetWidth(220); arrow.label:SetWordWrap(false)
-  arrow.dist = arrow:CreateFontString(nil, "OVERLAY"); arrow.dist:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE"); arrow.dist:SetPoint("TOP", arrow, "BOTTOM", 0, 6)
-  arrow.hint = arrow:CreateFontString(nil, "OVERLAY"); arrow.hint:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE"); arrow.hint:SetPoint("TOP", arrow.dist, "BOTTOM", 0, -2)
-  arrow.hint:SetTextColor(0.8, 0.8, 0.8); arrow.hint:SetWidth(240); arrow.hint:SetWordWrap(true)
+  arrow.label = arrow:CreateFontString(nil, "OVERLAY"); RG.Font(arrow.label, "semibold", 13); arrow.label:SetPoint("BOTTOM", arrow, "TOP", 0, 2); arrow.label:SetShadowColor(0, 0, 0, 0.9); arrow.label:SetShadowOffset(1, -1)
+  arrow.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); arrow.label:SetWidth(260); arrow.label:SetWordWrap(false)
+  arrow.dist = arrow:CreateFontString(nil, "OVERLAY"); RG.Font(arrow.dist, "medium", 16); arrow.dist:SetPoint("TOP", arrow, "BOTTOM", 0, 2); arrow.dist:SetShadowColor(0, 0, 0, 0.9); arrow.dist:SetShadowOffset(1, -1)
+  arrow.hint = arrow:CreateFontString(nil, "OVERLAY"); RG.Font(arrow.hint, "regular", 11); arrow.hint:SetPoint("TOP", arrow.dist, "BOTTOM", 0, -2)
+  arrow.hint:SetTextColor(0.78, 0.82, 0.85); arrow.hint:SetShadowColor(0, 0, 0, 0.9); arrow.hint:SetShadowOffset(1, -1); arrow.hint:SetWidth(260); arrow.hint:SetWordWrap(true)
   -- right-click or double-click to turn it off; mouse wheel to resize
   local lastUp = 0
   arrow:SetScript("OnMouseUp", function(_, btn)
@@ -596,7 +591,7 @@ local function buildArrow()
   end
   arrow:SetScript("OnUpdate", function(self, dt)
     sync3d(self)
-    if self.pulse > 0 then self.pulse = math.max(0, self.pulse - dt * 2); self.glow:SetAlpha(self.pulse * 0.8) end
+    if self.pulse > 0 then self.pulse = math.max(0, self.pulse - dt * 2.5); local k = 1 + 0.18 * self.pulse; self.sheet:SetSize(100 * k, 100 * k); self.spec:SetSize(100 * k, 100 * k) end
     if arrivedAt then
       local t = GetTime() - arrivedAt
       self:SetAlpha(math.max(0, 1 - math.max(0, t - 1.2) * 2))
@@ -630,7 +625,7 @@ local function buildArrow()
     local d = math.sqrt(dx * dx + dy * dy)
     if d < 10 then
       arrivedAt = GetTime()
-      self.tex:Hide(); self.check:Show(); self.glow:SetAlpha(0.9)
+      self.tex:Hide(); self.check:Show()
       self.dist:SetText(GREEN .. "Arrived|r"); self.hint:SetText("")
       if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960) end
       return
