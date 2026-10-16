@@ -80,6 +80,8 @@ AltGuide.lua
 Camp.lua
 Fish.lua
 FishLoot.lua
+FlightPaths.lua
+Flights.lua
 FishMode.lua
 Path.lua
 Speed.lua

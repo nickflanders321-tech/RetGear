@@ -47,8 +47,8 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
-local GROUPS = { prof = { "prof", "fish" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
-local SUBLABEL = { prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
+local GROUPS = { route = { "route", "flights" }, prof = { "prof", "fish" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
+local SUBLABEL = { route = "Leveling route", flights = "Flight paths", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -1620,6 +1620,43 @@ local function renderCamp()
   return n
 end
 
+local function renderFlights()
+  local n = 0
+  local list = RG.FlightList and RG.FlightList() or {}
+  local sq = (state.search or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+  local learned, todo, hits = {}, {}, 0
+  for _, e in ipairs(list) do
+    local hay = (e.node .. " " .. e.zone .. " " .. (e.npc or "")):lower()
+    if sq == "" or hay:find(sq, 1, true) then
+      hits = hits + 1
+      if e.known == true then learned[#learned + 1] = e else todo[#todo + 1] = e end
+    end
+  end
+  local function row(e)
+    n = n + 1
+    local r = getRow(n)
+    local status = e.known == true and (GREEN .. "Learned|r") or (e.known == false and (GOLD .. "Not learned|r") or (GREY .. "Open a flight master once|r"))
+    local right2 = e.dist and (e.dist >= 1000 and string.format("%.1f km", e.dist / 1000) or string.format("%d yd", e.dist)) or ""
+    setItem(r, nil, nil, "|cffffffff" .. e.node .. "|r", e.zone .. GREY .. "  ·  " .. (e.npc or "") .. "  ·  " .. string.format("%.0f, %.0f", e.x, e.y) .. "|r", status, right2, e.known == false and "gold" or nil)
+    r.icon:SetTexture("Interface\\Icons\\Ability_Mount_Gryphon_01")
+    local wp = e.wp
+    r.onClick = function() RG.Follow(wp) end
+    r.onDoubleClick = function() RG.ArrowTo(wp) end
+    r.onRightClick = function() RG.PinWaypoint(wp) end
+    r.tip = "Click to be guided to " .. e.node .. " (map pin and arrow). Right-click to pin only."
+  end
+  if hits == 0 then n = n + 1; setHeader(getRow(n), sq ~= "" and ("No flight path matches \"" .. state.search .. "\"") or "No flight path data") return n end
+  if #todo > 0 then
+    n = n + 1; setHeader(getRow(n), (sq == "" and "Flight paths to learn" or "Not learned") .. "  ·  " .. #todo)
+    for _, e in ipairs(todo) do row(e) end
+  end
+  if #learned > 0 then
+    n = n + 1; setHeader(getRow(n), "Learned  ·  " .. #learned)
+    for _, e in ipairs(learned) do row(e) end
+  end
+  return n
+end
+
 local function renderFish()
   local n = 0
   local p = RG.Professions()
@@ -2092,6 +2129,7 @@ local TITLES = {
   settings = { "Settings", "Turn Waypath+'s helpers on or off" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
+  flights = { "Flight paths", "Every flight master for your faction: click one and Waypath+ guides you there" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
   group = { "Group play", "How grouping is going, your class duties, shared quests and finding a group" },
@@ -2106,6 +2144,7 @@ local FOOTERS = {
   ah    = "Opening the AH refreshes old prices  ·  your own searches pause the scan  ·  /wp alert [item] 25",
   settings = "Settings are saved per character (prices and window positions are shared)",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
+  flights = "Click a flight path for the arrow  ·  fly there once to learn it  ·  /wp fp points at the nearest one you haven't learned",
   fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
   mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
@@ -2156,6 +2195,7 @@ function RG.RefreshUINow()
   elseif state.tab == "mail" then n = renderMail()
   elseif state.tab == "camp" then n = renderCamp()
   elseif state.tab == "fish" then n = renderFish()
+  elseif state.tab == "flights" then n = renderFlights()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
@@ -2165,8 +2205,8 @@ function RG.RefreshUINow()
     if frame.search then frame.search:SetText("") end
   end
   if frame.search then
-    frame.search:SetShown(state.tab == "settings" or state.tab == "route")
-    frame.search.hint:SetText(state.tab == "route" and "Search the route" or "Search settings")
+    frame.search:SetShown(state.tab == "settings" or state.tab == "route" or state.tab == "flights")
+    frame.search.hint:SetText(state.tab == "route" and "Search the route" or (state.tab == "flights" and "Search flight paths" or "Search settings"))
   end
   for _, b in ipairs(frame.hdr or {}) do
     local on = b.isOn()

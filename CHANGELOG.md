@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.75.0
+- **Flight paths:** a new "Flight paths" tab beside the leveling route lists every Classic flight master for your faction (61 in the game data, with neutral ones), split into ones to learn and ones you have. Click a row and Waypath+ pins it and turns the arrow on; right-click pins without the arrow, double-click toggles the arrow. Rows are sorted by distance when you are on the same continent, and the search box filters them.
+- `/wp fp` points the arrow at the nearest flight path you have not learned yet; `/wp fp list` opens the tab. A path counts as learned once you have opened any flight master's map with that character.
+
 ## v0.74.0
 - **Gathering route:** `/wp node` (also /wp ore, /wp herb) points the arrow at the nearest known ore or herb spot you can still gather for skill, then the next one as you reach it (spots you just visited are skipped for ten minutes).
 - **Travel time:** "Getting there" on the tracker and Route tab now ends with an estimate, for example "(about 19 min)".
