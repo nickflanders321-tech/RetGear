@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.61.2
+- The dark look is removed again (the Look button and /wp theme are gone); Waypath+ keeps its classic look.
+
 ## v0.61.1
 - **Real 3D arrow:** replaced the layered look with a properly rendered solid arrow with lighting and a highlight, drawn from 100 pre-rendered angles. /wp arrow3d off brings back the flat one.
 

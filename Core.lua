@@ -797,8 +797,6 @@ SlashCmdList.WAYPATH = function(msg)
   cmd = cmd and cmd:lower() or ""
   if cmd == "" then
     if RG.ToggleUI then RG.ToggleUI() end
-  elseif cmd == "theme" then
-    if RG.SetTheme and RG.SetTheme(rest) then RG.Print("Look: " .. rest) else RG.Print("/wp theme classic | dark") end
   elseif cmd == "arrow3d" then
     RG.db.arrow3d = (rest ~= "off"); RG.Print("3D arrow " .. (RG.db.arrow3d and "on" or "off"))
   elseif cmd == "trail" then

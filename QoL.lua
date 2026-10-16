@@ -38,31 +38,17 @@ local function backdrop(f, bg, edge)
   f:SetBackdropBorderColor(edge[1], edge[2], edge[3], math.max(edge[4] or 1, 0.75))
 end
 -- Classic dialog frame: the stone-and-gold border used by Blizzard's popups.
--- Themes: "classic" keeps the Blizzard dialog look, "dark" is a flat, cool, low-clutter version.
-RG.THEMES = {
-  classic = { solid = { 0.04, 0.035, 0.03, 0.92 }, panel = { 0.09, 0.08, 0.07, 0.92 }, edge = { 0.55, 0.5, 0.42, 0.85 }, row = { 0.07, 0.065, 0.06 }, rowEdge = { 0.45, 0.42, 0.36 } },
-  dark    = { solid = { 0.04, 0.045, 0.06, 0.97 }, panel = { 0.075, 0.085, 0.11, 0.92 }, edge = { 0.2, 0.28, 0.37, 0.9 }, row = { 0.06, 0.07, 0.095 }, rowEdge = { 0.2, 0.28, 0.37 }, flat = true, border = { 0.25, 0.4, 0.55, 1 } },
-}
-function RG.Theme() return RG.THEMES[(RG.db and RG.db.theme) or "classic"] or RG.THEMES.classic end
 function RG.DialogBackdrop(f)
   if not f.SetBackdrop then Mixin(f, BackdropTemplateMixin) end
-  local th = RG.Theme()
-  if th.flat then
-    f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
-    f:SetBackdropColor(unpack(th.solid)); f:SetBackdropBorderColor(unpack(th.border))
-  else
-    f:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-      tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } })
-    f:SetBackdropColor(1, 1, 1, 1); f:SetBackdropBorderColor(1, 1, 1, 1)
-  end
+  f:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } })
+  f:SetBackdropColor(1, 1, 1, 1); f:SetBackdropBorderColor(1, 1, 1, 1)
   -- solid dark layer underneath, so text stays readable even if a client lacks the dialog texture
   if type(rawget(f, "rgSolid")) ~= "table" then
     f.rgSolid = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    f.rgSolid:SetPoint("TOPLEFT", 11, -12); f.rgSolid:SetPoint("BOTTOMRIGHT", -12, 11)
+    f.rgSolid:SetColorTexture(0.04, 0.035, 0.03, 0.92)
   end
-  f.rgSolid:ClearAllPoints()
-  if th.flat then f.rgSolid:SetPoint("TOPLEFT", 1, -1); f.rgSolid:SetPoint("BOTTOMRIGHT", -1, 1)
-  else f.rgSolid:SetPoint("TOPLEFT", 11, -12); f.rgSolid:SetPoint("BOTTOMRIGHT", -12, 11) end
-  f.rgSolid:SetColorTexture(unpack(th.solid))
 end
 -- Gold title banner across the top edge of a dialog (UI-DialogBox-Header).
 function RG.DialogHeader(f, text, width)
