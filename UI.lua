@@ -269,7 +269,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r, "TOPLEFT", leftX, -top)
   r.sub:ClearAllPoints(); r.sub:SetPoint("TOPLEFT", r.title, "BOTTOMLEFT", 0, -gap)
   if accent then
-    local c = accent == "green" and T.green or (accent == "purple" and T.purple or (accent == "blue" and T.blue or T.gold))
+    local c = accent == "green" and T.green or ((accent == "purple" or accent == "blue") and T.dim or T.gold)   -- teal for what matters, grey for the rest
     r.stripe:SetColorTexture(c[1], c[2], c[3], 0.9); r.stripe:Show()
   end
   r:Show()
@@ -1086,6 +1086,20 @@ local function renderRoute()
   end
   local function count(where) local c = 0; for _, e in ipairs(entries) do if e.where == where then c = c + 1 end end; return c end
 
+  -- nothing at your exact level (a new character that ticked its starting zone, say): the next zone is "Now"
+  if count("now") == 0 then
+    for _, e in ipairs(entries) do if e.where == "next" then e.where = "now"; e.upNext = true; break end end
+  end
+  -- Now: always open, steps showing
+  local upNext = false
+  for _, e in ipairs(entries) do if e.upNext then upNext = true end end
+  if section((upNext and "Up next" or "Now") .. "  ·  level " .. lvl, "secNow", nil, true) then
+    local any = false
+    for _, e in ipairs(entries) do if e.where == "now" then card(e, true); any = true end end
+    if not any then
+      n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Everything for your level is done.|r", "Your next zones are under Coming up.", "", "", "green", nil, true)
+    end
+  end
   -- leveling pace: one line (click for splits)
   if RG.Pace and not (RG.IsAlt and RG.IsAlt()) then
     local cur, last, avg = RG.Pace()
@@ -1111,14 +1125,6 @@ local function renderRoute()
     end
   end
 
-  -- Now: always open, steps showing
-  if section("Now  ·  level " .. lvl, "secNow", nil, true) then
-    local any = false
-    for _, e in ipairs(entries) do if e.where == "now" then card(e, true); any = true end end
-    if not any then
-      n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Everything for your level is done.|r", "Your next zones are under Coming up.", "", "", "green", nil, true)
-    end
-  end
   -- Coming up: the next 5 levels, closed until you open them
   local nNext = count("next")
   if nNext > 0 and section("Coming up  ·  next 5 levels", "secNext", nNext .. " to do", true) then
@@ -1126,7 +1132,7 @@ local function renderRoute()
   end
   -- Later: the rest of the route, by level bracket
   local nLater = count("later")
-  if nLater > 0 and section("Later", "secLater", nLater .. " to do", false) then
+  if nLater > 0 and lvl > 10 and section("Later", "secLater", nLater .. " to do", false) then
     local lastBracket
     for _, e in ipairs(entries) do
       if e.where == "later" then
@@ -2291,6 +2297,15 @@ local function build()
     local th = sb.GetThumbTexture and sb:GetThumbTexture()
     if th then th:SetTexture(WHITE); th:SetVertexColor(0.35, 0.35, 0.35, 1); th:SetWidth(5) end
     if sb.SetWidth then sb:SetWidth(8) end
+    -- a faint track, and a thumb as long as the visible share of the list (the stock one is a fixed little stub)
+    local track = sb:CreateTexture(nil, "BACKGROUND"); track:SetAllPoints(sb); track:SetColorTexture(1, 1, 1, 0.05)
+    local function sizeThumb()
+      if not th then return end
+      local range, view = scroll:GetVerticalScrollRange() or 0, scroll:GetHeight() or 0
+      th:SetHeight(range > 0 and math.max(40, view * view / (view + range)) or 40)
+    end
+    scroll:HookScript("OnScrollRangeChanged", sizeThumb)
+    sizeThumb()
   end)
   content = CreateFrame("Frame", nil, scroll); content:SetSize(W - 56, 10)
   scroll:SetScrollChild(content)

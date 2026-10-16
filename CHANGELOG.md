@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.68.0
+- **A new character no longer sees "Everything for your level is done."** When nothing matches your exact level (for example after ticking the starting zone), the next zone is shown as "Up next" instead.
+- Levels 1-10 hide the long "Later" list so the first screen is just what to do now and what comes next.
+- The leveling pace card moved from the top to below "Now".
+- The scroll bar has a real thumb (as long as the visible part of the list) on a faint track, instead of a small stub.
+- Fewer colours: the teal accent marks what matters; dungeon and travel rows use a quiet grey bar.
+- The tracker panel is darker (about 85% opaque) with a thin grey border, so text reads over snow and sand.
+
 ## v0.67.1
 - **No more accidental skips:** steps tick themselves when you finish them in game. Ticking one by hand now needs Shift-click (on the Route tab and on the tracker), so a stray click can't mark a step done. Clicking a step you ticked still un-ticks it, and Undo is still offered.
 - Fixed dungeons showing "Quests done" on a new character: quests you can't take yet no longer count as finished.

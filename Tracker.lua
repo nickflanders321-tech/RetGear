@@ -226,7 +226,7 @@ end
 local function build()
   tr = CreateFrame("Frame", "WaypathTracker", UIParent, "BackdropTemplate")
   tr:SetWidth(W); tr:SetClampedToScreen(true); tr:SetMovable(true); tr:EnableMouse(true); tr:SetFrameStrata("MEDIUM")
-  RG.Backdrop(tr, { 0.02, 0.02, 0.02, 0.6 }, { 0.6, 0.55, 0.45, 0.6 })
+  RG.Backdrop(tr, { 0.04, 0.04, 0.045, 0.84 }, { 0.22, 0.22, 0.24, 0.9 })   -- dense enough to read over snow and sand
   local pos = RG.db.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   tr:RegisterForDrag("LeftButton")
