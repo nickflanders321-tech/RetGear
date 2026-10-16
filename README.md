@@ -27,6 +27,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Bag icons**: a green arrow on items that are upgrades for you, your 2nd spec's icon on pieces for your 2nd set.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Ore alerts**: a heads-up when you walk near a spot where a vein you can mine (and that still gives skill) spawns, with direction and distance.
+- **Flight paths**: a tab listing every flight master for your faction (learned or not, nearest first); click one and the arrow guides you there.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
 - **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Double-click the arrow, or right-click it, to turn it off; the arrow switch in the tracker's header turns it on or off for good. Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/wp way 45 60` pins any spot.
 
@@ -74,6 +75,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp` | Open or close the window |
 | `/wp group` · `/wp lfg Scarlet Monastery` | Group tab · post an LFG message |
 | `/wp spec` · `/wp heal` (2nd spec gear) · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp settings` | Open that tab |
+| `/wp fp` · `/wp fp list` | Arrow to the nearest flight path you have not learned · open the Flight paths tab |
 | `/wp auto` | Auto accept / turn in on or off |
 | `/wp next` | Pin your nearest quest objective (or turn-in) |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |

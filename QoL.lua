@@ -311,7 +311,7 @@ local TOUR = {
   { "The window", "Open it from the tracker book, the minimap button or " .. GOLD .. "/wp|r.\n\n"
     .. "Route has every zone and step (with a search box), Gear guide and My gear compare items, Professions and Gold & AH help your trades. "
     .. "The small buttons at the top turn the arrow, tracker and sounds on and off, and report a wrong step." },
-  { "And more", GOLD .. "/wp node|r points the arrow at the next ore or herb you can still gather.\n"
+  { "And more", GOLD .. "/wp node|r points the arrow at the next ore or herb you can still gather, " .. GOLD .. "/wp fp|r at the nearest flight path you have not learned.\n"
     .. GOLD .. "Fishing|r hides the interface and shows your lure, food and campfire, what each catch is worth and what to do with it.\n"
     .. GOLD .. "/wp report|r copies the step you are on for a bug report. " .. GOLD .. "/wp setup|r changes your choices any time." },
 }

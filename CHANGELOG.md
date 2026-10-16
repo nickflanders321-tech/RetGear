@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.75.1
+- Polish: `/wp fp` is in the tour, the `/wp` help and the README.
+
 ## v0.75.0
 - **Flight paths:** a new "Flight paths" tab beside the leveling route lists every Classic flight master for your faction (61 in the game data, with neutral ones), split into ones to learn and ones you have. Click a row and Waypath+ pins it and turns the arrow on; right-click pins without the arrow, double-click toggles the arrow. Rows are sorted by distance when you are on the same continent, and the search box filters them.
 - `/wp fp` points the arrow at the nearest flight path you have not learned yet; `/wp fp list` opens the tab. A path counts as learned once you have opened any flight master's map with that character.
