@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.91.0
+- Right-clicking a green "turn in" quest in the sidebar now points the arrow at the hand-in, even for quests our data does not cover yet: the hand-in spot is read from the game's own quest map. If no spot is known, it says so in chat instead of doing nothing.
+
 ## v0.90.0
 - Every place and NPC card now has its own picture: a little landscape (sky, sun or moon, two ridge lines and a landmark) worked out from the card itself, so no two cards look alike. NPCs keep a small portrait badge on top. The same art shows on the Arena board.
 - /wp arena now reports a problem in chat instead of doing nothing if the window cannot open.

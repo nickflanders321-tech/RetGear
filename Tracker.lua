@@ -598,7 +598,10 @@ function RG.RefreshTracker()
                       if q.complete and q.wp and not (IsShiftKeyDown and IsShiftKeyDown()) then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end
                     end,
                     -- right-click: the arrow follows this quest
-                    onRightClick = q.wp and function() RG.Follow(q.wp) end or nil })
+                    onRightClick = function()
+                      if q.wp then RG.Follow(q.wp)
+                      else RG.Print("No location known for " .. q.title .. " yet. Click it to open the quest.") end
+                    end })
               end
             end
           end

@@ -298,6 +298,28 @@ end
 -- Every quest in your log: level, progress, whether it's ready, and the
 -- nearest place to work on it (objective or turn-in) with its distance.
 -- Ready quests first, then nearest, then the rest by level.
+-- Where the game itself says a finished quest is handed in (for quests our data does not know yet).
+local function liveTurnIn(qid, title)
+  if C_QuestLog and C_QuestLog.GetNextWaypoint then
+    local ok, m, x, y = pcall(C_QuestLog.GetNextWaypoint, qid)
+    if ok and m and x and y then return { m, x * 100, y * 100, title } end
+  end
+  if C_QuestLog and C_QuestLog.GetQuestsOnMap and C_Map and C_Map.GetBestMapForUnit then
+    local map, guard = C_Map.GetBestMapForUnit("player"), 0
+    while map and map > 0 and guard < 6 do
+      local ok, list = pcall(C_QuestLog.GetQuestsOnMap, map)
+      if ok and type(list) == "table" then
+        for _, e in ipairs(list) do
+          if e.questID == qid and e.x and e.y then return { map, e.x * 100, e.y * 100, title } end
+        end
+      end
+      local inf = C_Map.GetMapInfo and C_Map.GetMapInfo(map)
+      map = inf and inf.parentMapID; guard = guard + 1
+    end
+  end
+end
+RG.QuestTurnInPoint = liveTurnIn
+
 function RG.MyQuests()
   local out = {}
   if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return out end
@@ -337,6 +359,15 @@ function RG.MyQuests()
         local c2, x, y = toWorld(ewp[1], ewp[2], ewp[3])
         if c and c2 == c then d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2) end
         n = { dist = d, wp = ewp, label = ewp[4] }
+      end
+      if complete and not (n and n.wp) then
+        local lw = liveTurnIn(info.questID, info.title)
+        if lw then
+          local d
+          local c2, x, y = toWorld(lw[1], lw[2], lw[3])
+          if c and c2 == c then d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2) end
+          n = { dist = d, wp = lw, label = lw[4] }
+        end
       end
       out[#out + 1] = { id = info.questID, title = info.title, level = level, complete = complete, failed = info.isFailed,
         prog = prog, objs = objs, zone = zone, dist = n and n.dist, wp = n and n.wp, label = n and n.label,
