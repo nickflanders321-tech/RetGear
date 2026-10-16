@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.90.0
+- Every place and NPC card now has its own picture: a little landscape (sky, sun or moon, two ridge lines and a landmark) worked out from the card itself, so no two cards look alike. NPCs keep a small portrait badge on top. The same art shows on the Arena board.
+- /wp arena now reports a problem in chat instead of doing nothing if the window cannot open.
+
 ## v0.89.0
 - Gear guide: a "View" row switches between the by-level list and a slot-by-slot view that shows what you wear in each slot and the best piece you could swap in.
 - Gear guide: a "Source" row cycles through Dungeon, Quest, Vendor, Crafted, Rare mob and Drop so you can see only gear from one place; it also filters the "Best upgrades you can get now" block.

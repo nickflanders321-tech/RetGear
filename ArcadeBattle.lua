@@ -293,6 +293,7 @@ local function makeMinion(parent)
   m.glow = m:CreateTexture(nil, "BACKGROUND"); m.glow:SetTexture(U.MEDIA .. "Glow"); m.glow:SetBlendMode("ADD"); m.glow:SetSize(150, 150); m.glow:SetPoint("CENTER", m, "TOP", 0, -44); m.glow:Hide()
   m.back = m:CreateTexture(nil, "BACKGROUND", nil, 2); m.back:SetColorTexture(0.05, 0.04, 0.1, 1); m.back:SetSize(66, 66); m.back:SetPoint("CENTER", m, "TOP", 0, -44)
   m.icon = m:CreateTexture(nil, "ARTWORK", nil, 1); m.icon:SetSize(66, 66); m.icon:SetPoint("CENTER", m, "TOP", 0, -44); m.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  m.scn = U.newScene(m, 66, 66, m.back)
   m.tile = m:CreateTexture(nil, "ARTWORK", nil, 2); m.tile:SetSize(88, 88); m.tile:SetPoint("TOP", m, "TOP", 0, 0)
   m.ice = m:CreateTexture(nil, "ARTWORK", nil, 3); m.ice:SetTexture(U.MEDIA .. "Ice"); m.ice:SetSize(84, 84); m.ice:SetPoint("CENTER", m.tile, "CENTER"); m.ice:SetAlpha(0.7); m.ice:Hide()
   m.bubble = m:CreateTexture(nil, "ARTWORK", nil, 4); m.bubble:SetTexture(U.MEDIA .. "Bubble"); m.bubble:SetBlendMode("ADD"); m.bubble:SetSize(96, 96); m.bubble:SetPoint("CENTER", m.tile, "CENTER"); m.bubble:Hide()
@@ -321,6 +322,13 @@ local function paintMinion(w, m, side)
   w.m, w.ref = m, m.uid
   w:Show()
   w.icon:SetTexture(iconOf(m.key, m))
+  local cc = m.key and not m.icon and cardObj(m.key)
+  if cc and U.usesScene(cc) then
+    U.setScene(w.scn, cc, false)
+    if cc.kind == 3 then w.icon:Hide() else w.icon:SetSize(34, 34); w.icon:Show() end
+  else
+    U.hideScene(w.scn); w.icon:SetSize(66, 66); w.icon:Show()
+  end
   local iron = m.kw.taunt
   w.tile:SetTexture(U.MEDIA .. (iron and "TileIron" or "Tile"))
   local c = side == 1 and TILE_ME or TILE_FOE
@@ -1022,7 +1030,7 @@ end
 function RG.ShowBattle()
   if not win then
     U = RG.ArcadeUI
-    if not U then return end
+    if not U then if RG.Print then RG.Print("The Arena needs the card window files (Arcade.lua) to load.") end return end
     buildWindow(); makeBoard(); buildMenu(); buildDeck()
     local a = store(); if a and a.level then S.level = a.level end
   end
@@ -1036,7 +1044,17 @@ local slashBase = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
-  if cmd == "arena" or cmd == "duel" then RG.ShowBattle() return end
+  if cmd == "arena" or cmd == "duel" then
+    local ok, err = xpcall(RG.ShowBattle, function(e) return tostring(e) .. " " .. tostring(debugstack and debugstack(2, 3, 0) or "") end)
+    if not ok then
+      if win then win:Hide() end
+      win = nil   -- rebuild next time
+      if RG.Print then RG.Print("The Arena hit a snag: " .. tostring(err)) end
+    elseif not (win and win:IsShown()) then
+      if RG.Print then RG.Print("The Arena did not open. Try /reload and /wp arena again.") end
+    end
+    return
+  end
   return slashBase(msg)
 end
 

@@ -489,6 +489,87 @@ local function iconFor(c)
   return "Interface\\Icons\\" .. (c.text == "Zone" and "INV_Misc_Map_01" or "INV_Misc_Map02")
 end
 
+
+local MEDIA = "Interface\\AddOns\\Waypath\\Media\\Arcade\\"
+-- ---------------------------------------------------------------------------
+-- Scenery: every place and every NPC gets its own little landscape, worked out from its name, so no two
+-- cards share a picture (sky colour, sun or moon, two ridge lines, a landmark).
+-- ---------------------------------------------------------------------------
+local function seedOf(str)
+  local h = 7
+  for i = 1, #str do h = (h * 31 + str:byte(i)) % 2147483647 end
+  if h == 0 then h = 1 end
+  return h
+end
+local function rngOf(seed)
+  local x = seed
+  return function() x = (x * 16807) % 2147483647; return x / 2147483647 end
+end
+local function hsv(h, s, v)
+  h = (h % 1) * 6
+  local i = math.floor(h); local f = h - i
+  local p, q, t = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+  i = i % 6
+  if i == 0 then return v, t, p elseif i == 1 then return q, v, p elseif i == 2 then return p, v, t
+  elseif i == 3 then return p, q, v elseif i == 4 then return t, p, v else return v, p, q end
+end
+local function usesScene(card) return card and (card.kind == 2 or card.kind == 3) end
+
+-- builds the textures once on an art holder frame (frame) of size aw x ah; returns the scene object
+local function newScene(frame, aw, ah, anchor)
+  anchor = anchor or frame
+  local sc = { aw = aw, ah = ah }
+  local function tex(sub, file) local t = frame:CreateTexture(nil, "ARTWORK", nil, sub); t:SetTexture(MEDIA .. file); t:Hide(); return t end
+  sc.sky, sc.sun, sc.r1, sc.r2, sc.mo = tex(-4, "Sky"), tex(-3, "Glow"), tex(-2, "Ridge1"), tex(-1, "Ridge1"), tex(0, "Motifs")
+  sc.sun:SetBlendMode("ADD")
+  sc.sky:SetAllPoints(anchor)
+  sc.frame = anchor
+  return sc
+end
+local function hideScene(sc) if sc then sc.sky:Hide(); sc.sun:Hide(); sc.r1:Hide(); sc.r2:Hide(); sc.mo:Hide() end end
+local function setScene(sc, card, dim)
+  local aw, ah = sc.aw, sc.ah
+  local rnd = rngOf(seedOf((card.name or "?") .. "|" .. tostring(card.id or card.ref or 0)))
+  for _ = 1, 3 do rnd() end
+  local hue = rnd()
+  local sat = 0.30 + rnd() * 0.40
+  local val = 0.55 + rnd() * 0.40
+  local k = dim and 0.16 or 1
+  local r, g, b = hsv(hue, sat, val)
+  sc.sky:SetTexture(MEDIA .. "Sky"); sc.sky:SetVertexColor(r * k, g * k, b * k, 1); sc.sky:Show()
+  -- sun or moon
+  local sx, sy = 0.15 + rnd() * 0.7, 0.45 + rnd() * 0.4
+  local sr, sg, sb = hsv(hue + 0.08 + rnd() * 0.1, 0.25 + rnd() * 0.4, 1)
+  local ss = (0.28 + rnd() * 0.3) * ah
+  sc.sun:ClearAllPoints(); sc.sun:SetPoint("CENTER", sc.frame, "BOTTOMLEFT", sx * aw, sy * ah); sc.sun:SetSize(ss, ss)
+  sc.sun:SetVertexColor(sr * k, sg * k, sb * k, 0.95); sc.sun:Show()
+  -- two ridge lines (far, near), each one of four shapes, scrolled and mirrored differently
+  local function ridge(t, kind, hgt, shade, hueShift)
+    t:SetTexture(MEDIA .. "Ridge" .. kind)
+    local u0 = rnd() * 0.5
+    if rnd() < 0.5 then t:SetTexCoord(u0 + 0.5, u0, 0, 1) else t:SetTexCoord(u0, u0 + 0.5, 0, 1) end
+    t:ClearAllPoints(); t:SetPoint("BOTTOMLEFT", sc.frame, "BOTTOMLEFT", 0, 0); t:SetPoint("BOTTOMRIGHT", sc.frame, "BOTTOMRIGHT", 0, 0); t:SetHeight(hgt * ah)
+    local rr, rg, rb = hsv(hue + hueShift, math.min(1, sat + 0.1), val * shade)
+    t:SetVertexColor(rr * k, rg * k, rb * k, 1); t:Show()
+  end
+  local k1 = 1 + math.floor(rnd() * 4)
+  local k2 = 1 + math.floor(rnd() * 4)
+  if k2 == k1 then k2 = k1 % 4 + 1 end
+  ridge(sc.r1, k1, 0.40 + rnd() * 0.15, 0.55, 0.04)
+  ridge(sc.r2, k2, 0.22 + rnd() * 0.12, 0.28, -0.03)
+  -- a landmark standing on the near ridge
+  local m = math.floor(rnd() * 8)
+  local col, row = m % 4, math.floor(m / 4)
+  local mx = 0.18 + rnd() * 0.64
+  local ms = (0.30 + rnd() * 0.14) * ah
+  local flip = rnd() < 0.5
+  if flip then sc.mo:SetTexCoord((col + 1) * 0.25, col * 0.25, row * 0.5, row * 0.5 + 0.5)
+  else sc.mo:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.5, row * 0.5 + 0.5) end
+  sc.mo:ClearAllPoints(); sc.mo:SetPoint("BOTTOM", sc.frame, "BOTTOMLEFT", mx * aw, 0.07 * ah); sc.mo:SetSize(ms, ms)
+  local mr, mg, mb = hsv(hue - 0.02, 0.35, 0.12 + rnd() * 0.1)
+  sc.mo:SetVertexColor(mr * k, mg * k, mb * k, 1); sc.mo:Show()
+end
+
 local function ensureModel(w)
   local have = rawget(w, "model")
   if have ~= nil then return have end
@@ -507,7 +588,6 @@ end
 -- ---------------------------------------------------------------------------
 -- Look: a dark grimoire, parchment cards, gold trim (textures: Media/Arcade, drawn by tools/arcade/art.py)
 -- ---------------------------------------------------------------------------
-local MEDIA = "Interface\\AddOns\\Waypath\\Media\\Arcade\\"
 local FDIR = "Interface\\AddOns\\Waypath\\Media\\Fonts\\"
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local FONT = { title = FDIR .. "Cinzel-ExtraBold.ttf", head = FDIR .. "Cinzel-SemiBold.ttf", body = FDIR .. "Marcellus-Regular.ttf" }
@@ -744,10 +824,16 @@ local function paint(w, card, finish, copies)
     w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
   end
   w.art:SetTexture(iconFor(card))
+  local scene = usesScene(card)
+  if scene then
+    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+    setScene(w.scn, card, not finish)
+  elseif rawget(w, "scn") then hideScene(w.scn) end
   if not finish then
     -- an empty slot in the binder: a silhouette and the collector number
     w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
+    if scene then w.art:Hide() end
     w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
     w.num:SetTextColor(0.5, 0.45, 0.6)
     return
@@ -765,6 +851,9 @@ local function paint(w, card, finish, copies)
   w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
   local full = finish == 4
   if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  elseif scene then
+    w.iconBack:Hide(); w.iconEdge:Hide()
+    if card.kind == 3 then w.art:Hide() else placeIcon(full and 64 or 46); w.art:Show(); w.iconBack:Show(); w.iconEdge:Show() end
   else placeIcon(full and 120 or 84) end
   if fx.rays then tintTex(w.rays, { 1, 0.86, 0.5 }, fx.rays); w.rays:Show() end
   if fx.foil > 0 then w.foil:Show() end
@@ -1397,7 +1486,7 @@ end
 
 RG.ArcadeUI = { makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
-  owned = owned, iconFor = iconFor, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
+  owned = owned, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
 function RG.ShowArcade()
   if not frame then build() end
