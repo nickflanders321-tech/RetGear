@@ -42,7 +42,8 @@ local function BAR_H() return sz(44) end
 
 local frame, scroll, content, tabs, footer, sectionTitle
 local rows = {}
-local state = { tab = "route", near = true, onlyUp = false, open = {} }
+local state = { tab = "route", near = true, onlyUp = false, bySlot = false, src = nil, open = {} }
+RG.UIState = state
 local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
@@ -324,8 +325,11 @@ end
 local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
 local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand" }
 -- "Upgrades only": hide pieces you already beat; keep tips, things you cannot use yet, and ones still loading
+local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Drop" }
 local function guideKeep(g, lvl)
-  if not state.onlyUp or g.tip or not g.id then return true end
+  if g.tip or not g.id then return true end
+  if state.src and g.how ~= state.src then return false end
+  if not state.onlyUp then return true end
   local own = RG.OwnState(g.id)
   if own == "equipped" then return false end
   if g.lvl > lvl then return true end
@@ -424,7 +428,7 @@ local function renderGuide()
   do
     local best = {}
     for _, g in ipairs(RG.GUIDE) do
-      if g.id and not g.tip and g.lvl <= lvl and not RG.OwnState(g.id) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) then
+      if g.id and not g.tip and g.lvl <= lvl and (not state.src or g.how == state.src) and not RG.OwnState(g.id) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) then
         local _, link = GetItemInfo(g.id)
         local d = link and RG.GuideDelta(g)
         if d and d > 0.5 then best[#best + 1] = { g = g, d = d + ((g.how == "Quest" and g.src and RG.InLog and RG.InLog((g.src:gsub("%s*%(.-%)$", "")))) and 3 or 0) } end
@@ -440,6 +444,28 @@ local function renderGuide()
     end
   end
   -- your 2nd spec: a link to its gear list
+  -- slot by slot: what you wear and the best piece you could swap in
+  if state.bySlot then
+    local SLOTNUM = { Head = 1, Neck = 2, Shoulder = 3, Back = 15, Chest = 5, Wrist = 9, Hands = 10, Waist = 6, Legs = 7, Feet = 8, Ring = 11, Trinket = 13, ["2H"] = 16, ["Main Hand"] = 16, ["Off Hand"] = 17, Ranged = 18 }
+    list = {}
+    for _, slot in ipairs(GUIDE_SLOTS) do
+      local items = {}
+      for _, g in ipairs(RG.GUIDE) do
+        if g.id and not g.tip and g.slot == slot and g.lvl <= lvl and RG.OwnState(g.id) ~= "equipped" and guideKeep(g, lvl) then items[#items + 1] = g end
+      end
+      local rank = {}
+      for _, g in ipairs(items) do rank[g] = guideRank(g) end
+      table.sort(items, function(a, b) return rank[a] > rank[b] end)
+      local worn = SLOTNUM[slot] and GetInventoryItemLink("player", SLOTNUM[slot])
+      local wn = worn and GetItemInfo(worn)
+      list[#list + 1] = { header = (GUIDE_SLOT_LABEL[slot] or slot) .. GREY .. "   wearing " .. (wn or "nothing") .. "|r" }
+      local g = items[1]
+      local d = g and RG.GuideDelta(g)
+      if g and (d == nil or d > 0.5) then list[#list + 1] = { g = g }
+      else list[#list + 1] = { note = items[1] and "Nothing better at your level yet" or "No guide piece for this slot at your level" } end
+    end
+  end
+  table.insert(list, 1, { ctl = "src" }); table.insert(list, 1, { ctl = "view" })
   local off = 0
   local s2 = RG.SecondSpecActive and RG.SecondSpecActive()
   if s2 or lvl >= 20 then
@@ -460,6 +486,22 @@ local function renderGuide()
   for i, e in ipairs(list) do
     local r = getRow(i + off)
     if e.header then setHeader(r, e.header)
+    elseif e.ctl == "view" then
+      setItem(r, nil, nil, GOLD .. "View:|r  " .. (state.bySlot and "slot by slot" or "by level") .. GREY .. "   (click to switch)|r", GREY .. (state.bySlot and "Each slot with what you wear and the best piece to swap in." or "Upgrades grouped by level, with the best ones on top.") .. "|r", "", "", nil, nil, true)
+      r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+      r.onClick = function() state.bySlot = not state.bySlot; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
+    elseif e.ctl == "src" then
+      setItem(r, nil, nil, GOLD .. "Source:|r  " .. (state.src or "any") .. GREY .. "   (click to change)|r", GREY .. "Show only gear that comes from one place: Dungeon, Quest, Vendor, Crafted, Rare mob or Drop.|r", "", "", nil, nil, true)
+      r.icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01")
+      r.onClick = function()
+        local cur = 1
+        for i, v in ipairs(SRC_CYCLE) do if (v or nil) == state.src then cur = i end end
+        state.src = SRC_CYCLE[cur % #SRC_CYCLE + 1] or nil
+        scroll:SetVerticalScroll(0); RG.RefreshUINow()
+      end
+    elseif e.note then
+      setItem(r, nil, nil, GREY .. e.note .. "|r", "", "", "", nil, nil, true)
+      r.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
     elseif e.g.tip then
       setItem(r, nil, nil, GOLD .. "Tip|r" .. GREY .. "  ·  level " .. e.g.lvl .. "|r", e.g.text, "", "", "gold")
       r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")

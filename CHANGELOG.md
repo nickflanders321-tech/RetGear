@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.89.0
+- Gear guide: a "View" row switches between the by-level list and a slot-by-slot view that shows what you wear in each slot and the best piece you could swap in.
+- Gear guide: a "Source" row cycles through Dungeon, Quest, Vendor, Crafted, Rare mob and Drop so you can see only gear from one place; it also filters the "Best upgrades you can get now" block.
+
 ## v0.88.0
 - Gear guide: a "Best upgrades you can get now" block at the top lists the pieces that would improve you most (a quest already in your log counts extra), then the rest of the guide follows.
 - Gear guide: near your level, each slot is now sorted by how much the piece would actually improve you instead of by level, pieces you carry come first, and upgrade rows say what they replace ("replaces ..." or "fills an empty slot").
