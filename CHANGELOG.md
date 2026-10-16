@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.71.0
+- **Fishing shows your boosts.** The fishing screen has a new row of icon chips with countdowns for the lure on your pole (with its skill bonus), your food buff (Well Fed or any fishing buff) and your campfire (Camp Benefits, or "sit by the fire"/"campfire near"). A chip turns orange when it is about to run out, and "No lure" shows when your pole is bare. The tracker's fishing section lists the same food and campfire timers under the lure.
+
 ## v0.70.5
 - **Right-click a quest in the tracker and the arrow follows it** (turning the arrow on if it was off). Right-click works the same on route steps, pick-ups and hand-ins. To open a ready quest in your quest log, Shift-click it.
 

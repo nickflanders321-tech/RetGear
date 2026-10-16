@@ -40,7 +40,7 @@ local function build()
   if hud then return end
   local parent = WorldFrame or UIParent
   hud = CreateFrame("Frame", "WaypathFishHUD", parent)
-  hud:SetSize(340, 120); hud:SetPoint("BOTTOM", parent, "BOTTOM", 0, 120)
+  hud:SetSize(340, 150); hud:SetPoint("BOTTOM", parent, "BOTTOM", 0, 120)
   hud:SetFrameStrata("HIGH"); hud:EnableMouse(false)
   hud:SetAlpha(0); hud:Hide()
   -- soft dark band behind the text so it reads on any water
@@ -55,10 +55,20 @@ local function build()
   hud.bar = hud:CreateTexture(nil, "OVERLAY"); hud.bar:SetHeight(4); hud.bar:SetPoint("LEFT", hud.barBg, "LEFT", 0, 0); hud.bar:SetColorTexture(0.35, 0.75, 1, 0.9); hud.bar:SetWidth(1)
   hud.status = hud:CreateFontString(nil, "OVERLAY"); font(hud.status, 13); hud.status:SetPoint("TOP", hud.barBg, "BOTTOM", 0, -6)
   hud.stats = hud:CreateFontString(nil, "OVERLAY"); font(hud.stats, 11); hud.stats:SetPoint("TOP", hud.status, "BOTTOM", 0, -5)
+  -- active lure, food and campfire: icon chips with a countdown
+  hud.buffRow = CreateFrame("Frame", nil, hud); hud.buffRow:SetSize(340, 24); hud.buffRow:SetPoint("TOP", hud.stats, "BOTTOM", 0, -6); hud.buffRow:EnableMouse(false)
+  hud.chips = {}
+  for i = 1, 4 do
+    local c = CreateFrame("Frame", nil, hud.buffRow); c:SetSize(20, 20); c:EnableMouse(false)
+    c.edge = c:CreateTexture(nil, "BACKGROUND"); c.edge:SetAllPoints(); c.edge:SetColorTexture(0.45, 0.45, 0.45, 0.9)
+    c.icon = c:CreateTexture(nil, "ARTWORK"); c.icon:SetPoint("TOPLEFT", 1, -1); c.icon:SetPoint("BOTTOMRIGHT", -1, 1); c.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    c.text = c:CreateFontString(nil, "OVERLAY"); font(c.text, 11); c.text:SetPoint("LEFT", c, "RIGHT", 5, 0)
+    c:Hide(); hud.chips[i] = c
+  end
   hud.feed = {}
   for i = 1, 3 do
     local f = hud:CreateFontString(nil, "OVERLAY"); font(f, 11)
-    f:SetPoint("TOP", i == 1 and hud.stats or hud.feed[i - 1], "BOTTOM", 0, i == 1 and -6 or -2)
+    f:SetPoint("TOP", i == 1 and hud.buffRow or hud.feed[i - 1], "BOTTOM", 0, i == 1 and -6 or -2)
     hud.feed[i] = f
   end
   hud.hint = hud:CreateFontString(nil, "OVERLAY"); font(hud.hint, 9); hud.hint:SetPoint("BOTTOM", hud, "BOTTOM", 0, -6)
@@ -173,6 +183,23 @@ function RG.FishModeRefresh()
   end
   if skill and max and skill >= max and max < 300 then parts[#parts + 1] = ORANGE .. "capped: train|r" end
   hud.stats:SetText(table.concat(parts, GREY .. "  ·  |r"))
+  -- buff chips, centered in a row
+  local buffs = RG.FishBuffs and RG.FishBuffs() or {}
+  local widths, total = {}, 0
+  for i, c in ipairs(hud.chips) do
+    local b = buffs[i]
+    if b then
+      c.icon:SetTexture(b.icon); c.icon:SetDesaturated(b.missing and true or false)
+      c.edge:SetColorTexture(b.missing and 1 or (b.warn and 1 or 0.45), b.missing and 0.5 or (b.warn and 0.5 or 0.45), b.missing and 0.25 or (b.warn and 0.25 or 0.45), 0.95)
+      local col = b.missing and ORANGE or (b.warn and ORANGE or "|cffffffff")
+      c.text:SetText(col .. b.label .. "|r" .. (b.left and (GREY .. "  " .. RG.FmtLeft(b.left) .. "|r") or ""))
+      widths[i] = 20 + 5 + (c.text:GetStringWidth() or 0); total = total + widths[i] + (i > 1 and 14 or 0)
+    end
+  end
+  local x = -total / 2
+  for i, c in ipairs(hud.chips) do
+    if widths[i] then c:ClearAllPoints(); c:SetPoint("LEFT", hud.buffRow, "CENTER", x, 0); c:Show(); x = x + widths[i] + 14 else c:Hide() end
+  end
   -- last catches, fading after a while
   for i = 1, 3 do
     local e = feed[i]

@@ -138,6 +138,55 @@ function RG.FishLure()
   return (ms or 0) / 1000, lastLure and LURE[lastLure] and LURE[lastLure].bonus or nil
 end
 
+-- What's boosting you while you fish: the lure on your pole, food buffs and the campfire.
+-- Each: { key, icon, label, left (seconds or nil), warn (true under a minute), tip }
+local function fmtLeft(sec)
+  sec = math.max(0, math.floor(sec + 0.5))
+  if sec >= 3600 then return string.format("%dh %dm", sec / 3600, (sec % 3600) / 60) end
+  return string.format("%d:%02d", sec / 60, sec % 60)
+end
+RG.FmtLeft = fmtLeft
+function RG.FishBuffs()
+  local out = {}
+  -- lure (weapon enchant on the pole)
+  if RG.HasPole() then
+    local left, bonus = RG.FishLure()
+    if left then
+      local icon = lastLure and GetItemIcon and GetItemIcon(lastLure) or "Interface\\Icons\\INV_Misc_Food_26"
+      out[#out + 1] = { key = "lure", icon = icon, label = "Lure" .. (bonus and (" +" .. bonus) or ""), left = left, warn = left < 60,
+        tip = "Lure on your pole" .. (bonus and (": +" .. bonus .. " Fishing skill") or "") .. ". It runs out in " .. fmtLeft(left) .. "." }
+    else
+      out[#out + 1] = { key = "lure", icon = "Interface\\Icons\\INV_Misc_Food_26", label = "No lure", missing = true, tip = "A lure adds 25 to 100 Fishing skill for 5-10 minutes, so fewer fish get away." }
+    end
+  end
+  -- food and fishing buffs from your auras
+  local seen = {}
+  RG.FindAura("player", "HELPFUL", function(a)
+    local n = a.name
+    if n == "Well Fed" or n:find("Fishing", 1, true) then
+      if not seen[n] then
+        seen[n] = true
+        local exp = a.expirationTime
+        local left = (type(exp) == "number" and not (RG.IsSecret and RG.IsSecret(exp)) and exp > 0) and (exp - GetTime()) or nil
+        out[#out + 1] = { key = "food", icon = a.icon or "Interface\\Icons\\INV_Misc_Fish_13", label = n, left = left, warn = left and left < 120,
+          tip = n .. (left and (": " .. fmtLeft(left) .. " left") or "") }
+      end
+    end
+  end)
+  -- campfire
+  if RG.CampState then
+    local st, left = RG.CampState()
+    if st == "active" then
+      out[#out + 1] = { key = "camp", icon = "Interface\\Icons\\Spell_Fire_Fire", label = "Camp Benefits", left = left, warn = left and left < 120, tip = "Camp Benefits from your campfire: " .. (left and (fmtLeft(left) .. " left") or "active") }
+    elseif st == "sitting" then
+      out[#out + 1] = { key = "camp", icon = "Interface\\Icons\\Spell_Fire_Fire", label = "Campfire", tip = "Sit by the fire for Camp Benefits." }
+    elseif st == "near" then
+      out[#out + 1] = { key = "camp", icon = "Interface\\Icons\\Spell_Fire_Fire", label = "Campfire near", tip = "A campfire is close by." }
+    end
+  end
+  return out
+end
+
 -- The zone you're in: skill where every fish bites, and how you compare.
 function RG.FishZone()
   local zone = GetRealZoneText and GetRealZoneText() or ""
@@ -320,6 +369,11 @@ function RG.FishTrackerLines()
       out[#out + 1] = { GREY .. "Lure|r", (left < 60 and ORANGE or "|cffffffff") .. math.ceil(left / 60) .. " min|r" }
     elseif z and z.status ~= "all" then
       out[#out + 1] = { ORANGE .. "No lure on your pole|r", nil, open, "A lure adds 25 to 100 skill for 5-10 minutes so fewer fish get away." }
+    end
+  end
+  for _, b in ipairs(RG.FishBuffs()) do
+    if b.key == "food" or b.key == "camp" then
+      out[#out + 1] = { GREY .. b.label .. "|r", b.left and ((b.warn and ORANGE or "|cffffffff") .. fmtLeft(b.left) .. "|r") or GREEN .. "on|r", nil, b.tip }
     end
   end
   local s = RG.FishSession()
