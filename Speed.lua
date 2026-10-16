@@ -541,17 +541,12 @@ local function buildArrow()
   -- the arrow itself
   arrow.tex = arrow:CreateTexture(nil, "OVERLAY"); arrow.tex:SetSize(46, 46); arrow.tex:SetPoint("CENTER")
   arrow.tex:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3])
-  -- 3D look: the arrow is extruded (a stack of darker copies below it) over a soft shadow, with a highlight on top
-  arrow.shadow = arrow:CreateTexture(nil, "ARTWORK", nil, -2); arrow.shadow:SetSize(46, 46); arrow.shadow:SetPoint("CENTER", 5, -9)
-  arrow.shadow:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.shadow:SetVertexColor(0, 0, 0, 0.45)
-  arrow.ext = {}
-  for i = 1, 6 do
-    local t = arrow:CreateTexture(nil, "ARTWORK", nil, -1)
-    t:SetSize(46, 46); t:SetPoint("CENTER", 0, -i * 1.2); t:SetTexture("Interface\\Minimap\\MinimapArrow")
-    arrow.ext[i] = t
-  end
-  arrow.shine = arrow:CreateTexture(nil, "OVERLAY", nil, 2); arrow.shine:SetSize(46, 46); arrow.shine:SetPoint("CENTER", 0, 1)
-  arrow.shine:SetTexture("Interface\\Minimap\\MinimapArrow"); arrow.shine:SetVertexColor(1, 1, 1, 0.22); arrow.shine:SetBlendMode("ADD")
+  -- 3D look: a pre-rendered solid arrow (tools/media/arrow3d.py), one sprite-sheet frame per heading,
+  -- tinted like the flat arrow, with a highlight added on top
+  arrow.sheet = arrow:CreateTexture(nil, "OVERLAY"); arrow.sheet:SetSize(78, 78); arrow.sheet:SetPoint("CENTER", 0, 2)
+  arrow.sheet:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3D")
+  arrow.spec = arrow:CreateTexture(nil, "OVERLAY", nil, 2); arrow.spec:SetSize(78, 78); arrow.spec:SetPoint("CENTER", 0, 2)
+  arrow.spec:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3DSpec"); arrow.spec:SetBlendMode("ADD")
   arrow.check = arrow:CreateTexture(nil, "OVERLAY"); arrow.check:SetSize(34, 34); arrow.check:SetPoint("CENTER")
   arrow.check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready"); arrow.check:Hide()
   -- text: destination above, distance and time below, travel hint under that
@@ -585,18 +580,18 @@ local function buildArrow()
   arrow.pulse = 0
   local shown, lastKey, arrivedAt = 0, nil, nil
   local acc = 0
+  local FR, COLS3, CELL3, SHEET3 = 100, 10, 102, 1024
   local function sync3d(self)
     local on = RG.db.arrow3d ~= false and self.tex:IsShown()
+    self.tex:SetAlpha(on and 0 or 1)
+    self.sheet:SetShown(on); self.spec:SetShown(on)
+    if not on then return end
     local r, g, b = self.tex:GetVertexColor()
-    self.shadow:SetShown(on); self.shine:SetShown(on)
-    if on then
-      self.shadow:SetRotation(self.rot or 0); self.shine:SetRotation(self.rot or 0)
-      -- the shadow always falls the same way on screen, whichever way the arrow points
-    end
-    for i, t in ipairs(self.ext) do
-      t:SetShown(on)
-      if on then t:SetRotation(self.rot or 0); local k = 0.78 - i * 0.07; t:SetVertexColor((r or 1) * k, (g or 1) * k, (b or 1) * k) end
-    end
+    local idx = math.floor(((self.rot or 0) % (2 * math.pi)) / (2 * math.pi) * FR + 0.5) % FR
+    local col = idx % COLS3; local row = (idx - col) / COLS3
+    local l, rr, t, bt = col * CELL3 / SHEET3, (col + 1) * CELL3 / SHEET3, row * CELL3 / SHEET3, (row + 1) * CELL3 / SHEET3
+    self.sheet:SetTexCoord(l, rr, t, bt); self.spec:SetTexCoord(l, rr, t, bt)
+    self.sheet:SetVertexColor(r or 1, g or 1, b or 1)
   end
   arrow:SetScript("OnUpdate", function(self, dt)
     sync3d(self)

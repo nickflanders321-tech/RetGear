@@ -1,7 +1,10 @@
 # Changelog
 
+## v0.61.1
+- **Real 3D arrow:** replaced the layered look with a properly rendered solid arrow with lighting and a highlight, drawn from 100 pre-rendered angles. /wp arrow3d off brings back the flat one.
+
 ## v0.61.0
-- **3D arrow:** the waypoint arrow is now a solid, thick arrow with depth, a shadow and a highlight, and it still turns smoothly and changes colour as you face the target. Prefer the flat arrow? Type /wp arrow3d off.
+- **3D arrow:** the waypoint arrow is now a solid, lit 3D arrow (pre-rendered, one picture per direction) that turns smoothly and still changes colour as you face the target. Prefer the flat arrow? Type /wp arrow3d off.
 
 ## v0.60.0
 - **Dark look:** a flat, cooler, less cluttered theme sits beside the classic one. Click "Look" in the window's top bar, or type /wp theme dark or /wp theme classic. Your choice is remembered.
