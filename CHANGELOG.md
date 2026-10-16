@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.82.0
+- Card coins rebalanced. XP now pays 1 coin per 4% of a level (was 2%), and there are new bonuses: level-ups (5 + level/5, plus 25 at every tenth level), quest turn-ins (3 + level/20), mob kills that give XP (1 coin per 20) and profession skill-ups (1 coin per 2). Quests, kills and skill-ups together pay at most 80 coins a day. A pack costs 40 coins (was 30) and a duel win pays 4. Climbing from 1 to 60 earns roughly 100 packs.
+
 ## v0.81.0
 - Cards: the five creator cards are gone. The super rare set is now **Raiders**: characters you have met (your own, your group, and anyone who chats near you) as cards, shown as a 3D model of their race wearing the best raid armour of their class (Tier 3 sets). They come as holo or full art only, are saved with your collection, and the set grows as you play. Races without a known model fall back to the class icon. The old Legends cards are removed.
 

@@ -19,7 +19,13 @@ local CREATURE_ICON = {
   [5] = "Spell_Nature_EarthElemental_Totem", [6] = "Spell_Shadow_AnimateDead", [7] = "INV_Misc_Head_Orc_01", [8] = "Ability_Hunter_Pet_Rabbit",
   [9] = "INV_Gizmo_01",
 }
-local PACK_PRICE, PACK_SIZE = 30, 5
+local PACK_PRICE, PACK_SIZE = 40, 5
+-- How coins are earned (about 100 packs over a 1-60 climb):
+--   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
+--   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 20
+--   profession skill-ups: 1 coin per 2    duel win: 4
+-- Quests, kills and skill-ups together pay at most DAY_CAP coins per day, so grinding one thing all day doesn't run away.
+local DAY_CAP = 80
 
 local CARDS = {}
 for i, d in ipairs(RG.ARCADE_DATA or {}) do CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5] } end
@@ -72,15 +78,33 @@ local function bestFinish(a, id) local c = a.cards[CARDS[id].key or CARDS[id].na
 -- Coins from XP: 1 coin for every 2% of a level you gain
 -- ---------------------------------------------------------------------------
 local lastXP, lastMax
-local function earn(gainPct)
+-- pay out: kind is "xp", "level", "quest", "kill", "skill" or "duel"; amount is in coins (fractions are carried over)
+local function give(kind, amount, capped)
   local a = store(); if not a then return end
-  a.acc = (a.acc or 0) + gainPct
-  local coins = math.floor(a.acc / 2)
-  if coins > 0 then a.acc = a.acc - coins * 2; a.coins = (a.coins or 0) + coins end
+  a.acc = type(a.acc) == "table" and a.acc or {}
+  a.stats = a.stats or {}
+  if capped then
+    local today = date and date("%Y-%m-%d") or "today"
+    if a.day ~= today then a.day, a.dayCoins = today, 0 end
+    a.dayCoins = a.dayCoins or 0
+    amount = math.min(amount, math.max(0, DAY_CAP - a.dayCoins))
+    if amount <= 0 then return end
+  end
+  a.acc[kind] = (a.acc[kind] or 0) + amount
+  local coins = math.floor(a.acc[kind])
+  if coins > 0 then
+    a.acc[kind] = a.acc[kind] - coins
+    a.coins = (a.coins or 0) + coins
+    a.stats[kind] = (a.stats[kind] or 0) + coins
+    if capped then a.dayCoins = (a.dayCoins or 0) + coins end
+  end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
 end
+RG.ArcadeGive = give
+local function earn(gainPct) give("xp", gainPct / 4) end
 local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_LOGIN"); ev:RegisterEvent("PLAYER_XP_UPDATE"); ev:RegisterEvent("PLAYER_LEVEL_UP"); ev:RegisterEvent("GROUP_ROSTER_UPDATE")
+ev:RegisterEvent("PLAYER_LOGIN"); ev:RegisterEvent("PLAYER_XP_UPDATE"); ev:RegisterEvent("PLAYER_LEVEL_UP"); ev:RegisterEvent("GROUP_ROSTER_UPDATE"); ev:RegisterEvent("QUEST_TURNED_IN")
+for _, e in ipairs({ "CHAT_MSG_SKILL", "CHAT_MSG_COMBAT_XP_GAIN" }) do pcall(ev.RegisterEvent, ev, e) end
 for _, e in ipairs({ "SAY", "YELL", "PARTY", "PARTY_LEADER", "RAID", "RAID_LEADER", "GUILD", "WHISPER", "CHANNEL" }) do pcall(ev.RegisterEvent, ev, "CHAT_MSG_" .. e) end
 
 local function meet(name, class, race, sex)
@@ -93,6 +117,19 @@ local function meet(name, class, race, sex)
   addRaider(name, class, race, sex)
 end
 ev:SetScript("OnEvent", function(_, event, text, author, _, _, _, _, _, _, _, _, _, guid)
+  if event == "PLAYER_LEVEL_UP" then
+    local lvl = tonumber(text) or (UnitLevel and UnitLevel("player")) or 1
+    give("level", 5 + math.floor(lvl / 5) + (lvl % 10 == 0 and 25 or 0))
+  elseif event == "QUEST_TURNED_IN" then
+    give("quest", 3 + math.floor(((UnitLevel and UnitLevel("player")) or 1) / 20), true)
+    return
+  elseif event == "CHAT_MSG_SKILL" then
+    if type(text) == "string" and not (RG.IsSecret and RG.IsSecret(text)) and text:find("%d+") then give("skill", 0.5, true) end
+    return
+  elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then
+    if type(text) == "string" and not (RG.IsSecret and RG.IsSecret(text)) and text:find("dies", 1, true) then give("kill", 0.05, true) end
+    return
+  end
   if event:find("^CHAT_MSG_") then
     if author and guid and GetPlayerInfoByGUID and not (RG.IsSecret and (RG.IsSecret(author) or RG.IsSecret(guid))) then
       local ok, _, class, _, race, sex, name = pcall(GetPlayerInfoByGUID, guid)
@@ -206,7 +243,7 @@ function RG.ArcadeDuel()
   local BEATS = { [2] = 1, [1] = 3, [3] = 2, [4] = 2 }   -- NPC beats item, item beats place, place beats NPC
   local function score(c, f, o) local s = power(c, f) + math.random(0, 25); if BEATS[c.kind] == o.kind then s = s + 20 end; return s end
   local win = score(mine, mf, foe) >= score(foe, ff, mine)
-  if win then a.coins = a.coins + 6; a.wins = (a.wins or 0) + 1 else a.losses = (a.losses or 0) + 1 end
+  if win then a.coins = a.coins + 4; a.wins = (a.wins or 0) + 1 else a.losses = (a.losses or 0) + 1 end
   return win, mine, foe, mf, ff
 end
 
@@ -512,7 +549,7 @@ local function build()
   frame.duel = btn("Duel for coins", 0, 16, 150, function()
     local win, mine, foe, mf, ff = RG.ArcadeDuel()
     if win == nil then frame.msg:SetText(mine or "") return end
-    frame.msg:SetText((win and "Won! +6 coins. " or "Lost. ") .. mine.name .. " (" .. FINISH[mf][1] .. ") vs " .. foe.name .. " (" .. FINISH[ff][1] .. ")")
+    frame.msg:SetText((win and "Won! +4 coins. " or "Lost. ") .. mine.name .. " (" .. FINISH[mf][1] .. ") vs " .. foe.name .. " (" .. FINISH[ff][1] .. ")")
     RG.ArcadeRefresh(true)
   end)
   frame.sell = btn("Sell extras", 150, 16, 150, function()
@@ -526,7 +563,7 @@ function RG.ArcadeRefresh(keepMsg)
   if not (frame and frame:IsShown()) then return end
   local a, own, total, prints = RG.ArcadeStats()
   frame.coins:SetText("|cffffd100" .. (a.coins or 0) .. "|r coins")
-  frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  1 coin per 2% of a level  ·  " .. (a.wins or 0) .. " duel wins")
+  frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  " .. (a.wins or 0) .. " duel wins\nXP, level-ups, quests, kills, skill-ups and duels pay coins  ·  " .. ((a.day == (date and date("%Y-%m-%d") or "today")) and (a.dayCoins or 0) or 0) .. " of " .. DAY_CAP .. " quest, kill and skill coins today")
   if keepMsg ~= true then frame.msg:SetText("") end
   local list = filtered(a)
   local pages = math.max(1, math.ceil(#list / #cells))
