@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.79.0
+- Cards: a new super rare "Legends" set (Asmongold, Madseasonshow, Leeroy Jenkins, Xaryu, Savvier). They only come as holo or full-art prints, are rarer than any other card, and have their own filter. Collections are now saved by card name so the card list can grow without mixing saves up.
+
 ## v0.78.0
 - The hidden card game (`/wp arcade`) is now a collection of 1,206 world cards: 430 iconic epic and legendary items, 400 bosses and rare NPCs, and 376 zones and places. Packs hold 5 cards and every card can come as a common, a rare, a holo (shimmering) or a full-art print; the last card of a pack is always a rare or better. Pages, filters (items, NPCs, places, owned only), a pack-opening reveal, "Sell extras" for coins and duels. The first creature set was swapped for coins.
 
