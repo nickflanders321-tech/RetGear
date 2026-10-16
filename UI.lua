@@ -19,7 +19,19 @@ local T = {
   blue    = { 0.0, 0.44, 0.87 },          -- rare blue
   text    = { 1, 1, 1 },
   dim     = { 0.62, 0.62, 0.62 },
+  row     = { 0.07, 0.065, 0.06 },
+  rowEdge = { 0.45, 0.42, 0.36 },
 }
+-- switch look: copies the theme's colours into T, restyles the window and redraws
+function RG.SetTheme(name)
+  if not RG.THEMES[name] then return false end
+  RG.db.theme = name
+  local th = RG.THEMES[name]
+  T.panel, T.edge, T.row, T.rowEdge = th.panel, th.edge, th.row, th.rowEdge
+  if RG.UIFrame then RG.DialogBackdrop(RG.UIFrame) end
+  if RG.RefreshUINow then RG.RefreshUINow() end
+  return true
+end
 local TOOLTIP_BG, TOOLTIP_EDGE = "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border"
 local STATUSBAR = "Interface\\TargetingFrame\\UI-StatusBar"
 local FONT_TITLE = "Fonts\\MORPHEUS.TTF"
@@ -220,7 +232,7 @@ end
 local function setItem(r, id, link, title, sub, right, right2, accent, quality, small)
   hideAll(r); r.itemID, r.link = id, link
   r.kind, r.h = small and "sub" or "item", small and SUB_H() or ROW_H()
-  backdrop(r, small and { 0.07, 0.065, 0.06, 0.85 } or T.panel, accent == "gold" and { T.gold[1], T.gold[2], T.gold[3], 0.9 } or (accent == "green" and { T.green[1], T.green[2], T.green[3], 0.9 } or T.edge), small and 10 or 12)
+  backdrop(r, small and { T.row[1], T.row[2], T.row[3], 0.85 } or T.panel, accent == "gold" and { T.gold[1], T.gold[2], T.gold[3], 0.9 } or (accent == "green" and { T.green[1], T.green[2], T.green[3], 0.9 } or T.edge), small and 10 or 12)
   r.hl:Show()
   local size = small and sz(22) or sz(32)
   r.iconBorder:SetSize(size, size)
@@ -294,7 +306,7 @@ end
 local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
-  backdrop(r, { 0.07, 0.065, 0.06, done and 0.6 or 0.85 }, { 0.45, 0.42, 0.36, done and 0.4 or 0.7 }, 10)
+  backdrop(r, { T.row[1], T.row[2], T.row[3], done and 0.6 or 0.85 }, { T.rowEdge[1], T.rowEdge[2], T.rowEdge[3], done and 0.4 or 0.7 }, 10)
   r.hl:Show()
   local box = sz(16)
   r.iconBorder:SetSize(box, box); r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("TOPLEFT", 34, -sz(9))
@@ -2114,7 +2126,7 @@ function RG.RefreshUINow()
     for i = #subs, 1, -1 do
       local b = frame.subBtns[subs[i]]
       local on = subs[i] == state.tab
-      backdrop(b, on and { 0.25, 0.2, 0.05, 0.9 } or { 0.08, 0.07, 0.06, 0.85 }, on and { T.gold[1], T.gold[2], T.gold[3], 1 } or { 0.5, 0.47, 0.4, 0.8 }, 10)
+      backdrop(b, on and { 0.25, 0.2, 0.05, 0.9 } or { T.row[1], T.row[2], T.row[3], 0.85 }, on and { T.gold[1], T.gold[2], T.gold[3], 1 } or { 0.5, 0.47, 0.4, 0.8 }, 10)
       b.text:SetFontObject(on and "GameFontHighlightSmall" or "GameFontNormalSmall")
       b:ClearAllPoints()
       if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -22, -86) end
@@ -2138,6 +2150,8 @@ local function build()
   local pos = RG.db and RG.db.windowPos
   if pos then frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else frame:SetPoint("CENTER") end
   if RG.db and RG.db.lastTab and TITLES[RG.db.lastTab] then state.tab = RG.db.lastTab end
+  RG.UIFrame = frame
+  do local th = RG.Theme(); T.panel, T.edge, T.row, T.rowEdge = th.panel, th.edge, th.row, th.rowEdge end
   RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
@@ -2171,7 +2185,12 @@ local function build()
     return b
   end
   local plus = sizeBtn("A+", 0.1, close)
-  sizeBtn("A-", -0.1, plus)
+  local minus = sizeBtn("A-", -0.1, plus)
+  local look = panelButton(frame, "Look", 44, 20)
+  look:SetPoint("RIGHT", minus, "LEFT", -4, 0)
+  look:SetScript("OnClick", function() RG.SetTheme((RG.db.theme == "dark") and "classic" or "dark") end)
+  look:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Switch look"); GameTooltip:AddLine("Classic or dark. /wp theme classic | dark", 1, 1, 1); GameTooltip:Show() end)
+  look:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
   -- classic XP bar: purple, blue while rested
   frame.xp = CreateFrame("StatusBar", nil, frame, "BackdropTemplate")

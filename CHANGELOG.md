@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.60.0
+- **Dark look:** a flat, cooler, less cluttered theme sits beside the classic one. Click "Look" in the window's top bar, or type /wp theme dark or /wp theme classic. Your choice is remembered.
+
 ## v0.59.0
 - **The arrow learns the way:** Waypath+ now remembers where you walk (a thin trail, shared by all your characters). If the arrow sees you aren't getting closer, because a mountain, cliff or cave entrance is in the way, it leads you point by point along the way you went before. If it doesn't know the way yet it says so, and learns it as you find it. /wp trail shows what it knows; /wp trail off or reset to stop or clear it.
 
