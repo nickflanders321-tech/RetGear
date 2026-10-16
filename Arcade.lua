@@ -98,12 +98,18 @@ local function give(kind, amount, capped)
     a.stats[kind] = (a.stats[kind] or 0) + coins
     if capped then a.dayCoins = (a.dayCoins or 0) + coins end
   end
+  -- once a day, after you have opened the cards window at least once, say when a pack is affordable
+  local d = date and date("%Y-%m-%d") or "today"
+  if a.seen and (a.coins or 0) >= PACK_PRICE and a.hintDay ~= d then
+    a.hintDay = d
+    if RG.Print then RG.Print("You have enough coins for a card pack. /wp cards") end
+  end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
 end
 RG.ArcadeGive = give
 local function earn(gainPct) give("xp", gainPct / 4) end
 local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_LOGIN"); ev:RegisterEvent("PLAYER_XP_UPDATE"); ev:RegisterEvent("PLAYER_LEVEL_UP"); ev:RegisterEvent("GROUP_ROSTER_UPDATE"); ev:RegisterEvent("QUEST_TURNED_IN")
+ev:RegisterEvent("PLAYER_LOGIN"); ev:RegisterEvent("PLAYER_XP_UPDATE"); ev:RegisterEvent("PLAYER_LEVEL_UP"); ev:RegisterEvent("GROUP_ROSTER_UPDATE"); ev:RegisterEvent("UPDATE_MOUSEOVER_UNIT"); ev:RegisterEvent("QUEST_TURNED_IN")
 for _, e in ipairs({ "CHAT_MSG_SKILL", "CHAT_MSG_COMBAT_XP_GAIN" }) do pcall(ev.RegisterEvent, ev, e) end
 for _, e in ipairs({ "SAY", "YELL", "PARTY", "PARTY_LEADER", "RAID", "RAID_LEADER", "GUILD", "WHISPER", "CHANNEL" }) do pcall(ev.RegisterEvent, ev, "CHAT_MSG_" .. e) end
 
@@ -137,6 +143,13 @@ ev:SetScript("OnEvent", function(_, event, text, author, _, _, _, _, _, _, _, _,
     end
     return
   end
+  if event == "UPDATE_MOUSEOVER_UNIT" then
+    if UnitExists and UnitExists("mouseover") and UnitIsPlayer and UnitIsPlayer("mouseover") and not (UnitIsUnit and UnitIsUnit("mouseover", "player")) then
+      local _, class = UnitClass("mouseover"); local _, race = UnitRace("mouseover")
+      meet(UnitName("mouseover"), class, race, UnitSex and UnitSex("mouseover"))
+    end
+    return
+  end
   if event == "GROUP_ROSTER_UPDATE" then
     for i = 1, 4 do
       local u = "party" .. i
@@ -165,7 +178,7 @@ ev:SetScript("OnEvent", function(_, event, text, author, _, _, _, _, _, _, _, _,
 end)
 
 -- ---------------------------------------------------------------------------
--- Packs, selling, duels
+-- Rolling cards
 -- ---------------------------------------------------------------------------
 local byTier, tierWeight
 local function buildPools()   -- (the Raiders pool only counts once there is one)
@@ -191,35 +204,150 @@ local function rollFinish(atLeast)
   return atLeast or 1
 end
 
+-- ---------------------------------------------------------------------------
+-- Sets, daily goals, free pack
+-- ---------------------------------------------------------------------------
+local function setOf(c)
+  if c.kind == 3 then
+    local z = c.text:match("^Found in (.+)$")
+    return z and ("Places in " .. z) or "All zones"
+  elseif c.kind == 2 then
+    local rank, ty = c.text:match("^(.-), level %d+ (%a+)$")
+    if rank then return ty:sub(1, 1):upper() .. ty:sub(2) .. " " .. (rank == "Boss" and "bosses" or "rares") end
+    return "Other NPCs"
+  elseif c.kind == 1 then
+    if c.text:find("^Legendary") then return "Legendary items" end
+    local il = tonumber(c.text:match("item level (%d+)")) or 0
+    return "Epic items, item level " .. math.floor(il / 10) * 10 .. "s"
+  end
+  return "Raiders: " .. (c.class and (c.class:sub(1, 1) .. c.class:sub(2):lower()) or "?")
+end
+local setCache, setCount
+local function getSets()
+  if setCache and setCount == #CARDS then return setCache end
+  local by, list = {}, {}
+  for _, c in ipairs(CARDS) do
+    local n = setOf(c)
+    if not by[n] then by[n] = { name = n, cards = {} }; list[#list + 1] = by[n] end
+    table.insert(by[n].cards, c)
+  end
+  local out = {}
+  for _, s in ipairs(list) do if #s.cards >= 3 then s.reward = math.min(100, 10 + 2 * #s.cards); out[#out + 1] = s end end
+  table.sort(out, function(x, y) return x.name < y.name end)
+  setCache, setCount = out, #CARDS
+  return out
+end
+local function setProgress(a, s)
+  local n = 0
+  for _, c in ipairs(s.cards) do if owned(a, c.id) > 0 then n = n + 1 end end
+  return n
+end
+-- pay out every finished set once; returns the names
+local function claimSets(a)
+  a.setsDone = a.setsDone or {}
+  local done = {}
+  for _, s in ipairs(getSets()) do
+    if not a.setsDone[s.name] and setProgress(a, s) >= #s.cards then
+      a.setsDone[s.name] = true
+      a.coins = (a.coins or 0) + s.reward
+      a.stats = a.stats or {}; a.stats.sets = (a.stats.sets or 0) + s.reward
+      done[#done + 1] = s.name .. " (+" .. s.reward .. ")"
+    end
+  end
+  return done
+end
+
+local GOALS = {
+  { "packs2", "Open 2 packs", 2, 5 }, { "packs3", "Open 3 packs", 3, 8 }, { "duel2", "Win 2 duels", 2, 5 },
+  { "shiny", "Pull a holo or full art", 1, 8 }, { "new5", "Find 5 new cards", 5, 6 }, { "sell", "Sell your extras", 1, 3 },
+}
+local function today() return date and date("%Y-%m-%d") or "today" end
+local function todaysGoals(a)
+  if a.goals and a.goals.day == today() then return a.goals end
+  local seed = tonumber(date and date("%j") or "1") + (tonumber(date and date("%Y") or "2026") or 0)
+  local pick, used = {}, {}
+  local k = 0
+  while #pick < 3 do
+    local i = (seed + k * 2) % #GOALS + 1; k = k + 1
+    if not used[i] then used[i] = true; pick[#pick + 1] = GOALS[i][1] end
+  end
+  a.goals = { day = today(), pick = pick, prog = {}, done = {} }
+  return a.goals
+end
+local function goalProgress(a, id, n)
+  local g = todaysGoals(a)
+  local def
+  for _, d in ipairs(GOALS) do if d[1] == id then def = d end end
+  local on = false
+  for _, p in ipairs(g.pick) do if p == id then on = true end end
+  if not def or not on or g.done[id] then return end
+  g.prog[id] = (g.prog[id] or 0) + (n or 1)
+  if g.prog[id] >= def[3] then
+    g.done[id] = true
+    a.coins = (a.coins or 0) + def[4]
+    a.stats = a.stats or {}; a.stats.goal = (a.stats.goal or 0) + def[4]
+    return def[2] .. " done (+" .. def[4] .. ")"
+  end
+end
+-- one free pack a day (up to 3 saved)
+local function dailyCheck()
+  local a = store(); if not a then return end
+  if a.freeDay ~= today() then a.freeDay = today(); a.free = math.min(3, (a.free or 0) + 1) end
+  todaysGoals(a)
+end
+RG.ArcadeDaily = dailyCheck
+
+-- ---------------------------------------------------------------------------
+-- Packs, selling, duels
+-- ---------------------------------------------------------------------------
+local PITY = 7   -- a pack after this many without a holo or full art always has one
 function RG.ArcadeOpenPack()
   local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
-  if (a.coins or 0) < PACK_PRICE then return nil, "A pack costs " .. PACK_PRICE .. " coins." end
-  a.coins = a.coins - PACK_PRICE; a.packs = (a.packs or 0) + 1
-  local got = {}
+  dailyCheck()
+  local free = (a.free or 0) > 0
+  if free then a.free = a.free - 1
+  elseif (a.coins or 0) < PACK_PRICE then return nil, "A pack costs " .. PACK_PRICE .. " coins."
+  else a.coins = a.coins - PACK_PRICE end
+  a.packs = (a.packs or 0) + 1
+  local got, shiny, newCount = {}, false, 0
   for i = 1, PACK_SIZE do
     local c = rollCard()
-    local f = rollFinish(c.tier == 6 and 3 or (i == PACK_SIZE and 2 or 1))   -- the last card of a pack is always a rare or better
+    local least = c.tier == 6 and 3 or 1
+    if i == PACK_SIZE then least = math.max(least, (a.pity or 0) >= PITY and 3 or 2) end   -- last card: rare or better (holo after a long dry spell)
+    local f = rollFinish(least)
     local isNew = owned(a, c.id) == 0
     local slot = a.cards[c.key or c.name] or {}
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
     got[#got + 1] = { card = c, finish = f, new = isNew }
+    if f >= 3 then shiny = true end
+    if isNew then newCount = newCount + 1 end
+    local r = a.rarest
+    if not r or (f * 10 + c.tier) > (r.finish * 10 + r.tier) then a.rarest = { name = c.name, finish = f, tier = c.tier } end
   end
-  return got
+  a.pity = shiny and 0 or ((a.pity or 0) + 1)
+  local notes = {}
+  local function note(x) if x then notes[#notes + 1] = x end end
+  note(goalProgress(a, "packs2", 1)); note(goalProgress(a, "packs3", 1))
+  if shiny then note(goalProgress(a, "shiny", 1)) end
+  if newCount > 0 then note(goalProgress(a, "new5", newCount)) end
+  for _, s in ipairs(claimSets(a)) do notes[#notes + 1] = "Set complete: " .. s end
+  return got, free, notes
 end
 
 -- keep one of each print, sell the rest
 function RG.ArcadeSellExtras()
   local a = store(); if not a then return 0, 0 end
   local coins, cnt = 0, 0
-  for id, slot in pairs(a.cards) do
+  for _, slot in pairs(a.cards) do
     for f = 1, 4 do
       local n = slot[f] or 0
       if n > 1 then coins = coins + (n - 1) * FINISH[f][4]; cnt = cnt + n - 1; slot[f] = 1 end
     end
   end
   a.coins = (a.coins or 0) + coins
-  return cnt, coins
+  local g = cnt > 0 and goalProgress(a, "sell", 1)
+  return cnt, coins, g
 end
 
 local function power(c, f) return (c.tier == 6 and 5.5 or c.tier) * 18 + FINISH[f or 1][3] + (c.id % 7) end
@@ -232,19 +360,29 @@ local function best(a)
   return b, bf, bp
 end
 local lastDuel = 0
+local DUEL_WAIT = 30
 function RG.ArcadeDuel()
   local a = store(); if not a then return end
-  local mine, mf, mp = best(a)
+  local mine, mf
+  if a.duelCard and byKey[a.duelCard] and bestFinish(a, byKey[a.duelCard].id) then
+    mine = byKey[a.duelCard]; mf = bestFinish(a, mine.id)
+  else mine, mf = best(a) end
   if not mine then return nil, "Open a pack first." end
   local now = GetTime and GetTime() or 0
-  if lastDuel > 0 and now - lastDuel < 60 then return nil, "Your card is resting. Try again in a minute." end
+  if lastDuel > 0 and now - lastDuel < DUEL_WAIT then return nil, "Your card is resting. Try again in " .. math.ceil(DUEL_WAIT - (now - lastDuel)) .. " seconds." end
   lastDuel = now
   local foe, ff = rollCard(), rollFinish()
   local BEATS = { [2] = 1, [1] = 3, [3] = 2, [4] = 2 }   -- NPC beats item, item beats place, place beats NPC
   local function score(c, f, o) local s = power(c, f) + math.random(0, 25); if BEATS[c.kind] == o.kind then s = s + 20 end; return s end
   local win = score(mine, mf, foe) >= score(foe, ff, mine)
-  if win then a.coins = a.coins + 4; a.wins = (a.wins or 0) + 1 else a.losses = (a.losses or 0) + 1 end
-  return win, mine, foe, mf, ff
+  local prize, goal = 0, nil
+  if win then
+    prize = 4 + math.min(a.streak or 0, 4)   -- +1 for each win in a row, up to +4
+    a.coins = a.coins + prize; a.wins = (a.wins or 0) + 1; a.streak = (a.streak or 0) + 1
+    a.stats = a.stats or {}; a.stats.duel = (a.stats.duel or 0) + prize
+    goal = goalProgress(a, "duel2", 1)
+  else a.losses = (a.losses or 0) + 1; a.streak = 0 end
+  return win, mine, foe, mf, ff, prize, goal
 end
 
 function RG.ArcadeStats()
@@ -255,6 +393,84 @@ function RG.ArcadeStats()
     for k = 1, 4 do if ((a.cards[c.key or c.name] or {})[k] or 0) > 0 then prints = prints + 1 end end
   end
   return a, own, #CARDS, prints
+end
+
+-- showcase: up to nine favourites
+function RG.ArcadePin(card)
+  local a = store(); if not a then return end
+  a.showcase = a.showcase or {}
+  local key = card.key or card.name
+  for i, k in ipairs(a.showcase) do if k == key then table.remove(a.showcase, i) return false end end
+  if #a.showcase >= 9 then table.remove(a.showcase, 1) end
+  table.insert(a.showcase, key)
+  return true
+end
+
+-- ---------------------------------------------------------------------------
+-- Trading with your party (one card for one card, both from your extras)
+-- ---------------------------------------------------------------------------
+local PREFIX = "WPCARD"
+local trade = { out = nil, incoming = nil }
+RG.ArcadeTrade = trade
+local function extraOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) >= 2 end
+local function tradable(c) return c and c.kind ~= 4 end
+local function sendAddon(msg, channel, target)
+  if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, target) end
+end
+function RG.ArcadeOffer(c, f)
+  local a = store(); if not a or not c then return false, "Pick a card first." end
+  if not tradable(c) then return false, "Raider cards can't be traded." end
+  if not extraOf(a, c, f) then return false, "Only extra copies can be traded: you keep one of each print." end
+  if not (IsInGroup and IsInGroup()) then return false, "Join a party to trade." end
+  trade.out = { key = c.key or c.name, finish = f }
+  sendAddon("O|" .. (c.key or c.name) .. "|" .. f, IsInRaid and IsInRaid() and "RAID" or "PARTY")
+  return true, "Offered " .. c.name .. " (" .. FINISH[f][1] .. ") to your group. Waiting for someone to answer."
+end
+function RG.ArcadeAcceptOffer(c, f)
+  local a = store(); local o = trade.incoming
+  if not (a and o) then return false, "No offer to answer." end
+  if not tradable(c) or not extraOf(a, c, f) then return false, "Pick one of your extra cards to give back." end
+  sendAddon("A|" .. o.key .. "|" .. o.finish .. "|" .. (c.key or c.name) .. "|" .. f, "WHISPER", o.from)
+  trade.pending = { give = { key = c.key or c.name, finish = f }, get = { key = o.key, finish = o.finish }, from = o.from }
+  trade.incoming = nil
+  return true, "Answer sent. Waiting for " .. o.from .. " to confirm."
+end
+local function addCard(a, key, f, n)
+  local c = byKey[key]; if not c then return end
+  local slot = a.cards[key] or {}
+  slot[f] = math.max(0, (slot[f] or 0) + n)
+  a.cards[key] = slot
+end
+local function onAddon(prefix, text, channel, sender)
+  if prefix ~= PREFIX or type(text) ~= "string" then return end
+  local a = store(); if not a then return end
+  local me = UnitName and UnitName("player")
+  if sender and me and (sender == me or sender:match("^([^-]+)") == me) then return end
+  local op, p1, p2, p3, p4 = strsplit("|", text)
+  if op == "O" and byKey[p1] and FINISH[tonumber(p2) or 0] then
+    trade.incoming = { key = p1, finish = tonumber(p2), from = sender }
+    if RG.ArcadeRefresh then RG.ArcadeRefresh(); RG.ArcadeMsg((sender or "Someone") .. " offers " .. p1 .. " (" .. FINISH[tonumber(p2)][1] .. "). Open the Trade tab to answer.") end
+  elseif op == "A" and trade.out and trade.out.key == p1 and trade.out.finish == tonumber(p2) and byKey[p3] and FINISH[tonumber(p4) or 0] then
+    local c = byKey[p1]
+    if extraOf(a, c, tonumber(p2)) and tradable(byKey[p3]) then
+      addCard(a, p1, tonumber(p2), -1); addCard(a, p3, tonumber(p4), 1)
+      sendAddon("C|" .. p3 .. "|" .. p4 .. "|" .. p1 .. "|" .. p2, "WHISPER", sender)
+      trade.out = nil
+      if RG.ArcadeMsg then RG.ArcadeMsg("Traded " .. p1 .. " for " .. p3 .. ".") end
+      if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+    end
+  elseif op == "C" and trade.pending and trade.pending.give.key == p1 and trade.pending.get.key == p3 then
+    addCard(a, p1, tonumber(p2), -1); addCard(a, p3, tonumber(p4), 1)
+    trade.pending = nil
+    if RG.ArcadeMsg then RG.ArcadeMsg("Traded " .. p1 .. " for " .. p3 .. ".") end
+    if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  end
+end
+do
+  if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX) end
+  local tf = CreateFrame("Frame")
+  tf:RegisterEvent("CHAT_MSG_ADDON")
+  tf:SetScript("OnEvent", function(_, _, ...) onAddon(...) end)
 end
 
 -- ---------------------------------------------------------------------------
@@ -316,6 +532,8 @@ ticker:SetScript("OnUpdate", function(_, dt)
       local r, g, b = 0.5 + 0.5 * math.sin(h * 6.283), 0.5 + 0.5 * math.sin(h * 6.283 + 2.09), 0.5 + 0.5 * math.sin(h * 6.283 + 4.19)
       w.shine:SetVertexColor(r, g, b, w.finish == 4 and 0.28 or 0.38)
       w.edge:SetVertexColor(r, g, b, 1)
+      local sp = rawget(w, "spark")
+      if sp then sp:SetAlpha(0.45 + 0.45 * math.sin(clock * 3 + w.phase * 6)); sp:SetVertexColor(1, 1, 1) end
     else holos[w] = nil end
   end
 end)
@@ -331,7 +549,13 @@ local function makeCard(parent, w, h)
   f.name = RG.NewText(f, "GameFontHighlightSmall"); f.name:SetPoint("BOTTOM", 0, 6); f.name:SetWidth(w - 10); f.name:SetHeight(h * 0.26); f.name:SetJustifyV("MIDDLE")
   f.kind = RG.NewText(f, "GameFontNormalSmall"); f.kind:SetPoint("TOPLEFT", 6, -5)
   f.count = RG.NewText(f, "GameFontNormalSmall"); f.count:SetPoint("TOPRIGHT", -6, -5)
+  f.spark = f:CreateTexture(nil, "OVERLAY", nil, 5); f.spark:SetTexture("Interface\\Cooldown\\star4"); f.spark:SetBlendMode("ADD")
+  f.spark:SetSize(math.max(16, w * 0.3), math.max(16, w * 0.3)); f.spark:SetPoint("TOPRIGHT", 4, 4); f.spark:Hide()
+  f.pin = RG.NewText(f, "GameFontNormal"); f.pin:SetPoint("BOTTOMLEFT", 5, 4); f.pin:SetText("|cffffd100*|r"); f.pin:Hide()
   f.phase = math.random()
+  f:SetScript("OnMouseUp", function(self, btn)
+    if self.onCard and self.card then self.onCard(self, btn) end
+  end)
   f:SetScript("OnEnter", function(self)
     local c = self.card
     if not c then return end
@@ -356,6 +580,13 @@ local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
   holos[w] = nil
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
+  w.spark:Hide()
+  local pinned = false
+  do
+    local a = WaypathDB and WaypathDB.arcade
+    if a and card and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then pinned = true end end end
+  end
+  if pinned then w.pin:Show() else w.pin:Hide() end
   if not card then w:Hide() return end
   w:Show()
   local t = TIER[card.tier][3]
@@ -377,12 +608,12 @@ local function paint(w, card, finish, copies)
   w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
   if finish == 4 then   -- full art: the picture fills the card
     w.art:SetPoint("TOPLEFT", 3, -3); w.art:SetPoint("BOTTOMRIGHT", -3, 3)
-    w.bar:Show(); w.shine:Show(); holos[w] = true
+    w.bar:Show(); w.shine:Show(); holos[w] = true; w.spark:Show()
   else
     local s = math.min(w.cw * 0.5, w.ch * 0.42)
     w.art:SetPoint("TOP", 0, -(w.ch * 0.16)); w.art:SetSize(s, s)
     w.bar:Show()
-    if finish == 3 then w.shine:Show(); holos[w] = true else w.shine:Hide() end
+    if finish == 3 then w.shine:Show(); holos[w] = true; w.spark:Show() else w.shine:Hide() end
   end
   if finish == 1 then w.edge:SetVertexColor(0.45, 0.45, 0.45, 1)
   elseif finish == 2 then w.edge:SetVertexColor(1, 0.82, 0.25, 1) end
@@ -391,15 +622,34 @@ end
 -- ---------------------------------------------------------------------------
 -- Window
 -- ---------------------------------------------------------------------------
-local frame, cells, reveal
+local frame, cells, reveal, detail
 local COLS, ROWS, CW, CH = 6, 4, 104, 118
-local view = { kind = 0, ownedOnly = false, page = 1 }
+local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
+local SHOWS = { "All", "Owned", "Missing", "Extras" }
+local SORTS = { "Collection", "Rarity", "Name", "Power" }
 
-local function filtered(a)
-  local list = {}
+local function isPinned(a, c)
+  for _, k in ipairs(a.showcase or {}) do if k == (c.key or c.name) then return true end end
+  return false
+end
+local function hasExtra(a, c) local s = a.cards[c.key or c.name]; if not s then return false end; for f = 1, 4 do if (s[f] or 0) >= 2 then return true end end return false end
+
+local function collectionList(a)
+  local list, q = {}, (view.search or ""):lower()
   for _, c in ipairs(CARDS) do
-    if (view.kind == 0 or c.kind == view.kind) and (not view.ownedOnly or owned(a, c.id) > 0) then list[#list + 1] = c end
+    local n = owned(a, c.id)
+    local ok = view.kind == 0 or c.kind == view.kind
+    if ok and view.show == 2 and n == 0 then ok = false end
+    if ok and view.show == 3 and n > 0 then ok = false end
+    if ok and view.show == 4 and not hasExtra(a, c) then ok = false end
+    if ok and q ~= "" and not (c.name:lower():find(q, 1, true) or (c.text or ""):lower():find(q, 1, true)) then ok = false end
+    if ok and view.set and setOf(c) ~= view.set then ok = false end
+    if ok and view.showcase and not isPinned(a, c) then ok = false end
+    if ok then list[#list + 1] = c end
   end
+  if view.sort == 2 then table.sort(list, function(x, y) if x.tier ~= y.tier then return x.tier > y.tier end return x.name < y.name end)
+  elseif view.sort == 3 then table.sort(list, function(x, y) return x.name < y.name end)
+  elseif view.sort == 4 then table.sort(list, function(x, y) return power(x, bestFinish(a, x.id) or 1) > power(y, bestFinish(a, y.id) or 1) end) end
   return list
 end
 
@@ -430,6 +680,21 @@ local function makeCover(card)
   return c
 end
 
+local FNAME = { "Common", "Rare", "Holo", "Full art" }
+local function summarize()
+  local best, bi
+  for i, g in ipairs(reveal.got) do
+    local sc = g.finish * 10 + g.card.tier
+    if not best or sc > best then best, bi = sc, i end
+  end
+  local g = reveal.got[bi]
+  local new = 0
+  for _, x in ipairs(reveal.got) do if x.new then new = new + 1 end end
+  local line = "Best pull: |cffffd100" .. g.card.name .. "|r (" .. FNAME[g.finish] .. ")  ·  " .. new .. " new"
+  if reveal.notes and #reveal.notes > 0 then line = line .. "\n|cff55ff55" .. table.concat(reveal.notes, "  ·  ") .. "|r" end
+  reveal.sum:SetText(line)
+end
+
 local function flip(i)
   local card = reveal.cards[i]
   local c = card.cover
@@ -446,26 +711,29 @@ local function flip(i)
       local g = reveal.got[i]
       reveal.flipped = reveal.flipped + 1
       card.new:SetText(g.new and "|cff55ff55New!|r" or "")
-      -- the drama: a white flash that grows with the print, and a sound
       local big = g.card.tier == 6 and 3 or (g.finish >= 3 and 2 or (g.finish == 2 and 1 or 0))
       playSound(g.finish, g.card.tier)
       if big > 0 then
         card.flash:SetAlpha(0.35 + 0.3 * big); card.flashLeft = 0.6 + 0.3 * big
-        card.flash:SetScript("OnUpdate", nil)
         card:SetScript("OnUpdate", function(f, d)
           f.flashLeft = f.flashLeft - d
           if f.flashLeft <= 0 then f.flash:SetAlpha(0); f:SetScript("OnUpdate", nil) else f.flash:SetAlpha(math.min(0.95, f.flashLeft * 0.9)) end
         end)
       end
-      if reveal.flipped >= #reveal.got then reveal.all:Hide(); reveal.ok:SetText("Done") end
+      if reveal.flipped >= #reveal.got then reveal.all:Hide(); reveal.ok:SetText("Done"); summarize() end
     end
   end)
 end
 
-local function showReveal(got)
+local function afford()
+  local a = store()
+  return a and (((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
+end
+
+local function showReveal(got, notes)
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
-    reveal:SetSize(PACK_SIZE * 138 + 30, 250); reveal:SetPoint("CENTER", 0, 60); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
+    reveal:SetSize(PACK_SIZE * 138 + 30, 310); reveal:SetPoint("CENTER", 0, 60); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
     RG.DialogBackdrop(reveal)
     reveal.cards = {}
     for i = 1, PACK_SIZE do
@@ -476,19 +744,25 @@ local function showReveal(got)
       cover:SetScript("OnClick", function() flip(i) end)
     end
     reveal.title = RG.NewText(reveal, "GameFontNormal"); reveal.title:SetPoint("TOP", 0, -12)
-    reveal.all = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); reveal.all:SetSize(120, 24); reveal.all:SetPoint("BOTTOM", -70, 14); reveal.all:SetText("Flip all")
-    reveal.all:SetScript("OnClick", function()
+    reveal.sum = RG.NewText(reveal, "GameFontHighlight"); reveal.sum:SetPoint("TOP", 0, -196); reveal.sum:SetWidth(PACK_SIZE * 138 - 20)
+    local function rb(label, x, w, fn)
+      local o = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); o:SetSize(w, 24); o:SetPoint("BOTTOM", x, 14); o:SetText(label); o:SetScript("OnClick", fn); return o
+    end
+    reveal.all = rb("Flip all", -150, 120, function()
       for i = 1, PACK_SIZE do
         local function go() if reveal:IsShown() then flip(i) end end
         if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5, go) else go() end
       end
     end)
-    reveal.ok = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); reveal.ok:SetSize(120, 24); reveal.ok:SetPoint("BOTTOM", 70, 14)
-    reveal.ok:SetScript("OnClick", function() reveal:Hide(); RG.ArcadeRefresh(true) end)
+    reveal.again = rb("Open another", 0, 140, function()
+      if frame and frame.buy then frame.buy._scripts.OnClick(frame.buy) end
+    end)
+    reveal.ok = rb("Skip", 150, 120, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
     tinsert(UISpecialFrames, "WaypathArcadePack")
   end
-  reveal.got, reveal.flipped = got, 0
+  reveal.got, reveal.flipped, reveal.notes = got, 0, notes
   reveal.title:SetText("Click each card to flip it")
+  reveal.sum:SetText("")
   reveal.all:Show(); reveal.ok:SetText("Skip")
   reveal:Show()
   for i, g in ipairs(got) do
@@ -497,89 +771,322 @@ local function showReveal(got)
     w.new:SetText(""); w.flash:SetAlpha(0); w:SetScript("OnUpdate", nil)
     local c = w.cover
     c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c.logo:SetAlpha(0.9); c.hint:SetAlpha(1); c:Show()
-    -- a faint hint for the special ones: the back of a holo, full art or Legend glitters
     if g.finish >= 3 or g.card.tier == 6 then holos[c] = true; c.hint:SetText("Something shiny...") else holos[c] = nil; c.edge:SetColorTexture(0.31, 0.82, 0.77, 1); c.edge:SetVertexColor(1, 1, 1, 1); c.hint:SetText("Click to flip") end
   end
+  reveal.again:SetEnabled(afford() and true or false)
+end
+
+-- ---------------------------------------------------------------------------
+-- Card detail view
+-- ---------------------------------------------------------------------------
+local function say(text)
+  if frame and frame:IsShown() and frame.msg then frame.msg:SetText(text or "") elseif RG.Print then RG.Print(text) end
+end
+RG.ArcadeMsg = say
+
+local function refreshDetail()
+  if not (detail and detail:IsShown() and detail.data) then return end
+  local a = store()
+  local c = detail.data
+  local slot = a.cards[c.key or c.name] or {}
+  local f = detail.finish
+  if (slot[f] or 0) == 0 then f = bestFinish(a, c.id) or 1; detail.finish = f end
+  paint(detail.card, c, bestFinish(a, c.id) and f or nil, owned(a, c.id))
+  local lines = {
+    "|cffffd100" .. c.name .. "|r",
+    KIND[c.kind] .. "  ·  " .. TIER[c.tier][1],
+    "|cffbbbbbb" .. (c.text or "") .. "|r",
+    "Set: " .. setOf(c),
+    "Power " .. power(c, f) .. (a.duelCard == (c.key or c.name) and "  ·  |cff55ff55your duel card|r" or ""),
+  }
+  detail.text:SetText(table.concat(lines, "\n"))
+  for k = 1, 4 do
+    local n = slot[k] or 0
+    local b = detail.prints[k]
+    b:SetText(FNAME[k] .. " x" .. n)
+    b:SetEnabled(n > 0 and k ~= f)
+  end
+  detail.pin:SetText(isPinned(a, c) and "Remove from showcase" or "Add to showcase")
+  detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
+  detail.offer:SetEnabled(c.kind ~= 4 and (slot[f] or 0) >= 2)
+end
+
+local function openDetail(c)
+  local a = store()
+  if not (a and c and owned(a, c.id) > 0) then return end
+  if not detail then
+    detail = CreateFrame("Frame", "WaypathArcadeCard", UIParent, "BackdropTemplate")
+    detail:SetSize(480, 320); detail:SetPoint("CENTER", 120, 0); detail:SetFrameStrata("FULLSCREEN_DIALOG")
+    RG.DialogBackdrop(detail)
+    tinsert(UISpecialFrames, "WaypathArcadeCard")
+    detail.card = makeCard(detail, 190, 250); detail.card:SetPoint("TOPLEFT", 20, -24)
+    detail.text = RG.NewText(detail, "GameFontHighlight"); detail.text:SetPoint("TOPLEFT", 232, -26); detail.text:SetWidth(232); detail.text:SetJustifyH("LEFT"); detail.text:SetSpacing(4)
+    local close = CreateFrame("Button", nil, detail, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", -4, -4)
+    detail.prints = {}
+    for k = 1, 4 do
+      local b = CreateFrame("Button", nil, detail, "UIPanelButtonTemplate"); b:SetSize(108, 22); b:SetPoint("TOPLEFT", 232 + ((k - 1) % 2) * 112, -140 - math.floor((k - 1) / 2) * 26)
+      b:SetScript("OnClick", function() detail.finish = k; refreshDetail() end)
+      detail.prints[k] = b
+    end
+    local function ab(label, x, y, fn)
+      local b = CreateFrame("Button", nil, detail, "UIPanelButtonTemplate"); b:SetSize(108, 24); b:SetPoint("TOPLEFT", x, y); b:SetText(label); b:SetScript("OnClick", fn); return b
+    end
+    detail.pin = ab("Showcase", 232, -204, function()
+      local on = RG.ArcadePin(detail.data); say(on and (detail.data.name .. " added to your showcase.") or (detail.data.name .. " removed from your showcase.")); refreshDetail(); RG.ArcadeRefresh(true)
+    end)
+    detail.pin:SetSize(224, 24)
+    detail.duel = ab("Use for duels", 232, -232, function()
+      local a2 = store(); a2.duelCard = detail.data.key or detail.data.name; say(detail.data.name .. " will fight your duels."); refreshDetail()
+    end)
+    detail.link = ab("Link in chat", 344, -232, function()
+      local c2 = detail.data
+      local text = "[Waypath card: " .. c2.name .. " (" .. FNAME[detail.finish] .. ")]"
+      if ChatEdit_InsertLink then pcall(ChatEdit_InsertLink, text) elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox then DEFAULT_CHAT_FRAME.editBox:Insert(text) end
+    end)
+    detail.offer = ab("Offer to group", 232, -260, function()
+      local ok, msg = RG.ArcadeOffer(detail.data, detail.finish); say(msg)
+    end)
+    detail.offer:SetSize(224, 24)
+  end
+  detail.data, detail.finish = c, bestFinish(a, c.id) or 1
+  detail:Show(); refreshDetail()
+end
+
+-- ---------------------------------------------------------------------------
+-- Window
+-- ---------------------------------------------------------------------------
+local MODES = { { "cards", "Cards" }, { "sets", "Sets" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Stats" } }
+
+local function cell_click(self, btn)
+  local c = self.card
+  if not c then return end
+  local a = store()
+  if owned(a, c.id) == 0 then return end
+  if btn == "RightButton" then
+    local on = RG.ArcadePin(c); say(on and (c.name .. " added to your showcase.") or (c.name .. " removed from your showcase."))
+    RG.ArcadeRefresh(true)
+  else openDetail(c) end
 end
 
 local function build()
   frame = CreateFrame("Frame", "WaypathArcade", UIParent, "BackdropTemplate")
-  frame:SetSize(COLS * CW + 44, ROWS * CH + 190); frame:SetPoint("CENTER"); frame:SetFrameStrata("DIALOG")
+  frame:SetSize(COLS * CW + 44, ROWS * CH + 118 + 150); frame:SetPoint("CENTER"); frame:SetFrameStrata("DIALOG")
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving); frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
   RG.DialogBackdrop(frame)
   tinsert(UISpecialFrames, "WaypathArcade")
-  frame.title = RG.NewText(frame, "GameFontNormalLarge"); frame.title:SetPoint("TOPLEFT", 22, -18); frame.title:SetText("Azeroth cards")
-  frame.coins = RG.NewText(frame, "GameFontNormal"); frame.coins:SetPoint("TOPRIGHT", -44, -22)
-  frame.sub = RG.NewText(frame, "GameFontHighlightSmall"); frame.sub:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -6); frame.sub:SetTextColor(0.6, 0.6, 0.6)
+  frame.title = RG.NewText(frame, "GameFontNormalLarge"); frame.title:SetPoint("TOPLEFT", 22, -16); frame.title:SetText("Azeroth cards")
+  frame.coins = RG.NewText(frame, "GameFontNormal"); frame.coins:SetPoint("TOPRIGHT", -44, -20)
+  frame.sub = RG.NewText(frame, "GameFontHighlightSmall"); frame.sub:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -4); frame.sub:SetTextColor(0.6, 0.6, 0.6); frame.sub:SetJustifyH("LEFT")
   local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", -4, -4)
 
-  -- filters
+  local function sbtn(parent, label, x, y, w, fn)
+    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate"); b:SetSize(w, 22); b:SetPoint("TOPLEFT", x, y); b:SetText(label); b:SetScript("OnClick", fn); return b
+  end
+  -- row 1: what to show
   frame.filters = {}
   local labels = { [0] = "All", "Items", "NPCs", "Places", "Raiders" }
   for k = 0, 4 do
-    local b = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate"); b:SetSize(70, 22); b:SetPoint("TOPLEFT", 22 + k * 74, -60); b:SetText(labels[k])
-    b:SetScript("OnClick", function() view.kind = k; view.page = 1; RG.ArcadeRefresh(true) end)
-    frame.filters[k] = b
+    frame.filters[k] = sbtn(frame, labels[k], 22 + k * 62, -64, 60, function() view.kind = k; view.page = 1; view.showcase = false; view.mode = "cards"; RG.ArcadeRefresh(true) end)
   end
-  frame.ownedBtn = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate"); frame.ownedBtn:SetSize(24, 24); frame.ownedBtn:SetPoint("LEFT", frame.filters[4], "RIGHT", 14, 0)
-  frame.ownedBtn.text = RG.NewText(frame.ownedBtn, "GameFontNormalSmall"); frame.ownedBtn.text:SetPoint("LEFT", frame.ownedBtn, "RIGHT", 2, 0); frame.ownedBtn.text:SetText("Owned only")
-  frame.ownedBtn:SetScript("OnClick", function(self) view.ownedOnly = self:GetChecked(); view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.showcase = sbtn(frame, "Showcase", 22 + 5 * 62, -64, 76, function() view.showcase = not view.showcase; view.kind = 0; view.page = 1; view.mode = "cards"; RG.ArcadeRefresh(true) end)
+  -- row 2: search, sort, show; and the screens
+  frame.searchBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate"); frame.searchBox:SetSize(110, 20); frame.searchBox:SetPoint("TOPLEFT", 30, -90)
+  frame.searchBox:SetAutoFocus(false); frame.searchBox:SetMaxLetters(30)
+  frame.searchBox:SetScript("OnTextChanged", function(self) local t = self:GetText() or ""; if t ~= view.search then view.search = t; view.page = 1; RG.ArcadeRefresh(true) end end)
+  frame.searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  frame.searchHint = RG.NewText(frame, "GameFontDisableSmall"); frame.searchHint:SetPoint("LEFT", frame.searchBox, "LEFT", 6, 0); frame.searchHint:SetText("Search")
+  frame.sortBtn = sbtn(frame, "Sort: Collection", 146, -89, 112, function() view.sort = view.sort % #SORTS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.showBtn = sbtn(frame, "Show: All", 262, -89, 90, function() view.show = view.show % #SHOWS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.modes = {}
+  for i, m in ipairs(MODES) do
+    frame.modes[m[1]] = sbtn(frame, m[2], 372 + (i - 1) * 54, -89, 52, function() view.mode = m[1]; view.set = (m[1] == "cards") and view.set or nil; RG.ArcadeRefresh(true) end)
+  end
 
   cells = {}
   for i = 1, COLS * ROWS do
     local c = makeCard(frame, CW - 8, CH - 8)
-    c:SetPoint("TOPLEFT", 26 + ((i - 1) % COLS) * CW, -92 - math.floor((i - 1) / COLS) * CH)
+    c:SetPoint("TOPLEFT", 26 + ((i - 1) % COLS) * CW, -122 - math.floor((i - 1) / COLS) * CH)
+    c.onCard = cell_click
     cells[i] = c
+  end
+  -- the text screens (Sets, Today, Trade, Stats)
+  frame.panel = RG.NewText(frame, "GameFontHighlight"); frame.panel:SetPoint("TOPLEFT", 28, -126); frame.panel:SetWidth(COLS * CW - 12); frame.panel:SetJustifyH("LEFT"); frame.panel:SetJustifyV("TOP"); frame.panel:SetSpacing(5)
+  frame.rows = {}
+  for i = 1, 14 do
+    local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
+    b:SetSize(COLS * CW - 12, 24); b:SetPoint("TOPLEFT", 28, -126 - (i - 1) * 28)
+    RG.Round(b, 0.14, 0.14, 0.14, 1, 6)
+    b.left = RG.NewText(b, "GameFontHighlight"); b.left:SetPoint("LEFT", 8, 0); b.left:SetJustifyH("LEFT")
+    b.right = RG.NewText(b, "GameFontNormal"); b.right:SetPoint("RIGHT", -8, 0); b.right:SetJustifyH("RIGHT")
+    b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.2, 0.2, 0.2, 1) end)
+    b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.14, 0.14, 0.14, 1) end)
+    b:SetScript("OnClick", function(self) if self.act then self.act() end end)
+    frame.rows[i] = b
   end
 
   local function btn(label, x, y, w, fn)
     local o = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate"); o:SetSize(w, 26); o:SetPoint("BOTTOM", x, y); o:SetText(label); o:SetScript("OnClick", fn)
     return o
   end
-  frame.msg = RG.NewText(frame, "GameFontHighlight"); frame.msg:SetPoint("BOTTOM", 0, 82); frame.msg:SetWidth(COLS * CW - 20)
+  frame.msg = RG.NewText(frame, "GameFontHighlight"); frame.msg:SetPoint("BOTTOM", 0, 84); frame.msg:SetWidth(COLS * CW - 20)
   frame.prev = btn("<", -60, 52, 40, function() view.page = view.page - 1; RG.ArcadeRefresh(true) end)
   frame.next = btn(">", 60, 52, 40, function() view.page = view.page + 1; RG.ArcadeRefresh(true) end)
   frame.pageText = RG.NewText(frame, "GameFontNormal"); frame.pageText:SetPoint("BOTTOM", 0, 58)
-  frame.buy = btn("Open pack (" .. PACK_PRICE .. ")", -150, 16, 150, function()
-    local got, err = RG.ArcadeOpenPack()
-    if not got then frame.msg:SetText(err or "") return end
-    showReveal(got); RG.ArcadeRefresh(true)
+  frame.buy = btn("Open pack", -150, 16, 150, function()
+    local got, free, notes = RG.ArcadeOpenPack()
+    if not got then say(free or "") return end
+    playSound(2)
+    showReveal(got, notes); RG.ArcadeRefresh(true)
   end)
   frame.duel = btn("Duel for coins", 0, 16, 150, function()
-    local win, mine, foe, mf, ff = RG.ArcadeDuel()
-    if win == nil then frame.msg:SetText(mine or "") return end
-    frame.msg:SetText((win and "Won! +4 coins. " or "Lost. ") .. mine.name .. " (" .. FINISH[mf][1] .. ") vs " .. foe.name .. " (" .. FINISH[ff][1] .. ")")
+    local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
+    if win == nil then say(mine or "") return end
+    say((win and ("Won! +" .. prize .. " coins.") or "Lost.") .. " " .. mine.name .. " (" .. FNAME[mf] .. ") vs " .. foe.name .. " (" .. FNAME[ff] .. ")" .. (goal and ("  ·  " .. goal) or ""))
     RG.ArcadeRefresh(true)
   end)
   frame.sell = btn("Sell extras", 150, 16, 150, function()
-    local n, coins = RG.ArcadeSellExtras()
-    frame.msg:SetText(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept.") or "No extras to sell: you keep one of each print.")
+    local n, coins, g = RG.ArcadeSellExtras()
+    say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
     RG.ArcadeRefresh(true)
   end)
 end
+
+local function categoryLine(a)
+  local have, tot = { 0, 0, 0, 0 }, { 0, 0, 0, 0 }
+  for _, c in ipairs(CARDS) do tot[c.kind] = tot[c.kind] + 1; if owned(a, c.id) > 0 then have[c.kind] = have[c.kind] + 1 end end
+  return string.format("Items %d/%d  ·  NPCs %d/%d  ·  Places %d/%d  ·  Raiders %d/%d", have[1], tot[1], have[2], tot[2], have[3], tot[3], have[4], tot[4])
+end
+
+local function showRows(n) for i, b in ipairs(frame.rows) do b:SetShown(i <= n) end end
 
 function RG.ArcadeRefresh(keepMsg)
   if not (frame and frame:IsShown()) then return end
   local a, own, total, prints = RG.ArcadeStats()
+  dailyCheck()
   frame.coins:SetText("|cffffd100" .. (a.coins or 0) .. "|r coins")
-  frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  " .. (a.wins or 0) .. " duel wins\nXP, level-ups, quests, kills, skill-ups and duels pay coins  ·  " .. ((a.day == (date and date("%Y-%m-%d") or "today")) and (a.dayCoins or 0) or 0) .. " of " .. DAY_CAP .. " quest, kill and skill coins today")
+  frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  " .. (a.wins or 0) .. " duel wins\n" .. categoryLine(a))
   if keepMsg ~= true then frame.msg:SetText("") end
-  local list = filtered(a)
-  local pages = math.max(1, math.ceil(#list / #cells))
-  view.page = math.max(1, math.min(view.page, pages))
-  for i, cell in ipairs(cells) do
-    local c = list[(view.page - 1) * #cells + i]
-    paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
+  local cards = view.mode == "cards"
+  for _, cell in ipairs(cells) do if not cards then cell:Hide() end end
+  frame.panel:SetText("")
+  frame.searchBox:SetShown(cards); frame.searchHint:SetShown(cards and (view.search or "") == "")
+  frame.sortBtn:SetShown(cards); frame.showBtn:SetShown(cards)
+  frame.sortBtn:SetText("Sort: " .. SORTS[view.sort]); frame.showBtn:SetText("Show: " .. SHOWS[view.show])
+  for k, b in pairs(frame.filters) do b:SetEnabled(not (cards and not view.showcase and k == view.kind)) end
+  frame.showcase:SetEnabled(not (cards and view.showcase))
+  for k, b in pairs(frame.modes) do b:SetEnabled(k ~= view.mode) end
+  frame.prev:SetShown(cards); frame.next:SetShown(cards); frame.pageText:SetShown(cards)
+  showRows(0)
+
+  if cards then
+    local list = collectionList(a)
+    local pages = math.max(1, math.ceil(#list / #cells))
+    view.page = math.max(1, math.min(view.page, pages))
+    for i, cell in ipairs(cells) do
+      local c = list[(view.page - 1) * #cells + i]
+      paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
+    end
+    frame.pageText:SetText(view.page .. " / " .. pages .. (view.set and ("  ·  " .. view.set) or "") .. (view.showcase and "  ·  showcase" or ""))
+    frame.prev:SetEnabled(view.page > 1); frame.next:SetEnabled(view.page < pages)
+    if #list == 0 then frame.panel:SetText("|cff999999Nothing matches. Change the search or the filters.|r") end
+  elseif view.mode == "sets" then
+    local sets = getSets()
+    local shown = math.min(14, #sets)
+    local pg = view.setPage or 0
+    local per = 14
+    local first = pg * per
+    frame.panel:SetText("Complete a set to earn a coin reward. Click a set to browse it.   |cff999999(" .. #sets .. " sets; use the arrows to turn the page)|r")
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -124)
+    showRows(math.max(0, math.min(per, #sets - first)))
+    for i = 1, per do
+      local s = sets[first + i]
+      local b = frame.rows[i]
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 28, -150 - (i - 1) * 26)
+      if s then
+        local have = setProgress(a, s)
+        local done = have >= #s.cards
+        b.left:SetText((done and "|cff55ff55" or "|cffffffff") .. s.name .. "|r")
+        b.right:SetText(have .. "/" .. #s.cards .. (done and ("  |cff55ff55done|r") or ("  +" .. s.reward)))
+        b.act = function() view.set = s.name; view.mode = "cards"; view.kind = 0; view.page = 1; view.show = 1; RG.ArcadeRefresh(true) end
+      end
+    end
+    frame.prev:Show(); frame.next:Show(); frame.pageText:Show()
+    local pages = math.max(1, math.ceil(#sets / per))
+    frame.pageText:SetText((pg + 1) .. " / " .. pages)
+    frame.prev:SetEnabled(pg > 0); frame.next:SetEnabled(pg + 1 < pages)
+  elseif view.mode == "today" then
+    local g = todaysGoals(a)
+    local lines = { "|cffffd100Today|r", "" }
+    lines[#lines + 1] = "Free packs waiting: |cffffffff" .. (a.free or 0) .. "|r  (one new pack every day, up to 3 saved)"
+    lines[#lines + 1] = "Pity: |cffffffff" .. (a.pity or 0) .. "|r of " .. PITY .. " packs without a holo or full art"
+    lines[#lines + 1] = "Quest, kill and skill coins today: |cffffffff" .. ((a.day == today()) and (a.dayCoins or 0) or 0) .. "|r of " .. DAY_CAP
+    lines[#lines + 1] = "Duel win streak: |cffffffff" .. (a.streak or 0) .. "|r  (each win in a row pays +1, up to +4)"
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "|cffffd100Goals|r"
+    for _, id in ipairs(g.pick) do
+      for _, d in ipairs(GOALS) do
+        if d[1] == id then
+          local done = g.done[id]
+          lines[#lines + 1] = (done and "|cff55ff55" or "|cffffffff") .. d[2] .. "|r  " .. math.min(g.prog[id] or 0, d[3]) .. "/" .. d[3] .. "  ·  +" .. d[4] .. " coins" .. (done and "  done" or "")
+        end
+      end
+    end
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -130)
+    frame.panel:SetText(table.concat(lines, "\n"))
+  elseif view.mode == "trade" then
+    local lines = { "|cffffd100Trade with your party|r", "", "Offer an extra copy from its card (Offer to group). Someone in your group answers with one of their own extras and the swap happens when you both agree.", "Raiders can't be traded." }
+    if trade.incoming then lines[#lines + 1] = ""; lines[#lines + 1] = "|cff55ff55" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r Pick one of your extras below to answer." end
+    if trade.out then lines[#lines + 1] = ""; lines[#lines + 1] = "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer." end
+    if trade.pending then lines[#lines + 1] = ""; lines[#lines + 1] = "Answer sent. Waiting for " .. trade.pending.from .. "." end
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -126)
+    local ptext = table.concat(lines, "\n")
+    frame.panel:SetText(ptext)
+    -- your extras, to answer an offer or start one
+    local extras = {}
+    for _, c in ipairs(CARDS) do
+      if c.kind ~= 4 then
+        local s = a.cards[c.key or c.name]
+        if s then for f = 1, 4 do if (s[f] or 0) >= 2 then extras[#extras + 1] = { c = c, f = f, n = s[f] - 1 } end end end
+      end
+    end
+    local n = math.min(8, #extras)
+    showRows(n)
+    for i = 1, n do
+      local e = extras[i]
+      local b = frame.rows[i]
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 28, -300 - (i - 1) * 28)
+      b.left:SetText(e.c.name .. "  |cff999999(" .. FNAME[e.f] .. ")|r"); b.right:SetText("x" .. e.n .. " extra")
+      b.act = function()
+        local ok, msg
+        if trade.incoming then ok, msg = RG.ArcadeAcceptOffer(e.c, e.f) else ok, msg = RG.ArcadeOffer(e.c, e.f) end
+        say(msg); RG.ArcadeRefresh(true)
+      end
+    end
+    if #extras == 0 then frame.panel:SetText(ptext .. "\n\n|cff999999You have no extra copies to trade yet.|r") end
+  elseif view.mode == "stats" then
+    local st = a.stats or {}
+    local r = a.rarest
+    local lines = { "|cffffd100Statistics|r", "",
+      "Packs opened: |cffffffff" .. (a.packs or 0) .. "|r",
+      "Rarest pull: |cffffffff" .. (r and (r.name .. " (" .. FNAME[r.finish] .. ")") or "none yet") .. "|r",
+      "Duels: |cffffffff" .. (a.wins or 0) .. " won, " .. (a.losses or 0) .. " lost|r",
+      "", "|cffffd100Coins earned|r",
+      string.format("XP %d  ·  level-ups %d  ·  quests %d  ·  kills %d", st.xp or 0, st.level or 0, st.quest or 0, st.kill or 0),
+      string.format("Skill-ups %d  ·  duels %d  ·  goals %d  ·  sets %d", st.skill or 0, st.duel or 0, st.goal or 0, st.sets or 0),
+      "", "Characters met: |cffffffff" .. (function() local n = 0; for _ in pairs(a.raiders or {}) do n = n + 1 end return n end)() .. "|r",
+    }
+    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 28, -130)
+    frame.panel:SetText(table.concat(lines, "\n"))
   end
-  frame.pageText:SetText(view.page .. " / " .. pages)
-  frame.prev:SetEnabled(view.page > 1); frame.next:SetEnabled(view.page < pages)
-  frame.buy:SetEnabled((a.coins or 0) >= PACK_PRICE)
-  for k, b in pairs(frame.filters) do b:SetEnabled(k ~= view.kind) end
+  local free = a.free or 0
+  frame.buy:SetText(free > 0 and ("Free pack (" .. free .. ")") or ("Open pack (" .. PACK_PRICE .. ")"))
+  frame.buy:SetEnabled(afford() and true or false)
 end
 
 function RG.ShowArcade()
   if not frame then build() end
+  local a = store(); if a then a.seen = true end
   frame:Show(); RG.ArcadeRefresh()
 end
 
