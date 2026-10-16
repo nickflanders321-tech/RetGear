@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.70.1
+- **Redesign, second pass.** Your current zone is now a large "hero" card (bigger icon and title), all cards and rows are taller with more space between them and bigger text, the header shows your character in a larger font with a thicker XP bar, section labels are quiet capitals without +/- markers, and the pace line is a plain row. The tracker has larger text, more room between lines and between sections.
+
 ## v0.70.0
 - **A new look for everything.** Rounded cards and pills replace the boxed outlines; the window, tracker, pop-ups, setup wizard and source windows share one deep blue-black palette with a teal accent.
 - **Route window:** the tab strip is now a rounded segmented control, section labels are small and quiet, steps use round checkboxes, and sub-tabs, buttons and status pills are rounded.

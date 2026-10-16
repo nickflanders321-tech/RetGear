@@ -304,7 +304,7 @@ local function build()
   tr.foot = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.foot:SetPoint("BOTTOMLEFT", 12, 16); tr.foot:SetTextColor(0.62, 0.62, 0.62)
   tr.pct = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.pct:SetPoint("BOTTOMRIGHT", -12, 16); tr.pct:SetTextColor(0.62, 0.62, 0.62)
 
-  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -38); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
+  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -46); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   lines = {}
 end
 
@@ -331,14 +331,14 @@ local function section(n, y, label, key, right)
     end
     b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
   end
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\ARIALN.TTF", fontSize(12), "")
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); b.text:SetFont("Fonts\\ARIALN.TTF", fontSize(11.5), "")
   b.text:SetWidth(W - 24); b.text:SetWordWrap(false)
   b.text:SetShadowColor(0, 0, 0, 0); b.text:SetShadowOffset(0, 0)
   local lab = label:find("|", 1, true) and label or label:upper()
   b.text:SetText((key and ("|cff6f7b8a" .. (isFolded and "+ " or "- ") .. "|r") or "") .. "|cff8b97a6" .. lab .. "|r")
   b.right:SetFont("Fonts\\ARIALN.TTF", fontSize(10), ""); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
-  return y + 22, isFolded
+  return y + 28, isFolded
 end
 -- opts: onClick, onRightClick, tip, box (checkbox state), right (right-hand text), single (one line, cut with ...)
 local function item(n, y, text, opts)
@@ -347,9 +347,9 @@ local function item(n, y, text, opts)
   b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
   b.onDoubleClick = opts.wp and function() RG.ArrowTo(opts.wp) end or nil
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
-  b.right:SetFont("Fonts\\ARIALN.TTF", fontSize(11.5), ""); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
+  b.right:SetFont("Fonts\\ARIALN.TTF", fontSize(12.5), ""); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); b.text:SetFont("Fonts\\ARIALN.TTF", fontSize(12.5), "")
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); b.text:SetFont("Fonts\\ARIALN.TTF", fontSize(13.5), "")
   b.text:SetWidth(W - 24 - indent - rw)
   b.text:SetWordWrap(not opts.single)
   if b.text.SetMaxLines then b.text:SetMaxLines(opts.single and 1 or 0) end
@@ -362,7 +362,7 @@ local function item(n, y, text, opts)
   else b.box:Hide(); b.check:Hide() end
   local h = opts.single and 15 or math.max(15, (b.text:GetStringHeight() or 14) + 2)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(h); b:Show()
-  return y + h + 3
+  return y + h + 5
 end
 
 -- Tooltip for a quest in your log.
@@ -467,7 +467,7 @@ function RG.RefreshTracker()
       n = n + 1
       y = item(n, y, (RG.ItemInfo(e.id) or ("item " .. e.id)) .. "  x" .. e.need .. (e.toBuy > 0 and (GREY .. "  (buy " .. e.toBuy .. ")|r") or (GREEN .. "  (in your bags)|r")) .. "\n" .. GREY .. e.quest .. "|r", { onClick = function() if RG.ShowTab then RG.ShowTab("mail") end end })
     end
-    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(38 + y + 40)
+    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(46 + y + 44)
     return
   end
   local MAXQ = 10
@@ -863,7 +863,7 @@ function RG.RefreshTracker()
     end
   end
   tr.body:SetHeight(math.max(10, y))
-  tr:SetHeight(38 + y + 40)
+  tr:SetHeight(46 + y + 44)
 end
 
 -- Fade the tracker during fights so it doesn't cover the action.

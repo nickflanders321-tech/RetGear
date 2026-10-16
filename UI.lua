@@ -34,10 +34,10 @@ local W, H = 780, 640
 -- Text size: 1.0 = original, saved per account. A- / A+ in the header change it.
 local function TS() return (RG.db and RG.db.textSize) or 1.2 end
 local function sz(n) return math.floor(n * TS() + 0.5) end
-local GAP = 4
-local function ROW_H() return sz(48) end
-local function HEAD_H() return sz(30) end
-local function SUB_H() return sz(34) end
+local GAP = 8
+local function ROW_H() return sz(54) end
+local function HEAD_H() return sz(34) end
+local function SUB_H() return sz(38) end
 local function BAR_H() return sz(44) end
 
 local frame, scroll, content, tabs, footer, sectionTitle
@@ -198,7 +198,7 @@ end
 local function setHeader(r, text)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind, r.h = "head", HEAD_H()
-  font(r.head, FONT_TITLE, sz(11))
+  font(r.head, FONT_TITLE, sz(12))
   r:SetBackdrop(nil); r.hl:Hide()
   -- small caps-style section label (only when the text has no colour codes to break)
   local label = text
@@ -216,22 +216,23 @@ end
 -- accent: "gold" | "green" | "purple" | nil  ·  quality: item quality for the icon border
 local function setItem(r, id, link, title, sub, right, right2, accent, quality, small)
   hideAll(r); r.itemID, r.link = id, link
-  r.kind, r.h = small and "sub" or "item", small and SUB_H() or ROW_H()
+  local hero = state.hero and not small
+  r.kind, r.h = small and "sub" or "item", small and SUB_H() or (hero and sz(84) or ROW_H())
   local fill = small and { 0.09, 0.12, 0.165, 1 } or T.panel
-  if accent == "gold" then fill = { 0.07, 0.15, 0.17, 1 } elseif accent == "green" then fill = { 0.075, 0.15, 0.115, 1 } end
+  if hero then fill = { 0.075, 0.16, 0.18, 1 } elseif accent == "gold" then fill = { 0.07, 0.15, 0.17, 1 } elseif accent == "green" then fill = { 0.075, 0.15, 0.115, 1 } end
   backdrop(r, fill, nil, small and 10 or 12)
   r.hl:Show()
-  local size = small and sz(22) or sz(32)
+  local size = small and sz(24) or (hero and sz(48) or sz(38))
   r.iconBorder:SetSize(size, size)
-  r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("LEFT", small and 34 or 8, 0)
+  r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("LEFT", small and 40 or 14, 0)
   r.iconBorder:Show(); r.icon:Show()
   r.icon:SetTexture(id and itemIcon(id) or 134400); r.icon:SetDesaturated(false)
   r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93); r.icon:SetVertexColor(1, 1, 1, 1)
   local qc = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
   r.iconBorder:SetVertexColor(1, 1, 1, 1)
   if qc then r.iconBorder:SetColorTexture(qc.r, qc.g, qc.b, 0.95) else r.iconBorder:SetColorTexture(0.35, 0.33, 0.3, 0.9) end
-  font(r.title, FONT_BODY, small and sz(11.5) or sz(13))
-  font(r.sub, FONT_NUM, small and sz(11.5) or sz(12.5))
+  font(r.title, hero and FONT_TITLE or FONT_BODY, small and sz(12.5) or (hero and sz(16) or sz(14)))
+  font(r.sub, FONT_NUM, small and sz(12) or (hero and sz(13.5) or sz(13)))
   font(r.pillText, FONT_NUM, sz(11)); font(r.meta, FONT_NUM, sz(11))
   r.pill:SetHeight(sz(18))
   r.title:SetText(title or ""); r.title:Show()
@@ -251,7 +252,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   if small and right2 and right2 ~= "" and not kind then r.meta:SetText(right2); r.meta:ClearAllPoints(); r.meta:SetPoint("RIGHT", -12, 0); r.meta:Show() end
   -- keep titles clear of the right column
   local rightW = math.max(kind and r.pill:GetWidth() or 0, r.meta:IsShown() and r.meta:GetStringWidth() or 0)
-  local leftX = (small and 34 or 8) + size + 10
+  local leftX = (small and 40 or 14) + size + 14
   -- long text wraps and the row grows to fit it (nothing is cut off with "...")
   local th = fitText(r.title, math.max(120, (W - 56) - leftX - rightW - 26))
   local hasSub = sub and sub ~= ""
@@ -259,7 +260,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   if not hasSub then shh = 0 end
   local gap = hasSub and 2 or 0
   local content = th + gap + shh
-  local pad = small and 5 or 7
+  local pad = small and 7 or (hero and 14 or 10)
   r.h = math.max(r.h, math.ceil(content + pad * 2))
   local top = math.max(pad, (r.h - content) / 2)
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r, "TOPLEFT", leftX, -top)
@@ -1077,7 +1078,7 @@ local function renderRoute()
     local r = getRow(n)
     local isOpen = state[key]
     if isOpen == nil then isOpen = defaultOpen end
-    setHeader(r, (isOpen and "- " or "+ ") .. label .. (count and (GREY .. "   " .. count .. "|r") or ""))
+    setHeader(r, label .. (count and (GREY .. "   " .. count .. "|r") or ""))
     r.onClick = function() state[key] = not isOpen; RG.RefreshUI() end
     r.tip = isOpen and "Click to fold this section." or "Click to show this section."
     return isOpen
@@ -1093,7 +1094,7 @@ local function renderRoute()
   for _, e in ipairs(entries) do if e.upNext then upNext = true end end
   if section((upNext and "Up next" or "Now") .. "  ·  level " .. lvl, "secNow", nil, true) then
     local any = false
-    for _, e in ipairs(entries) do if e.where == "now" then card(e, true); any = true end end
+    for _, e in ipairs(entries) do if e.where == "now" then state.hero = true; card(e, true); state.hero = nil; any = true end end
     if not any then
       n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Everything for your level is done.|r", "Your next zones are under Coming up.", "", "", "green", nil, true)
     end
@@ -1107,7 +1108,7 @@ local function renderRoute()
     local pr = getRow(n)
     setItem(pr, nil, nil, "|cffffffffLevel " .. lvl .. "|r" .. GREY .. "   " .. RG.FormatDuration(cur) .. " so far" .. (eta and ("  ·  next level in about " .. (RG.FormatETA(eta) or "?")) or "") .. "|r",
       last and (GREY .. "Last level " .. RG.FormatDuration(last) .. "  ·  average of last 5: " .. RG.FormatDuration(avg) .. "|r") or (GREY .. "Times for earlier levels appear after your next level-up|r"),
-      state.pace and (GREY .. "hide splits|r") or (GREY .. "show splits|r"), "", "gold", nil, true)
+      state.pace and (GREY .. "hide splits|r") or (GREY .. "show splits|r"), "", nil, nil, true)
     pr.icon:SetTexture("Interface\\Icons\\INV_Misc_PocketWatch_01")
     pr.onClick = function() state.pace = not state.pace; RG.RefreshUI() end
     if state.pace then
@@ -2244,15 +2245,15 @@ local function build()
   end
 
   -- who you are, and a thin XP bar
-  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_BODY, 12); frame.subtitle:SetPoint("TOPLEFT", 18, -86); frame.subtitle:SetJustifyH("LEFT"); frame.subtitle:SetTextColor(unpack(T.text))
+  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_TITLE, 15); frame.subtitle:SetPoint("TOPLEFT", 18, -86); frame.subtitle:SetJustifyH("LEFT"); frame.subtitle:SetTextColor(unpack(T.text))
   frame.xp = CreateFrame("StatusBar", nil, frame)
-  frame.xp:SetPoint("TOPLEFT", 18, -105); frame.xp:SetPoint("TOPRIGHT", -18, -105); frame.xp:SetHeight(5)
+  frame.xp:SetPoint("TOPLEFT", 18, -108); frame.xp:SetPoint("TOPRIGHT", -18, -108); frame.xp:SetHeight(5)
   frame.xp:SetStatusBarTexture(WHITE)
   local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.1, 0.13, 0.17, 1)
-  frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("TOPRIGHT", -18, -86); frame.xpText:SetTextColor(unpack(T.dim))
+  frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("TOPRIGHT", -18, -90); frame.xpText:SetTextColor(unpack(T.dim))
 
   -- section title
-  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_BODY, 16); sectionTitle:SetPoint("TOPLEFT", 18, -118); sectionTitle:SetTextColor(unpack(T.gold))
+  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_TITLE, 15); sectionTitle:SetPoint("TOPLEFT", 18, -122); sectionTitle:SetTextColor(unpack(T.text))
   sectionTitle:SetShadowColor(0, 0, 0, 1); sectionTitle:SetShadowOffset(1, -1)
   frame.sectionSub = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
 
@@ -2293,7 +2294,7 @@ local function build()
   frame.scan:SetScript("OnClick", function() RG.ScanAH(true) end)
 
   scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-  scroll:SetPoint("TOPLEFT", 18, -158); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
+  scroll:SetPoint("TOPLEFT", 18, -166); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
   pcall(function()   -- slim scroll bar: no arrow buttons, a thin grey thumb
     local sb = scroll.ScrollBar
     if not sb then return end
