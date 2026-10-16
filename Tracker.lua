@@ -58,6 +58,10 @@ local function plain(text) return ((text or ""):gsub("|T.-|t", ""):gsub("|c%x%x%
 -- open steps, falling back to any zone that fits.
 local function currentEntry()
   local lvl = UnitLevel("player")
+  if RG.SmartEntry then
+    local ok, pick = pcall(RG.SmartEntry)
+    if ok and pick then return pick end
+  end
   local function open(r)
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
     for i = 1, #steps do if not RG.StepIsDone(r, i) then return true end end
@@ -546,6 +550,16 @@ function RG.RefreshTracker()
     local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
     if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
     n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
+    if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" then
+      local ok, alts = pcall(RG.SmartAlternatives, r)
+      if ok and alts and #alts > 0 then
+        local names = {}
+        for _, o in ipairs(alts) do names[#names + 1] = o.r.zone end
+        n = n + 1
+        y = item(n, y, GREY .. "Also good: " .. table.concat(names, ", ") .. "|r", { single = true, indent = 2,
+          tip = GOLD .. "Smart route|r picks the zone that suits your level, position and quest log.\n\n" .. (function() local t = {} for _, o in ipairs(alts) do t[#t + 1] = "|cffffffff" .. o.r.zone .. "|r: " .. o.why end return table.concat(t, "\n") end)() .. "\n\n" .. GOLD .. "/wp smart|r turns this off." })
+      end
+    end
     if not isFolded and qlines then
       local sk = key .. "#" .. firstOpen
       local wp = RG.StepWaypoint and RG.StepWaypoint(r, firstOpen)

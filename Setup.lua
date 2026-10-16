@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 
-local W, H = 540, 460
+local W, H = 540, 490
 local wiz
 
 -- ---------------------------------------------------------------------------
@@ -161,6 +161,7 @@ local function buildPages()
   segment("What matters most?", "goal", { { "fast", "Level fast" }, { "balanced", "Balanced" }, { "scenic", "Enjoy the zones" } }, "balanced")
   segment("Solo or with others?", "playStyle", { { "solo", "Solo only" }, { "group", "Open to dungeons and groups" } }, "solo")
   segment("Travel", "travel", { { "any", "Use boats, zeppelins and hearth" }, { "walk", "Keep travel short" } }, "any")
+  segment("Route style", "routeStyle", { { "smart", "Smart: best zone for me now" }, { "guided", "Guided: follow the route in order" } }, "smart")
   segment("Your role", "role", { { "dps", "Damage" }, { "tank", "Tank" }, { "heal", "Healer" } }, "dps")
   local why = text(pp, "GameFontHighlightSmall", GREY .. "Waypath+ uses these to choose routes, gear and dungeon steps. Change them any time with /wp setup.|r", W - 70)
   why:SetPoint("TOPLEFT", 0, sy)

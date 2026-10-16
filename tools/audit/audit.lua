@@ -64,6 +64,7 @@ local PROF_WORDS = { "mining", "mine ", "blacksmith", "smelt", "veins", "herbs",
 local PROF_OK = { "Miners:", "Crafters:", "Blacksmiths:", "%(miners", "learn your professions", "Herbalists:", "Skinners:" }
 
 local failures, rows = {}, {}
+local SCORE = {}   -- spec scorecard: faction class spec -> numbers
 local function fail(combo, msg) failures[#failures + 1] = combo .. ": " .. msg end
 
 -- Professions (same for every race and class): each has trainers for every rank, a
@@ -258,6 +259,11 @@ for _, race in ipairs(RACE_ORDER) do
         if ns < 12 then bad("gear for only " .. ns .. " slots") end
         for b, c in ipairs(bands) do if c < 8 then bad("only " .. c .. " items in levels " .. (20 + b * 10) .. "s") end end
       end
+      if not sp.main then
+        local list = ((RG.SPEC_GEAR or {})[RG.PLAYER_CLASS] or {})[sp.key] or {}
+        local key = (ALLIANCE[race] and "Alliance " or "Horde ") .. class .. " " .. sp.name
+        if not SCORE[key] or #list < SCORE[key].n then SCORE[key] = { n = #list, builds = #(sp.build or {}), tips = #(sp.tips or {}), ok = ok } end
+      end
       if ok then specOK = specOK + 1 end
     end
     if mains ~= 1 then fail(combo, mains .. " leveling specs marked main (want 1)") end
@@ -267,6 +273,13 @@ for _, race in ipairs(RACE_ORDER) do
   end
 end
 
+if arg[1] == "--scorecard" or arg[2] == "--scorecard" then
+  local keys = {}
+  for k in pairs(SCORE) do keys[#keys + 1] = k end
+  table.sort(keys)
+  print("| Faction / class / spec | Gear items | Build lines | Tips | Ready |\n|---|---|---|---|---|")
+  for _, k in ipairs(keys) do local v = SCORE[k]; print(string.format("| %s | %d | %d | %d | %s |", k, v.n, v.builds, v.tips, v.ok and "yes" or "NO")) end
+end
 local head = { "Race / class", "Start (steps)", "Steps 1-20", "With waypoint", "Route gaps", "Class quests (1-9/10-19/20-39/40+)", "Dungeon quests", "Problems", "Gear guide", "Professions with a trainer nearby", "2nd specs ready" }
 if MARKDOWN then
   print("| " .. table.concat(head, " | ") .. " |")

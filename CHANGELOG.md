@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.58.0
+- **Smart route:** the tracker now picks the best questing zone for your level, where you are and the quests already in your log, and lists the next best choices ("Also good: ..."). It follows the style you pick in /wp setup (Fastest XP, Balanced, Low travel). It stays in a zone until something is clearly better, and dungeons are only suggested if you said you're open to groups. Prefer the fixed order? Choose Guided in setup or type /wp smart to switch.
+- Every spec (Horde and Alliance) is now scored against the same gear and guide standard in the data checks.
+
 ## v0.57.0
 - **Alliance support (beta):** Humans, Dwarves, Gnomes, Night Elves and Alliance Skyborne now get a full leveling route from their own starting zone through all the shared Alliance zones to 60, with quest steps, map pins, dungeon quest lists, Alliance profession trainers and Alliance gear sources for every class and spec.
 - Undead-only paladin text is hidden for Alliance paladins. The first time an Alliance character logs in you get a short beta notice; please report anything that looks off.

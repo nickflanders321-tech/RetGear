@@ -797,6 +797,8 @@ SlashCmdList.WAYPATH = function(msg)
   cmd = cmd and cmd:lower() or ""
   if cmd == "" then
     if RG.ToggleUI then RG.ToggleUI() end
+  elseif cmd == "smart" then
+    if RG.SmartToggle then RG.SmartToggle(rest == "on" or (rest ~= "off" and (RG.db.smart == false or RG.db.routeStyle == "guided"))) end
   elseif cmd == "weight" then
     local stat, val = rest:match("^(%S+)%s+([%d%.]+)$")
     stat = stat and stat:upper()
