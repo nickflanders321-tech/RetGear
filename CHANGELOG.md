@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.63.1
+- **Crystal arrow:** the 3D arrow is redrawn as a faceted, cut-glass arrow with a ridge down its length, glowing edges and a soft shadow beneath. It glows cyan when you face the target, amber when it is off to the side and soft red when it is behind you.
+
 ## v0.63.0
 - **New Graphite look:** the classic ornate frames are gone. Waypath+ is now flat near-black with thin lines, a single teal accent and the Inter typeface (SIL Open Font License, included). Tabs run along the top, list items are separated by hairlines instead of boxes, buttons and the scroll bar are slim, and the quest tracker, setup and toasts match.
 - **Cleaner arrow:** no more dark disc or gold ring. The solid 3D arrow floats on its own, larger, with a crisp name above and distance below in Inter, and gives a small pop when its target changes.

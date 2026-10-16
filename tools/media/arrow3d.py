@@ -12,57 +12,63 @@ import numpy as np
 
 FRAMES, COLS, CELL, SHEET, SS = 100, 10, 102, 1024, 4
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'Media'
-EL = math.radians(52)          # camera elevation above the ground
-H = 0.26                       # arrow thickness
+EL = math.radians(58)          # camera elevation above the ground
+H = 0.30                       # arrow thickness
 
-P = [(-0.17, -0.72), (0.17, -0.72), (0.17, 0.02), (0.52, 0.02), (0.0, 0.82), (-0.52, 0.02), (-0.17, 0.02)]
-TRI = [(0, 1, 2), (0, 2, 6), (5, 6, 4), (6, 2, 4), (2, 3, 4)]
+# Crystal arrow: a faceted body with a ridge down the middle, flat-shaded like cut glass.
+P = [(-0.21, -0.68), (0.21, -0.68), (0.21, 0.02), (0.56, 0.02), (0.0, 0.84), (-0.56, 0.02), (-0.21, 0.02)]
 cx = sum(p[0] for p in P) / len(P); cy = sum(p[1] for p in P) / len(P)
 def inset(p, k): return (cx + (p[0] - cx) * k, cy + (p[1] - cy) * k)
-TOP = [inset(p, 0.80) for p in P]
-
-def tris():
-    """Triangles as ((x,y,z) * 3, normal-or-None for flat); bevelled sides are smooth-shaded."""
+TOPK = 0.78
+A = [inset(p, TOPK) for p in P]
+A[2] = (A[2][0], 0.02); A[6] = (A[6][0], 0.02); A[3] = (A[3][0], 0.02); A[5] = (A[5][0], 0.02)
+AZ = [H, H, H, H, H * 1.25, H, H]
+S0 = (0.0, -0.62, H * 1.4); S1 = (0.0, 0.10, H * 1.8); C1 = (0.0, 0.42, H * 1.6)
+def V(i): return (*A[i], AZ[i])
+FACES = [
+    (V(0), V(1), S0), (V(0), S0, S1), (V(0), S1, V(6)), (V(1), V(2), S1), (V(1), S1, S0),
+    (V(5), V(6), S1), (V(3), S1, V(2)),
+    (V(5), S1, C1), (V(5), C1, V(4)), (V(3), C1, S1), (V(3), V(4), C1),
+]
+for i in range(len(P)):
+    j = (i + 1) % len(P)
+    lo_a, lo_b = (*P[i], 0.0), (*P[j], 0.0)
+    FACES.append((lo_a, lo_b, V(j))); FACES.append((lo_a, V(j), V(i)))
+def mesh():
     out = []
-    for a, b, c in TRI:
-        out.append(([(*TOP[a], H), (*TOP[b], H), (*TOP[c], H)], (0, 0, 1)))
-    n = len(P)
-    for i in range(n):
-        j = (i + 1) % n
-        lo_a, lo_b = (*P[i], 0.0), (*P[j], 0.0)
-        hi_a, hi_b = (*TOP[i], H), (*TOP[j], H)
-        # the side faces slope inwards: normal from the edge and the slope
-        ex, ey = P[j][0] - P[i][0], P[j][1] - P[i][1]
-        L = math.hypot(ex, ey) or 1
-        nx, ny = ey / L, -ex / L
-        nz = 0.7
-        m = math.sqrt(nx * nx + ny * ny + nz * nz)
-        nrm = (nx / m * 0.714, ny / m * 0.714, nz / m * 0.9)
-        out.append(([lo_a, lo_b, hi_b], nrm)); out.append(([lo_a, hi_b, hi_a], nrm))
+    mid = np.array([cx, cy, H * 0.7])
+    for tri in FACES:
+        a, b, c = (np.array(p, float) for p in tri)
+        n = np.cross(b - a, c - a)
+        if np.linalg.norm(n) < 1e-9: continue
+        n /= np.linalg.norm(n)
+        if n @ ((a + b + c) / 3 - mid) < 0: n = -n
+        out.append(([tuple(a), tuple(b), tuple(c)], tuple(n)))
     return out
-MESH = tris()
+MESH = mesh()
 
-LIGHT = np.array([-0.45, -0.55, 0.70]); LIGHT /= np.linalg.norm(LIGHT)
+LIGHT = np.array([-0.45, -0.35, 0.82]); LIGHT /= np.linalg.norm(LIGHT)
 VIEW = np.array([0.0, -math.cos(EL), math.sin(EL)])   # towards the camera
+FILL = 0.92   # leave room around the arrow for its shadow
 
 def render(theta, size):
     s = size
-    zbuf = np.full((s, s), -1e9); body = np.zeros((s, s)); spec = np.zeros((s, s)); alpha = np.zeros((s, s))
+    zbuf = np.full((s, s), -1e9); body = np.zeros((s, s)); spec = np.zeros((s, s)); alpha = np.zeros((s, s)); ids = np.full((s, s), -1)
     ct, st = math.cos(theta), math.sin(theta)
-    scale = s / 2.05
-    for pts, nrm in MESH:
+    scale = s / 2.05 * FILL
+    for fi, (pts, nrm) in enumerate(MESH):
         sp, cam = [], []
         for x, y, z in pts:
             rx, ry = x * ct - y * st, x * st + y * ct
             sx = rx * scale + s / 2
-            sy = s / 2 - (ry * math.sin(EL) + (z - H / 2) * math.cos(EL)) * scale * 0.95 - s * 0.02
+            sy = s / 2 - (ry * math.sin(EL) + (z - H) * math.cos(EL)) * scale * 0.95 - s * 0.05
             sp.append((sx, sy)); cam.append(-ry * math.cos(EL) + z * math.sin(EL))
         nx, ny, nz = nrm
         n = np.array([nx * ct - ny * st, nx * st + ny * ct, nz]); n /= np.linalg.norm(n)
         diff = max(0.0, float(n @ LIGHT))
         rr = 2 * float(n @ LIGHT) * n - LIGHT
-        sh = 0.30 + 0.70 * diff
-        sc = max(0.0, float(rr @ VIEW)) ** 18 * (0.9 if nrm == (0, 0, 1) else 0.5)
+        sh = 0.18 + 0.82 * diff ** 0.8
+        sc = max(0.0, float(rr @ VIEW)) ** 14 * 0.7
         (x0, y0), (x1, y1), (x2, y2) = sp
         minx, maxx = int(max(0, math.floor(min(x0, x1, x2)))), int(min(s - 1, math.ceil(max(x0, x1, x2))))
         miny, maxy = int(max(0, math.floor(min(y0, y1, y2)))), int(min(s - 1, math.ceil(max(y0, y1, y2))))
@@ -78,10 +84,26 @@ def render(theta, size):
         sub = zbuf[miny:maxy + 1, minx:maxx + 1]
         win = inside & (d > sub)
         sub[win] = d[win]
-        body[miny:maxy + 1, minx:maxx + 1][win] = sh
+        # a vertical gradient: brighter towards the tip, deeper towards the tail
+        grad = 0.72 + 0.5 * np.clip((s * 0.9 - Y) / (s * 0.8), 0, 1)
+        body[miny:maxy + 1, minx:maxx + 1][win] = np.clip(sh * grad[win], 0, 1)
         spec[miny:maxy + 1, minx:maxx + 1][win] = sc
         alpha[miny:maxy + 1, minx:maxx + 1][win] = 1
+        ids[miny:maxy + 1, minx:maxx + 1][win] = fi
+    # glowing facet edges and a soft rim
+    edge = np.zeros((s, s))
+    for dx, dy in ((1, 0), (0, 1), (1, 1)):
+        a1 = ids[:s - dy, :s - dx]; b1 = ids[dy:, dx:]
+        e = (a1 != b1) & (a1 >= 0) & (b1 >= 0)
+        edge[:s - dy, :s - dx] = np.maximum(edge[:s - dy, :s - dx], e)
+    spec = np.clip(spec + edge * 0.55, 0, 1)
     return body, spec, alpha
+
+def blur(a, r):
+    k = 2 * r + 1
+    p = np.pad(a, r, mode='edge'); c = np.cumsum(np.cumsum(p, 0), 1)
+    c = np.pad(c, ((1, 0), (1, 0)))
+    return (c[k:, k:] - c[:-k, k:] - c[k:, :-k] + c[:-k, :-k]) / (k * k)
 
 def down(a, k): return a.reshape(CELL, k, CELL, k).mean(axis=(1, 3))
 
@@ -90,9 +112,12 @@ def main():
     sheet_b = np.zeros((SHEET, SHEET, 4), np.uint8); sheet_s = np.zeros((SHEET, SHEET, 4), np.uint8)
     for i in range(FRAMES):
         b, sp, a = render(math.radians(i * 360 / FRAMES), big)
-        A = down(a, SS)
-        B = down(b * a, SS) / np.maximum(A, 1e-6)
-        S = down(sp * a, SS)
+        # soft ground shadow below the arrow, drawn dark into the body sheet
+        shadow = blur(np.roll(a, int(big * 0.13), axis=0), int(big * 0.045)) * 0.42
+        halo = np.clip(blur(a, int(big * 0.03)) - a, 0, 1)
+        A = np.clip(down(a, SS) + down(np.maximum(shadow - a, 0), SS) * (1 - down(a, SS)), 0, 1)
+        B = np.where(down(a, SS) > 0.01, down(b * a, SS) / np.maximum(down(a, SS), 1e-6), 0.0)
+        S = down(sp * a, SS) + down(halo, SS) * 0.5
         r, c = divmod(i, COLS)
         y0, x0 = r * CELL, c * CELL
         g = np.clip(B * 255, 0, 255).astype(np.uint8)
@@ -100,7 +125,7 @@ def main():
         sheet_b[y0:y0 + CELL, x0:x0 + CELL, 3] = np.clip(A * 255, 0, 255).astype(np.uint8)
         s8 = np.clip(S * 255, 0, 255).astype(np.uint8)
         for k in range(3): sheet_s[y0:y0 + CELL, x0:x0 + CELL, k] = s8
-        sheet_s[y0:y0 + CELL, x0:x0 + CELL, 3] = np.clip(A * 255, 0, 255).astype(np.uint8)
+        sheet_s[y0:y0 + CELL, x0:x0 + CELL, 3] = 255   # additive: the colour alone carries the light
     os.makedirs(OUT, exist_ok=True)
     for name, arr in (('Arrow3D.tga', sheet_b), ('Arrow3DSpec.tga', sheet_s)):
         write_tga(os.path.join(OUT, name), arr)
