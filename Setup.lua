@@ -71,9 +71,9 @@ local function check(parent, label, sub, getter, setter)
   c:SetScript("OnClick", function(self) setter(self:GetChecked() and true or false); if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or 856) end end)
   return c
 end
-local function choice(parent, label, desc, onPick)
+local function choice(parent, label, desc, onPick, h)
   local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
-  b:SetSize(W - 70, 68)
+  b:SetSize(W - 70, h or 68)
   RG.Backdrop(b, { 0.07, 0.065, 0.06, 0.9 }, { 0.55, 0.5, 0.42, 0.85 })
   b.title = text(b, "GameFontNormal", label); b.title:SetPoint("TOPLEFT", 14, -10)
   b.desc = text(b, "GameFontHighlightSmall", desc, W - 110); b.desc:SetPoint("TOPLEFT", b.title, "BOTTOMLEFT", 0, -4); b.desc:SetTextColor(0.8, 0.8, 0.8)
@@ -141,6 +141,25 @@ local function buildPages()
       c.refresh()
     end)
   end
+
+  -- 2b. Main spec: never assumed, you pick what you level as
+  local pm = newPage("What do you level as?")
+  local note = text(pm, "GameFontHighlightSmall", "Pick your main spec. Gear scores, the Gear guide and reminders follow it. You can change it any time on the Spec tab.", W - 70)
+  note:SetPoint("TOPLEFT", 0, -34); note:SetTextColor(0.8, 0.8, 0.8)
+  local mainBtns = {}
+  local specs = RG.SpecList and RG.SpecList() or {}
+  local bh = #specs > 4 and 52 or 62
+  for i, sp in ipairs(specs) do
+    local b = choice(pm, sp.name .. "   " .. GREY .. sp.role .. "|r", sp.stats or "", function() RG.SetMainSpec(sp.key); for _, r in ipairs(pm.refreshers) do r() end end, bh - 4)
+    b:SetPoint("TOPLEFT", 0, -62 - (i - 1) * bh)
+    b.key = sp.key; mainBtns[#mainBtns + 1] = b
+  end
+  local askNote = text(pm, "GameFontNormal", "", W - 70); askNote:SetPoint("BOTTOMLEFT", 0, 4)
+  table.insert(pm.refreshers, function()
+    local sure = RG.MainSpecChosen and RG.MainSpecChosen()
+    for _, b in ipairs(mainBtns) do b.select(sure and RG.MainSpec() and RG.MainSpec().key == b.key) end
+    askNote:SetText(sure and (GREEN .. "You level as " .. RG.MainSpec().name .. ".|r") or (GOLD .. "Not picked yet.|r" .. GREY .. " Click one, or Next to decide later.|r"))
+  end)
 
   -- 3. How you play
   local pp = newPage("How do you play?")
@@ -215,10 +234,10 @@ local function buildPages()
   specLabel:SetPoint("TOPLEFT", 0, -36 - #extras * 46 - 52)
   local specBtns, x = {}, 80
   for _, sp in ipairs(RG.SpecList and RG.SpecList() or {}) do
-    if not sp.main then
+    do
       local b = CreateFrame("Button", nil, p5, "UIPanelButtonTemplate")
       b:SetSize(math.max(84, (#sp.name * 7) + 20), 22); b:SetPoint("TOPLEFT", x, -36 - #extras * 46 - 48); b:SetText(sp.name)
-      b:SetScript("OnClick", function() RG.SetSecondSpec(sp.key); RG.db.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
+      b:SetScript("OnClick", function() if RG.IsMainSpec(sp) then RG.Print(sp.name .. " is your main spec. Pick a different one here.") return end; RG.SetSecondSpec(sp.key); RG.db.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
       b.key = sp.key
       specBtns[#specBtns + 1] = b; x = x + b:GetWidth() + 6
     end
@@ -236,7 +255,7 @@ local function buildPages()
     local lv = {}
     for _, n in ipairs({ "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }) do if RG.Plans(n) then lv[#lv + 1] = n end end
     summary:SetText(GOLD .. "You:|r " .. RG.DetectLine() .. ", " .. (RG.db.goal or "balanced") .. ", " .. (RG.db.playStyle or "solo") .. "\n" .. GOLD .. "Help level:|r " .. pr.label .. "\n" .. GOLD .. "Professions:|r " .. (#lv > 0 and table.concat(lv, ", ") or "none") .. "\n"
-      .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "2nd spec:|r " .. ((RG.SecondSpecActive and RG.SecondSpecActive()) and (RG.SecondSpecActive().name .. (RG.Opt("healSet") and ", collecting its gear" or "")) or "none yet (/wp spec)") .. "\n\n"
+      .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "Main spec:|r " .. ((RG.MainSpec and RG.MainSpec()) and RG.MainSpec().name or "?") .. ((RG.MainSpecChosen and RG.MainSpecChosen()) and "" or " (not picked: /wp spec)") .. "\n" .. GOLD .. "2nd spec:|r " .. ((RG.SecondSpecActive and RG.SecondSpecActive()) and (RG.SecondSpecActive().name .. (RG.Opt("healSet") and ", collecting its gear" or "")) or "none yet (/wp spec)") .. "\n\n"
       .. GOLD .. "Worth remembering|r\n"
       .. GOLD .. "/wp|r  the full guide        " .. GOLD .. "/wp next|r  pin your nearest objective\n"
       .. GOLD .. "/wp group|r  group play         " .. GOLD .. "/wp camp|r  camp, fishing, cooking\n"
@@ -251,7 +270,7 @@ end
 local function show(i)
   -- leaving a page: apply what it set
   if page == 2 and i > 2 then applyPlan(plan) end
-  if page == 4 and i == 5 then RG.ApplyPreset(RG.db.preset or "full"); applyPlan(plan) end
+  if page == 5 and i == 6 then RG.ApplyPreset(RG.db.preset or "full"); applyPlan(plan) end
   page = i
   for k, p in ipairs(pages) do
     p:SetShown(k == i)
@@ -263,7 +282,7 @@ local function show(i)
   for k, d in ipairs(wiz.dots) do d:SetVertexColor(k == i and 1 or 0.35, k == i and 0.82 or 0.35, k == i and 0 or 0.35, 1) end
 end
 local function finish(open)
-  if page < 4 then applyPlan(plan) end
+  if page < 5 then applyPlan(plan) end
   RG.db.welcomed = true; RG.db.setupDone = true
   wiz:Hide()
   if RG.RefreshTracker then RG.RefreshTracker() end

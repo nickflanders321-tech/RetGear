@@ -1368,26 +1368,38 @@ local function renderSpec()
   local list = RG.SpecList and RG.SpecList() or {}
   if #list == 0 then n = n + 1; setHeader(getRow(n), "No spec data for your class yet"); return n end
   local cur = RG.SecondSpec and RG.SecondSpec()
+  local sure = RG.MainSpecChosen and RG.MainSpecChosen()
+  n = n + 1; setHeader(getRow(n), "Your main spec  ·  the one you level as" .. (sure and "" or "  ·  not confirmed yet"))
+  for _, s in ipairs(list) do
+    n = n + 1
+    local isMain = RG.IsMainSpec and RG.IsMainSpec(s)
+    local pill = isMain and (sure and (GREEN .. "Your main spec|r") or (GOLD .. "Assumed: click to confirm|r")) or (GOLD .. "Level as this|r")
+    setItem(getRow(n), nil, nil, (isMain and "|cffffffff" or "|cffd8d0c0") .. s.name .. "|r  " .. (KIND_COLOR[s.kind] or "") .. s.role .. "|r",
+      GREY .. s.stats .. "|r", pill, "", isMain and sure and "green" or nil)
+    specIcon(rows[n], s)
+    rows[n].onClick = function() RG.SetMainSpec(s.key) end
+  end
   n = n + 1; setHeader(getRow(n), "Pick your 2nd spec  ·  click one")
   for _, s in ipairs(list) do
     n = n + 1
     local chosen = cur and cur.key == s.key
+    local isMain = RG.IsMainSpec and RG.IsMainSpec(s)
     local pill
-    if chosen and s.main then pill = GOLD .. "You level as this|r"
+    if chosen and isMain then pill = GOLD .. "You level as this|r"
     elseif chosen then pill = GREEN .. "Your 2nd spec|r"
-    elseif s.main then pill = GREY .. "Leveling spec|r"
+    elseif isMain then pill = GREY .. "Your main spec|r"
     else pill = GOLD .. "Choose|r" end
     setItem(getRow(n), nil, nil, (chosen and "|cffffffff" or "|cffd8d0c0") .. s.name .. "|r  " .. (KIND_COLOR[s.kind] or "") .. s.role .. "|r",
       GREY .. s.stats .. "|r", pill, "", chosen and "green" or nil)
     specIcon(rows[n], s)
-    rows[n].onClick = function() RG.SetSecondSpec(s.key) end
+    rows[n].onClick = function() if isMain then RG.Print(s.name .. " is your main spec. Pick a different spec for your second set.") else RG.SetSecondSpec(s.key) end end
   end
   if not cur then
     n = n + 1
     setItem(getRow(n), nil, nil, GREY .. "No 2nd spec yet|r", GREY .. "Pick one above: Waypath+ then collects gear for it, never sells it, and swaps it on when you change spec. Dual spec unlocks at level " .. (RG.DUAL_SPEC_LEVEL or 40) .. ".|r", "", "", nil, nil, true)
     return n
   end
-  if cur.main then
+  if RG.IsMainSpec(cur) then
     n = n + 1
     setItem(getRow(n), nil, nil, GOLD .. cur.name .. " is the spec you level with|r", GREY .. "Your Gear guide already follows it. Pick one of the other specs to collect a second set.|r", "", "", nil, nil, true)
   else
@@ -1429,7 +1441,7 @@ local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784
 local function renderHeal()
   local n = 0
   local s = RG.SecondSpec and RG.SecondSpec()
-  if not s or s.main then
+  if not s or RG.IsMainSpec(s) then
     n = n + 1
     setItem(getRow(n), nil, nil, GOLD .. (s and (s.name .. " is your leveling spec") or "Pick a 2nd spec first") .. "|r", GREY .. "Choose any other spec of your class on the Spec page: this page then lists the gear to start collecting for it.|r", GOLD .. "Choose|r", "", "gold")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")

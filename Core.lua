@@ -163,6 +163,7 @@ local function InitDB()
   for k, v in pairs(RG.DEFAULT_WEIGHTS) do if db.weights[k] == nil then db.weights[k] = v end end
   if db.hitCapByClass[cls] == nil then db.hitCapByClass[cls] = RG.DEFAULT_HIT_CAP end
   db.hitCap = db.hitCapByClass[cls]
+  if RG.ApplyMainSpec then RG.ApplyMainSpec(true) end
   if db.talentHit == nil then db.talentHit = 0 end
   if db.tooltip == nil then db.tooltip = true end
   if db.levelAlerts == nil then db.levelAlerts = true end
@@ -353,6 +354,7 @@ local LINE_PATTERNS = {
 }
 
 local cache = {}
+function RG.ClearScoreCache() wipe(cache) end
 function RG.GetStats(link)
   if not link then return nil end
   if cache[link] then return cache[link] end

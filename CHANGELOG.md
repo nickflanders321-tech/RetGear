@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.87.0
+- Setup: new characters now pick their main spec ("What do you level as?") instead of Waypath+ assuming it. The choice drives stat weights, the weapon model, the Gear guide, the score name on tooltips and the paladin seal and blessing reminders (those only show for melee and tank specs).
+- Spec tab: a "Your main spec" section lets you change it any time (it says "not confirmed yet" until you pick). Your 2nd spec can no longer be the same as your main. Existing characters get a one-time chat reminder to pick one.
+
 ## v0.86.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

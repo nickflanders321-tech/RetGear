@@ -78,33 +78,41 @@ RG.SCORE_NAME = own.scoreName and (own.scoreName .. " score") or "Upgrade score"
 
 -- Gear guide: hand-written entries, then the generated list (hand-written
 -- entries win when both list an item).
-local guide, have = {}, {}
--- The hand-written Paladin guide is written for an Undead paladin: on the Alliance side it keeps
--- only the entries that work for everyone (crafting, dungeons, neutral zones).
-local HORDE_TEXT = { "Camp Taurajo", "Tok'Kar", "Camp Mojache", "Undercity", "Tirisfal", "Brill", "Horde", "Deathknell", "Silverpine", "Bandarion", "Forsaken" }
-local function hordeOnly(g)
-  local t = (g.src or "") .. " " .. (g.zone or "") .. " " .. (g.text or "")
-  for _, w in ipairs(HORDE_TEXT) do if t:find(w, 1, true) then return true end end
-  return false
+-- specKey: build the guide for a leveling spec other than the class's default (generated gear lists only)
+local function buildGuide(specKey)
+  local guide, have = {}, {}
+  -- The hand-written Paladin guide is written for an Undead paladin: on the Alliance side it keeps
+  -- only the entries that work for everyone (crafting, dungeons, neutral zones).
+  local HORDE_TEXT = { "Camp Taurajo", "Tok'Kar", "Camp Mojache", "Undercity", "Tirisfal", "Brill", "Horde", "Deathknell", "Silverpine", "Bandarion", "Forsaken" }
+  local function hordeOnly(g)
+    local t = (g.src or "") .. " " .. (g.zone or "") .. " " .. (g.text or "")
+    for _, w in ipairs(HORDE_TEXT) do if t:find(w, 1, true) then return true end end
+    return false
+  end
+  for _, g in ipairs(specKey and (((RG.SPEC_HAND or {})[C.token] or {})[specKey] or {}) or (C.guide or {})) do
+    if not (faction == "Alliance" and hordeOnly(g)) then guide[#guide + 1] = g; if g.id then have[g.id] = true end end
+  end
+  -- Before level 13 you're still in or near your own starting zone: skip early
+  -- items from the other races' starting zones (an Orc won't walk to Tirisfal at 8).
+  local HOME = { O = { Durotar = true }, R = { Durotar = true }, T = { Mulgore = true }, U = { ["Tirisfal Glades"] = true }, S = { ["Zephras Isle"] = true, Mulgore = true },
+    H = { ["Elwynn Forest"] = true }, D = { ["Dun Morogh"] = true }, G = { ["Dun Morogh"] = true }, N = { Teldrassil = true }, A = { ["Zephras Isle"] = true, Westfall = true } }
+  local START = { Durotar = true, Mulgore = true, ["Tirisfal Glades"] = true, ["Zephras Isle"] = true, ["Elwynn Forest"] = true, ["Dun Morogh"] = true, Teldrassil = true }
+  local home = HOME[RG.RACE_LETTER] or {}
+  for _, g in ipairs(specKey and (((RG.SPEC_GEAR or {})[C.token] or {})[specKey] or {}) or ((RG.CLASS_GEAR or {})[C.token] or {})) do
+    local farStart = (g.lvl or 0) < 13 and START[g.zone] and not home[g.zone]
+    if not have[g.id] and not farStart then guide[#guide + 1] = g; have[g.id] = true end
+  end
+  table.sort(guide, function(a, b)
+    if a.lvl ~= b.lvl then return a.lvl < b.lvl end
+    return (a.tip and 0 or 1) < (b.tip and 0 or 1)
+  end)
+  if RG.GUIDE then   -- rebuilt in place so everything holding the table sees the new guide
+    for i = #RG.GUIDE, 1, -1 do RG.GUIDE[i] = nil end
+    for i, g in ipairs(guide) do RG.GUIDE[i] = g end
+  else RG.GUIDE = guide end
 end
-for _, g in ipairs(C.guide or {}) do
-  if not (faction == "Alliance" and hordeOnly(g)) then guide[#guide + 1] = g; if g.id then have[g.id] = true end end
-end
--- Before level 13 you're still in or near your own starting zone: skip early
--- items from the other races' starting zones (an Orc won't walk to Tirisfal at 8).
-local HOME = { O = { Durotar = true }, R = { Durotar = true }, T = { Mulgore = true }, U = { ["Tirisfal Glades"] = true }, S = { ["Zephras Isle"] = true, Mulgore = true },
-  H = { ["Elwynn Forest"] = true }, D = { ["Dun Morogh"] = true }, G = { ["Dun Morogh"] = true }, N = { Teldrassil = true }, A = { ["Zephras Isle"] = true, Westfall = true } }
-local START = { Durotar = true, Mulgore = true, ["Tirisfal Glades"] = true, ["Zephras Isle"] = true, ["Elwynn Forest"] = true, ["Dun Morogh"] = true, Teldrassil = true }
-local home = HOME[RG.RACE_LETTER] or {}
-for _, g in ipairs((RG.CLASS_GEAR or {})[C.token] or {}) do
-  local farStart = (g.lvl or 0) < 13 and START[g.zone] and not home[g.zone]
-  if not have[g.id] and not farStart then guide[#guide + 1] = g; have[g.id] = true end
-end
-table.sort(guide, function(a, b)
-  if a.lvl ~= b.lvl then return a.lvl < b.lvl end
-  return (a.tip and 0 or 1) < (b.tip and 0 or 1)
-end)
-RG.GUIDE = guide
+RG.BuildGuide = buildGuide
+buildGuide(nil)
 
 -- ---------------------------------------------------------------------------
 -- Route: faction zones + race starting zones + class milestones

@@ -18,8 +18,73 @@ table.insert(RG.OPTIONS, { key = "healSet", label = "Collect a gear set for my 2
 local LEGACY_DEFAULT = { PALADIN = "holy" }
 
 function RG.SpecList() return (RG.SPECS or {})[RG.PLAYER_CLASS] or {} end
-function RG.MainSpec()
+local invalidate
+-- The spec you level as. Pick it in setup or on the Spec tab; until you do, it is the class's usual leveling spec.
+local function dataMain()
   for _, s in ipairs(RG.SpecList()) do if s.main then return s end end
+end
+function RG.MainSpecChosen()
+  local by = RG.db and RG.db.mainSpecByClass
+  return by and by[RG.PLAYER_CLASS] ~= nil and ((RG.SPEC_BY or {})[RG.PLAYER_CLASS] or {})[by[RG.PLAYER_CLASS]] ~= nil
+end
+function RG.MainSpec()
+  local by = RG.db and RG.db.mainSpecByClass
+  local key = by and by[RG.PLAYER_CLASS]
+  local chosen = key and ((RG.SPEC_BY or {})[RG.PLAYER_CLASS] or {})[key]
+  return chosen or dataMain()
+end
+function RG.IsMainSpec(s) local m = RG.MainSpec(); return s ~= nil and m ~= nil and s.key == m.key end
+-- Is the main spec one that melees or tanks? (seal and blessing reminders only make sense then)
+function RG.MainIsMelee() local m = RG.MainSpec(); return not m or m.kind == "melee" or m.kind == "tank" end
+
+local C0 = RG.ActiveClass or {}
+local W0, HIT0, MODEL0, SCORE0 = RG.DEFAULT_WEIGHTS, RG.DEFAULT_HIT_CAP, RG.WEAPON_MODEL, RG.SCORE_NAME
+-- Make everything follow the main spec: stat weights, weapon model, gear guide, score name.
+-- fresh = the player just picked it: replace the saved weights too (they belonged to the old spec).
+function RG.ApplyMainSpec(quiet, fresh)
+  local m = RG.MainSpec()
+  if not m then return end
+  local default = dataMain()
+  local isDefault = (not default) or m.key == default.key
+  if isDefault then
+    RG.DEFAULT_WEIGHTS, RG.WEAPON_MODEL, RG.SCORE_NAME = W0, MODEL0, SCORE0
+  else
+    RG.DEFAULT_WEIGHTS = m.weights or W0
+    RG.WEAPON_MODEL = m.model or C0.model or MODEL0
+    RG.SCORE_NAME = m.name .. " score"
+  end
+  RG.DEFAULT_HIT_CAP = HIT0
+  local dw = RG.WEAPON_MODEL == "DW" or RG.PLAYER_CLASS == "HUNTER"
+  RG.EQUIP_SLOTS.INVTYPE_WEAPON = dw and { 16, 17 } or { 16 }
+  if RG.BuildGuide then RG.BuildGuide(not isDefault and m.key or nil) end
+  if RG.GuideByID then
+    for k in pairs(RG.GuideByID) do RG.GuideByID[k] = nil end
+    for _, g in ipairs(RG.GUIDE or {}) do if g.id then RG.GuideByID[g.id] = g end end
+  end
+  if fresh and RG.db then
+    local w = RG.db.weights
+    if w then
+      for k in pairs(w) do w[k] = nil end
+      for k, v in pairs(RG.DEFAULT_WEIGHTS) do w[k] = v end
+    end
+  end
+  if RG.ClearScoreCache then RG.ClearScoreCache() end
+end
+function RG.SetMainSpec(key)
+  local by = (RG.SPEC_BY or {})[RG.PLAYER_CLASS]
+  if not (by and by[key]) then return end
+  RG.db.mainSpecByClass = RG.db.mainSpecByClass or {}
+  RG.db.mainSpecByClass[RG.PLAYER_CLASS] = key
+  RG.db.secondSpecByClass = RG.db.secondSpecByClass or {}
+  if RG.db.secondSpecByClass[RG.PLAYER_CLASS] == key or (RG.db.secondSpecByClass[RG.PLAYER_CLASS] == nil and LEGACY_DEFAULT[RG.PLAYER_CLASS] == key) then
+    RG.db.secondSpecByClass[RG.PLAYER_CLASS] = false
+  end
+  RG.db.healBank = {}
+  RG.ApplyMainSpec(false, true)
+  if invalidate then invalidate() end
+  RG.Print("You level as " .. GOLD .. by[key].name .. "|r. Gear scores and the Gear guide now follow it.")
+  if RG.RefreshUI then RG.RefreshUI() end
+  if RG.RefreshTracker then RG.RefreshTracker() end
 end
 function RG.SecondSpec()
   local db = RG.db
@@ -30,7 +95,6 @@ function RG.SecondSpec()
   local by = (RG.SPEC_BY or {})[RG.PLAYER_CLASS]
   return key and key ~= false and by and by[key] or nil
 end
-local invalidate
 function RG.SetSecondSpec(key)
   RG.db.secondSpecByClass = RG.db.secondSpecByClass or {}
   RG.db.secondSpecByClass[RG.PLAYER_CLASS] = key or false
@@ -43,7 +107,7 @@ end
 -- A 2nd set only makes sense for a spec other than the one you level with.
 local function active()
   local s = RG.SecondSpec()
-  return s and not s.main and s or nil
+  return s and not RG.IsMainSpec(s) and s or nil
 end
 RG.SecondSpecActive = active
 local function on() return RG.Opt("healSet") and not RG.IsAlt() and active() ~= nil end
@@ -52,7 +116,7 @@ RG.SecondSetOn = on
 function RG.SpecWeights(s)
   s = s or active()
   if not s then return nil end
-  if s.main then return RG.DEFAULT_WEIGHTS end
+  if RG.IsMainSpec(s) then return RG.DEFAULT_WEIGHTS end
   return s.weights or {}
 end
 function RG.SpecModel(s)
@@ -116,7 +180,7 @@ function RG.SpecGuide(s)
   if guideCache[ck] then return guideCache[ck] end
   local out, have = {}, {}
   for _, g in ipairs(((RG.SPEC_HAND[s.class] or {})[s.key]) or {}) do out[#out + 1] = g; have[g.id] = true end
-  local gen = s.main and ((RG.CLASS_GEAR or {})[s.class] or {}) or (((RG.SPEC_GEAR or {})[s.class] or {})[s.key] or {})
+  local gen = (s.main and RG.IsMainSpec(s)) and ((RG.CLASS_GEAR or {})[s.class] or {}) or (((RG.SPEC_GEAR or {})[s.class] or {})[s.key] or {})
   for _, g in ipairs(gen) do
     if not have[g.id] and g.lvl >= SPEC_FROM then
       local e = {}
@@ -380,4 +444,19 @@ SlashCmdList.WAYPATH = function(msg)
     return
   end
   return base(msg)
+end
+
+-- Existing characters never picked a main spec: ask once, never assume silently.
+do
+  local f = CreateFrame("Frame")
+  f:RegisterEvent("PLAYER_LOGIN")
+  f:SetScript("OnEvent", function()
+    local function ask()
+      if not RG.db or RG.db.specAsked or not RG.db.setupDone or (RG.IsAlt and RG.IsAlt()) then return end
+      if #RG.SpecList() < 2 or (RG.MainSpecChosen and RG.MainSpecChosen()) then return end
+      RG.db.specAsked = true
+      RG.Print("Which spec do you level as? Waypath+ is assuming " .. GOLD .. (RG.MainSpec() and RG.MainSpec().name or "your usual spec") .. "|r. Pick yours on the Spec tab: /wp spec")
+    end
+    if C_Timer and C_Timer.After then C_Timer.After(8, ask) end
+  end)
 end
