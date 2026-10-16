@@ -614,6 +614,15 @@ local function buildArrow()
       if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960) end
       return
     end
+    -- learned paths: when you are not getting closer, lead the way you went before
+    local pathHint
+    if RG.PathTick then
+      local ok, ox, oy, h = pcall(RG.PathTick, c1, px, py, tx, ty, d, GetUnitSpeed and GetUnitSpeed("player") or 0, step, key)
+      if ok then
+        if ox then dx, dy = ox, oy end
+        pathHint = h
+      end
+    end
     -- smooth turning
     local target = math.atan2(dy, dx) - facing
     local diff = (target - shown + math.pi) % (2 * math.pi) - math.pi
@@ -633,6 +642,7 @@ local function buildArrow()
       local legs = info and RG.TravelPlan(info.name)
       if legs and legs[1] and legs[1].how ~= "walk" then hint = "Fastest: " .. legs[1].text end
     end
+    if pathHint then hint = pathHint end
     if hint == "" and math.abs(rel) > 2.6 then hint = "It's behind you" end
     self.hint:SetText(hint)
   end)

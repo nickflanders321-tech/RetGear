@@ -81,6 +81,7 @@ Camp.lua
 Fish.lua
 FishLoot.lua
 FishMode.lua
+Path.lua
 Speed.lua
 Travel.lua
 NodeData.lua
