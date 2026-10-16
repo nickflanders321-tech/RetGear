@@ -208,7 +208,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Places to go
 -- ---------------------------------------------------------------------------
-local CAPITAL = { U = 1458, O = 1454, R = 1454, T = 1456, S = 1456 }
+local CAPITAL = { U = 1458, O = 1454, R = 1454, T = 1456, S = 1456, H = 1453, D = 1455, G = 1455, N = 1457, A = 1453 }
 local function playerMap()
   local m = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
   return m
@@ -216,7 +216,9 @@ end
 -- Spots near you first: the zone you're in, then your continent, then your
 -- race's home zones; `extra(w)` adds its own points (e.g. a better level).
 local HOME_MAPS = { O = { [1411] = true, [1413] = true }, R = { [1411] = true, [1413] = true }, T = { [1412] = true, [1413] = true },
-  U = { [1420] = true, [1421] = true }, S = { [1412] = true, [1413] = true } }
+  U = { [1420] = true, [1421] = true }, S = { [1412] = true, [1413] = true },
+  H = { [1429] = true, [1436] = true }, D = { [1426] = true, [1432] = true }, G = { [1426] = true, [1432] = true },
+  N = { [1438] = true, [1439] = true }, A = { [2521] = true, [1436] = true } }
 local contCache = {}
 local function continentOf(map)
   if not map then return nil end

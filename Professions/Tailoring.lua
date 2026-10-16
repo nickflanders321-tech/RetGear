@@ -11,6 +11,15 @@ T.train = {
   expert = "Josef Gregorian (Undercity)",
   artisan = "Daryl Stack (Tarren Mill, Hillsbrad Foothills)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+T.trainA = {
+  start = { H = "Eldrin in Elwynn Forest", D = "Uthrar Threx in Ironforge", G = "Uthrar Threx in Ironforge", N = "Trianna in Darnassus", A = "Lawrence Schneider in Stormwind" },
+  apprentice = "Eldrin (Elwynn Forest), Lawrence Schneider (Stormwind), Uthrar Threx (Ironforge), Trianna (Darnassus)",
+  journeyman = "Lawrence Schneider (Stormwind), Uthrar Threx (Ironforge), Trianna (Darnassus)",
+  expert = "Sellandus (Stormwind), Jormund Stonebrow (Ironforge), Me'lynn (Darnassus)",
+  artisan = "Georgio Bolero (Stormwind)",
+}
 T.supplies = "Threads and dyes: the Tailoring Supply vendor by each trainer (Brill: Abigail Shiel)."
 T.plan = {
   { from = 1,   to = 30,  craft = "Bolt of Linen Cloth", n = 30, mats = "2 Linen Cloth each. Keep the bolts." },

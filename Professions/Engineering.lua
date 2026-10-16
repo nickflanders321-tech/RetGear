@@ -10,6 +10,15 @@ G.train = {
   expert = "Roxxik (Orgrimmar)",
   artisan = "Buzzek Bracketswing (Gadgetzan, Tanaris)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+G.trainA = {
+  start = { H = "Sprite Jumpsprocket in Stormwind", D = "Bronk Guzzlegear in Kharanos", G = "Bronk Guzzlegear in Kharanos", N = "Sprite Jumpsprocket in Stormwind", A = "Sprite Jumpsprocket in Stormwind" },
+  apprentice = "Sprite Jumpsprocket (Stormwind), Jemma Quikswitch (Ironforge), Bronk Guzzlegear (Dun Morogh)",
+  journeyman = "Sprite Jumpsprocket (Stormwind), Jemma Quikswitch (Ironforge)",
+  expert = "Lilliam Sparkspindle (Stormwind), Trixie Quikswitch (Ironforge)",
+  artisan = "Springspindle Fizzlegear (Ironforge)",
+}
 G.supplies = "Blacksmith Hammer and Weak Flux: the Engineering or Blacksmithing Supply vendor by the trainer."
 G.plan = {
   { from = 1,   to = 30,  craft = "Rough Blasting Powder", n = 60, mats = "1 Rough Stone each. Keep them all." },

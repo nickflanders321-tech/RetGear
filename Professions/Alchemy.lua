@@ -11,6 +11,15 @@ A.train = {
   expert = "Doctor Herbert Halsey (Undercity)",
   artisan = "Rogvar (Stonard, Swamp of Sorrows)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+A.trainA = {
+  start = { H = "Alchemist Mallory in Goldshire", D = "Vosur Brakthel in Ironforge", G = "Vosur Brakthel in Ironforge", N = "Cyndra Kindwhisper in Dolanaar", A = "Tel'Athir in Stormwind" },
+  apprentice = "Alchemist Mallory (Goldshire), Tel'Athir (Stormwind), Vosur Brakthel (Ironforge), Milla Fairancora (Darnassus)",
+  journeyman = "Tel'Athir (Stormwind), Vosur Brakthel (Ironforge), Milla Fairancora (Darnassus)",
+  expert = "Lilyssia Nightbreeze (Stormwind), Tally Berryfizz (Ironforge)",
+  artisan = "Ainethil (Darnassus)",
+}
 A.supplies = "Empty, Leaded and Crystal Vials: Alchemy and Trade Supply vendors (not in the shopping counts)."
 A.plan = {
   { from = 1,   to = 10,  craft = "Minor Arcane Elixir", n = 9, mats = "1 Peacebloom, 1 Empty Vial each (or Elixir of Minor Force: 1 Silverleaf)" },

@@ -724,8 +724,10 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
     local cname = UnitClass("player") or "your class"
     if not RG.ClassSupported then RG.Print("Loaded. " .. cname .. " isn't set up yet: the route, quests, arrow, travel and professions all work, and item scores use a general melee guide for now.")
-    elseif RG.PLAYER_FACTION == "Alliance" then RG.Print("Loaded. The leveling route is Horde-only for now; Alliance routes are coming. Quest tracking, the arrow, bags and gold all work.")
-    elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it picks up from level 12, which is the same for every Horde race.") end
+    elseif RG.PLAYER_FACTION == "Alliance" and not (RG.db and RG.db.allianceBetaSeen) then
+      if RG.db then RG.db.allianceBetaSeen = true end
+      RG.Print("Loaded. Alliance routes are new: quest steps come from WoW Forever's quest data, the zone order and travel tips are hand-written. Professions and some gear sources are still being matched to Alliance towns, so tell me (/wp report) if a step looks wrong.")
+    elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it picks up from level 12, which is the same for every race on your side.") end
   elseif RG.IsAlt() then
     return
   elseif event == "PLAYER_LEVEL_UP" then

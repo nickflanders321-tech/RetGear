@@ -11,6 +11,15 @@ F.train = {
   expert = "the book Expert First Aid - Under Wraps from Balai Lok'Wein (Dustwallow Marsh), with the Heavy Silk and Mageweave Bandage manuals",
   artisan = "the Triage quest from Doctor Gregory Victor (Hammerfall, Arathi Highlands; skill 225, level 35)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+F.trainA = {
+  start = { H = "Shaina Fuller in Stormwind", D = "Nissa Firestone in Ironforge", G = "Nissa Firestone in Ironforge", N = "Byancie in Dolanaar", A = "Shaina Fuller in Stormwind" },
+  apprentice = "Shaina Fuller (Stormwind), Nissa Firestone (Ironforge), Dannelor (Darnassus), Byancie (Dolanaar)",
+  journeyman = "any First Aid trainer (skill 50)",
+  expert = "the book Expert First Aid - Under Wraps from Doctor Gustaf VanHowzen (Theramore Isle), with the Heavy Silk and Mageweave Bandage manuals",
+  artisan = "the Triage quest from Doctor Gustaf VanHowzen (Theramore Isle; skill 225, level 35)",
+}
 F.supplies = "Only cloth (or Peacebloom, Mild Spices and Empty Vials for the potion route)."
 F.plan = {
   { from = 1,   to = 40,  craft = "Linen Bandage", n = 50, mats = "1 Linen Cloth each (or Minor Healing Potion to 75)" },

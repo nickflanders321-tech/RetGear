@@ -8,6 +8,13 @@ K.train = {
   apprentice = "Thuwd (Orgrimmar), Killian Hagey (Undercity), Mooranta (Thunder Bluff)",
   journeyman = "any Skinning trainer (level 10)", expert = "any Skinning trainer (level 20)", artisan = "any Skinning trainer (level 35)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+K.trainA = {
+  start = { H = "Maris Granger in Stormwind", D = "Balthus Stoneflayer in Ironforge", G = "Balthus Stoneflayer in Ironforge", N = "Eladriel in Darnassus", A = "Maris Granger in Stormwind" },
+  apprentice = "Maris Granger (Stormwind), Balthus Stoneflayer (Ironforge), Eladriel (Darnassus)",
+  journeyman = "any Skinning trainer (level 10)", expert = "any Skinning trainer (level 20)", artisan = "any Skinning trainer (level 35)",
+}
 K.supplies = "Skinning Knife: Trade Supplies vendors. In Forever each beast can be skinned once."
 K.plan = {
   { from = 1,   to = 75,  skin = "Beasts level 1-17 (Light Leather, Light Hide)", where = "your starting zone, then The Barrens and Silverpine Forest" },

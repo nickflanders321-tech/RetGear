@@ -11,6 +11,15 @@ E.train = {
   expert = "Hgarth (Sun Rock Retreat, Stonetalon Mountains)",
   artisan = "Annora (Uldaman, back entrance: bring a group; learn every recipe from her)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+E.trainA = {
+  start = { H = "Betty Quin in Stormwind", D = "Thonys Pillarstone in Ironforge", G = "Thonys Pillarstone in Ironforge", N = "Alanna Raveneye in Dolanaar", A = "Betty Quin in Stormwind" },
+  apprentice = "Betty Quin (Stormwind), Thonys Pillarstone (Ironforge), Lalina Summermoon (Darnassus), Alanna Raveneye (Dolanaar)",
+  journeyman = "Betty Quin (Stormwind), Thonys Pillarstone (Ironforge), Lalina Summermoon (Darnassus)",
+  expert = "Lucan Cordell (Stormwind), Gimble Thistlefuzz (Ironforge), Taladan (Darnassus)",
+  artisan = "Kitta Firewind (Elwynn Forest, Eastvale Logging Camp: learn every recipe from her)",
+}
 E.supplies = "Copper Rod and Mote of Magic: the Enchanting Supply vendor near each capital trainer."
 E.plan = {
   { from = 1,   to = 2,   craft = "Runed Copper Rod", n = 1, mats = "1 Copper Rod, 1 Mote of Magic" },

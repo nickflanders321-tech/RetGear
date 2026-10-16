@@ -15,8 +15,8 @@ D = json.load(open(sys.argv[2], encoding='utf-8'), object_pairs_hook=_sorted_pai
 RET = (sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')).rstrip('/') + '/'
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
 # Horde races: Orc, Undead, Tauren, Troll, Skyborne (Windshaper)
-RACES = [(2, 'O'), (16, 'U'), (32, 'T'), (128, 'R'), (8589934592, 'S')]
-HORDE = sum(b for b, _ in RACES)
+RACES = [(2, 'O'), (16, 'U'), (32, 'T'), (128, 'R'), (8589934592, 'S'), (1, 'H'), (4, 'D'), (8, 'N'), (64, 'G'), (4294967296, 'A')]
+HORDE = sum(b for b, _ in RACES)   # every playable race, both factions
 CLASSES = [(1, 'W'), (2, 'P'), (4, 'H'), (8, 'R'), (16, 'I'), (64, 'S'), (128, 'M'), (256, 'L'), (1024, 'D')]
 ALL_CLASSES = sum(b for b, _ in CLASSES)
 
@@ -132,7 +132,7 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '-- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.',
         '-- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,',
         '--   pg = {all of these first}, ps = {any of these first}, x = {done one of these: this one is gone},',
-        '--   ra = only these races (O Orc, U Undead, T Tauren, R Troll, S Skyborne), cl = only these classes',
+        '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
         '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... } }',
         'local _, RG = ...', 'RG.QDATA = {']

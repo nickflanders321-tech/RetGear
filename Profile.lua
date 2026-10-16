@@ -17,14 +17,17 @@ end
 
 local classToken = token(UnitClass)
 local raceToken = token(UnitRace)
-if raceToken and raceToken:find("Sky") then raceToken = "Skyborne" end
+local skyborne = raceToken and raceToken:find("Sky") and true or false
+if skyborne then raceToken = "Skyborne" end
 local factionNow = UnitFactionGroup and select(1, pcall(UnitFactionGroup, "player")) and UnitFactionGroup("player")
 local faction = (factionNow == "Alliance" or factionNow == "Horde") and factionNow
   or ((raceToken and not HORDE_RACES[raceToken]) and "Alliance" or "Horde")
 
 local C = RG.CLASSES[classToken or ""] or RG.CLASSES[FALLBACK_CLASS]
 if raceToken == "Undead" then raceToken = "Scourge" end
-local R = RG.RACES[raceToken or ""] or RG.RACES[FALLBACK_RACE]
+-- Skyborne exist on both sides: the Alliance ones have their own race entry
+if skyborne and faction == "Alliance" then raceToken = "SkyborneA" end
+local R = RG.RACES[raceToken or ""] or RG.RACES[faction == "Alliance" and "Human" or FALLBACK_RACE]
 local H = RG.ROUTES[faction] or RG.ROUTES.Horde
 
 RG.PLAYER_CLASS = classToken or FALLBACK_CLASS
@@ -38,9 +41,10 @@ RG.RaceSupported = raceToken ~= nil and RG.RACES[raceToken] ~= nil
 function RG.IsClass(t) return RG.PLAYER_CLASS == t end
 
 -- Quest data (Objectives.lua) marks race- and class-only quests with letters.
-local RACE_LETTER = { Orc = "O", Scourge = "U", Tauren = "T", Troll = "R", Skyborne = "S" }
+local RACE_LETTER = { Orc = "O", Scourge = "U", Tauren = "T", Troll = "R", Skyborne = "S",
+  Human = "H", Dwarf = "D", NightElf = "N", Gnome = "G", SkyborneA = "A" }
 local CLASS_LETTER = { WARRIOR = "W", PALADIN = "P", HUNTER = "H", ROGUE = "R", PRIEST = "I", SHAMAN = "S", MAGE = "M", WARLOCK = "L", DRUID = "D" }
-RG.RACE_LETTER = RACE_LETTER[RG.PLAYER_RACE] or ((RG.PLAYER_RACE or ""):find("Sky") and "S") or "?"
+RG.RACE_LETTER = RACE_LETTER[RG.PLAYER_RACE] or ((RG.PLAYER_RACE or ""):find("Sky") and "S") or (faction == "Alliance" and "H") or "?"
 RG.CLASS_LETTER = CLASS_LETTER[RG.PLAYER_CLASS] or "?"
 -- Can this character take the quest? (race and class only; level and prerequisites are checked elsewhere)
 function RG.QuestForMe(d)
@@ -53,6 +57,10 @@ end
 -- ---------------------------------------------------------------------------
 -- Class: stat weights, gear guide, talents, rotation, class quests
 -- ---------------------------------------------------------------------------
+if faction == "Alliance" then   -- the generated gear lists come in a Horde and an Alliance version
+  RG.CLASS_GEAR, RG.SPEC_GEAR = RG.CLASS_GEAR_A or RG.CLASS_GEAR, RG.SPEC_GEAR_A or RG.SPEC_GEAR
+end
+RG.CLASS_GEAR_A, RG.SPEC_GEAR_A = nil, nil
 RG.DEFAULT_WEIGHTS = C.weights or {}
 RG.WEAPON_MODEL = C.model or "2H"
 -- Dual wielders put one-handers in either hand; every class has a ranged slot.
@@ -71,11 +79,22 @@ RG.SCORE_NAME = own.scoreName and (own.scoreName .. " score") or "Upgrade score"
 -- Gear guide: hand-written entries, then the generated list (hand-written
 -- entries win when both list an item).
 local guide, have = {}, {}
-for _, g in ipairs(C.guide or {}) do guide[#guide + 1] = g; if g.id then have[g.id] = true end end
+-- The hand-written Paladin guide is written for an Undead paladin: on the Alliance side it keeps
+-- only the entries that work for everyone (crafting, dungeons, neutral zones).
+local HORDE_TEXT = { "Camp Taurajo", "Tok'Kar", "Camp Mojache", "Undercity", "Tirisfal", "Brill", "Horde", "Deathknell", "Silverpine", "Bandarion", "Forsaken" }
+local function hordeOnly(g)
+  local t = (g.src or "") .. " " .. (g.zone or "") .. " " .. (g.text or "")
+  for _, w in ipairs(HORDE_TEXT) do if t:find(w, 1, true) then return true end end
+  return false
+end
+for _, g in ipairs(C.guide or {}) do
+  if not (faction == "Alliance" and hordeOnly(g)) then guide[#guide + 1] = g; if g.id then have[g.id] = true end end
+end
 -- Before level 13 you're still in or near your own starting zone: skip early
 -- items from the other races' starting zones (an Orc won't walk to Tirisfal at 8).
-local HOME = { O = { Durotar = true }, R = { Durotar = true }, T = { Mulgore = true }, U = { ["Tirisfal Glades"] = true }, S = { ["Zephras Isle"] = true, Mulgore = true } }
-local START = { Durotar = true, Mulgore = true, ["Tirisfal Glades"] = true, ["Zephras Isle"] = true }
+local HOME = { O = { Durotar = true }, R = { Durotar = true }, T = { Mulgore = true }, U = { ["Tirisfal Glades"] = true }, S = { ["Zephras Isle"] = true, Mulgore = true },
+  H = { ["Elwynn Forest"] = true }, D = { ["Dun Morogh"] = true }, G = { ["Dun Morogh"] = true }, N = { Teldrassil = true }, A = { ["Zephras Isle"] = true, Westfall = true } }
+local START = { Durotar = true, Mulgore = true, ["Tirisfal Glades"] = true, ["Zephras Isle"] = true, ["Elwynn Forest"] = true, ["Dun Morogh"] = true, Teldrassil = true }
 local home = HOME[RG.RACE_LETTER] or {}
 for _, g in ipairs((RG.CLASS_GEAR or {})[C.token] or {}) do
   local farStart = (g.lvl or 0) < 13 and START[g.zone] and not home[g.zone]
@@ -91,6 +110,10 @@ RG.GUIDE = guide
 -- Route: faction zones + race starting zones + class milestones
 -- ---------------------------------------------------------------------------
 local route, travel, steps = {}, {}, {}
+if faction == "Alliance" and own.token == "PALADIN" then   -- Forsaken paladin quests, not yours
+  own = { weights = own.weights }
+  RG.CLASS_QUESTS = {}
+end
 for _, src in ipairs({ H, R, own }) do
   for _, r in ipairs(src.route or {}) do route[#route + 1] = r end
   for _, t in ipairs(src.travel or {}) do travel[#travel + 1] = t end
@@ -112,18 +135,21 @@ table.sort(travel, function(a, b) if a.lvl ~= b.lvl then return a.lvl < b.lvl en
 -- Starting zones with generated quest steps (Routes/Generated.lua): text, the
 -- quests each step covers (so it ticks itself off) and the hub's waypoint.
 local stepQuests, stepWp = {}, {}
-local gen = R.gen and RG.GEN_STEPS and RG.GEN_STEPS[RG.RACE_LETTER]
-if gen then
-  for _, r in ipairs(R.route or {}) do
+local function mergeGen(src, letter)
+  local gen = src.gen and RG.GEN_STEPS and RG.GEN_STEPS[letter]
+  if not gen then return end
+  for _, r in ipairs(src.route or {}) do
     local key = r.zone .. "|" .. r.from
     local g = gen[key]
-    if g and not (R.steps and R.steps[key]) then
+    if g and not (src.steps and src.steps[key]) then
       local texts, qs, ws = {}, {}, {}
       for i, s in ipairs(g) do texts[i], qs[i], ws[i] = s.t, s.q, s.w end
       steps[key], stepQuests[key], stepWp[key] = texts, qs, ws
     end
   end
 end
+mergeGen(R, RG.RACE_LETTER)
+mergeGen(H, "F")      -- Alliance: the zones every race shares
 -- Lines for one class ("Paladins: ...") only show for that class.
 local CLASS_PLURAL = { Warriors = "WARRIOR", Paladins = "PALADIN", Hunters = "HUNTER", Rogues = "ROGUE", Priests = "PRIEST",
   Shamans = "SHAMAN", Mages = "MAGE", Warlocks = "WARLOCK", Druids = "DRUID" }
@@ -156,7 +182,7 @@ for name, dq in pairs(H.dungeons or {}) do
   for k, v in pairs(dq) do copy[k] = v end
   local list, seen = {}, {}
   for _, q in ipairs(dq.quests or {}) do list[#list + 1] = q; seen[(q[1]:gsub("%s*%(.-%)$", ""))] = true end
-  for _, g in ipairs((RG.GEN_DUNGEONS or {})[name] or {}) do
+  for _, g in ipairs(((faction == "Alliance" and RG.GEN_DUNGEONS_A) or RG.GEN_DUNGEONS or {})[name] or {}) do
     if not seen[g.n] and g.g ~= "" and forMe(g) and g.l <= (dq.go or 0) + 12 and g.r <= (dq.go or 60) + 2 then
       seen[g.n] = true
       list[#list + 1] = { g.n, g.g, g.at, wp = g.w, id = g.id }
@@ -171,6 +197,9 @@ RG.DUNGEON_QUESTS = dungeons
 -- Professions (all of them for now; the tabs check your skills)
 -- ---------------------------------------------------------------------------
 local P = RG.PROFESSIONS
+if faction == "Alliance" then   -- trainers for the Alliance towns
+  for _, pd in pairs(P) do if pd.trainA then pd.train = pd.trainA end end
+end
 RG.MINING = P.Mining and P.Mining.zones or {}
 RG.SMELT = P.Mining and P.Mining.smelt or {}
 RG.STONES = P.Blacksmithing and P.Blacksmithing.stones or { sharp = {}, blunt = {} }
@@ -195,6 +224,7 @@ if not RG.KEEP_ALL_DATA then
   for _, t in ipairs({ RG.CLASS_GEAR, RG.SPEC_GEAR, RG.SPEC_HAND }) do
     for cls in pairs(t or {}) do if cls ~= RG.PLAYER_CLASS then t[cls] = nil end end
   end
-  for letter in pairs(RG.GEN_STEPS or {}) do if letter ~= RG.RACE_LETTER then RG.GEN_STEPS[letter] = nil end end
+  for letter in pairs(RG.GEN_STEPS or {}) do if letter ~= RG.RACE_LETTER and letter ~= "F" then RG.GEN_STEPS[letter] = nil end end
+  if faction == "Alliance" then RG.GEN_DUNGEONS = nil else RG.GEN_DUNGEONS_A = nil end
   collectgarbage("collect")
 end

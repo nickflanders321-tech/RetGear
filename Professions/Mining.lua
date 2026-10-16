@@ -35,6 +35,13 @@ M.train = {
   apprentice = "Makaru (Orgrimmar), Brom Killian (Undercity), Brek Stonehoof (Thunder Bluff)",
   journeyman = "any Mining trainer (level 10)", expert = "any Mining trainer (level 20)", artisan = "any Mining trainer (level 35)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+M.trainA = {
+  start = { H = "Gelman Stonehand in Stormwind", D = "Yarr Hammerstone in Dun Morogh", G = "Yarr Hammerstone in Dun Morogh", N = "Kurdram Stonehammer in Darkshore (Auberdine)", A = "Halavuul Cragwind on Zephras Isle" },
+  apprentice = "Gelman Stonehand (Stormwind), Geofram Bouldertoe (Ironforge), Yarr Hammerstone (Dun Morogh), Kurdram Stonehammer (Auberdine)",
+  journeyman = "any Mining trainer (level 10)", expert = "any Mining trainer (level 20)", artisan = "any Mining trainer (level 35)",
+}
 M.supplies = "Mining Pick: Trade Supplies vendors in every capital and most towns."
 -- Gathering plan: what to mine at each skill (zones come from the spawn data in NodeData.lua).
 M.plan = {

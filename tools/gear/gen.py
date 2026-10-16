@@ -127,6 +127,9 @@ HORDE_FAR = {"The Stockade"}  # inside Stormwind
 # Alliance home zones: no quest rewards, rare mobs or vendors from there for the Horde
 ALLIANCE_ZONES = {"Dun Morogh", "Elwynn Forest", "Teldrassil", "Darkshore", "Westfall", "Loch Modan", "Redridge Mountains",
                   "Duskwood", "Stormwind City", "Ironforge", "Darnassus"}
+# Horde home zones and Horde-only dungeons: nothing from there for the Alliance
+HORDE_ZONES = {"Durotar", "Mulgore", "Tirisfal Glades", "Silverpine Forest", "Orgrimmar", "Thunder Bluff", "Undercity"}
+HORDE_FAR_A = {"Ragefire Chasm", "Ruins of Lordaeron", "Krol'dok Stronghold"}
 def zone_name(z):
     if z is None: return None
     return DUNGEON.get(z) or AREA.get(z)
@@ -272,12 +275,13 @@ def raid_item(iid):
 # quests that need a raid boss's drop to start or finish
 RAID_QUESTS = {"The Lord of Blackrock", "The Nightmare Manifests", "Victory for the Horde", "The Savior of Kalimdor"}
 HORDE = 2 | 16 | 32 | 128 | 8589934592   # Orc, Undead, Tauren, Troll, Skyborne (Horde)
+ALLY = 1 | 4 | 8 | 64 | 4294967296       # Human, Dwarf, Night Elf, Gnome, Skyborne (Alliance)
 CLASS_BIT = 2   # set per class below
-def horde_quest(qid):
+def horde_quest(qid, ally=False):
     q = FQ.get(str(qid))
     if not q or q["name"] in RAID_QUESTS: return None
     races = q.get("races") or 0
-    if races and not (int(races) & HORDE): return None
+    if races and not (int(races) & (ALLY if ally else HORDE)): return None
     classes = q.get("classes") or 0
     if classes and not (int(classes) & CLASS_BIT): return None
     z = q.get("zone")
@@ -289,16 +293,18 @@ def horde_quest(qid):
         ok = False
         for g in givers:
             n = FN.get(str(g))
-            if n and "H" in (n.get("faction") or ""): ok = True
+            if n and ("A" if ally else "H") in (n.get("faction") or ""): ok = True
         if not ok: return None
     return q
 
-def sources(iid):
+def sources(iid, ally=False):
+    other = HORDE_ZONES if ally else ALLIANCE_ZONES
+    far = HORDE_FAR_A if ally else HORDE_FAR
     f = FI.get(str(iid))
     if not f: return []
     out = []
     for qid in L(f.get("questRewards")):
-        q = horde_quest(qid)
+        q = horde_quest(qid, ally)
         if q:
             z = q.get("zone")
             zname = zone_name(z) if isinstance(z, int) and z > 0 else None
@@ -306,7 +312,7 @@ def sources(iid):
             gv, _ = givers_of(q)
             if gv:
                 n = FN.get(str(gv[0])); giver = n and n.get("name")
-            if zname in ALLIANCE_ZONES: continue
+            if zname in other: continue
             out.append({"how": "Quest", "lvl": q.get("level") or q.get("reqLevel") or 0, "req": q.get("reqLevel") or 0,
                         "src": q["name"] + (" (" + giver + ")" if giver else ""), "zone": zname or "", "quest": q["name"], "q": int(qid)})
     drops = L(f.get("npcDrops"))
@@ -317,15 +323,15 @@ def sources(iid):
             z = n.get("zone")
             d = DUNGEON.get(z)
             if d:
-                if d in RAIDS or d in HORDE_FAR: continue
+                if d in RAIDS or d in far: continue
                 if (n.get("rank") or 0) < 1: continue
                 out.append({"how": "Dungeon", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": d, "bl": n.get("maxLevel") or 0})
-            elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in ALLIANCE_ZONES:
+            elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in other:
                 out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
     for vid in L(f.get("vendors")):
         n = FN.get(str(vid))
         sub = (n.get("sub") or "") if n else ""
-        if n and "H" in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in ALLIANCE_ZONES and not re.search(r"Supply Officer|Quartermaster|Legionnaire|Battlemaster", sub):
+        if n and ("A" if ally else "H") in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in other and not re.search(r"Supply Officer|Quartermaster|Legionnaire|Battlemaster", sub):
             out.append({"how": "Vendor", "lvl": 0, "src": n["name"], "zone": zone_name(n.get("zone")) or ""})
     return out
 
@@ -335,7 +341,7 @@ def sources(iid):
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3}
 src_cache = {}
-def pick(C, lvl_from=5):
+def pick(C, lvl_from=5, ally=False):
     """The upgrade path for every slot plus the best quest reward and dungeon drop per
     5-level window, from lvl_from to 60."""
     global CLASS_BIT
@@ -344,8 +350,8 @@ def pick(C, lvl_from=5):
     for iid, d in items.items():
         slot = eligible(d, C)
         if not slot: continue
-        key = (iid, CLASS_BIT)
-        if key not in src_cache: src_cache[key] = sources(iid)
+        key = (iid, CLASS_BIT, ally)
+        if key not in src_cache: src_cache[key] = sources(iid, ally)
         src = [dict(x) for x in src_cache[key]]
         if not src: continue
         req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
@@ -405,19 +411,24 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
     CLASSES[C["tok"]] = C
     if ONLY and C["name"] not in ONLY and C["tok"] not in ONLY: continue
     picked = pick(C)
+    picked_a = pick(C, ally=True)
     cnt = defaultdict(int)
     for c in picked: cnt[c["slot"]] += 1
-    print("%-8s %-14s picked %3d: %s" % (C["name"], C["spec"], len(picked), dict(sorted(cnt.items()))), file=sys.stderr)
+    print("%-8s %-14s picked %3d (Alliance %3d): %s" % (C["name"], C["spec"], len(picked), len(picked_a), dict(sorted(cnt.items()))), file=sys.stderr)
     out_path = os.path.join(addon_dir, 'Classes', C["name"] + 'Gear.lua')
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("-- GENERATED by tools/gear/gen.py: do not edit by hand.\n")
-        f.write("-- %s %s upgrades for every slot, levels 5-60: quest rewards a Horde %s can get,\n" % (C["spec"], C["name"].lower(), C["name"].lower()))
-        f.write("-- dungeon boss drops, and Horde vendors, scored with Classes/%s.lua's weights.\n" % C["name"])
+        f.write("-- %s %s upgrades for every slot, levels 5-60: quest rewards a %s can get,\n" % (C["spec"], C["name"].lower(), C["name"].lower()))
+        f.write("-- dungeon boss drops, and vendors, scored with Classes/%s.lua's weights. CLASS_GEAR is for the Horde, CLASS_GEAR_A for the Alliance.\n" % C["name"])
         f.write("-- Stats: cMaNGOS classic DB; sources: QuestieDB merged Forever data.\n")
         f.write("local _, RG = ...\n")
         f.write("RG.CLASS_GEAR = RG.CLASS_GEAR or {}\n")
         f.write("RG.CLASS_GEAR.%s = {\n" % C["tok"])
         for c in picked: f.write(entry(c))
+        f.write("}\n")
+        f.write("RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}\n")
+        f.write("RG.CLASS_GEAR_A.%s = {\n" % C["tok"])
+        for c in picked_a: f.write(entry(c))
         f.write("}\n")
 
 # ---------------------------------------------------------------------------
@@ -428,29 +439,32 @@ if SPECS_JSON:
     specs = json.load(open(SPECS_JSON))
     out = ["-- GENERATED by tools/gear/gen.py --specs: do not edit by hand.",
            "-- Gear to start collecting for every 2nd spec (Classes/Specs.lua), levels %d-60: quest rewards" % SPEC_FROM,
-           "-- a Horde character of that class can get, dungeon boss drops and Horde vendors, scored with",
-           "-- the spec's own weights. Stats: cMaNGOS classic DB; sources: QuestieDB merged Forever data.",
+           "-- a character of that class can get, dungeon boss drops and vendors, scored with",
+           "-- the spec's own weights. SPEC_GEAR is for the Horde, SPEC_GEAR_A for the Alliance.",
+           "-- Stats: cMaNGOS classic DB; sources: QuestieDB merged Forever data.",
            "-- Leveling specs use their class's gear guide instead (Classes/<Class>Gear.lua).",
-           "local _, RG = ...", "RG.SPEC_GEAR = RG.SPEC_GEAR or {}"]
-    for tok in sorted(specs):
-        C = CLASSES.get(tok)
-        if not C: continue
-        out.append("RG.SPEC_GEAR.%s = {" % tok)
-        for sp in specs[tok]:
-            if sp.get("main"): continue
-            S = dict(C)
-            S["w"] = {k: float(v) for k, v in (sp.get("weights") or {}).items()}
-            S["model"] = sp.get("model") or C["model"]
-            if sp.get("weapons"): S["weapons"] = set(sp["weapons"])
-            S["shield"] = bool(sp.get("shield"))
-            S["kind"] = sp.get("kind")
-            picked = pick(S, SPEC_FROM)
-            cnt = defaultdict(int)
-            for c in picked: cnt[c["slot"]] += 1
-            print("%-8s %-14s picked %3d: %s" % (C["name"], sp["name"], len(picked), dict(sorted(cnt.items()))), file=sys.stderr)
-            out.append("  %s = {" % sp["key"])
-            for c in picked: out.append("  " + entry(c).rstrip("\n"))
-            out.append("  },")
-        out.append("}")
+           "local _, RG = ..."]
+    for var, ally in (("RG.SPEC_GEAR", False), ("RG.SPEC_GEAR_A", True)):
+        out.append("%s = %s or {}" % (var, var))
+        for tok in sorted(specs):
+            C = CLASSES.get(tok)
+            if not C: continue
+            out.append("%s.%s = {" % (var, tok))
+            for sp in specs[tok]:
+                if sp.get("main"): continue
+                S = dict(C)
+                S["w"] = {k: float(v) for k, v in (sp.get("weights") or {}).items()}
+                S["model"] = sp.get("model") or C["model"]
+                if sp.get("weapons"): S["weapons"] = set(sp["weapons"])
+                S["shield"] = bool(sp.get("shield"))
+                S["kind"] = sp.get("kind")
+                picked = pick(S, SPEC_FROM, ally)
+                cnt = defaultdict(int)
+                for c in picked: cnt[c["slot"]] += 1
+                print("%-8s %-14s %s picked %3d: %s" % (C["name"], sp["name"], "Alliance" if ally else "Horde", len(picked), dict(sorted(cnt.items()))), file=sys.stderr)
+                out.append("  %s = {" % sp["key"])
+                for c in picked: out.append("  " + entry(c).rstrip("\n"))
+                out.append("  },")
+            out.append("}")
     with open(os.path.join(addon_dir, 'Classes', 'SpecGear.lua'), "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")

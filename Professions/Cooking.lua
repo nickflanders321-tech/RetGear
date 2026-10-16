@@ -12,6 +12,15 @@ K.train = {
   expert = "the Expert Cookbook from Wulan (Shadowprey Village, Desolace; skill 125)",
   artisan = "Clamlette Surprise for Dirge Quikcleave in Gadgetzan (skill 225, level 35): take To Gadgetzan You Go! from Zamja in Orgrimmar, and bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+K.trainA = {
+  start = { H = "Stephen Ryback in Stormwind", D = "Gremlock Pilsnor in Kharanos", G = "Gremlock Pilsnor in Kharanos", N = "Alegorn in Darnassus", A = "Stephen Ryback in Stormwind" },
+  apprentice = "Stephen Ryback (Stormwind), Daryl Riknussun (Ironforge), Alegorn (Darnassus), Gremlock Pilsnor (Dun Morogh)",
+  journeyman = "any Cooking trainer (skill 50)",
+  expert = "the Expert Cookbook (skill 125): a Cooking recipe vendor for your side; not confirmed for WoW Forever yet",
+  artisan = "Clamlette Surprise for Dirge Quikcleave in Gadgetzan (skill 225, level 35); bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss",
+}
 K.supplies = "Simple Wood and Flint and Tinder for the campfire, spices and Refreshing Spring Water: Cooking Supply vendors (Xen'to in Orgrimmar, Ronald Burch in Undercity, Naal Mistrunner in Thunder Bluff)."
 K.plan = {
   { from = 1,   to = 50,  craft = "Brilliant Smallfish, Charred Wolf Meat or Roasted Boar Meat", n = 55, mats = "1 raw fish or meat each (Scorpid Surprise in Durotar, Crispy Bat Wing in Tirisfal)" },

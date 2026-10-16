@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.57.0
+- **Alliance support (beta):** Humans, Dwarves, Gnomes, Night Elves and Alliance Skyborne now get a full leveling route from their own starting zone through all the shared Alliance zones to 60, with quest steps, map pins, dungeon quest lists, Alliance profession trainers and Alliance gear sources for every class and spec.
+- Undead-only paladin text is hidden for Alliance paladins. The first time an Alliance character logs in you get a short beta notice; please report anything that looks off.
+- The data checks now cover all ten races and every class they can play.
+
 ## v0.56.0
 - **Smarter first-run setup:** Waypath+ now detects your faction, race, class, level, zone and professions on its own and shows them on the setup page. A new "How do you play?" page asks what matters most (leveling fast or enjoying the zones), solo or groups, travel and your role. Run it again any time with /wp setup.
 - **Professions follow you:** learn a profession and it is added to your guided professions automatically, with a message; drop one and it is removed. Professions you know but don't want guided can be unticked in setup.

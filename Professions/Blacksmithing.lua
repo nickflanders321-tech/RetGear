@@ -60,6 +60,15 @@ B.train = {
   expert = "Saru Steelfury (Orgrimmar)",
   artisan = "Brikk Keencraft (Booty Bay, Stranglethorn Vale)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+B.trainA = {
+  start = { H = "Smith Argus in Goldshire", D = "Tognus Flintfire in Kharanos", G = "Tognus Flintfire in Kharanos", N = "Dane Lindgren in Stormwind", A = "Dane Lindgren in Stormwind" },
+  apprentice = "Smith Argus (Goldshire), Dane Lindgren (Stormwind), Groum Stonebeard (Ironforge), Tognus Flintfire (Dun Morogh)",
+  journeyman = "Dane Lindgren (Stormwind), Groum Stonebeard (Ironforge)",
+  expert = "Therum Deepforge (Stormwind), Rotgath Stonebeard (Ironforge)",
+  artisan = "Bengus Deepforge (Ironforge)",
+}
 B.supplies = "Blacksmith Hammer, Weak and Strong Flux: the Blacksmithing Supply vendor next to each capital trainer. Green Dye: Tamar (Orgrimmar), Millie Gregorian (Undercity), Mahu (Thunder Bluff)."
 
 -- Bars whose Auction House prices are tracked (ore and basic bars come from Mining).

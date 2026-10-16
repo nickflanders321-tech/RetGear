@@ -1,4 +1,4 @@
--- Waypath+ coverage audit: loads the add-on's data once for every playable Horde
+-- Waypath+ coverage audit: loads the add-on's data once for every playable
 -- race/class combination and checks that each one gets the same quality of guide.
 --
 --   lua5.1 tools/audit/audit.lua [--markdown]      (run from the add-on folder)
@@ -19,11 +19,17 @@ local COMBOS = {
   Tauren = { "WARRIOR", "HUNTER", "SHAMAN", "DRUID" },
   Scourge = { "WARRIOR", "PALADIN", "ROGUE", "PRIEST", "MAGE", "WARLOCK" },
   Skyborne = { "WARRIOR", "HUNTER", "ROGUE", "SHAMAN", "DRUID" },
+  Human = { "WARRIOR", "PALADIN", "ROGUE", "PRIEST", "MAGE", "WARLOCK" },
+  Dwarf = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST" },
+  Gnome = { "WARRIOR", "ROGUE", "MAGE", "WARLOCK" },
+  NightElf = { "WARRIOR", "HUNTER", "ROGUE", "PRIEST", "DRUID" },
+  SkyborneAlliance = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "MAGE" },
 }
-local RACE_ORDER = { "Orc", "Troll", "Tauren", "Scourge", "Skyborne" }
+local RACE_ORDER = { "Orc", "Troll", "Tauren", "Scourge", "Skyborne", "Human", "Dwarf", "Gnome", "NightElf", "SkyborneAlliance" }
+local ALLIANCE = { Human = true, Dwarf = true, Gnome = true, NightElf = true, SkyborneAlliance = true }
 local FILES = {
   "Data.lua", "Classes/Paladin.lua", "Classes/PaladinGear.lua", "Races/Undead.lua", "Races/Durotar.lua", "Races/Tauren.lua",
-  "Races/Skyborne.lua", "Routes/Horde.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua", "Professions/Herbalism.lua", "Professions/Skinning.lua", "Professions/Alchemy.lua", "Professions/Enchanting.lua", "Professions/Engineering.lua", "Professions/Leatherworking.lua", "Professions/Tailoring.lua", "Professions/FirstAid.lua", "Professions/Cooking.lua", "Professions/Fishing.lua", "Professions/Generated.lua",
+  "Races/Skyborne.lua", "Races/Human.lua", "Races/Dwarf.lua", "Races/Gnome.lua", "Races/NightElf.lua", "Races/SkyborneAlliance.lua", "Routes/Horde.lua", "Routes/Alliance.lua", "Routes/Generated.lua", "Professions/Mining.lua", "Professions/Blacksmithing.lua", "Professions/Herbalism.lua", "Professions/Skinning.lua", "Professions/Alchemy.lua", "Professions/Enchanting.lua", "Professions/Engineering.lua", "Professions/Leatherworking.lua", "Professions/Tailoring.lua", "Professions/FirstAid.lua", "Professions/Cooking.lua", "Professions/Fishing.lua", "Professions/Generated.lua",
   "Profile.lua", "Waypoints.lua", "Objectives.lua", "NodeData.lua",
 }
 -- 2nd specs (load before Profile.lua, like the .toc does)
@@ -39,7 +45,7 @@ local function load(class, race)
   local RG = {}
   UnitClass = function() return class, class end
   UnitRace = function() return race, race end
-  UnitFactionGroup = function() return "Horde" end
+  UnitFactionGroup = function() return ALLIANCE[race] and "Alliance" or "Horde" end
   for _, f in ipairs(FILES) do assert(loadfile(f))("Waypath", RG) end
   return RG
 end
@@ -175,6 +181,7 @@ for _, race in ipairs(RACE_ORDER) do
           end
         end
         local prof = false
+        if text:find("%(levels? %d+") then low = "" end   -- quest lists: names like "Venture Company Mining" are not advice
         for _, w in ipairs(PROF_WORDS) do if low:find(w, 1, true) then prof = true break end end
         if prof then
           local ok = false

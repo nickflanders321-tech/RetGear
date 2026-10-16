@@ -40,7 +40,13 @@ Races\Undead.lua
 Races\Durotar.lua
 Races\Tauren.lua
 Races\Skyborne.lua
+Races\Human.lua
+Races\Dwarf.lua
+Races\Gnome.lua
+Races\NightElf.lua
+Races\SkyborneAlliance.lua
 Routes\Horde.lua
+Routes\Alliance.lua
 Routes\Generated.lua
 Professions\Mining.lua
 Professions\Blacksmithing.lua

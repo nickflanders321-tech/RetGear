@@ -150,8 +150,8 @@ for p in glob.glob(os.path.join(addon, "Professions", "*.lua")):
     for c in re.findall(r'craft = "([^"]+)"', src):
         for part in re.split(r",\s*|\s+or\s+", c):
             if part.strip(): plan_crafts.add(part.strip())
-    tm = re.search(r'\w\.train = \{(.*?)^\}', src, re.S | re.M)
-    if tm:
+    for tm in re.finditer(r'\w\.train[A]? = \{(.*?)^\}', src, re.S | re.M):
+        tm = tm
         for nm, ctx in re.findall(r"([A-Z][A-Za-z'\.]+(?: [A-Z][A-Za-z'\.]+){0,3}) \(([^)]*)", tm.group(1)):
             trainer_names.add(nm); trainer_ctx[nm] = ctx
         for nm in re.findall(r'"([A-Z][A-Za-z\']+(?: [A-Z][A-Za-z\']+){0,2}) (?:in|at) ', tm.group(1)):

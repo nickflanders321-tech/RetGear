@@ -9,6 +9,13 @@ H.train = {
   apprentice = "Jandi (Orgrimmar), Martha Alliestar (Undercity), Komin Winterhoof (Thunder Bluff)",
   journeyman = "any Herbalism trainer (level 10)", expert = "any Herbalism trainer (level 20)", artisan = "any Herbalism trainer (level 35)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+H.trainA = {
+  start = { H = "Herbalist Pomeroy in Goldshire", D = "Reyna Stonebranch in Ironforge", G = "Reyna Stonebranch in Ironforge", N = "Firodren Mooncaller in Darnassus", A = "Tannysa in Stormwind" },
+  apprentice = "Herbalist Pomeroy (Goldshire), Tannysa (Stormwind), Reyna Stonebranch (Ironforge), Firodren Mooncaller (Darnassus)",
+  journeyman = "any Herbalism trainer (level 10)", expert = "any Herbalism trainer (level 20)", artisan = "any Herbalism trainer (level 35)",
+}
 H.supplies = "Nothing to buy: just learn Find Herbs and watch your minimap."
 H.plan = {
   { from = 1,   to = 50,  gather = "Peacebloom", also = "Silverleaf" },

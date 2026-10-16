@@ -11,6 +11,15 @@ L.train = {
   expert = "Una (Thunder Bluff)",
   artisan = "Hahrana Ironhide (Camp Mojache, Feralas)",
 }
+
+-- Alliance: the same trainers, in Stormwind, Ironforge, Darnassus and the starting zones (Profile.lua uses this one for Alliance characters).
+L.trainA = {
+  start = { H = "Adele Fielder in Elwynn Forest", D = "Gretta Finespindle in Ironforge", G = "Gretta Finespindle in Ironforge", N = "Nadyia Maneweaver in Dolanaar", A = "Randal Worth in Stormwind" },
+  apprentice = "Randal Worth (Stormwind), Gretta Finespindle (Ironforge), Darianna (Darnassus), Adele Fielder (Elwynn Forest), Nadyia Maneweaver (Dolanaar)",
+  journeyman = "Randal Worth (Stormwind), Gretta Finespindle (Ironforge), Darianna (Darnassus)",
+  expert = "Simon Tanner (Stormwind), Fimble Finespindle (Ironforge), Faldron (Darnassus)",
+  artisan = "Telonis (Darnassus)",
+}
 L.supplies = "Salt, threads and dyes: the Leatherworking Supply vendor by each trainer (Brill: Abigail Shiel)."
 L.plan = {
   { from = 1,   to = 30,  craft = "Light Leather", n = 33, mats = "3 Ruined Leather Scraps each (or Light Armor Kit from bought Light Leather)" },
