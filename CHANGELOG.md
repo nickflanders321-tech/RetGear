@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.70.4
+- **A lighter, smaller tracker.** The panel is now see-through by default (50%) so you can see the world behind it; hold **Alt and scroll over it** to make it more or less see-through. Text and spacing are tighter, so it takes up less of the screen, and text has a soft shadow to stay readable.
+
 ## v0.70.3
 - **One font everywhere.** Pop-ups (toasts), the setup wizard, the item source window, the error window, the tracker header and footer, the window's footer, search box and "Near my level" label, the fishing and paper-doll overlays all used the game's own gold ornate fonts. They now use Inter like the rest, with the mint accent instead of Blizzard gold.
 

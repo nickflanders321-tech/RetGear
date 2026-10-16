@@ -223,7 +223,7 @@ local function line(i)
   b:SetWidth(W - 24)
   b.text = b:CreateFontString(nil, "OVERLAY"); b.text:SetFont("Fonts\\ARIALN.TTF", 13, ""); b.text:SetPoint("TOPLEFT", 16, 0); b.text:SetWidth(W - 44); b.text:SetJustifyH("LEFT"); b.text:SetWordWrap(true)
   b.right = b:CreateFontString(nil, "OVERLAY"); b.right:SetFont("Fonts\\ARIALN.TTF", 10, ""); b.right:SetPoint("TOPRIGHT", 0, -1); b.right:SetJustifyH("RIGHT")
-  b.right:SetShadowColor(0, 0, 0, 0); b.right:SetShadowOffset(0, 0)
+  b.right:SetShadowColor(0, 0, 0, 0.9); b.right:SetShadowOffset(1, -1)
   b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetPoint("TOPLEFT", -4, 1); b.hl:SetPoint("BOTTOMRIGHT", 4, -1); b.hl:SetColorTexture(1, 1, 1, 0.06)
   b.box = b:CreateTexture(nil, "ARTWORK"); b.box:SetSize(12, 12); b.box:SetPoint("TOPLEFT", 0, -1)
   b.check = b:CreateTexture(nil, "OVERLAY"); b.check:SetSize(12, 12); b.check:SetPoint("CENTER", b.box, "CENTER", 0, 0); b.check:SetTexture("Interface\\AddOns\\Waypath\\Media\\Check"); b.check:SetVertexColor(0.05, 0.07, 0.07, 1)
@@ -250,7 +250,7 @@ end
 local function build()
   tr = CreateFrame("Frame", "WaypathTracker", UIParent, "BackdropTemplate")
   tr:SetWidth(W); tr:SetClampedToScreen(true); tr:SetMovable(true); tr:EnableMouse(true); tr:SetFrameStrata("MEDIUM")
-  RG.Round(tr, 0.06, 0.06, 0.065, 0.9, 12)   -- dense enough to read over snow and sand
+  RG.Round(tr, 0.06, 0.06, 0.065, RG.db.trackerAlpha or 0.5, 12)   -- dense enough to read over snow and sand
   local pos = RG.db.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   tr:RegisterForDrag("LeftButton")
@@ -260,6 +260,8 @@ local function build()
   tr:SetScript("OnMouseWheel", function(self, delta)
     if IsControlKeyDown and IsControlKeyDown() then
       RG.db.trackerScale = math.max(0.6, math.min(1.6, (RG.db.trackerScale or 1) + delta * 0.05))
+    elseif IsAltKeyDown and IsAltKeyDown() then
+      RG.db.trackerAlpha = math.max(0.15, math.min(0.95, (RG.db.trackerAlpha or 0.5) + delta * 0.05))
     elseif IsShiftKeyDown and IsShiftKeyDown() then
       RG.db.trackerWidth = math.max(240, math.min(460, (RG.db.trackerWidth or 300) + delta * 20))
     else return end
@@ -276,6 +278,7 @@ local function build()
     GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move", 1, 1, 1)
     GameTooltip:AddLine("Ctrl + mouse wheel: bigger or smaller", 1, 1, 1)
     GameTooltip:AddLine("Shift + mouse wheel: wider or narrower", 1, 1, 1)
+    GameTooltip:AddLine("Alt + mouse wheel: more or less see-through", 1, 1, 1)
     GameTooltip:AddLine("Click a gold heading to fold it", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
@@ -321,7 +324,7 @@ local function build()
   tr.foot = RG.NewText(tr, "GameFontHighlightSmall"); tr.foot:SetPoint("BOTTOMLEFT", 12, 16); tr.foot:SetTextColor(0.62, 0.62, 0.62)
   tr.pct = RG.NewText(tr, "GameFontHighlightSmall"); tr.pct:SetPoint("BOTTOMRIGHT", -12, 16); tr.pct:SetTextColor(0.62, 0.62, 0.62)
 
-  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -46); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
+  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -42); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   lines = {}
 end
 
@@ -350,12 +353,12 @@ local function section(n, y, label, key, right)
   end
   b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); tfont(b.text, fontSize(11.5))
   b.text:SetWidth(W - 24); b.text:SetWordWrap(false)
-  b.text:SetShadowColor(0, 0, 0, 0); b.text:SetShadowOffset(0, 0)
+  b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
   local lab = label:find("|", 1, true) and label or label:upper()
   b.text:SetText((key and ("|cff707070" .. (isFolded and "+ " or "- ") .. "|r") or "") .. "|cff9a9a9a" .. lab .. "|r")
   tfont(b.right, fontSize(11)); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
-  return y + 28, isFolded
+  return y + 24, isFolded
 end
 -- opts: onClick, onRightClick, tip, box (checkbox state), right (right-hand text), single (one line, cut with ...)
 local function item(n, y, text, opts)
@@ -364,13 +367,13 @@ local function item(n, y, text, opts)
   b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
   b.onDoubleClick = opts.wp and function() RG.ArrowTo(opts.wp) end or nil
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
-  tfont(b.right, fontSize(12.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
+  tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(13.5))
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(12.5))
   b.text:SetWidth(W - 24 - indent - rw)
   b.text:SetWordWrap(not opts.single)
   if b.text.SetMaxLines then b.text:SetMaxLines(opts.single and 1 or 0) end
-  b.text:SetShadowColor(0, 0, 0, 0); b.text:SetShadowOffset(0, 0)
+  b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
   b.text:SetText(text); tcheck(b.text, text)
   if opts.box ~= nil then
     b.box:Show(); b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\" .. (opts.box and "Disc" or "Ring"))
@@ -379,7 +382,7 @@ local function item(n, y, text, opts)
   else b.box:Hide(); b.check:Hide() end
   local h = opts.single and 15 or math.max(15, (b.text:GetStringHeight() or 14) + 2)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(h); b:Show()
-  return y + h + 5
+  return y + h + 3
 end
 
 -- Tooltip for a quest in your log.
@@ -409,6 +412,7 @@ function RG.RefreshTracker()
   -- size and width (Ctrl / Shift + mouse wheel)
   W = RG.db.trackerWidth or 300
   tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
+  tr:SetBackdropColor(0.06, 0.06, 0.065, RG.db.trackerAlpha or 0.5)
   for _, b in ipairs(lines) do b:Hide(); b:SetWidth(W - 24) end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
@@ -484,7 +488,7 @@ function RG.RefreshTracker()
       n = n + 1
       y = item(n, y, (RG.ItemInfo(e.id) or ("item " .. e.id)) .. "  x" .. e.need .. (e.toBuy > 0 and (GREY .. "  (buy " .. e.toBuy .. ")|r") or (GREEN .. "  (in your bags)|r")) .. "\n" .. GREY .. e.quest .. "|r", { onClick = function() if RG.ShowTab then RG.ShowTab("mail") end end })
     end
-    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(46 + y + 44)
+    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 40)
     return
   end
   local MAXQ = 10
@@ -880,7 +884,7 @@ function RG.RefreshTracker()
     end
   end
   tr.body:SetHeight(math.max(10, y))
-  tr:SetHeight(46 + y + 44)
+  tr:SetHeight(42 + y + 40)
 end
 
 -- Fade the tracker during fights so it doesn't cover the action.
