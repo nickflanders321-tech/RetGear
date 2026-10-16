@@ -13,6 +13,7 @@ for _, o in ipairs({
   { key = "questItems",    label = "Buttons for quest items I need to use", default = true },
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
   { key = "arrow",         label = "Arrow to my map pin (/wp way 45 60)", default = true },
+  { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
@@ -667,11 +668,26 @@ local function buildArrow()
     self.hint:SetText(hint)
   end)
 end
+-- Shortest Path Forever (a separate add-on with a baked walking map of the whole world) plans routes
+-- around mountains, walls and cave mouths. When it is installed it takes over the directions for the
+-- pin Waypath+ places, and its arrow is shown instead of ours.
+local function spfApi()
+  local api = ShortestPathForever and ShortestPathForever.API
+  if RG.Opt("spf") and api and type(api.Navigate) == "function" then return api end
+end
+RG.SPFApi = spfApi
+local function spfActive()
+  local api = spfApi()
+  if not (api and api.CurrentStop) then return false end
+  local ok, cur = pcall(api.CurrentStop, "Waypath+")
+  return ok and cur ~= nil
+end
 local refreshArrow
 function RG.RefreshArrow() if refreshArrow then refreshArrow() end end
 refreshArrow = function()
   if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
   local has = C_Map and C_Map.HasUserWaypoint and C_Map.HasUserWaypoint()
+  if has and spfActive() then if arrow then arrow:Hide() end return end
   if has then buildArrow(); arrow:Show() elseif arrow then arrow:Hide() end
 end
 -- ---------------------------------------------------------------------------
@@ -707,10 +723,14 @@ function RG.PinWaypoint(wp, quiet)
   if not ok then if not quiet then RG.Print("Can't pin " .. wp[4] .. " from here.") end return end
   if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
+  local api = spfApi()
+  if api then pcall(api.Navigate, "Waypath+", wp[1], wp[2] / 100, wp[3] / 100, wp[4]) end
   if RG.RefreshArrow then RG.RefreshArrow() end
   if not quiet then RG.Notify("Pinned " .. wp[4] .. ": follow the arrow") end
 end
 function RG.ClearWaypoint()
+  local api = spfApi()
+  if api and api.Cancel then pcall(api.Cancel, "Waypath+") end
   if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
   if arrow then arrow:Hide() end
 end

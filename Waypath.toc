@@ -4,7 +4,7 @@
 ## Author: Nick (Darmine Doggy Doors)
 ## Version: @project-version@
 ## SavedVariables: WaypathDB
-## OptionalDeps: Auctionator, TradeSkillMaster
+## OptionalDeps: Auctionator, TradeSkillMaster, ShortestPathForever
 ## X-License: GPL-3.0
 ## X-Curse-Project-ID: 1743915
 ## X-Website: https://github.com/nickflanders321-tech/RetGear

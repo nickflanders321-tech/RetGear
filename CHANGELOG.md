@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.62.0
+- **Proper pathing with Shortest Path Forever:** if you install the free add-on Shortest Path Forever (by cjber), Waypath+ now hands every pin to it. It plans a real walking route around mountains, cliffs and cave mouths (and boats, zeppelins and flights) from a baked map of the world, and its arrow and tracker guide you. Our own arrow steps aside while it's guiding. Turn it off in Settings if you prefer ours. Without it, the arrow still learns your walked paths as before.
+
 ## v0.61.2
 - The dark look is removed again (the Look button and /wp theme are gone); Waypath+ keeps its classic look.
 
