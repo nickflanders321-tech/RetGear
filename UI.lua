@@ -1665,6 +1665,15 @@ local function renderFish()
       table.concat(parts, ", "), s.gained > 0 and (GREEN .. "+" .. s.gained .. " skill|r") or "", (s.value or 0) > 0 and ("|cffffffff" .. RG.FishMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. "  ·  " .. RG.FishMoney(s.goldPerHour) .. "/hr|r") or "")) or "")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_14")
   end
+  local dst, dmin = RG.FishDerby and RG.FishDerby()
+  if dst then
+    n = n + 1
+    local h, m = math.floor(dmin / 60), dmin % 60
+    local when = (h >= 24 and (math.floor(h / 24) .. " d " .. (h % 24) .. " h") or (h > 0 and (h .. " h " .. m .. " min") or (m .. " min")))
+    setItem(getRow(n), nil, nil, "|cffffffffStranglethorn Fishing Extravaganza|r", "Sundays from 2 pm server time. Turn in 40 Speckled Tastyfish to Riggle Bassbait in Booty Bay first; the winner picks the Arcanite Fishing Pole or the Hook of the Master Angler.",
+      dst == "on" and (GREEN .. "On now: " .. math.floor(dmin / 60) .. "h " .. (dmin % 60) .. "m left|r") or (GREY .. "in " .. when .. "|r"), "", dst == "on" and "gold" or nil)
+    rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing")
+  end
   -- what this zone can bring up, and what is worth your time
   local best = RG.FishBest and RG.FishBest()
   if best then
@@ -1689,7 +1698,8 @@ local function renderFish()
       local name, link, quality = itemName(e.id)
       local ago = time() - (e.t or 0)
       local when = ago < 90 and "just now" or (ago < 5400 and (math.floor(ago / 60) .. " min ago") or (math.floor(ago / 3600) .. " h ago"))
-      setItem(getRow(n), e.id, link, name .. GREY .. "   x" .. (e.qty or 1) .. "|r", GREY .. (e.zone or "") .. "  ·  " .. when .. "|r", (e.v or 0) > 0 and (GOLD .. RG.FishMoney((e.v or 0) * (e.qty or 1)) .. "|r") or "", "", nil, quality, true)
+      local adv, advTip = RG.FishAdvice and RG.FishAdvice(e.id)
+      setItem(getRow(n), e.id, link, name .. GREY .. "   x" .. (e.qty or 1) .. "|r", GREY .. (e.zone or "") .. "  ·  " .. when .. "|r" .. (adv and ("  ·  " .. adv) or ""), (e.v or 0) > 0 and (GOLD .. RG.FishMoney((e.v or 0) * (e.qty or 1)) .. "|r") or "", "", nil, quality, true)
     end
   end
   -- cook now

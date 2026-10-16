@@ -20,6 +20,13 @@ function RG.Font(fs, weight, size, flags)
   if not ok then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
 end
 RG.ACCENT = { 0.31, 0.82, 0.77 }
+-- Localisation scaffolding: RG.L["English text"] returns the translation for the game's language,
+-- or the English text itself. Add a language with RG.AddLocale("deDE", { ["English text"] = "Text" }) from a
+-- Locales/<code>.lua file (see LOCALES.md). New code wraps player-facing strings in RG.L[...].
+RG.L = setmetatable({}, { __index = function(_, k) return k end })
+function RG.AddLocale(code, strings)
+  if GetLocale and GetLocale() == code then for k, v in pairs(strings) do rawset(RG.L, k, v) end end
+end
 -- Inter for every piece of text: the game's built-in font objects (gold, ornate) mapped to the window's look.
 local STYLE = {
   GameFontNormal         = { "semibold", 13, 0.31, 0.82, 0.77 },

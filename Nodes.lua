@@ -172,3 +172,50 @@ function RG.GatherHere(zone)
   end
   return #parts > 0 and table.concat(parts, "  ·  ") or nil
 end
+
+-- A gathering route: pin the nearest known spawn point you still want, then the next one as you
+-- reach (or skip) each. /wp node. Spots you stood next to in the last ten minutes are skipped.
+local visited = {}
+function RG.PinNextNode()
+  if RG.IsAlt and RG.IsAlt() then RG.Print("This is a bank alt: no gathering route.") return end
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+  local size = map and mapSize(map)
+  if not (pos and size) then RG.Print("No gathering data for this spot.") return end
+  local px, py = pos.x * 100, pos.y * 100
+  local best, bestD, bestKind, bestNames
+  local now = GetTime()
+  for _, kind in ipairs(KINDS) do
+    local skill = RG.Skill and RG.Skill(kind.prof)
+    local spots = skill and spotsFor(kind, map)
+    if spots then
+      local mask, names = wanted(kind, skill)
+      if mask > 0 then
+        for _, s in ipairs(spots) do
+          if band(s[3], mask) > 0 then
+            local dx, dy = (s[1] - px) / 100 * size[1], (s[2] - py) / 100 * size[2]
+            local d = math.sqrt(dx * dx + dy * dy)
+            local key = kind.key .. map .. ":" .. s[1] .. ":" .. s[2]
+            if d <= 30 then visited[key] = now end
+            if not (visited[key] and now - visited[key] < 600) and (not bestD or d < bestD) then best, bestD, bestKind, bestNames = s, d, kind, names end
+          end
+        end
+      end
+    end
+  end
+  if not best then RG.Print("No more known ore or herb spots nearby that still give you skill.") return end
+  local types, ore = bestKind.types(), nil
+  for i = #types, 1, -1 do if bestNames[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = bestNames[i]; break end end
+  local dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2])
+  if not RG.Opt("arrow") then RG.db.arrow = true end
+  RG.PinWaypoint({ map, best[1], best[2], (ore or "Node") .. " " .. bestKind.word }, true)
+  RG.Notify(string.format("Next %s: %s, %d yd %s", bestKind.word, ore or "node", bestD, dir))
+  if RG.RefreshTracker then RG.RefreshTracker() end
+end
+local nodeBase = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
+  local cmd = (msg or ""):match("^%s*(%S+)")
+  cmd = cmd and cmd:lower()
+  if cmd == "node" or cmd == "nodes" or cmd == "ore" or cmd == "herb" or cmd == "gather" then RG.PinNextNode() return end
+  return nodeBase(msg)
+end

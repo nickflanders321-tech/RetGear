@@ -294,9 +294,51 @@ function RG.ShowWelcome()
     o:SetScript("OnClick", function() RG.db.welcomed = true; f:Hide(); if fn then fn() end end)
   end
   btn("Open the guide", -80, function() if RG.ToggleUI then RG.ToggleUI() end end, true)
-  btn("Got it", 80)
+  btn("Take the tour", 80, function() if RG.ShowTour then RG.ShowTour(1) end end)
   f:Show()
   sound(SND.UI_QUEST_ROLLING_FORWARD_01 or 862)
+end
+
+-- ---------------------------------------------------------------------------
+-- Tour: four short pages on what to click (/wp tour; offered from the welcome screen)
+-- ---------------------------------------------------------------------------
+local TOUR = {
+  { "The tracker", "The panel on the right is your to-do list: the quest you are on, what to do next, quests ready to hand in, and reminders.\n\n"
+    .. GOLD .. "Click a heading|r to fold it. " .. GOLD .. "Ctrl + scroll|r resizes it, " .. GOLD .. "Shift + scroll|r makes it wider, " .. GOLD .. "Alt + scroll|r makes it see-through." },
+  { "The arrow", "Anything with a location can point the arrow at it.\n\n"
+    .. GOLD .. "Right-click|r a line to make the arrow follow it. " .. GOLD .. "Double-click|r turns the arrow on or off for that spot. Steps tick themselves when you finish them; "
+    .. GOLD .. "Shift-click|r skips one." },
+  { "The window", "Open it from the tracker book, the minimap button or " .. GOLD .. "/wp|r.\n\n"
+    .. "Route has every zone and step (with a search box), Gear guide and My gear compare items, Professions and Gold & AH help your trades. "
+    .. "The small buttons at the top turn the arrow, tracker and sounds on and off, and report a wrong step." },
+  { "And more", GOLD .. "/wp node|r points the arrow at the next ore or herb you can still gather.\n"
+    .. GOLD .. "Fishing|r hides the interface and shows your lure, food and campfire, what each catch is worth and what to do with it.\n"
+    .. GOLD .. "/wp report|r copies the step you are on for a bug report. " .. GOLD .. "/wp setup|r changes your choices any time." },
+}
+function RG.ShowTour(page)
+  page = page or 1
+  local f = _G.WaypathTour
+  if not f then
+    f = CreateFrame("Frame", "WaypathTour", UIParent, "BackdropTemplate")
+    f:SetSize(460, 300); f:SetPoint("CENTER", 0, 80); f:SetFrameStrata("DIALOG")
+    RG.DialogBackdrop(f)
+    f.step = RG.NewText(f, "GameFontNormalSmall"); f.step:SetPoint("TOPLEFT", 22, -18)
+    f.title = RG.NewText(f, "GameFontNormalLarge"); f.title:SetPoint("TOPLEFT", 22, -40)
+    f.body = RG.NewText(f, "GameFontHighlight"); f.body:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -14); f.body:SetWidth(416); f.body:SetJustifyH("LEFT"); f.body:SetSpacing(3)
+    local function btn(label, x, fn)
+      local o = CreateFrame("Button", nil, f, "UIPanelButtonTemplate"); o:SetSize(110, 24); o:SetPoint("BOTTOM", x, 20); o:SetText(label); o:SetScript("OnClick", fn); return o
+    end
+    f.back = btn("Back", -130, function() RG.ShowTour(f.page - 1) end)
+    f.next = btn("Next", 0, function() if f.page >= #TOUR then RG.db.tourSeen = true; f:Hide() else RG.ShowTour(f.page + 1) end end)
+    f.skip = btn("Close", 130, function() RG.db.tourSeen = true; f:Hide() end)
+    tinsert(UISpecialFrames, "WaypathTour")
+  end
+  page = math.max(1, math.min(#TOUR, page))
+  f.page = page
+  f.step:SetText("Tour  ·  " .. page .. " of " .. #TOUR)
+  f.title:SetText(TOUR[page][1]); f.body:SetText(TOUR[page][2])
+  f.back:SetShown(page > 1); f.next:SetText(page >= #TOUR and "Done" or "Next")
+  f:Show()
 end
 
 -- ---------------------------------------------------------------------------

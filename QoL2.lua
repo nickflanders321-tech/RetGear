@@ -500,6 +500,7 @@ SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
   cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
   if cmd == "report" then RG.ReportStep(); return end
+  if cmd == "tour" then RG.ShowTour(1); return end
   if cmd == "errors" or cmd == "error" or cmd == "debug" or cmd == "bug" then
     if rest == "clear" then WaypathDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
     return

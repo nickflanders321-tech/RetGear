@@ -336,6 +336,10 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3)
         local c = ITEM_QUALITY_COLORS and quality and ITEM_QUALITY_COLORS[quality]
         local col = (c and c.hex) or "|cffffffff"
         local text = (icon and not secret(icon) and ("|T" .. icon .. ":14:14|t ") or "") .. col .. name .. "|r" .. ((qty and not secret(qty) and qty > 1) and (GREY .. " x" .. qty .. "|r") or "")
+        local lootLink = GetLootSlotLink and GetLootSlotLink(i)
+        local lootId = lootLink and tonumber(lootLink:match("item:(%d+)"))
+        local advice = lootId and RG.FishAdvice and RG.FishAdvice(lootId)
+        if advice then text = text .. GREY .. "  ·  |r" .. advice end
         table.insert(feed, 1, { text = text, t = GetTime() }); feed[4] = nil
         names[#names + 1] = name
       end

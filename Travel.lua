@@ -149,17 +149,18 @@ function RG.TravelPlan(target)
   -- a flight path you haven't learned at the destination: mention it
   local kd, fd = knows(target)
   if kd == false and fd then out[#out + 1] = { how = "tip", text = "Grab the " .. fd .. " flight path when you arrive" } end
-  return out, target
+  return out, target, dist[target]
 end
 
 -- One line for the tracker: "Zeppelin ... > Fly ... > Run ..."
 function RG.TravelSummary(target)
   if not RG.Opt("travelTips") then return nil end
-  local legs, to = RG.TravelPlan(target)
+  local legs, to, cost = RG.TravelPlan(target)
   if not legs or #legs == 0 then return nil end
   local parts = {}
   for _, l in ipairs(legs) do parts[#parts + 1] = (l.how == "tip" and GREY or "") .. l.text .. (l.how == "tip" and "|r" or "") end
-  return table.concat(parts, GOLD .. "  >  |r"), to, legs
+  local eta = cost and cost >= 1 and (GREY .. "  (about " .. math.floor(cost + 0.5) .. " min)|r") or ""
+  return table.concat(parts, GOLD .. "  >  |r") .. eta, to, legs, cost
 end
 
 -- ---------------------------------------------------------------------------

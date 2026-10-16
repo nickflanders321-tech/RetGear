@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.74.0
+- **Gathering route:** `/wp node` (also /wp ore, /wp herb) points the arrow at the nearest known ore or herb spot you can still gather for skill, then the next one as you reach it (spots you just visited are skipped for ten minutes).
+- **Travel time:** "Getting there" on the tracker and Route tab now ends with an estimate, for example "(about 19 min)".
+- **Fishing:** every catch shows what to do with it (cook it, keep it, or sell it with its price) in the fishing feed and the catch log. The Stranglethorn Fishing Extravaganza has a countdown on the Fishing tab and the tracker (Sundays from 2 pm server time, about two hours).
+- **First-run tour:** `/wp tour`, also offered by "Take the tour" on the welcome screen, is four short pages on the tracker, the arrow, the window and the extras.
+- **Translations:** added `RG.L` and `RG.AddLocale` so a language can be added as a file (see LOCALES.md). Not translated yet.
+
 ## v0.73.0
 - **Finishing touches.**
   - **Header switches:** four small buttons beside A-/A+ turn the arrow, tracker and sounds on and off (lit when on) and open a step report.

@@ -366,6 +366,35 @@ function RG.FishZoneLoot()
   table.sort(out, function(a, b) return a.chance > b.chance end)
   return out, (L.zones[sub] and sub or zone)
 end
+-- What to do with a catch: cook it (still levels Cooking), sell it to the AH or a vendor, or keep it for a reagent.
+function RG.FishAdvice(id)
+  for _, c in ipairs(RG.FISH_COOK) do
+    if c.id == id then
+      local st = RG.CookState and RG.CookState(c.dish)
+      if st == "optimal" or st == "medium" or st == "easy" then return GREEN .. "cook it|r", "Still gives Cooking skill: cook it at a campfire." end
+      if c.note and c.note:find("reagent", 1, true) then return GOLD .. "keep|r", c.note end
+    end
+  end
+  for _, f in ipairs(RG.FISH_SELL) do
+    if f.id == id then return GOLD .. "sell|r", f.note end
+  end
+  local v, src = itemValue(id)
+  if v >= 100 then return GREY .. "sell " .. fmtMoney(v) .. "|r", "Worth about " .. fmtMoney(v) .. " (" .. (src == "AH" and "auction house" or "vendor") .. ")." end
+  return nil
+end
+-- The Stranglethorn Fishing Extravaganza: Sundays from 2 pm server time (beta report), about two hours.
+function RG.FishDerby()
+  if not (C_DateAndTime and C_DateAndTime.GetCurrentCalendarTime) then return nil end
+  local t = C_DateAndTime.GetCurrentCalendarTime()
+  if not (t and t.weekday and t.hour) then return nil end
+  local minsNow = ((t.weekday - 1) * 24 + t.hour) * 60 + (t.minute or 0)
+  local start = 14 * 60            -- Sunday 14:00 (weekday 1 = Sunday)
+  local length = 120
+  local diff = (start - minsNow) % (7 * 24 * 60)
+  if minsNow >= start and minsNow < start + length then return "on", start + length - minsNow end
+  return "soon", diff
+end
+
 -- Best things to fish for here: highest value per catch, and the single most valuable fish.
 function RG.FishBest()
   local lst, zone = RG.FishZoneLoot()
@@ -479,6 +508,9 @@ function RG.FishTrackerLines()
       out[#out + 1] = { GREY .. "Catch value|r", "|cffffffff" .. fmtMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. "  ·  " .. fmtMoney(s.goldPerHour) .. "/hr|r") or ""), open, "What this session's catches are worth at your AH scan prices (vendor price where there is none)." }
     end
   end
+  local dst, dmin = RG.FishDerby()
+  if dst == "on" then out[#out + 1] = { GREEN .. "Fishing Extravaganza is on|r", GREY .. fmtLeft(dmin * 60) .. " left|r", open, "Stranglethorn Fishing Extravaganza (Sundays from 2 pm server time). Turn in 40 Speckled Tastyfish to Riggle Bassbait in Booty Bay first." }
+  elseif dst == "soon" and dmin < 12 * 60 then out[#out + 1] = { GREY .. "Fishing Extravaganza|r", "|cffffffffin " .. fmtLeft(dmin * 60) .. "|r", open, "Stranglethorn Fishing Extravaganza: Sundays from 2 pm server time (beta report)." } end
   local cook, n = RG.CookNow()
   if n > 0 then
     out[#out + 1] = { GOLD .. "Cook " .. n .. " raw fish|r" .. GREY .. ": still levels Cooking|r", nil, open,
