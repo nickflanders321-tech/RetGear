@@ -81,7 +81,13 @@ print("items %d spells %d creatures %d" % (len(items), len(spells), len(creature
 # ---------------------------------------------------------------------------
 # Forever data (QuestieDB): NPC levels/factions, spawns, zones
 # ---------------------------------------------------------------------------
-FN = json.load(open(gear_json))["npcs"]
+def _sorted_pairs(kv):
+    """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
+    def k(x):
+        s = x[0]
+        return (0, int(s), '') if s.lstrip('-').isdigit() else (1, 0, s)
+    return dict(sorted(kv, key=k))
+FN = json.load(open(gear_json), object_pairs_hook=_sorted_pairs)["npcs"]
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(qdb + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
 DUNGEON_AREAS = set()
 for m in re.finditer(r'\[(\d+)\] = \{"([^"]+)",(?:\{([\d,]*)\}|nil)', open(qdb + "support/Forever/Zones/dungeons.lua", encoding="utf-8").read()):

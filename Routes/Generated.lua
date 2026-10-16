@@ -498,7 +498,7 @@ RG.GEN_DUNGEONS = {
     { id = 9121, n = "The Dread Citadel - Naxxramas", g = "Archmage Angela Dosantos", at = "Eastern Plaguelands", w = { 1423, 71.7, 48.7, "Archmage Angela Dosantos" }, l = 60, r = 60 },
     { id = 9126, n = "Bonescythe Digs", g = "Rohan the Assassin", at = "Eastern Plaguelands", w = { 1423, 71.6, 48.9, "Rohan the Assassin" }, l = 60, r = 55 },
     { id = 9136, n = "Savage Flora", g = "Rayne", at = "Eastern Plaguelands", w = { 1423, 71.4, 49.4, "Rayne" }, l = 60, r = 55 },
-    { id = 9319, n = "A Light in Dark Places", g = "Festival Flamekeeper", at = "Teldrassil", w = { 1438, 56.6, 91.9, "Festival Flamekeeper" }, l = 60, r = 50 },
+    { id = 9319, n = "A Light in Dark Places", g = "Festival Flamekeeper", at = "Undercity", w = { 1458, 65.6, 36.0, "Festival Flamekeeper" }, l = 60, r = 50 },
     { id = 94260, n = "Craftsman's Writ: Catseye Draught", g = "", at = "starts from an item", w = nil, l = 60, r = 1 },
     { id = 94340, n = "Craftsman's Writ: Truesilver Transformer", g = "", at = "starts from an item", w = nil, l = 60, r = 1 },
   },

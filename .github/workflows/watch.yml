@@ -1,0 +1,123 @@
+name: Watch
+
+# Hourly, free, no Claude: watches for a new WoW Forever game build, new WoW Forever
+# quest data (QuestieDB) and new bug reports, and does the routine work itself:
+#   * new quest data  -> rebuild every generated data file, run both checks, release
+#   * new game build  -> add its interface number to the .toc files, release, and open a
+#                        "needs-claude" issue so the compatibility check gets done
+#   * new bug report  -> label it "needs-claude"
+# Claude's scheduled task only wakes up for issues labeled "needs-claude".
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Anything new?
+        id: check
+        run: python3 tools/watch/check.py .
+
+      - name: Label new bug reports for Claude
+        if: steps.check.outputs.new_issues != ''
+        run: |
+          gh api repos/${{ github.repository }}/labels -f name=needs-claude -f color=d4b46a -f description="Waiting for Claude (compatibility, bug or failed data update)" >/dev/null 2>&1 || true
+          for n in ${{ steps.check.outputs.new_issues }}; do
+            gh api repos/${{ github.repository }}/issues/$n/labels -f "labels[]=needs-claude" >/dev/null
+            echo "labeled issue #$n"
+          done
+
+      - name: Install Lua 5.1
+        if: steps.check.outputs.data_changed == 'true' || steps.check.outputs.build_changed == 'true'
+        run: sudo apt-get install -y -qq lua5.1 >/dev/null
+
+      - name: Rebuild the data from WoW Forever's latest quest data
+        id: regen
+        if: steps.check.outputs.data_changed == 'true'
+        continue-on-error: true
+        run: |
+          sh tools/watch/regenerate.sh > "$RUNNER_TEMP/regen.log" 2>&1 || { tail -60 "$RUNNER_TEMP/regen.log"; exit 1; }
+          tail -8 "$RUNNER_TEMP/regen.log"
+
+      - name: Report a failed data update to Claude
+        if: steps.regen.outcome == 'failure'
+        run: |
+          git checkout -- . && git clean -fdq -- ':!tools/sources/watch.json.new'
+          title="Automatic data update failed (QuestieDB ${{ steps.check.outputs.new_tree }})"
+          open=$(gh api "repos/${{ github.repository }}/issues?state=open&labels=needs-claude&per_page=100" --jq '.[].title')
+          if ! printf '%s\n' "$open" | grep -qxF "$title"; then
+            body=$(printf 'The hourly watcher rebuilt the data from new WoW Forever quest data, but a check failed, so nothing was released.\n\nLast lines of the log:\n```\n%s\n```\n\nRun `sh tools/watch/regenerate.sh`, fix what the audit or cross-check reports (tools/sources/UPDATE.md), release, and close this issue.' "$(tail -40 "$RUNNER_TEMP/regen.log")")
+            gh api repos/${{ github.repository }}/labels -f name=needs-claude -f color=d4b46a >/dev/null 2>&1 || true
+            gh api repos/${{ github.repository }}/issues -f title="$title" -f body="$body" -f "labels[]=needs-claude" >/dev/null
+          fi
+          # keep the old tree in watch.json so the next run tries again only after QuestieDB changes again
+          python3 - <<'PY'
+          import json
+          p = 'tools/sources/watch.json'
+          new = json.load(open(p + '.new')); old = json.load(open(p))
+          new['questiedb_forever_tree'] = old['questiedb_forever_tree']
+          new['questiedb_failed_tree'] = '${{ steps.check.outputs.new_tree }}'
+          json.dump(new, open(p + '.new', 'w'), indent=2)
+          PY
+
+      - name: "New game build: interface number and a compatibility issue"
+        id: build
+        if: steps.check.outputs.build_changed == 'true'
+        run: |
+          iface=${{ steps.check.outputs.interface }}
+          changed=false
+          for t in Waypath.toc Waypath_Forever.toc; do
+            if ! grep -q "^## Interface:.*\b$iface\b" "$t"; then sed -i "s/^## Interface: \(.*\)$/## Interface: \1, $iface/" "$t"; changed=true; fi
+          done
+          echo "toc_changed=$changed" >> "$GITHUB_OUTPUT"
+          title="WoW Forever build ${{ steps.check.outputs.new_build }}: compatibility check"
+          gh api repos/${{ github.repository }}/labels -f name=needs-claude -f color=d4b46a >/dev/null 2>&1 || true
+          body=$(printf 'Blizzard released WoW Forever build %s (interface %s). The watcher %s.\n\nCheck what the patch changed for add-ons and fix Waypath+ if needed (tools/sources/UPDATE.md step 1), then close this issue.' "${{ steps.check.outputs.new_build }}" "$iface" "$([ $changed = true ] && echo 'added the interface number to the .toc files and released' || echo 'found the interface number already listed')")
+          gh api repos/${{ github.repository }}/issues -f title="$title" -f body="$body" -f "labels[]=needs-claude" >/dev/null
+
+      - name: Commit, version and release
+        run: |
+          mv tools/sources/watch.json.new tools/sources/watch.json
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          gen="Objectives.lua Routes/Generated.lua NodeData.lua Classes Waypoints.lua Professions/Generated.lua FishLoot.lua"
+          release=false; notes=""
+          if [ "${{ steps.regen.outcome }}" = "success" ] && ! git diff --quiet -- $gen; then
+            release=true; notes="- Quest, gear, map and profession data updated from WoW Forever's latest game data."
+          fi
+          if [ "${{ steps.build.outputs.toc_changed }}" = "true" ]; then
+            release=true; notes="$notes
+          - Works with WoW Forever build ${{ steps.check.outputs.new_build }}."
+          fi
+          if [ "$release" = "true" ]; then
+            v=$(tr -d '[:space:]' < VERSION); new=$(echo "$v" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')
+            echo "$new" > VERSION
+            python3 - "$new" "$notes" <<'PY'
+          import sys
+          v, notes = sys.argv[1], sys.argv[2].strip()
+          p = 'CHANGELOG.md'; s = open(p, encoding='utf-8').read()
+          s = s.replace('# Changelog\n\n', '# Changelog\n\n## v%s\n%s\n\n' % (v, notes), 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+          fi
+          git add -A
+          if git diff --cached --quiet; then echo "Nothing to commit."; exit 0; fi
+          git commit -qm "$( [ "$release" = true ] && echo "v$(cat VERSION): automatic update" || echo "Watcher: record what was checked")"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done
+          if [ "$release" = "true" ]; then gh workflow run release.yml --ref main; echo "Release v$(cat VERSION) started."; fi

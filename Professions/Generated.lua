@@ -759,7 +759,7 @@ RG.SKIN_SPOTS = {
   { 1423, 15.3, 26.7, "Plagued Swine (Eastern Plaguelands, level 60)", 60 },
 }
 RG.FISH_SPOTS = {
-  [1413] = { 1413, 63.0, 52.4, "Oily Blackmouth School (21 pools around here)" },
+  [1413] = { 1413, 63.0, 52.4, "Floating Debris (21 pools around here)" },
   [1424] = { 1424, 61.7, 32.2, "Sagefish School (7 pools around here)" },
   [1429] = { 1429, 53.9, 15.9, "School of Fish (1 pools around here)" },
   [1434] = { 1434, 34.6, 32.2, "School of Tastyfish (13 pools around here)" },

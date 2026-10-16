@@ -12,7 +12,13 @@ Usage: python3 gen.py <QuestieDB checkout> <forever.json from tools/objectives/d
 import json, re, sys, os, math
 
 QDB = sys.argv[1].rstrip('/') + '/'
-D = json.load(open(sys.argv[2], encoding='utf-8'))
+def _sorted_pairs(kv):
+    """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
+    def k(x):
+        s = x[0]
+        return (0, int(s), '') if s.lstrip('-').isdigit() else (1, 0, s)
+    return dict(sorted(kv, key=k))
+D = json.load(open(sys.argv[2], encoding='utf-8'), object_pairs_hook=_sorted_pairs)
 OUT = (sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')).rstrip('/') + '/'
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
 
@@ -79,7 +85,10 @@ for nid, e in D['npcs'].items():
     if n and n not in npc_by_name and isinstance(at(e, 2), dict) and at(e, 2): npc_by_name[n] = at(e, 2)
 
 def first_point(spawns, prefer):
-    for z in [str(p) for p in prefer] + list(spawns.keys()):
+    # preferred zones first, then Horde-side zones before Alliance cities (an NPC who
+    # stands in both, like a festival keeper, gets the Horde spot)
+    rest = sorted(spawns.keys(), key=lambda z: (int(z) in ALLIANCE_AREAS if str(z).isdigit() else False, str(z)))
+    for z in [str(p) for p in prefer] + rest:
         pts = spawns.get(z)
         if pts:
             pts = [p for p in pts if p and p[0] is not None and p[0] >= 0]

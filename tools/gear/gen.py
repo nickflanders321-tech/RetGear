@@ -89,7 +89,13 @@ for r in rows(sql, "spell_template"):
 del sql
 print("items %d, spells %d" % (len(items), len(spells)), file=sys.stderr)
 
-fv = json.load(open(json_path))
+def _sorted_pairs(kv):
+    """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
+    def k(x):
+        s = x[0]
+        return (0, int(s), '') if s.lstrip('-').isdigit() else (1, 0, s)
+    return dict(sorted(kv, key=k))
+fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
 FI, FN, FQ = fv["items"], fv["npcs"], fv["quests"]
 
 def L(v):
