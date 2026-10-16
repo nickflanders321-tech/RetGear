@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.70.2
+- **Back to charcoal and mint.** The window, tracker and pop-ups use neutral charcoal greys with the mint accent again (the blue-black tint is gone). Layout and rounded corners stay.
+- **Tracker text** now uses the same Inter font as the window, a touch larger, with neutral grey section labels. If the font ever shows blank lines, turn off "Modern font in the tracker" in Settings (it also switches itself off if it lays out at zero width).
+
 ## v0.70.1
 - **Redesign, second pass.** Your current zone is now a large "hero" card (bigger icon and title), all cards and rows are taller with more space between them and bigger text, the header shows your character in a larger font with a thicker XP bar, section labels are quiet capitals without +/- markers, and the pace line is a plain row. The tracker has larger text, more room between lines and between sections.
 

@@ -8,9 +8,9 @@ local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, R
 -- Theme
 -- ---------------------------------------------------------------------------
 local T = {
-  bg      = { 0.051, 0.067, 0.09, 0.97 },
-  panel   = { 0.071, 0.094, 0.129, 1 },
-  raised  = { 0.122, 0.157, 0.2, 1 },
+  bg      = { 0.078, 0.078, 0.078, 0.97 },
+  panel   = { 0.118, 0.118, 0.118, 1 },
+  raised  = { 0.17, 0.17, 0.17, 1 },
   edge    = { 0.17, 0.17, 0.17, 1 },
   line    = { 0.17, 0.17, 0.17, 1 },
   gold    = RG.ACCENT,                    -- the accent (teal in the Graphite look)
@@ -21,7 +21,7 @@ local T = {
   blue    = { 0.0, 0.44, 0.87 },          -- rare blue
   text    = { 0.93, 0.93, 0.93 },
   dim     = { 0.55, 0.55, 0.55 },
-  row     = { 0.071, 0.094, 0.129 },
+  row     = { 0.118, 0.118, 0.118 },
   rowEdge = { 0.17, 0.17, 0.17 },
 }
 local TOOLTIP_BG, TOOLTIP_EDGE = "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border"
@@ -112,9 +112,9 @@ local function pillKind(s)
 end
 local PILL = {
   green = { bg = { 0.2, 0.55, 0.3, 0.45 }, edge = { 0.25, 0.75, 0.25, 0.75 } },
-  gold  = { bg = { 0.17, 0.5, 0.47, 0.5 }, edge = { 1, 0.82, 0, 0.75 } },
+  gold  = { bg = { 0.17, 0.5, 0.46, 0.5 }, edge = { 1, 0.82, 0, 0.75 } },
   red   = { bg = { 0.6, 0.2, 0.2, 0.5 }, edge = { 1, 0.2, 0.2, 0.75 } },
-  muted = { bg = { 0.15, 0.19, 0.25, 1 },   edge = { 0.5, 0.5, 0.5, 0.6 } },
+  muted = { bg = { 0.2, 0.2, 0.2, 1 },   edge = { 0.5, 0.5, 0.5, 0.6 } },
 }
 
 -- ---------------------------------------------------------------------------
@@ -218,8 +218,8 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   hideAll(r); r.itemID, r.link = id, link
   local hero = state.hero and not small
   r.kind, r.h = small and "sub" or "item", small and SUB_H() or (hero and sz(84) or ROW_H())
-  local fill = small and { 0.09, 0.12, 0.165, 1 } or T.panel
-  if hero then fill = { 0.075, 0.16, 0.18, 1 } elseif accent == "gold" then fill = { 0.07, 0.15, 0.17, 1 } elseif accent == "green" then fill = { 0.075, 0.15, 0.115, 1 } end
+  local fill = small and { 0.15, 0.15, 0.15, 1 } or T.panel
+  if hero then fill = { 0.1, 0.17, 0.165, 1 } elseif accent == "gold" then fill = { 0.095, 0.15, 0.145, 1 } elseif accent == "green" then fill = { 0.095, 0.15, 0.11, 1 } end
   backdrop(r, fill, nil, small and 10 or 12)
   r.hl:Show()
   local size = small and sz(24) or (hero and sz(48) or sz(38))
@@ -294,7 +294,7 @@ end
 local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
-  backdrop(r, { 0.09, 0.12, 0.165, done and 0.55 or 1 }, nil, 10)
+  backdrop(r, { 0.15, 0.15, 0.15, done and 0.55 or 1 }, nil, 10)
   r.hl:Show()
   local box = sz(16)
   r.iconBorder:SetSize(box, box); r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("TOPLEFT", 34, -sz(9))
@@ -302,9 +302,9 @@ local function setStep(r, num, text, done, onClick, auto)
   -- the classic checkbox: an empty box, with a gold check (green when the game ticked it)
   local MEDIA = "Interface\\AddOns\\Waypath\\Media\\"
   r.iconBorder:SetTexture(MEDIA .. (done and "Disc" or "Ring")); r.iconBorder:SetTexCoord(0, 1, 0, 1); r.iconBorder:Show()
-  if done then r.iconBorder:SetVertexColor(bc[1], bc[2], bc[3], 1) else r.iconBorder:SetVertexColor(0.3, 0.37, 0.46, 1) end
+  if done then r.iconBorder:SetVertexColor(bc[1], bc[2], bc[3], 1) else r.iconBorder:SetVertexColor(0.42, 0.42, 0.42, 1) end
   r.icon:SetTexture(MEDIA .. "Check"); r.icon:SetTexCoord(0, 1, 0, 1)
-  r.icon:SetVertexColor(0.04, 0.09, 0.1, 1)
+  r.icon:SetVertexColor(0.05, 0.07, 0.07, 1)
   r.icon:SetShown(done and true or false)
   font(r.title, FONT_NUM, sz(13))
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r.iconBorder, "TOPRIGHT", 10, 1)
@@ -2132,7 +2132,7 @@ function RG.RefreshUINow()
     for i = #subs, 1, -1 do
       local b = frame.subBtns[subs[i]]
       local on = subs[i] == state.tab
-      backdrop(b, on and { 0.11, 0.3, 0.29, 1 } or T.panel, nil, 8, 12)
+      backdrop(b, on and { 0.12, 0.3, 0.28, 1 } or T.panel, nil, 8, 12)
       font(b.text, FONT_BODY, 12); b.text:SetTextColor(unpack(on and T.gold or T.text))
       b:ClearAllPoints()
       if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -18, -116) end
@@ -2151,7 +2151,7 @@ local function panelButton(parent, text, w, h)
   b.label = b:CreateFontString(nil, "OVERLAY"); font(b.label, FONT_BODY, 12); b.label:SetPoint("CENTER", 0, 0); b.label:SetTextColor(unpack(T.text))
   b.SetText = function(self, t) self.label:SetText(t) end
   b.GetText = function(self) return self.label:GetText() end
-  b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.17, 0.22, 0.28, 1); self.label:SetTextColor(unpack(T.gold)) end)
+  b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.23, 0.23, 0.23, 1); self.label:SetTextColor(unpack(T.gold)) end)
   b:SetScript("OnLeave", function(self) self:SetBackdropColor(T.raised[1], T.raised[2], T.raised[3], 1); self.label:SetTextColor(unpack(T.text)) end)
   b:SetText(text)
   return b
@@ -2219,7 +2219,7 @@ local function build()
   local strip = CreateFrame("Frame", nil, frame, "BackdropTemplate")
   strip:SetPoint("TOPLEFT", 12, -42); strip:SetPoint("TOPRIGHT", -12, -42); strip:SetHeight(34)
   strip:SetFrameLevel((frame:GetFrameLevel() or 1) + 1)
-  RG.Round(strip, 0.07, 0.092, 0.127, 1, 12)
+  RG.Round(strip, 0.105, 0.105, 0.105, 1, 12)
   local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "group", "Group" },
     { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
   local x = 16
@@ -2232,7 +2232,7 @@ local function build()
     b:SetSize(w, 26); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -46); x = x + w + 2
     local bg = CreateFrame("Frame", nil, frame, "BackdropTemplate")
     bg:SetFrameLevel((frame:GetFrameLevel() or 1) + 3)
-    bg:SetAllPoints(b); RG.Round(bg, 0.122, 0.157, 0.2, 1, 9); bg:Hide()
+    bg:SetAllPoints(b); RG.Round(bg, 0.19, 0.19, 0.19, 1, 9); bg:Hide()
     b.under = bg
     b:SetScript("OnEnter", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.text)) end end)
     b:SetScript("OnLeave", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.dim)) end end)
@@ -2249,7 +2249,7 @@ local function build()
   frame.xp = CreateFrame("StatusBar", nil, frame)
   frame.xp:SetPoint("TOPLEFT", 18, -108); frame.xp:SetPoint("TOPRIGHT", -18, -108); frame.xp:SetHeight(5)
   frame.xp:SetStatusBarTexture(WHITE)
-  local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.1, 0.13, 0.17, 1)
+  local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.17, 0.17, 0.17, 1)
   frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("TOPRIGHT", -18, -90); frame.xpText:SetTextColor(unpack(T.dim))
 
   -- section title

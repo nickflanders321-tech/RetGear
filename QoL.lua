@@ -17,6 +17,7 @@ RG.OPTIONS = {
   { key = "tooltip",      label = "Show upgrade scores on item tooltips",       default = true },
   { key = "autoScan",     label = "Check prices when I open the Auction House", default = true },
   { key = "minimap",      label = "Show the minimap button",                default = true },
+  { key = "trackerInter", label = "Modern font in the tracker (turn off if its text looks blank)", default = true },
   { key = "sounds",       label = "Play sounds for pop-ups",                default = true },
 }
 function RG.Opt(key)
@@ -51,10 +52,10 @@ local function backdrop(f, bg, edge, radius)
     f:SetBackdropColor(0, 0, 0, 0); f:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4] or 1)
     return
   end
-  RG.Round(f, bg[1] * 0.4 + 0.045, bg[2] * 0.4 + 0.055, bg[3] * 0.4 + 0.075, bg[4] or 1, radius or 8)   -- cool near-black whatever tint was asked for
+  RG.Round(f, bg[1] * 0.4 + 0.06, bg[2] * 0.4 + 0.06, bg[3] * 0.4 + 0.06, bg[4] or 1, radius or 8)   -- cool near-black whatever tint was asked for
 end
 -- The window: a deep rounded panel.
-function RG.DialogBackdrop(f) RG.Round(f, 0.051, 0.067, 0.09, 0.97, 14) end
+function RG.DialogBackdrop(f) RG.Round(f, 0.078, 0.078, 0.078, 0.97, 14) end
 -- Window title, top left. (Returns nil for the old banner texture, then the text.)
 function RG.DialogHeader(f, text)
   local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "semibold", 15); t:SetPoint("TOPLEFT", 18, -14); t:SetText(text); t:SetTextColor(0.93, 0.93, 0.93)
