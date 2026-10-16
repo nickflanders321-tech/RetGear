@@ -2152,6 +2152,23 @@ local function build()
   frame:SetScript("OnHide", saveTab)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "WaypathFrame")
+  frame:SetScale((RG.db and RG.db.windowScale) or 1)
+  -- drag the bottom-right corner to make the whole window bigger or smaller
+  local grip = CreateFrame("Button", nil, frame)
+  grip:SetSize(16, 16); grip:SetPoint("BOTTOMRIGHT", -4, 4); grip:SetFrameLevel((frame:GetFrameLevel() or 1) + 20)
+  grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up"); grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+  grip:SetScript("OnMouseDown", function(self)
+    self.sx = GetCursorPosition(); self.s0 = frame:GetScale(); self.w0 = frame:GetWidth() * frame:GetEffectiveScale()
+    self:SetScript("OnUpdate", function(g)
+      local cx = GetCursorPosition()
+      local sc = math.max(0.7, math.min(1.5, g.s0 * (g.w0 + (cx - g.sx)) / g.w0))
+      frame:SetScale(sc); if RG.db then RG.db.windowScale = sc end
+    end)
+  end)
+  grip:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+  grip:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT"); GameTooltip:SetText("Drag to resize"); GameTooltip:AddLine("Double-click to reset", 1, 1, 1); GameTooltip:Show() end)
+  grip:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  grip:SetScript("OnDoubleClick", function() frame:SetScale(1); if RG.db then RG.db.windowScale = nil end end)
 
   -- title bar: logo, name, text size, close
   local logo = frame:CreateTexture(nil, "ARTWORK"); logo:SetSize(20, 20); logo:SetPoint("TOPLEFT", 16, -12); logo:SetTexture(RG.LOGO_LARGE)

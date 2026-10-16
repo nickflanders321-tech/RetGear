@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.65.0
+- **Tracker restyle:** the header is just your level; the XP bar is now a thin line along the bottom with your XP per hour, time to level and percent above it.
+- **Compact tracker:** collapse the tracker (the - button) and it keeps one line, "Next: ...", with your next step.
+- **Resizable window:** drag the bottom-right corner of the Waypath+ window to make it bigger or smaller; double-click the corner to reset.
+- **Bug reports:** `/wp debug` opens the error window with your version, race, class, level, zone and memory on the first lines, ready to copy.
+- A small public API for other add-ons: `WaypathAPI.Pin(map, x, y, label)`, `Clear()`, `CurrentZone()`.
+
 ## v0.64.0
 - Lighter on memory: quests your race or class can never take, the other faction's route and other races' definitions are dropped after login (about 18% less memory).
 - The ore and herb alert check does nothing when you have no gathering profession or the alerts are off.

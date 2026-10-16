@@ -83,6 +83,8 @@ local function currentEntry()
   return done
 end
 
+function RG.CurrentRouteEntry() local ok, r = pcall(currentEntry); return ok and r or nil end
+
 -- A generated route step split into its quests, each with the one thing to do
 -- next. Returns the list (hand-ins first, then pick-ups, then quests in your
 -- log, then ones that open later), how many are done, how many count, and the
@@ -285,13 +287,15 @@ local function build()
   ab:SetScript("OnLeave", function() GameTooltip:Hide() end)
   tr.arrowBtn = ab
 
-  -- XP bar under the header
-  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(4); xpBg:SetPoint("TOPLEFT", 6, -32); xpBg:SetPoint("TOPRIGHT", -6, -32)
-  xpBg:SetTexture("Interface\\TargetingFrame\\UI-StatusBar"); xpBg:SetVertexColor(0.12, 0.12, 0.12, 0.9)
-  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(4); tr.xp:SetPoint("LEFT", xpBg, "LEFT")
-  tr.xp:SetTexture("Interface\\TargetingFrame\\UI-StatusBar"); tr.xp:SetVertexColor(0.58, 0.0, 0.55, 1)
+  -- thin XP bar along the bottom, with the pace and time to level above it
+  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(3); xpBg:SetPoint("BOTTOMLEFT", 1, 1); xpBg:SetPoint("BOTTOMRIGHT", -1, 1)
+  xpBg:SetTexture("Interface\\Buttons\\WHITE8X8"); xpBg:SetVertexColor(1, 1, 1, 0.08)
+  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(3); tr.xp:SetPoint("BOTTOMLEFT", 1, 1)
+  tr.xp:SetTexture("Interface\\Buttons\\WHITE8X8"); tr.xp:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  tr.foot = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.foot:SetPoint("BOTTOMLEFT", 12, 9); tr.foot:SetTextColor(0.62, 0.62, 0.62)
+  tr.pct = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.pct:SetPoint("BOTTOMRIGHT", -12, 9); tr.pct:SetTextColor(0.62, 0.62, 0.62)
 
-  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -42); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
+  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -38); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   lines = {}
 end
 
@@ -373,15 +377,42 @@ function RG.RefreshTracker()
   if RG.XPRate then rate, eta = RG.XPRate() end
   local rested = GetXPExhaustion and GetXPExhaustion()
   if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
-  tr.lvl:SetText("Level " .. lvl .. (max and max > 0 and lvl < 60 and string.format("  ·  %d%%", xp / max * 100) or "") .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or "")
-    .. (rate and string.format("  ·  %.1fk/hr  ·  %s", rate / 1000, RG.FormatETA(eta) or "") or ""))
-  tr.xp:SetWidth(math.max(1, (W - 12) * ((max and max > 0) and xp / max or 1)))
+  tr.lvl:SetText("Level " .. lvl .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or ""))
+  tr.foot:SetText(rate and string.format("%.0f XP/h  ·  %s to level", rate, RG.FormatETA(eta) or "?") or "")
+  tr.pct:SetText(max and max > 0 and lvl < 60 and string.format("%d%%", xp / max * 100) or "")
+  tr.xp:SetWidth(math.max(1, (W - 2) * ((max and max > 0) and xp / max or 1)))
   if tr.arrowBtn then
     local on = RG.Opt("arrow")
     tr.arrowBtn.icon:SetDesaturated(not on)
     if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
-  if RG.db.trackerCollapsed then tr.body:Hide(); tr:SetHeight(40); tr.min.t:SetText("+"); return end
+  if RG.db.trackerCollapsed then
+    tr.body:Hide(); tr.min.t:SetText("+")
+    -- compact: one calm line with the next thing to do
+    local txt
+    if not (RG.IsAlt and RG.IsAlt()) then
+      local ok, r = pcall(currentEntry)
+      local steps = ok and r and RG.STEPS[r.zone .. "|" .. r.from]
+      if steps then
+        for i = 1, #steps do
+          if not RG.StepIsDone(r, i) then
+            txt = plain(steps[i]):gsub("%s+", " ")
+            if #txt > 110 then txt = txt:sub(1, 107):gsub("[%s%p]+$", "") .. "..." end
+            break
+          end
+        end
+      end
+    end
+    if not rawget(tr, "nextLine") then
+      tr.nextLine = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+      tr.nextLine:SetPoint("TOPLEFT", 12, -38); tr.nextLine:SetJustifyH("LEFT"); tr.nextLine:SetTextColor(0.85, 0.85, 0.85)
+    end
+    tr.nextLine:SetWidth(W - 24)
+    if txt then tr.nextLine:SetText(GOLD .. "Next:|r " .. txt); tr.nextLine:Show(); tr:SetHeight(66 + math.max(12, tr.nextLine:GetStringHeight() or 12))
+    else tr.nextLine:Hide(); tr:SetHeight(58) end
+    return
+  end
+  if rawget(tr, "nextLine") then tr.nextLine:Hide() end
   tr.body:Show(); tr.min.t:SetText("-")
 
   local n, y = 0, 0
@@ -407,7 +438,7 @@ function RG.RefreshTracker()
       n = n + 1
       y = item(n, y, (RG.ItemInfo(e.id) or ("item " .. e.id)) .. "  x" .. e.need .. (e.toBuy > 0 and (GREY .. "  (buy " .. e.toBuy .. ")|r") or (GREEN .. "  (in your bags)|r")) .. "\n" .. GREY .. e.quest .. "|r", { onClick = function() if RG.ShowTab then RG.ShowTab("mail") end end })
     end
-    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 8)
+    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(38 + y + 30)
     return
   end
   local MAXQ = 10
@@ -799,7 +830,7 @@ function RG.RefreshTracker()
     end
   end
   tr.body:SetHeight(math.max(10, y))
-  tr:SetHeight(42 + y + 8)
+  tr:SetHeight(38 + y + 30)
 end
 
 -- Fade the tracker during fights so it doesn't cover the action.

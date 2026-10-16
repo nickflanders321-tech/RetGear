@@ -70,7 +70,9 @@ end
 local errFrame
 function RG.ShowErrors()
   local list = (WaypathDB and WaypathDB.errors) or {}
-  local lines = { "Waypath+ " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught", "" }
+  local lines = { "Waypath+ " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught",
+    "Paste this when reporting a problem: " .. (RG.DetectLine and RG.DetectLine() or "?") .. "  ·  " .. tostring(RG.PLAYER_FACTION)
+      .. "  ·  " .. (GetBuildInfo and select(1, GetBuildInfo()) or "?") .. "  ·  " .. string.format("%.1f MB", (collectgarbage("count") or 0) / 1024) .. " Lua memory", "" }
   for i, e in ipairs(list) do
     lines[#lines + 1] = string.format("#%d  x%d  %s%s", i, e.count or 1, e.v and (tostring(e.v):gsub("^v?", "v") .. "  ") or "", e.t and date and date("%Y-%m-%d %H:%M", e.t) or "")
     lines[#lines + 1] = e.msg or "?"
@@ -462,7 +464,7 @@ local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
   cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
-  if cmd == "errors" or cmd == "error" then
+  if cmd == "errors" or cmd == "error" or cmd == "debug" or cmd == "bug" then
     if rest == "clear" then WaypathDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
     return
   elseif cmd == "gear" and (rest == "heal" or rest == "holy" or rest == "2" or rest == "second" or rest == "spec") then RG.EquipHealSet(); return

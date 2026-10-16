@@ -878,3 +878,13 @@ SlashCmdList.WAYPATH = function(msg)
   end
   return base(msg)
 end
+
+-- Small public API for other add-ons (WaypathAPI).
+_G.WaypathAPI = {
+  version = function() return RG.VERSION end,
+  -- Pin a map point ({ uiMapID, x, y, label }, x and y in map percent) and point the arrow at it.
+  Pin = function(uiMapID, x, y, label) if RG.PinWaypoint then RG.PinWaypoint({ uiMapID, x, y, label or "Waypath+" }) end end,
+  Clear = function() if RG.ClearWaypoint then RG.ClearWaypoint() end end,
+  -- The step Waypath+ is guiding you on: { zone, from, to } or nil.
+  CurrentZone = function() local e = RG.CurrentRouteEntry and RG.CurrentRouteEntry(); return e and { zone = e.zone, from = e.from, to = e.to } or nil end,
+}
