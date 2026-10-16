@@ -329,6 +329,14 @@ function RG.MyQuests()
       local n = near[info.title]
       local qd = RG.QDATA and RG.QDATA[info.questID]
       local level = (info.level and info.level > 0 and info.level) or (qd and qd.l) or RG.QuestLevel(info.title)
+      -- a finished quest always knows where to hand in: the quest data's finisher, even on another continent
+      if complete and qd and qd.e and qd.e[1] then
+        local ewp = { qd.e[1], qd.e[2], qd.e[3], qd.e[4] or info.title }
+        local d
+        local c2, x, y = toWorld(ewp[1], ewp[2], ewp[3])
+        if c and c2 == c then d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2) end
+        n = { dist = d, wp = ewp, label = ewp[4] }
+      end
       out[#out + 1] = { id = info.questID, title = info.title, level = level, complete = complete, failed = info.isFailed,
         prog = prog, objs = objs, zone = zone, dist = n and n.dist, wp = n and n.wp, label = n and n.label,
         group = (info.suggestedGroup or 0) > 1 }

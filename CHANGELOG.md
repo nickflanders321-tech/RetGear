@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.69.1
+- **Double-click a quest that is ready to turn in and the arrow guides you to the hand-in.** Ready quests now always know their hand-in NPC from the quest data (even when it is on another continent), so every green "turn in" row on the tracker can be double-clicked. Right-click shows the spot on the map.
+
 ## v0.69.0
 - **Tracker redesign:** the header now names the zone you're working through. Quest rows use the quest-log icons (? hand in, ! pick up, a sword for objectives, a clock for later) with coloured names. Professions and Reminders start folded, with a count, so the tracker shows only what to do now (click a heading to open it; it remembers).
 
