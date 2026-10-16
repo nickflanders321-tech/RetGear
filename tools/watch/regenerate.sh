@@ -31,6 +31,7 @@ $LUA tools/fishloot/dump.lua "$C" "$T/fl_obj.tsv" "$T/fl_items.tsv"
 python3 tools/fishloot/gen.py "$T/classic.sql" "$T/qdb" "$T/fl_obj.tsv" "$T/fl_items.tsv" .
 python3 tools/flights/gen.py "$T/classic.sql" "$T/qdb" "$T/npcs.tsv" .
 python3 tools/arcade/gen.py "$T/classic.sql" "$T/qdb" .
+python3 tools/arcade/gear.py "$T/classic.sql" .
 # both checks must pass
 $LUA tools/audit/audit.lua > "$T/audit.txt" || { cat "$T/audit.txt"; exit 1; }
 python3 tools/audit/crosscheck.py . "$T/forever.json" "$T/forever_gear.json" "$LUA"

@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.81.0
+- Cards: the five creator cards are gone. The super rare set is now **Raiders**: characters you have met (your own, your group, and anyone who chats near you) as cards, shown as a 3D model of their race wearing the best raid armour of their class (Tier 3 sets). They come as holo or full art only, are saved with your collection, and the set grows as you play. Races without a known model fall back to the class icon. The old Legends cards are removed.
+
 ## v0.80.0
 - Pack opening: the five cards are dealt face down. Click each one to flip it (or "Flip all"). Rare, holo, full-art and Legend cards flash and play a sound when they turn over, and the backs of holos, full arts and Legends glitter before you flip them.
 

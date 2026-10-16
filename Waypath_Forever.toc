@@ -83,6 +83,7 @@ FishLoot.lua
 FlightPaths.lua
 Flights.lua
 ArcadeCards.lua
+ArcadeGear.lua
 Arcade.lua
 FishMode.lua
 Path.lua
