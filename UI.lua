@@ -43,7 +43,7 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
-local GROUPS = { prof = { "prof", "fish", "camp" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
+local GROUPS = { prof = { "prof", "fish" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
 local SUBLABEL = { prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
@@ -585,41 +585,68 @@ local function renderProf()
     end
     return r
   end
-  -- which profession: yours first, then the one you picked from the full list
+  -- your professions: one section each, open or folded
   local mine = {}
   for _, name in ipairs(PROF_ORDER) do
-    if RG.PROFESSIONS[name] and (known[name] or (RG.Plans and RG.Plans(name))) then mine[#mine + 1] = name end
+    if RG.PROFESSIONS[name] and not (RG.db.profIgnore and RG.db.profIgnore[name]) and (known[name] or (RG.Plans and RG.Plans(name))) then mine[#mine + 1] = name end
   end
-  if not state.profSel or not RG.PROFESSIONS[state.profSel] then state.profSel = mine[1] or "Mining" end
-  local sel = state.profSel
-  -- your professions: a bar each, click to open
-  head("Your professions  ·  click one to open its guide")
+  local browsing = state.profSel and RG.PROFESSIONS[state.profSel] and state.profSel
+  for _, m in ipairs(mine) do if m == browsing then browsing = nil end end
+  RG.db.profOpen = RG.db.profOpen or {}
+  local function isOpen(name)
+    local v = RG.db.profOpen[name]
+    if v == nil then return #mine <= 2 or name == mine[1] or name == state.profSel end
+    return v
+  end
   if #mine == 0 then
-    line(nil, "|cffffffffTwo main professions, plus Cooking, Fishing and First Aid|r", "Good pairs: Mining + Blacksmithing or Engineering, Herbalism + Alchemy, Skinning + Leatherworking, Tailoring + Enchanting. Two gathering professions make the most gold while leveling. Run /wp setup to pick yours, or open any profession below.", "", "", 136240, nil, nil, true)
+    head("Your professions")
+    line(nil, "|cffffffffTwo main professions, plus Cooking, Fishing and First Aid|r", "Learn one and it appears here on its own. Good pairs: Mining + Blacksmithing or Engineering, Herbalism + Alchemy, Skinning + Leatherworking, Tailoring + Enchanting. Two gathering professions make the most gold while leveling.", "", "", 136240, nil, nil, true)
   end
-  for _, name in ipairs(mine) do
-    local k = known[name]
-    local P = RG.PROFESSIONS[name]
-    local now = RG.ProfNow(name)
+
+  -- the camp object (and, for Cooking, the campfire) that goes with a profession
+  local function campBlock(sel)
+    local lines = {}
+    for _, o in ipairs(RG.CAMP_OBJECTS or {}) do if o.prof == sel then lines[#lines + 1] = o end end
+    if sel ~= "Cooking" and #lines == 0 then return end
+    head("Camp")
+    if sel == "Cooking" then
+      local st, left = RG.CampState()
+      local txt = st == "active" and (GREEN .. (left and string.format("%d min left", math.ceil(left / 60)) or "Active") .. "|r") or (st == "sitting" and (GOLD .. "Keep sitting...|r") or (st == "near" and (GOLD .. "Sit by the fire|r") or (GREY .. "No camp buff|r")))
+      line(nil, "|cffffffffCamp buffs|r", "Place a campfire, add a camp object, /sit for a minute: the buffs last an hour.", txt, "", "Interface\\Icons\\Spell_Fire_Fire", "gold", nil, true)
+      for _, c in ipairs(RG.CAMPFIRES or {}) do
+        local have = (known.Cooking and known.Cooking.rank or 0) >= c.cook
+        line(nil, (have and "|cffffffff" or GREY) .. c.name .. "|r" .. GREY .. "   " .. c.slots .. " slots|r", c.how, have and (GREEN .. "Ready|r") or (GOLD .. "Cooking " .. c.cook .. "|r"), "", "Interface\\Icons\\Spell_Fire_Fire", have and "green" or nil, nil, true)
+      end
+    end
+    for _, o in ipairs(lines) do
+      local have = (known[sel] and known[sel].rank or 0) >= o.skill
+      line(nil, (have and "|cffffffff" or GREY) .. o.name .. "|r" .. GREY .. "   skill " .. o.skill .. "|r", o.buff .. GREY .. "  ·  " .. o.how .. (o.mats and ("  ·  " .. o.mats) or "") .. "|r", have and (GREEN .. "Unlocked|r") or (GOLD .. "Skill " .. o.skill .. "|r"), "", RG.PROFESSIONS[sel] and RG.PROFESSIONS[sel].icon, have and "green" or nil, nil, true)
+    end
+  end
+
+  local function body(sel)
+  -- a section: its bar (click to fold or open), then the guide
+  local P = RG.PROFESSIONS[sel]
+  local k = known[sel]
+  local rank, max = k and k.rank or 0, k and k.max or 0
+  if k and not k.max then max = rank end
+  local open = isOpen(sel)
+  n = n + 1; setBar(getRow(n), (open and "[-]  " or "[+]  ") .. sel, rank, math.max(max, rank, 1), T.gold, k and (rank .. " / " .. max) or (GREY .. "Not learned yet|r"))
+  rows[n].onClick = function() RG.db.profOpen[sel] = not isOpen(sel); RG.RefreshUINow() end
+  rows[n].tip = open and "Click to fold this profession." or "Click to open this profession."
+  local now = RG.ProfNow(sel, rank)
+  if not open then
     local what
     if not k then what = GOLD .. "Not learned yet|r"
     elseif now and now.done then what = GREEN .. "Done: 300|r"
     elseif now and now.craft then
       local short = 0
       for _, e in ipairs(now.mats or {}) do if not e.via then short = short + e.short end end
-      what = now.craft .. " x" .. (now.left or 0) .. (short > 0 and (GREY .. "  ·  " .. short .. " materials to get|r") or (GREEN .. "  ·  you have everything|r"))
-    elseif now and now.st then what = (now.st.gather or now.st.skin or (now.st.fish and ("Fish in " .. now.st.fish)) or "") .. GREY .. "  ·  until " .. now.st.to .. "|r" end
-    local r = line(nil, (name == sel and GOLD or "|cffffffff") .. name .. "|r" .. GREY .. "   " .. (k and (k.rank .. " / " .. (k.max or "?")) or "") .. "|r", what or "", name == sel and (GREEN .. "Open|r") or (GOLD .. "Show|r"), "", P.icon, name == sel and "gold" or nil, nil, true)
-    r.onClick = function() state.profSel = name; RG.RefreshUINow() end
+      what = "Now: " .. now.craft .. " x" .. (now.left or 0) .. (short > 0 and (GREY .. "  ·  " .. short .. " materials to get|r") or (GREEN .. "  ·  you have everything|r"))
+    elseif now and now.st then what = "Now: " .. (now.st.gather or now.st.skin or (now.st.fish and ("fish in " .. now.st.fish)) or "") .. GREY .. "  ·  until " .. now.st.to .. "|r" end
+    if what then line(nil, what, "", "", "", P.icon, nil, nil, true) end
+    return
   end
-
-  -- the selected profession
-  local P = RG.PROFESSIONS[sel]
-  local k = known[sel]
-  local rank, max = k and k.rank or 0, k and k.max or 0
-  if k and not k.max then max = rank end
-  n = n + 1; setBar(getRow(n), sel, rank, math.max(max, rank, 1), T.gold, k and (rank .. " / " .. max) or (GREY .. "Not learned yet|r"))
-  local now = RG.ProfNow(sel, rank)
   local T2 = P.train or {}
   -- training
   if not k then
@@ -723,8 +750,8 @@ local function renderProf()
     end
   end
   -- the whole route
-  head(sel .. " 1-300  ·  " .. (P.source or "WoW Forever guide") .. (state.profFull and "" or "  ·  click below for every step"))
-  if state.profFull then
+  head(sel .. " 1-300  ·  " .. (P.source or "WoW Forever guide") .. ((state.profFullOf or {})[sel] and "" or "  ·  click below for every step"))
+  if (state.profFullOf or {})[sel] then
     for _, st in ipairs(RG.ProfPlan(P)) do
       local here = now and now.st == st
       local passed = rank >= st.to and not st.train
@@ -739,7 +766,8 @@ local function renderProf()
     end
   end
   n = n + 1
-  setStep(getRow(n), "", "Show every step of the route", state.profFull, function() state.profFull = not state.profFull; RG.RefreshUI() end)
+  state.profFullOf = state.profFullOf or {}
+  setStep(getRow(n), "", "Show every step of the " .. sel .. " route", state.profFullOf[sel], function() state.profFullOf[sel] = not state.profFullOf[sel]; RG.RefreshUI() end)
   if P.fishTab then line(nil, "|cffffffffFishing guide|r", "Zones by skill, lures, poles and the derby are on the Fishing tab (/wp fish).", "", "", P.icon, nil, nil, true) end
   if P.supplies then line(nil, GREY .. "Supplies|r", P.supplies, "", "", P.icon, nil, nil, true) end
 
@@ -783,8 +811,14 @@ local function renderProf()
       line(id, nm2, cnt > 0 and ("You have " .. cnt) or (GREY .. "None in your bags or bank|r"), "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, nil, quality, true)
     end
   end
+  campBlock(sel)
+  end -- body
+
+  for _, name in ipairs(mine) do body(name) end
+  if browsing then head("Reading: " .. browsing); body(browsing) end
+
   -- every other profession's route
-  head("Every profession's leveling route  ·  click one to read it")
+  head("Other professions  ·  click one to read its route")
   for _, name in ipairs(PROF_ORDER) do
     local isMine = false
     for _, m in ipairs(mine) do if m == name then isMine = true end end
@@ -792,8 +826,8 @@ local function renderProf()
     if P2 and not isMine then
       local steps = 0
       for _, st in ipairs(RG.ProfPlan(P2)) do if not st.train then steps = steps + 1 end end
-      local r = line(nil, (name == sel and GOLD or "|cffffffff") .. name .. "|r", steps .. " steps from 1 to 300" .. GREY .. "  ·  " .. (P2.kind == "gather" and "gathering" or (P2.kind or "")) .. "|r", name == sel and (GREEN .. "Open|r") or "", "", P2.icon, name == sel and "gold" or nil, nil, true)
-      r.onClick = function() state.profSel = name; state.profFull = true; RG.RefreshUINow() end
+      local r = line(nil, (name == browsing and GOLD or "|cffffffff") .. name .. "|r", steps .. " steps from 1 to 300" .. GREY .. "  ·  " .. (P2.kind == "gather" and "gathering" or (P2.kind or "")) .. "|r", name == browsing and (GREEN .. "Open|r") or "", "", P2.icon, name == browsing and "gold" or nil, nil, true)
+      r.onClick = function() state.profSel = name; state.profFullOf = state.profFullOf or {}; state.profFullOf[name] = true; RG.RefreshUINow() end
     end
   end
   return n
@@ -2237,6 +2271,7 @@ end
 function RG.ShowTab(tab)
   if not frame then build() end
   if GROUPS[tab] then tab = state.lastSub[tab] or GROUPS[tab][1] end
+  if tab == "camp" then tab = "prof"; RG.db.profOpen = RG.db.profOpen or {}; RG.db.profOpen.Cooking = true; state.profSel = "Cooking" end
   if not TITLES[tab] then tab = "route" end
   state.tab = tab; saveTab(); frame:Show(); RG.RefreshUI()
 end

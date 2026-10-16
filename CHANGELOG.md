@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.56.0
+- **Smarter first-run setup:** Waypath+ now detects your faction, race, class, level, zone and professions on its own and shows them on the setup page. A new "How do you play?" page asks what matters most (leveling fast or enjoying the zones), solo or groups, travel and your role. Run it again any time with /wp setup.
+- **Professions follow you:** learn a profession and it is added to your guided professions automatically, with a message; drop one and it is removed. Professions you know but don't want guided can be unticked in setup.
+- **Professions tab redesigned:** every profession you have gets its own section with a skill bar. Click a bar to fold or open it. Each section shows the current step, materials, trainers, places, the full route, and its camp object. The separate Camping tab is gone; campfires live under Cooking and each camp object under its profession.
+
 ## v0.55.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

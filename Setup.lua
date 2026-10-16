@@ -45,6 +45,7 @@ end
 -- (Plans saved before every profession was in the guide only had these four, on by default.)
 local LEGACY = { Mining = true, Blacksmithing = true, Fishing = true, Cooking = true }
 function RG.Plans(prof)
+  if RG.db and RG.db.profIgnore and RG.db.profIgnore[prof] then return false end
   if RG.Skill and RG.Skill(prof) then return true end
   local plan = RG.db and RG.db.plan
   if plan and plan[prof] ~= nil then return plan[prof] and true or false end
@@ -124,16 +125,47 @@ local function buildPages()
       .. GREY .. " Every character has its own settings and progress.|r")
     mainBtn:SetShown(not isMain)
   end)
-  local profHead = text(p2, "GameFontNormal", "Which professions will you level?  " .. GREY .. "Two main ones, plus any of Cooking, Fishing and First Aid|r", W - 70); profHead:SetPoint("TOPLEFT", 0, -116)
-  local profs = { "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }
-  for i, pr in ipairs(profs) do
-    local c = check(p2, pr, nil, function() if plan[pr] ~= nil then return plan[pr] end return RG.Plans(pr) end, function(v) plan[pr] = v end)
+  local seen = text(p2, "GameFontNormal", "", W - 70); seen:SetPoint("TOPLEFT", 0, -106)
+  table.insert(p2.refreshers, function()
+    local d = RG.Detect()
+    seen:SetText(GREY .. "Detected:|r " .. GOLD .. d.faction .. "|r " .. RG.DetectLine())
+  end)
+  local profHead = text(p2, "GameFontNormal", "Professions  " .. GREY .. "ticked = guided. Ones you learn later are added automatically.|r", W - 70); profHead:SetPoint("TOPLEFT", 0, -132)
+  for i, pr in ipairs(RG.PROFESSION_LIST) do
+    local c = check(p2, pr, nil, function() if plan[pr] ~= nil then return plan[pr] end return RG.Plans(pr) end, function(v) plan[pr] = v; RG.IgnoreProfession(pr, not v and RG.Skill(pr) ~= nil) end)
     local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
-    c:SetPoint("TOPLEFT", col * (W / 2 - 30), -138 - row * 28)
-    table.insert(p2.refreshers, c.refresh)
+    c:SetPoint("TOPLEFT", col * (W / 2 - 30), -154 - row * 26)
+    table.insert(p2.refreshers, function()
+      local r = RG.Skill(pr)
+      c.label:SetText(pr .. (r and (GREEN .. "  learned, " .. r .. "|r") or ""))
+      c.refresh()
+    end)
   end
 
-  -- 3. Preset
+  -- 3. How you play
+  local pp = newPage("How do you play?")
+  local sy = -40
+  local function segment(question, key, opts, default)
+    local q = text(pp, "GameFontNormal", question, W - 70); q:SetPoint("TOPLEFT", 0, sy)
+    local bs, x = {}, 0
+    local function pickIt(v) RG.db[key] = v; for k, b in pairs(bs) do if k == v then b:LockHighlight() else b:UnlockHighlight() end end end
+    for _, o in ipairs(opts) do
+      local b = CreateFrame("Button", nil, pp, "UIPanelButtonTemplate")
+      b:SetSize(math.max(96, #o[2] * 7 + 20), 22); b:SetPoint("TOPLEFT", x, sy - 20); b:SetText(o[2])
+      b:SetScript("OnClick", function() pickIt(o[1]) end)
+      bs[o[1]] = b; x = x + b:GetWidth() + 6
+    end
+    table.insert(pp.refreshers, function() pickIt(RG.db[key] or default) end)
+    sy = sy - 62
+  end
+  segment("What matters most?", "goal", { { "fast", "Level fast" }, { "balanced", "Balanced" }, { "scenic", "Enjoy the zones" } }, "balanced")
+  segment("Solo or with others?", "playStyle", { { "solo", "Solo only" }, { "group", "Open to dungeons and groups" } }, "solo")
+  segment("Travel", "travel", { { "any", "Use boats, zeppelins and hearth" }, { "walk", "Keep travel short" } }, "any")
+  segment("Your role", "role", { { "dps", "Damage" }, { "tank", "Tank" }, { "heal", "Healer" } }, "dps")
+  local why = text(pp, "GameFontHighlightSmall", GREY .. "Waypath+ uses these to choose routes, gear and dungeon steps. Change them any time with /wp setup.|r", W - 70)
+  why:SetPoint("TOPLEFT", 0, sy)
+
+  -- 4. Preset
   local p3 = newPage("How much help do you want?")
   local btns = {}
   local function pick(name) RG.db.preset = name; for k, b in pairs(btns) do b.select(k == name) end end
@@ -202,7 +234,7 @@ local function buildPages()
     local pr = RG.PRESETS[RG.db.preset or "full"]
     local lv = {}
     for _, n in ipairs({ "Mining", "Herbalism", "Skinning", "Blacksmithing", "Engineering", "Alchemy", "Leatherworking", "Tailoring", "Enchanting", "Cooking", "Fishing", "First Aid" }) do if RG.Plans(n) then lv[#lv + 1] = n end end
-    summary:SetText(GOLD .. "Help level:|r " .. pr.label .. "\n" .. GOLD .. "Professions:|r " .. (#lv > 0 and table.concat(lv, ", ") or "none") .. "\n"
+    summary:SetText(GOLD .. "You:|r " .. RG.DetectLine() .. ", " .. (RG.db.goal or "balanced") .. ", " .. (RG.db.playStyle or "solo") .. "\n" .. GOLD .. "Help level:|r " .. pr.label .. "\n" .. GOLD .. "Professions:|r " .. (#lv > 0 and table.concat(lv, ", ") or "none") .. "\n"
       .. GOLD .. "Auto quests:|r " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)" or "off") .. "\n" .. GOLD .. "2nd spec:|r " .. ((RG.SecondSpecActive and RG.SecondSpecActive()) and (RG.SecondSpecActive().name .. (RG.Opt("healSet") and ", collecting its gear" or "")) or "none yet (/wp spec)") .. "\n\n"
       .. GOLD .. "Worth remembering|r\n"
       .. GOLD .. "/wp|r  the full guide        " .. GOLD .. "/wp next|r  pin your nearest objective\n"
@@ -218,7 +250,7 @@ end
 local function show(i)
   -- leaving a page: apply what it set
   if page == 2 and i > 2 then applyPlan(plan) end
-  if page == 3 and i == 4 then RG.ApplyPreset(RG.db.preset or "full"); applyPlan(plan) end
+  if page == 4 and i == 5 then RG.ApplyPreset(RG.db.preset or "full"); applyPlan(plan) end
   page = i
   for k, p in ipairs(pages) do
     p:SetShown(k == i)
@@ -230,7 +262,7 @@ local function show(i)
   for k, d in ipairs(wiz.dots) do d:SetVertexColor(k == i and 1 or 0.35, k == i and 0.82 or 0.35, k == i and 0 or 0.35, 1) end
 end
 local function finish(open)
-  if page < 3 then applyPlan(plan) end
+  if page < 4 then applyPlan(plan) end
   RG.db.welcomed = true; RG.db.setupDone = true
   wiz:Hide()
   if RG.RefreshTracker then RG.RefreshTracker() end

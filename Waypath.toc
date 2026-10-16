@@ -79,6 +79,7 @@ Travel.lua
 NodeData.lua
 Nodes.lua
 Setup.lua
+Detect.lua
 Group.lua
 Bags.lua
 SourceInfo.lua
