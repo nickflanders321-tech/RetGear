@@ -45,15 +45,15 @@ a = src.index("AREA = {"); b = src.index("for m in re.finditer", a)
 ns = {}; exec(src[a:b], ns); AREA = ns['AREA']
 
 # the flight path's own name, by flight master NPC
-NODE = {352: "Stormwind", 523: "Sentinel Hill", 931: "Lakeshire", 1387: "Grom'gol Base Camp", 1571: "Menethil Harbor", 1572: "Thelsamar", 1573: "Ironforge",
+NODE = {352: "Stormwind", 523: "Sentinel Hill", 931: "Lakeshire", 1387: "Grom'gol", 1571: "Menethil Harbor", 1572: "Thelsamar", 1573: "Ironforge",
   2226: "The Sepulcher", 2299: "Morgan's Vigil", 2389: "Tarren Mill", 2409: "Darkshire", 2432: "Southshore", 2835: "Refuge Pointe", 2851: "Hammerfall",
   2858: "Booty Bay", 2859: "Booty Bay", 2861: "Kargath", 2941: "Thorium Point", 2995: "Thunder Bluff", 3305: "Thorium Point", 3310: "Orgrimmar",
-  3615: "The Crossroads", 3838: "Rut'theran Village", 3841: "Auberdine", 4267: "Astranaar", 4312: "Sun Rock Retreat", 4314: "Revantusk Village",
-  4317: "Freewind Post", 4319: "Thalanaar", 4321: "Theramore Isle", 4407: "Stonetalon Peak", 4551: "Undercity", 6026: "Stonard", 6706: "Nijel's Point",
+  3615: "Crossroads", 3838: "Rut'theran Village", 3841: "Auberdine", 4267: "Astranaar", 4312: "Sun Rock Retreat", 4314: "Revantusk Village",
+  4317: "Freewind Post", 4319: "Thalanaar", 4321: "Theramore", 4407: "Stonetalon Peak", 4551: "Undercity", 6026: "Stonard", 6706: "Nijel's Point",
   6726: "Shadowprey Village", 7823: "Gadgetzan", 7824: "Gadgetzan", 8018: "Aerie Peak", 8019: "Feathermoon Stronghold", 8020: "Camp Mojache",
   8609: "Nethergarde Keep", 8610: "Valormok", 10378: "Camp Taurajo", 10583: "Marshal's Refuge", 10897: "Nighthaven", 11138: "Everlook", 11139: "Everlook",
   11899: "Brackenwall Village", 11900: "Bloodvenom Post", 11901: "Splintertree Post", 12577: "Talrendis Point", 12578: "Talonbranch Glade",
-  12596: "Chillwind Camp", 12616: "Zoram'gar Outpost", 12617: "Light's Hope Chapel", 12636: "Light's Hope Chapel", 12740: "Nighthaven",
+  12596: "Chillwind Camp", 12616: "Zoram'gar Outpost", 12617: "Light's Hope", 12636: "Light's Hope", 12740: "Nighthaven",
   13177: "Flame Crest", 15177: "Cenarion Hold", 15178: "Cenarion Hold", 16227: "Ratchet"}
 FAC = {}
 for f in (29, 68, 104): FAC[f] = "H"

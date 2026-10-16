@@ -945,11 +945,34 @@ local function renderRoute()
     if open then
       local showAll = state.showDone[e.key]
       local num = 0
+      -- step pager: one unfinished step at a time (click: next, right-click: back)
+      state.pager = state.pager or {}
+      local total = 0
+      for i = 1, #e.steps do if not (e.auto[i] or RG.db.stepsDone[e.key .. "#" .. i] or e.past) then total = total + 1 end end
+      local page = state.pager[e.key]
+      if page then page = math.max(1, math.min(page, math.max(total, 1))); state.pager[e.key] = page end
+      if total > 1 then
+        n = n + 1
+        local pk = e.key
+        if page then
+          setItem(getRow(n), nil, nil, GOLD .. "Step " .. page .. " of " .. total .. "|r", "Click for the next step, right-click for the previous one.", GOLD .. "Next|r", GREY .. "Show all|r", nil, nil, true)
+          rows[n].onClick = function() state.pager[pk] = page % total + 1; RG.RefreshUI() end
+          rows[n].onRightClick = function() state.pager[pk] = (page - 2) % total + 1; RG.RefreshUI() end
+          rows[n].onDoubleClick = function() state.pager[pk] = nil; RG.RefreshUI() end
+          rows[n].tip = "Click: next step. Right-click: previous step. Double-click: show every step again."
+        else
+          setItem(getRow(n), nil, nil, GREY .. "One step at a time|r", total .. " steps left here. Click to page through them.", "", "", nil, nil, true)
+          rows[n].onClick = function() state.pager[pk] = 1; RG.RefreshUI() end
+        end
+        rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+      end
+      local seen = 0
       for i, text in ipairs(e.steps) do
         local sk = e.key .. "#" .. i
         local auto = e.auto[i]
         local isDone = auto or RG.db.stepsDone[sk] or e.past
-        if not isDone or showAll then
+        if not isDone then seen = seen + 1 end
+        if (not isDone or showAll) and (not page or (not isDone and seen == page)) then
           num = num + 1
           n = n + 1
           local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
@@ -1690,6 +1713,15 @@ local function renderFish()
     setItem(getRow(n), nil, nil, "|cffffffff" .. (zoneName ~= "" and zoneName or "This zone") .. "|r", "No fishing level known for this zone.", "", "")
   end
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_02")
+  local pool = RG.NearestPool and RG.NearestPool()
+  if pool then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffNearest pool: " .. pool.name .. "|r", pool.where .. GREY .. "  ·  /wp pool|r", GOLD .. "Guide me|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_06")
+    local wp = pool.wp
+    rows[n].onClick = function() RG.Follow(wp) end
+    rows[n].tip = "Click to pin the nearest pool cluster and turn the arrow on."
+  end
   local s = RG.FishSession()
   if s and s.catches > 0 then
     n = n + 1
@@ -2057,6 +2089,14 @@ local function renderSettings()
       grp[2] = keep; hits = hits + #keep
     end
     if hits == 0 then n = n + 1; setHeader(getRow(n), "No settings match \"" .. state.search .. "\"") end
+  end
+  if q == "" then
+    n = n + 1; setHeader(getRow(n), "Look")
+    n = n + 1
+    local cur = RG.db.accent or "mint"
+    setItem(getRow(n), nil, nil, "Accent colour", "Click to change: Mint, Gold, Sky, Rose, Violet or High contrast. Some text keeps its colour until /reload.", GOLD .. (RG.ACCENTS[cur] or RG.ACCENTS.mint)[1] .. "|r", "", "gold")
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gem_Variety_01")
+    rows[n].onClick = function() RG.SetAccent(nil) end
   end
   for _, grp in ipairs(ordered) do
    if #grp[2] > 0 then

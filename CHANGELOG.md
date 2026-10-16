@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.76.0
+- **Step pager:** in an open Route zone, "One step at a time" shows a single unfinished step; click for the next, right-click for the previous, double-click to show all again.
+- **Accent colours:** Settings > Look (or `/wp theme [mint|gold|sky|rose|violet|light]`) changes the accent. Text that uses a fixed colour code updates after /reload.
+- **Fish pools:** the Fishing tab has a "Nearest pool" row and `/wp pool` guides you to the closest known pool cluster on your map.
+- Flight path names now match the ones the travel planner uses (Grom'gol, Crossroads, Light's Hope, Theramore), so learned paths are recognised.
+- Data check: regenerated everything from the latest QuestieDB (Oct 15). Quests, gear and professions unchanged; the 54 race/class checks pass. Riverglades still has no quest data in Forever's database.
+
 ## v0.75.1
 - Polish: `/wp fp` is in the tour, the `/wp` help and the README.
 

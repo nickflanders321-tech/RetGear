@@ -77,3 +77,36 @@ SlashCmdList.WAYPATH = function(msg)
   end
   return base(msg)
 end
+
+-- Nearest fishing pool/school on this zone's map (spots are the centre of each pool cluster).
+function RG.NearestPool()
+  local FL = RG.FISH_LOOT
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+  if not (FL and FL.pools and map and pos) or (RG.IsSecret and (RG.IsSecret(pos.x) or RG.IsSecret(pos.y))) then return nil end
+  local best, bd
+  for _, p in ipairs(FL.pools) do
+    for _, s in ipairs(p.spots or {}) do
+      if s[1] == map then
+        local d = math.sqrt((s[2] - pos.x * 100) ^ 2 + (s[3] - pos.y * 100) ^ 2)
+        if not bd or d < bd then bd, best = d, { p.name, s } end
+      end
+    end
+  end
+  if not best then return nil end
+  local s = best[2]
+  return { name = best[1], wp = { s[1], s[2], s[3], best[1] }, where = s[4], pct = bd }
+end
+
+local base2 = SlashCmdList.WAYPATH
+SlashCmdList.WAYPATH = function(msg)
+  local cmd = (msg or ""):match("^%s*(%S+)")
+  cmd = cmd and cmd:lower()
+  if cmd == "pool" or cmd == "pools" then
+    local p = RG.NearestPool()
+    if not p then RG.Print("No fishing pool is known on this map.") return end
+    RG.Print("Nearest pool: " .. p.name .. " (" .. p.where .. ")")
+    RG.Follow(p.wp) return
+  end
+  return base2(msg)
+end

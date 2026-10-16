@@ -20,6 +20,17 @@ function RG.Font(fs, weight, size, flags)
   if not ok then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
 end
 RG.ACCENT = { 0.31, 0.82, 0.77 }
+-- Accent colours (Settings > Look, /wp theme). The accent table is changed in place, so everything that
+-- reads it at draw time follows; text already coloured with a fixed code changes on /reload.
+RG.ACCENT_ORDER = { "mint", "gold", "sky", "rose", "violet", "light" }
+RG.ACCENTS = {
+  mint = { "Mint", 0.31, 0.82, 0.77 }, gold = { "Gold", 0.96, 0.76, 0.25 }, sky = { "Sky", 0.38, 0.65, 0.98 },
+  rose = { "Rose", 0.96, 0.45, 0.62 }, violet = { "Violet", 0.70, 0.55, 0.98 }, light = { "High contrast", 1, 1, 1 },
+}
+function RG.ApplyAccent(name)
+  local a = RG.ACCENTS[name or "mint"] or RG.ACCENTS.mint
+  RG.ACCENT[1], RG.ACCENT[2], RG.ACCENT[3] = a[2], a[3], a[4]
+end
 -- Localisation scaffolding: RG.L["English text"] returns the translation for the game's language,
 -- or the English text itself. Add a language with RG.AddLocale("deDE", { ["English text"] = "Text" }) from a
 -- Locales/<code>.lua file (see LOCALES.md). New code wraps player-facing strings in RG.L[...].
@@ -127,6 +138,7 @@ local function InitDB()
   WaypathDB = WaypathDB or {}
   local db = setupProfiles(WaypathDB)
   RG.db = db
+  RG.ApplyAccent(db.accent)
   -- the DPS coach was removed: drop its saved fight history
   db.fights, db.spellAvg, db.coach, db.coachChat = nil, nil, nil, nil
   if db.stepsDone then

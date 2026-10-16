@@ -501,6 +501,7 @@ SlashCmdList.WAYPATH = function(msg)
   cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
   if cmd == "report" then RG.ReportStep(); return end
   if cmd == "tour" then RG.ShowTour(1); return end
+  if cmd == "theme" or cmd == "accent" then RG.SetAccent((msg or ""):match("^%s*%S+%s+(%S+)")); return end
   if cmd == "errors" or cmd == "error" or cmd == "debug" or cmd == "bug" then
     if rest == "clear" then WaypathDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
     return
@@ -510,4 +511,20 @@ SlashCmdList.WAYPATH = function(msg)
   elseif cmd == "greys" or cmd == "grey" then RG.AbandonGreyQuests(); return
   end
   return base(msg)
+end
+
+-- Pick the accent colour: a name, or nothing to go to the next one.
+function RG.SetAccent(name)
+  local order = RG.ACCENT_ORDER
+  if name then name = name:lower(); if name == "contrast" or name == "white" then name = "light" end end
+  if not (name and RG.ACCENTS[name]) then
+    local cur = RG.db.accent or "mint"
+    for i, k in ipairs(order) do if k == cur then name = order[i % #order + 1] end end
+    name = name or "mint"
+  end
+  RG.db.accent = name
+  RG.ApplyAccent(name)
+  RG.Print("Accent colour: " .. RG.ACCENTS[name][1] .. ". Some text updates on /reload.")
+  if RG.RefreshTracker then RG.RefreshTracker() end
+  if RG.RefreshUI then RG.RefreshUI() end
 end
