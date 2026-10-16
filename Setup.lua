@@ -56,7 +56,7 @@ end
 -- Widgets
 -- ---------------------------------------------------------------------------
 local function text(parent, tpl, str, w)
-  local fs = parent:CreateFontString(nil, "OVERLAY", tpl or "GameFontHighlight")
+  local fs = RG.NewText(parent, tpl or "GameFontHighlight")
   fs:SetJustifyH("LEFT"); fs:SetJustifyV("TOP")
   if w then fs:SetWidth(w) end
   fs:SetText(str or "")
@@ -82,7 +82,7 @@ local function choice(parent, label, desc, onPick)
   b.select = function(on)
     b:SetBackdropBorderColor(on and 0.31 or 0.22, on and 0.82 or 0.22, on and 0.77 or 0.22, 1)
     b:SetBackdropColor(on and 0.08 or 0.11, on and 0.2 or 0.11, on and 0.19 or 0.11, 0.95)
-    b.title:SetFontObject(on and "GameFontHighlight" or "GameFontNormal")
+    RG.StyleText(b.title, on and "GameFontHighlight" or "GameFontNormal")
   end
   b:SetScript("OnClick", function() onPick(); if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.U_CHAT_SCROLL_BUTTON or 1115) end end)
   return b

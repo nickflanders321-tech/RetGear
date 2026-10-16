@@ -268,7 +268,7 @@ local function build()
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
 
   local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture(RG.LOGO); crest:SetTexCoord(0, 1, 0, 1)
-  tr.title = tr:CreateFontString(nil, "OVERLAY", "GameFontNormal"); tr.title:SetPoint("LEFT", crest, "RIGHT", 6, 0); tr.title:SetText("Waypath+"); tfont(tr.title, 16); tr.title:SetTextColor(0.93, 0.95, 0.97); tr.title:SetShadowColor(0, 0, 0, 0)
+  tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:SetPoint("LEFT", crest, "RIGHT", 6, 0); tr.title:SetText("Waypath+"); tfont(tr.title, 16); tr.title:SetTextColor(0.93, 0.95, 0.97); tr.title:SetShadowColor(0, 0, 0, 0)
   -- hover the header for the tracker's controls
   local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(120, 26)
   hint:SetScript("OnEnter", function(self)
@@ -280,7 +280,7 @@ local function build()
     GameTooltip:Show()
   end)
   hint:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  tr.lvl = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.lvl:SetPoint("LEFT", tr.title, "RIGHT", 8, 0); tr.lvl:SetTextColor(0.75, 0.75, 0.75)
+  tr.lvl = RG.NewText(tr, "GameFontHighlightSmall"); tr.lvl:SetPoint("LEFT", tr.title, "RIGHT", 8, 0); tr.lvl:SetTextColor(0.75, 0.75, 0.75)
 
   local function hdrBtn(label, x, fn, tip)
     local b = CreateFrame("Button", nil, tr); b:SetSize(20, 20); b:SetPoint("TOPRIGHT", x, -8)
@@ -318,8 +318,8 @@ local function build()
   xpBg:SetTexture("Interface\\Buttons\\WHITE8X8"); xpBg:SetVertexColor(1, 1, 1, 0.08)
   tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(4); tr.xp:SetPoint("BOTTOMLEFT", 12, 8)
   tr.xp:SetTexture("Interface\\Buttons\\WHITE8X8"); tr.xp:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
-  tr.foot = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.foot:SetPoint("BOTTOMLEFT", 12, 16); tr.foot:SetTextColor(0.62, 0.62, 0.62)
-  tr.pct = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); tr.pct:SetPoint("BOTTOMRIGHT", -12, 16); tr.pct:SetTextColor(0.62, 0.62, 0.62)
+  tr.foot = RG.NewText(tr, "GameFontHighlightSmall"); tr.foot:SetPoint("BOTTOMLEFT", 12, 16); tr.foot:SetTextColor(0.62, 0.62, 0.62)
+  tr.pct = RG.NewText(tr, "GameFontHighlightSmall"); tr.pct:SetPoint("BOTTOMRIGHT", -12, 16); tr.pct:SetTextColor(0.62, 0.62, 0.62)
 
   tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -46); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   lines = {}
@@ -450,7 +450,7 @@ function RG.RefreshTracker()
       end
     end
     if not rawget(tr, "nextLine") then
-      tr.nextLine = tr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+      tr.nextLine = RG.NewText(tr, "GameFontHighlightSmall")
       tr.nextLine:SetPoint("TOPLEFT", 12, -38); tr.nextLine:SetJustifyH("LEFT"); tr.nextLine:SetTextColor(0.85, 0.85, 0.85)
     end
     tr.nextLine:SetWidth(W - 24)

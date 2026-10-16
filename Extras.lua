@@ -108,7 +108,7 @@ local function exorcismAlert()
     local ic = exo:CreateTexture(nil, "OVERLAY"); ic:SetSize(28, 28); ic:SetPoint("LEFT", 6, 0); ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo("Exorcism")
     ic:SetTexture(info and info.iconID or "Interface\\Icons\\Spell_Holy_Excorcism_02")
-    exo.text = exo:CreateFontString(nil, "OVERLAY"); exo.text:SetFont("Fonts\\FRIZQT__.TTF", 12, ""); exo.text:SetPoint("LEFT", ic, "RIGHT", 8, 0); exo.text:SetJustifyH("LEFT")
+    exo.text = exo:CreateFontString(nil, "OVERLAY"); RG.Font(exo.text, "medium", 12); exo.text:SetPoint("LEFT", ic, "RIGHT", 8, 0); exo.text:SetJustifyH("LEFT")
     exo:EnableMouse(false)
   end
   exo.text:SetText(GOLD .. ctype .. "!|r  Use " .. GOLD .. "Exorcism|r" .. (knows("Holy Wrath") and " and Holy Wrath" or ""))
@@ -240,7 +240,7 @@ local function updatePaperdoll()
     end
   end
   if CharacterFrame and show then
-    if not dollTotal then dollTotal = CharacterFrame:CreateFontString(nil, "OVERLAY"); dollTotal:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE"); dollTotal:SetPoint("TOPRIGHT", CharacterFrame, "TOPRIGHT", -34, -32) end
+    if not dollTotal then dollTotal = CharacterFrame:CreateFontString(nil, "OVERLAY"); RG.Font(dollTotal, "semibold", 11, "OUTLINE"); dollTotal:SetPoint("TOPRIGHT", CharacterFrame, "TOPRIGHT", -34, -32) end
     dollTotal:SetText(GOLD .. RG.SCORE_NAME .. " " .. string.format("%.0f", total) .. "|r" .. (worst and (GREY .. "  ·  weakest: " .. (RG.SLOT_NAMES[worst] or "") .. "|r") or ""))
     dollTotal:Show()
   elseif dollTotal then dollTotal:Hide() end

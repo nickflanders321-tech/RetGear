@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.70.3
+- **One font everywhere.** Pop-ups (toasts), the setup wizard, the item source window, the error window, the tracker header and footer, the window's footer, search box and "Near my level" label, the fishing and paper-doll overlays all used the game's own gold ornate fonts. They now use Inter like the rest, with the mint accent instead of Blizzard gold.
+
 ## v0.70.2
 - **Back to charcoal and mint.** The window, tracker and pop-ups use neutral charcoal greys with the mint accent again (the blue-black tint is gone). Layout and rounded corners stay.
 - **Tracker text** now uses the same Inter font as the window, a touch larger, with neutral grey section labels. If the font ever shows blank lines, turn off "Modern font in the tracker" in Settings (it also switches itself off if it lays out at zero width).

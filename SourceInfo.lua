@@ -174,8 +174,8 @@ local function makeWin()
   win.iconBorder = win:CreateTexture(nil, "ARTWORK"); win.iconBorder:SetSize(40, 40); win.iconBorder:SetPoint("TOPLEFT", 16, -16)
   win.iconBorder:SetColorTexture(0.6, 0.55, 0.4, 0.9)
   win.icon = win:CreateTexture(nil, "OVERLAY"); win.icon:SetPoint("TOPLEFT", win.iconBorder, 2, -2); win.icon:SetPoint("BOTTOMRIGHT", win.iconBorder, -2, 2)
-  win.name = win:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); win.name:SetPoint("TOPLEFT", win.iconBorder, "TOPRIGHT", 10, -1); win.name:SetPoint("RIGHT", -34, 0); win.name:SetJustifyH("LEFT")
-  win.sub = win:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); win.sub:SetPoint("TOPLEFT", win.name, "BOTTOMLEFT", 0, -4); win.sub:SetPoint("RIGHT", -20, 0); win.sub:SetJustifyH("LEFT")
+  win.name = RG.NewText(win, "GameFontNormalLarge"); win.name:SetPoint("TOPLEFT", win.iconBorder, "TOPRIGHT", 10, -1); win.name:SetPoint("RIGHT", -34, 0); win.name:SetJustifyH("LEFT")
+  win.sub = RG.NewText(win, "GameFontHighlightSmall"); win.sub:SetPoint("TOPLEFT", win.name, "BOTTOMLEFT", 0, -4); win.sub:SetPoint("RIGHT", -20, 0); win.sub:SetJustifyH("LEFT")
   win.close = CreateFrame("Button", nil, win, "UIPanelCloseButton"); win.close:SetPoint("TOPRIGHT", -4, -4)
   win.close:SetScript("OnClick", function() win:Hide() end)
   win.item = CreateFrame("Button", nil, win)
@@ -197,7 +197,7 @@ end
 local function fs(i, kind)
   local key = kind .. i
   if not pool[key] then
-    local f = win:CreateFontString(nil, "OVERLAY", kind == "head" and "GameFontNormal" or (kind == "label" and "GameFontNormalSmall" or "GameFontHighlightSmall"))
+    local f = RG.NewText(win, kind == "head" and "GameFontNormal" or (kind == "label" and "GameFontNormalSmall" or "GameFontHighlightSmall"))
     f:SetJustifyH("LEFT"); f:SetWordWrap(true)
     pool[key] = f
   end

@@ -2255,7 +2255,7 @@ local function build()
   -- section title
   sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_TITLE, 15); sectionTitle:SetPoint("TOPLEFT", 18, -122); sectionTitle:SetTextColor(unpack(T.text))
   sectionTitle:SetShadowColor(0, 0, 0, 1); sectionTitle:SetShadowOffset(1, -1)
-  frame.sectionSub = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
+  frame.sectionSub = RG.NewText(frame, "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
 
   -- sub-tabs for merged tabs (top right of the section)
   frame.subBtns = {}
@@ -2272,14 +2272,14 @@ local function build()
   frame.near = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
   frame.near:SetSize(24, 24); frame.near:SetPoint("TOPRIGHT", -112, -116)
   frame.near:SetChecked(state.near)
-  frame.near.label = frame.near:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  frame.near.label = RG.NewText(frame.near, "GameFontNormalSmall")
   frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level")
   frame.near:SetScript("OnClick", function(self) state.near = self:GetChecked(); RG.RefreshUI() end)
   -- settings search
   frame.search = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
   frame.search:SetSize(150, 20); frame.search:SetPoint("TOPRIGHT", -24, -118)
   frame.search:SetAutoFocus(false)
-  frame.search.hint = frame.search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  frame.search.hint = RG.NewText(frame.search, "GameFontDisableSmall")
   frame.search.hint:SetPoint("LEFT", 4, 0); frame.search.hint:SetText("Search settings")
   frame.search:SetScript("OnTextChanged", function(self)
     local t = self:GetText() or ""
@@ -2316,7 +2316,7 @@ local function build()
   scroll:SetScrollChild(content)
 
   local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(1, 1, 1, 0.05)
-  footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 7)
+  footer = RG.NewText(frame, "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 7)
   -- long footers wrap onto a second line instead of running off the window
   footer:SetWidth(W - 44); footer:SetHeight(22); footer:SetJustifyH("LEFT"); footer:SetJustifyV("MIDDLE"); footer:SetWordWrap(true)
   if footer.SetMaxLines then footer:SetMaxLines(2) end

@@ -20,6 +20,26 @@ function RG.Font(fs, weight, size, flags)
   if not ok then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
 end
 RG.ACCENT = { 0.31, 0.82, 0.77 }
+-- Inter for every piece of text: the game's built-in font objects (gold, ornate) mapped to the window's look.
+local STYLE = {
+  GameFontNormal         = { "semibold", 13, 0.31, 0.82, 0.77 },
+  GameFontNormalLarge    = { "semibold", 17, 0.95, 0.95, 0.95 },
+  GameFontNormalSmall    = { "medium", 12, 0.31, 0.82, 0.77 },
+  GameFontHighlight      = { "regular", 13, 0.93, 0.93, 0.93 },
+  GameFontHighlightSmall = { "regular", 12, 0.8, 0.8, 0.8 },
+  GameFontDisableSmall   = { "regular", 11, 0.5, 0.5, 0.5 },
+}
+function RG.StyleText(fs, tpl)
+  local st = STYLE[tpl]
+  if not st then return fs end
+  RG.Font(fs, st[1], st[2]); fs:SetTextColor(st[3], st[4], st[5]); fs:SetShadowColor(0, 0, 0, 0)
+  return fs
+end
+function RG.NewText(parent, tpl)
+  local fs = parent:CreateFontString(nil, "OVERLAY")
+  return RG.StyleText(fs, tpl)
+end
+
 RG.COLORS = { GOLD = GOLD, GREEN = GREEN, RED = RED, GREY = GREY }
 
 function RG.Print(msg) DEFAULT_CHAT_FRAME:AddMessage(GOLD .. "Waypath+|r " .. tostring(msg)) end

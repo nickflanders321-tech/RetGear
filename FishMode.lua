@@ -35,7 +35,7 @@ local whisper, whisperAt
 -- Display
 -- ---------------------------------------------------------------------------
 local hud, fader, refreshFailed
-local function font(fs, size, flags) fs:SetFont("Fonts\\FRIZQT__.TTF", size, flags or ""); fs:SetShadowColor(0, 0, 0, 1); fs:SetShadowOffset(1, -1) end
+local function font(fs, size, flags) RG.Font(fs, "semibold", size, flags); fs:SetShadowColor(0, 0, 0, 1); fs:SetShadowOffset(1, -1) end
 local function build()
   if hud then return end
   local parent = WorldFrame or UIParent
