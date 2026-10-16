@@ -1650,8 +1650,35 @@ local function renderFish()
     local parts = {}
     for i = 1, math.min(3, #top) do parts[#parts + 1] = (itemName(top[i].id) or "?") .. " x" .. top[i].c end
     setItem(getRow(n), nil, nil, string.format("|cffffffffThis session: %d fish|r", s.catches) .. (s.perHour and (GREY .. "   " .. s.perHour .. " per hour|r") or ""),
-      table.concat(parts, ", "), s.gained > 0 and (GREEN .. "+" .. s.gained .. " skill|r") or "", "")
+      table.concat(parts, ", "), s.gained > 0 and (GREEN .. "+" .. s.gained .. " skill|r") or "", (s.value or 0) > 0 and ("|cffffffff" .. RG.FishMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. "  ·  " .. RG.FishMoney(s.goldPerHour) .. "/hr|r") or "")) or "")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_14")
+  end
+  -- what this zone can bring up, and what is worth your time
+  local best = RG.FishBest and RG.FishBest()
+  if best then
+    n = n + 1; setHeader(getRow(n), "What you can catch here  ·  " .. best.zone .. GREY .. "  (about " .. RG.FishMoney(best.perCatch) .. " per catch)|r")
+    local shown = 0
+    for _, e in ipairs(best.list) do
+      if shown >= 8 then break end
+      shown = shown + 1
+      n = n + 1
+      local name, link, quality = itemName(e.id)
+      local pill = (e == best.bestEv and e.ev > 0) and (GREEN .. "Worth the most|r") or (e == best.bestValue and e.value > 0 and (GOLD .. "Priciest fish|r")) or ""
+      setItem(getRow(n), e.id, link, name .. GREY .. string.format("   %.1f%% of catches|r", e.chance), e.value > 0 and ("Worth " .. RG.FishMoney(e.value) .. GREY .. " each (" .. (e.src == "AH" and "auction house" or "vendor") .. ")  ·  about " .. RG.FishMoney(e.ev) .. " per catch|r") or (GREY .. "No price yet: scan the auction house|r"), pill, "", pill ~= "" and "gold" or nil, quality, true)
+    end
+  end
+  -- catch log
+  local flog = RG.db.fish and RG.db.fish.log
+  if flog and #flog > 0 then
+    n = n + 1; setHeader(getRow(n), string.format("Catch log  ·  last %d  ·  all time %s", math.min(#flog, 12), RG.FishMoney(RG.db.fish.goldTotal or 0)))
+    for i = 1, math.min(12, #flog) do
+      local e = flog[i]
+      n = n + 1
+      local name, link, quality = itemName(e.id)
+      local ago = time() - (e.t or 0)
+      local when = ago < 90 and "just now" or (ago < 5400 and (math.floor(ago / 60) .. " min ago") or (math.floor(ago / 3600) .. " h ago"))
+      setItem(getRow(n), e.id, link, name .. GREY .. "   x" .. (e.qty or 1) .. "|r", GREY .. (e.zone or "") .. "  ·  " .. when .. "|r", (e.v or 0) > 0 and (GOLD .. RG.FishMoney((e.v or 0) * (e.qty or 1)) .. "|r") or "", "", nil, quality, true)
+    end
   end
   -- cook now
   local cook, total = RG.CookNow()

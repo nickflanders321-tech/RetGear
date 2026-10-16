@@ -187,6 +187,40 @@ function RG.FishBuffs()
   return out
 end
 
+-- The lure and food worth offering a button for: the best you carry, only when that boost is missing
+-- or nearly gone. { lure = {macro, icon, label, title, tip}, food = {...} }
+local function countItem(id) return (GetItemCount and GetItemCount(id)) or 0 end
+function RG.FishBoostChoice()
+  local out = {}
+  if not RG.HasPole() then return out end
+  local skill = RG.FishSkill() or 0
+  local left = RG.FishLure()
+  if not left or left < 60 then
+    local bestId, best
+    for id, g in pairs(LURE) do
+      if countItem(id) > 0 and (not g.skill or skill >= g.skill) and (not best or g.bonus > best.bonus) then bestId, best = id, g end
+    end
+    if bestId then
+      local name = RG.ItemInfo(bestId) or ("item:" .. bestId)
+      out.lure = { macro = "/use item:" .. bestId .. "\n/use 16", icon = GetItemIcon and GetItemIcon(bestId) or "Interface\\Icons\\INV_Misc_Food_26", label = "Lure",
+        title = "Apply " .. name, tip = "+" .. best.bonus .. " Fishing skill for " .. best.mins .. " minutes. You have " .. countItem(bestId) .. "." }
+    end
+  end
+  local hasFood = false
+  for _, b in ipairs(RG.FishBuffs()) do if b.key == "food" and (not b.left or b.left >= 120) then hasFood = true end end
+  if not hasFood then
+    local pick
+    for _, c in ipairs(RG.FISH_COOK) do
+      if countItem(c.dish) > 0 and (not pick or c.cook > pick.cook) then pick = c end
+    end
+    if pick then
+      out.food = { macro = "/use " .. pick.dish, icon = (RG.ItemInfo and select(10, RG.ItemInfo(pick.dish))) or "Interface\\Icons\\INV_Misc_Fish_13", label = "Eat",
+        title = "Eat " .. pick.dish, tip = "A cooked fish for the Well Fed buff. You have " .. countItem(pick.dish) .. "." }
+    end
+  end
+  return out
+end
+
 -- The zone you're in: skill where every fish bites, and how you compare.
 function RG.FishZone()
   local zone = GetRealZoneText and GetRealZoneText() or ""
@@ -297,15 +331,65 @@ function RG.CookNow()
 end
 
 -- ---------------------------------------------------------------------------
+-- Value of a catch, what the zone can give you, and what is worth your time
+-- ---------------------------------------------------------------------------
+local function fmtMoney(c)
+  c = math.floor((c or 0) + 0.5)
+  if c >= 10000 then return string.format("%dg %ds", c / 10000, (c % 10000) / 100) end
+  if c >= 100 then return string.format("%ds %dc", c / 100, c % 100) end
+  return c .. "c"
+end
+RG.FishMoney = fmtMoney
+-- copper value of one item: your AH scan (or Auctionator/TSM), else what a vendor pays
+local function itemValue(id)
+  local p = RG.Price and RG.db and RG.db.prices and RG.Price(id)
+  if p and p > 0 then return p, "AH" end
+  local sell = RG.ItemInfo and select(11, RG.ItemInfo(id))
+  if sell and sell > 0 then return sell, "vendor" end
+  return 0, nil
+end
+RG.FishItemValue = itemValue
+-- Everything this zone can bring up: { id, chance (%), value, ev (copper per catch), name }, best chance first.
+function RG.FishZoneLoot()
+  local L = RG.FISH_LOOT
+  if not L then return nil end
+  local zone = GetRealZoneText and GetRealZoneText() or ""
+  local sub = GetSubZoneText and GetSubZoneText() or ""
+  local lst = L.zones[sub] or L.zones[zone]
+  if not lst then return nil, zone end
+  local out = {}
+  for _, c in ipairs(lst) do
+    local v, src = itemValue(c[1])
+    local info = L.info and L.info[c[1]]
+    out[#out + 1] = { id = c[1], chance = c[2], value = v, src = src, ev = v * c[2] / 100, name = info and info[1] or ("Item " .. c[1]), kind = info and info[2] }
+  end
+  table.sort(out, function(a, b) return a.chance > b.chance end)
+  return out, (L.zones[sub] and sub or zone)
+end
+-- Best things to fish for here: highest value per catch, and the single most valuable fish.
+function RG.FishBest()
+  local lst, zone = RG.FishZoneLoot()
+  if not lst then return nil end
+  local byEv, byValue = lst[1], lst[1]
+  for _, e in ipairs(lst) do
+    if e.chance >= 1 and e.ev > (byEv.ev or 0) then byEv = e end
+    if e.chance >= 1 and e.value > (byValue.value or 0) then byValue = e end
+  end
+  local per = 0
+  for _, e in ipairs(lst) do per = per + e.ev end
+  return { zone = zone, list = lst, bestEv = byEv, bestValue = byValue, perCatch = per }
+end
+
+-- ---------------------------------------------------------------------------
 -- Fishing session: catches, fish per hour, skill gained
 -- ---------------------------------------------------------------------------
-local session = { start = nil, last = nil, catches = 0, skillStart = nil, items = {} }
+local session = { start = nil, last = nil, catches = 0, skillStart = nil, items = {}, value = 0 }
 RG.FishSessionData = session
 local function onCatch()
   if not (IsFishingLoot and IsFishingLoot()) then return end
   local now = GetTime()
   if not session.last or now - session.last > 20 * 60 then
-    session.start, session.catches, session.items = now, 0, {}
+    session.start, session.catches, session.items, session.value = now, 0, {}, 0
     session.skillStart = RG.FishSkill()
   end
   session.last = now
@@ -319,6 +403,13 @@ local function onCatch()
       local qty = select(3, GetLootSlotInfo(i)) or 1
       session.items[id] = (session.items[id] or 0) + qty
       d.caught[id] = (d.caught[id] or 0) + qty
+      -- the catch log: last 100 catches with what they were worth when caught
+      local v = itemValue(id)
+      session.value = (session.value or 0) + v * qty
+      d.goldTotal = (d.goldTotal or 0) + v * qty
+      d.log = d.log or {}
+      table.insert(d.log, 1, { t = time(), id = id, qty = qty, v = v, zone = GetRealZoneText and GetRealZoneText() or "" })
+      d.log[101] = nil
     end
   end
   if RG.QueueTracker then RG.QueueTracker() end
@@ -335,7 +426,8 @@ function RG.FishSession()
   local mins = math.max(1, (session.last - session.start) / 60)
   local skill = RG.FishSkill()
   return { catches = session.catches, perHour = (session.catches > 1 and session.last - session.start >= 180) and math.floor(session.catches / mins * 60 + 0.5) or nil,
-    gained = (skill and session.skillStart) and (skill - session.skillStart) or 0, items = session.items }
+    gained = (skill and session.skillStart) and (skill - session.skillStart) or 0, items = session.items,
+    value = session.value or 0, goldPerHour = (session.last - session.start >= 180) and math.floor((session.value or 0) / mins * 60 + 0.5) or nil }
 end
 
 -- Lines for the tracker's Fishing section: { text, right, onClick, tip }
@@ -376,9 +468,16 @@ function RG.FishTrackerLines()
       out[#out + 1] = { GREY .. b.label .. "|r", b.left and ((b.warn and ORANGE or "|cffffffff") .. fmtLeft(b.left) .. "|r") or GREEN .. "on|r", nil, b.tip }
     end
   end
+  local best = RG.FishBest()
+  if best and best.bestEv and best.bestEv.ev > 0 then
+    out[#out + 1] = { GREY .. "Worth catching|r", "|cffffffff" .. best.bestEv.name .. "|r", open, string.format("Best value here: %s (%.0f%% of catches, %s each). About %s per catch overall.", best.bestEv.name, best.bestEv.chance, fmtMoney(best.bestEv.value), fmtMoney(best.perCatch)) }
+  end
   local s = RG.FishSession()
   if s and s.catches > 0 then
     out[#out + 1] = { GREY .. "This session|r", "|cffffffff" .. s.catches .. " fish|r" .. (s.perHour and (GREY .. "  ·  " .. s.perHour .. "/hr|r") or "") .. (s.gained > 0 and (GREEN .. "  +" .. s.gained .. "|r") or "") }
+    if s.value and s.value > 0 then
+      out[#out + 1] = { GREY .. "Catch value|r", "|cffffffff" .. fmtMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. "  ·  " .. fmtMoney(s.goldPerHour) .. "/hr|r") or ""), open, "What this session's catches are worth at your AH scan prices (vendor price where there is none)." }
+    end
   end
   local cook, n = RG.CookNow()
   if n > 0 then

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.72.0
+- **Deeper fishing.**
+  - **Catch value:** every catch is priced (your AH scan, Auctionator/TSM, or the vendor price). The fishing screen, tracker and Fishing tab show what the session is worth and gold per hour.
+  - **Catch log:** the Fishing tab lists your last catches with zone, time and value, plus your all-time haul.
+  - **What this water gives:** the fishing screen shows the top catches here with their chances and the one worth the most per cast; the Fishing tab lists up to 8 with price and value per catch.
+  - **Worth catching:** the tracker's fishing section names the best-value fish in your zone.
+  - **One-click boosts:** when your lure is missing or under a minute left, or you have no food buff, a Lure / Eat button appears beside Cast if you carry one (best lure for your skill, best cooked fish). Click to apply or eat.
+
 ## v0.71.0
 - **Fishing shows your boosts.** The fishing screen has a new row of icon chips with countdowns for the lure on your pole (with its skill bonus), your food buff (Well Fed or any fishing buff) and your campfire (Camp Benefits, or "sit by the fire"/"campfire near"). A chip turns orange when it is about to run out, and "No lure" shows when your pole is bare. The tracker's fishing section lists the same food and campfire timers under the lure.
 

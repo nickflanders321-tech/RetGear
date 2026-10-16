@@ -40,7 +40,7 @@ local function build()
   if hud then return end
   local parent = WorldFrame or UIParent
   hud = CreateFrame("Frame", "WaypathFishHUD", parent)
-  hud:SetSize(340, 150); hud:SetPoint("BOTTOM", parent, "BOTTOM", 0, 120)
+  hud:SetSize(340, 170); hud:SetPoint("BOTTOM", parent, "BOTTOM", 0, 120)
   hud:SetFrameStrata("HIGH"); hud:EnableMouse(false)
   hud:SetAlpha(0); hud:Hide()
   -- soft dark band behind the text so it reads on any water
@@ -65,10 +65,11 @@ local function build()
     c.text = c:CreateFontString(nil, "OVERLAY"); font(c.text, 11); c.text:SetPoint("LEFT", c, "RIGHT", 5, 0)
     c:Hide(); hud.chips[i] = c
   end
+  hud.odds = hud:CreateFontString(nil, "OVERLAY"); font(hud.odds, 11); hud.odds:SetPoint("TOP", hud.buffRow, "BOTTOM", 0, -5)
   hud.feed = {}
   for i = 1, 3 do
     local f = hud:CreateFontString(nil, "OVERLAY"); font(f, 11)
-    f:SetPoint("TOP", i == 1 and hud.buffRow or hud.feed[i - 1], "BOTTOM", 0, i == 1 and -6 or -2)
+    f:SetPoint("TOP", i == 1 and hud.odds or hud.feed[i - 1], "BOTTOM", 0, i == 1 and -6 or -2)
     hud.feed[i] = f
   end
   hud.hint = hud:CreateFontString(nil, "OVERLAY"); font(hud.hint, 9); hud.hint:SetPoint("BOTTOM", hud, "BOTTOM", 0, -6)
@@ -119,11 +120,52 @@ local function buildCast()
   b:SetAlpha(0); b:Hide()
   return b
 end
+-- One-click lure and food: secure macro buttons beside Cast. They only show when you have the item
+-- in your bags and the boost is missing or about to run out; set up out of combat, as the game requires.
+local boostBtn = {}
+local function buildBoost(kind, dx)
+  if boostBtn[kind] or not CreateFrame then return boostBtn[kind] end
+  local ok, b = pcall(CreateFrame, "Button", "WaypathFish" .. kind, WorldFrame or UIParent, "SecureActionButtonTemplate")
+  if not ok or not b then return nil end
+  boostBtn[kind] = b
+  b:SetSize(40, 40); b:SetPoint("BOTTOM", WorldFrame or UIParent, "BOTTOM", dx, 58)
+  b:SetFrameStrata("HIGH"); b:RegisterForClicks("AnyUp", "AnyDown")
+  b:SetAttribute("type", "macro")
+  b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetAllPoints(); b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  b.edge = b:CreateTexture(nil, "BACKGROUND"); b.edge:SetPoint("TOPLEFT", -2, 2); b.edge:SetPoint("BOTTOMRIGHT", 2, -2); b.edge:SetColorTexture(0.31, 0.82, 0.77, 0.9)
+  b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.18)
+  b.label = b:CreateFontString(nil, "OVERLAY"); font(b.label, 11, "OUTLINE"); b.label:SetPoint("TOP", b, "BOTTOM", 0, -3)
+  b:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:AddLine(self.tipTitle or kind, 1, 1, 1)
+    if self.tipText then GameTooltip:AddLine(self.tipText, 0.7, 0.7, 0.7, true) end
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  b:SetAlpha(0); b:Hide()
+  return b
+end
+local function updateBoost()
+  if InCombatLockdown and InCombatLockdown() then return end
+  local want = RG.FishBoostChoice and RG.FishBoostChoice() or {}
+  for kind, dx in pairs({ Lure = -64, Food = 64 }) do
+    local c = want[kind:lower()]
+    local b = boostBtn[kind]
+    if c and active then
+      b = b or buildBoost(kind, dx)
+      if b then
+        b:SetAttribute("macrotext", c.macro)
+        b.icon:SetTexture(c.icon); b.label:SetText(GOLD .. c.label .. "|r"); b.tipTitle = c.title; b.tipText = c.tip
+        b:SetAlpha(peeking and 1 or (hud and hud:GetAlpha() or 1)); b:Show()
+      end
+    elseif b then b:Hide() end
+  end
+end
 local function showCast(on)
   if InCombatLockdown and InCombatLockdown() then return end
   local b = buildCast()
   if not b then return end
-  if on then b:Show() else b:Hide() end
+  if on then b:Show() else b:Hide(); for _, x in pairs(boostBtn) do x:Hide() end end
 end
 RG.FishCastButton = function() return castBtn end
 
@@ -141,6 +183,7 @@ local function fadeTo(target)
     if UIParent then UIParent:SetAlpha(from + ((target and 0 or 1) - from) * p) end
     hud:SetAlpha(hudFrom + ((target and 1 or 0) - hudFrom) * p)
     if castBtn and castBtn:IsShown() then castBtn:SetAlpha(hud:GetAlpha() or 1) end
+    for _, x in pairs(boostBtn) do if x:IsShown() then x:SetAlpha(hud:GetAlpha() or 1) end end
     if p >= 1 then
       self:SetScript("OnUpdate", nil)
       if not target then hud:Hide() end
@@ -173,6 +216,7 @@ function RG.FishModeRefresh()
   -- session, lure and zone on one line
   local parts = {}
   if s and s.catches > 0 then parts[#parts + 1] = "|cffffffff" .. s.catches .. " fish|r" .. (s.perHour and (GREY .. " (" .. s.perHour .. "/hr)|r") or "") end
+  if s and (s.value or 0) > 0 then parts[#parts + 1] = GOLD .. RG.FishMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. " (" .. RG.FishMoney(s.goldPerHour) .. "/hr)|r") or "") end
   local lure = RG.FishLure and RG.FishLure()
   if lure then parts[#parts + 1] = (lure < 60 and ORANGE or GREY) .. "lure " .. math.ceil(lure / 60) .. " min|r" end
   local z = RG.FishZone and RG.FishZone()
@@ -183,6 +227,7 @@ function RG.FishModeRefresh()
   end
   if skill and max and skill >= max and max < 300 then parts[#parts + 1] = ORANGE .. "capped: train|r" end
   hud.stats:SetText(table.concat(parts, GREY .. "  ·  |r"))
+  if active then pcall(updateBoost) end
   -- buff chips, centered in a row
   local buffs = RG.FishBuffs and RG.FishBuffs() or {}
   local widths, total = {}, 0
@@ -200,6 +245,15 @@ function RG.FishModeRefresh()
   for i, c in ipairs(hud.chips) do
     if widths[i] then c:ClearAllPoints(); c:SetPoint("LEFT", hud.buffRow, "CENTER", x, 0); c:Show(); x = x + widths[i] + 14 else c:Hide() end
   end
+  -- what this water gives, and what is worth the most
+  local best = RG.FishBest and RG.FishBest()
+  if best then
+    local bits = {}
+    for i = 1, math.min(3, #best.list) do bits[#bits + 1] = "|cffffffff" .. best.list[i].name .. "|r" .. GREY .. string.format(" %.0f%%|r", best.list[i].chance) end
+    local txt = GREY .. "Here: |r" .. table.concat(bits, GREY .. "  ·  |r")
+    if best.bestEv and best.bestEv.ev > 0 then txt = txt .. GREY .. "   Worth most: |r" .. GREEN .. best.bestEv.name .. "|r" end
+    hud.odds:SetText(txt)
+  else hud.odds:SetText("") end
   -- last catches, fading after a while
   for i = 1, 3 do
     local e = feed[i]
@@ -238,6 +292,7 @@ local function peek()
   if UIParent then UIParent:SetAlpha(1) end
   hud:Show(); hud:SetAlpha(1)
   if castBtn then castBtn:SetAlpha(1) end
+  for _, x in pairs(boostBtn) do if x:IsShown() then x:SetAlpha(1) end end
 end
 local function unpeek()
   if not (active and peeking) then return end
