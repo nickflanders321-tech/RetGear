@@ -591,7 +591,9 @@ local function renderProf()
   -- your professions: one section each, open or folded
   local mine = {}
   for _, name in ipairs(PROF_ORDER) do
-    if RG.PROFESSIONS[name] and not (RG.db.profIgnore and RG.db.profIgnore[name]) and (known[name] or (RG.Plans and RG.Plans(name))) then mine[#mine + 1] = name end
+    local def = RG.PROFESSIONS[name]
+    -- side professions (Cooking, Fishing, First Aid) always have their section: anyone can learn them
+    if def and not (RG.db.profIgnore and RG.db.profIgnore[name]) and (known[name] or def.kind == "secondary" or (RG.Plans and RG.Plans(name))) then mine[#mine + 1] = name end
   end
   local browsing = state.profSel and RG.PROFESSIONS[state.profSel] and state.profSel
   for _, m in ipairs(mine) do if m == browsing then browsing = nil end end
@@ -601,7 +603,9 @@ local function renderProf()
     if v == nil then return #mine <= 2 or name == mine[1] or name == state.profSel end
     return v
   end
-  if #mine == 0 then
+  local mains = 0
+  for _, m in ipairs(mine) do if RG.PROFESSIONS[m].kind ~= "secondary" then mains = mains + 1 end end
+  if mains == 0 then
     head("Your professions")
     line(nil, "|cffffffffTwo main professions, plus Cooking, Fishing and First Aid|r", "Learn one and it appears here on its own. Good pairs: Mining + Blacksmithing or Engineering, Herbalism + Alchemy, Skinning + Leatherworking, Tailoring + Enchanting. Two gathering professions make the most gold while leveling.", "", "", 136240, nil, nil, true)
   end
@@ -817,7 +821,13 @@ local function renderProf()
   campBlock(sel)
   end -- body
 
-  for _, name in ipairs(mine) do body(name) end
+  local shownMain, shownSide
+  for _, name in ipairs(mine) do
+    local side = RG.PROFESSIONS[name].kind == "secondary"
+    if side and not shownSide then shownSide = true; head("Side professions  ·  Cooking, Fishing and First Aid use no profession slot") end
+    if not side and not shownMain and mains > 0 then shownMain = true; head("Main professions") end
+    body(name)
+  end
   if browsing then head("Reading: " .. browsing); body(browsing) end
 
   -- every other profession's route

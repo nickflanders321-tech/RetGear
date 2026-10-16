@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.65.1
+- **Professions tab:** your main professions and your side professions are now listed separately. Cooking, Fishing and First Aid always have their own section under "Side professions", even before you learn them, so the First Aid plan (and its camp object) is always one click away.
+- First Aid is now part of the default plan for every character, like Cooking and Fishing.
+
 ## v0.65.0
 - **Tracker restyle:** the header is just your level; the XP bar is now a thin line along the bottom with your XP per hour, time to level and percent above it.
 - **Compact tracker:** collapse the tracker (the - button) and it keeps one line, "Next: ...", with your next step.

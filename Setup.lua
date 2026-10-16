@@ -43,7 +43,7 @@ local function applyPlan(plan)
 end
 -- Does this character level the profession? Yes if it knows it, or if setup says so.
 -- (Plans saved before every profession was in the guide only had these four, on by default.)
-local LEGACY = { Mining = true, Blacksmithing = true, Fishing = true, Cooking = true }
+local LEGACY = { Mining = true, Blacksmithing = true, Fishing = true, Cooking = true, ["First Aid"] = true }
 function RG.Plans(prof)
   if RG.db and RG.db.profIgnore and RG.db.profIgnore[prof] then return false end
   if RG.Skill and RG.Skill(prof) then return true end
