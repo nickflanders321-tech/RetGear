@@ -149,7 +149,7 @@ local function mergeGen(src, letter)
   end
 end
 mergeGen(R, RG.RACE_LETTER)
-mergeGen(H, "F")      -- Alliance: the zones every race shares
+mergeGen(H, faction == "Alliance" and "F" or "X")      -- the zones every race of your faction shares
 -- Lines for one class ("Paladins: ...") only show for that class.
 local CLASS_PLURAL = { Warriors = "WARRIOR", Paladins = "PALADIN", Hunters = "HUNTER", Rogues = "ROGUE", Priests = "PRIEST",
   Shamans = "SHAMAN", Mages = "MAGE", Warlocks = "WARLOCK", Druids = "DRUID" }
@@ -224,7 +224,7 @@ if not RG.KEEP_ALL_DATA then
   for _, t in ipairs({ RG.CLASS_GEAR, RG.SPEC_GEAR, RG.SPEC_HAND }) do
     for cls in pairs(t or {}) do if cls ~= RG.PLAYER_CLASS then t[cls] = nil end end
   end
-  for letter in pairs(RG.GEN_STEPS or {}) do if letter ~= RG.RACE_LETTER and letter ~= "F" then RG.GEN_STEPS[letter] = nil end end
+  for letter in pairs(RG.GEN_STEPS or {}) do if letter ~= RG.RACE_LETTER and letter ~= (faction == "Alliance" and "F" or "X") then RG.GEN_STEPS[letter] = nil end end
   if faction == "Alliance" then RG.GEN_DUNGEONS = nil else RG.GEN_DUNGEONS_A = nil end
   -- (Objectives.lua loads after this file and calls RG.PruneQuests when it is done)
   -- the other faction's route and the other races' definitions

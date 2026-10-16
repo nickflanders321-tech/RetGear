@@ -4,7 +4,7 @@
 -- kind: "zone" = questing zone, "dungeon" = dungeon to run at that level.
 -- o = position in the merged route (keeps the order the route was written in).
 local _, RG = ...
-local H = { faction = "Horde" }
+local H = { faction = "Horde", gen = true }   -- gen: zone quest steps come from Routes/Generated.lua (letter X)
 
 H.route = {
   { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon in the ruins above Undercity (take the Orgrimmar zeppelin to Tirisfal if you started in Kalimdor). Several quests, with good weapon rewards." },
@@ -43,6 +43,8 @@ H.route = {
   { o = 35, from = 51, to = 55, kind = "zone",    zone = "Felwood", hub = "Bloodvenom Post", fp = "Bloodvenom", notes = "" },
   { o = 36, from = 53, to = 58, kind = "zone",    zone = "Burning Steppes", hub = "Flame Crest", fp = "Flame Crest", notes = "Miners: Thorium." },
   { o = 37, from = 55, to = 60, kind = "zone",    zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Miners: rich Thorium." },
+  { o = 37.5, from = 52, to = 58, kind = "zone",    zone = "Azshara", hub = "Valormok", notes = "Few quests, in the Horde camp at Valormok. Most players pass through on the way to a better zone." },
+  { o = 38.7, from = 56, to = 60, kind = "zone",    zone = "Silithus", hub = "Cenarion Hold", fp = "Cenarion Hold", notes = "Endgame quests; most are level 60. Cenarion Hold takes both factions." },
   { o = 38, from = 55, to = 60, kind = "zone",    zone = "Western & Eastern Plaguelands", hub = "The Bulwark / Light's Hope", fp = "Light's Hope", notes = "Tirion Fordring's chain ends in Mark of Fordring." },
   { o = 39, from = 56, to = 60, kind = "dungeon", zone = "Stratholme, Scholomance, Dire Maul, LBRS/UBRS", hub = "Level 58-60", notes = "The level 58-60 dungeons for pre-raid gear: the gear guide's pre-raid checklist says which ones drop yours." },
 }
@@ -164,40 +166,17 @@ H.steps = {
     "The cave is south-west of the Crossroads, under the hill where the druids stand.",
     "Fight through to Mutanus at the end. Escort the Disciple of Naralex to wake Naralex.",
   },
-  ["The Barrens|18"] = {
-    "From Orgrimmar, run south through Durotar to the Crossroads and grab the flight path.",
-    "Take every quest at the Crossroads; this hub keeps you busy for several levels.",
-    "Kill quilboars at the Forgotten Pools, harpies in the Dry Hills, and centaur in the north.",
-    "Grab the Ratchet flight path and its quests on the east coast.",
-    "Go south to Camp Taurajo: take Weapons of Choice from Tatternack Steelforge for the Demolition Hammer.",
-    "Miners: Copper and Tin outcrops along the cliffs and canyon walls.",
-  },
   ["Shadowfang Keep|22"] = {
     "Pick up the quests at The Sepulcher and in Undercity first (listed below).",
     "The keep is the castle on the hill above Pyrewood Village in south Silverpine.",
     "Archmage Arugal is the last boss; finish Arugal Must Die there.",
     "Paladins: grab the Enchanted Silver Ingot for Wolf's Bane while you're here.",
   },
-  ["Stonetalon Mountains|22"] = {
-    "Run west from the Crossroads to Sun Rock Retreat and grab the flight path.",
-    "Do the harpy and Windshear Crag quests, including the Venture Co. loggers.",
-    "Miners: Tin and your first Iron in the mountain passes.",
-  },
   ["Blackfathom Deeps|24"] = {
     "Grab the quests at Zoram'gar Outpost on the Ashenvale coast and in Thunder Bluff (listed below).",
     "The entrance is in the ruins on the Zoram Strand, on Ashenvale's west coast.",
     "Paladins: Aku'mai at the end drops Strike of the Hydra.",
     "Paladins: take Olric Frostvale's quest in Ashenvale first, then collect the Purified Kor Gem here for Wolf's Bane.",
-  },
-  ["Hillsbrad Foothills|25"] = {
-    "From The Sepulcher, follow the road south-east to Tarren Mill and grab the flight path.",
-    "Take the Tarren Mill quests: the farms, the Syndicate in the foothills, and the yetis.",
-    "Miners: Tin and Silver around the foothills and on the Alterac slopes.",
-  },
-  ["Ashenvale|25"] = {
-    "Go to Splintertree Post in east Ashenvale and grab the flight path.",
-    "Do the Warsong Lumber Camp and Splintertree quests. Watch out for Alliance players.",
-    "Grab Zoram'gar Outpost on the west coast while you're here for the BFD quests.",
   },
   ["Razorfen Kraul|29"] = {
     "Pick up the quests in Undercity and Thunder Bluff first (listed below).",
@@ -238,111 +217,31 @@ H.steps = {
     "The six Atal'ai Defenders in the alcoves over the Pit of Sacrifice hold Jammal'an's forcefield. The statue puzzle (Classic order: south, north, south-west, south-east, north-west, north-east) is untested in Forever.",
     "The last boss is the Shade of Eranikus: The Essence of Eranikus drops from him. Some boss gear and quest rewards are still missing from the Forever data, so plan with Classic fights.",
   },
-  ["Thousand Needles|30"] = {
-    "Go south from Camp Taurajo down the Great Lift into Thousand Needles.",
-    "Grab the Freewind Post flight path and quests: centaur, harpies and Grimtotem.",
-    "The Shimmering Flats in the south-east have the goblin racer quests.",
-  },
-  ["Arathi Highlands|33"] = {
-    "Head east from Tarren Mill into Arathi and follow the road to Hammerfall in the far east. Grab the flight path.",
-    "Take the Hammerfall quests: Boulderfist ogres, Witherbark trolls, and the Syndicate.",
-    "Miners: Arathi is one of the best Iron and Gold zones. Fill your bags.",
-  },
-  ["Desolace|32"] = {
-    "Go to Shadowprey Village on the south-west coast and grab the flight path.",
-    "Do the Kolkar centaur and Burning Blade quests.",
-    "Note Maraudon's entrance here; you'll be back in the mid-40s.",
-  },
   ["Scarlet Monastery|33"] = {
     "Pick up the three quests in Undercity first (listed below).",
     "Ride north from Brill to the north-east corner of Tirisfal, past the Scarlet Watch Post.",
     "Run the wings in order: Graveyard (~33), Library (~35), Armory (~37), Cathedral (~39).",
     "Paladins: Herod in the Armory drops Ravager, and Mograine in the Cathedral drops Mograine's Might.",
   },
-  ["Stranglethorn Vale|32"] = {
-    "Take the zeppelin from outside Undercity to Grom'gol and grab the flight path.",
-    "Do the Nesingwary hunting quests (tigers, panthers, raptors) at his camp north of Grom'gol.",
-    "Collect Green Hills of Stranglethorn pages as they drop and turn them in.",
-    "Run south to Booty Bay for its flight path. Miners: Iron and Mithril in the north.",
-  },
-  ["Dustwallow Marsh|36"] = {
-    "Go to Brackenwall Village in west Dustwallow and grab the flight path.",
-    "Do the Grimtotem, black dragon and Theramore deserter quests.",
-    "Visit Tabetha's hut; her quests point you toward Uldaman and Zul'Farrak.",
-  },
-  ["Badlands|40"] = {
-    "Go to Kargath on the west edge and grab the flight path.",
-    "Do the Dark Iron dwarf, ogre and buzzard quests, plus Jarkal's Uldaman reagent run.",
-    "Miners: Mithril and Iron along the canyon walls.",
-  },
   ["Uldaman|41"] = {
     "Pick up the quests in Kargath, Dustwallow and Orgrimmar first (listed below).",
     "The entrance is in the north of the Badlands.",
     "Paladins: Archaedas at the end drops Stoneslayer.",
-  },
-  ["Swamp of Sorrows|40"] = {
-    "Go to Stonard in the middle of the swamp and grab the flight path.",
-    "Take Threat From the Sea from Tok'Kar for Tok'kar's Murloc Chopper.",
-    "The Sunken Temple is here for later.",
-  },
-  ["Tanaris|43"] = {
-    "Go to Gadgetzan and grab the flight path.",
-    "Do the pirate quests at Lost Rigger Cove, the Wastewander bandits, and the Steamwheedle Port quests.",
-    "Miners: Mithril and Truesilver across the dunes.",
   },
   ["Zul'Farrak|44"] = {
     "Pick up the quests in Gadgetzan, Steamwheedle Port and Dustwallow first (listed below).",
     "The entrance is in north-west Tanaris.",
     "Gahz'rilla is summoned at the pool with the Mallet of Zul'Farrak.",
   },
-  ["Feralas|44"] = {
-    "Go to Camp Mojache in east Feralas and grab the flight path.",
-    "Take Weapons of Spirit from Witch Doctor Uzer'i for Will of the Mountain Giant.",
-    "Dire Maul is in the middle of the zone for later.",
-  },
   ["Maraudon|46"] = {
     "Pick up the quests at Shadowprey Village, outside Maraudon and in Orgrimmar first (listed below).",
     "The entrance is in central Desolace.",
     "Paladins: Princess Theradras drops her Scepter and the Blackstone Ring.",
   },
-  ["The Hinterlands|47"] = {
-    "Go to Revantusk Village on the east coast and grab the flight path.",
-    "Do the troll and owlbeast quests.",
-    "Miners: Mithril and Truesilver in the hills.",
-  },
-  ["Searing Gorge|48"] = {
-    "Go to Thorium Point on the north cliff and grab the flight path.",
-    "Do the Dark Iron and golem quests.",
-    "Miners: Thorium and Mithril, and the Thorium Point forge to smelt.",
-  },
-  ["Un'Goro Crater|50"] = {
-    "Go to Marshal's Refuge on the north rim and grab the flight path.",
-    "Take The Mighty U'cha for Beastslayer, and collect crystals and pylons as you go.",
-    "Miners: Thorium veins are everywhere. Mine every one.",
-  },
   ["Blackrock Depths|52"] = {
     "Pick up the quests in Kargath and Flame Crest first (listed below).",
     "Blackrock Mountain sits between Searing Gorge and Burning Steppes.",
     "Paladins: Look out for Hand of Justice and the Savage Gladiator Chain from Gorosh.",
-  },
-  ["Felwood|51"] = {
-    "Go to Bloodvenom Post and grab the flight path.",
-    "Do the corrupted wildlife and satyr quests.",
-  },
-  ["Burning Steppes|53"] = {
-    "Go to Flame Crest and grab the flight path.",
-    "Do the Blackrock orc and black dragon quests.",
-    "Miners: Thorium on the ridges.",
-  },
-  ["Winterspring|55"] = {
-    "Go to Everlook and grab the flight path.",
-    "Do the Winterfall furbolg and Frostsaber quests.",
-    "Miners: rich Thorium veins line the valleys.",
-  },
-  ["Western & Eastern Plaguelands|55"] = {
-    "Start at The Bulwark in Western Plaguelands for the plague quests.",
-    "In Eastern Plaguelands, grab Light's Hope Chapel's flight path.",
-    "Find Tirion Fordring near Terrorweb Path and do his chain for Mark of Fordring.",
   },
   ["Stratholme, Scholomance, Dire Maul, LBRS/UBRS|56"] = {
     "Pick up the quests listed below; several open the doors and keys for these dungeons.",

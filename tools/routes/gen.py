@@ -27,6 +27,7 @@ RACE_BITS = {'O': 2, 'U': 16, 'T': 32, 'R': 128, 'S': 8589934592,
 HORDE_ALL = 2 | 16 | 32 | 128 | 8589934592
 ALLY_ALL = 1 | 4 | 8 | 64 | 4294967296
 RACE_BITS['F'] = ALLY_ALL     # F = steps shared by every Alliance race
+RACE_BITS['X'] = HORDE_ALL    # X = steps shared by every Horde race
 
 # Alliance zones after the starting zones: (name, from, to, [area ids]). The route entries in
 # Routes/Alliance.lua use the same names and starting levels as their keys ("Zone|from").
@@ -46,6 +47,28 @@ ALLIANCE_ZONES = [
 
 # Legs of each race's start. zones = quest categories (area IDs) the leg's quests belong to.
 # key must match the route entry in Races/<Race>.lua ("Zone|from").
+# Horde zones after the starting zones, keyed like Routes/Horde.lua ("Zone|from"): (name, from, to, [area ids], min quest level).
+# Quests below the minimum level belong to an earlier leg (The Barrens 12-20 is each race's own).
+HORDE_ZONES = [
+    ('The Barrens', 18, 26, [17], 20), ('Stonetalon Mountains', 22, 27, [406], 0), ('Hillsbrad Foothills', 25, 30, [267], 0),
+    ('Ashenvale', 25, 30, [331], 0), ('Thousand Needles', 30, 35, [400], 0), ('Arathi Highlands', 33, 40, [45], 0),
+    ('Desolace', 32, 40, [405], 0), ('Stranglethorn Vale', 32, 42, [33], 0), ('Dustwallow Marsh', 36, 42, [15], 0),
+    ('Badlands', 40, 45, [3], 0), ('Swamp of Sorrows', 40, 45, [8], 0), ('Tanaris', 43, 48, [440], 0),
+    ('Feralas', 44, 50, [357], 0), ('The Hinterlands', 47, 52, [47], 0), ('Searing Gorge', 48, 54, [51], 0),
+    ("Un'Goro Crater", 50, 55, [490], 0), ('Felwood', 51, 55, [361], 0), ('Burning Steppes', 53, 58, [46], 0),
+    ('Winterspring', 55, 60, [618], 0), ('Western & Eastern Plaguelands', 55, 60, [28, 139], 0),
+    ('Azshara', 52, 58, [16], 0), ('Silithus', 56, 60, [1377], 0),
+]
+HORDE_ANCHORS = {
+    406: [('Sun Rock Retreat', 'Innkeeper Jayka')], 267: [('Tarren Mill', 'Innkeeper Shay')],
+    331: [('Splintertree Post', 'Innkeeper Kaylisk'), ("Zoram'gar Outpost", 'Vhulgra')],
+    400: [('Freewind Post', 'Innkeeper Abeqwa')], 45: [('Hammerfall', 'Innkeeper Adegwa')],
+    405: [('Shadowprey Village', 'Innkeeper Sikewa')], 33: [("Grom'gol Base Camp", 'Innkeeper Thulbek')],
+    15: [('Brackenwall Village', 'Shardi')], 3: [('Kargath', "Innkeeper Shul'kar")], 8: [('Stonard', 'Innkeeper Karakul')],
+    357: [('Camp Mojache', 'Innkeeper Greul')], 490: [("Marshal's Refuge", 'Gryfe')], 361: [('Bloodvenom Post', 'Brakkar')],
+    46: [('Flame Crest', 'Vahgruk')], 16: [('Valormok', 'Kaerbrus')], 1377: [('Cenarion Hold', 'Commander Mar\'alith')], 139: [("Light's Hope Chapel", 'Georgia')],
+}
+
 LEGS = [
     # Orc and Troll: Valley of Trials, Durotar, then The Barrens
     ('O', 'Valley of Trials', 1, 6, [363]), ('O', 'Durotar', 6, 12, [14]), ('O', 'The Barrens', 12, 20, [17]),
@@ -63,7 +86,7 @@ LEGS = [
     ('G', 'Coldridge Valley', 1, 6, [132]), ('G', 'Dun Morogh', 6, 12, [1]),
     ('N', 'Shadowglen', 1, 6, [188]), ('N', 'Teldrassil', 6, 12, [141]),
     ('A', 'Zephras Isle', 1, 12, [16593]),
-] + [('F',) + z for z in ALLIANCE_ZONES]
+] + [('F',) + z + (0,) for z in ALLIANCE_ZONES] + [('X',) + z for z in HORDE_ZONES]
 
 # Quest hubs, anchored to an NPC who stands there (coordinates come from the data).
 ANCHORS = {
@@ -99,6 +122,7 @@ ANCHORS = {
     16593: [('the starting grove', 'Rorian the Dayseeker'), ("Shen'dar Village", 'Constable Aonda'),
             ('Falaath Village', 'Missionary Jasaan'), ('Valanaar', 'Valennia Stormfist')],
 }
+for _z, _a in HORDE_ANCHORS.items(): ANCHORS.setdefault(_z, []).extend(_a)
 CITIES = {1637: 'Orgrimmar', 1638: 'Thunder Bluff', 1497: 'Undercity', 1519: 'Stormwind City', 1537: 'Ironforge', 1657: 'Darnassus'}   # a giver anywhere in a capital = that city
 HUB_RADIUS = 10.0     # map units: givers this close to an anchor belong to that hub
 MAX_PER_STEP = 8
@@ -168,7 +192,7 @@ def anchor_points(zones):
 
 def lstr(s): return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
-def build(letter, zone_name, lo, hi, zones):
+def build(letter, zone_name, lo, hi, zones, qmin=0):
     bit = RACE_BITS[letter]
     ally = letter in 'HDNGAF'
     FACTION[0] = 'Alliance' if ally else 'Horde'
@@ -177,12 +201,13 @@ def build(letter, zone_name, lo, hi, zones):
         name, starts, ends, rl, ql, races, objs, z, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
         races = int(races or 0)
         if z not in zones or classes: continue
-        if letter == 'F':
-            if races and (races & ALLY_ALL) != ALLY_ALL: continue      # a quest for some races only isn't shared
+        if letter in ('F', 'X'):
+            shared = ALLY_ALL if letter == 'F' else HORDE_ALL
+            if races and (races & shared) != shared: continue      # a quest for some races only isn't shared
         elif races and not (races & bit): continue
         if (sflags or 0) & 1: continue           # repeatable
         ql = ql if (ql and ql > 0) else (rl or 1)
-        if not (lo - 1 <= ql <= hi + 1): continue
+        if not (lo - 1 <= ql <= hi + 1) or ql < qmin: continue
         giver = None
         if (horde_only if ally else alliance_only)(at(starts, 1)): continue
         for i in (at(starts, 1) or []):
@@ -362,8 +387,9 @@ lines = ['-- GENERATED by tools/routes/gen.py from QuestieDB\'s merged WoW Forev
          'local _, RG = ...', 'RG.GEN_STEPS = {']
 total = 0
 by_race = {}
-for letter, zone_name, lo, hi, zones in LEGS:
-    steps = build(letter, zone_name, lo, hi, zones)
+for leg in LEGS:
+    letter, zone_name, lo, hi, zones = leg[:5]
+    steps = build(letter, zone_name, lo, hi, zones, leg[5] if len(leg) > 5 else 0)
     by_race.setdefault(letter, []).append((zone_name, lo, steps))
     total += len(steps)
     print('%s %-18s %2d-%2d: %2d steps, %3d quests' % (letter, zone_name, lo, hi, len(steps), sum(len(s[1]) for s in steps)), file=sys.stderr)

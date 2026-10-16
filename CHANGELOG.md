@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.66.0
+- **Horde zones are now built from the quest data, quest by quest.** Stonetalon, Hillsbrad, Ashenvale, Thousand Needles, Arathi, Desolace, Stranglethorn, Dustwallow, Badlands, Swamp of Sorrows, Tanaris, Feralas, Hinterlands, Searing Gorge, Un'Goro, Felwood, Burning Steppes, Winterspring, the Plaguelands and the Barrens (18-26) went from about three hand-written lines each to a full list: every quest your Horde character can take, grouped by town in a sensible order, with a map pin per stop. Each step ticks itself off when its quests are turned in. The Alliance zones already worked this way.
+- New Horde zone entries: Azshara (52-58) and Silithus (56-60).
+
 ## v0.65.1
 - **Professions tab:** your main professions and your side professions are now listed separately. Cooking, Fishing and First Aid always have their own section under "Side professions", even before you learn them, so the First Aid plan (and its camp object) is always one click away.
 - First Aid is now part of the default plan for every character, like Cooking and Fishing.
