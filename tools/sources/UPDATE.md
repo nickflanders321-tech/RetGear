@@ -1,5 +1,9 @@
 # How to update Waypath+
 
+> Routine watching (new game build, new Forever quest data, new bug reports) and data regeneration
+> now run free in GitHub Actions (.github/workflows/watch.yml, tools/watch/). Claude only handles
+> issues labeled `needs-claude`; step 4 below is `sh tools/watch/regenerate.sh`.
+
 The full update procedure. Both scheduled tasks follow it: the twice-weekly guide update,
 and the hourly patch watcher when it sees a new game build, new WoW Forever quest data or a
 new bug report. Standing goal: **every update makes Waypath+ more accurate and more complete
