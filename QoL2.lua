@@ -68,7 +68,7 @@ if seterrorhandler and geterrorhandler then
 end
 
 local errFrame
-function RG.ShowErrors()
+function RG.ShowErrors(override, heading)
   local list = (WaypathDB and WaypathDB.errors) or {}
   local lines = { "Waypath+ " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught",
     "Paste this when reporting a problem: " .. (RG.DetectLine and RG.DetectLine() or "?") .. "  ·  " .. tostring(RG.PLAYER_FACTION)
@@ -80,7 +80,7 @@ function RG.ShowErrors()
     lines[#lines + 1] = ""
   end
   if #list == 0 then lines[#lines + 1] = "No errors. Nice." end
-  local text = table.concat(lines, "\n")
+  local text = override or table.concat(lines, "\n")
   if not errFrame then
     errFrame = CreateFrame("Frame", "WaypathErrors", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
     errFrame:SetSize(560, 380); errFrame:SetPoint("CENTER")
@@ -90,7 +90,7 @@ function RG.ShowErrors()
     errFrame:SetScript("OnDragStop", errFrame.StopMovingOrSizing)
     RG.DialogBackdrop(errFrame)
     local title = RG.NewText(errFrame, "GameFontNormal")
-    title:SetPoint("TOPLEFT", 12, -10); title:SetText("Waypath+ errors  ·  Ctrl+A, Ctrl+C to copy")
+    title:SetPoint("TOPLEFT", 12, -10); title:SetText("Waypath+ errors  ·  Ctrl+A, Ctrl+C to copy"); errFrame.title = title
     local close = CreateFrame("Button", nil, errFrame, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -2, -2)
     local clear = CreateFrame("Button", nil, errFrame, "UIPanelButtonTemplate")
@@ -107,6 +107,7 @@ function RG.ShowErrors()
     if UISpecialFrames then table.insert(UISpecialFrames, "WaypathErrors") end
   end
   errFrame.eb:SetText(text)
+  if errFrame.title then errFrame.title:SetText(heading or "Waypath+ errors  ·  Ctrl+A, Ctrl+C to copy") end
   errFrame:Show()
   errFrame.eb:SetFocus(); errFrame.eb:HighlightText()
 end
@@ -455,12 +456,50 @@ ev:SetScript("OnEvent", function(_, event)
 end)
 
 -- ===========================================================================
+-- Report this step: everything needed to fix a wrong or confusing route step, ready to paste
+-- ===========================================================================
+function RG.ReportStep()
+  local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+  local L = { "Waypath+ step report  ·  v" .. tostring(RG.VERSION or "?") .. "  ·  " .. (RG.DetectLine and RG.DetectLine() or "?") .. "  ·  " .. tostring(RG.PLAYER_FACTION) .. "  ·  " .. (GetBuildInfo and select(1, GetBuildInfo()) or "?"),
+    string.format("Level %d  ·  %s  ·  %s", UnitLevel("player") or 0, GetRealZoneText and GetRealZoneText() or "?", GetSubZoneText and GetSubZoneText() or "") }
+  local x, y, map
+  if C_Map and C_Map.GetBestMapForUnit then
+    map = C_Map.GetBestMapForUnit("player")
+    local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+    if pos and pos.GetXY then x, y = pos:GetXY() end
+  end
+  L[#L + 1] = string.format("Map %s  ·  position %s, %s", tostring(map), x and string.format("%.1f", x * 100) or "?", y and string.format("%.1f", y * 100) or "?")
+  if r then
+    local key = r.zone .. "|" .. r.from
+    L[#L + 1] = "Route entry: " .. key .. "  (levels " .. r.from .. "-" .. r.to .. ")"
+    local steps = RG.STEPS and RG.STEPS[key]
+    if steps then
+      for i, text in ipairs(steps) do
+        local done = (RG.db.stepsDone and RG.db.stepsDone[key .. "#" .. i]) or (RG.StepAuto and RG.StepAuto(r, text))
+        if not done then
+          L[#L + 1] = "Current step " .. i .. "/" .. #steps .. ": " .. text
+          local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+          if wp then L[#L + 1] = string.format("Waypoint: %s (map %s, %.1f, %.1f)", tostring(wp[4]), tostring(wp[1]), wp[2] or 0, wp[3] or 0) end
+          local ql = RG.StepQuestLines and RG.StepQuestLines(r, i)
+          if ql then for _, q in ipairs(ql) do L[#L + 1] = string.format("  quest %s [%s] %s%s", tostring(q.id), tostring(q.act), tostring(q.name), q.npc and (" · " .. q.npc) or "") end end
+          break
+        end
+      end
+    end
+  else L[#L + 1] = "No current route entry." end
+  L[#L + 1] = ""
+  L[#L + 1] = "What looked wrong? (write here, then paste this whole box into an issue at github.com/nickflanders321-tech/RetGear/issues)"
+  RG.ShowErrors(table.concat(L, "\n"), "Waypath+ step report  ·  Ctrl+A, Ctrl+C to copy")
+end
+
+-- ===========================================================================
 -- Slash commands
 -- ===========================================================================
 local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
   cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
+  if cmd == "report" then RG.ReportStep(); return end
   if cmd == "errors" or cmd == "error" or cmd == "debug" or cmd == "bug" then
     if rest == "clear" then WaypathDB.errors = {}; RG.Print("Error log cleared.") else RG.ShowErrors() end
     return

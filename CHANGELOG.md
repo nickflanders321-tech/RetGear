@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.73.0
+- **Finishing touches.**
+  - **Header switches:** four small buttons beside A-/A+ turn the arrow, tracker and sounds on and off (lit when on) and open a step report.
+  - **Search the route:** a search box on the Route tab finds any zone, hub, note or step ("hearthstone", "Kharanos") and shows the matching entries, even finished or later ones.
+  - **Report this step:** the header button (or `/wp report`) opens a copy box with your version, zone, position, the step you are on, its waypoint and quest IDs, ready to paste into a bug report.
+
 ## v0.72.0
 - **Deeper fishing.**
   - **Catch value:** every catch is priced (your AH scan, Auctionator/TSM, or the vendor price). The fishing screen, tracker and Fishing tab show what the session is worth and gold per hour.

@@ -19,8 +19,8 @@ Standing rules: no talent advice, never hide or move protected Blizzard frames.
 
 ## 3. Make it feel finished
 - **Step pager and search box:** flip through route steps one at a time; search quests, items and NPCs.
-- **Header buttons:** quick toggles for arrow, tracker and sounds in the window header.
-- **Report this step:** a button on every generated step that files a correction to the data pipeline.
+- ~~**Header buttons:**~~ (done v0.73.0) quick toggles for arrow, tracker and sounds in the window header.
+- ~~**Report this step:**~~ (done v0.73.0) a button on every generated step that files a correction to the data pipeline.
 - **First-run tour:** a three-screen intro that shows the arrow, the tracker and Shift-click.
 - **Themes:** charcoal and mint (default), plus light and high-contrast options for readability.
 - **Localisation scaffolding:** move strings into a table so other languages can be added.

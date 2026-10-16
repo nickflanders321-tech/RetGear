@@ -1085,6 +1085,18 @@ local function renderRoute()
   end
   local function count(where) local c = 0; for _, e in ipairs(entries) do if e.where == where then c = c + 1 end end; return c end
 
+  -- search box: every entry whose zone, hub, notes or steps mention the words
+  local sq = (state.search or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+  if sq ~= "" then
+    local hits = 0
+    for _, e in ipairs(entries) do
+      local hay = (e.r.zone .. " " .. (e.r.hub or "") .. " " .. (e.r.notes or "")):lower()
+      if e.steps then for _, t in ipairs(e.steps) do hay = hay .. " " .. t:lower() end end
+      if hay:find(sq, 1, true) then hits = hits + 1; card(e, true) end
+    end
+    if hits == 0 then n = n + 1; setHeader(getRow(n), "No route entry matches \"" .. state.search .. "\"") end
+    return n
+  end
   -- nothing at your exact level (a new character that ticked its starting zone, say): the next zone is "Now"
   if count("now") == 0 then
     for _, e in ipairs(entries) do if e.where == "next" then e.where = "now"; e.upNext = true; break end end
@@ -2138,7 +2150,18 @@ function RG.RefreshUINow()
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
   frame.near:SetShown(state.tab == "guide")
-  if frame.search then frame.search:SetShown(state.tab == "settings") end
+  if state.searchFor ~= state.tab then
+    state.searchFor = state.tab; state.search = ""
+    if frame.search then frame.search:SetText("") end
+  end
+  if frame.search then
+    frame.search:SetShown(state.tab == "settings" or state.tab == "route")
+    frame.search.hint:SetText(state.tab == "route" and "Search the route" or "Search settings")
+  end
+  for _, b in ipairs(frame.hdr or {}) do
+    local on = b.isOn()
+    b.ic:SetDesaturated(not on); b.ic:SetVertexColor(on and T.gold[1] or 0.6, on and T.gold[2] or 0.6, on and T.gold[3] or 0.6, 1)
+  end
   frame.scan:SetShown(state.tab == "ah")
   -- stack rows with their own heights
   local y = 0
@@ -2239,7 +2262,29 @@ local function build()
     return b
   end
   local plus = sizeBtn("A+", 0.1, close)
-  sizeBtn("A-", -0.1, plus)
+  local minus = sizeBtn("A-", -0.1, plus)
+  -- quick switches: report a step, sounds, tracker, arrow
+  frame.hdr = {}
+  local function hdrToggle(key, iconPath, tipTitle, tipText, action, isOn, anchor)
+    local b = panelButton(frame, "", 26, 20)
+    b:SetPoint("RIGHT", anchor, "LEFT", -8, 0)
+    b.ic = b:CreateTexture(nil, "OVERLAY"); b.ic:SetSize(14, 14); b.ic:SetPoint("CENTER"); b.ic:SetTexture(iconPath)
+    b.isOn = isOn
+    b:SetScript("OnClick", function() action(); RG.RefreshUI() end)
+    local enter, leave = b:GetScript("OnEnter"), b:GetScript("OnLeave")
+    b:SetScript("OnEnter", function(self) enter(self); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText(tipTitle); if tipText then GameTooltip:AddLine(tipText, 1, 1, 1, true) end; GameTooltip:Show() end)
+    b:SetScript("OnLeave", function(self) leave(self); GameTooltip:Hide() end)
+    frame.hdr[#frame.hdr + 1] = b
+    return b
+  end
+  local a1 = hdrToggle("arrow", "Interface\\Minimap\\MinimapArrow", "Arrow", "Turn the waypoint arrow on or off.",
+    function() RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end end, function() return RG.Opt("arrow") end, minus)
+  local a2 = hdrToggle("tracker", "Interface\\Icons\\INV_Misc_Book_09", "Tracker", "Show or hide the quest tracker.",
+    function() RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end end, function() return RG.Opt("tracker") end, a1)
+  local a3 = hdrToggle("sounds", "Interface\\Common\\VoiceChat-Speaker", "Sounds", "Pop-up sounds on or off.",
+    function() RG.db.sounds = not RG.Opt("sounds") end, function() return RG.Opt("sounds") end, a2)
+  local a4 = hdrToggle("report", "Interface\\Icons\\INV_Misc_Note_01", "Report this step", "Copy what you are on (step, quests, position) to paste into a bug report.",
+    function() if RG.ReportStep then RG.ReportStep() end end, function() return true end, a3)
 
   -- tab strip: a rounded track with the open tab as a raised pill
   tabs = {}
