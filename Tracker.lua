@@ -302,7 +302,14 @@ local function build()
 end
 
 -- Sections fold with a click on their header (remembered between sessions).
-local function folded(key) return key and RG.db.trackerFold and RG.db.trackerFold[key] end
+-- Professions and Reminders start folded so the tracker stays calm; a click opens them and remembers
+local DEFAULT_FOLD = { profs = true, reminders = true }
+local function folded(key)
+  if not key then return nil end
+  local v = RG.db.trackerFold and RG.db.trackerFold[key]
+  if v == nil then return DEFAULT_FOLD[key] end
+  return v
+end
 local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
 local function section(n, y, label, key, right)
   local b = line(n)
@@ -312,7 +319,7 @@ local function section(n, y, label, key, right)
   if key then
     b.onClick = function()
       RG.db.trackerFold = RG.db.trackerFold or {}
-      RG.db.trackerFold[key] = not RG.db.trackerFold[key] or nil
+      RG.db.trackerFold[key] = not folded(key)
       RG.RefreshTracker()
     end
     b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
@@ -380,6 +387,13 @@ function RG.RefreshTracker()
   local rested = GetXPExhaustion and GetXPExhaustion()
   if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
   tr.lvl:SetText("Level " .. lvl .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or ""))
+  -- the header names the zone you are working through
+  do
+    local ze = not (RG.IsAlt and RG.IsAlt()) and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+    tr.title:SetText(ze and ze.zone or "Waypath+"); tr.title:SetWidth(0)
+    if (tr.title:GetStringWidth() or 0) > W - 160 then tr.title:SetWidth(W - 160) end
+    if tr.title.SetWordWrap then tr.title:SetWordWrap(false) end
+  end
   tr.foot:SetText(rate and string.format("%.0f XP/h  ·  %s to level", rate, RG.FormatETA(eta) or "?") or "")
   tr.pct:SetText(max and max > 0 and lvl < 60 and string.format("%d%%", xp / max * 100) or "")
   tr.xp:SetWidth(math.max(1, (W - 2) * ((max and max > 0) and xp / max or 1)))
@@ -420,7 +434,7 @@ function RG.RefreshTracker()
   local n, y = 0, 0
   -- bank alt: just the shopping list for your main
   if RG.IsAlt and RG.IsAlt() then
-    tr.lvl:SetText("Bank alt for " .. (RG.MainName() or "your main"))
+    tr.lvl:SetText("Bank alt for " .. (RG.MainName() or "your main")); tr.title:SetText("Waypath+")
     -- secret guide: walk a new alt to the Auction House
     local gl, gdone, gtotal = nil, 0, 0
     if RG.AltGuideLines then gl, gdone, gtotal = RG.AltGuideLines() end
@@ -610,12 +624,14 @@ function RG.RefreshTracker()
         if first and first.wp and (first.act == "turnin" or first.act == "pickup") then RG.AutoPin(sk .. "@" .. first.act .. first.id, first.wp)
         elseif wp then RG.AutoPin(sk, wp) end
       end
-      local VERB = { turnin = GREEN .. "Hand in|r ", pickup = "|cffffd100Pick up|r ", doing = "|cffffffffDo|r ", later = GREY .. "Later:|r " }
+      -- an icon per kind of task, like the quest log: ? hand in, ! pick up, sword to do, clock for later
+      local VERB = { turnin = "|TInterface\\GossipFrame\\ActiveQuestIcon:13:13:0:-1|t ", pickup = "|TInterface\\GossipFrame\\AvailableQuestIcon:13:13:0:-1|t ",
+        doing = "|TInterface\\Icons\\INV_Sword_27:13:13:0:-1:64:64:5:59:5:59|t ", later = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:13:13:0:-1:64:64:5:59:5:59|t " }
       local shownL = 0
       for _, l in ipairs(qlines) do
         if shownL < 6 then
           shownL = shownL + 1
-          local nameCol = (l.act == "later") and GREY or "|cffffffff"
+          local nameCol = (l.act == "later" and GREY) or (l.act == "turnin" and "|cff8be0a4") or (l.act == "doing" and "|cff9fd4ff") or "|cffffffff"
           local rt
           if l.act == "turnin" then rt = GREEN .. "to " .. (l.npc or "the quest giver") .. "|r"
           elseif l.act == "pickup" then rt = GREY .. (l.npc and ("from " .. l.npc) or "starts from an item or object") .. "|r"
@@ -804,7 +820,7 @@ function RG.RefreshTracker()
     if #entries > 0 then
       table.sort(entries, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.name < b.name end)
       local isFolded
-      n = n + 1; y, isFolded = section(n, y, "Professions", "profs")
+      n = n + 1; y, isFolded = section(n, y, "Professions", "profs", GREY .. #entries .. "|r")
       if not isFolded then
         for i = 1, math.min(3, #entries) do
           local e = entries[i]
@@ -825,7 +841,7 @@ function RG.RefreshTracker()
     for i, rr in ipairs(rem) do rr.i = i end
     table.sort(rem, function(a, b) local pa, pb = a[3] or 3, b[3] or 3; if pa ~= pb then return pa < pb end return a.i < b.i end)
     local isFolded
-    n = n + 1; y, isFolded = section(n, y, "Reminders", "reminders", #rem > 4 and (GREY .. #rem .. "|r") or nil)
+    n = n + 1; y, isFolded = section(n, y, "Reminders", "reminders", GREY .. #rem .. "|r")
     if not isFolded then
       for i = 1, math.min(4, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2] }) end
       if #rem > 4 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rem - 4) .. " more  ·  turn reminders off in Settings|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("settings") end end }) end

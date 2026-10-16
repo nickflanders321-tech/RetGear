@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.69.0
+- **Tracker redesign:** the header now names the zone you're working through. Quest rows use the quest-log icons (? hand in, ! pick up, a sword for objectives, a clock for later) with coloured names. Professions and Reminders start folded, with a count, so the tracker shows only what to do now (click a heading to open it; it remembers).
+
 ## v0.68.0
 - **A new character no longer sees "Everything for your level is done."** When nothing matches your exact level (for example after ticking the starting zone), the next zone is shown as "Up next" instead.
 - Levels 1-10 hide the long "Later" list so the first screen is just what to do now and what comes next.
