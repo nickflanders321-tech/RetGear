@@ -22,6 +22,7 @@ Standing rules: no talent advice, never hide or move protected Blizzard frames.
 - ~~**Header buttons:**~~ (done v0.73.0) quick toggles for arrow, tracker and sounds in the window header.
 - ~~**Report this step:**~~ (done v0.73.0) a button on every generated step that files a correction to the data pipeline.
 - ~~**First-run tour:** a three-screen intro that shows the arrow, the tracker and Shift-click.~~ (done v0.74.0)
+- ~~**One objective, quest planner, requirements, ratings, goals, play-test log:**~~ (done v0.84.0)
 - ~~**Themes:** charcoal and mint (default), plus light and high-contrast options for readability.~~ (done v0.76.0)
 - ~~**Localisation scaffolding:** move strings into a table so other languages can be added.~~ (done v0.74.0)
 

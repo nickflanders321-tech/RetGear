@@ -47,8 +47,8 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
 -- prices, gold tips and the bank alt. Sub-tabs pick the section.
-local GROUPS = { route = { "route", "flights" }, prof = { "prof", "fish" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
-local SUBLABEL = { route = "Leveling route", flights = "Flight paths", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
+local GROUPS = { route = { "route", "plan", "flights" }, prof = { "prof", "fish" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
+local SUBLABEL = { route = "Leveling route", plan = "Quest plan", flights = "Flight paths", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
 local PARENT = {}
 for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -845,10 +845,41 @@ local function renderProf()
   return n
 end
 
+-- The current objective as a row (shared by the Route and Quest plan tabs).
+local ACT_ICON = { turnin = "Interface\\GossipFrame\\ActiveQuestIcon", pickup = "Interface\\GossipFrame\\AvailableQuestIcon",
+  doing = "Interface\\Icons\\INV_Sword_27", goal = "Interface\\Icons\\INV_Misc_Map_01", route = "Interface\\Icons\\INV_Misc_Map_01", dungeon = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01" }
+local function nowRow(n, withReqs)
+  local obj = RG.Objective and RG.Objective()
+  if not obj then return n, nil end
+  n = n + 1
+  local r = getRow(n)
+  local more = (obj.count and obj.count > 1) and (GREY .. "  ·  stop " .. (obj.index or 1) .. " of " .. obj.count .. "|r") or ""
+  setItem(r, nil, nil, "|cffffffff" .. obj.text .. "|r", (obj.why or "") .. more, obj.tag and (obj.tagColor .. obj.tag .. "|r") or "", obj.dist and RG.FormatYards(math.floor(obj.dist)) or "", "gold")
+  r.icon:SetTexture(ACT_ICON[obj.act or obj.kind] or ACT_ICON.route)
+  local wp = obj.wp
+  r.onClick = function() if wp then RG.Follow(wp) end end
+  r.onDoubleClick = function() if wp then RG.ArrowTo(wp) end end
+  r.onRightClick = (obj.stop and obj.count and obj.count > 1) and function() RG.SkipStop(obj.stop); RG.SyncObjective(RG.Objective(true)); RG.RefreshUI(); RG.RefreshTracker() end or nil
+  r.tip = (obj.tag and (obj.tagColor .. obj.tag .. "|r: " .. (obj.tagNote or "") .. "\n\n") or "") .. "Click for the map pin and arrow. Double-click turns the arrow on or off." .. (r.onRightClick and " Right-click skips this stop." or "")
+  if withReqs then
+    for _, rq in ipairs(obj.reqs or {}) do
+      if rq.ok ~= nil or rq.kind == "obj" then
+        n = n + 1
+        local sr = getRow(n)
+        setItem(sr, nil, nil, (rq.ok and GREY or "|cffffffff") .. rq.text .. "|r", "", "", "", nil, nil, true)
+        sr.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\" .. (rq.ok and "Disc" or "Ring")); sr.icon:SetTexCoord(0, 1, 0, 1)
+        sr.icon:SetVertexColor(rq.ok and T.gold[1] or 0.5, rq.ok and T.gold[2] or 0.5, rq.ok and T.gold[3] or 0.5, 1)
+      end
+    end
+  end
+  return n, obj
+end
+
 local function renderRoute()
   local lvl = UnitLevel("player")
   local mining = RG.Skill("Mining") or 0
   local n = 0
+  if (state.search or "") == "" then n = nowRow(n) end
   local KIND = { zone = GREY .. "Questing|r", dungeon = "|cffA58BD8Dungeon|r", pala = GOLD .. "Paladin|r", travel = "|cff6FA8DCTravel|r" }
   local ICON = { zone = 134269, dungeon = 136058, pala = 135920, travel = "Interface\\Icons\\Ability_Mount_Wyvern_01" }
   RG.db.stepsDone = RG.db.stepsDone or {}
@@ -1680,6 +1711,101 @@ local function renderFlights()
   return n
 end
 
+local function renderPlan()
+  local n = 0
+  local obj
+  n = n + 1; setHeader(getRow(n), "Right now")
+  n, obj = nowRow(n, true)
+  if not obj then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffNothing planned yet|r", "Accept a quest and Waypath+ plans the trip. Zones with no quest data: add your own goal with /wp goto 45 60 Name.", "", "")
+    getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01")
+  end
+  local plan = RG.GuidePlan and RG.GuidePlan() or { stops = {}, elsewhere = 0 }
+  local stops = plan.stops or {}
+  if #stops > 0 then
+    local mins = plan.eta and math.max(1, math.floor(plan.eta / 60 + 0.5))
+    n = n + 1; setHeader(getRow(n), "Your trip  ·  " .. #stops .. " stop" .. (#stops > 1 and "s" or "") .. (mins and ("  ·  about " .. mins .. " min on foot") or ""))
+    for i, st in ipairs(stops) do
+      n = n + 1
+      local r = getRow(n)
+      local cur = obj and obj.stop == st
+      local rest = {}
+      for k = 2, #st.items do rest[#rest + 1] = RG.StopText and RG.StopText({ items = { st.items[k] } }, true) or st.items[k].title end
+      local it = st.items[1]
+      local tag, col = RG.QuestWorth(it.level, it.group, it.id)
+      setItem(r, nil, nil, "|cffffffff" .. i .. ".  " .. (RG.StopText and RG.StopText(st) or it.title) .. "|r",
+        (#rest > 0 and ("Also here: " .. table.concat(rest, ", ")) or ((it.act == "doing" and "Quest: " .. it.title) or "")) .. (cur and (GREY .. "   (you are heading here)|r") or ""),
+        tag and (col .. tag .. "|r") or "", st.dist and ("+" .. RG.FormatYards(math.floor(st.dist))) or "", cur and "gold" or nil)
+      r.icon:SetTexture(ACT_ICON[it.act] or ACT_ICON.route)
+      local wp = st.wp
+      r.onClick = function() RG.Follow(wp) end
+      r.onDoubleClick = function() RG.ArrowTo(wp) end
+      r.onRightClick = function() RG.SkipStop(st); RG.SyncObjective(RG.Objective(true)); RG.RefreshUI(); RG.RefreshTracker() end
+      r.tip = "Click to be guided here. Right-click to skip this stop for 10 minutes."
+    end
+  end
+  if (plan.elsewhere or 0) > 0 then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffff" .. plan.elsewhere .. " task" .. (plan.elsewhere > 1 and "s are" or " is") .. " on another continent|r", "They join the plan when you arrive. The travel tips on the Route tab show how to get there.", "", "")
+    getRow(n).icon:SetTexture("Interface\\Icons\\Ability_Mount_Wyvern_01")
+  end
+  -- quests that are not worth your time right now
+  local weak = {}
+  for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+    if not q.complete then
+      local tag, col, note, rank = RG.QuestWorth(q.level, q.group, q.id)
+      if tag and rank <= 1 then weak[#weak + 1] = { q = q, tag = tag, col = col, note = note } end
+    end
+  end
+  if #weak > 0 then
+    n = n + 1; setHeader(getRow(n), "Worth a second look  ·  " .. #weak)
+    for i = 1, math.min(6, #weak) do
+      local w = weak[i]
+      n = n + 1
+      local r = getRow(n)
+      setItem(r, nil, nil, "|cffffffff" .. w.q.title .. "|r", w.note, w.col .. w.tag .. "|r", w.q.level and ("L" .. w.q.level) or "")
+      r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+      local q = w.q
+      r.onClick = function() RG.OpenQuest(q.title, q.id) end
+      r.tip = "Click to open this quest in your log. /wp greys offers to drop the grey ones."
+    end
+  end
+  -- quest givers close by
+  local near = RG.WhatsNear and RG.WhatsNear(500) or {}
+  local newOnes = {}
+  for _, e in ipairs(near) do if e.act == "pickup" and (e.dist or 0) < 600 then newOnes[#newOnes + 1] = e end end
+  if #newOnes > 0 then
+    n = n + 1; setHeader(getRow(n), "New quests near you")
+    for i = 1, math.min(4, #newOnes) do
+      local e = newOnes[i]
+      n = n + 1
+      local r = getRow(n)
+      setItem(r, nil, nil, "|cffffffff" .. e.text .. "|r", e.note or "", e.tag and (e.color .. e.tag .. "|r") or "", RG.FormatYards(math.floor(e.dist or 0)))
+      r.icon:SetTexture(ACT_ICON.pickup)
+      local wp = e.wp
+      r.onClick = function() RG.Follow(wp) end
+      r.tip = "Click to be guided to the quest giver."
+    end
+  end
+  -- your own goals
+  local goals = RG.db.goals or {}
+  n = n + 1; setHeader(getRow(n), "Your own goals" .. (#goals > 0 and ("  ·  " .. #goals) or ""))
+  for i, g in ipairs(goals) do
+    n = n + 1
+    local r = getRow(n)
+    setItem(r, nil, nil, "|cffffffff" .. i .. ".  " .. tostring(g[4]) .. "|r", string.format("%.1f, %.1f", g[2], g[3]), i == 1 and (GOLD .. "Heading here|r") or "", "", i == 1 and "gold" or nil)
+    r.icon:SetTexture(ACT_ICON.goal)
+    r.onClick = function() RG.Follow(g) end
+    r.onRightClick = function() RG.RemoveGoal(i) end
+    r.tip = "Click for the arrow. Right-click removes this goal."
+  end
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffAdd a goal|r", "/wp goto 45.2 60.8 Camp  ·  /wp goto pin turns your map pin into one  ·  works in zones with no quest data", "", "")
+  getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Map02")
+  return n
+end
+
 local function renderFish()
   local n = 0
   local p = RG.Professions()
@@ -1965,7 +2091,7 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "targetBar", "questItems", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows" } },
   { "Group play", { "groupDuties", "groupAlerts" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan" } },
@@ -2169,6 +2295,7 @@ local TITLES = {
   settings = { "Settings", "Turn Waypath+'s helpers on or off" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
+  plan = { "Quest plan", "The best order for the quests in your log, with what each one needs" },
   flights = { "Flight paths", "Every flight master for your faction: click one and Waypath+ guides you there" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
@@ -2184,6 +2311,7 @@ local FOOTERS = {
   ah    = "Opening the AH refreshes old prices  ·  your own searches pause the scan  ·  /wp alert [item] 25",
   settings = "Settings are saved per character (prices and window positions are shared)",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
+  plan = "Click a stop for the arrow  ·  right-click skips it for 10 minutes  ·  /wp next does it from the keyboard  ·  /wp goto adds your own goal",
   flights = "Click a flight path for the arrow  ·  fly there once to learn it  ·  /wp fp points at the nearest one you haven't learned",
   fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
@@ -2236,6 +2364,7 @@ function RG.RefreshUINow()
   elseif state.tab == "camp" then n = renderCamp()
   elseif state.tab == "fish" then n = renderFish()
   elseif state.tab == "flights" then n = renderFlights()
+  elseif state.tab == "plan" then n = renderPlan()
   else n = renderAH() end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])

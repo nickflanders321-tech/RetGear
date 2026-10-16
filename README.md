@@ -77,7 +77,14 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp spec` · `/wp heal` (2nd spec gear) · `/wp fish` · `/wp camp` · `/wp gold` · `/wp mail` · `/wp settings` | Open that tab |
 | `/wp fp` · `/wp fp list` | Arrow to the nearest flight path you have not learned · open the Flight paths tab |
 | `/wp auto` | Auto accept / turn in on or off |
-| `/wp next` | Pin your nearest quest objective (or turn-in) |
+| `/wp next` | Point the arrow at your current objective; press again to skip to the next stop |
+| `/wp plan` · `/wp plan chat` | Open the Quest plan tab · print the planned stops in chat |
+| `/wp near` · `/wp near go` | What is worth doing close by (rated) · arrow to the first |
+| `/wp why` | Why the guide chose this objective, and what it needs (ticked live) |
+| `/wp goto 45 60 Name` · `goto pin` · `goto list` · `goto done` · `goto clear` | Your own goals, followed one at a time (works in zones with no quest data) |
+| `/wp minimal` | Tracker with only the Now line (again to bring everything back) |
+| `/wp share` | Share your current objective with your party (and see theirs) |
+| `/wp log` · `log copy` · `log clear` | Play-test log: arrivals, skipped stops, pins you set yourself |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
 | `/wp way 45 60` | Pin a spot in your zone and follow the arrow |
 | `/wp pace` | Time at this level, last level and your average |

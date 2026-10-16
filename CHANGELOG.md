@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.84.0
+- One objective for everything. The arrow, the tracker's new **Now** line, the collapsed tracker and the new **Quest plan** tab all follow the same current objective, so they never disagree. After a reload or relog the arrow goes back to it.
+- Quest planner: the quests in your log (and the route's next pick-ups) are ordered into a trip. Objectives and hand-ins that are close together share one stop, hand-ins wait for their objectives, and the arrow keeps heading for a stop until another is clearly closer. The Quest plan tab shows every stop and the walking time; right-click a stop to skip it for 10 minutes.
+- `/wp next` (and the "Next objective" key binding) points the arrow at the objective, and if it is already there it moves on to the next stop.
+- Each objective says why it was chosen and what it needs: level, earlier quests and objectives, ticked live (`/wp why`, the Now tooltip, the plan tab).
+- Quest ratings (Great, Okay, Tough, Skip, Too hard) from the quest colour, group recommendation and how many quests follow; low-value quests are listed on the plan tab.
+- `/wp near` lists what is worth doing close by. `/wp goto 45 60 Name` adds goals of your own for zones with no quest data (Riverglades), `goto pin` turns your map pin into one.
+- `/wp minimal` shows only the Now line. `/wp share` shares your current objective with your party and shows theirs.
+- Inside a dungeon the Now line shows the dungeon quest from your log and the arrow rests.
+- Play-test log (`/wp log`): arrivals and how long they took, stops you skipped, pins you set yourself, steps you skipped by hand. It is added to `/wp report`.
+- Settings: "Plan the quest trip" (on) and "Share my current objective with my party" (off).
+
 ## v0.83.2
 - Fix: the game could block the world map's quest pins ("SetPassThroughButtons during combat") because Waypath+ placed or cleared the map pin in combat. Pins and clears now wait until combat ends.
 

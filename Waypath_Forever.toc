@@ -88,6 +88,7 @@ Arcade.lua
 FishMode.lua
 Path.lua
 Speed.lua
+Guide.lua
 Travel.lua
 NodeData.lua
 Nodes.lua

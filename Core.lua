@@ -884,8 +884,8 @@ SlashCmdList.WAYPATH = function(msg)
     RG.Print("Commands (type /wp on its own to open the guide):")
     for _, line in ipairs({
       "|cffffd100Guide|r  /wp  ·  /wp setup  ·  /wp settings  ·  /wp tracker",
-      "|cffffd100Questing|r  /wp next  ·  /wp undo  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
-      "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp fp",
+      "|cffffd100Questing|r  /wp next  ·  /wp plan  ·  /wp near  ·  /wp why  ·  /wp goto 45 60 Name  ·  /wp minimal  ·  /wp undo  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
+      "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp fp  ·  /wp log",
       "|cffffd100Group|r  /wp lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /wp scan  ·  /wp autoscan  ·  /wp track [item]  ·  /wp untrack [item]  ·  /wp alert [item] 25",
       "|cffffd100Bags|r  /wp sort  ·  /wp sort bank",

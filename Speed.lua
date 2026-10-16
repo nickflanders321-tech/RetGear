@@ -143,6 +143,7 @@ local function playerWorld()
   if not pos then return nil end
   return toWorld(map, pos.x * 100, pos.y * 100)
 end
+RG.ToWorld, RG.PlayerWorld = toWorld, playerWorld
 -- Every place you could go right now: unfinished objectives and quests ready to turn in.
 function RG.QuestSpots()
   local spots = {}
@@ -633,6 +634,7 @@ local function buildArrow()
     local d = math.sqrt(dx * dx + dy * dy)
     if d < 10 then
       arrivedAt = GetTime()
+      if RG.OnArrive then pcall(RG.OnArrive, label) end
       self.tex:Hide(); self.check:Show()
       self.dist:SetText(GREEN .. "Arrived|r"); self.hint:SetText("")
       if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960) end
@@ -763,6 +765,12 @@ function RG.ArrowTo(wp)
   end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
+-- true when the pin on the map is one Waypath+ placed (not one you set yourself)
+function RG.PinIsOurs()
+  local cur = currentPin()
+  return cur and lastPlaced and samePin(cur, lastPlaced) or false
+end
+function RG.HasPin() return currentPin() ~= nil end
 function RG.ArrowTarget(wp)
   local cur = currentPin()
   return wp and cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) or false

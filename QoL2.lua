@@ -487,6 +487,12 @@ function RG.ReportStep()
       end
     end
   else L[#L + 1] = "No current route entry." end
+  local o = RG.Objective and RG.Objective(true)
+  if o then
+    L[#L + 1] = "Objective [" .. tostring(o.kind) .. "]: " .. tostring(o.text) .. (o.wp and string.format("  (map %s, %.1f, %.1f)", tostring(o.wp[1]), o.wp[2] or 0, o.wp[3] or 0) or "")
+    if o.why then L[#L + 1] = "  why: " .. o.why end
+  end
+  if RG.LogSummary and RG.db and RG.db.ptlog and #RG.db.ptlog > 0 then L[#L + 1] = ""; L[#L + 1] = RG.LogSummary() end
   L[#L + 1] = ""
   L[#L + 1] = "What looked wrong? (write here, then paste this whole box into an issue at github.com/nickflanders321-tech/RetGear/issues)"
   RG.ShowErrors(table.concat(L, "\n"), "Waypath+ step report  ·  Ctrl+A, Ctrl+C to copy")

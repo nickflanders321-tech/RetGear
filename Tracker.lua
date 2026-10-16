@@ -32,6 +32,7 @@ function RG.TickStep(sk, text)
   for i = #h, 1, -1 do if h[i].sk == sk then table.remove(h, i) end end
   h[#h + 1] = { sk = sk, text = text, t = time() }
   while #h > 10 do table.remove(h, 1) end
+  if RG.Log then RG.Log("stepskip", sk) end
   RG.RefreshTracker(); if RG.RefreshUI then RG.RefreshUI() end
 end
 -- Puts the most recent hand-ticked task back on the list. Returns its text.
@@ -448,7 +449,12 @@ function RG.RefreshTracker()
     tr.body:Hide(); tr.min.t:SetText("+")
     -- compact: one calm line with the next thing to do
     local txt
-    if not (RG.IsAlt and RG.IsAlt()) then
+    local okO, objc = pcall(RG.Objective or function() end)
+    if okO and objc and objc.text then
+      txt = plain(objc.text)
+      if #txt > 110 then txt = txt:sub(1, 107):gsub("[%s%p]+$", "") .. "..." end
+    end
+    if not txt and not (RG.IsAlt and RG.IsAlt()) then
       local ok, r = pcall(currentEntry)
       local steps = ok and r and RG.STEPS[r.zone .. "|" .. r.from]
       if steps then
@@ -514,6 +520,15 @@ function RG.RefreshTracker()
     end
     y = y + 5
     MAXQ = 6 -- keep the tracker short while fishing
+  end
+  -- 0b. now: the one thing to do next (the same objective the arrow follows)
+  do
+    local okN, nl = pcall(RG.NowLines or function() end)
+    if okN and nl and #nl > 0 then
+      n = n + 1; y = section(n, y, "Now", nil, nl.right)
+      for _, l in ipairs(nl) do n = n + 1; y = item(n, y, l.text, l.opts) end
+      y = y + 5
+    end
   end
   -- 1. your quests: level, name, progress, distance
   local quests = RG.MyQuests and RG.MyQuests() or {}
@@ -665,7 +680,7 @@ function RG.RefreshTracker()
           onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
           onRightClick = wp and function() RG.Follow(wp) end or nil })
       -- the arrow goes to the first thing to do: a hand-in, else a pick-up, else the hub
-      if RG.AutoPin then
+      if RG.AutoPin and not (RG.Opt("smartPlan") and RG.Objective and RG.Objective()) then
         local first = qlines[1]
         if first and first.wp and (first.act == "turnin" or first.act == "pickup") then RG.AutoPin(sk .. "@" .. first.act .. first.id, first.wp)
         elseif wp then RG.AutoPin(sk, wp) end

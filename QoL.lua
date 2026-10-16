@@ -311,6 +311,8 @@ local TOUR = {
   { "The window", "Open it from the tracker book, the minimap button or " .. GOLD .. "/wp|r.\n\n"
     .. "Route has every zone and step (with a search box), Gear guide and My gear compare items, Professions and Gold & AH help your trades. "
     .. "The small buttons at the top turn the arrow, tracker and sounds on and off, and report a wrong step." },
+  { "One objective", "The arrow, the tracker's " .. GOLD .. "Now|r line and the " .. GOLD .. "Quest plan|r tab all follow the same thing: the best next stop for the quests in your log, with the others nearby bundled in. "
+    .. GOLD .. "/wp next|r (or a key you bind) points the arrow at it, and skips to the next stop if it is already there. " .. GOLD .. "/wp near|r shows what is worth doing close by, " .. GOLD .. "/wp goto 45 60 Camp|r adds a goal of your own, " .. GOLD .. "/wp minimal|r keeps only the Now line." },
   { "And more", GOLD .. "/wp node|r points the arrow at the next ore or herb you can still gather, " .. GOLD .. "/wp fp|r at the nearest flight path you have not learned.\n"
     .. GOLD .. "Fishing|r hides the interface and shows your lure, food and campfire, what each catch is worth and what to do with it.\n"
     .. GOLD .. "/wp report|r copies the step you are on for a bug report. " .. GOLD .. "/wp setup|r changes your choices any time." },
@@ -428,7 +430,7 @@ end
 -- Key Bindings (Esc > Options > Keybindings > AddOns > Waypath+)
 BINDING_HEADER_WAYPATH = "Waypath+"
 BINDING_NAME_WAYPATH_TOGGLE = "Open or close the guide"
-BINDING_NAME_WAYPATH_NEXT = "Pin my nearest quest objective"
+BINDING_NAME_WAYPATH_NEXT = "Next objective (arrow to it, or skip to the next stop)"
 BINDING_NAME_WAYPATH_ARROW = "Arrow on or off"
 BINDING_NAME_WAYPATH_TRACKER = "Show or hide the tracker"
 BINDING_NAME_WAYPATH_UNDO = "Undo my last ticked task"
