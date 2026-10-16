@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.55.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v0.55.0
 - **Route steps for five more dungeons:** Excavation Site (Wetlands), City of Dalaran, Gnomeregan, Razorfen Downs and the Temple of Atal'Hakkar now have step-by-step guidance on the route: the quests to collect first, where the entrance is (with a map pin), the boss order, and the quests to hand in. Gnomeregan explains the Goblin Transponder Horde use to get in, and Dalaran lists the Tarren Mill key chain.
 - **Honest fishing numbers:** the Fishing tab now says plainly that zone skill levels are Classic's until WoW Forever publishes its own, instead of presenting them as confirmed.
