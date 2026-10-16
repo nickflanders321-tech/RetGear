@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.83.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v0.83.0
 - Cards, UI: a pack summary after the flips (best pull, new cards, set and goal rewards) with an "Open another" button; sparkle on holo and full-art cards; click a card for a large detail view (all four prints, set, power, showcase, duel card, link in chat, offer to group); search, sort (collection, rarity, name, power) and show (all, owned, missing, extras) controls; a showcase of up to nine favourites (right-click a card); progress for items, NPCs, places and raiders.
 - Cards, features: Sets with coin rewards for finishing them; a free pack every day (up to 3 saved); a pity timer (a holo or full art at least every 7 packs); three daily goals; choose which card duels for you, with a win streak bonus; trading extras with your party; the Today and Stats screens; characters you mouse over become Raider cards; a once-a-day chat hint when you can afford a pack.
