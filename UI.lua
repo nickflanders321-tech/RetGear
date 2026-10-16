@@ -2454,6 +2454,7 @@ function RG.RefreshUINow()
   for _, r in ipairs(rows) do r:Hide() end
   updateHeader()
   local n
+  local okRender, errRender = pcall(function()
   if state.tab == "guide" then n = renderGuide()
   elseif state.tab == "gear" then n = renderGear()
   elseif state.tab == "route" then n = renderRoute()
@@ -2469,6 +2470,16 @@ function RG.RefreshUINow()
   elseif state.tab == "flights" then n = renderFlights()
   elseif state.tab == "plan" then n = renderPlan()
   else n = renderAH() end
+  end)
+  if not okRender then
+    for _, r in ipairs(rows) do r:Hide() end
+    n = 0
+    if RG.RecordError then pcall(RG.RecordError, tostring(errRender)) end
+    local er = getRow(math.max(1, (type(n) == "number" and n or 0) + 1))
+    setItem(er, nil, nil, RED .. "This page hit an error|r", GREY .. tostring(errRender):sub(1, 220) .. "|r", "", "", nil, nil, true)
+    er.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    n = math.max(1, (type(n) == "number" and n or 0) + 1)
+  end
   sectionTitle:SetText(TITLES[state.tab][1]); frame.sectionSub:SetText(TITLES[state.tab][2])
   footer:SetText(FOOTERS[state.tab])
   frame.near:SetShown(state.tab == "guide")
@@ -2514,6 +2525,11 @@ function RG.RefreshUINow()
   end
   frame.scan:ClearAllPoints()
   if anchor then frame.scan:SetPoint("RIGHT", anchor, "LEFT", -10, 0) else frame.scan:SetPoint("TOPRIGHT", -18, -116) end
+  -- the search box sits beside the sub-tabs, never on top of them
+  if frame.search then
+    frame.search:ClearAllPoints()
+    if anchor then frame.search:SetPoint("RIGHT", anchor, "LEFT", -12, 0) else frame.search:SetPoint("TOPRIGHT", -24, -118) end
+  end
 end
 
 -- Classic red Blizzard button

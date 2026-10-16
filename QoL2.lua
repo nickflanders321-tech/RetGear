@@ -32,7 +32,7 @@ local function recordError(msg)
   if not told then
     told = true
     if C_Timer then C_Timer.After(0.1, function()
-      RG.Print(GOLD .. "Waypath+ hit an error|r" .. GREY .. " (it kept running). Type|r /wp errors " .. GREY .. "to see and copy it for a bug report.|r")
+      RG.Print("hit an error" .. GREY .. " (it kept running): " .. tostring(msg):gsub("^.-([%w_]+%.lua:%d+:)", "%1"):sub(1, 160) .. ". Type|r /wp errors " .. GREY .. "to copy it for a bug report.|r")
     end) end
   end
 end

@@ -179,6 +179,7 @@ end
 -- ---------------------------------------------------------------------------
 local function say(txt, hold)
   if not win then return end
+  win.msg:ClearAllPoints(); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, S.mode == "mull" and 462 or 372)
   win.msg:SetText(txt or ""); S.msgT = clock + (hold or 3)
 end
 
@@ -623,7 +624,7 @@ local function makeBoard()
     w:HookScript("OnEnter", function(self) self.hov = true; if game and game.p[1].hand[self.hslot] then preview(game.p[1].hand[self.hslot], nil, 1) end; refresh() end)
     w:HookScript("OnLeave", function(self) self.hov = false; refresh() end)
     w:Hide(); ui.hand[i] = w
-    local b = bd:CreateTexture(nil, "ARTWORK"); b:SetTexture(U.MEDIA .. "Back"); b:SetTexCoord(0, 1, 0, 358 / 512); b:SetSize(34, 48); b:Hide(); ui.back[i] = b
+    local b = bd:CreateTexture(nil, "ARTWORK"); b:SetTexture(U.MEDIA .. "Back"); b:SetTexCoord(0, 1, 0, 358 / 512); b:SetSize(24, 34); b:Hide(); ui.back[i] = b
   end
   -- mana
   ui.mana = {}
@@ -646,7 +647,7 @@ local function makeBoard()
     S.sure = false; self:SetText("Concede"); game.over = true; game.winner = 2; afterAction()
   end)
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
-  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 260); win.mullBtn:Hide()
+  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 418); win.mullBtn:Hide()
   -- the end screen
   win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 420, 230); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
   win.over.title = U.fs(win.over, "title", 34); win.over.title:SetPoint("TOP", 0, -30)
@@ -719,7 +720,7 @@ refresh = function()
   for i = 1, 10 do
     local b = ui.back[i]
     if i <= nb then
-      b:ClearAllPoints(); b:SetPoint("CENTER", win, "BOTTOMLEFT", 600 + (i - (nb + 1) / 2) * 30, 670); b:Show()
+      b:ClearAllPoints(); b:SetPoint("CENTER", win, "BOTTOMLEFT", 600 + (i - (nb + 1) / 2) * 26, 681); b:Show()
     else b:Hide() end
   end
   -- my hand
@@ -730,7 +731,7 @@ refresh = function()
     if key then
       local x = 600 - (n - 1) * step / 2 + (i - 1) * step
       local y = (w.hov and S.mode ~= "mull") and 108 or 68
-      if S.mode == "mull" then y = 130 end
+      if S.mode == "mull" then y = 296 end
       pt(w, x, y)
       w:SetFrameLevel(U.lv(win.board) + 10 + i * 6 + (w.hov and 80 or 0))
       w.hslot = i
@@ -746,7 +747,7 @@ refresh = function()
   win.endBtn:SetEnabled(mine and S.mode == "play")
   local idle = mine and S.mode == "play" and #B.actions(game, 1) == 0
   win.endBtn:SetActive(idle and true or false)
-  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "Choose your opening hand" or (game.cur == 1 and "Your turn" or "Opponent's turn")))
+  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "Opening hand" or (game.cur == 1 and "Your turn" or "Opponent's turn")))
 end
 
 -- ---------------------------------------------------------------------------
@@ -863,7 +864,7 @@ local function buildMenu()
   menu.lvlInfo = U.fs(p, "body", 13); menu.lvlInfo:SetPoint("TOPLEFT", 440, -283); menu.lvlInfo:SetWidth(380); menu.lvlInfo:SetJustifyH("LEFT"); menu.lvlInfo:SetTextColor(0.85, 0.8, 0.7)
   menu.play = U.gbtn(p, "Enter the Arena", 300, 46, function() startMatch() end, true); menu.play:SetPoint("TOP", 0, -334)
   label("HOW IT PLAYS", -400)
-  local rules = U.fs(p, "body", 13); rules:SetPoint("TOPLEFT", 24, -422); rules:SetWidth(790); rules:SetJustifyH("LEFT"); rules:SetJustifyV("TOP"); rules:SetTextColor(0.82, 0.78, 0.7)
+  local rules = U.fs(p, "body", 13); rules:SetPoint("TOPLEFT", 24, -422); rules:SetWidth(790); rules:SetJustifyH("LEFT"); rules:SetJustifyV("TOP"); rules:SetTextColor(0.82, 0.78, 0.7); if rules.SetSpacing then rules:SetSpacing(3) end
   rules:SetText("Each hero has 30 health. You gain one more mana crystal every turn, up to ten, and draw a card.\n"
     .. "Click a card in your hand to play it. Click a minion that glows green, then something to attack. New minions must wait a turn, unless they have Charge (anything) or Rush (minions only).\n"
     .. "Taunt must be attacked first. Divine Shield blocks one hit. Battlecries happen when a card is played, deathrattles when it dies, and some minions act at the end of your turn.\n"
