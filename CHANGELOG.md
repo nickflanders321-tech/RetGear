@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.63.2
+- The arrow is green when you are facing the target (amber to the side, soft red when it is behind you).
+
 ## v0.63.1
 - **Crystal arrow:** the 3D arrow is redrawn as a faceted, cut-glass arrow with a ridge down its length, glowing edges and a soft shadow beneath. It glows cyan when you face the target, amber when it is off to the side and soft red when it is behind you.
 

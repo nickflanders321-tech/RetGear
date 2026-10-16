@@ -514,9 +514,9 @@ end
 -- when it's in another zone, and a check mark when you arrive.
 local function lerp(a, b, t) return a + (b - a) * t end
 local function angleColor(rel)
-  -- rel: 0 = straight ahead, pi = behind. cyan when you face it, amber to the side, soft red behind
+  -- rel: 0 = straight ahead, pi = behind. green when you face it, amber to the side, soft red behind
   local t = math.min(1, math.abs(rel) / math.pi)
-  if t < 0.35 then local k = t / 0.35; return lerp(0.30, 1, k), lerp(0.85, 0.78, k), lerp(1, 0.30, k) end
+  if t < 0.35 then local k = t / 0.35; return lerp(0.28, 1, k), lerp(0.9, 0.78, k), lerp(0.38, 0.30, k) end
   local k = (t - 0.35) / 0.65; return 1, lerp(0.78, 0.35, k), lerp(0.30, 0.35, k)
 end
 local function fmtTime(sec)
