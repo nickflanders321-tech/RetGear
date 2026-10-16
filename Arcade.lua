@@ -284,29 +284,102 @@ local function filtered(a)
   return list
 end
 
+local function playSound(finish, tier)
+  if not (PlaySound and SOUNDKIT) then return end
+  local id
+  if tier == 6 then id = SOUNDKIT.UI_LEGENDARY_LOOT_TOAST or SOUNDKIT.LEVEL_UP
+  elseif finish and finish >= 3 then id = SOUNDKIT.UI_EPICLOOT_TOAST or SOUNDKIT.IG_QUEST_LIST_COMPLETE
+  elseif finish == 2 then id = SOUNDKIT.IG_QUEST_LIST_OPEN
+  else id = SOUNDKIT.IG_BACKPACK_OPEN end
+  if id then pcall(PlaySound, id) end
+end
+
+-- a face-down card: click it and the back slides shut to show the card under it
+local function makeCover(card)
+  local c = CreateFrame("Button", nil, card, "BackdropTemplate")
+  c:SetPoint("CENTER"); c:SetSize(card.cw, card.ch); local lvl = card:GetFrameLevel(); c:SetFrameLevel((type(lvl) == "number" and lvl or 1) + 10)
+  RG.Round(c, 0.09, 0.14, 0.15, 1, 8)
+  c.edge = c:CreateTexture(nil, "BACKGROUND"); c.edge:SetPoint("TOPLEFT", -2, 2); c.edge:SetPoint("BOTTOMRIGHT", 2, -2); c.edge:SetColorTexture(0.31, 0.82, 0.77, 1)
+  c.shine = c.edge; c.finish = 3; c.phase = math.random()
+  c.logo = c:CreateTexture(nil, "ARTWORK"); c.logo:SetSize(card.cw * 0.5, card.cw * 0.5); c.logo:SetPoint("CENTER", 0, 8)
+  c.logo:SetTexture(RG.LOGO or "Interface\\Icons\\INV_Misc_Book_09"); c.logo:SetAlpha(0.9)
+  c.hint = RG.NewText(c, "GameFontNormalSmall"); c.hint:SetPoint("BOTTOM", 0, 10); c.hint:SetText("Click to flip"); c.hint:SetTextColor(0.5, 0.8, 0.77)
+  c.glow = c:CreateTexture(nil, "OVERLAY"); c.glow:SetAllPoints(); c.glow:SetColorTexture(1, 1, 1, 0); c.glow:SetBlendMode("ADD")
+  c:SetScript("OnEnter", function(self) self.glow:SetAlpha(0.12) end)
+  c:SetScript("OnLeave", function(self) self.glow:SetAlpha(0) end)
+  card.cover = c
+  return c
+end
+
+local function flip(i)
+  local card = reveal.cards[i]
+  local c = card.cover
+  if not c or c.flipping == true or not c:IsShown() then return end
+  c.flipping = true; holos[c] = nil
+  local t = 0
+  c:SetScript("OnUpdate", function(self, dt)
+    t = t + dt
+    local k = 1 - t / 0.25
+    if k > 0.02 then
+      self:SetWidth(math.max(1, card.cw * k)); self.logo:SetAlpha(0.9 * k); self.hint:SetAlpha(k)
+    else
+      self:SetScript("OnUpdate", nil); self:Hide(); self.flipping = false
+      local g = reveal.got[i]
+      reveal.flipped = reveal.flipped + 1
+      card.new:SetText(g.new and "|cff55ff55New!|r" or "")
+      -- the drama: a white flash that grows with the print, and a sound
+      local big = g.card.tier == 6 and 3 or (g.finish >= 3 and 2 or (g.finish == 2 and 1 or 0))
+      playSound(g.finish, g.card.tier)
+      if big > 0 then
+        card.flash:SetAlpha(0.35 + 0.3 * big); card.flashLeft = 0.6 + 0.3 * big
+        card.flash:SetScript("OnUpdate", nil)
+        card:SetScript("OnUpdate", function(f, d)
+          f.flashLeft = f.flashLeft - d
+          if f.flashLeft <= 0 then f.flash:SetAlpha(0); f:SetScript("OnUpdate", nil) else f.flash:SetAlpha(math.min(0.95, f.flashLeft * 0.9)) end
+        end)
+      end
+      if reveal.flipped >= #reveal.got then reveal.all:Hide(); reveal.ok:SetText("Done") end
+    end
+  end)
+end
+
 local function showReveal(got)
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
-    reveal:SetSize(PACK_SIZE * 138 + 30, 230); reveal:SetPoint("CENTER", 0, 60); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
+    reveal:SetSize(PACK_SIZE * 138 + 30, 250); reveal:SetPoint("CENTER", 0, 60); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
     RG.DialogBackdrop(reveal)
     reveal.cards = {}
     for i = 1, PACK_SIZE do
-      local c = makeCard(reveal, 128, 150); c:SetPoint("TOPLEFT", 14 + (i - 1) * 138, -18); reveal.cards[i] = c
+      local c = makeCard(reveal, 128, 150); c:SetPoint("TOPLEFT", 14 + (i - 1) * 138, -34); reveal.cards[i] = c
       c.new = RG.NewText(c, "GameFontNormal"); c.new:SetPoint("BOTTOM", c, "TOP", 0, 2)
+      c.flash = c:CreateTexture(nil, "OVERLAY", nil, 6); c.flash:SetPoint("TOPLEFT", -6, 6); c.flash:SetPoint("BOTTOMRIGHT", 6, -6); c.flash:SetColorTexture(1, 1, 1, 1); c.flash:SetBlendMode("ADD"); c.flash:SetAlpha(0)
+      local cover = makeCover(c)
+      cover:SetScript("OnClick", function() flip(i) end)
     end
-    local ok = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); ok:SetSize(120, 24); ok:SetPoint("BOTTOM", 0, 14); ok:SetText("Nice"); ok:SetScript("OnClick", function() reveal:Hide() end)
+    reveal.title = RG.NewText(reveal, "GameFontNormal"); reveal.title:SetPoint("TOP", 0, -12)
+    reveal.all = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); reveal.all:SetSize(120, 24); reveal.all:SetPoint("BOTTOM", -70, 14); reveal.all:SetText("Flip all")
+    reveal.all:SetScript("OnClick", function()
+      for i = 1, PACK_SIZE do
+        local function go() if reveal:IsShown() then flip(i) end end
+        if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5, go) else go() end
+      end
+    end)
+    reveal.ok = CreateFrame("Button", nil, reveal, "UIPanelButtonTemplate"); reveal.ok:SetSize(120, 24); reveal.ok:SetPoint("BOTTOM", 70, 14)
+    reveal.ok:SetScript("OnClick", function() reveal:Hide(); RG.ArcadeRefresh(true) end)
     tinsert(UISpecialFrames, "WaypathArcadePack")
   end
+  reveal.got, reveal.flipped = got, 0
+  reveal.title:SetText("Click each card to flip it")
+  reveal.all:Show(); reveal.ok:SetText("Skip")
   reveal:Show()
-  for i = 1, PACK_SIZE do paint(reveal.cards[i], nil) end
   for i, g in ipairs(got) do
-    local function show()
-      if not reveal:IsShown() then return end
-      local w = reveal.cards[i]
-      paint(w, g.card, g.finish, 1)
-      w.new:SetText(g.new and "|cff55ff55New!|r" or "")
-    end
-    if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.45, show) else show() end
+    local w = reveal.cards[i]
+    paint(w, g.card, g.finish, 1)
+    w.new:SetText(""); w.flash:SetAlpha(0); w:SetScript("OnUpdate", nil)
+    local c = w.cover
+    c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c.logo:SetAlpha(0.9); c.hint:SetAlpha(1); c:Show()
+    -- a faint hint for the special ones: the back of a holo, full art or Legend glitters
+    if g.finish >= 3 or g.card.tier == 6 then holos[c] = true; c.hint:SetText("Something shiny...") else holos[c] = nil; c.edge:SetColorTexture(0.31, 0.82, 0.77, 1); c.edge:SetVertexColor(1, 1, 1, 1); c.hint:SetText("Click to flip") end
   end
 end
 

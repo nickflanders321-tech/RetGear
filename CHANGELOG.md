@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.80.0
+- Pack opening: the five cards are dealt face down. Click each one to flip it (or "Flip all"). Rare, holo, full-art and Legend cards flash and play a sound when they turn over, and the backs of holos, full arts and Legends glitter before you flip them.
+
 ## v0.79.0
 - Cards: a new super rare "Legends" set (Asmongold, Madseasonshow, Leeroy Jenkins, Xaryu, Savvier). They only come as holo or full-art prints, are rarer than any other card, and have their own filter. Collections are now saved by card name so the card list can grow without mixing saves up.
 
