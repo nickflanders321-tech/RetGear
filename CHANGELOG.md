@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.77.0
+- A hidden extra for the curious: leveling XP quietly earns coins, and coins buy packs of collectible creature cards (36 original creatures in six types, from common to legendary) and fund small card duels. It is not mentioned anywhere in the add-on; `/wp arcade` opens it.
+
 ## v0.76.0
 - **Step pager:** in an open Route zone, "One step at a time" shows a single unfinished step; click for the next, right-click for the previous, double-click to show all again.
 - **Accent colours:** Settings > Look (or `/wp theme [mint|gold|sky|rose|violet|light]`) changes the accent. Text that uses a fixed colour code updates after /reload.
