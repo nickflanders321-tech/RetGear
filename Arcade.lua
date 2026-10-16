@@ -19,8 +19,8 @@ local CREATURE_ICON = {
   [5] = "Spell_Nature_EarthElemental_Totem", [6] = "Spell_Shadow_AnimateDead", [7] = "INV_Misc_Head_Orc_01", [8] = "Ability_Hunter_Pet_Rabbit",
   [9] = "INV_Gizmo_01",
 }
-local PACK_PRICE, PACK_SIZE = 40, 5
--- How coins are earned (about 100 packs over a 1-60 climb):
+local PACK_PRICE, PACK_SIZE = 25, 5
+-- How coins are earned (about 150 packs over a 1-60 climb):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 20
 --   profession skill-ups: 1 coin per 2    duel win: 4

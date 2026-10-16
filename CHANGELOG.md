@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.82.1
+- Cards: a pack now costs 25 coins.
+
 ## v0.82.0
 - Card coins rebalanced. XP now pays 1 coin per 4% of a level (was 2%), and there are new bonuses: level-ups (5 + level/5, plus 25 at every tenth level), quest turn-ins (3 + level/20), mob kills that give XP (1 coin per 20) and profession skill-ups (1 coin per 2). Quests, kills and skill-ups together pay at most 80 coins a day. A pack costs 40 coins (was 30) and a duel win pays 4. Climbing from 1 to 60 earns roughly 100 packs.
 
