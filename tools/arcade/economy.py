@@ -1,7 +1,7 @@
 """Waypath+ card game economy check. Simulates a 1-60 climb: coins earned, packs bought, extras sold back,
 and reports how much of the Master Set (every card, any finish) a player owns at level 60.
 Usage: python3 tools/arcade/economy.py [income] [coins_per_card] [free_packs] [set_rewards]
-Defaults: 6500 coins, 4.6 coins a card, 45 free packs, 800 from set rewards. Tune COLLECTOR_LUCK in Arcade.lua to hit ~75%.
+Defaults: 8455 coins, 9 coins a card, 190 free packs (daily + bonuses + the level 60 gift), 800 from set rewards. Tune COLLECTOR_LUCK in Arcade.lua to hit ~75%.
 Card counts per tier and the draw weights mirror Arcade.lua (TIER, FINISH) and ArcadeCards.lua."""
 import random, sys, statistics as st
 CNT = [220, 272, 143, 410, 161]; W = [44, 26, 14, 12, 4]
@@ -44,7 +44,7 @@ def run(q, price_card, income, freepacks, sets_bonus, seed):
 
 if __name__ == "__main__":
     a = sys.argv[1:] + [None] * 4
-    income = float(a[0] or 6500); price = float(a[1] or 4.6); free = float(a[2] or 45); sb = float(a[3] or 800)
+    income = float(a[0] or 8455); price = float(a[1] or 9); free = float(a[2] or 190); sb = float(a[3] or 800)
     for q in (0, 0.05, 0.10, 0.15, 0.20):
         r = [run(q, price, income, free, sb, s)[0] for s in range(40)]
         print("luck %.2f: median %.0f%%  (10th-90th percentile %.0f%%-%.0f%%)" % (q, 100 * st.median(r), 100 * sorted(r)[4], 100 * sorted(r)[36]))

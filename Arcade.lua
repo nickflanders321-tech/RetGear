@@ -44,19 +44,28 @@ local NAME_ICON = {
   { "mine", "INV_Pick_02" }, { "deeps", "INV_Pick_02" }, { "depths", "INV_Pick_02" }, { "cavern", "INV_Pick_02" }, { "cave", "INV_Pick_02" },
 }
 local FREE_PACKS = true   -- beta: every pack of every kind is free (set to false at release to charge coins)
--- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 6,500 coins
--- (XP, level-ups, quests, kills, skill-ups, goals, duels, set rewards) plus about 45 daily free packs and a
--- reward Jumbo every 7th day. Spent on packs at 4.5 to 5 coins a card, with extras sold back, that gives a
--- median of about 75% of the Master Set (every card, in any finish) at level 60: about 70% for a light player
--- (5,000 coins) and about 83% for a heavy one (8,000). COLLECTOR_LUCK is the one dial that tunes it.
+-- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 8,500 coins
+-- (XP, level-ups, quests, kills, skill-ups, goals, duels, set rewards, and the bonuses in ArcadeRewards.lua)
+-- plus about 190 packs' worth of free cards (daily packs, a reward Jumbo every 7th day, milestone, dungeon,
+-- quest-line and gear packs, and the level 60 gift). Spent on packs at about 9 coins a card, with extras sold
+-- back, that gives a median of about 76% of the Master Set (every card, in any finish) at level 60: about 68%
+-- for a light player and about 90% for a heavy one. COLLECTOR_LUCK and the pack prices tune it.
 -- three kinds of pack, and every card in the game can come out of any of them
 local PACKS = {
-  normal = { name = "Pack", size = 5, price = 25, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
-  jumbo = { name = "Jumbo Pack", size = 8, price = 38, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
-  super = { name = "Super Jumbo Pack", size = 12, price = 54, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
+  normal = { name = "Pack", size = 5, price = 45, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
+  jumbo = { name = "Jumbo Pack", size = 8, price = 72, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
+  super = { name = "Super Jumbo Pack", size = 12, price = 104, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
 }
 local PACK_ORDER = { "normal", "jumbo", "super" }
 local PACK_MAX = 12
+-- packs you earn (milestones, dungeons, quest chains, gear, the level 60 gift) wait here until you open them
+local function tok(a) a.tok = a.tok or { normal = 0, jumbo = 0, super = 0 }; return a.tok end
+local function tokenCount(a, kind)
+  local t = tok(a)
+  if kind == "normal" then return (a.free or 0) + (t.normal or 0)
+  elseif kind == "jumbo" then return (a.bonus or 0) + (t.jumbo or 0) end
+  return t.super or 0
+end
 local function packPrice(kind) return FREE_PACKS and 0 or PACKS[kind or "normal"].price end
 local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
 -- How coins are earned (about 6,500 coins over a 1-60 climb, see RELEASE BALANCE above):
@@ -382,6 +391,7 @@ local function openOne(a, kind)
   local bonus, free = false, false
   if kind == "jumbo" and (a.bonus or 0) > 0 then bonus = true; a.bonus = a.bonus - 1   -- a reward pack is a jumbo
   elseif kind == "normal" and (a.free or 0) > 0 then free = true; a.free = a.free - 1
+  elseif (tok(a)[kind] or 0) > 0 then free = true; tok(a)[kind] = tok(a)[kind] - 1
   elseif (a.coins or 0) < packPrice(kind) then return nil, "A " .. def.name:lower() .. " costs " .. packPrice(kind) .. " coins."
   else a.coins = a.coins - packPrice(kind) end
   local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0, kind = kind, size = def.size }
@@ -457,7 +467,7 @@ end
 function RG.ArcadeSealsReady()
   local a = store(); if not a then return 0 end
   dailyCheck()
-  local n = (a.bonus or 0) + (a.free or 0)
+  local n = tokenCount(a, "normal") + tokenCount(a, "jumbo") + tokenCount(a, "super")
   if PACK_PRICE == 0 then n = math.max(n, 1) end
   return math.min(MANY_MAX, n)
 end
@@ -471,7 +481,7 @@ function RG.ArcadeOpenMany()
   local all, notes, many = {}, {}, { count = 0, new = 0, newPrint = 0, value = 0, bonus = 0 }
   local last
   for _ = 1, n do
-    local got, nt, meta = openOne(a, (a.bonus or 0) > 0 and "jumbo" or "normal")
+    local got, nt, meta = openOne(a, tokenCount(a, "super") > 0 and "super" or (tokenCount(a, "jumbo") > 0 and "jumbo" or "normal"))
     if not got then break end
     last = meta
     many.count = many.count + 1
@@ -500,6 +510,59 @@ function RG.ArcadeOpenMany()
   for _, g in ipairs(all) do if g.new then for _, m in ipairs(meta.sets) do if m.name == setOf(g.card) then m.gained = m.gained + 1 end end end end
   table.sort(meta.sets, function(x, y) if x.gained ~= y.gained then return x.gained > y.gained end return x.name < y.name end)
   return show, true, notes, meta
+end
+
+-- a bonus: coins and packs from a milestone, a dungeon, a quest line, a gear upgrade...
+function RG.ArcadeGrant(label, coins, packs)
+  local a = store(); if not a then return end
+  coins = coins or 0
+  a.coins = (a.coins or 0) + coins
+  a.stats = a.stats or {}; a.stats.bonus = (a.stats.bonus or 0) + coins
+  local t, bits = tok(a), {}
+  if coins > 0 then bits[#bits + 1] = "+" .. coins .. " coins" end
+  for _, k in ipairs(PACK_ORDER) do
+    local n = packs and packs[k] or 0
+    if n > 0 then t[k] = (t[k] or 0) + n; bits[#bits + 1] = n .. " " .. (k == "normal" and "pack" or (k == "jumbo" and "jumbo pack" or "super jumbo pack")) .. (n > 1 and "s" or "") end
+  end
+  local msg = "|cffffd36bWaypath Cards:|r " .. label .. "  (" .. table.concat(bits, ", ") .. ")"
+  if RG.Notify then RG.Notify(msg) elseif RG.Print then RG.Print(msg) end
+  if frame and frame.IsShown and frame:IsShown() and RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  return msg
+end
+
+-- the level 60 present: three cards rated 105 or higher (new ones first) and five packs of every size
+function RG.ArcadeGiftCards()
+  local a = store(); if not a or #CARDS == 0 then return nil end
+  local fresh, any = {}, {}
+  for _, c in ipairs(CARDS) do
+    if c.kind ~= 4 then
+      for f = 1, #FINISH do
+        if (c.tier == 6 and 5.5 or c.tier) * 18 + FINISH[f][3] + (c.id % 7) >= 105 then
+          local e = { c, f }
+          any[#any + 1] = e
+          if ((a.cards[c.key or c.name] or {})[f] or 0) == 0 then fresh[#fresh + 1] = e end
+        end
+      end
+    end
+  end
+  local got, used = {}, {}
+  for _ = 1, 3 do
+    local pool = (#fresh > 0) and fresh or any
+    local e
+    for _ = 1, 40 do e = pool[math.random(#pool)]; if not used[e[1].id] then break end end
+    used[e[1].id] = true
+    local c, f = e[1], e[2]
+    local isNew = owned(a, c.id) == 0
+    local slot = a.cards[c.key or c.name] or {}
+    local newPrint = (not isNew) and (slot[f] or 0) == 0
+    slot[f] = (slot[f] or 0) + 1; a.cards[c.key or c.name] = slot
+    got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
+    local r = a.rarest
+    if not r or (f * 10 + c.tier) > (r.finish * 10 + r.tier) then a.rarest = { name = c.name, finish = f, tier = c.tier } end
+    for i = #fresh, 1, -1 do if fresh[i][1].id == c.id then table.remove(fresh, i) end end
+  end
+  table.sort(got, function(x, y) return pullScore(x) < pullScore(y) end)
+  return got
 end
 
 -- reward seals: a guaranteed rare, and a holo or better to finish
@@ -1103,7 +1166,9 @@ local function layoutText(w, big, name, text)
   w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -239 * u); w.nameB:SetWidth(208 * u)
   w.nameB:SetWordWrap(false); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
   local lines = 1
+  w.nameB:SetWidth(700)   -- (measure it unclipped: a clipped string reports its clipped width)
   local wd = w.nameB:GetStringWidth()
+  w.nameB:SetWidth(208 * u)
   if type(wd) == "number" and wd > bw then
     lines = 2
     while sz > 9 and wd > bw * 1.85 do sz = sz - 0.5; setfont(w.nameB, "head", sz); w.nameB:SetText(name or ""); wd = w.nameB:GetStringWidth() end
@@ -1117,7 +1182,7 @@ local function layoutText(w, big, name, text)
   local tl = math.floor(room / (tsz + 2))
   setfont(w.text, "body", tsz); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("TOP")
   if text and text ~= "" and tl >= 1 then
-    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -(239 * u + nh + 2)); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 188 * u, -322 * u)
+    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -(239 * u + nh + 2)); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 232 * u, -322 * u)
     if w.text.SetMaxLines then w.text:SetMaxLines(tl) end
     w.text:SetText(text)
   else w.text:SetText("") end
@@ -1482,8 +1547,7 @@ local function afford(kind)
   local a = store()
   if not a then return false end
   kind = kind or "normal"
-  if kind == "jumbo" and (a.bonus or 0) > 0 then return true end
-  if kind == "normal" and (a.free or 0) > 0 then return true end
+  if tokenCount(a, kind) > 0 then return true end
   return (a.coins or 0) >= packPrice(kind)
 end
 
@@ -1880,7 +1944,11 @@ local function showReveal(got, notes, meta)
   local def = PACKS[kind]
   reveal.kind = kind
   local col, title, info = def.col, def.name, {}
-  if meta.bonus then
+  if meta.gift then
+    col, title = { 1, 0.85, 0.45 }, "Level 60 gift"
+    info[#info + 1] = { "Your gift", GOLDHEX .. "Three cards rated 105 or higher|r" }
+    info[#info + 1] = { "Also", "5 packs, 5 jumbo packs and 5 super jumbo packs are waiting for you" }
+  elseif meta.bonus then
     col, title = { 0.85, 0.6, 1 }, "Reward Jumbo Pack"
     info[#info + 1] = { "Reward pack", "|cffd9a8ff" .. def.size .. " cards: two rares and a holo or better inside|r" }
   elseif meta.many then
@@ -1890,7 +1958,7 @@ local function showReveal(got, notes, meta)
     info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from the whole collection   ·   " .. def.rares .. " rare or better" }
     if meta.daily then title = "Daily " .. def.name; info[#info + 1] = { "Daily", "|cff7be08aDay " .. (meta.streak or 1) .. " in a row|r" } end
   end
-  if not meta.many then
+  if not meta.many and not meta.gift then
     local pb = meta.pityBefore or 0
     if meta.bonus or pb >= PITY then info[#info + 1] = { "Guarantee", "|cffd9a8ffThis pack holds a holo or full art|r" }
     else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") .. " worth of opening" } end
@@ -1901,7 +1969,7 @@ local function showReveal(got, notes, meta)
   -- the wrapper: tinted by pack type, the rune in the medallion; several packs fan out
   reveal.emb:Hide(); reveal.sealCount:SetText(""); reveal.ribbon:Hide(); reveal.ribbonText:SetText("")
   for _, bt in ipairs(reveal.packBack) do bt:SetVertexColor(col[1] * 0.7, col[2] * 0.7, col[3] * 0.7, 1); bt:SetShown(meta.many and true or false) end
-  reveal.packKind:SetText(meta.many and ("x" .. meta.many.count) or (def.size .. " CARDS"))
+  reveal.packKind:SetText(meta.many and ("x" .. meta.many.count) or (meta.gift and "GIFT" or (def.size .. " CARDS")))
   reveal.packName:SetText(kind == "normal" and "WAYPATH" or (kind == "jumbo" and "JUMBO" or "SUPER JUMBO"))
   if meta.many then reveal.sealCount:SetText("x" .. meta.many.count)
   else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(math.min(1, col[1] + 0.3), math.min(1, col[2] + 0.3), math.min(1, col[3] + 0.3), 0.95); reveal.emb:Show() end
@@ -1938,6 +2006,18 @@ local function showReveal(got, notes, meta)
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
   end
   reveal.again:SetEnabled(afford(meta.many and "normal" or kind) and true or false)
+end
+
+-- the present for reaching level 60 (shown when you are out of combat, or the next time you open the cards)
+function RG.ArcadeClaimGift()
+  local a = store(); if not a or a.giftDone then return end
+  if InCombatLockdown and InCombatLockdown() then a.giftPending = true return end
+  local got = RG.ArcadeGiftCards(); if not got then return end
+  a.giftDone, a.giftPending = true, nil
+  RG.ArcadeGrant("Level 60 gift", 0, { normal = 5, jumbo = 5, super = 5 })
+  playSound(nil, nil, "reward")
+  showReveal(got, {}, { gift = true, kind = "super", size = 3, free = true, pityBefore = 0, sets = {}, streak = a.packStreak })
+  RG.ArcadeRefresh(true)
 end
 
 -- ---------------------------------------------------------------------------
@@ -2148,32 +2228,34 @@ local function build()
     if meta and meta.bonus then playSound(nil, nil, "reward") end
     showReveal(got, notes, meta); RG.ArcadeRefresh(true)
   end
-  -- the three packs: a pack (5 cards), a jumbo (8) and a super jumbo (12)
+  -- footer: Arena and Duel on the left, the three packs in the middle, Sell extras and Open all on the right
   frame.packBtns = {}
-  local PX = { -110, 14, 138 }
+  local PX = { -126, -6, 114 }
   for i, kind in ipairs(PACK_ORDER) do
-    local b = gbtn(frame, PACKS[kind].name, 118, 40, function() frame.buyNow(kind) end, i == 1)
+    local b = gbtn(frame, PACKS[kind].name, 114, 40, function() frame.buyNow(kind) end, false)
     b:SetPoint("BOTTOM", PX[i], 16)
+    b.label:ClearAllPoints(); b.label:SetPoint("TOP", 0, -7)
+    b.sub = fs(b, "body", 11); b.sub:SetPoint("BOTTOM", 0, 7); b.sub:SetTextColor(0.66, 0.6, 0.8)
     frame.packBtns[kind] = b
   end
   frame.buy = frame.packBtns.normal
-  frame.buyAll = gbtn(frame, "All", 60, 28, function() frame.buyNow(true) end)
-  frame.buyAll:SetPoint("BOTTOM", 335, 22); frame.buyAll:Hide()
-  frame.duel = gbtn(frame, "Duel for coins", 104, 28, function()
+  frame.buyAll = gbtn(frame, "Open all", 60, 28, function() frame.buyNow(true) end)
+  frame.buyAll:SetPoint("BOTTOM", 317, 22); frame.buyAll:Hide()
+  frame.duel = gbtn(frame, "Duel", 64, 28, function()
     local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
     if win == nil then say(mine or "") return end
     say((win and ("Won! +" .. prize .. " coins.") or "Lost.") .. " " .. mine.name .. " (" .. FNAME[mf] .. ") vs " .. foe.name .. " (" .. FNAME[ff] .. ")" .. (goal and ("  ·  " .. goal) or ""))
     RG.ArcadeRefresh(true)
   end)
-  frame.duel:SetPoint("BOTTOM", -229, 22)
+  frame.duel:SetPoint("BOTTOM", -231, 22)
   frame.sell = gbtn(frame, "Sell extras", 92, 28, function()
     local n, coins, g = RG.ArcadeSellExtras()
     say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
     RG.ArcadeRefresh(true)
   end)
-  frame.sell:SetPoint("BOTTOM", 251, 22)
-  frame.arena = gbtn(frame, "Arena", 76, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
-  frame.arena:SetPoint("BOTTOM", -327, 22)
+  frame.sell:SetPoint("BOTTOM", 235, 22)
+  frame.arena = gbtn(frame, "Arena", 70, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
+  frame.arena:SetPoint("BOTTOM", -308, 22)
   -- fit small screens
   local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
   if type(ph) == "number" and ph > 0 and ph < WINH + 30 then frame:SetScale(math.max(0.6, (ph - 30) / WINH)) end
@@ -2395,29 +2477,30 @@ function RG.ArcadeRefresh(keepMsg)
     pgTile(2, PGX + tw + 16, 196, tw, 78, (a.wins or 0) .. " - " .. (a.losses or 0), "Duels  (won - lost)", nil, { 0.5, 0.78, 1 })
     pgTile(3, PGX + 2 * (tw + 16), 196, tw, 78, tostring(n), "Characters met", nil, { 0.5, 0.88, 0.6 })
     pgBox(1, 290, 42, nil, "|cffa89bc9RAREST PULL|r          " .. (r and (GOLDHEX .. r.name .. "|r   (" .. FNAME[r.finish] .. ")") or "|cff9a96b0none yet, open some packs|r"), GOLDC)
-    local total = (st.xp or 0) + (st.level or 0) + (st.quest or 0) + (st.kill or 0) + (st.skill or 0) + (st.duel or 0) + (st.goal or 0) + (st.sets or 0)
+    local total = (st.xp or 0) + (st.level or 0) + (st.quest or 0) + (st.kill or 0) + (st.skill or 0) + (st.duel or 0) + (st.goal or 0) + (st.sets or 0) + (st.bonus or 0)
     pgHead(1, 366, "Coins earned", GOLDHEX .. total .. "|r coins in all")
     local cw = (PGW - 30) / 2
     local kv = { { "Experience", st.xp }, { "Level-ups", st.level }, { "Quests", st.quest }, { "Kills", st.kill },
-      { "Skill-ups", st.skill }, { "Duels", st.duel }, { "Daily goals", st.goal }, { "Completed sets", st.sets } }
+      { "Skill-ups", st.skill }, { "Duels", st.duel }, { "Daily goals", st.goal }, { "Completed sets", st.sets }, { "Milestones, dungeons and gear", st.bonus } }
     for i, e in ipairs(kv) do
-      local col, row = math.floor((i - 1) / 4), (i - 1) % 4
+      local col, row = math.floor((i - 1) / 5), (i - 1) % 5
       pgKV(i, PGX + col * (cw + 30), 396 + row * 28, cw, e[1], tostring(e[2] or 0))
     end
     local mh, mt = RG.ArcadeMaster()
     local mp = mt > 0 and mh / mt or 0
-    pgHead(2, 528, "Master set", "every card, in any finish   ·   " .. math.floor(MASTER_GOAL * 100) .. "% is the goal for level 60")
-    pgBar(1, 556, GOLDHEX .. mh .. "|r of " .. mt .. " cards", string.format("%d%%", math.floor(mp * 100 + 0.5)), mp, mp >= MASTER_GOAL and { 0.48, 0.88, 0.54 } or GOLDC)
+    pgHead(2, 546, "Master set", "every card, in any finish   ·   " .. math.floor(MASTER_GOAL * 100) .. "% is the goal for level 60")
+    pgBar(1, 574, GOLDHEX .. mh .. "|r of " .. mt .. " cards", string.format("%d%%", math.floor(mp * 100 + 0.5)), mp, mp >= MASTER_GOAL and { 0.48, 0.88, 0.54 } or GOLDC)
   end
   local free = a.free or 0
   local bonus = a.bonus or 0
   for _, kind in ipairs(PACK_ORDER) do
     local d, b = PACKS[kind], frame.packBtns[kind]
     local tag
-    if kind == "jumbo" and bonus > 0 then tag = "reward x" .. bonus
-    elseif kind == "normal" and free > 0 then tag = "free x" .. free
+    local have = tokenCount(a, kind)
+    if kind == "jumbo" and bonus > 0 then tag = "reward x" .. have
+    elseif have > 0 then tag = "free x" .. have
     else tag = packPrice(kind) == 0 and "free" or (packPrice(kind) .. " coins") end
-    b:SetText((kind == "normal" and "Pack" or (kind == "jumbo" and "Jumbo" or "Super Jumbo")) .. "\n|cffa89bc9" .. d.size .. " cards  ·  " .. tag .. "|r")
+    b:SetText(kind == "normal" and "Pack" or (kind == "jumbo" and "Jumbo" or "Super Jumbo")); b.sub:SetText(d.size .. " cards  ·  " .. tag)
     b:SetEnabled(afford(kind) and true or false)
   end
   local ready = RG.ArcadeSealsReady and RG.ArcadeSealsReady() or 0
@@ -2426,7 +2509,7 @@ end
 
 RG.ArcadeUI = { layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
-  owned = owned, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
+  owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
 RG.ArcadePackPrice = PACK_PRICE
 RG.ArcadePacks = PACKS
@@ -2440,6 +2523,7 @@ function RG.ShowArcade()
   if not frame then build() end
   local a = store(); if a then a.seen = true end
   frame:Show(); RG.ArcadeRefresh()
+  if a and a.giftPending and not a.giftDone and RG.ArcadeClaimGift then RG.ArcadeClaimGift() end
 end
 
 local base = SlashCmdList.WAYPATH
