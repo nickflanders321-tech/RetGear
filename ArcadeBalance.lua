@@ -1,0 +1,3 @@
+-- Per-card balance nudges, written by tools/balance/tune.lua from simulated duels. Do not edit by hand.
+local _, RG = ...
+RG.ARCADE_BALANCE = {}

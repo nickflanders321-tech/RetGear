@@ -342,6 +342,17 @@ function B.derive(c)
   end
   d.key, d.name, d.kind, d.tier, d.lore = key, c.name, kind, tier, c.text
   d.cost = max(0, min(10, d.cost))
+  -- balance pass: per-card nudges found by simulating thousands of duels (tools/balance, data in ArcadeBalance.lua)
+  local bal = RG.ARCADE_BALANCE and RG.ARCADE_BALANCE[key]
+  if bal then
+    d.cost = max(0, min(10, d.cost + (bal.cost or 0)))
+    if d.type == "minion" then
+      d.atk = max(d.kw and d.kw.taunt and 0 or 1, d.atk + (bal.atk or 0)); d.hp = max(1, d.hp + (bal.hp or 0))
+    elseif d.type == "weapon" then
+      d.atk = max(1, d.atk + (bal.atk or 0)); d.dur = max(1, d.dur + (bal.dur or 0))
+      d.ops = { { op = "weapon", a = d.atk, d = d.dur } }
+    end
+  end
   d.text = B.describe(d)
   B.defs[key] = d
   return d
@@ -691,6 +702,7 @@ function B.play(G, s, hi, tref, pos)
   P.mana = P.mana - d.cost; P.spent = P.spent + d.cost
   table.remove(P.hand, hi)
   ev(G, { t = "play", side = s, key = key })
+  if not G.sim then P.played = P.played or {}; P.played[key] = true end
   if d.type == "minion" then
     local m = B.summonMinion(G, s, d, pos)
     if m then
