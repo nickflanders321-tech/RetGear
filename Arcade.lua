@@ -2261,8 +2261,8 @@ local function build()
     frame.packBtns[kind] = b
   end
   frame.buy = frame.packBtns.normal
-  frame.buyAll = gbtn(frame, "Open all", 60, 28, function() frame.buyNow(true) end)
-  frame.buyAll:SetPoint("BOTTOM", 317, 22); frame.buyAll:Hide()
+  frame.buyAll = gbtn(frame, "All", 64, 28, function() frame.buyNow(true) end)
+  frame.buyAll:SetPoint("BOTTOM", 329, 22); frame.buyAll:Hide()
   frame.duel = gbtn(frame, "Duel", 64, 28, function()
     local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
     if win == nil then say(mine or "") return end
@@ -2270,12 +2270,12 @@ local function build()
     RG.ArcadeRefresh(true)
   end)
   frame.duel:SetPoint("BOTTOM", -231, 22)
-  frame.sell = gbtn(frame, "Sell extras", 92, 28, function()
+  frame.sell = gbtn(frame, "Sell extras", 102, 28, function()
     local n, coins, g = RG.ArcadeSellExtras()
     say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
     RG.ArcadeRefresh(true)
   end)
-  frame.sell:SetPoint("BOTTOM", 235, 22)
+  frame.sell:SetPoint("BOTTOM", 240, 22)
   frame.arena = gbtn(frame, "Arena", 70, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
   frame.arena:SetPoint("BOTTOM", -308, 22)
   -- fit small screens
@@ -2526,7 +2526,7 @@ function RG.ArcadeRefresh(keepMsg)
     b:SetEnabled(afford(kind) and true or false)
   end
   local ready = RG.ArcadeSealsReady and RG.ArcadeSealsReady() or 0
-  if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
+  if ready >= 2 then frame.buyAll:SetText("All x" .. ready); frame.buyAll:Show() else frame.buyAll:Hide() end
 end
 
 -- the picture a card shows, so the board can show the same one: "model", displayId | "tex", path, l, r, t, b | "scene" | "icon", path
