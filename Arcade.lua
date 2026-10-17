@@ -1177,13 +1177,13 @@ local function dressModel(w, c, finish)
   m.cls = c.class; m.creature = false
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
-  local ids = RACE_DISPLAY[race]
-  local ok = false
-  if ids and m.SetDisplayInfo then ok = pcall(m.SetDisplayInfo, m, ids[female and 2 or 1]) end
+  -- the character file first (it carries the skin); the bare display id is only a fallback
+  local dir = RACE_DIR[race] or "Human"
+  local g = female and "Female" or "Male"
+  local ok = pcall(m.SetModel, m, "Character\\" .. dir .. "\\" .. g .. "\\" .. dir .. g .. ".m2")
   if not ok then
-    local dir = RACE_DIR[race] or "Human"
-    local g = female and "Female" or "Male"
-    ok = pcall(m.SetModel, m, "Character\\" .. dir .. "\\" .. g .. "\\" .. dir .. g .. ".m2")
+    local ids = RACE_DISPLAY[race]
+    if ids and m.SetDisplayInfo then ok = pcall(m.SetDisplayInfo, m, ids[female and 2 or 1]) end
   end
   if not ok then m:Hide() return false end
   if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0.2) end
