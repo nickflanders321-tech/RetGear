@@ -1163,31 +1163,30 @@ local function placeArt(w, c, full)
   return true
 end
 
--- display ids of the player races (male, female): the card shows the model even when the game's file path is not known
-local RACE_DISPLAY = { Human = { 49, 50 }, Orc = { 51, 52 }, Dwarf = { 53, 54 }, NightElf = { 55, 56 }, Scourge = { 57, 58 }, Tauren = { 59, 60 },
-  Gnome = { 1563, 1564 }, Troll = { 1478, 1479 }, BloodElf = { 15476, 15475 }, Draenei = { 16125, 16126 } }
-local RACE_LIST = { "Human", "Orc", "Dwarf", "NightElf", "Scourge", "Tauren", "Gnome", "Troll", "BloodElf", "Draenei" }
+-- A Raider is shown as one of the game's own textured people of their class (a Scarlet judge, a dwarven pyromancer, a
+-- dragonmaw battlemaster...), picked from the name so the same Raider always gets the same one. (A bare player-race
+-- model has no skin when it is not a unit, so it came out all white.)
+local RAIDER_FACE = {
+  WARRIOR = { 4912, 10344, 4937, 10346, 10431 }, PALADIN = { 10355, 10342, 10431, 5072, 16154 },
+  PRIEST = { 12169, 10342, 5072, 10482, 10920 }, MAGE = { 2240, 8762, 16024, 10432, 9472 },
+  WARLOCK = { 10432, 6669, 11578, 9472, 10343 }, ROGUE = { 10343, 10875, 4003, 10344, 10346 },
+  HUNTER = { 10375, 4731, 10875, 4033, 10346 }, DRUID = { 2168, 1542, 12169, 15421, 10375 },
+  SHAMAN = { 6102, 10911, 10443, 10357, 4527 },
+}
+local RAIDER_ANY = { 10344, 10355, 10343, 2240, 8762, 10375, 4912, 12169 }
 local function dressModel(w, c, finish)
   local m = ensureModel(w)
-  if not m then return false end
-  -- a Raider whose race we never saw still gets a person: one picked from the name, so it is always the same one
-  local seed = seedOf(c.name or "?")
-  local race = RACE_DISPLAY[c.race or ""] and c.race or RACE_DISPLAY[RACE_DIR[c.race or ""] or ""] and RACE_DIR[c.race] or RACE_LIST[seed % #RACE_LIST + 1]
-  local female = (c.sex == 3) or (c.sex ~= 2 and (math.floor(seed / 7) % 2 == 1))
-  m.cls = c.class; m.creature = false
+  if not m or not m.SetDisplayInfo then return false end
+  local list = RAIDER_FACE[(c.class or ""):upper()] or RAIDER_ANY
+  local id = list[seedOf(c.name or "?") % #list + 1]
+  m.cls = c.class; m.creature = true
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
-  -- the character file first (it carries the skin); the bare display id is only a fallback
-  local dir = RACE_DIR[race] or "Human"
-  local g = female and "Female" or "Male"
-  local ok = pcall(m.SetModel, m, "Character\\" .. dir .. "\\" .. g .. "\\" .. dir .. g .. ".m2")
-  if not ok then
-    local ids = RACE_DISPLAY[race]
-    if ids and m.SetDisplayInfo then ok = pcall(m.SetDisplayInfo, m, ids[female and 2 or 1]) end
-  end
-  if not ok then m:Hide() return false end
-  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0.2) end
-  if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
+  if not pcall(m.SetDisplayInfo, m, id) then m:Hide() return false end
+  m.zoom = RG.ArcadeModelZoom({ ref = 7 })
+  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
+  if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
+  if m.SetFacing then pcall(m.SetFacing, m, 0.5) end
   m:Show()
   return true
 end

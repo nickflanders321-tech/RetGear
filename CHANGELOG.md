@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Raider cards use the game's own textured people of their class (picked from the name) instead of untextured player models, which showed all white.
 - Raider cards always show a character model in their class gear (race and sex picked from the name when never seen); names in Chinese, Korean and Cyrillic use fonts that have those letters.
 - Blood elf and draenei Raiders now show their character model on their card (they fell back to scenery before).
 - No two cards share a picture any more: Raiders, creatures and places the game can't show a model or painting for get their own drawn scenery, seeded from their name (cards, pack reveal and board).
