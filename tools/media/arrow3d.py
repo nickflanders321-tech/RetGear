@@ -54,7 +54,7 @@ FILL = 0.92   # leave room around the arrow for its shadow
 
 def render(theta, size):
     s = size
-    zbuf = np.full((s, s), -1e9); body = np.zeros((s, s)); spec = np.zeros((s, s)); alpha = np.zeros((s, s)); ids = np.full((s, s), -1)
+    NM = np.zeros((s, s, 3)); zbuf = np.full((s, s), -1e9); body = np.zeros((s, s)); spec = np.zeros((s, s)); alpha = np.zeros((s, s)); ids = np.full((s, s), -1)
     ct, st = math.cos(theta), math.sin(theta)
     scale = s / 2.05 * FILL
     for fi, (pts, nrm) in enumerate(MESH):
@@ -87,24 +87,36 @@ def render(theta, size):
         sub[win] = d[win]
         # a vertical gradient: brighter towards the tip, deeper towards the tail
         grad = 0.72 + 0.5 * np.clip((s * 0.9 - Y) / (s * 0.8), 0, 1)
-        body[miny:maxy + 1, minx:maxx + 1][win] = np.clip(sh * grad[win], 0, 1)
-        spec[miny:maxy + 1, minx:maxx + 1][win] = sc
+        NM[miny:maxy + 1, minx:maxx + 1][win] = n
         alpha[miny:maxy + 1, minx:maxx + 1][win] = 1
         ids[miny:maxy + 1, minx:maxx + 1][win] = fi
-    # glowing facet edges and a soft rim
-    edge = np.zeros((s, s))
-    for dx, dy in ((1, 0), (0, 1), (1, 1)):
-        a1 = ids[:s - dy, :s - dx]; b1 = ids[dy:, dx:]
-        e = (a1 != b1) & (a1 >= 0) & (b1 >= 0)
-        edge[:s - dy, :s - dx] = np.maximum(edge[:s - dy, :s - dx], e)
-    # smooth, not faceted: blend the shading across the facets (inside the silhouette only, so the rim stays crisp)
-    # and leave out the glowing facet lines
-    sm = max(2, int(s * 0.011))
-    cover = blur(alpha, sm)
+    # per-pixel shading: facet normals softened a little, plus a rounded bevel from the silhouette's own slope,
+    # so the rim catches light like cut glass; a thin bright edge and a deep contact edge give it bite
     inside = alpha > 0
-    body = np.where(inside, blur(body * alpha, sm) / np.maximum(cover, 1e-6), 0.0)
-    spec = np.where(inside, blur(spec * alpha, sm) / np.maximum(cover, 1e-6), 0.0)
-    spec = np.clip(spec, 0, 1)
+    k = max(1, int(s * 0.004))
+    for c in range(3): NM[:, :, c] = np.where(inside, blur(NM[:, :, c] * alpha, k) / np.maximum(blur(alpha, k), 1e-6), 0)
+    bw = max(2, int(s * 0.03))
+    h = blur(alpha, bw)
+    gy, gx = np.gradient(h)
+    kb = bw * 2.2
+    NM[:, :, 0] += -gx * kb * math.cos(0) * 1.0
+    NM[:, :, 1] += gy * kb * math.sin(EL)
+    NM[:, :, 2] += np.abs(gy) * 0.0 + 0.0
+    nrm = np.linalg.norm(NM, axis=2, keepdims=True); NM = NM / np.maximum(nrm, 1e-6)
+    ndl = np.clip(NM @ LIGHT, 0, 1)
+    R = 2 * (NM @ LIGHT)[..., None] * NM - LIGHT
+    rv = np.clip(R @ VIEW, 0, 1)
+    yy = np.arange(s)[:, None] * np.ones((1, s))
+    grad = 0.72 + 0.5 * np.clip((s * 0.9 - yy) / (s * 0.8), 0, 1)
+    body = np.clip((0.16 + 0.84 * ndl ** 0.8) * grad, 0, 1)
+    ndv = np.clip(NM @ VIEW, 0, 1)
+    fres = (1 - ndv) ** 3
+    body = np.clip(body * (0.55 + 0.45 * np.clip(h / max(h.max(), 1e-6) * 1.6, 0, 1)) + 0, 0, 1)
+    spec = np.clip(rv ** 40 * 0.9 + rv ** 8 * 0.18 + fres * 0.35, 0, 1)
+    # crisp edge: brightest just inside the silhouette, dark right at it
+    inner = np.clip((alpha - blur(alpha, max(1, int(s * 0.006)))) * 0, 0, 1)
+    spec = np.where(inside, spec, 0.0)
+    body = np.where(inside, body, 0.0)
     return body, spec, alpha
 
 def blur(a, r):

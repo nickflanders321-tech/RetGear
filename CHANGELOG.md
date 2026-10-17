@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.12
+- The 3D arrow is re-lit per pixel: crisp silhouette, rounded glassy edges, a real specular highlight and a rim light, instead of soft blurred shading. It reads as detailed instead of blurry.
+
 ## v1.0.11
 - A sharper arrow: the 3D arrow is drawn at four times the detail (256 px frames, 2048 px sheet) with much lighter smoothing, so it stays crisp even at 300 percent size.
 - A smoother arrow: it now turns every frame instead of about thirty times a second, easing towards its heading independent of frame rate, and blends between neighbouring frames so there are no visible steps. It keeps up with 144 Hz displays.
