@@ -86,6 +86,7 @@ ArcadeCards.lua
 ArcadeGear.lua
 Battle.lua
 Arcade.lua
+ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua
 FishMode.lua

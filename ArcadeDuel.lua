@@ -84,7 +84,7 @@ local function newDuel(env)
     D.deck, D.class, D.name = deck, class, me
     D.lastRecv = env.now()
     D.deadline = env.now() + INVITE_SECS
-    send(table.concat({ "C", PROTO, env.cardCount, env.version, class, me, packDeck(deck) }, "|"))
+    send(table.concat({ "C", PROTO, env.cardCount, env.version, class, me, packDeck(deck), env.rating() }, "|"))
     env.print("Challenge sent to " .. name .. ". Waiting up to " .. INVITE_SECS .. " seconds for an answer. They need Waypath+ too.")
     return true
   end
@@ -100,11 +100,11 @@ local function newDuel(env)
       return false
     end
     D.deck, D.class, D.name = deck, class, me
-    D.hostDeck, D.hostClass, D.hostName = inv.deck, inv.class, inv.name
+    D.hostDeck, D.hostClass, D.hostName, D.hostRating = inv.deck, inv.class, inv.name, inv.rating
     D.state = "wait"
     D.lastRecv = env.now(); D.deadline = env.now() + INVITE_SECS
     env.print("Accepted. Waiting for " .. (D.peer or "the host") .. " to start the duel...")
-    send(table.concat({ "A", class, me, packDeck(deck) }, "|"))
+    send(table.concat({ "A", class, me, packDeck(deck), env.rating() }, "|"))
     if env.closeInvite then env.closeInvite() end
     return true
   end
@@ -171,7 +171,7 @@ local function newDuel(env)
   -- ----- receiving -----
   function D.onMessage(msg, sender)
     if type(msg) ~= "string" then return end
-    local op, a, b, c, d, e, f = strsplit("|", msg)
+    local op, a, b, c, d, e, f, g = strsplit("|", msg)
     if op == "C" then
       if D.state then
         env.send("X|busy", sender)
@@ -185,7 +185,7 @@ local function newDuel(env)
       if not deck then env.send("X|I could not read your deck. Both of you need the same Waypath+ version.", sender) return end
       reset()
       D.state, D.peer, D.peerShort, D.side = "in", sender, short(sender), 2
-      D.invite = { deck = deck, class = d, name = e or sender, from = sender }
+      D.invite = { deck = deck, class = d, name = e or sender, from = sender, rating = tonumber(g) }
       D.lastRecv = env.now(); D.deadline = env.now() + INVITE_SECS
       env.invite(sender, d, function() D.accept() end, function() D.decline() end)
       return
@@ -198,13 +198,13 @@ local function newDuel(env)
       local deck = unpackDeck(c)
       if not deck then fail("Could not read " .. D.peer .. "'s deck.") return end
       local o = { me = 1, decks = { D.deck, deck }, classes = { D.class, a }, names = { D.name, b or D.peer },
-                  seed = env.random(1, 2000000000), first = env.random(1, 2), foeName = b or D.peer }
+                  seed = env.random(1, 2000000000), first = env.random(1, 2), foeName = b or D.peer, foeRating = tonumber(d) }
       env.print((b or D.peer) .. " accepted. Starting the duel...")
       send("S|" .. o.seed .. "|" .. o.first)
       startGame(o)
     elseif op == "S" and D.state == "wait" then
       local o = { me = 2, decks = { D.hostDeck, D.deck }, classes = { D.hostClass, D.class }, names = { D.hostName, D.name },
-                  seed = tonumber(a), first = tonumber(b), foeName = D.hostName }
+                  seed = tonumber(a), first = tonumber(b), foeName = D.hostName, foeRating = D.hostRating }
       if not (o.seed and (o.first == 1 or o.first == 2)) then fail("The start message was garbled.") return end
       startGame(o)
     elseif op == "M" and D.state == "mull" then
@@ -299,6 +299,7 @@ local function realEnv()
   end
   function env.handSize(side) local g = RG.ArenaPvPState(); return g and #g.p[side].hand or 0 end
   function env.seed() return RG.ArenaPvPSeed() end
+  function env.rating() return RG.ArenaPvPRating() end
   function env.curSide() local g = RG.ArenaPvPState(); return g and g.cur or 0 end
   function env.start(o) RG.ArenaPvPStart(o) end
   function env.applyMull(a, b) RG.ArenaPvPApplyMull(a, b) end

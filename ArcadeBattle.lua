@@ -599,11 +599,44 @@ local function consume()
   end
 end
 
+-- Ladder: update the rating for a finished duel. Returns the result table, or nil if the game was unranked.
+local function rankResult(a, won)
+  local R = RG.Rank
+  if not (a and R) or game.winner == 0 then return nil end
+  local opp, ranked = nil, true
+  if S.pvp then
+    opp = S.foeRating or R.START
+    -- the same opponent only counts a few times a day, so a pair of friends can't farm the ladder
+    local today = date and date("%Y-%m-%d") or "today"
+    if a.rDay ~= today then a.rDay = today; a.rVs = {} end
+    a.rVs = a.rVs or {}
+    local who = (S.foeName or "?"):lower()
+    a.rVs[who] = (a.rVs[who] or 0) + 1
+    if a.rVs[who] > 3 then ranked = false end
+  else
+    opp = R.AI[S.level] or R.START
+  end
+  if not ranked then return { unranked = true } end
+  return R.apply(a, opp, won)
+end
+local function rankLine(res)
+  if not res then return "" end
+  if res.unranked then return "|cffa89bc9Unranked: you have already played them 3 times today|r" end
+  local c = res.after.color
+  local hex = string.format("|cff%02x%02x%02x", math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5), math.floor(c[3] * 255 + 0.5))
+  local d = res.delta
+  local txt = (d >= 0 and "|cff9fe39a+" or "|cffe39a9a") .. d .. " RR|r   " .. hex .. res.after.label .. "|r"
+  if res.after.top then txt = txt .. "  |cffa89bc9(" .. res.after.rr .. " RR)|r" else txt = txt .. "  |cffa89bc9(" .. res.after.rr .. " / 100)|r" end
+  if res.promoted then txt = txt .. "\n|cffffd36bPROMOTED!|r" elseif res.demoted then txt = txt .. "\n|cffe39a9aDemoted|r" end
+  if res.placement and res.placement <= RG.Rank.PLACEMENT then txt = txt .. "\n|cffa89bc9Placement game " .. res.placement .. " of " .. RG.Rank.PLACEMENT .. "|r" end
+  return txt
+end
 local function overFx(won, a)
   local o = win.over
   if won then o.glow:SetVertexColor(1, 0.8, 0.3, 0.6) else o.glow:SetVertexColor(0.55, 0.35, 0.95, 0.5) end
   local st = a and a.bStreak or 0
   o.streak:SetText(won and st > 1 and ("Win streak: " .. st) or "")
+  o.rank:SetText(rankLine(S.lastRank))
   o.t = 0
   if PlaySound and SOUNDKIT then local id = won and SOUNDKIT.IG_QUEST_LIST_COMPLETE or SOUNDKIT.IG_QUEST_FAILED; if id then pcall(PlaySound, id) end end
 end
@@ -617,6 +650,7 @@ local function finish()
     if a then
       if won then a.pvpWins = (a.pvpWins or 0) + 1; a.bStreak = (a.bStreak or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1; a.bStreak = 0 end
     end
+    S.lastRank = rankResult(a, won)
     local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
     win.over.title:SetText(t); win.over.title:SetTextColor(won and 1 or 0.9, won and 0.84 or 0.4, won and 0.4 or 0.4)
     overFx(won, a)
@@ -640,6 +674,7 @@ local function finish()
     end
     a.coins = (a.coins or 0) + prize; a.stats.duel = (a.stats.duel or 0) + prize
   end
+  S.lastRank = rankResult(a, won)
   local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
   win.over.title:SetText(t); win.over.title:SetTextColor(won and 1 or 0.9, won and 0.84 or 0.4, won and 0.4 or 0.4)
   overFx(won, a)
@@ -756,13 +791,14 @@ local function makeBoard()
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
   win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 418); win.mullBtn:Hide()
   -- the end screen
-  win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 330); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
+  win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 370); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
   local o = win.over
   o.glow = o:CreateTexture(nil, "BACKGROUND", nil, 1); o.glow:SetTexture(U.MEDIA .. "Glow"); o.glow:SetBlendMode("ADD"); o.glow:SetSize(420, 300); o.glow:SetPoint("TOP", 0, 80); o.glow:SetVertexColor(1, 0.8, 0.3, 0.6)
   o.logo = o:CreateTexture(nil, "ARTWORK"); o.logo:SetTexture(RG.LOGO_LARGE or RG.LOGO); o.logo:SetSize(70, 70); o.logo:SetPoint("TOP", 0, -18)
   o.title = U.fs(o, "title", 38); o.title:SetPoint("TOP", 0, -98)
-  o.body = U.fs(o, "body", 14); o.body:SetPoint("TOP", 0, -154); o.body:SetWidth(420); o.body:SetTextColor(0.9, 0.85, 0.72)
-  o.streak = U.fs(o, "head", 13); o.streak:SetPoint("BOTTOM", 0, 78); o.streak:SetTextColor(1, 0.83, 0.42)
+  o.rank = U.fs(o, "head", 15); o.rank:SetPoint("TOP", 0, -144); o.rank:SetWidth(440)
+  o.body = U.fs(o, "body", 14); o.body:SetPoint("TOP", 0, -196); o.body:SetWidth(420); o.body:SetTextColor(0.9, 0.85, 0.72)
+  o.streak = U.fs(o, "head", 13); o.streak:SetPoint("BOTTOM", 0, 76); o.streak:SetTextColor(1, 0.83, 0.42)
   local again = U.gbtn(o, "Another duel", 160, 34, function() o:Hide(); RG.BattleMenu() end, true); again:SetPoint("BOTTOMLEFT", 40, 26)
   local done = U.gbtn(o, "Close", 130, 34, function() o:Hide(); win:Hide() end); done:SetPoint("BOTTOMRIGHT", -40, 26)
   tick(function(dt)
@@ -821,9 +857,12 @@ local function makeBoard()
     local function dress(g, P, mine)
       local cc = CLASS_COL and CLASS_COL[P.class] or { 1, 1, 1 }
       g.icon:SetTexture(CLS_ICON(P.class)); g.ring:SetVertexColor(cc[1], cc[2], cc[3], 1); g.glow:SetVertexColor(cc[1], cc[2], cc[3], 0.6)
-      g.name:SetText(P.name or "?"); g.name:SetTextColor(cc[1], cc[2], cc[3]); g.sub:SetText(B.HERO[P.class].title)
+      g.name:SetText(P.name or "?"); g.name:SetTextColor(cc[1], cc[2], cc[3]); g.sub:SetText(B.HERO[P.class].title .. (mine and (S.myRankLabel and ("  -  " .. S.myRankLabel) or "") or (S.foeRankLabel and ("  -  " .. S.foeRankLabel) or "")))
       g.back:SetTexture(U.MEDIA .. RG.CardBackName())
     end
+    local a0 = store()
+    S.myRankLabel = a0 and RG.Rank and RG.Rank.info(RG.Rank.rating(a0)).label
+    S.foeRankLabel = S.pvp and S.foeRating and RG.Rank.info(S.foeRating).label or (not S.pvp and RG.Rank.info(RG.Rank.AI[S.level] or 1000).label)
     dress(vs.a, me, true); dress(vs.b, foe, false)
     vs.tag:SetText(S.pvp and "FRIENDLY DUEL" or ("VS THE COMPUTER  -  " .. string.upper(LEVELS[S.level] or "")))
     vs.t = 0; vs:SetAlpha(1); vs:Show()
@@ -986,7 +1025,7 @@ local function startMatch()
   local aiDeck = B.randomDeck(aiPool(), cap, math.random)
   local cls = a.heroClass or select(2, UnitClass("player")) or "WARRIOR"
   local aiCls = B.CLASSES[math.random(#B.CLASSES)]
-  ME, S.pvp, S.foeName, S.endReason = 1, false, nil, nil
+  ME, S.pvp, S.foeName, S.endReason, S.foeRating = 1, false, nil, nil, nil
   beginGame(B.new({ decks = { expand(dk), aiDeck }, classes = { cls, aiCls }, names = { (UnitName and UnitName("player")) or "You", B.OPPONENTS[aiCls] }, seed = math.random(1, 2000000000) }))
 end
 
@@ -1062,6 +1101,17 @@ local function refreshMenu()
   if menu.pvp then menu.pvp:SetEnabled(n == B.DECK) end
   menu.play:SetText(n == B.DECK and "Enter the Arena" or "Finish your deck first")
   menu.lvlInfo:SetText("|cffa89bc9Win|r |cfff5d273" .. REWARD[S.level] .. " coins|r  |cffa89bc9" .. LEVEL_BLURB[S.level] .. "|r")
+  do
+    local R = RG.Rank
+    local inf = R.info(R.rating(a))
+    local c = inf.color
+    menu.rankName:SetText(inf.label); menu.rankName:SetTextColor(c[1], c[2], c[3])
+    menu.rankBar:SetVertexColor(c[1], c[2], c[3], 1)
+    menu.rankBar:SetWidth(inf.top and 242 or math.max(2, 242 * inf.rr / 100))
+    if inf.top then menu.rankPts:SetText(inf.rr .. " RR above the summit") else menu.rankPts:SetText(inf.rr .. " / 100 RR   |cffa89bc9" .. inf.toNext .. " to promotion|r") end
+    local g = a.rGames or 0
+    menu.rankSub:SetText(g < R.PLACEMENT and ("Placement " .. g .. "/" .. R.PLACEMENT) or ("Peak " .. R.info(a.rPeak or R.rating(a)).label))
+  end
   menu.rec:SetText("|cfff5d273" .. (a.bWins or 0) .. "|r won   |cffe39a9a" .. (a.bLoss or 0) .. "|r lost")
   menu.rec2:SetText("|cfff5d273" .. (a.pvpWins or 0) .. "|r won   |cffe39a9a" .. (a.pvpLoss or 0) .. "|r lost")
   menu.rec3:SetText(((a.bStreak or 0) > 1) and ("|cffffd36bWin streak: " .. a.bStreak .. "|r") or "|cffa89bc9Your first win each day pays +8 coins|r")
@@ -1171,14 +1221,20 @@ local function buildMenu()
   menu.pvp:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
   local rulesBtn = U.gbtn(p, "How to play", 120, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 672, -503)
 
-  -- record
+  -- rank and record
   local rb = CreateFrame("Frame", nil, p, "BackdropTemplate")
-  rb:SetSize(270, 130); rb:SetPoint("TOPLEFT", 766, -344)
-  rb:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); rb:SetBackdropColor(0.06, 0.05, 0.13, 0.95); rb:SetBackdropBorderColor(0.4, 0.34, 0.24, 0.9)
+  rb:SetSize(270, 146); rb:SetPoint("TOPLEFT", 766, -336)
+  rb:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); rb:SetBackdropColor(0.06, 0.05, 0.13, 0.95); rb:SetBackdropBorderColor(0.6, 0.5, 0.28, 0.9)
   local function rl(txt, y) local f = U.fs(rb, "head", 11); f:SetPoint("TOPLEFT", 14, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt) end
-  rl("VS THE COMPUTER", -12); menu.rec = U.fs(rb, "body", 13); menu.rec:SetPoint("TOPLEFT", 14, -28)
-  rl("PLAYER DUELS", -58); menu.rec2 = U.fs(rb, "body", 13); menu.rec2:SetPoint("TOPLEFT", 14, -74)
-  menu.rec3 = U.fs(rb, "body", 12); menu.rec3:SetPoint("TOPLEFT", 14, -102)
+  rl("RANKED LADDER", -10)
+  menu.rankName = U.fs(rb, "title", 20); menu.rankName:SetPoint("TOPLEFT", 14, -26)
+  menu.rankSub = U.fs(rb, "body", 11); menu.rankSub:SetPoint("TOPRIGHT", -14, -32); menu.rankSub:SetTextColor(0.7, 0.66, 0.85)
+  menu.rankBg = rb:CreateTexture(nil, "ARTWORK"); menu.rankBg:SetColorTexture(0.02, 0.02, 0.06, 1); menu.rankBg:SetSize(242, 10); menu.rankBg:SetPoint("TOPLEFT", 14, -58)
+  menu.rankBar = rb:CreateTexture(nil, "OVERLAY"); menu.rankBar:SetTexture(U.WHITE); menu.rankBar:SetHeight(10); menu.rankBar:SetPoint("TOPLEFT", menu.rankBg, "TOPLEFT", 0, 0); menu.rankBar:SetWidth(2)
+  menu.rankPts = U.fs(rb, "body", 11); menu.rankPts:SetPoint("TOPLEFT", 14, -72); menu.rankPts:SetTextColor(0.85, 0.8, 0.7)
+  rl("VS THE COMPUTER", -92); menu.rec = U.fs(rb, "body", 12); menu.rec:SetPoint("TOPRIGHT", -14, -92)
+  rl("PLAYER DUELS", -108); menu.rec2 = U.fs(rb, "body", 12); menu.rec2:SetPoint("TOPRIGHT", -14, -108)
+  menu.rec3 = U.fs(rb, "body", 11); menu.rec3:SetPoint("TOPLEFT", 14, -126)
 
   menu.msg = U.fs(p, "head", 13); menu.msg:SetPoint("TOPLEFT", 24, -568); menu.msg:SetWidth(700); menu.msg:SetJustifyH("LEFT"); menu.msg:SetTextColor(1, 0.7, 0.5)
   local back = U.gbtn(p, "Back to cards", 130, 28, function() win:Hide(); if RG.ShowArcade then RG.ShowArcade() end end); back:SetPoint("BOTTOMLEFT", 24, 18)
@@ -1433,7 +1489,7 @@ function RG.ArenaPvPStart(o)
   U = U or RG.ArcadeUI
   if not win then RG.ShowBattle() end
   if not win then return false end
-  ME, S.pvp, S.foeName, S.endReason = o.me, true, o.foeName, nil
+  ME, S.pvp, S.foeName, S.endReason, S.foeRating = o.me, true, o.foeName, nil, o.foeRating
   beginGame(B.new({ decks = o.decks, classes = o.classes, names = o.names, seed = o.seed, first = o.first }))
   win:Show()
   return true
@@ -1459,6 +1515,7 @@ function RG.ArenaPvPOver(winner, why)
   afterAction()
 end
 function RG.ArenaPvPState() return game, ME, S end
+function RG.ArenaPvPRating() U = U or RG.ArcadeUI; local a = U and store(); return RG.Rank and RG.Rank.rating(a) or 1000 end
 function RG.ArenaPvPSeed() return game and game.seed end
 function RG.ArenaPvPSetSend(fn) sendMove = fn end
 

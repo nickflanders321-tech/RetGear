@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Ranked ladder.** Every Arena duel now moves your rank. It is a chess-style Elo rating shown Valorant-style: seven tiers (Wanderer, Scout, Pathfinder, Trailblazer, Navigator, Cartographer, Waymaster), three divisions each, 100 RR per division. Beat a stronger opponent for a big gain, a weaker one for a small gain; a loss to a weaker opponent costs more. The computer opponents are rated Apprentice 800, Adept 1200 and Archmage 1600, so they can take you into the middle of the ladder and the top needs real players. Your first 5 games are placement games with bigger swings. Player duels are ranked too (each side sends its rating), but the same opponent only counts 3 times a day. The lobby shows your rank bar; the VS splash and end screen show your rank and the RR gained or lost, with promotion and demotion banners.
 - **A premium Waypath Arena lobby.** Hero portraits in class colours with a showcase of your hero and its power, deck cards with your card back and a mana-curve chart, opponent cards with difficulty pips and coin rewards, one big Enter button, a records box with your win streak, and the rules tucked behind a "How to play" button.
 - **VS splash** when a duel starts (both heroes slide in with names and classes) and a **new victory / defeat screen** with the Waypath logo, a pulsing glow, your win streak and a sound.
 - Removed the Waypath+ quest bar (target buttons, quest-item buttons) and the WaypathTarget macro; the leftover macro is deleted from your macro list once. Quest-mob nameplate alerts stay.
