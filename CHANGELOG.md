@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- No two cards share a picture any more: Raiders, creatures and places the game can't show a model or painting for get their own drawn scenery, seeded from their name (cards, pack reveal and board).
 - Raider cards and other text with non-Latin letters (Cyrillic, Chinese, Korean...) no longer show empty boxes: those strings switch to the game's own font automatically.
 - Creature models are framed by creature type (head and chest for upright humanoids, the whole body for long low beasts and dragonkin) so they sit centred in the card and on the board; basic cards like Orgrimmar Grunt show the same picture on the board as on the card.
 - Arena: a minion on the board now shows the same picture as its card (the creature's 3D model, the place's painting, the item's icon) instead of a guessed keyword icon. Name-based icons only match at the start of a word, so "Howler" no longer gets an owl.

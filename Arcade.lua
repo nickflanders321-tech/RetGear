@@ -1266,9 +1266,18 @@ local function paint(w, card, finish, copies)
   tintTex(w.aura, t, 1)
   w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
   local full = finish == 4
+  -- no two cards share a picture: when the game cannot give a model (or a painting), the card gets its own drawn scenery
+  local function ownScene()
+    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+    setScene(w.scn, card, false)
+    w.iconBack:Hide(); w.iconEdge:Hide(); w.art:Hide(); w.spot:Hide()
+  end
   if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  elseif card.kind == 4 then ownScene()
   elseif card.kind == 2 and dressCreature(w, card) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  elseif card.kind == 2 then ownScene()
   elseif card.kind == 3 and placeArt(w, card, full) then -- painting in its gold frame
+  elseif card.kind == 3 and not scene then ownScene()
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
     w.art:Hide()
@@ -2537,7 +2546,7 @@ function RG.ArcadePortrait(c)
     local col, row = e[2] % 8, math.floor(e[2] / 8)
     return "tex", MEDIA .. "Places" .. e[1], (col * 120 + 18) / 1024, (col * 120 + 102) / 1024, row * 84 / 1024, (row + 1) * 84 / 1024
   end
-  if usesScene(c) then return "scene" end   -- the card paints its own little landscape
+  if usesScene(c) or c.kind == 4 then return "scene" end   -- the card paints its own little landscape (no two cards share a picture)
   return "icon", iconFor(c)
 end
 
