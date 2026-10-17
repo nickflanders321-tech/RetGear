@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.1
+- The Arena and the cards window now close the main Waypath+ window when they open, so the two no longer draw on top of each other.
+
 ## v1.0.0
 - New Cards tab in the main window: play The Arena, open a pack (free in the beta) and browse your collection without remembering a command. /wp cards and /wp arena still work.
 

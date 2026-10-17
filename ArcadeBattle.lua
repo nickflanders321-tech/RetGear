@@ -1029,6 +1029,7 @@ function RG.BattleMenu()
 end
 
 function RG.ShowBattle()
+  if WaypathFrame and WaypathFrame.IsShown and WaypathFrame:IsShown() then WaypathFrame:Hide() end   -- never stack on the main window
   if not win then
     U = RG.ArcadeUI
     if not U then if RG.Print then RG.Print("The Arena needs the card window files (Arcade.lua) to load.") end return end

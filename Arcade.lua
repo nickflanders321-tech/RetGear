@@ -1502,6 +1502,7 @@ function RG.ArcadeBuyNow()
   if frame and frame.buyNow then frame.buyNow() end
 end
 function RG.ShowArcade()
+  if WaypathFrame and WaypathFrame.IsShown and WaypathFrame:IsShown() then WaypathFrame:Hide() end   -- never stack on the main window
   if not frame then build() end
   local a = store(); if a then a.seen = true end
   frame:Show(); RG.ArcadeRefresh()
