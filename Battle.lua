@@ -13,7 +13,7 @@ B.KW = { taunt = "Taunt", charge = "Charge", rush = "Rush", shield = "Divine Shi
 B.KWORDER = { "taunt", "charge", "rush", "shield", "stealth", "windfury", "lifesteal", "poison" }
 B.defs = {}
 -- going second: how the two seats are evened out (tuned by simulation, see tools/balance)
-B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 3,
+B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 5,
   minionBase = 0,    -- a vanilla minion has 2 * cost + minionBase stats
   kwExtra = { shield = 2, rush = 1, lifesteal = 1, taunt = 0, bc_heal = 1, dr_summon = 1, windfury = 1 },  -- extra stat price per keyword or effect
   archCost = { kill = 2, mend = -1, buff = -1, draw = 0, armor = -1 } }    -- mana nudge per spell archetype
@@ -411,7 +411,7 @@ B.CLASSES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE
 B.HERO = {
   WARRIOR = { title = "Warrior", power = "Armor Up!", cost = 2, ops = { armor(3) }, text = "Gain 3 Armor." },
   PALADIN = { title = "Paladin", power = "Reinforce", cost = 3, ops = { summon(1, tok("hand")) }, text = "Summon a 1/1 Silver Hand Recruit." },
-  HUNTER = { title = "Hunter", power = "Steady Shot", cost = 2, ops = { dmg(3, "eface") }, text = "Deal 3 damage to the enemy hero." },
+  HUNTER = { title = "Hunter", power = "Steady Shot", cost = 2, ops = { dmg(2, "eface"), armor(1) }, text = "Deal 2 damage to the enemy hero. Gain 1 Armor." },
   ROGUE = { title = "Rogue", power = "Dagger Mastery", cost = 2, ops = { { op = "weapon", a = 1, d = 3 } }, text = "Equip a 1/3 Dagger." },
   PRIEST = { title = "Priest", power = "Lesser Heal", cost = 2, ops = { heal(3), armor(1) }, tgt = "any", text = "Restore 3 Health. Gain 1 Armor." },
   SHAMAN = { title = "Shaman", power = "Totemic Call", cost = 3, ops = { { op = "summon", n = 1, pick = {

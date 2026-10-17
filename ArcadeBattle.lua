@@ -1019,7 +1019,7 @@ local function beginGame(g)
   say("Click any cards you want to swap, then keep the rest.", 600)
   refresh()
   if ui.showVS then ui.showVS() end
-  logLine("|cfff5d273" .. (game.first == ME and "You go first." or ((S.pvp and (S.foeName or "Your friend") or "The foe") .. " goes first. You get the Lucky Coin and 3 Armor.")) .. "|r")
+  logLine("|cfff5d273" .. (game.first == ME and "You go first." or ((S.pvp and (S.foeName or "Your friend") or "The foe") .. " goes first. You get the Lucky Coin and 5 Armor.")) .. "|r")
 end
 
 local function startMatch()
