@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Raider cards and other text with non-Latin letters (Cyrillic, Chinese, Korean...) no longer show empty boxes: those strings switch to the game's own font automatically.
 - Creature models are framed by creature type (head and chest for upright humanoids, the whole body for long low beasts and dragonkin) so they sit centred in the card and on the board; basic cards like Orgrimmar Grunt show the same picture on the board as on the card.
 - Arena: a minion on the board now shows the same picture as its card (the creature's 3D model, the place's painting, the item's icon) instead of a guessed keyword icon. Name-based icons only match at the start of a word, so "Howler" no longer gets an owl.
 - Card bonuses for playing the game (new file ArcadeRewards.lua). Coins and packs for: level milestones 10, 20, 30, 40, 45, 50, 55, 56, 57, 58 and 59 (each once per account, caught up on login); clearing a dungeon (three different bosses in one visit: a Jumbo and coins the first time, a Pack and coins on repeats, two repeats a day); finishing the last quest of a quest line (coins every time, plus a Pack for lines three quests or longer, two a day); and every gear upgrade, meaning an item level above anything that slot has worn before on that character (coins every time, plus a Pack for the first two each day). Reaching level 60 gives a present: three cards rated 105 or higher (new ones first) and 5 Packs, 5 Jumbos and 5 Super Jumbos.

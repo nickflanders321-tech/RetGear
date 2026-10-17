@@ -906,9 +906,13 @@ local KINDCOL = { { 1, 0.6, 0.25 }, { 0.35, 0.9, 0.55 }, { 0.35, 0.65, 1 }, { 0.
 local U = { name = { 13, 10, 243, 40 }, art = { 16, 44, 240, 200 }, type = { 13, 204, 243, 225 }, text = { 16, 229, 240, 327 } }
 
 local function lv(f) local l = f.GetFrameLevel and f:GetFrameLevel(); return type(l) == "number" and l or 1 end
+-- names and chat text can hold letters our card fonts do not have (Cyrillic, Chinese, Korean...): those use the game's own font
+local WIDE_PATTERN = "[\208-\225\227-\255]"
 local function setfont(f, key, size, flags)
   size = math.max(6, math.floor(size * 2 + 0.5) / 2)
-  local ok = f:SetFont(FONT[key] or FONT.body, size, flags or "")
+  f.fkey, f.fsize, f.fflags = key, size, flags
+  local path = (f.wideFont == true) and (STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF") or (FONT[key] or FONT.body)
+  local ok = f:SetFont(path, size, flags or "")
   if not ok and RG.FONTS then ok = f:SetFont(RG.FONTS.regular, size, flags or "") end
   if not ok then f:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
 end
@@ -916,6 +920,15 @@ local function fs(parent, key, size, layer, flags)
   local t = parent:CreateFontString(nil, layer or "OVERLAY")
   setfont(t, key, size, flags)
   t:SetShadowColor(0, 0, 0, 0.8); t:SetShadowOffset(1, -1)
+  local raw = t.SetText
+  t.SetText = function(self, text, ...)
+    local wide = type(text) == "string" and text:find(WIDE_PATTERN) and true or false
+    if wide ~= (self.wideFont == true) and type(self.fkey) == "string" then
+      self.wideFont = wide
+      setfont(self, self.fkey, self.fsize, self.fflags)
+    end
+    return raw(self, text, ...)
+  end
   return t
 end
 local function fitText(t, text, maxW, size, minSize, key)
