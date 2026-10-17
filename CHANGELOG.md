@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- **A premium Waypath Arena lobby.** Hero portraits in class colours with a showcase of your hero and its power, deck cards with your card back and a mana-curve chart, opponent cards with difficulty pips and coin rewards, one big Enter button, a records box with your win streak, and the rules tucked behind a "How to play" button.
+- **VS splash** when a duel starts (both heroes slide in with names and classes) and a **new victory / defeat screen** with the Waypath logo, a pulsing glow, your win streak and a sound.
 - Removed the Waypath+ quest bar (target buttons, quest-item buttons) and the WaypathTarget macro; the leftover macro is deleted from your macro list once. Quest-mob nameplate alerts stay.
 
 ## 1.1.1

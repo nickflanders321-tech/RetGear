@@ -22,6 +22,8 @@ local function cap(s) return (s or ""):sub(1, 1):upper() .. (s or ""):sub(2) end
 local CLS_ICON = function(c) return "Interface\\Icons\\ClassIcon_" .. cap((c or "warrior"):lower()) end
 local POWER_ICON = { WARRIOR = "Ability_Warrior_DefensiveStance", PALADIN = "Spell_Holy_HolyBolt", HUNTER = "Ability_Marksmanship", ROGUE = "Ability_Rogue_Eviscerate",
   PRIEST = "Spell_Holy_Heal", SHAMAN = "Spell_Nature_HealingWaveGreater", MAGE = "Spell_Fire_Fireball02", WARLOCK = "Spell_Shadow_LifeDrain02", DRUID = "Ability_Racial_BearForm" }
+local CLASS_COL = { WARRIOR = { 0.78, 0.61, 0.43 }, PALADIN = { 0.96, 0.55, 0.73 }, HUNTER = { 0.67, 0.83, 0.45 }, ROGUE = { 1, 0.96, 0.41 },
+  PRIEST = { 1, 1, 1 }, SHAMAN = { 0, 0.44, 0.87 }, MAGE = { 0.41, 0.8, 0.94 }, WARLOCK = { 0.58, 0.51, 0.79 }, DRUID = { 1, 0.49, 0.04 } }
 local REWARD = { 4, 8, 14 }
 local LEVELS = { "Apprentice", "Adept", "Archmage" }
 local TILE_ME, TILE_FOE = { 1, 0.86, 0.52 }, { 0.78, 0.6, 0.95 }
@@ -597,6 +599,14 @@ local function consume()
   end
 end
 
+local function overFx(won, a)
+  local o = win.over
+  if won then o.glow:SetVertexColor(1, 0.8, 0.3, 0.6) else o.glow:SetVertexColor(0.55, 0.35, 0.95, 0.5) end
+  local st = a and a.bStreak or 0
+  o.streak:SetText(won and st > 1 and ("Win streak: " .. st) or "")
+  o.t = 0
+  if PlaySound and SOUNDKIT then local id = won and SOUNDKIT.IG_QUEST_LIST_COMPLETE or SOUNDKIT.IG_QUEST_FAILED; if id then pcall(PlaySound, id) end end
+end
 local function finish()
   if S.finished then return end
   S.finished = true; S.busy = true
@@ -604,9 +614,12 @@ local function finish()
   local won = game.winner == ME
   local lines, prize = {}, 0
   if S.pvp then
-    if a then if won then a.pvpWins = (a.pvpWins or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1 end end
+    if a then
+      if won then a.pvpWins = (a.pvpWins or 0) + 1; a.bStreak = (a.bStreak or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1; a.bStreak = 0 end
+    end
     local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
     win.over.title:SetText(t); win.over.title:SetTextColor(won and 1 or 0.9, won and 0.84 or 0.4, won and 0.4 or 0.4)
+    overFx(won, a)
     win.over.body:SetText((won and ("You beat |cfff5d273" .. (S.foeName or "your friend") .. "|r.") or ((S.foeName or "Your opponent") .. " wins this one.")) .. (S.endReason and ("\n" .. S.endReason) or "") .. "\nFriendly duel: no coins are won or lost.")
     after(1.4, function() win.over:Show() end)
     if RG.Duel and RG.Duel.ended then RG.Duel.ended() end
@@ -619,15 +632,17 @@ local function finish()
       local today = date and date("%Y-%m-%d") or "today"
       if a.arenaDay ~= today then a.arenaDay = today; prize = prize + 8; lines[#lines + 1] = "First arena win today: +8 bonus" end
       a.bWins = (a.bWins or 0) + 1
+      a.bStreak = (a.bStreak or 0) + 1
       local g = U.goalProgress(a, "duel2", 1)
       if g then lines[#lines + 1] = g end
     else
-      prize = 1; a.bLoss = (a.bLoss or 0) + 1
+      prize = 1; a.bLoss = (a.bLoss or 0) + 1; a.bStreak = 0
     end
     a.coins = (a.coins or 0) + prize; a.stats.duel = (a.stats.duel or 0) + prize
   end
   local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
   win.over.title:SetText(t); win.over.title:SetTextColor(won and 1 or 0.9, won and 0.84 or 0.4, won and 0.4 or 0.4)
+  overFx(won, a)
   win.over.body:SetText((won and ("You earn |cfff5d273" .. prize .. " coins|r.") or ("A consolation |cfff5d273" .. prize .. " coin|r for trying.")) .. (#lines > 0 and ("\n" .. table.concat(lines, "\n")) or ""))
   after(1.4, function() win.over:Show() end)
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
@@ -741,11 +756,78 @@ local function makeBoard()
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
   win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 418); win.mullBtn:Hide()
   -- the end screen
-  win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 420, 230); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
-  win.over.title = U.fs(win.over, "title", 34); win.over.title:SetPoint("TOP", 0, -30)
-  win.over.body = U.fs(win.over, "body", 14); win.over.body:SetPoint("TOP", 0, -92); win.over.body:SetWidth(360); win.over.body:SetTextColor(0.9, 0.85, 0.72)
-  local again = U.gbtn(win.over, "Another duel", 150, 30, function() win.over:Hide(); RG.BattleMenu() end); again:SetPoint("BOTTOMLEFT", 40, 24)
-  local done = U.gbtn(win.over, "Close", 120, 30, function() win.over:Hide(); win:Hide() end); done:SetPoint("BOTTOMRIGHT", -40, 24)
+  win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 330); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
+  local o = win.over
+  o.glow = o:CreateTexture(nil, "BACKGROUND", nil, 1); o.glow:SetTexture(U.MEDIA .. "Glow"); o.glow:SetBlendMode("ADD"); o.glow:SetSize(420, 300); o.glow:SetPoint("TOP", 0, 80); o.glow:SetVertexColor(1, 0.8, 0.3, 0.6)
+  o.logo = o:CreateTexture(nil, "ARTWORK"); o.logo:SetTexture(RG.LOGO_LARGE or RG.LOGO); o.logo:SetSize(70, 70); o.logo:SetPoint("TOP", 0, -18)
+  o.title = U.fs(o, "title", 38); o.title:SetPoint("TOP", 0, -98)
+  o.body = U.fs(o, "body", 14); o.body:SetPoint("TOP", 0, -154); o.body:SetWidth(420); o.body:SetTextColor(0.9, 0.85, 0.72)
+  o.streak = U.fs(o, "head", 13); o.streak:SetPoint("BOTTOM", 0, 78); o.streak:SetTextColor(1, 0.83, 0.42)
+  local again = U.gbtn(o, "Another duel", 160, 34, function() o:Hide(); RG.BattleMenu() end, true); again:SetPoint("BOTTOMLEFT", 40, 26)
+  local done = U.gbtn(o, "Close", 130, 34, function() o:Hide(); win:Hide() end); done:SetPoint("BOTTOMRIGHT", -40, 26)
+  tick(function(dt)
+    if o:IsShown() then
+      o.t = (o.t or 0) + dt
+      o.glow:SetAlpha(0.55 + 0.35 * math.sin(o.t * 2.6))
+      local k = math.min(1, o.t * 4); o:SetAlpha(k)
+      if o.logo.SetRotation then o.logo:SetRotation(0) end
+    else o.t = 0 end
+  end)
+  -- the VS splash that opens a duel
+  local vs = CreateFrame("Frame", nil, win); vs:SetAllPoints(win); vs:SetFrameLevel(U.lv(win) + 70); vs:EnableMouse(true); vs:Hide()
+  win.vs = vs
+  vs.dim = vs:CreateTexture(nil, "BACKGROUND"); vs.dim:SetColorTexture(0.02, 0.01, 0.06, 0.86); vs.dim:SetAllPoints(vs)
+  local function side(tag)
+    local g = {}
+    g.glow = vs:CreateTexture(nil, "ARTWORK", nil, 1); g.glow:SetTexture(U.MEDIA .. "Glow"); g.glow:SetBlendMode("ADD"); g.glow:SetSize(320, 320)
+    g.icon = vs:CreateTexture(nil, "ARTWORK", nil, 2); g.icon:SetSize(130, 130); g.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    g.ring = vs:CreateTexture(nil, "ARTWORK", nil, 3); g.ring:SetTexture(U.MEDIA .. "Tile"); g.ring:SetSize(158, 158)
+    g.name = U.fs(vs, "title", 24, "OVERLAY", "OUTLINE")
+    g.sub = U.fs(vs, "head", 14, "OVERLAY", "OUTLINE")
+    g.back = vs:CreateTexture(nil, "ARTWORK", nil, 2); g.back:SetSize(44, 62); g.back:SetTexCoord(0, 1, 0, 358 / 512)
+    return g
+  end
+  vs.a, vs.b = side("a"), side("b")
+  vs.logo = vs:CreateTexture(nil, "ARTWORK", nil, 4); vs.logo:SetTexture(RG.LOGO_LARGE or RG.LOGO); vs.logo:SetSize(90, 90)
+  vs.vs = U.fs(vs, "title", 72, "OVERLAY", "OUTLINE"); vs.vs:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3])
+  vs.tag = U.fs(vs, "head", 15, "OVERLAY", "OUTLINE"); vs.tag:SetTextColor(0.82, 0.74, 0.98)
+  vs:SetScript("OnMouseUp", function() vs.t = 9 end)
+  local function put(g, x, y)
+    g.glow:ClearAllPoints(); g.glow:SetPoint("CENTER", win, "BOTTOMLEFT", x, y)
+    g.icon:ClearAllPoints(); g.icon:SetPoint("CENTER", win, "BOTTOMLEFT", x, y)
+    g.ring:ClearAllPoints(); g.ring:SetPoint("CENTER", win, "BOTTOMLEFT", x, y)
+    g.name:ClearAllPoints(); g.name:SetPoint("CENTER", win, "BOTTOMLEFT", x, y - 112)
+    g.sub:ClearAllPoints(); g.sub:SetPoint("CENTER", win, "BOTTOMLEFT", x, y - 140)
+    g.back:ClearAllPoints(); g.back:SetPoint("CENTER", win, "BOTTOMLEFT", x, y - 190)
+  end
+  tick(function(dt)
+    if not vs:IsShown() then return end
+    vs.t = (vs.t or 0) + dt
+    local t = vs.t
+    local e = math.min(1, t / 0.55); e = 1 - (1 - e) * (1 - e) * (1 - e)    -- ease out
+    put(vs.a, 300 - 520 * (1 - e), 380); put(vs.b, 900 + 520 * (1 - e), 380)
+    local k = math.max(0, math.min(1, (t - 0.35) / 0.3))
+    vs.vs:ClearAllPoints(); vs.vs:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 395 + (1 - k) * 40); vs.vs:SetAlpha(k)
+    vs.logo:ClearAllPoints(); vs.logo:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 480 + (1 - k) * 30); vs.logo:SetAlpha(k)
+    vs.tag:ClearAllPoints(); vs.tag:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 330); vs.tag:SetAlpha(k)
+    local pulse = 0.5 + 0.2 * math.sin(t * 5)
+    vs.a.glow:SetAlpha(pulse * e); vs.b.glow:SetAlpha(pulse * e)
+    local fade = t > 2.2 and math.max(0, 1 - (t - 2.2) / 0.5) or 1
+    vs:SetAlpha(fade)
+    if t > 2.7 then vs:Hide(); vs:SetAlpha(1) end
+  end)
+  function ui.showVS()
+    local me, foe = game.p[ME], game.p[3 - ME]
+    local function dress(g, P, mine)
+      local cc = CLASS_COL and CLASS_COL[P.class] or { 1, 1, 1 }
+      g.icon:SetTexture(CLS_ICON(P.class)); g.ring:SetVertexColor(cc[1], cc[2], cc[3], 1); g.glow:SetVertexColor(cc[1], cc[2], cc[3], 0.6)
+      g.name:SetText(P.name or "?"); g.name:SetTextColor(cc[1], cc[2], cc[3]); g.sub:SetText(B.HERO[P.class].title)
+      g.back:SetTexture(U.MEDIA .. RG.CardBackName())
+    end
+    dress(vs.a, me, true); dress(vs.b, foe, false)
+    vs.tag:SetText(S.pvp and "FRIENDLY DUEL" or ("VS THE COMPUTER  -  " .. string.upper(LEVELS[S.level] or "")))
+    vs.t = 0; vs:SetAlpha(1); vs:Show()
+  end
 end
 
 refresh = function()
@@ -872,7 +954,8 @@ local function show(which)
   S.mode = which == "board" and S.mode or which
   Sh(win.menu, which == "menu"); Sh(win.deck, which == "deck"); Sh(win.board, which == "board")
   Sh(win.bg, which == "board")
-  win.title:SetText(which == "menu" and "WAYPATH ARENA" or which == "deck" and "DECK BUILDER" or "WAYPATH ARENA")
+  win.title:SetText(which == "menu" and "" or which == "deck" and "DECK BUILDER" or "WAYPATH ARENA")
+  if win.logo then Sh(win.logo, which ~= "menu") end
   if which ~= "board" then for _, d in ipairs(ui.dots) do d:Hide() end end
 end
 
@@ -889,6 +972,7 @@ local function beginGame(g)
   win.mullBtn:Show(); win.mullBtn:SetEnabled(true); win.mullBtn:SetText("Keep these cards")
   say("Click any cards you want to swap, then keep the rest.", 600)
   refresh()
+  if ui.showVS then ui.showVS() end
   logLine("|cfff5d273" .. (game.first == ME and "You go first." or ((S.pvp and (S.foeName or "Your friend") or "The foe") .. " goes first. You get the Lucky Coin.")) .. "|r")
 end
 
@@ -935,78 +1019,183 @@ local function myClass(a)
   local _, c = UnitClass and UnitClass("player")
   return a.heroClass or c or "WARRIOR"
 end
+local LEVEL_ICON = { "Spell_Nature_Polymorph", "Spell_Frost_FrostBolt02", "Spell_Arcane_StarFire" }
+local LEVEL_BLURB = { "Plays loosely with a plain deck.", "Plays sensibly.", "Plays carefully, bosses included." }
+local function deckCurve(dk)
+  local c = { 0, 0, 0, 0, 0, 0, 0 }
+  for k, v in pairs(dk.cards) do
+    local d = B.defs[k]
+    if d then local i = math.min(7, (d.cost or 0) + 1); c[i] = c[i] + v end
+  end
+  return c
+end
 local function refreshMenu()
   local a = store(); if not a then return end
   local dk = deckOf(a, a.deckSel or 1)
   cleanDeck(a, dk)
   local cls = myClass(a)
-  for c, b in pairs(menu.cls) do b:SetActive(c == cls) end
-  for i, b in ipairs(menu.slots) do b:SetActive(i == (a.deckSel or 1)); local n = deckSize(deckOf(a, i)); b:SetText("Deck " .. i .. "  (" .. n .. ")") end
-  for i, b in ipairs(menu.lvl) do b:SetActive(i == S.level) end
+  for c, b in pairs(menu.cls) do b:SetSel(c == cls) end
+  local h = B.HERO[cls]; local cc = CLASS_COL[cls] or { 1, 1, 1 }
+  menu.show.icon:SetTexture(CLS_ICON(cls)); menu.show.pIcon:SetTexture("Interface\\Icons\\" .. (POWER_ICON[cls] or "INV_Misc_QuestionMark"))
+  menu.show.name:SetText(h.title); menu.show.name:SetTextColor(cc[1], cc[2], cc[3])
+  menu.show.pName:SetText(h.power .. "  |cff8fb8ff(" .. h.cost .. " mana)|r"); menu.show.pText:SetText(h.text)
+  menu.show.ring:SetVertexColor(cc[1], cc[2], cc[3], 1); menu.show.glow:SetVertexColor(cc[1], cc[2], cc[3], 0.55)
+  local bk = U.MEDIA .. RG.CardBackName()
+  for i, b in ipairs(menu.slots) do
+    local d2 = deckOf(a, i); local n = deckSize(d2)
+    b:SetSel(i == (a.deckSel or 1))
+    b.name:SetText("Deck " .. i)
+    b.count:SetText(n == B.DECK and "|cff9fe39aReady|r  " .. n .. " / " .. B.DECK or ("|cffe39a9a" .. n .. " / " .. B.DECK .. "|r"))
+    b.back:SetTexture(bk)
+    local cv = deckCurve(d2); local mx = 1
+    for _, v in ipairs(cv) do mx = math.max(mx, v) end
+    for j, bar in ipairs(b.bars) do bar:SetHeight(math.max(2, 30 * cv[j] / mx)); bar:SetVertexColor(0.95, 0.78, 0.35, n > 0 and 0.9 or 0.25) end
+  end
+  for i, b in ipairs(menu.lvl) do b:SetSel(i == S.level) end
   for i, b in ipairs(menu.backs or {}) do
     local on = i == (a.cardBack or 1)
     if on then b:SetBackdropBorderColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3], 1) else b:SetBackdropBorderColor(0.3, 0.27, 0.22, 0.9) end
   end
-  local h = B.HERO[cls]
-  menu.power:SetText("|cfff5d273" .. h.power .. "|r  (2 mana):  " .. h.text)
   local n = deckSize(dk)
   menu.deckInfo:SetText(n == B.DECK and "|cff9fe39aDeck ready|r" or ("|cffe39a9a" .. n .. " / " .. B.DECK .. " cards|r"))
   menu.play:SetEnabled(n == B.DECK)
   if menu.pvp then menu.pvp:SetEnabled(n == B.DECK) end
   menu.play:SetText(n == B.DECK and "Enter the Arena" or "Finish your deck first")
-  menu.lvlInfo:SetText(({ "Plays loosely with a plain deck.  Win: " .. REWARD[1] .. " coins.", "Plays sensibly.  Win: " .. REWARD[2] .. " coins.", "Plays carefully with a full deck, bosses included.  Win: " .. REWARD[3] .. " coins." })[S.level])
-  menu.rec:SetText("Arena record: " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.  Your first win each day pays +8 coins." .. (((a.pvpWins or 0) + (a.pvpLoss or 0)) > 0 and ("  Player duels: " .. (a.pvpWins or 0) .. " won, " .. (a.pvpLoss or 0) .. " lost.") or ""))
+  menu.lvlInfo:SetText("|cffa89bc9Win|r |cfff5d273" .. REWARD[S.level] .. " coins|r  |cffa89bc9" .. LEVEL_BLURB[S.level] .. "|r")
+  menu.rec:SetText("|cfff5d273" .. (a.bWins or 0) .. "|r won   |cffe39a9a" .. (a.bLoss or 0) .. "|r lost")
+  menu.rec2:SetText("|cfff5d273" .. (a.pvpWins or 0) .. "|r won   |cffe39a9a" .. (a.pvpLoss or 0) .. "|r lost")
+  menu.rec3:SetText(((a.bStreak or 0) > 1) and ("|cffffd36bWin streak: " .. a.bStreak .. "|r") or "|cffa89bc9Your first win each day pays +8 coins|r")
 end
 local deckRefresh = function() end
 
+local function pbox(parent, w, h)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  b:SetSize(w, h)
+  b:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 })
+  b.glow = b:CreateTexture(nil, "BACKGROUND", nil, 1); b.glow:SetTexture(U.MEDIA .. "Glow"); b.glow:SetBlendMode("ADD"); b.glow:SetPoint("TOPLEFT", -14, 14); b.glow:SetPoint("BOTTOMRIGHT", 14, -14); b.glow:SetVertexColor(0.95, 0.78, 0.35, 0); b.glow:SetAlpha(0)
+  function b:Paint()
+    if self.sel then self:SetBackdropColor(0.2, 0.15, 0.08, 0.98); self:SetBackdropBorderColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3], 1); self.glow:SetAlpha(0.35)
+    elseif self.hov then self:SetBackdropColor(0.14, 0.11, 0.24, 0.98); self:SetBackdropBorderColor(0.85, 0.72, 0.42, 1); self.glow:SetAlpha(0.18)
+    else self:SetBackdropColor(0.08, 0.06, 0.15, 0.95); self:SetBackdropBorderColor(0.4, 0.34, 0.24, 0.9); self.glow:SetAlpha(0) end
+  end
+  function b:SetSel(on) self.sel = on and true or false; self:Paint() end
+  b:HookScript("OnEnter", function(self) self.hov = true; self:Paint() end)
+  b:HookScript("OnLeave", function(self) self.hov = false; self:Paint() end)
+  b:Paint()
+  return b
+end
+
 local function buildMenu()
   local p = CreateFrame("Frame", nil, win.menu, "BackdropTemplate")
-  U.darkPanel(p, 840, 660); p:SetPoint("CENTER", win, "CENTER", 0, -4)
-  local function label(txt, y) local f = U.fs(p, "head", 12); f:SetPoint("TOPLEFT", 24, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt); return f end
-  local t = U.fs(p, "title", 28); t:SetPoint("TOP", 0, -22); t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); t:SetText("WAYPATH ARENA")
-  local lg = p:CreateTexture(nil, "ARTWORK"); lg:SetTexture(RG.LOGO_LARGE or RG.LOGO); lg:SetSize(52, 52); lg:SetPoint("TOPLEFT", 24, -14)
-  local lg2 = p:CreateTexture(nil, "ARTWORK"); lg2:SetTexture(RG.LOGO_LARGE or RG.LOGO); lg2:SetSize(52, 52); lg2:SetPoint("TOPRIGHT", -24, -14)
+  U.darkPanel(p, 1060, 640); p:SetPoint("CENTER", win, "CENTER", 0, -14)
+  local function label(txt, x, y) local f = U.fs(p, "head", 12); f:SetPoint("TOPLEFT", x, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt); return f end
+  local t = U.fs(p, "title", 30); t:SetPoint("TOP", 0, -22); t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); t:SetText("WAYPATH ARENA")
+  local lg = p:CreateTexture(nil, "ARTWORK"); lg:SetTexture(RG.LOGO_LARGE or RG.LOGO); lg:SetSize(56, 56); lg:SetPoint("TOPLEFT", 24, -14)
+  local lg2 = p:CreateTexture(nil, "ARTWORK"); lg2:SetTexture(RG.LOGO_LARGE or RG.LOGO); lg2:SetSize(56, 56); lg2:SetPoint("TOPRIGHT", -24, -14)
   local sub = U.fs(p, "body", 13); sub:SetPoint("TOP", 0, -62); sub:SetTextColor(0.8, 0.76, 0.9); sub:SetText("Duel with the cards you have found. Every card plays as a minion, a spell or a weapon.")
-  label("CHOOSE YOUR HERO", -100)
+
+  -- heroes: portrait buttons in class colours
+  label("CHOOSE YOUR HERO", 24, -96)
   for i, c in ipairs(B.CLASSES) do
-    local b = U.gbtn(p, B.HERO[c].title, 84, 26, function() local a = store(); a.heroClass = c; refreshMenu() end)
-    b:SetPoint("TOPLEFT", 24 + (i - 1) * 88, -122); menu.cls[c] = b
+    local b = pbox(p, 72, 92)
+    b:SetPoint("TOPLEFT", 24 + (i - 1) * 76, -118)
+    local cc = CLASS_COL[c]
+    b.ico = b:CreateTexture(nil, "ARTWORK"); b.ico:SetTexture(CLS_ICON(c)); b.ico:SetSize(46, 46); b.ico:SetPoint("TOP", 0, -8); b.ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    b.ringT = b:CreateTexture(nil, "OVERLAY"); b.ringT:SetTexture(U.MEDIA .. "Tile"); b.ringT:SetSize(56, 56); b.ringT:SetPoint("CENTER", b.ico); b.ringT:SetVertexColor(cc[1], cc[2], cc[3], 0.9)
+    b.nm = U.fs(b, "head", 11); b.nm:SetPoint("BOTTOM", 0, 10); b.nm:SetText(B.HERO[c].title); b.nm:SetTextColor(cc[1], cc[2], cc[3])
+    b:SetScript("OnClick", function() local a = store(); a.heroClass = c; refreshMenu() end)
+    menu.cls[c] = b
   end
-  menu.power = U.fs(p, "body", 13); menu.power:SetPoint("TOPLEFT", 24, -156); menu.power:SetTextColor(0.85, 0.8, 0.7)
-  label("YOUR DECK", -190)
+  -- showcase of the chosen hero
+  local sc = CreateFrame("Frame", nil, p, "BackdropTemplate")
+  sc:SetSize(270, 226); sc:SetPoint("TOPLEFT", 766, -100)
+  sc:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); sc:SetBackdropColor(0.06, 0.05, 0.13, 0.95); sc:SetBackdropBorderColor(0.6, 0.5, 0.28, 0.9)
+  menu.show = {}
+  local S2 = menu.show
+  S2.glow = sc:CreateTexture(nil, "BACKGROUND", nil, 1); S2.glow:SetTexture(U.MEDIA .. "Glow"); S2.glow:SetBlendMode("ADD"); S2.glow:SetSize(220, 220); S2.glow:SetPoint("TOP", 0, 20)
+  S2.icon = sc:CreateTexture(nil, "ARTWORK"); S2.icon:SetSize(84, 84); S2.icon:SetPoint("TOP", 0, -18); S2.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  S2.ring = sc:CreateTexture(nil, "OVERLAY"); S2.ring:SetTexture(U.MEDIA .. "Tile"); S2.ring:SetSize(104, 104); S2.ring:SetPoint("CENTER", S2.icon)
+  S2.name = U.fs(sc, "title", 20); S2.name:SetPoint("TOP", 0, -112)
+  S2.pIcon = sc:CreateTexture(nil, "ARTWORK"); S2.pIcon:SetSize(30, 30); S2.pIcon:SetPoint("TOPLEFT", 16, -146); S2.pIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  S2.pName = U.fs(sc, "head", 12); S2.pName:SetPoint("TOPLEFT", 54, -146); S2.pName:SetTextColor(0.96, 0.84, 0.5)
+  S2.pText = U.fs(sc, "body", 12); S2.pText:SetPoint("TOPLEFT", 54, -164); S2.pText:SetWidth(204); S2.pText:SetJustifyH("LEFT"); S2.pText:SetTextColor(0.85, 0.8, 0.7)
+
+  -- decks
+  label("YOUR DECK", 24, -238)
   for i = 1, 3 do
-    local b = U.gbtn(p, "Deck " .. i, 110, 26, function() local a = store(); a.deckSel = i; refreshMenu() end)
-    b:SetPoint("TOPLEFT", 24 + (i - 1) * 116, -212); menu.slots[i] = b
+    local b = pbox(p, 200, 84)
+    b:SetPoint("TOPLEFT", 24 + (i - 1) * 208, -260)
+    b.back = b:CreateTexture(nil, "ARTWORK"); b.back:SetSize(42, 59); b.back:SetPoint("LEFT", 10, 0); b.back:SetTexCoord(0, 1, 0, 358 / 512)
+    b.name = U.fs(b, "head", 14); b.name:SetPoint("TOPLEFT", 62, -12); b.name:SetTextColor(0.96, 0.9, 0.7)
+    b.count = U.fs(b, "body", 12); b.count:SetPoint("TOPLEFT", 62, -32)
+    b.bars = {}
+    for j = 1, 7 do
+      local bar = b:CreateTexture(nil, "ARTWORK"); bar:SetTexture(U.WHITE); bar:SetWidth(8); bar:SetHeight(2)
+      bar:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 62 + (j - 1) * 18, 10); b.bars[j] = bar
+    end
+    b:SetScript("OnClick", function() local a = store(); a.deckSel = i; refreshMenu() end)
+    menu.slots[i] = b
   end
-  local edit = U.gbtn(p, "Edit deck", 110, 26, function() RG.BattleDeck() end); edit:SetPoint("TOPLEFT", 388, -212)
-  local auto = U.gbtn(p, "Auto-fill", 110, 26, function() local a = store(); fillDeck(a, deckOf(a, a.deckSel or 1)); refreshMenu() end); auto:SetPoint("TOPLEFT", 504, -212)
-  menu.deckInfo = U.fs(p, "head", 12); menu.deckInfo:SetPoint("TOPLEFT", 630, -218)
-  label("OPPONENT", -256)
+  local edit = U.gbtn(p, "Edit deck", 118, 36, function() RG.BattleDeck() end); edit:SetPoint("TOPLEFT", 642, -262)
+  local auto = U.gbtn(p, "Auto-fill", 118, 36, function() local a = store(); fillDeck(a, deckOf(a, a.deckSel or 1)); refreshMenu() end); auto:SetPoint("TOPLEFT", 642, -304)
+  menu.deckInfo = U.fs(p, "head", 12); menu.deckInfo:SetPoint("TOPLEFT", 120, -238)
+
+  -- opponents
+  label("OPPONENT", 24, -362)
   for i = 1, 3 do
-    local b = U.gbtn(p, LEVELS[i], 130, 26, function() S.level = i; local a = store(); a.level = i; refreshMenu() end)
-    b:SetPoint("TOPLEFT", 24 + (i - 1) * 136, -278); menu.lvl[i] = b
+    local b = pbox(p, 200, 84)
+    b:SetPoint("TOPLEFT", 24 + (i - 1) * 208, -384)
+    b.ico = b:CreateTexture(nil, "ARTWORK"); b.ico:SetTexture("Interface\\Icons\\" .. LEVEL_ICON[i]); b.ico:SetSize(48, 48); b.ico:SetPoint("LEFT", 12, 0); b.ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    b.ringT = b:CreateTexture(nil, "OVERLAY"); b.ringT:SetTexture(U.MEDIA .. "Tile"); b.ringT:SetSize(58, 58); b.ringT:SetPoint("CENTER", b.ico)
+    b.nm = U.fs(b, "head", 14); b.nm:SetPoint("TOPLEFT", 74, -14); b.nm:SetText(LEVELS[i]); b.nm:SetTextColor(0.96, 0.9, 0.7)
+    for k = 1, 3 do   -- difficulty pips
+      local pip = b:CreateTexture(nil, "ARTWORK"); pip:SetTexture(U.MEDIA .. "Crystal"); pip:SetSize(16, 16); pip:SetPoint("TOPLEFT", 74 + (k - 1) * 18, -38)
+      if k > i then pip:SetVertexColor(0.3, 0.3, 0.4, 0.5) end
+    end
+    b.chip = U.fs(b, "head", 12); b.chip:SetPoint("BOTTOMLEFT", 74, 10); b.chip:SetTextColor(0.96, 0.84, 0.5); b.chip:SetText("+" .. REWARD[i] .. " coins")
+    b:SetScript("OnClick", function() S.level = i; local a = store(); a.level = i; refreshMenu() end)
+    menu.lvl[i] = b
   end
-  menu.lvlInfo = U.fs(p, "body", 13); menu.lvlInfo:SetPoint("TOPLEFT", 440, -283); menu.lvlInfo:SetWidth(380); menu.lvlInfo:SetJustifyH("LEFT"); menu.lvlInfo:SetTextColor(0.85, 0.8, 0.7)
-  menu.play = U.gbtn(p, "Enter the Arena", 300, 46, function() startMatch() end, true); menu.play:SetPoint("TOP", 0, -334)
-  menu.pvp = U.gbtn(p, "Challenge a player", 220, 38, function()
+  menu.lvlInfo = U.fs(p, "body", 12); menu.lvlInfo:SetPoint("TOPLEFT", 120, -362); menu.lvlInfo:SetJustifyH("LEFT")
+
+  -- play
+  menu.play = U.gbtn(p, "Enter the Arena", 400, 58, function() startMatch() end, true); menu.play:SetPoint("TOPLEFT", 24, -494)
+  menu.play:SetActive(true)
+  menu.pvp = U.gbtn(p, "Challenge a player", 220, 40, function()
     if not RG.DuelTarget then return end
     local ok, err, who = RG.DuelTarget()
     menu.msg:SetText(ok and ("Challenge sent to " .. who .. ".") or (err or ""))
   end)
-  menu.pvp:SetPoint("TOPLEFT", 596, -342)
-  menu.pvp:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Friendly duel with another Waypath+ player"); GameTooltip:AddLine("Target them first (or type /wp duel Name). You both play your selected Arena deck. No coins change hands.", 1, 1, 1, true); GameTooltip:Show() end)
-  menu.pvp:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  label("HOW IT PLAYS", -400)
-  local rules = U.fs(p, "body", 13); rules:SetPoint("TOPLEFT", 24, -422); rules:SetWidth(790); rules:SetJustifyH("LEFT"); rules:SetJustifyV("TOP"); rules:SetTextColor(0.82, 0.78, 0.7); if rules.SetSpacing then rules:SetSpacing(3) end
-  rules:SetText("Each hero has 30 health. You gain one more mana crystal every turn, up to ten, and draw a card.\n"
-    .. "Click a card in your hand to play it. Click a minion that glows green, then something to attack. New minions must wait a turn, unless they have Charge (anything) or Rush (minions only).\n"
-    .. "Taunt must be attacked first. Divine Shield blocks one hit. Battlecries happen when a card is played, deathrattles when it dies, and some minions act at the end of your turn.\n"
-    .. "Items become spells and weapons, NPCs and Raiders become minions, and Places become area spells. Every card plays the same way every time. Holo and full-art prints are for show.\n"
+  menu.pvp:SetPoint("TOPLEFT", 440, -503)
+  menu.pvp:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Friendly duel with another Waypath+ player"); GameTooltip:AddLine("Target them first (or type /wp duel Name). You both play your selected Arena deck. No coins change hands.", 1, 1, 1, true); GameTooltip:Show() end)
+  menu.pvp:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
+  local rulesBtn = U.gbtn(p, "How to play", 120, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 672, -503)
+
+  -- record
+  local rb = CreateFrame("Frame", nil, p, "BackdropTemplate")
+  rb:SetSize(270, 130); rb:SetPoint("TOPLEFT", 766, -344)
+  rb:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); rb:SetBackdropColor(0.06, 0.05, 0.13, 0.95); rb:SetBackdropBorderColor(0.4, 0.34, 0.24, 0.9)
+  local function rl(txt, y) local f = U.fs(rb, "head", 11); f:SetPoint("TOPLEFT", 14, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt) end
+  rl("VS THE COMPUTER", -12); menu.rec = U.fs(rb, "body", 13); menu.rec:SetPoint("TOPLEFT", 14, -28)
+  rl("PLAYER DUELS", -58); menu.rec2 = U.fs(rb, "body", 13); menu.rec2:SetPoint("TOPLEFT", 14, -74)
+  menu.rec3 = U.fs(rb, "body", 12); menu.rec3:SetPoint("TOPLEFT", 14, -102)
+
+  menu.msg = U.fs(p, "head", 13); menu.msg:SetPoint("TOPLEFT", 24, -568); menu.msg:SetWidth(700); menu.msg:SetJustifyH("LEFT"); menu.msg:SetTextColor(1, 0.7, 0.5)
+  local back = U.gbtn(p, "Back to cards", 130, 28, function() win:Hide(); if RG.ShowArcade then RG.ShowArcade() end end); back:SetPoint("BOTTOMLEFT", 24, 18)
+
+  -- rules drawer
+  local rbx = CreateFrame("Frame", nil, p, "BackdropTemplate")
+  U.darkPanel(rbx, 760, 330); rbx:SetPoint("CENTER", p, "CENTER", 0, 20); rbx:SetFrameLevel(U.lv(p) + 30); rbx:Hide(); menu.rulesBox = rbx
+  local rt = U.fs(rbx, "title", 20); rt:SetPoint("TOP", 0, -18); rt:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); rt:SetText("HOW TO PLAY")
+  local rules = U.fs(rbx, "body", 13); rules:SetPoint("TOPLEFT", 28, -56); rules:SetWidth(704); rules:SetJustifyH("LEFT"); rules:SetJustifyV("TOP"); rules:SetTextColor(0.88, 0.84, 0.76); if rules.SetSpacing then rules:SetSpacing(4) end
+  rules:SetText("Each hero has 30 health. You gain one more mana crystal every turn, up to ten, and draw a card.\n\n"
+    .. "Click a card in your hand to play it. Click a minion that glows green, then something to attack. New minions must wait a turn, unless they have Charge (anything) or Rush (minions only).\n\n"
+    .. "Taunt must be attacked first. Divine Shield blocks one hit. Battlecries happen when a card is played, deathrattles when it dies, and some minions act at the end of your turn.\n\n"
+    .. "Items become spells and weapons, NPCs and Raiders become minions, and Places become area spells.\n\n"
     .. "A deck is 30 cards, two copies of each (one of each legendary). Cards you have not found yet are not available, but a few basic cards always are.")
-  menu.rec = U.fs(p, "head", 12); menu.rec:SetPoint("BOTTOM", 0, 56); menu.rec:SetTextColor(0.75, 0.72, 0.9)
-  local back = U.gbtn(p, "Back to cards", 130, 26, function() win:Hide(); if RG.ShowArcade then RG.ShowArcade() end end); back:SetPoint("BOTTOMLEFT", 24, 18)
-  menu.msg = U.fs(p, "head", 13); menu.msg:SetPoint("BOTTOMRIGHT", -24, 74); menu.msg:SetTextColor(1, 0.7, 0.5)
-  -- card backs: pick the one your opponent's hand and your packs show
+  local rx = U.gbtn(rbx, "Close", 100, 28, function() rbx:Hide() end); rx:SetPoint("BOTTOM", 0, 18)
+
+  -- card backs
   menu.backs = {}
   for i, name in ipairs(BACKS) do
     local b = CreateFrame("Button", nil, p, "BackdropTemplate")
