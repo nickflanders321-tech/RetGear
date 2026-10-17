@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+- Arena balance pass (from 100k+ self-play games): the player who goes second now also starts with 3 Armor; hero powers retuned (Warrior 3 armor, Hunter 3 damage for 3, Paladin and Shaman cost 3, Priest heals 3 and gains 1 armor, Rogue dagger is 1/3, Warlock takes 1); vanilla minions and keyword prices lowered, shield and kill spells costlier, buff, heal and armor spells cheaper.
 - Arena: the opening-hand screen is tidied (cards sit on their own panel, the Keep button and message no longer overlap, the opponent's hand no longer touches their name).
 
 ## 1.2.0

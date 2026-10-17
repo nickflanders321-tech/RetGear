@@ -13,10 +13,10 @@ B.KW = { taunt = "Taunt", charge = "Charge", rush = "Rush", shield = "Divine Shi
 B.KWORDER = { "taunt", "charge", "rush", "shield", "stealth", "windfury", "lifesteal", "poison" }
 B.defs = {}
 -- going second: how the two seats are evened out (tuned by simulation, see tools/balance)
-B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 0,
-  minionBase = 1,    -- a vanilla minion has 2 * cost + minionBase stats
-  kwExtra = {},      -- extra stat price per keyword or effect (feature name -> stats)
-  archCost = {} }    -- mana nudge per spell archetype
+B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 3,
+  minionBase = 0,    -- a vanilla minion has 2 * cost + minionBase stats
+  kwExtra = { shield = 2, rush = 1, lifesteal = 1, taunt = 0, bc_heal = 1, dr_summon = 1, windfury = 1 },  -- extra stat price per keyword or effect
+  archCost = { kill = 2, mend = -1, buff = -1, draw = 0, armor = -1 } }    -- mana nudge per spell archetype
 
 local function hash(s) local h = 5381; for i = 1, #s do h = (h * 33 + s:byte(i)) % 2147483629 end return h end
 local function seeded(s) s = s % 2147483646 + 1; return function(n) s = (s * 48271) % 2147483647; return s % n + 1 end end
@@ -409,18 +409,18 @@ B.registerBasics()
 -- ---------------------------------------------------------------------------
 B.CLASSES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
 B.HERO = {
-  WARRIOR = { title = "Warrior", power = "Armor Up!", cost = 2, ops = { armor(2) }, text = "Gain 2 Armor." },
-  PALADIN = { title = "Paladin", power = "Reinforce", cost = 2, ops = { summon(1, tok("hand")) }, text = "Summon a 1/1 Silver Hand Recruit." },
-  HUNTER = { title = "Hunter", power = "Steady Shot", cost = 2, ops = { dmg(2, "eface") }, text = "Deal 2 damage to the enemy hero." },
-  ROGUE = { title = "Rogue", power = "Dagger Mastery", cost = 2, ops = { { op = "weapon", a = 1, d = 2 } }, text = "Equip a 1/2 Dagger." },
-  PRIEST = { title = "Priest", power = "Lesser Heal", cost = 2, ops = { heal(2) }, tgt = "any", text = "Restore 2 Health." },
-  SHAMAN = { title = "Shaman", power = "Totemic Call", cost = 2, ops = { { op = "summon", n = 1, pick = {
+  WARRIOR = { title = "Warrior", power = "Armor Up!", cost = 2, ops = { armor(3) }, text = "Gain 3 Armor." },
+  PALADIN = { title = "Paladin", power = "Reinforce", cost = 3, ops = { summon(1, tok("hand")) }, text = "Summon a 1/1 Silver Hand Recruit." },
+  HUNTER = { title = "Hunter", power = "Steady Shot", cost = 3, ops = { dmg(3, "eface") }, text = "Deal 3 damage to the enemy hero." },
+  ROGUE = { title = "Rogue", power = "Dagger Mastery", cost = 2, ops = { { op = "weapon", a = 1, d = 3 } }, text = "Equip a 1/3 Dagger." },
+  PRIEST = { title = "Priest", power = "Lesser Heal", cost = 2, ops = { heal(3), armor(1) }, tgt = "any", text = "Restore 3 Health. Gain 1 Armor." },
+  SHAMAN = { title = "Shaman", power = "Totemic Call", cost = 3, ops = { { op = "summon", n = 1, pick = {
     { name = "Searing Totem", atk = 1, hp = 1, icon = "Spell_Fire_SearingTotem", token = true },
     { name = "Stoneclaw Totem", atk = 0, hp = 2, icon = "Spell_Nature_StoneClawTotem", kw = { taunt = true }, token = true },
     { name = "Healing Totem", atk = 0, hp = 2, icon = "Spell_Nature_HealingWaveGreater", token = true, eot = { heal(1, "fall") } },
   } } }, text = "Summon a random Totem." },
   MAGE = { title = "Mage", power = "Fireblast", cost = 2, ops = { dmg(1) }, tgt = "any", text = "Deal 1 damage." },
-  WARLOCK = { title = "Warlock", power = "Life Tap", cost = 2, ops = { dmg(2, "fface"), draw(1) }, text = "Draw a card and take 2 damage." },
+  WARLOCK = { title = "Warlock", power = "Life Tap", cost = 2, ops = { dmg(1, "fface"), draw(1) }, text = "Draw a card and take 1 damage." },
   DRUID = { title = "Druid", power = "Shapeshift", cost = 2, ops = { { op = "hero", a = 1 }, armor(1) }, text = "+1 Attack this turn. +1 Armor." },
 }
 B.OPPONENTS = {
