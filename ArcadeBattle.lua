@@ -1217,9 +1217,19 @@ function RG.ArenaPvPDeck()
   local list = expand(dk)
   for _, k in ipairs(list) do
     if not B.defs[k] then return nil, "A card in your deck is not ready yet." end
-    if k:sub(1, 1) == "@" then return nil, "Raider cards can't be used in player duels yet: take " .. k:sub(2) .. " out of your deck." end
   end
-  return list, myClass(a), (UnitName and UnitName("player")) or "Player"
+  -- Raider cards only exist on your own collection, so the other player could not load them: swap them out for this duel
+  local keep, swapped = {}, 0
+  for _, k in ipairs(list) do if k:sub(1, 1) == "@" then swapped = swapped + 1 else keep[#keep + 1] = k end end
+  if swapped > 0 then
+    local have, keys = avail(a)
+    local pool, limit = {}, {}
+    for _, k in ipairs(keys) do if k:sub(1, 1) ~= "@" then pool[#pool + 1] = k end end
+    local deck = B.randomDeck(pool, 6, math.random, keep, function(k) return math.min(have[k] or 0, B.maxCopies(B.defs[k])) end)
+    list = deck
+    if #list ~= B.DECK then return nil, "Could not build a duel deck without your Raider cards." end
+  end
+  return list, myClass(a), (UnitName and UnitName("player")) or "Player", swapped
 end
 function RG.ArenaPvPStart(o)
   if not win then RG.ShowBattle() end

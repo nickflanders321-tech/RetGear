@@ -289,7 +289,11 @@ local function realEnv()
   function env.send(msg, target)
     if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "WHISPER", target) end
   end
-  function env.deck() return RG.ArenaPvPDeck() end
+  function env.deck()
+    local list, class, me, swapped = RG.ArenaPvPDeck()
+    if list and swapped and swapped > 0 then env.print(swapped .. " Raider card(s) in your deck were swapped for other cards for this duel (Raiders only exist on your own collection).") end
+    return list, class, me
+  end
   function env.handSize(side) local g = RG.ArenaPvPState(); return g and #g.p[side].hand or 0 end
   function env.seed() return RG.ArenaPvPSeed() end
   function env.curSide() local g = RG.ArenaPvPState(); return g and g.cur or 0 end
