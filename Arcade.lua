@@ -908,10 +908,17 @@ local U = { name = { 13, 10, 243, 40 }, art = { 16, 44, 240, 200 }, type = { 13,
 local function lv(f) local l = f.GetFrameLevel and f:GetFrameLevel(); return type(l) == "number" and l or 1 end
 -- names and chat text can hold letters our card fonts do not have (Cyrillic, Chinese, Korean...): those use the game's own font
 local WIDE_PATTERN = "[\208-\225\227-\255]"
+-- the game's own fonts that hold those letters: Chinese and Japanese, Korean, and Cyrillic and the rest
+local function wideFontFor(text)
+  if type(text) ~= "string" or not text:find(WIDE_PATTERN) then return false end
+  if text:find("[\234-\237]") then return "Fonts\\2002.TTF" end
+  if text:find("[\227-\233]") then return "Fonts\\ARKai_T.ttf" end
+  return STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+end
 local function setfont(f, key, size, flags)
   size = math.max(6, math.floor(size * 2 + 0.5) / 2)
   f.fkey, f.fsize, f.fflags = key, size, flags
-  local path = (f.wideFont == true) and (STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF") or (FONT[key] or FONT.body)
+  local path = type(f.wideFont) == "string" and f.wideFont or (FONT[key] or FONT.body)
   local ok = f:SetFont(path, size, flags or "")
   if not ok and RG.FONTS then ok = f:SetFont(RG.FONTS.regular, size, flags or "") end
   if not ok then f:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
@@ -922,8 +929,8 @@ local function fs(parent, key, size, layer, flags)
   t:SetShadowColor(0, 0, 0, 0.8); t:SetShadowOffset(1, -1)
   local raw = t.SetText
   t.SetText = function(self, text, ...)
-    local wide = type(text) == "string" and text:find(WIDE_PATTERN) and true or false
-    if wide ~= (self.wideFont == true) and type(self.fkey) == "string" then
+    local wide = wideFontFor(text)
+    if wide ~= (self.wideFont or false) and type(self.fkey) == "string" then
       self.wideFont = wide
       setfont(self, self.fkey, self.fsize, self.fflags)
     end
@@ -1156,17 +1163,31 @@ local function placeArt(w, c, full)
   return true
 end
 
+-- display ids of the player races (male, female): the card shows the model even when the game's file path is not known
+local RACE_DISPLAY = { Human = { 49, 50 }, Orc = { 51, 52 }, Dwarf = { 53, 54 }, NightElf = { 55, 56 }, Scourge = { 57, 58 }, Tauren = { 59, 60 },
+  Gnome = { 1563, 1564 }, Troll = { 1478, 1479 }, BloodElf = { 15476, 15475 }, Draenei = { 16125, 16126 } }
+local RACE_LIST = { "Human", "Orc", "Dwarf", "NightElf", "Scourge", "Tauren", "Gnome", "Troll", "BloodElf", "Draenei" }
 local function dressModel(w, c, finish)
   local m = ensureModel(w)
   if not m then return false end
-  local dir = RACE_DIR[c.race or ""]
-  if not dir then m:Hide() return false end
-  local g = c.sex == 3 and "Female" or "Male"
-  m.cls = c.class
+  -- a Raider whose race we never saw still gets a person: one picked from the name, so it is always the same one
+  local seed = seedOf(c.name or "?")
+  local race = RACE_DISPLAY[c.race or ""] and c.race or RACE_DISPLAY[RACE_DIR[c.race or ""] or ""] and RACE_DIR[c.race] or RACE_LIST[seed % #RACE_LIST + 1]
+  local female = (c.sex == 3) or (c.sex ~= 2 and (math.floor(seed / 7) % 2 == 1))
+  m.cls = c.class; m.creature = false
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
-  local ok = pcall(m.SetModel, m, "Character\\" .. dir .. "\\" .. g .. "\\" .. dir .. g .. ".m2")
+  local ids = RACE_DISPLAY[race]
+  local ok = false
+  if ids and m.SetDisplayInfo then ok = pcall(m.SetDisplayInfo, m, ids[female and 2 or 1]) end
+  if not ok then
+    local dir = RACE_DIR[race] or "Human"
+    local g = female and "Female" or "Male"
+    ok = pcall(m.SetModel, m, "Character\\" .. dir .. "\\" .. g .. "\\" .. dir .. g .. ".m2")
+  end
   if not ok then m:Hide() return false end
+  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0.2) end
+  if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
   m:Show()
   return true
 end

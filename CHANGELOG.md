@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Raider cards always show a character model in their class gear (race and sex picked from the name when never seen); names in Chinese, Korean and Cyrillic use fonts that have those letters.
 - Blood elf and draenei Raiders now show their character model on their card (they fell back to scenery before).
 - No two cards share a picture any more: Raiders, creatures and places the game can't show a model or painting for get their own drawn scenery, seeded from their name (cards, pack reveal and board).
 - Raider cards and other text with non-Latin letters (Cyrillic, Chinese, Korean...) no longer show empty boxes: those strings switch to the game's own font automatically.
