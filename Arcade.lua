@@ -418,7 +418,7 @@ local function openOne(a)
   if shiny then note(goalProgress(a, "shiny", 1)) end
   if newCount > 0 then note(goalProgress(a, "new5", newCount)) end
   for _, s in ipairs(claimSets(a)) do notes[#notes + 1] = "Set complete: " .. s end
-  if meta.streakReward then notes[#notes + 1] = STREAK_BONUS .. " days in a row: a reward seal is waiting" end
+  if meta.streakReward then notes[#notes + 1] = STREAK_BONUS .. " days in a row: a reward pack is waiting" end
   -- set progress for the sets these cards belong to
   local touched, order = {}, {}
   for _, g in ipairs(got) do
@@ -477,7 +477,7 @@ function RG.ArcadeOpenMany()
     end
     for _, x in ipairs(nt) do notes[#notes + 1] = x end
   end
-  if many.count == 0 then return nil, "No seals to break." end
+  if many.count == 0 then return nil, "No packs to break." end
   many.total = #all
   table.sort(all, function(x, y) return pullScore(x) > pullScore(y) end)
   local show = {}
@@ -1378,7 +1378,7 @@ local function summarize()
   local lines = {}
   if meta.many then
     local m = meta.many
-    lines[#lines + 1] = m.count .. " seals broken   ·   " .. m.total .. " cards   ·   " .. m.new .. " new" .. (m.newPrint > 0 and (", " .. m.newPrint .. " new prints") or "") ..
+    lines[#lines + 1] = m.count .. " packs opened   ·   " .. m.total .. " cards   ·   " .. m.new .. " new" .. (m.newPrint > 0 and (", " .. m.newPrint .. " new prints") or "") ..
       "   ·   duplicates worth " .. m.value .. " coins"
     lines[#lines + 1] = "Best of the haul: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g)
   else
@@ -1395,7 +1395,7 @@ local function summarize()
     end
     if #bits > 0 then lines[#lines + 1] = "|cffa89bc9Sets:|r " .. table.concat(bits, "   ·   ") end
   end
-  if meta.daily and meta.streak then lines[#lines + 1] = "|cffa89bc9Seal streak:|r day " .. meta.streak .. (meta.streak % 7 == 0 and "  (reward seal earned)" or "") end
+  if meta.daily and meta.streak then lines[#lines + 1] = "|cffa89bc9Pack streak:|r day " .. meta.streak .. (meta.streak % 7 == 0 and "  (reward pack earned)" or "") end
   if reveal.notes and #reveal.notes > 0 then lines[#lines + 1] = "|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
   reveal.sum:SetText(table.concat(lines, "\n"))
 end
@@ -1446,7 +1446,7 @@ local function flip(i)
       if g.record then reveal.record = true; reveal.title:SetText("Your rarest pull yet!"); playSound(nil, nil, "best") end
       if reveal.flipped >= #reveal.got then
         reveal.all:Hide(); reveal.ok:SetText("Done")
-        if not reveal.record then reveal.title:SetText("The seal is spent") end
+        if not reveal.record then reveal.title:SetText("Pack opened") end
         reveal.share:Show(); summarize()
       end
     end
@@ -1466,7 +1466,7 @@ end
 
 local function startDeal()
   reveal.phase = "deal"; reveal.dealT = 0
-  reveal.seal:Hide(); reveal.sealGlow:Hide()
+  reveal.sealFade = 0.55; reveal.sealGlow:Hide()
   reveal.title:SetText("Turn each card")
   for i = 1, PACK_SIZE do reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
   reveal.sum:SetText("|cff9a96b0Hold a card to peek at how rare it is, let go to turn it|r")
@@ -1579,31 +1579,32 @@ local function showReveal(got, notes, meta)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
     end
-    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(112, 112); reveal.seal:SetPoint("CENTER", 0, -10); reveal.seal:SetFrameLevel(lv(reveal) + 30)
+    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(104, 208); reveal.seal:SetPoint("CENTER", 0, 14); reveal.seal:SetFrameLevel(lv(reveal) + 30)
     reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
     reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0)
-    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seals"); sealTex:SetAllPoints(reveal.seal); sealTex:SetDesaturated(false)
-    sealTex:SetTexCoord(0, 0.5, 0, 0.5)
+    -- the booster pack: a foil wrapper (drawn by us, tinted per set) with its crimped top strip, which tears off
+    reveal.packBack = {}
+    for k = 1, 2 do
+      local bt = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -2); bt:SetTexture(MEDIA .. "PackBody"); bt:SetSize(104, 208)
+      bt:SetPoint("CENTER", reveal.seal, "CENTER", k == 1 and -18 or 18, -3); bt:SetAlpha(0.8); bt:Hide(); reveal.packBack[k] = bt
+    end
+    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "PackBody"); sealTex:SetAllPoints(reveal.seal)
     reveal.sealTex = sealTex
-    -- the set's emblem, pressed into the wax: a light edge, a shadow and the figure itself
-    reveal.embLight = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 1); reveal.embShadow = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 1); reveal.emb = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 2)
-    for _, t in ipairs({ reveal.embLight, reveal.embShadow, reveal.emb }) do t:SetSize(66, 66); t:Hide() end
-    reveal.embLight:SetPoint("CENTER", reveal.seal, "CENTER", -1.5, 1.5); reveal.embShadow:SetPoint("CENTER", reveal.seal, "CENTER", 1.5, -1.5); reveal.emb:SetPoint("CENTER", reveal.seal, "CENTER", 0, 0)
-    reveal.sealCount = fs(reveal.seal, "title", 30); reveal.sealCount:SetPoint("CENTER", reveal.seal, "CENTER", 0, 4); reveal.sealCount:SetTextColor(0.25, 0.18, 0.08); reveal.sealCount:SetText("")
-    reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 3); reveal.ribbon:SetTexture(MEDIA .. "Seals"); reveal.ribbon:SetTexCoord(0.5, 1, 0.68, 0.82)
-    reveal.ribbon:SetSize(190, 53); reveal.ribbon:SetPoint("CENTER", reveal.seal, "CENTER", 0, -52); reveal.ribbon:SetVertexColor(1, 0.85, 0.4, 1); reveal.ribbon:Hide()
-    reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetPoint("CENTER", reveal.ribbon, "CENTER", 0, 0); reveal.ribbonText:SetTextColor(0.22, 0.14, 0.04); reveal.ribbonText:SetText("")
-    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Drag to tear it open, or click it three times"); reveal.sealHint:SetTextColor(0.7, 0.67, 0.6)
+    reveal.strip = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 3); reveal.strip:SetTexture(MEDIA .. "PackTop"); reveal.strip:SetSize(104, 52)
+    reveal.strip:SetPoint("TOP", reveal.seal, "TOP", 0, 0)
+    -- the set's emblem sits in the medallion
+    reveal.emb = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 1); reveal.emb:SetSize(44, 44); reveal.emb:SetPoint("TOP", reveal.seal, "TOP", 0, -84); reveal.emb:Hide()
+    reveal.embLight, reveal.embShadow = reveal.emb, reveal.emb   -- (older code hides these by name)
+    reveal.sealCount = fs(reveal.seal, "title", 26); reveal.sealCount:SetPoint("CENTER", reveal.emb, "CENTER", 0, 0); reveal.sealCount:SetTextColor(1, 0.95, 0.8); reveal.sealCount:SetText("")
+    reveal.packName = fs(reveal.seal, "title", 12); reveal.packName:SetPoint("CENTER", reveal.seal, "TOP", 0, -50); reveal.packName:SetText("WAYPATH"); reveal.packName:SetTextColor(1, 0.96, 0.85)
+    reveal.packKind = fs(reveal.seal, "head", 10); reveal.packKind:SetPoint("CENTER", reveal.seal, "TOP", 0, -167); reveal.packKind:SetTextColor(1, 0.96, 0.85)
+    reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY"); reveal.ribbon:Hide()
+    reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetText("")
+    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Drag across the top to rip it open, or click it three times"); reveal.sealHint:SetTextColor(0.7, 0.67, 0.6)
     reveal.seal:EnableMouse(true)
     reveal.sealCol = { 1, 1, 1 }
     reveal.sealInfo = fs(reveal.seal, "body", 12); reveal.sealInfo:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -30); reveal.sealInfo:SetWidth(RW - 120); reveal.sealInfo:SetJustifyH("CENTER"); reveal.sealInfo:SetTextColor(0.78, 0.74, 0.92)
     reveal.cracks = {}
-    for i = 1, 4 do
-      local ct = reveal.seal:CreateTexture(nil, "OVERLAY"); ct:SetColorTexture(1, 0.95, 0.8, 1); ct:SetSize(3, 34 + i * 8)
-      ct:SetPoint("CENTER", (i - 2.5) * 20, (i % 2 == 0) and 16 or -16)
-      if ct.SetRotation then ct:SetRotation((i - 2.5) * 0.55) end
-      ct:SetAlpha(0); reveal.cracks[i] = ct
-    end
     reveal.shards = {}
     for i = 1, 14 do
       local st = reveal.fxFrame:CreateTexture(nil, "OVERLAY"); st:SetColorTexture(1, 0.8, 0.5, 1); st:SetSize(8, 8); st:Hide()
@@ -1651,7 +1652,7 @@ local function showReveal(got, notes, meta)
       end
     end)
     reveal.all:SetPoint("BOTTOM", -150, 18)
-    reveal.again = gbtn(reveal, "Break another seal", 170, 26, function() if frame and frame.buyNow then frame.buyNow() end end, true)
+    reveal.again = gbtn(reveal, "Open another pack", 170, 26, function() if frame and frame.buyNow then frame.buyNow() end end, true)
     reveal.again:SetPoint("BOTTOM", 0, 18)
     reveal.ok = gbtn(reveal, "Skip", 120, 26, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
     reveal.ok:SetPoint("BOTTOM", 150, 18)
@@ -1685,12 +1686,16 @@ local function showReveal(got, notes, meta)
         if self.tear >= 1 then tearOpen(); return end
         local tt = math.max(self.tear, self.picks / 3 * 0.85)
         local k = 1 + 0.02 * math.sin(t * 4) + 0.12 * tt
-        self.seal:SetSize(112 * k, 112 * k)
-        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 3 * tt, -10 + math.cos(t * 47) * 2 * tt)
+        self.seal:SetSize(104 * k, 208 * k)
+        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 2 * tt, 14 + math.cos(t * 47) * 1.5 * tt + 3 * math.sin(t * 1.6))
+        -- the strip lifts, tilts and pulls away as the tear goes on
+        self.strip:SetSize(104 * k, 52 * k)
+        self.strip:ClearAllPoints(); self.strip:SetPoint("TOP", self.seal, "TOP", 12 * tt, 20 * tt)
+        if self.strip.SetRotation then self.strip:SetRotation(-0.35 * tt) end
         self.sealGlow:SetAlpha(0)
         local c = self.sealCol
-        self.sealTex:SetVertexColor(c[1] + (1 - c[1]) * tt * 0.5, c[2] + (1 - c[2]) * tt * 0.5, c[3] + (1 - c[3]) * tt * 0.5, 1)
-        for _, ct in ipairs(self.cracks) do ct:SetAlpha(math.min(1, tt * 1.4)) end
+        local r, g, b = c[1] + (1 - c[1]) * tt * 0.4, c[2] + (1 - c[2]) * tt * 0.4, c[3] + (1 - c[3]) * tt * 0.4
+        self.sealTex:SetVertexColor(r, g, b, 1); self.strip:SetVertexColor(r, g, b, 1)
       elseif self.phase == "deal" then
         self.dealT = self.dealT + dt
         local all = true
@@ -1705,6 +1710,16 @@ local function showReveal(got, notes, meta)
           if k < 1 then all = false end
         end
         if all then self.phase = false end
+      end
+      if type(self.sealFade) == "number" and self.sealFade > 0 then
+        -- the strip is thrown off and the wrapper drops away
+        self.sealFade = self.sealFade - dt
+        local k = 1 - math.max(0, self.sealFade) / 0.55
+        self.strip:ClearAllPoints(); self.strip:SetPoint("TOP", self.seal, "TOP", 40 + 150 * k, 20 + 120 * k - 160 * k * k)
+        if self.strip.SetRotation then self.strip:SetRotation(-0.35 - 1.6 * k) end
+        self.strip:SetAlpha(1 - k)
+        self.seal:SetAlpha(math.max(0, 1 - k * 1.4))
+        if self.sealFade <= 0 then self.sealFade = nil; self.seal:Hide(); self.seal:SetAlpha(1); self.strip:SetAlpha(1) end
       end
       if self.shakeT > 0 then
         self.shakeT = self.shakeT - dt
@@ -1734,13 +1749,13 @@ local function showReveal(got, notes, meta)
   reveal.got, reveal.flipped, reveal.notes, reveal.meta, reveal.record = got, 0, notes, meta, false
   meta = meta or {}
   -- what kind of seal this is: reward, many at once, the day's first, or the featured set's colours
-  local col, title, info = { 1, 1, 1 }, "Break the seal", {}
+  local col, title, info = { 1, 1, 1 }, "Open the pack", {}
   if meta.bonus then
-    col, title = { 0.85, 0.6, 1 }, "Reward seal"
-    info[#info + 1] = "|cffd9a8ffReward seal|r  ·  a rare and a holo or better inside"
+    col, title = { 0.85, 0.6, 1 }, "Reward pack"
+    info[#info + 1] = "|cffd9a8ffReward pack|r  ·  a rare and a holo or better inside"
   elseif meta.many then
-    col, title = { 1, 0.85, 0.45 }, meta.many.count .. " seals"
-    info[#info + 1] = GOLDHEX .. meta.many.count .. " seals at once|r  ·  the five best cards are shown"
+    col, title = { 1, 0.85, 0.45 }, meta.many.count .. " packs"
+    info[#info + 1] = GOLDHEX .. meta.many.count .. " packs at once|r  ·  the five best cards are shown"
   else
     if meta.featured then
       local h = 0
@@ -1749,34 +1764,38 @@ local function showReveal(got, notes, meta)
       col = { r, g, b }
       info[#info + 1] = "Featured: " .. GOLDHEX .. meta.featured .. "|r  ·  more of its cards inside"
     end
-    if meta.daily then title = "Daily seal"; info[#info + 1] = "|cff7be08aDaily seal|r  ·  day " .. (meta.streak or 1) .. " in a row" end
+    if meta.daily then title = "Daily pack"; info[#info + 1] = "|cff7be08aDaily pack|r  ·  day " .. (meta.streak or 1) .. " in a row" end
   end
   if not meta.many then
     local pb = meta.pityBefore or 0
-    if meta.bonus or pb >= PITY then info[#info + 1] = "|cffd9a8ffThis seal holds a holo or full art|r"
-    else info[#info + 1] = "Holo or full art guaranteed within " .. (PITY - pb) .. " seal" .. (PITY - pb == 1 and "" or "s") end
+    if meta.bonus or pb >= PITY then info[#info + 1] = "|cffd9a8ffThis pack holds a holo or full art|r"
+    else info[#info + 1] = "Holo or full art guaranteed within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") end
   end
   reveal.sealCol = col
-  reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1)
-  -- the wax: plain for a set seal (with the set's emblem on it), laurel and star for a reward, a stack for several
-  reveal.emb:Hide(); reveal.embLight:Hide(); reveal.embShadow:Hide(); reveal.ribbon:Hide(); reveal.sealCount:SetText(""); reveal.ribbonText:SetText("")
-  if meta.bonus then reveal.sealTex:SetTexCoord(0.5, 1, 0, 0.5)
-  elseif meta.many then reveal.sealTex:SetTexCoord(0, 0.5, 0.5, 1); reveal.sealCount:SetText("x" .. meta.many.count)
-  else
-    reveal.sealTex:SetTexCoord(0, 0.5, 0, 0.5)
-    if meta.featured then
-      local sheet, cell = emblemFor(meta.featured)
-      local c0, r0 = cell % 4, math.floor(cell / 4)
-      for _, t in ipairs({ reveal.embLight, reveal.embShadow, reveal.emb }) do
-        t:SetTexture(MEDIA .. sheet); t:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, (r0 + 1) * 0.25); t:Show()
-      end
-      reveal.embLight:SetVertexColor(math.min(1, col[1] + 0.35), math.min(1, col[2] + 0.35), math.min(1, col[3] + 0.35), 0.6)
-      reveal.embShadow:SetVertexColor(col[1] * 0.25, col[2] * 0.25, col[3] * 0.25, 0.55)
-      reveal.emb:SetVertexColor(col[1] * 0.62, col[2] * 0.62, col[3] * 0.62, 0.95)
-    end
+  reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1); reveal.strip:SetVertexColor(col[1], col[2], col[3], 1)
+  -- the wrapper: tinted per set, with the set's emblem in the medallion; a reward pack is gold, several packs fan out
+  reveal.emb:Hide(); reveal.sealCount:SetText(""); reveal.ribbon:Hide(); reveal.ribbonText:SetText("")
+  for _, bt in ipairs(reveal.packBack) do bt:SetVertexColor(col[1] * 0.7, col[2] * 0.7, col[3] * 0.7, 1); bt:SetShown(meta.many and true or false) end
+  local kind = "MIXED"
+  if meta.bonus then kind = "REWARD"
+  elseif meta.many then kind = "x" .. meta.many.count
+  elseif meta.daily then kind = "DAILY"
+  elseif meta.featured then
+    local f = meta.featured
+    if f:find("^Places") or f == "All zones" then kind = "PLACES"
+    elseif f:find("bosses") or f:find("rares") or f == "Other NPCs" then kind = "NPCS"
+    else kind = "ITEMS" end
   end
-  if meta.daily and not meta.many then
-  end
+  reveal.packKind:SetText(kind)
+  if meta.many then reveal.sealCount:SetText("x" .. meta.many.count)
+  elseif meta.bonus then reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(1, 0.9, 0.5, 0.95); reveal.emb:Show()
+  elseif meta.featured then
+    local sheet, cell = emblemFor(meta.featured)
+    local c0, r0 = cell % 4, math.floor(cell / 4)
+    reveal.emb:SetTexture(MEDIA .. sheet); reveal.emb:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, (r0 + 1) * 0.25)
+    reveal.emb:SetVertexColor(math.min(1, col[1] + 0.25), math.min(1, col[2] + 0.25), math.min(1, col[3] + 0.25), 0.95); reveal.emb:Show()
+  else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(0.9, 0.9, 1, 0.8); reveal.emb:Show() end
+  reveal.sealFade = nil; reveal.seal:SetAlpha(1)
   reveal.sealInfo:SetText(table.concat(info, "\n"))
   reveal.title:SetText(title)
   reveal.sum:SetText("")
@@ -1784,13 +1803,14 @@ local function showReveal(got, notes, meta)
   do local a = store(); reveal.snd:SetText(a and a.mute and "Sound: Off" or "Sound: On") end
   reveal.burst:Hide(); reveal.burstLeft = 0
   reveal.tear, reveal.picks, reveal.holding, reveal.shardT, reveal.shakeT = 0, 0, false, 0, 0
-  for _, ct in ipairs(reveal.cracks) do ct:SetAlpha(0) end
   for _, sh in ipairs(reveal.shards) do sh.tex:Hide() end
   reveal:ClearAllPoints(); reveal:SetPoint("CENTER", 0, 40)
   reveal:Show()
   reveal.phase = "seal"
-  reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, -10)
-  reveal.seal:Show(); reveal.seal:SetSize(112, 112)
+  reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 14)
+  reveal.seal:Show(); reveal.seal:SetSize(104, 208); reveal.seal:SetAlpha(1)
+  reveal.strip:ClearAllPoints(); reveal.strip:SetPoint("TOP", reveal.seal, "TOP", 0, 0); reveal.strip:SetSize(104, 52)
+  if reveal.strip.SetRotation then reveal.strip:SetRotation(0) end; reveal.strip:SetAlpha(1); reveal.sealTex:SetAlpha(1)
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
     paint(w, g.card, g.finish, 1)
@@ -2014,7 +2034,7 @@ local function build()
     if meta and meta.bonus then playSound(nil, nil, "reward") end
     showReveal(got, notes, meta); RG.ArcadeRefresh(true)
   end
-  frame.buy = gbtn(frame, "Break a seal", 250, 34, function() frame.buyNow() end, true)
+  frame.buy = gbtn(frame, "Break a pack", 250, 34, function() frame.buyNow() end, true)
   frame.buy:SetPoint("BOTTOM", 0, 20)
   frame.buyAll = gbtn(frame, "Break all", 110, 28, function() frame.buyNow(true) end)
   frame.buyAll:SetPoint("BOTTOM", 335, 23); frame.buyAll:Hide()
@@ -2051,7 +2071,7 @@ function RG.ArcadeRefresh(keepMsg)
   local a, own, total, prints = RG.ArcadeStats()
   dailyCheck()
   frame.coins:SetText(GOLDHEX .. (a.coins or 0) .. "|r")
-  frame.free:SetText((a.free or 0) > 0 and ((a.free) .. " free seal" .. (a.free > 1 and "s" or "")) or "")
+  frame.free:SetText((a.free or 0) > 0 and ((a.free) .. " free pack" .. (a.free > 1 and "s" or "")) or "")
   frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  " .. (a.wins or 0) .. " duel wins\n" .. categoryLine(a))
   if keepMsg ~= true then frame.msg:SetText("") end
   local cards = view.mode == "cards"
@@ -2104,9 +2124,9 @@ function RG.ArcadeRefresh(keepMsg)
   elseif view.mode == "today" then
     local g = todaysGoals(a)
     local lines = { GOLDHEX .. "Today|r", "" }
-    lines[#lines + 1] = "Free seals waiting: |cffffffff" .. (a.free or 0) .. "|r   (one new seal every day, up to 3 saved)"
-    lines[#lines + 1] = "Reward seals waiting: |cffffffff" .. (a.bonus or 0) .. "|r   (a new highest rank, and every 7th day in a row you break a seal)"
-    lines[#lines + 1] = "Seal streak: |cffffffff" .. ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0) .. "|r day" .. "s in a row   ·   next seal's set: |cffffffff" .. (featuredSet(a) and featuredSet(a).name or "none") .. "|r"
+    lines[#lines + 1] = "Free packs waiting: |cffffffff" .. (a.free or 0) .. "|r   (one new pack every day, up to 3 saved)"
+    lines[#lines + 1] = "Reward packs waiting: |cffffffff" .. (a.bonus or 0) .. "|r   (a new highest rank, and every 7th day in a row you break a pack)"
+    lines[#lines + 1] = "Pack streak: |cffffffff" .. ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0) .. "|r day" .. "s in a row   ·   next pack's set: |cffffffff" .. (featuredSet(a) and featuredSet(a).name or "none") .. "|r"
     lines[#lines + 1] = "Pity: |cffffffff" .. (a.pity or 0) .. "|r of " .. PITY .. " packs without a holo or full art"
     lines[#lines + 1] = "Quest, kill and skill coins today: |cffffffff" .. ((a.day == today()) and (a.dayCoins or 0) or 0) .. "|r of " .. DAY_CAP
     lines[#lines + 1] = "Duel win streak: |cffffffff" .. (a.streak or 0) .. "|r   (each win in a row pays +1, up to +4)"
@@ -2155,7 +2175,7 @@ function RG.ArcadeRefresh(keepMsg)
     local st = a.stats or {}
     local r = a.rarest
     local lines = { GOLDHEX .. "The Ledger|r", "",
-      "Seals broken: |cffffffff" .. (a.packs or 0) .. "|r",
+      "Packs opened: |cffffffff" .. (a.packs or 0) .. "|r",
       "Rarest pull: |cffffffff" .. (r and (r.name .. " (" .. FNAME[r.finish] .. ")") or "none yet") .. "|r",
       "Duels: |cffffffff" .. (a.wins or 0) .. " won, " .. (a.losses or 0) .. " lost|r",
       "", GOLDHEX .. "Coins earned|r",
@@ -2168,8 +2188,8 @@ function RG.ArcadeRefresh(keepMsg)
   end
   local free = a.free or 0
   local bonus = a.bonus or 0
-  if bonus > 0 then frame.buy:SetText("Break a reward seal  (" .. bonus .. ")")
-  else frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free" or ("Break a seal  ·  " .. PACK_PRICE))) end
+  if bonus > 0 then frame.buy:SetText("Break a reward pack  (" .. bonus .. ")")
+  else frame.buy:SetText(free > 0 and ("Break a free pack  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free" or ("Break a pack  ·  " .. PACK_PRICE))) end
   frame.buy:SetEnabled(afford() and true or false)
   local ready = RG.ArcadeSealsReady and RG.ArcadeSealsReady() or 0
   if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
