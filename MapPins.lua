@@ -49,7 +49,7 @@ local function hookClick(fname, ownerTable)
   local owner = ownerTable or _G
   if not (hooksecurefunc and owner and type(owner[fname]) == "function") then return false end
   local ok = pcall(hooksecurefunc, owner, fname, function(self, button, ...)
-    if not on() or RG.db.questClick == false then return end
+    if not on() or (RG.db and RG.db.questClick == false) then return end
     if button and button ~= "LeftButton" then return end
     if modifier() then return end
     local id = questIdOf(self) or (type(self) == "table" and self.block and questIdOf(self.block))
@@ -66,7 +66,7 @@ local function hookQuestFrames()
   hookClick("QuestObjectiveTracker_OnOpenDropDown")
   if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.OnBlockHeaderClick then
     pcall(hooksecurefunc, QUEST_TRACKER_MODULE, "OnBlockHeaderClick", function(_, block, button)
-      if not on() or RG.db.questClick == false or (button and button ~= "LeftButton") or modifier() then return end
+      if not on() or (RG.db and RG.db.questClick == false) or (button and button ~= "LeftButton") or modifier() then return end
       local id = block and (block.id or block.questID)
       if type(id) == "number" then pcall(RG.QuestArrow, id) end
     end)
@@ -155,7 +155,7 @@ local function refreshPins(force)
     for _, sp in ipairs(RG.QuestSpots and RG.QuestSpots() or {}) do
       if sp.wp and sp.wp[1] == mapID then list[#list + 1] = { kind = sp.turnin and "turnin" or "obj", wp = sp.wp, title = sp.quest, sub = sp.label or "" } end
     end
-    if RG.db.mapPickups ~= false then for _, p in ipairs(pickupsFor(mapID)) do list[#list + 1] = p end end
+    if not (RG.db and RG.db.mapPickups == false) then for _, p in ipairs(pickupsFor(mapID)) do list[#list + 1] = p end end
   end
   local n = 0
   for _, p in ipairs(list) do

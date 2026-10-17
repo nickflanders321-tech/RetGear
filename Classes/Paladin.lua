@@ -1,6 +1,6 @@
 -- Waypath+ class data: Paladin (Retribution leveling, Holy off-spec).
 -- Everything paladin-specific lives here: stat weights, the hand-written gear
--- guide, class quests and route milestones, talent order and rotation tips.
+-- guide, class quests and route milestones, and rotation tips.
 -- The generated gear list is in Classes/PaladinGear.lua.
 local _, RG = ...
 local P = { name = "Paladin", spec = "Retribution", offSpec = "Holy", scoreName = "Ret", lfgName = "Ret Paladin", lfgNote = "Blessings, Purify" }
@@ -130,7 +130,6 @@ P.steps = {
     "Come back to Bandarion Keep each time you train new paladin spells: new class quests unlock as you level.",
   },
   ["Paladin|20"] = {
-    "Put your first 10 talent points into Retribution so you can take Seal of Command at level 20.",
     "Wolf's Bane starts on Fenris Isle in Silverpine: rescue Lumina Windsinger and bring her to safety. Trevan then explains the weapon and its three materials.",
     "Enchanted Silver Ingot: drops in Shadowfang Keep. Do it with your SFK run.",
     "Purified Kor Gem: Blackfathom Deeps. First take Olric Frostvale's quest in Ashenvale, or the gem won't drop.",
@@ -148,25 +147,6 @@ P.steps = {
   },
 }
 
--- Retribution talents in the order to take them while leveling with a
--- two-hander. Names are WoW Forever's (Icy Veins, Mobalytics, Warcraft Tavern).
--- The planner reads your real talent tree, skips anything you can't take yet,
--- and suggests the first one with points left.
-P.talents = {
-  { name = "Seal of Command", why = "Your main damage Seal with a slow two-hander." },
-  { name = "Two-Handed Weapon Specialization", why = "+3% two-handed damage per point." },
-  { name = "Vengeance", why = "Crits stack up to 5 times for more Physical and Holy damage." },
-  { name = "Crusade", why = "+1% damage per point, and another 1% against Undead and Demons." },
-  { name = "Conviction", why = "More critical strikes, which feed Vengeance." },
-  { name = "Sacred Arbiter", why = "Holy Strike hits 10% harder and refreshes your Judgements." },
-  { name = "Sanctified Judgement", why = "Judgement refunds Seal mana, so you drink less." },
-  { name = "Benediction", why = "Cheaper instant spells: more Holy Strikes and Judgements per mana bar." },
-  { name = "Holy Conduit", why = "Cheaper Exorcism, Consecration and Hammer of Wrath." },
-  { name = "Vindication", why = "Weakens what you hit and gives you Attack Power." },
-  { name = "Pursuit of Justice", why = "Faster mounted speed for getting around." },
-  { name = "Twist of Light", why = "Seal-twisting for extra damage once you're comfortable." },
-}
-
 -- Leveling priority, adjusted for Forever's changes (Judgement no longer uses
 -- up your Seal; Holy Strike is baseline at 6).
 P.rotation = {
@@ -177,11 +157,6 @@ P.rotation = {
   "Judgement on cooldown.",
   "Exorcism on Undead and Demons. Hammer of Wrath when a target is below 20% health.",
   "Consecration when 2 to 4 enemies are on you. It's weak past 4 targets.",
-}
-
--- Extra notes under the talent list: { heading, text }
-P.talentNotes = {
-  { "Undead and Demons", "Undead fill Tirisfal, Silverpine, the Plaguelands, Stratholme and Scholomance. Exorcism and Crusade's bonus make you much stronger there, and Holy Wrath stuns them." },
 }
 
 RG.RegisterClass("PALADIN", P)

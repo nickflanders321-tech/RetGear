@@ -356,7 +356,7 @@ end
 function RG.FormatYards(d)
   if not d then return nil end
   if d >= 1000 then return string.format("%.1fk yd", d / 1000) end
-  return string.format("%d yd", d)
+  return string.format("%d yd", math.floor(d + 0.5))
 end
 
 -- Every quest in your log: level, progress, whether it's ready, and the

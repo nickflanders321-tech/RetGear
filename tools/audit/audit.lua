@@ -235,7 +235,7 @@ for _, race in ipairs(RACE_ORDER) do
       else fail(combo, name .. " has no starting trainer for this race") end
     end
     r.profs = profOK .. "/" .. #ALL_PROFS
-    -- 8. 2nd specs: every spec of the class has a build, tips, weights and a gear list for 30-60
+    -- 8. 2nd specs: every spec of the class has tips, weights and a gear list for 30-60
     local specs = (RG.SPECS or {})[RG.PLAYER_CLASS] or {}
     if #specs < 3 then fail(combo, "only " .. #specs .. " specs") end
     local mains, specOK = 0, 0
@@ -243,8 +243,8 @@ for _, race in ipairs(RACE_ORDER) do
       local ok = true
       local function bad(msg) ok = false; fail(combo, sp.name .. ": " .. msg) end
       if sp.main then mains = mains + 1 end
-      for _, k in ipairs({ "key", "name", "role", "kind", "tab", "icon", "stats", "goal", "source" }) do if not sp[k] then bad("no " .. k) end end
-      if not (sp.build and #sp.build > 0) then bad("no build") end
+      for _, k in ipairs({ "key", "name", "role", "kind", "tab", "icon", "stats", "source" }) do if not sp[k] then bad("no " .. k) end end
+      if sp.build or sp.goal or sp.talents then bad("talent data present (Waypath+ gives no talent advice)") end
       if not (sp.tips and #sp.tips > 0) then bad("no tips") end
       if not sp.main then
         if not (sp.weights and next(sp.weights)) then bad("no weights") end
