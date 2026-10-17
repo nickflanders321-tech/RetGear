@@ -21,7 +21,7 @@ if not (RG and RG.Battle) then return end
 
 local PREFIX = "WPDUEL"
 local PROTO = 1
-local INVITE_SECS = 45      -- how long a challenge stays open
+local INVITE_SECS = 90      -- how long a challenge stays open
 local TURN_SECS = 120       -- the opponent must act within this long on their turn
 local WARN_SECS = 90
 
@@ -102,7 +102,8 @@ local function newDuel(env)
     D.deck, D.class, D.name = deck, class, me
     D.hostDeck, D.hostClass, D.hostName = inv.deck, inv.class, inv.name
     D.state = "wait"
-    D.lastRecv = env.now()
+    D.lastRecv = env.now(); D.deadline = env.now() + INVITE_SECS
+    env.print("Accepted. Waiting for " .. (D.peer or "the host") .. " to start the duel...")
     send(table.concat({ "A", class, me, packDeck(deck) }, "|"))
     if env.closeInvite then env.closeInvite() end
     return true
@@ -198,6 +199,7 @@ local function newDuel(env)
       if not deck then fail("Could not read " .. D.peer .. "'s deck.") return end
       local o = { me = 1, decks = { D.deck, deck }, classes = { D.class, a }, names = { D.name, b or D.peer },
                   seed = env.random(1, 2000000000), first = env.random(1, 2), foeName = b or D.peer }
+      env.print((b or D.peer) .. " accepted. Starting the duel...")
       send("S|" .. o.seed .. "|" .. o.first)
       startGame(o)
     elseif op == "S" and D.state == "wait" then
@@ -290,7 +292,8 @@ local function realEnv()
     if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "WHISPER", target) end
   end
   function env.deck()
-    local list, class, me, swapped = RG.ArenaPvPDeck()
+    local list, class, me, swapped, auto = RG.ArenaPvPDeck()
+    if list and auto then env.print("You had no finished Arena deck, so one was built for this duel.") end
     if list and swapped and swapped > 0 then env.print(swapped .. " Raider card(s) in your deck were swapped for other cards for this duel (Raiders only exist on your own collection).") end
     return list, class, me
   end

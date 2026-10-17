@@ -1210,10 +1210,19 @@ end
 -- Hooks for player-versus-player duels (the messaging lives in ArcadeDuel.lua)
 -- ---------------------------------------------------------------------------
 function RG.ArenaPvPDeck()
+  U = U or RG.ArcadeUI
+  if not U then return nil, "The card window is not ready yet." end
   local a = store(); if not a then return nil, "Your card collection is not ready yet." end
   local dk = deckOf(a, a.deckSel or 1)
   cleanDeck(a, dk)
-  if deckSize(dk) ~= B.DECK then return nil, "Your deck needs exactly " .. B.DECK .. " cards. Open the Arena menu to finish it." end
+  local auto = false
+  if deckSize(dk) ~= B.DECK then   -- no finished deck yet: build one for this duel (your saved deck is left alone)
+    local tmp = { name = "duel", cards = {} }
+    for k, v in pairs(dk.cards) do tmp.cards[k] = v end
+    pcall(fillDeck, a, tmp)
+    if deckSize(tmp) ~= B.DECK then return nil, "Your deck needs exactly " .. B.DECK .. " cards. Open the Waypath Arena menu to finish it." end
+    dk, auto = tmp, true
+  end
   local list = expand(dk)
   for _, k in ipairs(list) do
     if not B.defs[k] then return nil, "A card in your deck is not ready yet." end
@@ -1229,9 +1238,10 @@ function RG.ArenaPvPDeck()
     list = deck
     if #list ~= B.DECK then return nil, "Could not build a duel deck without your Raider cards." end
   end
-  return list, myClass(a), (UnitName and UnitName("player")) or "Player", swapped
+  return list, myClass(a), (UnitName and UnitName("player")) or "Player", swapped, auto
 end
 function RG.ArenaPvPStart(o)
+  U = U or RG.ArcadeUI
   if not win then RG.ShowBattle() end
   if not win then return false end
   ME, S.pvp, S.foeName, S.endReason = o.me, true, o.foeName, nil

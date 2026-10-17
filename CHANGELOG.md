@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 1.1.1
+- **Fix: accepting a duel did nothing** if you had never opened the Waypath Arena that session. It now works straight away, and if you have no finished Arena deck one is built for the duel. Challenges stay open for 90 seconds and both players see progress messages in chat.
 - Player duels no longer refuse a deck with Raider cards: they are swapped for other cards from your collection for that duel only.
 - **Player duels in the Waypath Arena.** Challenge anyone who also has Waypath+ (same realm and faction): target them and press "Challenge a player" in the Arena menu, or type `/wp duel Name`. They get an Accept/Decline box; you each play your selected Arena deck, the host's seed and first player are shared, then only moves are exchanged (every move carries a check value, so the two games can never silently differ). Mulligans, concede, a 2-minute turn clock and desync detection are in. Friendly duels: no coins, separate win/loss record. Raider cards can't be used in player duels yet.
 - **Waypath branding.** Card backs now show the Waypath+ logo; the game is "Waypath Arena" and "Waypath Cards", with the logo in the headers.
