@@ -521,13 +521,15 @@ local function newScene(frame, aw, ah, anchor)
   anchor = anchor or frame
   local sc = { aw = aw, ah = ah }
   local function tex(sub, file) local t = frame:CreateTexture(nil, "ARTWORK", nil, sub); t:SetTexture(MEDIA .. file); t:Hide(); return t end
-  sc.sky, sc.sun, sc.r1, sc.r2, sc.mo = tex(-4, "Sky"), tex(-3, "Glow"), tex(-2, "Ridge1"), tex(-1, "Ridge1"), tex(0, "Motifs")
-  sc.sun:SetBlendMode("ADD")
+  sc.sky, sc.stars, sc.sun, sc.r1, sc.mist, sc.r2, sc.mo, sc.fore = tex(-6, "Sky"), tex(-5, "Stars"), tex(-4, "Glow"), tex(-3, "Ridge1"), tex(-2, "Mist"),
+    tex(-1, "Ridge1"), tex(0, "Motifs"), tex(1, "Fore")
+  sc.sun:SetBlendMode("ADD"); sc.stars:SetBlendMode("ADD")
+  sc.stars:SetAllPoints(anchor); sc.mist:SetAllPoints(anchor)
   sc.sky:SetAllPoints(anchor)
   sc.frame = anchor
   return sc
 end
-local function hideScene(sc) if sc then sc.sky:Hide(); sc.sun:Hide(); sc.r1:Hide(); sc.r2:Hide(); sc.mo:Hide() end end
+local function hideScene(sc) if sc then sc.sky:Hide(); sc.stars:Hide(); sc.sun:Hide(); sc.r1:Hide(); sc.mist:Hide(); sc.r2:Hide(); sc.mo:Hide(); sc.fore:Hide() end end
 local function setScene(sc, card, dim)
   local aw, ah = sc.aw, sc.ah
   local rnd = rngOf(seedOf((card.name or "?") .. "|" .. tostring(card.id or card.ref or 0)))
@@ -538,6 +540,8 @@ local function setScene(sc, card, dim)
   local k = dim and 0.16 or 1
   local r, g, b = hsv(hue, sat, val)
   sc.sky:SetTexture(MEDIA .. "Sky"); sc.sky:SetVertexColor(r * k, g * k, b * k, 1); sc.sky:Show()
+  -- stars show through darker skies
+  sc.stars:SetTexture(MEDIA .. "Stars"); sc.stars:SetVertexColor(1, 1, 1, math.max(0, math.min(0.9, (0.8 - val) * 2.2)) * k); sc.stars:Show()
   -- sun or moon
   local sx, sy = 0.15 + rnd() * 0.7, 0.45 + rnd() * 0.4
   local sr, sg, sb = hsv(hue + 0.08 + rnd() * 0.1, 0.25 + rnd() * 0.4, 1)
@@ -557,18 +561,25 @@ local function setScene(sc, card, dim)
   local k2 = 1 + math.floor(rnd() * 4)
   if k2 == k1 then k2 = k1 % 4 + 1 end
   ridge(sc.r1, k1, 0.40 + rnd() * 0.15, 0.55, 0.04)
+  -- haze between the two ridges gives the picture depth
+  local mr2, mg2, mb2 = hsv(hue, 0.15, math.min(1, val + 0.2))
+  sc.mist:SetTexture(MEDIA .. "Mist"); sc.mist:SetVertexColor(mr2 * k, mg2 * k, mb2 * k, 0.55); sc.mist:Show()
   ridge(sc.r2, k2, 0.22 + rnd() * 0.12, 0.28, -0.03)
   -- a landmark standing on the near ridge
-  local m = math.floor(rnd() * 8)
+  local m = math.floor(rnd() * 16)
   local col, row = m % 4, math.floor(m / 4)
   local mx = 0.18 + rnd() * 0.64
-  local ms = (0.30 + rnd() * 0.14) * ah
+  local ms = (0.34 + rnd() * 0.16) * ah
   local flip = rnd() < 0.5
-  if flip then sc.mo:SetTexCoord((col + 1) * 0.25, col * 0.25, row * 0.5, row * 0.5 + 0.5)
-  else sc.mo:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.5, row * 0.5 + 0.5) end
+  if flip then sc.mo:SetTexCoord((col + 1) * 0.25, col * 0.25, row * 0.25, row * 0.25 + 0.25)
+  else sc.mo:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.25, row * 0.25 + 0.25) end
   sc.mo:ClearAllPoints(); sc.mo:SetPoint("BOTTOM", sc.frame, "BOTTOMLEFT", mx * aw, 0.07 * ah); sc.mo:SetSize(ms, ms)
   local mr, mg, mb = hsv(hue - 0.02, 0.35, 0.12 + rnd() * 0.1)
   sc.mo:SetVertexColor(mr * k, mg * k, mb * k, 1); sc.mo:Show()
+  -- a dark grassy foreground
+  local fr, fg, fb = hsv(hue, 0.3, 0.06)
+  sc.fore:SetTexture(MEDIA .. "Fore"); sc.fore:ClearAllPoints(); sc.fore:SetPoint("BOTTOMLEFT", sc.frame, "BOTTOMLEFT", 0, 0); sc.fore:SetPoint("BOTTOMRIGHT", sc.frame, "BOTTOMRIGHT", 0, 0)
+  sc.fore:SetHeight(0.2 * ah); sc.fore:SetVertexColor(fr * k, fg * k, fb * k, 1); sc.fore:Show()
 end
 
 local function ensureModel(w)
@@ -731,6 +742,8 @@ local function makeCard(parent, w)
   local aw, ah = (U.art[3] - U.art[1]) * u, (U.art[4] - U.art[2]) * u
   f.aw, f.ah = aw, ah
   f.glow = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 1); f.glow:SetTexture(MEDIA .. "Glow"); f.glow:SetBlendMode("ADD"); f.glow:SetAllPoints(f.artClip)
+  -- items: a spotlight in the rarity's colour behind the icon, so the picture is not a small icon on a dark window
+  f.spot = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 2); f.spot:SetTexture(MEDIA .. "Glow"); f.spot:SetBlendMode("ADD"); f.spot:Hide()
   f.rays = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 2); f.rays:SetTexture(MEDIA .. "Rays"); f.rays:SetBlendMode("ADD")
   f.rays:SetSize(aw * 1.5, aw * 1.5); f.rays:SetPoint("CENTER", f.artClip, "CENTER", 0, 0); f.rays:Hide()
   f.rune = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 3); f.rune:SetTexture(MEDIA .. "Rune"); f.rune:SetBlendMode("ADD")
@@ -832,7 +845,7 @@ local function paint(w, card, finish, copies)
   elseif rawget(w, "scn") then hideScene(w.scn) end
   if not finish then
     -- an empty slot in the binder: a silhouette and the collector number
-    w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+    w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide()
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
     if scene then w.art:Hide() end
     w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
@@ -845,6 +858,10 @@ local function paint(w, card, finish, copies)
   w.fxset = fx
   local kc = KINDCOL[card.kind] or KINDCOL[1]
   w.glow:SetVertexColor(kc[1], kc[2], kc[3], 0.55)
+  if card.kind == 1 then
+    w.spot:ClearAllPoints(); w.spot:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.spot:SetSize(w.ah * 1.7, w.ah * 1.7)
+    w.spot:SetVertexColor(t[1], t[2], t[3], 0.55 + 0.08 * (card.tier or 1)); w.spot:Show()
+  else w.spot:Hide() end
   tintTex(w.frameTex, t, finish == 1 and 0.82 or 1)
   tintTex(w.gem, t, 1)
   tintTex(w.rune, t, fx.rune)
@@ -855,7 +872,7 @@ local function paint(w, card, finish, copies)
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
     if card.kind == 3 then w.art:Hide() else placeIcon(full and 64 or 46); w.art:Show(); w.iconBack:Show(); w.iconEdge:Show() end
-  else placeIcon(full and 120 or 84) end
+  else placeIcon(full and 120 or 94) end
   if fx.rays then tintTex(w.rays, { 1, 0.86, 0.5 }, fx.rays); w.rays:Show() end
   if fx.foil > 0 then w.foil:Show() end
   if fx.aura > 0 then w.aura:Show(); w.aura:SetAlpha(fx.aura) end
