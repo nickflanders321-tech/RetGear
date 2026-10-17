@@ -43,7 +43,7 @@ G.plan = {
   { from = 215, to = 238, craft = "Mithril Casing", n = 40, mats = "3 Mithril Bar each" },
   { from = 238, to = 250, craft = "Hi-Explosive Bomb", n = 20, mats = "2 Mithril Casing, 1 Unstable Trigger, 2 Solid Blasting Powder each" },
   { from = 250, to = 260, craft = "Dense Blasting Powder", n = 30, mats = "2 Dense Stone each" },
-  { from = 260, to = 285, craft = "Thorium Widget", n = 35, mats = "3 Thorium Bar, 1 Runecloth each (schematic: Sovik, Orgrimmar)" },
+  { from = 260, to = 285, craft = "Thorium Widget", n = 35, mats = "3 Thorium Bar, 1 Runecloth each (schematic: an Engineering supplier in a capital city; Sovik in Orgrimmar for the Horde)" },
   { from = 285, to = 300, craft = "Thorium Tube", n = 20, mats = "6 Thorium Bar each (schematic: Xizzer Fizzbolt, Everlook)" },
 }
 G.mats = { 2835, 2836, 2838, 7912, 12365, 2840, 2841, 3575, 3859, 3860, 12359 }

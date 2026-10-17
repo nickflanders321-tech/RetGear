@@ -24,6 +24,30 @@ RG.ALT_LEVELING = {
   "Logging out in the Undercity inn earns rested XP the whole time, so a parked bank alt levels twice as fast later.",
 }
 
+-- The Alliance version: a new Human starts in Northshire, a short run from Goldshire and on to Stormwind, whose
+-- Auction House, bank, inn and bag vendor are all in the Trade District. (Coordinates: QuestieDB WoW Forever data.)
+local ALLY = RG.PLAYER_FACTION == "Alliance"
+if ALLY then
+  RG.ALT_INTRO = "Make a new character on the same realm: Alliance, Human. Humans start in Northshire Valley, a few minutes' run from Goldshire and on to Stormwind, the Alliance capital with an Auction House, bank and mailboxes close together in the Trade District. It doesn't need to level: a level 1 character can use the Auction House, bank and mail."
+  RG.ALT_STEPS = {
+    { key = "brill", title = "Run to Goldshire", text = "Skip the Northshire quests. Leave the abbey by the road and run south-east into Elwynn Forest to Goldshire without stopping to fight.", wp = { 1429, 43.8, 65.8, "Goldshire" } },
+    { key = "uc",    title = "Into Stormwind", text = "Follow the main road out of Goldshire to the gates of Stormwind and go in. The arrow shows the way.", wp = { 1453, 60.9, 71.5, "Stormwind City" } },
+    { key = "ah",    title = "Auction House", text = "The auctioneers stand in the Trade District. Open the Auction House once so Waypath+ can scan prices.", wp = { 1453, 60.9, 71.5, "Auctioneer Chilton" } },
+    { key = "bank",  title = "Bank", text = "The Stormwind bank is in the Trade District too (the Burnsides). Open your bank once.", wp = { 1453, 64.3, 80.8, "Stormwind bank" } },
+    { key = "mail",  title = "Mailbox", text = "Open a mailbox by the Auction House or the bank and collect anything your main sent.", wp = { 1453, 61.5, 72.5, "mailbox by the Auction House" } },
+    { key = "inn",   title = "Make Stormwind home", text = "Talk to Innkeeper Allison, make the inn your home, and always log out inside the inn so you log in next to the Auction House.", wp = { 1453, 60.4, 75.3, "Innkeeper Allison" } },
+    { key = "bags",  title = "Bags", text = "Fill all four bag slots: mail bags from your main, or buy them from Alyssa Griffith (bag vendor).", wp = { 1453, 71.7, 62.2, "Alyssa Griffith" } },
+  }
+  RG.ALT_LEVELING = {
+    "You don't have to level a bank alt: the Auction House, bank and mail all work at level 1.",
+    "If you want a few levels (for example to carry more or to quest later): do the Northshire quests to level 5, then Goldshire to 10. The Route tab on your main shows the same path.",
+    "Logging out in the Stormwind inn earns rested XP the whole time, so a parked bank alt levels twice as fast later.",
+  }
+end
+local HUB = ALLY and { place = "Goldshire", city = "Stormwind City", bind = { ["Stormwind City"] = true, ["Stormwind"] = true }, ah = "Stormwind Auction House", name = "Stormwind" }
+  or { place = "Brill", city = "Undercity", bind = { ["Undercity"] = true }, ah = "Undercity Auction House", name = "Undercity" }
+RG.ALT_HUB = HUB
+
 local function key() return RG.PlayerKey and RG.PlayerKey() or "?" end
 local function prog()
   WaypathDB.altGuide = WaypathDB.altGuide or {}
@@ -32,7 +56,7 @@ local function prog()
   return WaypathDB.altGuide[k]
 end
 
--- A step counts as done when it, or any later step, has happened (you can't be in Undercity without passing Brill).
+-- A step counts as done when it, or any later step, has happened (you can't be in the capital without passing the town before it).
 local IMPLIES_ARRIVAL = { uc = true, ah = true, bank = true, mail = true }
 function RG.AltStepDone(i)
   local p = prog()
@@ -53,7 +77,6 @@ function RG.AltGuideProgress()
 end
 -- The guide runs on an alt until every step is done (or you hide it).
 function RG.AltGuideActive()
-  if RG.PLAYER_FACTION == "Alliance" then return false end   -- the steps walk to the Undercity Auction House
   if not (RG.IsAlt and RG.IsAlt()) then return false end
   if prog().hidden then return false end
   local done, total = RG.AltGuideProgress()
@@ -91,11 +114,11 @@ end
 local function checkPlace()
   local zone = GetRealZoneText and GetRealZoneText() or ""
   local sub = GetSubZoneText and GetSubZoneText() or ""
-  if sub == "Brill" then mark("brill") end
-  if zone == "Undercity" then mark("uc") end
+  if sub == HUB.place then mark("brill") end
+  if zone == HUB.city then mark("uc") end
 end
 local function checkStatic()
-  if GetBindLocation and GetBindLocation() == "Undercity" then mark("inn") end
+  if GetBindLocation and HUB.bind[GetBindLocation() or ""] then mark("inn") end
   local full = true
   for bag = 1, 4 do
     local n = (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerNumSlots(bag)) or (GetContainerNumSlots and GetContainerNumSlots(bag)) or 0
@@ -116,7 +139,7 @@ ev:SetScript("OnEvent", function(_, event)
     C_Timer.After(3, function()
       if RG.AltGuideActive() then
         local done, total = RG.AltGuideProgress()
-        if done == 0 then RG.Print(GOLD .. "Secret bank-alt guide:|r follow the arrow to the Undercity Auction House (" .. total .. " quick steps on the tracker).") end
+        if done == 0 then RG.Print(GOLD .. "Secret bank-alt guide:|r follow the arrow to the " .. HUB.ah .. " (" .. total .. " quick steps on the tracker).") end
         autoPin()
       end
     end)
@@ -151,7 +174,7 @@ SlashCmdList.WAYPATH = function(msg)
     else
       RG.altGuideOpen = true
       if RG.ShowTab then RG.ShowTab("mail") end
-      RG.Print(GOLD .. "Secret bank-alt guide:|r make a new Undead on this realm and log in: Waypath+ walks it to the Undercity Auction House with the arrow. The steps are on the Bank alt tab.")
+      RG.Print(GOLD .. "Secret bank-alt guide:|r make a new " .. (ALLY and "Human" or "Undead") .. " on this realm and log in: Waypath+ walks it to the " .. HUB.ah .. " with the arrow. The steps are on the Bank alt tab.")
     end
     return
   end

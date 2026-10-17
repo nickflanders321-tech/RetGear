@@ -1,4 +1,4 @@
--- Waypath+ profession data: Mining. Where each ore is on the Horde side by
+-- Waypath+ profession data: Mining. Where each ore is, for the Horde (zones) and the Alliance (zonesA), by
 -- skill, ore and bar prices to track, and ore -> bar pairs for smelt-or-sell.
 -- Vein spawn points for ore alerts are in NodeData.lua.
 local _, RG = ...
@@ -11,6 +11,15 @@ M.zones = {
   { from = 65,  to = 124, ore = "Tin (and Silver)", zones = "Silverpine Forest, Hillsbrad Foothills, The Barrens, Stonetalon Mountains" },
   { from = 125, to = 174, ore = "Iron (and Gold)", zones = "Arathi Highlands, Desolace, Thousand Needles, Stranglethorn Vale" },
   { from = 175, to = 244, ore = "Mithril (and Truesilver)", zones = "Badlands, The Hinterlands, Searing Gorge, Tanaris, Felwood" },
+  { from = 245, to = 300, ore = "Thorium", zones = "Un'Goro Crater, Burning Steppes, Winterspring, Eastern Plaguelands, Silithus" },
+}
+
+-- The same, for the Alliance: the ore zones on the Alliance side (counted from WoW Forever's ore spawn data).
+M.zonesA = {
+  { from = 1,   to = 64,  ore = "Copper",  zones = "Elwynn Forest, Westfall, Dun Morogh, Loch Modan, Darkshore" },
+  { from = 65,  to = 124, ore = "Tin (and Silver)", zones = "Westfall, Loch Modan, Duskwood, Redridge Mountains, Wetlands, Arathi Highlands" },
+  { from = 125, to = 174, ore = "Iron (and Gold)", zones = "Arathi Highlands, Wetlands, Duskwood, Stranglethorn Vale, Desolace" },
+  { from = 175, to = 244, ore = "Mithril (and Truesilver)", zones = "Badlands, The Hinterlands, Searing Gorge, Burning Steppes, Tanaris, Felwood" },
   { from = 245, to = 300, ore = "Thorium", zones = "Un'Goro Crater, Burning Steppes, Winterspring, Eastern Plaguelands, Silithus" },
 }
 

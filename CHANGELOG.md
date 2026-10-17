@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Faction-neutral at last: the travel planner uses the Alliance flight masters, the boats (Rut'theran, Auberdine, Menethil, Theramore) and the Deeprun Tram for Alliance characters, with Horde zeppelins kept for the Horde. The secret bank-alt guide now has an Alliance version (a new Human, Goldshire, then the Stormwind Auction House, bank, inn and bag vendor, coordinates from the Forever data). Fishing has Alliance trainers, a leveling route and vendors, mining lists the Alliance ore zones, and cooking, blacksmithing, engineering and enchanting notes no longer assume Horde vendors. Flight-path steps now tick off for every flight master of both factions.
 - Fishing learns from you: anything you catch (a Sturdy Locked Chest, a crate, a clam) is added to that zone's list, so the Fishing page, the "Here:" line and the Fishing & cooking page show it from then on. `/wp fishseen` lists what you have added.
 - GPS data: when the game and our data cannot say where a quest is handed in, Waypath+ now asks Questie's own database (if Questie is installed). When a target is inside a dungeon, the arrow leads to the dungeon's door on the outside map. `/wp gpscheck` lists which map and quest data your game client offers.
 - Better GPS. When the arrow is blocked and has no learned path, it now leads to the game's own next leg of that quest (a door, cave mouth or stair) before the quest point. Without Shortest Path Forever installed, the arrow's tooltip and blocked hint mention it.

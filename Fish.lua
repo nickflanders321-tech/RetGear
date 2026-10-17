@@ -63,6 +63,24 @@ RG.FISH_GEAR = {
   { kind = "gear", id = 19969, bonus = 5, how = "Extravaganza: Brownell's Blue Striped Racer" },
   { kind = "gear", id = 19971, bonus = 5, skill = 150, how = "Extravaganza: Dezian Queenfish (permanent pole upgrade)" },
 }
+-- The Alliance versions of the Horde-written texts above: trainers, where to fish, and vendors.
+if RG.PLAYER_FACTION == "Alliance" then
+  RG.FISH_RANKS[1].how = "Any Fishing trainer, 1s: Arnold Leland in Stormwind, Grimnur Stonebrand in Ironforge, Astaia in Darnassus, Harold Riggs in the Wetlands."
+  RG.FISH_ROUTE = {
+    { from = 1, to = 75, lvl = 5, zone = "Stormwind City", spot = "Stormwind canals and Elwynn Forest lakes", text = "Fish the Stormwind canals by Arnold Leland (trainer) or the Elwynn Forest lakes near Goldshire: safe, few mobs. A Shiny Bauble helps below skill 50." },
+    { from = 75, to = 150, lvl = 10, zone = "Redridge Mountains", spot = "Lake Everstill", text = "No lure needed now. Fish Lake Everstill in Redridge and the Westfall and Loch Modan waters while you quest: Longjaw Mud Snapper and Bristle Whisker Catfish level you fast." },
+    { from = 150, to = 225, lvl = 30, zone = "Stranglethorn Vale", spot = "Booty Bay and the Stranglethorn coast", text = "Booty Bay is neutral, with an inn, a flight path and the Expert book from Old Man Heming. Fish the Stranglethorn coast and nearby waters: Rockscale Cod, Spotted Yellowtail, Oily Blackmouth and Firefin Snapper." },
+    { from = 225, to = 300, lvl = 42, zone = "Tanaris", spot = "Gadgetzan coast", text = "Tanaris coast: Spotted Yellowtail, Firefin Snapper, Glossy Mightfish, plus Summer Bass or Winter Squid by season. Or the Feralas lakes from Feathermoon Stronghold." },
+  }
+  RG.FISH_GEAR_A = {
+    [6256] = "Fishing supply vendors in Stormwind, Ironforge and Darnassus, about 23c",
+    [6365] = "Fishing vendors, about 9s, in Stormwind, Ironforge and Darnassus",
+    [19022] = "A Horde quest (Hinterlands); the Alliance can't take it. Buy a Strong Fishing Pole or look on the AH",
+    [6530] = "Fishing vendors, 1s (Stormwind, Ironforge, Darnassus, Booty Bay)",
+    [6533] = "Fishing vendors, 2s 50c (Stormwind, Ironforge, Darnassus, Booty Bay)",
+  }
+  for _, g in ipairs(RG.FISH_GEAR) do if RG.FISH_GEAR_A[g.id] then g.how = RG.FISH_GEAR_A[g.id] end end
+end
 local POLE, LURE = {}, {}
 for _, g in ipairs(RG.FISH_GEAR) do if g.kind == "pole" then POLE[g.id] = g.bonus elseif g.kind == "lure" then LURE[g.id] = g end end
 

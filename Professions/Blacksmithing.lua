@@ -69,6 +69,7 @@ B.trainA = {
   expert = "Therum Deepforge (Stormwind), Rotgath Stonebeard (Ironforge)",
   artisan = "Bengus Deepforge (Ironforge)",
 }
+B.suppliesA = "Blacksmith Hammer, Weak and Strong Flux: the Blacksmithing Supply vendor next to each capital trainer (Stormwind, Ironforge, Darnassus). Green Dye: a Blacksmithing or dye vendor in your capital."
 B.supplies = "Blacksmith Hammer, Weak and Strong Flux: the Blacksmithing Supply vendor next to each capital trainer. Green Dye: Tamar (Orgrimmar), Millie Gregorian (Undercity), Mahu (Thunder Bluff)."
 
 -- Bars whose Auction House prices are tracked (ore and basic bars come from Mining).

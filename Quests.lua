@@ -140,7 +140,10 @@ function RG.StepAuto(entry, text)
   local t = text:lower()
   -- flight paths
   if t:find("flight path", 1, true) then
-    for _, place in ipairs({ entry.fp, "The Sepulcher", "Undercity", "Orgrimmar", "Crossroads", "Ratchet", "Thunder Bluff", "Tarren Mill", "Hammerfall", "Booty Bay", "Grom'gol", "Light's Hope" }) do
+    -- every flight master in the game (both factions), so Alliance steps tick off too
+    local places = { entry.fp }
+    for _, f in ipairs(RG.FLIGHTS or {}) do places[#places + 1] = f[1] end
+    for _, place in ipairs(places) do
       if place and t:find(place:lower(), 1, true) and RG.KnowsFP(place) then return true, "You know the " .. place .. " flight path" end
     end
     if entry.fp and t:find("grab the flight path", 1, true) and RG.KnowsFP(entry.fp) then return true, "You know this flight path" end

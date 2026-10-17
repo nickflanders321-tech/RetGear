@@ -1653,13 +1653,13 @@ local function renderMail()
     alt and (GOLD .. "Main: " .. main .. "|r") or (GREY .. "Main: " .. (RG.db.main and main or "not set") .. "|r"), "", "gold")
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Letter_15")
   -- secret bank-alt guide: open on an alt still setting up, folded on your main (/wp bankalt opens it)
-  if RG.ALT_STEPS and RG.PLAYER_FACTION ~= "Alliance" then   -- the steps are for a Horde bank alt
+  if RG.ALT_STEPS then
     local open = state.altGuide
     if open == nil then open = RG.altGuideOpen or (alt and RG.AltGuideActive and RG.AltGuideActive()) or false end
     n = n + 1
     local done, total = 0, #RG.ALT_STEPS
     if alt and RG.AltGuideProgress then done = RG.AltGuideProgress() end
-    setItem(getRow(n), nil, nil, GOLD .. "Secret: a Horde bank alt in ten minutes|r", open and GREY .. RG.ALT_INTRO .. "|r" or (GREY .. "Make a new Undead and Waypath+ walks it to the Undercity Auction House with the arrow. Click to see the steps.|r"),
+    setItem(getRow(n), nil, nil, GOLD .. "Secret: a bank alt in ten minutes|r", open and GREY .. RG.ALT_INTRO .. "|r" or (GREY .. "Make a new " .. ((RG.PLAYER_FACTION == "Alliance") and "Human" or "Undead") .. " and Waypath+ walks it to the " .. ((RG.ALT_HUB and RG.ALT_HUB.ah) or "Auction House") .. " with the arrow. Click to see the steps.|r"),
       alt and (done >= total and (GREEN .. "Done|r") or (GOLD .. done .. "/" .. total .. "|r")) or (GREY .. (open and "hide" or "show") .. "|r"), "", "gold", nil, not open)
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Key_03")
     rows[n].onClick = function() state.altGuide = not open; RG.altGuideOpen = nil; RG.RefreshUI() end
@@ -2017,7 +2017,7 @@ local function renderFish()
     end
   end
   -- where to fish
-  n = n + 1; setHeader(getRow(n), (RG.PLAYER_FACTION == "Alliance") and "Where to fish for your skill (spots are written from the Horde side)" or "Where to fish for your skill")
+  n = n + 1; setHeader(getRow(n), "Where to fish for your skill")
   for _, r in ipairs(RG.FISH_ROUTE) do
     n = n + 1
     local here = fsk >= r.from and fsk < r.to

@@ -21,9 +21,10 @@ K.trainA = {
   expert = "the Expert Cookbook (skill 125): a Cooking recipe vendor for your side; not confirmed for WoW Forever yet",
   artisan = "Clamlette Surprise for Dirge Quikcleave in Gadgetzan (skill 225, level 35); bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss",
 }
+K.suppliesA = "Simple Wood and Flint and Tinder for the campfire, spices and Refreshing Spring Water: Cooking Supply vendors in Stormwind, Ironforge and Darnassus."
 K.supplies = "Simple Wood and Flint and Tinder for the campfire, spices and Refreshing Spring Water: Cooking Supply vendors (Xen'to in Orgrimmar, Ronald Burch in Undercity, Naal Mistrunner in Thunder Bluff)."
 K.plan = {
-  { from = 1,   to = 50,  craft = "Brilliant Smallfish, Charred Wolf Meat or Roasted Boar Meat", n = 55, mats = "1 raw fish or meat each (Scorpid Surprise in Durotar, Crispy Bat Wing in Tirisfal)" },
+  { from = 1,   to = 50,  craft = "Brilliant Smallfish, Charred Wolf Meat or Roasted Boar Meat", n = 55, mats = "1 raw fish or meat each (use the raw fish and meat you loot while questing)" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50)" },
   { from = 50,  to = 100, craft = "Longjaw Mud Snapper, Rainbow Fin Albacore, Coyote Steak or Strider Stew", n = 55, mats = "1 raw fish or meat each (Strider Stew: plus 1 Shiny Red Apple)" },
   { from = 100, to = 130, craft = "Bristle Whisker Catfish, Crab Cake or Dry Pork Ribs", n = 35, mats = "1 raw fish, or 1 meat and 1 Mild Spices each" },

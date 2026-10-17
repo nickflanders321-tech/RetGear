@@ -33,7 +33,7 @@ E.plan = {
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
   { from = 130, to = 150, craft = "Enchant Boots - Minor Stamina", n = 20, mats = "4 Strange Dust each" },
   { from = 150, to = 151, craft = "Runed Golden Rod", n = 1, mats = "1 Golden Rod, 1 Iridescent Pearl, 1 Greater Astral Essence, 1 Soul Dust" },
-  { from = 151, to = 165, craft = "Minor Mana Oil", n = 16, mats = "1 Soul Dust, 2 Maple Seed, 1 Leaded Vial each (formula: Kithas, Orgrimmar)" },
+  { from = 151, to = 165, craft = "Minor Mana Oil", n = 16, mats = "1 Soul Dust, 2 Maple Seed, 1 Leaded Vial each (formula: an Enchanting supplier in a capital city; Kithas in Orgrimmar for the Horde)" },
   { from = 165, to = 185, craft = "Enchant Boots - Lesser Agility", n = 22, mats = "1 Soul Dust each" },
   { from = 185, to = 200, craft = "Enchant Bracer - Strength", n = 15, mats = "1 Vision Dust each" },
   { from = 200, to = 201, craft = "Runed Truesilver Rod", n = 1, mats = "1 Truesilver Rod, 1 Black Pearl, 1 Greater Mystic Essence, 1 Vision Dust" },
@@ -43,7 +43,7 @@ E.plan = {
   { from = 230, to = 235, craft = "Enchant Boots - Stamina", n = 5, mats = "2 Vision Dust each" },
   { from = 235, to = 250, craft = "Enchant Chest - Superior Stamina", n = 20, mats = "3 Vision Dust each" },
   { from = 250, to = 265, craft = "Lesser Mana Oil", n = 20, mats = "1 Dream Dust, 1 Purple Lotus, 1 Crystal Vial each (formula: Kania, Silithus)" },
-  { from = 265, to = 294, craft = "Enchant Shield - Greater Stamina", n = 32, mats = "6 Dream Dust each (formula: Daniel Bartlett, Undercity)" },
+  { from = 265, to = 294, craft = "Enchant Shield - Greater Stamina", n = 32, mats = "6 Dream Dust each (formula: an Enchanting supplier in a capital city; Daniel Bartlett in Undercity for the Horde)" },
   { from = 294, to = 295, craft = "Runed Arcanite Rod", n = 1, mats = "Arcanite Rod, Golden Pearl, 10 Illusion Dust, 4 Greater Eternal Essence, 4 Small and 2 Large Brilliant Shard (Lorelae Wintersong, Moonglade)" },
   { from = 295, to = 300, craft = "Enchant Cloak - Superior Defense", n = 5, mats = "8 Illusion Dust each (Lorelae Wintersong, Moonglade)" },
 }

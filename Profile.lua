@@ -206,9 +206,12 @@ RG.DUNGEON_QUESTS = dungeons
 -- ---------------------------------------------------------------------------
 local P = RG.PROFESSIONS
 if faction == "Alliance" then   -- trainers for the Alliance towns
-  for _, pd in pairs(P) do if pd.trainA then pd.train = pd.trainA end end
+  for _, pd in pairs(P) do
+    if pd.trainA then pd.train = pd.trainA end
+    if pd.suppliesA then pd.supplies = pd.suppliesA end
+  end
 end
-RG.MINING = P.Mining and P.Mining.zones or {}
+RG.MINING = P.Mining and ((faction == "Alliance" and P.Mining.zonesA) or P.Mining.zones) or {}
 RG.SMELT = P.Mining and P.Mining.smelt or {}
 RG.STONES = P.Blacksmithing and P.Blacksmithing.stones or { sharp = {}, blunt = {} }
 RG.BS_PLAN = P.Blacksmithing and P.Blacksmithing.plan or {}

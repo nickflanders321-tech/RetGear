@@ -5,7 +5,7 @@ local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 table.insert(RG.OPTIONS, { key = "travelTips", label = "Travel tips when the guide sends me to another zone", default = true })
 
--- Horde (and neutral) flight masters by zone.
+-- Flight masters by zone: the Horde list is used for Horde characters, ALLY_FP for Alliance ones (see ensure()).
 local FP = {
   ["Tirisfal Glades"] = "Undercity", ["Undercity"] = "Undercity", ["Silverpine Forest"] = "The Sepulcher", ["Hillsbrad Foothills"] = "Tarren Mill",
   ["Arathi Highlands"] = "Hammerfall", ["The Hinterlands"] = "Revantusk Village", ["Badlands"] = "Kargath", ["Swamp of Sorrows"] = "Stonard",
@@ -13,8 +13,28 @@ local FP = {
   ["Durotar"] = "Orgrimmar", ["Orgrimmar"] = "Orgrimmar", ["The Barrens"] = "Crossroads", ["Mulgore"] = "Thunder Bluff", ["Thunder Bluff"] = "Thunder Bluff",
   ["Stonetalon Mountains"] = "Sun Rock Retreat", ["Ashenvale"] = "Splintertree Post", ["Thousand Needles"] = "Freewind Post", ["Desolace"] = "Shadowprey Village",
   ["Dustwallow Marsh"] = "Brackenwall Village", ["Tanaris"] = "Gadgetzan", ["Feralas"] = "Camp Mojache", ["Azshara"] = "Valormok",
-  ["Felwood"] = "Bloodvenom Post", ["Winterspring"] = "Everlook", ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Moonglade"] = "Moonglade",
+  ["Felwood"] = "Bloodvenom Post", ["Winterspring"] = "Everlook", ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Moonglade"] = "Nighthaven",
 }
+local ALLY_FP = {
+  ["Teldrassil"] = "Rut'theran Village", ["Darkshore"] = "Auberdine", ["Ashenvale"] = "Astranaar", ["Stonetalon Mountains"] = "Stonetalon Peak",
+  ["Desolace"] = "Nijel's Point", ["Feralas"] = "Feathermoon Stronghold", ["Dustwallow Marsh"] = "Theramore", ["Tanaris"] = "Gadgetzan",
+  ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Winterspring"] = "Everlook", ["Felwood"] = "Talonbranch Glade",
+  ["Azshara"] = "Talrendis Point", ["Moonglade"] = "Nighthaven", ["The Barrens"] = "Ratchet",
+  ["Dun Morogh"] = "Ironforge", ["Ironforge"] = "Ironforge", ["Loch Modan"] = "Thelsamar", ["Wetlands"] = "Menethil Harbor", ["Arathi Highlands"] = "Refuge Pointe",
+  ["Hillsbrad Foothills"] = "Southshore", ["The Hinterlands"] = "Aerie Peak", ["Western Plaguelands"] = "Chillwind Camp", ["Eastern Plaguelands"] = "Light's Hope",
+  ["Searing Gorge"] = "Thorium Point", ["Burning Steppes"] = "Morgan's Vigil", ["Redridge Mountains"] = "Lakeshire", ["Duskwood"] = "Darkshire",
+  ["Westfall"] = "Sentinel Hill", ["Elwynn Forest"] = "Stormwind", ["Stormwind City"] = "Stormwind", ["Stranglethorn Vale"] = "Booty Bay", ["Blasted Lands"] = "Nethergarde Keep",
+}
+-- which list applies: decided once the game says which faction you are
+local factionDone
+local function ensure()
+  if factionDone then return end
+  factionDone = true
+  if RG.PLAYER_FACTION == "Alliance" then
+    for k in pairs(FP) do FP[k] = nil end
+    for k, v in pairs(ALLY_FP) do FP[k] = v end
+  end
+end
 -- Inn towns (hearthstone locations) -> zone
 local INN_TOWN = { ["Brill"] = "Tirisfal Glades", ["Sen'jin Village"] = "Durotar", ["Undercity"] = "Undercity", ["The Sepulcher"] = "Silverpine Forest", ["Tarren Mill"] = "Hillsbrad Foothills",
   ["Hammerfall"] = "Arathi Highlands", ["Revantusk Village"] = "The Hinterlands", ["Kargath"] = "Badlands", ["Stonard"] = "Swamp of Sorrows",
@@ -23,11 +43,20 @@ local INN_TOWN = { ["Brill"] = "Tirisfal Glades", ["Sen'jin Village"] = "Durotar
   ["Bloodhoof Village"] = "Mulgore", ["Sun Rock Retreat"] = "Stonetalon Mountains", ["Splintertree Post"] = "Ashenvale", ["Freewind Post"] = "Thousand Needles",
   ["Shadowprey Village"] = "Desolace", ["Brackenwall Village"] = "Dustwallow Marsh", ["Gadgetzan"] = "Tanaris", ["Camp Mojache"] = "Feralas",
   ["Everlook"] = "Winterspring", ["Light's Hope Chapel"] = "Eastern Plaguelands", ["Thorium Point"] = "Searing Gorge", ["Cenarion Hold"] = "Silithus",
-  ["Marshal's Refuge"] = "Un'Goro Crater", ["Bloodvenom Post"] = "Felwood", ["Valormok"] = "Azshara" }
+  ["Marshal's Refuge"] = "Un'Goro Crater", ["Bloodvenom Post"] = "Felwood", ["Valormok"] = "Azshara",
+  -- Alliance
+  ["Goldshire"] = "Elwynn Forest", ["Stormwind"] = "Stormwind City", ["Stormwind City"] = "Stormwind City", ["Kharanos"] = "Dun Morogh", ["Ironforge"] = "Ironforge",
+  ["Thelsamar"] = "Loch Modan", ["Menethil Harbor"] = "Wetlands", ["Sentinel Hill"] = "Westfall", ["Lakeshire"] = "Redridge Mountains", ["Darkshire"] = "Duskwood",
+  ["Southshore"] = "Hillsbrad Foothills", ["Refuge Pointe"] = "Arathi Highlands", ["Aerie Peak"] = "The Hinterlands", ["Chillwind Camp"] = "Western Plaguelands",
+  ["Rut'theran Village"] = "Teldrassil", ["Dolanaar"] = "Teldrassil", ["Darnassus"] = "Darnassus", ["Auberdine"] = "Darkshore", ["Astranaar"] = "Ashenvale",
+  ["Stonetalon Peak"] = "Stonetalon Mountains", ["Nijel's Point"] = "Desolace", ["Feathermoon Stronghold"] = "Feralas", ["Theramore Isle"] = "Dustwallow Marsh",
+  ["Theramore"] = "Dustwallow Marsh", ["Talonbranch Glade"] = "Felwood", ["Talrendis Point"] = "Azshara", ["Morgan's Vigil"] = "Burning Steppes",
+  ["Nethergarde Keep"] = "Blasted Lands", ["Nighthaven"] = "Moonglade" }
 local EK = { ["Tirisfal Glades"] = 1, ["Undercity"] = 1, ["Silverpine Forest"] = 1, ["Hillsbrad Foothills"] = 1, ["Alterac Mountains"] = 1, ["Arathi Highlands"] = 1,
   ["The Hinterlands"] = 1, ["Western Plaguelands"] = 1, ["Eastern Plaguelands"] = 1, ["Wetlands"] = 1, ["Loch Modan"] = 1, ["Dun Morogh"] = 1, ["Badlands"] = 1,
   ["Searing Gorge"] = 1, ["Burning Steppes"] = 1, ["Redridge Mountains"] = 1, ["Elwynn Forest"] = 1, ["Westfall"] = 1, ["Duskwood"] = 1,
-  ["Stranglethorn Vale"] = 1, ["Deadwind Pass"] = 1, ["Swamp of Sorrows"] = 1, ["Blasted Lands"] = 1 }
+  ["Stranglethorn Vale"] = 1, ["Deadwind Pass"] = 1, ["Swamp of Sorrows"] = 1, ["Blasted Lands"] = 1,
+  ["Stormwind City"] = 1, ["Ironforge"] = 1 }
 local function continent(z) if EK[z] then return "EK" end return "K" end
 
 -- Zones you can walk between.
@@ -44,29 +73,42 @@ local BORDERS = {
   { "Stonetalon Mountains", "Ashenvale" }, { "Stonetalon Mountains", "Desolace" }, { "Desolace", "Feralas" }, { "Feralas", "Thousand Needles" },
   { "Thousand Needles", "Tanaris" }, { "Tanaris", "Un'Goro Crater" }, { "Un'Goro Crater", "Silithus" }, { "Ashenvale", "Felwood" },
   { "Ashenvale", "Azshara" }, { "Ashenvale", "Darkshore" }, { "Felwood", "Winterspring" }, { "Felwood", "Moonglade" }, { "Winterspring", "Moonglade" },
+  -- Alliance towns and zones
+  { "Dun Morogh", "Ironforge", 2 }, { "Elwynn Forest", "Stormwind City", 2 }, { "Elwynn Forest", "Redridge Mountains" }, { "Elwynn Forest", "Duskwood" },
+  { "Teldrassil", "Darnassus", 3 }, { "Wetlands", "Loch Modan" }, { "Stranglethorn Vale", "Blasted Lands", 20 },
 }
 -- Zeppelins and the boat: { from zone, to zone, text }
 local RIDES = {
-  { "Tirisfal Glades", "Durotar", "Zeppelin from the tower outside Undercity to Orgrimmar" },
-  { "Durotar", "Tirisfal Glades", "Zeppelin from the tower outside Orgrimmar to Undercity" },
-  { "Tirisfal Glades", "Stranglethorn Vale", "Zeppelin from the tower outside Undercity to Grom'gol" },
-  { "Stranglethorn Vale", "Tirisfal Glades", "Zeppelin from Grom'gol to Undercity" },
-  { "Durotar", "Stranglethorn Vale", "Zeppelin from the tower outside Orgrimmar to Grom'gol" },
-  { "Stranglethorn Vale", "Durotar", "Zeppelin from Grom'gol to Orgrimmar" },
+  { "Tirisfal Glades", "Durotar", "Zeppelin from the tower outside Undercity to Orgrimmar", "H" },
+  { "Durotar", "Tirisfal Glades", "Zeppelin from the tower outside Orgrimmar to Undercity", "H" },
+  { "Tirisfal Glades", "Stranglethorn Vale", "Zeppelin from the tower outside Undercity to Grom'gol", "H" },
+  { "Stranglethorn Vale", "Tirisfal Glades", "Zeppelin from Grom'gol to Undercity", "H" },
+  { "Durotar", "Stranglethorn Vale", "Zeppelin from the tower outside Orgrimmar to Grom'gol", "H" },
+  { "Stranglethorn Vale", "Durotar", "Zeppelin from Grom'gol to Orgrimmar", "H" },
   { "The Barrens", "Stranglethorn Vale", "Boat from Ratchet to Booty Bay" },
   { "Stranglethorn Vale", "The Barrens", "Boat from Booty Bay to Ratchet" },
+  -- Alliance: the boats of the Wetlands and Teldrassil, and the Deeprun Tram
+  { "Teldrassil", "Darkshore", "Boat from Rut'theran Village to Auberdine", "A" },
+  { "Darkshore", "Teldrassil", "Boat from Auberdine to Rut'theran Village", "A" },
+  { "Darkshore", "Wetlands", "Boat from Auberdine to Menethil Harbor", "A" },
+  { "Wetlands", "Darkshore", "Boat from Menethil Harbor to Auberdine", "A" },
+  { "Wetlands", "Dustwallow Marsh", "Boat from Menethil Harbor to Theramore", "A" },
+  { "Dustwallow Marsh", "Wetlands", "Boat from Theramore to Menethil Harbor", "A" },
+  { "Stormwind City", "Ironforge", "Deeprun Tram from Stormwind to Ironforge", "A" },
+  { "Ironforge", "Stormwind City", "Deeprun Tram from Ironforge to Stormwind", "A" },
 }
 -- Dungeons and combined route names -> the zone you travel to.
 local DESTINATION = {
   ["Ragefire Chasm"] = "Orgrimmar", ["Ruins of Lordaeron"] = "Tirisfal Glades", ["Excavation Site: Wetlands"] = "Wetlands", ["Wailing Caverns"] = "The Barrens", ["Shadowfang Keep"] = "Silverpine Forest", ["Blackfathom Deeps"] = "Ashenvale",
   ["Razorfen Kraul"] = "The Barrens", ["Razorfen Downs"] = "The Barrens", ["Scarlet Monastery"] = "Tirisfal Glades", ["Uldaman"] = "Badlands",
   ["Zul'Farrak"] = "Tanaris", ["Maraudon"] = "Desolace", ["Blackrock Depths"] = "Searing Gorge", ["Gnomeregan"] = "Dun Morogh",
-  ["The Deadmines"] = "Westfall", ["Sunken Temple"] = "Swamp of Sorrows", ["Dire Maul"] = "Feralas",
+  ["The Deadmines"] = "Westfall", ["The Stockade"] = "Stormwind City", ["Stormwind Stockade"] = "Stormwind City", ["Sunken Temple"] = "Swamp of Sorrows", ["Dire Maul"] = "Feralas",
   ["Western & Eastern Plaguelands"] = "Western Plaguelands", ["Stratholme, Scholomance, Dire Maul, LBRS/UBRS"] = "Burning Steppes",
   ["Excavation Site"] = "Wetlands", ["City of Dalaran"] = "Hillsbrad Foothills", ["The Temple of Atal'Hakkar"] = "Swamp of Sorrows",
   ["Riverglades"] = "Tanaris", ["Valley of Trials"] = "Durotar", ["Camp Narache"] = "Mulgore",
 }
 function RG.TravelZone(name)
+  ensure()
   if not name then return nil end
   if DESTINATION[name] then return DESTINATION[name] end
   if FP[name] or EK[name] then return name end
@@ -79,9 +121,13 @@ local function buildEdges()
   edges = {}
   local function add(a, b, cost, how, text) edges[a] = edges[a] or {}; table.insert(edges[a], { to = b, cost = cost, how = how, text = text }) end
   for _, b in ipairs(BORDERS) do add(b[1], b[2], b[3] or 10, "walk"); add(b[2], b[1], b[3] or 10, "walk") end
-  for _, r in ipairs(RIDES) do add(r[1], r[2], 7, "ride", r[3]) end
+  local ally = RG.PLAYER_FACTION == "Alliance"
+  for _, r in ipairs(RIDES) do
+    if not r[4] or (r[4] == "A") == ally then add(r[1], r[2], 7, "ride", r[3]) end
+  end
 end
 local function knows(z)
+  ensure()
   local f = FP[z]
   if not f then return false end
   local k = RG.KnowsFP and RG.KnowsFP(f)
@@ -96,6 +142,7 @@ end
 
 -- Returns the legs { text } from your zone to `target`, or nil when you're already there.
 function RG.TravelPlan(target)
+  ensure()
   target = RG.TravelZone(target)
   local here = GetRealZoneText and GetRealZoneText() or ""
   if not target or target == "" or here == "" or target == here then return nil end
