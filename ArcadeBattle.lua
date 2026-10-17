@@ -6,7 +6,7 @@ if not B then return end
 local U                      -- the card window's helpers, resolved when the arena first opens
 local win, game
 local W, H = 1180, 700       -- window
-local HW = 116               -- hand card width
+local HW = 100               -- hand card width
 local MW, MH = 88, 104       -- a minion on the board
 local S = { targeting = false, level = 2, busy = false, aiN = 0, held = 0, msgT = 0, mode = "menu", mull = {}, pkey = false }
 local gliding = {}      -- widgets easing to their place (see place())
@@ -232,9 +232,9 @@ end
 local function boardPos(side, i, n)
   return 600 - (n - 1) * 48 + (i - 1) * 96, side == 1 and 318 or 438
 end
-local HERO_POS = { [1] = { 600, 206 }, [2] = { 600, 592 } }   -- yours sits above the hand, not under it
-local POWER_POS = { [1] = { 696, 192 }, [2] = { 696, 604 } }
-local WEAPON_POS = { [1] = { 504, 192 }, [2] = { 504, 604 } }
+local HERO_POS = { [1] = { 600, 218 }, [2] = { 600, 592 } }   -- yours sits above the hand, not under it
+local POWER_POS = { [1] = { 696, 204 }, [2] = { 696, 604 } }
+local WEAPON_POS = { [1] = { 504, 204 }, [2] = { 504, 604 } }
 
 local function floatText(x, y, txt, r, g, b, size)
   local f
@@ -413,6 +413,7 @@ local function makeHero(parent, side)
   h.atkT = U.fs(h, "title", 20, "OVERLAY", "OUTLINE"); h.atkT:SetPoint("CENTER", h.atkB, "CENTER", 0, 0)
   h.arm = U.fs(h, "title", 16, "OVERLAY", "OUTLINE"); h.arm:SetPoint("TOPRIGHT", h, "TOPRIGHT", -2, -2); h.arm:SetTextColor(0.8, 0.85, 1)
   h.name = U.fs(h, "head", 11, "OVERLAY"); h.name:SetPoint("BOTTOM", h, "TOP", 0, 2); h.name:SetTextColor(0.96, 0.84, 0.5)
+  if side == 1 then h.name:Hide() end   -- your own name would sit on your minions' names; the tooltip still has it
   h:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   h:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar("h" .. E(self.side)) end end)
   return h
@@ -922,14 +923,14 @@ local function makeBoard()
   ui.deckT = { U.fs(bd, "head", 13, "OVERLAY"), U.fs(bd, "head", 13, "OVERLAY") }
   ui.deckT[1]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 108); ui.deckT[2]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 548)
   for s = 1, 2 do ui.deckT[s]:SetTextColor(0.75, 0.72, 0.9) end
-  win.endBtn = U.gbtn(bd, "End Turn", 150, 40, endTurn, true); pt(win.endBtn, 1065, 378)
+  win.endBtn = U.gbtn(bd, "End Turn", 170, 40, endTurn, true); pt(win.endBtn, 1065, 378)
   local function warnLabel() return "Reminder: " .. WARN_MODES[warnMode()] end
-  win.warnBtn = U.gbtn(bd, warnLabel(), 150, 20, function(self)
+  win.warnBtn = U.gbtn(bd, warnLabel(), 170, 20, function(self)
     local a = store(); if not a then return end
     a.endWarn = (warnMode() + 1) % 3; self:SetText(warnLabel()); S.confirmEnd = false; win.endBtn:SetText("End Turn")
   end)
   pt(win.warnBtn, 1065, 336)
-  win.sndBtn = U.gbtn(bd, "Sound: On", 150, 20, function(self)
+  win.sndBtn = U.gbtn(bd, "Sound: On", 170, 20, function(self)
     local a = store(); if not a then return end
     a.mute = not a.mute or nil; self:SetText(a.mute and "Sound: Off" or "Sound: On")
   end)
@@ -944,10 +945,13 @@ local function makeBoard()
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
   -- the opening-hand table: a dark panel so the cards and the button read clearly over the board
   win.mullPanel = CreateFrame("Frame", nil, bd, "BackdropTemplate")
-  win.mullPanel:SetSize(700, 300); pt(win.mullPanel, 600, 400); win.mullPanel:SetFrameLevel(U.lv(bd) + 3)
+  win.mullPanel:SetSize(760, 260); pt(win.mullPanel, 600, 392); win.mullPanel:SetFrameLevel(U.lv(bd) + 3)
   win.mullPanel:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); win.mullPanel:SetBackdropColor(0.03, 0.02, 0.09, 0.93); win.mullPanel:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
   win.mullPanel:Hide()
-  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 276); win.mullBtn:Hide(); win.mullBtn:SetFrameLevel(U.lv(bd) + 120)
+  -- the mulligan's instruction lives inside the panel, above the cards (never over them)
+  win.mullTitle = U.fs(win.mullPanel, "head", 15, "OVERLAY"); pt(win.mullTitle, 600, 503); win.mullTitle:SetTextColor(0.96, 0.84, 0.5)
+  win.mullTitle:SetText("Click any cards you want to swap, then keep the rest."); win.mullTitle:Hide()
+  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 283); win.mullBtn:Hide(); win.mullBtn:SetFrameLevel(U.lv(bd) + 120)
   -- the end screen
   win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 370); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
   local o = win.over
@@ -1113,13 +1117,13 @@ refresh = function()
   -- my hand
   local n = #me.hand
   local mull = S.mode == "mull"
-  local step = n > 1 and math.min(mull and 130 or 112, 700 / (n - 1)) or 0
+  local step = n > 1 and math.min(mull and 130 or 106, 700 / (n - 1)) or 0
   for i = 1, 10 do
     local w, key = ui.hand[i], me.hand[i]
     if key then
       local x = 600 - (n - 1) * step / 2 + (i - 1) * step
-      local y = (w.hov and not mull) and 128 or 88
-      if mull then y = 404 end
+      local y = (w.hov and not mull) and 86 or 78
+      if mull then y = 399 end
       local fresh = rawget(w, "gx") == nil
       if fresh and not mull then place(w, x, y, DECK_POS[1][1], DECK_POS[1][2]); pt(w, w.gx, w.gy) else place(w, x, y) end
       if fresh and mull then w.gx, w.gy = x, y; pt(w, x, y) end
@@ -1138,7 +1142,7 @@ refresh = function()
   -- buttons
   win.endBtn:SetEnabled(mine and S.mode == "play")
   Sh(win.endBtn, S.mode ~= "mull")
-  Sh(win.mullPanel, S.mode == "mull")
+  Sh(win.mullPanel, S.mode == "mull"); Sh(win.mullTitle, S.mode == "mull")
   local idle = mine and S.mode == "play" and #B.actions(game, ME) == 0
   win.endBtn:SetActive(idle and true or false)
   win.turnT:SetText(game.over and "" or (S.mode == "mull" and "" or (game.cur == ME and "YOUR TURN" or (S.pvp and (string.upper(S.foeName or "") .. "'S TURN") or "OPPONENT'S TURN"))))
@@ -1185,7 +1189,7 @@ local function beginGame(g)
   win.pv:Hide()
   do local a = store(); win.warnBtn:SetText("Reminder: " .. WARN_MODES[warnMode()]); win.sndBtn:SetText(a and a.mute and "Sound: Off" or "Sound: On") end
   win.mullBtn:Show(); win.mullBtn:SetEnabled(true); win.mullBtn:SetText("Keep these cards")
-  say("Click any cards you want to swap, then keep the rest.", 600)
+  say("", 0)
   refresh()
   if ui.showVS then ui.showVS() end
   logLine("|cfff5d273" .. (game.first == ME and "You go first." or ((S.pvp and (S.foeName or "Your friend") or "The foe") .. " goes first. You get the Lucky Coin and 5 Armor.")) .. "|r")
