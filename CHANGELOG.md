@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.4
+- Smarter quest planner. A quest that is ready to hand in is now always counted, even when only the game knows where it goes (before, the plan could send you 968 yd away while a turn-in sat 141 yd from you).
+- The planner now weighs how much each task is worth: yellow and orange quests first, green next, grey last, and hand-ins ahead of pick-ups. It also adds worthwhile new quests within about 900 yd to the plan, so the next stop reflects what is actually around you.
+- "New quests nearby" is now ranked by value for the distance (quest colour, chains it opens, and busy hubs with several givers), instead of just the nearest two. Grey quests no longer crowd out better ones.
+
 ## v1.0.3
 - Gear guide: items with no zone listed no longer show a stray "·" separator.
 - Cards: opening a pack now dims the whole collection window behind it, so the cards underneath no longer peek out around the reveal.

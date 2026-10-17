@@ -194,11 +194,13 @@ local function buildTasks()
   -- hand-ins: ready quests now, the rest after their objectives
   for _, q in ipairs(quests) do
     local qd = q.id and RG.QDATA and RG.QDATA[q.id]
-    if qd and qd.e and qd.e[1] then
-      local ewp = { qd.e[1], qd.e[2], qd.e[3], (qd.e[4] and qd.e[4] ~= "") and qd.e[4] or q.title }
+    local ewp
+    if qd and qd.e and qd.e[1] then ewp = { qd.e[1], qd.e[2], qd.e[3], (qd.e[4] and qd.e[4] ~= "") and qd.e[4] or q.title }
+    elseif q.complete and q.wp then ewp = q.wp end   -- not in our data: where the game says to hand it in
+    if ewp then
       local p = pt(ewp)
       if p and (q.complete or objOf[q.title]) then
-        tasks[#tasks + 1] = { act = "turnin", title = q.title, id = q.id, label = qd.e[4], pts = { p }, level = q.level, group = q.group,
+        tasks[#tasks + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], pts = { p }, level = q.level, group = q.group,
           deps = (not q.complete) and objOf[q.title] or nil }
       elseif not p and q.complete then elsewhere = elsewhere + 1 end
     end
@@ -220,7 +222,33 @@ local function buildTasks()
       end
     end
   end
+  -- worthwhile quests just around you, even when the route has not reached them yet
+  if RG.Opt and RG.Opt("newQuests") and RG.NearbyNewQuests then
+    local have = {}
+    for _, t in ipairs(tasks) do have[t.title] = true end
+    local added = 0
+    for _, q in ipairs(RG.NearbyNewQuests(6, true)) do
+      if added >= 3 then break end
+      if not have[q.name] and not byTitle[q.name] and (q.dist or 99999) <= 900 then
+        local p = pt(q.wp)
+        if p then tasks[#tasks + 1] = { act = "pickup", title = q.name, id = q.id, label = q.giver, pts = { p }, level = q.lvl }; have[q.name] = true; added = added + 1 end
+      end
+    end
+  end
   return tasks, elsewhere, c, px, py
+end
+
+-- how much a task is worth to you: XP-giving quests of your level first, grey ones last
+local WORTH_W = { [0] = 0.2, [1] = 0.45, [2] = 0.7, [3] = 0.95, [4] = 1.15 }
+local function taskWeight(t)
+  local w = 1
+  if t.level and RG.QuestWorth then
+    local _, _, _, rank = RG.QuestWorth(t.level, t.group, t.id)
+    w = WORTH_W[rank or 2] or 1
+  end
+  if t.act == "turnin" then return math.max(0.8, w * 1.5) end   -- hand-ins bank the XP and open the next quest
+  if t.act == "pickup" then return w * 0.85 end
+  return w
 end
 
 local function planFromTasks(tasks, px, py)
@@ -251,7 +279,7 @@ local function planFromTasks(tasks, px, py)
               end
             end
           end
-          local cost = (d + 40) / math.max(1, cover) + (skipped and 20000 or 0)
+          local cost = (d + 40) / math.max(1, cover) / taskWeight(t) + (skipped and 20000 or 0)
           if not bestCost or cost < bestCost then best, bestCost, bestPt = t, cost, p end
         end
       end

@@ -238,16 +238,32 @@ end
 local markBase = RG.MarkQuestsDirty
 function RG.MarkQuestsDirty() classDirty = true; markBase() end
 -- Nearest few quest givers with something for you, on your continent.
-function RG.NearbyNewQuests(max)
+function RG.NearbyNewQuests(max, valued)
   if not RG.Opt("newQuests") then return {} end
   local c, px, py = playerWorld()
   if not c then return {} end
   local out = {}
   for _, q in ipairs(availableQuests()) do
     local c2, x, y = toWorld(q.wp[1], q.wp[2], q.wp[3])
-    if c2 == c then q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); out[#out + 1] = q end
+    if c2 == c then q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); q.x, q.y = x, y; out[#out + 1] = q end
   end
-  table.sort(out, function(a, b) return a.dist < b.dist end)
+  -- rank by what the quest is worth for the distance: yellow and orange quests first, grey ones last,
+  -- quests that open a chain or sit in a busy hub (several givers close together) a little higher
+  local W = { [0] = 0.12, [1] = 0.3, [2] = 0.6, [3] = 0.9, [4] = 1.0 }
+  for _, q in ipairs(out) do
+    local rank = 2
+    if RG.QuestWorth and q.lvl then local _, _, _, r = RG.QuestWorth(q.lvl, nil, q.id); rank = r or 2 end
+    local hub = 0
+    for _, o in ipairs(out) do
+      if o ~= q and (o.x - q.x) ^ 2 + (o.y - q.y) ^ 2 <= 150 * 150 then hub = hub + 1 end
+    end
+    q.rank = rank
+    q.score = (W[rank] or 0.6) * (1 + 0.12 * math.min(hub, 4)) / (q.dist + 250)
+  end
+  table.sort(out, function(a, b) if a.score ~= b.score then return a.score > b.score end return a.dist < b.dist end)
+  if valued then   -- the planner only wants quests worth walking to
+    for i = #out, 1, -1 do if out[i].rank == 0 then table.remove(out, i) end end
+  end
   for i = #out, (max or 2) + 1, -1 do out[i] = nil end
   return out
 end
