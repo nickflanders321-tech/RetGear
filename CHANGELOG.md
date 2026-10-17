@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Release balance for the card game (packs stay free in the beta, all three kinds). Packs will cost 25 / 38 / 54 coins for 5 / 8 / 12 cards. A 1-60 climb earns about 6,500 coins plus about 45 daily free packs and a reward Jumbo every 7th day, which lands a typical player at about 75% of the Master Set (every card, any finish) at level 60: about 70% for a light player and about 83% for a heavy one. A small "collector's luck" gives each card a 10% chance to be one you don't own yet. The Ledger has a Master Set bar, and tools/arcade/economy.py re-runs the maths.
 - Packs are no longer themed by set: every card can come out of every pack. There are now three kinds: a Pack (5 cards, 1 rare or better), a Jumbo Pack (8 cards, 2 rares or better) and a Super Jumbo Pack (12 cards, 3 rares or better). Reward packs are Jumbos with a guaranteed holo or better at the end. Bigger packs count for more toward the holo/full-art guarantee. The pack screen lays out 5, 8 or 12 cards in one or two rows, and each pack type has its own colour and size.
 - Map markers for quest objectives are now the gold "..." bubble the quest log uses, instead of blue discs.
 - The booster pack is redrawn with proper proportions and now stands under a tinted spotlight on a floor glow with a shadow. A soft holographic band sweeps across the foil (and stays inside the pack), and a dashed tear line shows where to rip.

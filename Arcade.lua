@@ -43,23 +43,30 @@ local NAME_ICON = {
   { "tallstrider", "Ability_Hunter_Pet_TallStrider" }, { "serpent", "Ability_Hunter_Pet_WindSerpent" },
   { "mine", "INV_Pick_02" }, { "deeps", "INV_Pick_02" }, { "depths", "INV_Pick_02" }, { "cavern", "INV_Pick_02" }, { "cave", "INV_Pick_02" },
 }
-local FREE_PACKS = true   -- beta: every pack is free (set to false to charge coins again)
+local FREE_PACKS = true   -- beta: every pack of every kind is free (set to false at release to charge coins)
+-- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 6,500 coins
+-- (XP, level-ups, quests, kills, skill-ups, goals, duels, set rewards) plus about 45 daily free packs and a
+-- reward Jumbo every 7th day. Spent on packs at 4.5 to 5 coins a card, with extras sold back, that gives a
+-- median of about 75% of the Master Set (every card, in any finish) at level 60: about 70% for a light player
+-- (5,000 coins) and about 83% for a heavy one (8,000). COLLECTOR_LUCK is the one dial that tunes it.
 -- three kinds of pack, and every card in the game can come out of any of them
 local PACKS = {
   normal = { name = "Pack", size = 5, price = 25, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
-  jumbo = { name = "Jumbo Pack", size = 8, price = 45, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
-  super = { name = "Super Jumbo Pack", size = 12, price = 65, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
+  jumbo = { name = "Jumbo Pack", size = 8, price = 38, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
+  super = { name = "Super Jumbo Pack", size = 12, price = 54, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
 }
 local PACK_ORDER = { "normal", "jumbo", "super" }
 local PACK_MAX = 12
 local function packPrice(kind) return FREE_PACKS and 0 or PACKS[kind or "normal"].price end
 local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
--- How coins are earned (about 150 packs over a 1-60 climb):
+-- How coins are earned (about 6,500 coins over a 1-60 climb, see RELEASE BALANCE above):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 20
 --   profession skill-ups: 1 coin per 2    duel win: 4
 -- Quests, kills and skill-ups together pay at most DAY_CAP coins per day, so grinding one thing all day doesn't run away.
 local DAY_CAP = 80
+local COLLECTOR_LUCK = 0.10   -- each card has this chance to be one you do not own yet (a small mercy, so the last cards do not take forever)
+local MASTER_GOAL = 0.75
 
 local CARDS = {}
 for i, d in ipairs(RG.ARCADE_DATA or {}) do CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5] } end
@@ -221,8 +228,13 @@ local function buildPools()   -- (the Raiders pool only counts once there is one
   for _, c in ipairs(CARDS) do byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end
   for t = 1, #TIER do if byTier[t] then tierWeight = tierWeight + TIER[t][2] end end
 end
-local function rollCard()
+local function rollCard(a)
   if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
+  if a and math.random() < COLLECTOR_LUCK then
+    local missing = {}
+    for _, c in ipairs(CARDS) do if c.kind ~= 4 and owned(a, c.id) == 0 then missing[#missing + 1] = c end end
+    if #missing > 0 then return missing[math.random(#missing)] end
+  end
   local x = math.random() * tierWeight
   local tier = 1
   for t = 1, #TIER do
@@ -385,7 +397,7 @@ local function openOne(a, kind)
   local got, shiny, newCount = {}, false, 0
   local size = def.size
   for i = 1, size do
-    local c = rollCard()
+    local c = rollCard(a)
     local least = c.tier == 6 and 3 or 1
     if i > size - def.rares then least = math.max(least, 2) end   -- the last cards: rare or better (one in a pack, two in a jumbo, three in a super jumbo)
     if i == size then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- the last card: holo after a long dry spell or from a reward pack
@@ -555,6 +567,15 @@ function RG.ArcadeStats()
     for k = 1, 4 do if ((a.cards[c.key or c.name] or {})[k] or 0) > 0 then prints = prints + 1 end end
   end
   return a, own, #CARDS, prints
+end
+-- the Master Set: every card (not counting Raiders), in any finish
+function RG.ArcadeMaster()
+  local a = store(); if not a then return 0, 0 end
+  local have, total = 0, 0
+  for _, c in ipairs(CARDS) do
+    if c.kind ~= 4 then total = total + 1; if owned(a, c.id) > 0 then have = have + 1 end end
+  end
+  return have, total
 end
 
 -- showcase: up to nine favourites
@@ -2383,6 +2404,10 @@ function RG.ArcadeRefresh(keepMsg)
       local col, row = math.floor((i - 1) / 4), (i - 1) % 4
       pgKV(i, PGX + col * (cw + 30), 396 + row * 28, cw, e[1], tostring(e[2] or 0))
     end
+    local mh, mt = RG.ArcadeMaster()
+    local mp = mt > 0 and mh / mt or 0
+    pgHead(2, 528, "Master set", "every card, in any finish   ·   " .. math.floor(MASTER_GOAL * 100) .. "% is the goal for level 60")
+    pgBar(1, 556, GOLDHEX .. mh .. "|r of " .. mt .. " cards", string.format("%d%%", math.floor(mp * 100 + 0.5)), mp, mp >= MASTER_GOAL and { 0.48, 0.88, 0.54 } or GOLDC)
   end
   local free = a.free or 0
   local bonus = a.bonus or 0
