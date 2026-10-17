@@ -237,6 +237,12 @@ local function newDuel(env)
     end
   end
 
+  -- seconds the opponent has left to act on their turn (nil when it is not their turn)
+  function D.opponentLeft()
+    if D.state ~= "play" or env.curSide() == mySide or not D.lastRecv then return nil end
+    return math.max(0, TURN_SECS - (env.now() - D.lastRecv))
+  end
+
   -- ----- clocks: call about once a second -----
   function D.tick()
     local t = env.now()

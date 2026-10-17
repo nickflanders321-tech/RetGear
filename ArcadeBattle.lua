@@ -11,7 +11,7 @@ local MW, MH = 88, 104       -- a minion on the board
 local S = { targeting = false, level = 2, busy = false, aiN = 0, held = 0, msgT = 0, mode = "menu", mull = {}, pkey = false }
 local gliding = {}      -- widgets easing to their place (see place())
 local pt               -- defined below: put a widget's centre at x, y in the window
-local ui = { widgetOf = {}, hand = {}, mins = { {}, {} }, back = {}, crystals = { {}, {} }, pos = {}, floats = {}, dots = {}, trail = {} }
+local ui = { widgetOf = {}, hand = {}, mins = { {}, {} }, back = {}, crystals = { {}, {} }, pos = {}, floats = {}, dots = {}, trail = {}, shaking = {}, embers = {} }
 
 local function Sh(f, on) if on then f:Show() else f:Hide() end end
 -- Which engine side is the local player? 1 against the computer; the guest of a player duel is side 2.
@@ -47,6 +47,25 @@ end)
 RG.BattleDriver = driver
 local function after(sec, fn) timers[#timers + 1] = { t = clock + sec, fn = fn } end
 local function tick(fn) ticks[#ticks + 1] = fn end
+
+-- small sounds from the game's own sound kit (each is optional: a missing id is simply skipped)
+local SOUNDS = { play = "IG_ABILITY_ICON_DROP", draw = "IG_ABILITY_ICON_PICKUP", hit = "IG_CHARACTER_INFO_TAB", turn = "IG_PLAYER_INVITE",
+  win = "IG_QUEST_LIST_COMPLETE", lose = "IG_QUEST_FAILED", click = "IG_MAINMENU_OPTION_CHECKBOX_ON" }
+local function sfx(name)
+  local a = RG.ArcadeUI and RG.ArcadeUI.store and RG.ArcadeUI.store()
+  if a and a.mute then return end
+  local kit = SOUNDKIT and SOUNDKIT[SOUNDS[name]]
+  if kit and PlaySound then pcall(PlaySound, kit) end
+end
+local function hueOf(c)
+  local r, g, b = c[1], c[2], c[3]
+  local mx, mn = math.max(r, g, b), math.min(r, g, b)
+  if mx == mn then return 0.72 end
+  local d = mx - mn
+  local h
+  if mx == r then h = ((g - b) / d) % 6 elseif mx == g then h = (b - r) / d + 2 else h = (r - g) / d + 4 end
+  return (h / 6) % 1
+end
 
 -- ---------------------------------------------------------------------------
 -- Cards as they play
@@ -340,14 +359,14 @@ local function makeMinion(parent)
   m:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   m:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar(self.ref) end end)
   m:SetScript("OnEnter", function(self)
-    self.hov = true
+    self.hov = true; S.hoverRef = self.ref
     if self.m and self.m.key and B.defs[self.m.key] then preview(self.m.key, self.m, V(self.m.side))
     elseif self.m then
       -- a token has no card: describe it
       win.tokTip:SetText("|cfff5d273" .. self.m.name .. "|r\n" .. self.m.atk .. "/" .. self.m.hp .. (self.m.kw.taunt and "  Taunt" or "")); win.tokTip:Show()
     end
   end)
-  m:SetScript("OnLeave", function(self) self.hov = false; win.tokTip:Hide() end)
+  m:SetScript("OnLeave", function(self) self.hov = false; if S.hoverRef == self.ref then S.hoverRef = nil end; win.tokTip:Hide() end)
   return m
 end
 
@@ -424,7 +443,12 @@ local function buildWindow()
   win:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 })
   win:SetBackdropColor(0.03, 0.02, 0.07, 1); win:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
   win.night = win:CreateTexture(nil, "BACKGROUND", nil, 0); win.night:SetTexture(U.MEDIA .. "Night"); win.night:SetPoint("TOPLEFT", 2, -2); win.night:SetPoint("BOTTOMRIGHT", -2, 2); win.night:SetAlpha(0.9)
-  win.bg = win:CreateTexture(nil, "BACKGROUND", nil, 1); win.bg:SetTexture(U.MEDIA .. "Board"); win.bg:SetPoint("TOPLEFT", 2, -2); win.bg:SetPoint("BOTTOMRIGHT", -2, 2)
+  -- the table: a painted backdrop in the colours of your hero's class, with the table drawn over it
+  win.scnF = CreateFrame("Frame", nil, win); win.scnF:SetPoint("TOPLEFT", 2, -2); win.scnF:SetPoint("BOTTOMRIGHT", -2, 2); win.scnF:SetFrameLevel(U.lv(win) + 1)
+  win.scn = U.newScene(win.scnF, W - 4, H - 4)
+  win.bgF = CreateFrame("Frame", nil, win); win.bgF:SetAllPoints(win.scnF); win.bgF:SetFrameLevel(U.lv(win) + 2)
+  win.bg = win.bgF:CreateTexture(nil, "ARTWORK"); win.bg:SetTexture(U.MEDIA .. "Board"); win.bg:SetAllPoints(win.bgF); win.bg:SetAlpha(0.72)
+  win.scnF:Hide()
   win:RegisterForDrag("LeftButton")
   win:SetScript("OnDragStart", function(self) self:StartMoving() end)
   win:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
@@ -452,6 +476,8 @@ local function buildWindow()
   for i = 1, 14 do local f = { live = false }; f.fs = U.fs(win.fx, "title", 22, "OVERLAY", "OUTLINE"); f.fs:Hide(); ui.floats[i] = f end
   for i = 1, 16 do local d = win.fx:CreateTexture(nil, "OVERLAY"); d:SetTexture(U.MEDIA .. "Glow"); d:SetBlendMode("ADD"); d:SetSize(26, 26); d:Hide(); ui.dots[i] = d end
   for i = 1, 10 do local d = win.fx:CreateTexture(nil, "OVERLAY"); d:SetTexture(U.MEDIA .. "Glow"); d:SetBlendMode("ADD"); d:SetSize(30, 30); d:SetVertexColor(1, 0.55, 0.2, 1); d:Hide(); ui.trail[i] = d end
+  for i = 1, 24 do local t = win.fx:CreateTexture(nil, "OVERLAY"); t:SetTexture(U.MEDIA .. "Glow"); t:SetBlendMode("ADD"); t:SetSize(12, 12); t:Hide(); ui.embers[i] = { tex = t, live = false } end
+  ui.reticle = win.fx:CreateTexture(nil, "OVERLAY"); ui.reticle:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); ui.reticle:SetBlendMode("ADD"); ui.reticle:SetSize(46, 46); ui.reticle:Hide()
   win.msg = U.fs(win.fx, "head", 15, "OVERLAY", "OUTLINE"); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 372); win.msg:SetTextColor(1, 0.95, 0.75); win.msg:SetText("")
   win.banner = U.fs(win.fx, "title", 40, "OVERLAY", "OUTLINE"); win.banner:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 378); win.banner:SetText(""); win.banner:Hide()
   win.tokTip = U.fs(win.board, "head", 13, "OVERLAY", "OUTLINE"); win.tokTip:SetPoint("CENTER", win, "BOTTOMLEFT", 125, 480); win.tokTip:SetWidth(220); win.tokTip:SetJustifyH("CENTER"); win.tokTip:Hide()
@@ -494,6 +520,7 @@ local function buildWindow()
       end
     end
     -- aiming arrow
+    if not S.targeting and ui.reticle then ui.reticle:Hide() end
     if S.targeting and win:IsShown() and GetCursorPosition then
       local from = S.targeting.from
       local sp = ui.pos[from == "power1" and "power1" or (type(from) == "string" and from:find("^hand") and "hand" or from)]
@@ -510,8 +537,68 @@ local function buildWindow()
             d:ClearAllPoints(); d:SetPoint("CENTER", win, "BOTTOMLEFT", sp[1] + (tx - sp[1]) * k, sp[2] + (ty - sp[2]) * k + math.sin(k * 3.14) * 18)
             d:SetSize(14 + 20 * k, 14 + 20 * k); d:SetVertexColor(0.4 + 0.6 * k, 1 - 0.5 * k, 0.4, 0.95); d:Show()
           end
+          -- a ring on the cursor: bright over something you can hit, grey over nothing
+          local t = S.targeting
+          local over = S.hoverRef and t.valid and t.valid[S.hoverRef]
+          ui.reticle:ClearAllPoints(); ui.reticle:SetPoint("CENTER", win, "BOTTOMLEFT", tx, ty)
+          local pulse = 1 + 0.12 * math.sin((S.ph or 0) * 10)
+          ui.reticle:SetSize((over and 58 or 40) * pulse, (over and 58 or 40) * pulse)
+          if over then ui.reticle:SetVertexColor(1, 0.35, 0.25, 1) else ui.reticle:SetVertexColor(0.7, 0.7, 0.8, 0.55) end
+          ui.reticle:Show()
         end
       end
+    end
+    -- ready attackers breathe; a pending end-turn warning makes them blaze
+    do
+      S.ph = (S.ph or 0) + dt
+      local warn = (S.warnT or 0) > 0
+      for s2 = 1, 2 do for _, w in ipairs(ui.mins[s2]) do
+        if rawget(w, "pulse") and w:IsShown() then
+          local a = warn and (0.65 + 0.35 * math.sin(S.ph * 9)) or (0.62 + 0.28 * math.sin(S.ph * 3))
+          w.glow:SetAlpha(a); w.glow:SetSize(warn and 175 or 150, warn and 175 or 150)
+        end
+      end end
+      for s2 = 1, 2 do local h = ui.hero[s2]
+        if rawget(h, "pulse") then h.glow:SetAlpha(warn and (0.65 + 0.35 * math.sin(S.ph * 9)) or (0.62 + 0.28 * math.sin(S.ph * 3))) end
+      end
+      if warn then S.warnT = S.warnT - dt end
+    end
+    -- hit shake
+    for w in pairs(ui.shaking) do
+      w.shk = w.shk - dt
+      if w.shk <= 0 then ui.shaking[w] = nil; w.shk = nil; if rawget(w, "bx") then pt(w, w.bx, w.by) end
+      else
+        local a = 5 * (w.shk / 0.3)
+        if rawget(w, "bx") then pt(w, w.bx + math.sin(S.ph * 70) * a, w.by + math.cos(S.ph * 83) * a * 0.6) end
+      end
+    end
+    -- embers from fallen minions
+    for _, e in ipairs(ui.embers) do
+      if e.live then
+        e.t = e.t + dt
+        local k = e.t / e.dur
+        if k >= 1 then e.live = false; e.tex:Hide()
+        else
+          e.tex:ClearAllPoints(); e.tex:SetPoint("CENTER", win, "BOTTOMLEFT", e.x + e.vx * e.t, e.y + e.vy * e.t - 30 * e.t * e.t)
+          e.tex:SetAlpha(1 - k); e.tex:SetSize(e.sz * (1 - 0.5 * k), e.sz * (1 - 0.5 * k))
+        end
+      end
+    end
+    -- mana crystals pop when they fill
+    for s2 = 1, 2 do for _, c in ipairs(ui.crystals[s2]) do
+      if rawget(c, "pop") then
+        c.pop = c.pop - dt
+        if c.pop <= 0 then c.pop = nil; c:SetSize(24, 24) else local q = math.sin(math.pi * (1 - c.pop / 0.45)); c:SetSize(24 + 12 * q, 24 + 12 * q) end
+      end
+    end end
+    -- the opponent's clock in a player duel
+    if S.pvp and win.clockT and RG.Duel and RG.Duel.opponentLeft then
+      local left = RG.Duel.opponentLeft()
+      if left then
+        local m, sec = math.floor(left / 60), math.floor(left % 60)
+        win.clockT:SetText(string.format("%s's clock  %d:%02d", S.foeName or "Opponent", m, sec))
+        win.clockT:SetTextColor(left < 30 and 1 or 0.82, left < 30 and 0.4 or 0.7, left < 30 and 0.35 or 0.95)
+      else win.clockT:SetText("") end
     end
     -- strike trail
     if ui.trailT and ui.trailT > 0 then
@@ -577,7 +664,11 @@ local function consume()
   local n = 0
   for _, e in ipairs(evs) do
     local p = e.tgt and ui.pos[e.tgt]
-    if e.t == "dmg" and p then floatText(p[1], p[2], "-" .. e.n, 1, 0.3, 0.3, 26)
+    if e.t == "dmg" and p then
+      floatText(p[1], p[2], "-" .. e.n, 1, 0.3, 0.3, 26)
+      local w = ui.widgetOf[e.tgt]
+      if w then w.shk = 0.3; ui.shaking[w] = true; gliding[w] = nil end
+      sfx("hit")
     elseif e.t == "heal" and p then floatText(p[1], p[2], "+" .. e.n, 0.4, 1, 0.5, 24)
     elseif e.t == "pop" and p then floatText(p[1], p[2], "Shield!", 1, 0.9, 0.5, 18)
     elseif e.t == "armor" and p then floatText(p[1], p[2], "+" .. e.n .. " armor", 0.8, 0.85, 1, 16)
@@ -589,11 +680,26 @@ local function consume()
       if d then
         logLine((e.side == ME and "|cff9fe39a" or "|cffe39a9a") .. (e.side == ME and "You play " or (S.pvp and (S.foeName .. " plays ") or "Foe plays ")) .. d.name .. "|r")
         if e.side ~= ME then preview(e.key, nil, 2) end
+        sfx("play")
       end
-    elseif e.t == "die" then logLine("|cffaaaaaa" .. (e.name or "A minion") .. " dies|r")
+    elseif e.t == "die" then
+      logLine("|cffaaaaaa" .. (e.name or "A minion") .. " dies|r")
+      if p then
+        for _, em in ipairs(ui.embers) do
+          if not em.live and n < 8 then
+            n = n + 1
+            em.live, em.t, em.dur = true, 0, 0.7 + math.random() * 0.5
+            em.x, em.y = p[1] + (math.random() - 0.5) * 50, p[2] + (math.random() - 0.5) * 40
+            em.vx, em.vy, em.sz = (math.random() - 0.5) * 70, 30 + math.random() * 70, 14 + math.random() * 12
+            em.tex:SetVertexColor(1, 0.5 + math.random() * 0.3, 0.2, 1); em.tex:Show()
+          end
+        end
+        n = 0
+      end
     elseif e.t == "fatigue" then say((e.side == ME and "You are" or "The foe is") .. " out of cards: " .. e.n .. " damage!", 3)
     elseif e.t == "burn" then if e.side == ME then say("Your hand is full. " .. (B.defs[e.key] and B.defs[e.key].name or "A card") .. " burns.", 3) end
     elseif e.t == "turn" then
+      if S.mode == "play" and e.side == ME then sfx("turn") end
       if S.mode == "play" then banner(e.side == ME and "Your turn" or "Opponent's turn", e.side == ME and 0.96 or 0.8, e.side == ME and 0.82 or 0.6, e.side == ME and 0.45 or 0.95) end
     end
   end
@@ -703,8 +809,39 @@ local function startAI()
   after(1.5, function() aiStep(gid) end)
 end
 
+-- what is still unused this turn: attackers that could swing, cards that could be played, the hero power
+local function unused()
+  local n, plays, power = 0, 0, false
+  for _, m in ipairs(game.p[ME].board) do if B.canAttack(game, ME, m) then n = n + 1 end end
+  if B.canAttack(game, ME, game.p[ME]) then n = n + 1 end
+  for i = 1, #game.p[ME].hand do if B.canPlay(game, ME, i) then plays = plays + 1 end end
+  if B.canHeroPower(game, ME) then power = true end
+  return n, plays, power
+end
+local WARN_MODES = { [0] = "Off", [1] = "Attackers", [2] = "Everything" }
+local function warnMode() local a = store(); return a and a.endWarn or 1 end
 local function endTurn()
   if not myTurn() then return end
+  local mode = warnMode()
+  if mode > 0 and not S.confirmEnd then
+    local n, plays, power = unused()
+    local bits = {}
+    if n > 0 then bits[#bits + 1] = n .. (n == 1 and " attacker is" or " attackers are") .. " ready" end
+    if mode >= 2 and plays > 0 then bits[#bits + 1] = plays .. (plays == 1 and " card is" or " cards are") .. " playable" end
+    if mode >= 2 and power then bits[#bits + 1] = "your hero power is unused" end
+    if #bits > 0 then
+      S.confirmEnd = true; S.warnT = 3
+      win.endBtn:SetText("End anyway?")
+      say("|cffffd060" .. table.concat(bits, ", ") .. ".|r  Click End Turn again to end your turn.", 4)
+      sfx("click")
+      local id = (S.warnId or 0) + 1; S.warnId = id
+      after(4, function() if S.warnId == id then S.confirmEnd = false; S.warnT = 0; if win.endBtn then win.endBtn:SetText("End Turn") end end end)
+      refresh()
+      return
+    end
+  end
+  S.confirmEnd = false; S.warnT = 0; S.warnId = (S.warnId or 0) + 1
+  win.endBtn:SetText("End Turn")
   clearTarget()
   B.endTurn(game, ME)
   sendMove({ t = "end" })
@@ -715,6 +852,7 @@ local function endTurn()
 end
 
 afterAction = function()
+  if S.confirmEnd then S.confirmEnd = false; S.warnT = 0; if win and win.endBtn then win.endBtn:SetText("End Turn") end end
   consume()
   refresh()
   if game and game.over then finish() end
@@ -756,8 +894,8 @@ local function makeBoard()
       if w then win.tokTip:SetText("|cfff5d273" .. (w.name or "Weapon") .. "|r\n" .. w.atk .. " attack, " .. w.dur .. " durability"); win.tokTip:Show() end
     end)
     ui.weapon[s]:SetScript("OnLeave", function() win.tokTip:Hide() end)
-    ui.hero[s]:SetScript("OnEnter", function() win.tokTip:SetText("|cfff5d273" .. game.p[E(s)].name .. "|r\n" .. B.HERO[game.p[E(s)].class].title); win.tokTip:Show() end)
-    ui.hero[s]:SetScript("OnLeave", function() win.tokTip:Hide() end)
+    ui.hero[s]:SetScript("OnEnter", function() S.hoverRef = "h" .. E(s); win.tokTip:SetText("|cfff5d273" .. game.p[E(s)].name .. "|r\n" .. B.HERO[game.p[E(s)].class].title); win.tokTip:Show() end)
+    ui.hero[s]:SetScript("OnLeave", function() if S.hoverRef == "h" .. E(s) then S.hoverRef = nil end; win.tokTip:Hide() end)
   end
   -- hand
   for i = 1, 10 do
@@ -782,7 +920,19 @@ local function makeBoard()
   ui.deckT[1]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 108); ui.deckT[2]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 548)
   for s = 1, 2 do ui.deckT[s]:SetTextColor(0.75, 0.72, 0.9) end
   win.endBtn = U.gbtn(bd, "End Turn", 150, 40, endTurn, true); pt(win.endBtn, 1065, 378)
+  local function warnLabel() return "Reminder: " .. WARN_MODES[warnMode()] end
+  win.warnBtn = U.gbtn(bd, warnLabel(), 150, 20, function(self)
+    local a = store(); if not a then return end
+    a.endWarn = (warnMode() + 1) % 3; self:SetText(warnLabel()); S.confirmEnd = false; win.endBtn:SetText("End Turn")
+  end)
+  pt(win.warnBtn, 1065, 336)
+  win.sndBtn = U.gbtn(bd, "Sound: On", 150, 20, function(self)
+    local a = store(); if not a then return end
+    a.mute = not a.mute or nil; self:SetText(a.mute and "Sound: Off" or "Sound: On")
+  end)
+  pt(win.sndBtn, 1065, 312)
   win.turnT = U.fs(bd, "head", 13, "OVERLAY", "OUTLINE"); win.turnT:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 378); win.turnT:SetTextColor(0.96, 0.84, 0.5)
+  win.clockT = U.fs(bd, "head", 12, "OVERLAY", "OUTLINE"); win.clockT:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 412)
   win.concede = U.gbtn(bd, "Concede", 90, 22, function(self)
     if not game or game.over then win:Hide() return end
     if not S.sure then S.sure = true; self:SetText("Sure?"); after(3, function() S.sure = false; if win.concede then win.concede:SetText("Concede") end end) return end
@@ -900,7 +1050,8 @@ refresh = function()
         if tg then if tg.valid[m.uid] then col = s == 1 and GREEN or RED end
         elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, ME, m) then col = GREEN end
         if col then w.glow:SetVertexColor(col[1], col[2], col[3], col[4]); w.glow:Show() else w.glow:Hide() end
-      else w:Hide(); unplace(w) end
+        w.pulse = (col == GREEN and not tg and s == 1) or nil
+      else w:Hide(); unplace(w); w.pulse = nil end
     end
   end
   -- heroes
@@ -917,6 +1068,11 @@ refresh = function()
     if tg then if tg.valid["h" .. E(s)] then col = s == 1 and GREEN or RED end
     elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, ME, P) then col = GREEN end
     if col then h.glow:SetVertexColor(col[1], col[2], col[3], col[4]); h.glow:Show() else h.glow:Hide() end
+    h.pulse = (col == GREEN and not tg and s == 1) or nil
+    do   -- the frame takes the colour of the hero's class
+      local cc = CLASS_COL[P.class]
+      if cc then h.tile:SetVertexColor(cc[1], cc[2], cc[3], 1) end
+    end
     -- power and weapon
     local pw, hp = ui.power[s], B.HERO[P.class]
     pw.icon:SetTexture("Interface\\Icons\\" .. (POWER_ICON[P.class] or "INV_Misc_QuestionMark"))
@@ -933,10 +1089,15 @@ refresh = function()
     -- mana
     for i = 1, 10 do
       local c = ui.crystals[s][i]
-      c:Show(); c:SetTexture(U.MEDIA .. (i <= P.mana and "Crystal" or "CrystalDim")); c:SetAlpha(i <= P.maxMana and 1 or 0.28)
+      local lit = i <= P.mana
+      if lit and rawget(c, "wasLit") == false and ui.manaSeen then c.pop = 0.45 end     -- a crystal that fills up pops
+      c.wasLit = lit
+      c:Show(); c:SetTexture(U.MEDIA .. (lit and "Crystal" or "CrystalDim")); c:SetAlpha(i <= P.maxMana and 1 or 0.28)
     end
+    ui.manaSeen = true
     ui.mana[s]:SetText(P.mana .. " / " .. P.maxMana)
-    ui.deckT[s]:SetText("|cffa89bc9Deck|r |cffffffff" .. #P.deck .. "|r     |cffa89bc9Hand|r |cffffffff" .. #P.hand .. "|r")
+    local low = #P.deck <= 3
+    ui.deckT[s]:SetText("|cffa89bc9Deck|r " .. (low and "|cffff6a5a" or "|cffffffff") .. #P.deck .. (low and " !" or "") .. "|r     |cffa89bc9Hand|r |cffffffff" .. #P.hand .. "|r")
   end
   -- opponent hand
   local nb = #foe.hand
@@ -999,7 +1160,7 @@ end
 local function show(which)
   S.mode = which == "board" and S.mode or which
   Sh(win.menu, which == "menu"); Sh(win.deck, which == "deck"); Sh(win.board, which == "board")
-  Sh(win.bg, which == "board")
+  Sh(win.bg, which == "board"); Sh(win.scnF, which == "board"); Sh(win.night, which ~= "board")
   win.title:SetText(which == "menu" and "" or which == "deck" and "DECK BUILDER" or "WAYPATH ARENA")
   if win.logo then Sh(win.logo, which ~= "menu") end
   if which ~= "board" then for _, d in ipairs(ui.dots) do d:Hide() end end
@@ -1014,7 +1175,12 @@ local function beginGame(g)
   for s2 = 1, 2 do for _, w in ipairs(ui.mins[s2]) do unplace(w) end end
   ui.pos = { power1 = ui.pos.power1 }; ui.bindHeroes()
   show("board"); S.mode = "mull"
+  do   -- the backdrop takes the colour of your class and a landmark chosen by the pairing
+    local c = CLASS_COL[g.p[ME].class] or { 0.6, 0.5, 0.9 }
+    U.setScene(win.scn, { name = "arena:" .. g.p[ME].class .. ":" .. g.p[3 - ME].class, kind = 3, id = 1, hue = hueOf(c), val = 0.5 }, false)
+  end
   win.pv:Hide()
+  do local a = store(); win.warnBtn:SetText("Reminder: " .. WARN_MODES[warnMode()]); win.sndBtn:SetText(a and a.mute and "Sound: Off" or "Sound: On") end
   win.mullBtn:Show(); win.mullBtn:SetEnabled(true); win.mullBtn:SetText("Keep these cards")
   say("Click any cards you want to swap, then keep the rest.", 600)
   refresh()

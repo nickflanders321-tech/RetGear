@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Arena board: ending your turn with an attacker that could still swing now asks you to click End Turn again (the ready attackers blaze while it waits). The small Reminder button cycles Attackers, Everything (also playable cards and an unused hero power) and Off.
+- Arena board: a painted backdrop in your class colours behind the table, class-coloured hero frames, ready attackers that breathe, a targeting ring that lights up over valid targets, hit shake, embers when a minion dies, mana crystals that pop as they fill, a low-deck warning, your opponent's clock in player duels, and optional sounds (Sound button).
+
 - Card art: places and NPCs get richer scenery (16 detailed landmarks instead of 8 plain shapes, stars in dark skies, haze between the ridges, lit ridge crests and a grassy foreground); item cards get a rarity-coloured spotlight behind a larger icon.
 - NPC cards now show a silhouette of their own creature type (beast, spider, dragon, wyrm, demon, flame, rock, giant, undead, humanoid, golem and more), bigger for bosses; item cards show an emblem of their gear slot (helm, shoulders, chest, gloves, boots, belt, legs, bracers, ring, amulet, cloak, weapons, shield, trinket) behind the icon.
 

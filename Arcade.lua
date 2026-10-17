@@ -564,6 +564,8 @@ local function setScene(sc, card, dim)
   local hue = rnd()
   local sat = 0.30 + rnd() * 0.40
   local val = 0.55 + rnd() * 0.40
+  if card.hue then hue = card.hue end
+  if card.val then val = card.val end
   local k = dim and 0.16 or 1
   local r, g, b = hsv(hue, sat, val)
   sc.sky:SetTexture(MEDIA .. "Sky"); sc.sky:SetVertexColor(r * k, g * k, b * k, 1); sc.sky:Show()
