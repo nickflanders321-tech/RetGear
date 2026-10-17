@@ -94,6 +94,7 @@ FishMode.lua
 Path.lua
 Paths.lua
 Speed.lua
+MapPins.lua
 GPS.lua
 Guide.lua
 Travel.lua

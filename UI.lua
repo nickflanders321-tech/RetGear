@@ -170,6 +170,8 @@ local function getRow(i)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
   r:SetScript("OnClick", function(self, btn)
     if btn == "RightButton" and self.onRightClick then self.onRightClick(self); return end
+    -- a place: one click sends the arrow there
+    if btn ~= "RightButton" and not self.onClick and self.onDoubleClick and RG.ARROWFN[self.onDoubleClick] then self.onDoubleClick(self); return end
     if self.onDoubleClick then
       -- wait a moment so a double-click doesn't also do the single-click action
       local now = GetTime()
@@ -674,8 +676,8 @@ local function renderProf()
   local function place(pl, icon)
     local r = line(nil, "|cffffffff" .. pl.title .. "|r", pl.sub or "", pl.wp and (GOLD .. "Double-click|r") or "", pl.wp and (GREY .. "arrow|r") or "", icon or "Interface\\Icons\\INV_Misc_Map_01", pl.wp and "gold" or nil)
     if pl.wp then
-      r.onDoubleClick = function() RG.ArrowTo(pl.wp) end
-      r.tip = "Double-click to put " .. pl.wp[4] .. " on your map and point the arrow at it."
+      r.onDoubleClick = RG.ArrowFn(pl.wp)
+      r.tip = "Click to put " .. pl.wp[4] .. " on your map and point the arrow at it."
     end
     return r
   end
@@ -751,7 +753,7 @@ local function renderProf()
     local start = T2.start and T2.start[RG.RACE_LETTER]
     local pin = RG.TrainerPin(start or T2.apprentice)
     local r = line(nil, GOLD .. "Learn " .. sel .. "|r" .. GREY .. "  ·  no level needed|r", start and ("Closest trainer: " .. start) or (T2.apprentice or ""), pin and (GOLD .. "Double-click|r") or (GOLD .. "Train|r"), pin and (GREY .. "arrow|r") or "", P.icon, "gold")
-    if pin then r.onDoubleClick = function() RG.ArrowTo(pin) end; r.tip = "Double-click to put " .. pin[4] .. " on your map." end
+    if pin then r.onDoubleClick = RG.ArrowFn(pin); r.tip = "Click to put " .. pin[4] .. " on your map." end
   else
     for ri = 2, #RANKS do
       local key, label, needSkill, needLvl = RANKS[ri][1], RANKS[ri][2], RANKS[ri][3], RANKS[ri][4]
@@ -760,8 +762,8 @@ local function renderProf()
         local ready = rank >= needSkill and lvl >= needLvl
         local pin = RG.TrainerPin(T2[key])
         local r = line(nil, (ready and GOLD or "|cffffffff") .. "Train " .. label .. "|r" .. GREY .. "  ·  skill " .. needSkill .. ", level " .. needLvl .. "|r", T2[key],
-          ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), pin and (GREY .. "double-click: arrow|r") or "", P.icon, ready and "gold" or nil)
-        if pin then r.onDoubleClick = function() RG.ArrowTo(pin) end; r.tip = "Double-click to put " .. pin[4] .. " on your map." end
+          ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), pin and (GREY .. "click: arrow|r") or "", P.icon, ready and "gold" or nil)
+        if pin then r.onDoubleClick = RG.ArrowFn(pin); r.tip = "Click to put " .. pin[4] .. " on your map." end
         break
       end
     end
@@ -793,7 +795,7 @@ local function renderProf()
               allReady = false
               local pl = RG.MatPlaces(e.id, 1)[1]
               if pl and pl.wp then
-                r.onDoubleClick = function() RG.ArrowTo(pl.wp) end
+                r.onDoubleClick = RG.ArrowFn(pl.wp)
                 r.tip = pl.title .. ": " .. pl.wp[4] .. "\nDouble-click to point the arrow there."
               end
             end
@@ -826,7 +828,7 @@ local function renderProf()
     -- where to go
     local places = RG.ProfPlaces(sel, now)
     if #places > 0 then
-      head("Where to go  ·  double-click a place and follow the arrow")
+      head("Where to go  ·  click a place and follow the arrow")
       for _, pl in ipairs(places) do place(pl) end
     end
     -- what comes next
@@ -950,7 +952,7 @@ local function nowRow(n, withReqs)
   r.icon:SetTexture(ACT_ICON[obj.act or obj.kind] or ACT_ICON.route)
   local wp = obj.wp
   r.onClick = function() if wp then RG.Follow(wp) end end
-  r.onDoubleClick = function() if wp then RG.ArrowTo(wp) end end
+  r.onDoubleClick = RG.ArrowFn(wp)
   r.onRightClick = (obj.stop and obj.count and obj.count > 1) and function() RG.SkipStop(obj.stop); RG.SyncObjective(RG.Objective(true)); RG.RefreshUI(); RG.RefreshTracker() end or nil
   r.tip = (obj.tag and (obj.tagColor .. obj.tag .. "|r: " .. (obj.tagNote or "") .. "\n\n") or "") .. "Click for the map pin and arrow. Double-click turns the arrow on or off." .. (r.onRightClick and " Right-click skips this stop." or "")
   if withReqs then
@@ -1132,7 +1134,7 @@ local function renderRoute()
               local lw = l.wp
               qr.onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif lw then RG.PinWaypoint(lw) end end
               qr.onRightClick = lw and function() RG.PinWaypoint(lw) end or nil
-              qr.onDoubleClick = lw and function() RG.ArrowTo(lw) end or nil
+              qr.onDoubleClick = lw and RG.ArrowFn(lw) or nil
               qr.tip = (l.act == "doing" and "Click to open it in your quest log." or (lw and ("Click: show " .. lw[4] .. " on the map\nDouble-click: arrow on / off") or "")) 
             end
           elseif not isDone then
@@ -1799,7 +1801,7 @@ local function renderFlights()
     r.icon:SetTexture("Interface\\Icons\\Ability_Mount_Gryphon_01")
     local wp = e.wp
     r.onClick = function() RG.Follow(wp) end
-    r.onDoubleClick = function() RG.ArrowTo(wp) end
+    r.onDoubleClick = RG.ArrowFn(wp)
     r.onRightClick = function() RG.PinWaypoint(wp) end
     r.tip = "Click to be guided to " .. e.node .. " (map pin and arrow). Right-click to pin only."
   end
@@ -1844,7 +1846,7 @@ local function renderPlan()
       r.icon:SetTexture(ACT_ICON[it.act] or ACT_ICON.route)
       local wp = st.wp
       r.onClick = function() RG.Follow(wp) end
-      r.onDoubleClick = function() RG.ArrowTo(wp) end
+      r.onDoubleClick = RG.ArrowFn(wp)
       r.onRightClick = function() RG.SkipStop(st); RG.SyncObjective(RG.Objective(true)); RG.RefreshUI(); RG.RefreshTracker() end
       r.tip = "Click to be guided here. Right-click to skip this stop for 10 minutes."
     end

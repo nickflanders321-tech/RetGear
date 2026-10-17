@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Click a place, follow the arrow: a single click on any location line in the Waypath+ sidebar and window (quests, hand-ins, pick-ups, steps, trainers, vendors) now sends the arrow there; click again for off. No more double-click.
+- World map markers: your quest objectives, hand-ins (?) and the pick-ups (!) you could start on the map you are looking at are clickable and point the arrow at them. Ctrl+click anywhere on the map to send the arrow to that spot. `/wpmap on|off|pickups|quests` controls it.
+- The game's own quest log and tracker: clicking a quest also points the arrow at its next objective or hand-in (Shift, Ctrl and Alt clicks keep the game's own behaviour).
+
 - Duel your party: a new "Duel your party" button in the Arena lobby (or /wp duel) lists everyone in your group, shows who has Waypath+ and its rank, and sends a duel invite with one click. Players answer a quick hello automatically, so you can see who can accept before you ask.
 
 - Arena board: ending your turn with an attacker that could still swing now asks you to click End Turn again (the ready attackers blaze while it waits). The small Reminder button cycles Attackers, Everything (also playable cards and an unused hero power) and Off.

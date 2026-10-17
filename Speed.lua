@@ -829,6 +829,14 @@ function RG.ArrowTo(wp)
   end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
+-- a click handler that sends the arrow to wp; remembered so list rows know a plain click may run it
+RG.ARROWFN = setmetatable({}, { __mode = "k" })
+function RG.ArrowFn(wp)
+  if not wp then return nil end
+  local f = function() RG.ArrowTo(wp) end
+  RG.ARROWFN[f] = true
+  return f
+end
 -- true when the pin on the map is one Waypath+ placed (not one you set yourself)
 function RG.PinIsOurs()
   local cur = currentPin()
