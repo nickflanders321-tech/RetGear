@@ -1,7 +1,8 @@
-"""Waypath+ booster pack art: a foil wrapper, drawn by us, grayscale so the add-on tints it per set.
-Outputs (Media/Arcade/):
-  PackBody.tga  256x512  the wrapper below the tear line (the top edge is jagged and transparent above it)
-  PackTop.tga   256x128  the crimped top strip that tears off (rows 0-72 hold the strip)
+"""Waypath+ booster pack art, drawn by us. Two layers so the foil can be tinted per set while the trim stays gold:
+  PackBody.tga     256x512  tintable foil wrapper below the tear line (shaded, crimped bottom, dark label panels)
+  PackTop.tga      256x128  tintable crimped top strip that tears off
+  PackTrim.tga     256x512  untinted gold ornament for the body (frame, banners, medallion rings, sparkles)
+  PackTrimTop.tga  256x128  untinted gold trim for the strip
 Run: python3 tools/arcade/art_packs.py
 """
 import os, numpy as np
@@ -10,81 +11,121 @@ from scipy.ndimage import gaussian_filter
 D = os.path.join(os.path.dirname(__file__), "..", "..", "Media", "Arcade")
 S = 3
 W, H = 256 * S, 512 * S
-rng = np.random.default_rng(11)
+rng = np.random.default_rng(5)
 y, x = np.mgrid[0:H, 0:W].astype(np.float32)
-xs, ys = x / S, y / S   # in 256x512 units
+xs, ys = x / S, y / S
 
-def smooth(a, b, v):
+def sm(a, b, v):
     t = np.clip((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t)
+def blur(a, r): return gaussian_filter(a.astype(np.float32), r * S / 3)
 
-# --- foil: vertical gradient, diagonal sheen bands, fine crinkle
-base = 0.70 + 0.10 * np.cos((ys / 512) * 6.283)
-band = 0.5 + 0.5 * np.sin((xs * 0.9 + ys * 0.55) / 22.0)
-base += 0.10 * band * smooth(0.2, 0.8, np.abs(np.sin((xs - ys * 0.3) / 60.0)))
-noise = gaussian_filter(rng.standard_normal((H, W)).astype(np.float32), 5 * S / 3)
-base += 0.35 * noise / noise.std() * 0.05
-crinkle = gaussian_filter(rng.standard_normal((H, W)).astype(np.float32), 1.6 * S / 3)
-base += 0.04 * crinkle / crinkle.std()
-# --- crimped top and bottom: vertical ridges
-CT, CB = 66, 446
-crimp = 0.5 + 0.5 * np.sin(xs * 2 * np.pi / 5.0)
-top_zone = smooth(CT + 4, CT - 14, ys)          # 1 near the top edge
-bot_zone = smooth(CB - 4, CB + 14, ys)
-ridge = (top_zone + bot_zone)
-base = base * (1 - 0.22 * ridge) + 0.22 * ridge * crimp * 0.9
-# --- wrapper outline with serrated crimp edges
-L, R, T, B = 16, 240, 12, 500
-tooth = 3.0 * (np.abs(((xs / 4.0) % 1.0) - 0.5) * 2)
+L, R, T, B = 14, 242, 10, 502
+CT, CB = 64, 448                       # crimp zones end / start
+tooth = 2.6 * (np.abs(((xs / 3.5) % 1.0) - 0.5) * 2)
 mask = (xs > L) & (xs < R) & (ys > T + tooth) & (ys < B - tooth)
-# soft darkening toward the edges and a lighter inner line
-dx = np.minimum(xs - L, R - xs); dy = np.minimum(ys - T - tooth, B - tooth - ys)
+dx = np.minimum(xs - L, R - xs)
+dy = np.minimum(ys - T - tooth, B - tooth - ys)
 dist = np.minimum(dx, dy)
-base *= 0.72 + 0.28 * smooth(0, 14, dist)
-base += 0.12 * (np.abs(dist - 7) < 0.9)
-# --- design: title band, medallion, name band, sparkles (all grayscale, drawn on top of the foil)
-def band_rect(y0, y1, x0=L + 14, x1=R - 14, dark=0.55, edge=0.95):
-    inside = (xs > x0) & (xs < x1) & (ys > y0) & (ys < y1)
-    e = inside & ((xs < x0 + 1.4) | (xs > x1 - 1.4) | (ys < y0 + 1.4) | (ys > y1 - 1.4))
-    return inside, e
-global_img = base.copy()
-ins, e = band_rect(100, 148); global_img[ins] *= 0.55; global_img[e] = 1.0
-ins, e = band_rect(392, 428); global_img[ins] *= 0.55; global_img[e] = 1.0
-# diamonds either side of the title band
-for cx in (L + 24, R - 24):
-    d = np.abs(xs - cx) + np.abs(ys - 124)
-    global_img[d < 7] = 0.98; global_img[(d < 7) & (d > 4.5)] = 0.4
-# medallion
+
+# ---- foil body: brushed vertical streaks, a puffed "pillow" shape, two soft specular bands
+streak = blur(rng.standard_normal((H, W)), 0.7)
+streak = gaussian_filter(streak, (6 * S, 0.5 * S)); streak /= streak.std()
+fine = blur(rng.standard_normal((H, W)), 0.5); fine /= fine.std()
+u = (xs - 128) / 114.0
+pillow = 1 - 0.30 * u ** 2                               # darker toward the sides
+vert = 1 - 0.18 * ((ys - 256) / 256.0) ** 2
+spec1 = np.exp(-(((xs * 0.8 - ys * 0.55) - 20) / 34.0) ** 2)   # diagonal sheen bands
+spec2 = np.exp(-(((xs * 0.8 - ys * 0.55) + 120) / 18.0) ** 2)
+foil = 0.50 * pillow * vert + 0.04 * streak + 0.015 * fine + 0.32 * spec1 + 0.18 * spec2
+# crimps: strong ridges, shaded
+ridge = 0.5 + 0.5 * np.sin(xs * 2 * np.pi / 4.2)
+topz = sm(CT, CT - 20, ys); botz = sm(CB, CB + 20, ys)
+cz = np.maximum(topz, botz)
+foil = foil * (1 - 0.45 * cz) + 0.5 * cz * (0.25 + 0.75 * ridge) * 0.8
+# edge bevel
+foil *= 0.55 + 0.45 * sm(0, 10, dist)
+foil += 0.22 * (np.abs(dist - 1.2) < 1.0)               # bright rim
+foil = np.clip(foil, 0, 1)
+
+# ---- dark label panels (tinted dark): title banner, medallion disc, set band
+def pointed(x0, x1, y0, y1, pt):
+    cy = (y0 + y1) / 2; hh = (y1 - y0) / 2
+    xin = np.clip((np.minimum(xs - x0, x1 - xs)), 0, None)
+    half = np.where(xin < pt, hh * xin / pt, hh)
+    return (xs > x0) & (xs < x1) & (np.abs(ys - cy) < half)
+title = pointed(22, 234, 92, 150, 16)
+band = pointed(30, 226, 392, 432, 12)
 cx, cy = 128, 262
-r = np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2)
-disc = r < 70
-global_img[disc] *= 0.45
-global_img[(r > 66) & (r < 70)] = 0.98
-global_img[(r > 61) & (r < 63)] = 0.8
-for k in range(24):
-    a = k * 2 * np.pi / 24
-    px, py = cx + 76 * np.cos(a), cy + 76 * np.sin(a)
-    dd = np.abs(xs - px) + np.abs(ys - py)
-    global_img[dd < 3.2] = 0.98
-# sparkles
-for (sx, sy, sz) in [(52, 190, 7), (206, 205, 6), (60, 350, 5), (200, 340, 8), (44, 270, 4), (214, 280, 4)]:
-    dd = np.minimum(np.abs(xs - sx) * 5 + np.abs(ys - sy), np.abs(xs - sx) + np.abs(ys - sy) * 5)
-    global_img[dd < sz] = np.maximum(global_img[dd < sz], 0.97)
-img = np.clip(global_img, 0, 1.0)
-img = np.where(mask, img, 0)
-# --- tear line: jagged, separates strip from body
+rr = np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2)
+disc = rr < 66
+dark = title | band | disc
+foil = np.where(dark, foil * 0.30 + 0.05, foil)
+# a faint radial glow behind the medallion
+foil += 0.10 * np.exp(-(rr / 110.0) ** 2) * (~dark)
+foil = np.clip(foil, 0, 1)
+
+# ---- tear line
 zig = 66 + 4.2 * np.abs(((xs / 13.0) % 1.0) - 0.5) * 2 + 1.5 * np.sin(xs / 7.0)
-strip = mask & (ys < zig)
-body = mask & (ys >= zig)
-# a little shadow where the body's torn edge sits
+strip = mask & (ys < zig); body = mask & (ys >= zig)
 edge_d = np.clip(ys - zig, 0, 8)
-img_body = img * (0.78 + 0.22 * smooth(0, 8, edge_d))
-def save(path, rgb_mask, vals, box):
-    a = np.where(rgb_mask, 255, 0).astype(np.uint8)
-    g = (np.clip(vals, 0, 1) * 255).astype(np.uint8)
-    im = Image.fromarray(np.dstack([g, g, g, a]), "RGBA").resize((256, 512), Image.LANCZOS)
-    im = im.crop(box)
-    im.save(path)
-save(os.path.join(D, "PackBody.tga"), body, img_body, (0, 0, 256, 512))
-top = Image.fromarray(np.dstack([(np.clip(img, 0, 1) * 255).astype(np.uint8)] * 3 + [np.where(strip, 255, 0).astype(np.uint8)]), "RGBA").resize((256, 512), Image.LANCZOS).crop((0, 0, 256, 128))
-top.save(os.path.join(D, "PackTop.tga"))
+foil_b = foil * (0.78 + 0.22 * sm(0, 8, edge_d))
+
+# ---- gold trim
+def gold(v):
+    v = np.clip(v, 0, 1)
+    c0 = np.array([110, 72, 18], np.float32); c1 = np.array([255, 232, 150], np.float32)
+    return c0[None, None, :] * (1 - v[..., None]) + c1[None, None, :] * v[..., None]
+gv = np.zeros((H, W), np.float32); ga = np.zeros((H, W), np.float32)
+def paint(m, v, a=1.0):
+    global gv, ga
+    gv = np.where(m, v, gv); ga = np.where(m, a, ga)
+light = 0.55 + 0.45 * np.sin((xs * 0.8 - ys * 0.55) / 40.0) * 0.5 + 0.25 * (0.5 + 0.5 * np.sin(ys / 30.0))
+# frame: a bright line and a fine inner line, following the wrapper, stopping at the crimps
+inner = (ys > CT + 8) & (ys < CB - 8)
+paint((np.abs(dist - 9) < 1.0) & inner & mask, light + 0.2)
+paint((np.abs(dist - 13) < 0.5) & inner & mask, light * 0.8, 0.8)
+# crimp edge lines
+for yy in (CT + 2, CB - 2):
+    paint((np.abs(ys - yy) < 0.9) & (xs > L + 8) & (xs < R - 8), light + 0.1)
+# banners: outlines
+def outline(shape, w=1.3):
+    from scipy.ndimage import binary_erosion
+    er = binary_erosion(shape, iterations=max(1, int(w * S)))
+    return shape & ~er
+paint(outline(title, 1.4), light + 0.25); paint(outline(band, 1.2), light + 0.2)
+# diamonds at the ends of the title banner and corners of the frame
+for (px, py, r) in [(30, 121, 6), (226, 121, 6), (L + 12, CT + 14, 4), (R - 12, CT + 14, 4), (L + 12, CB - 14, 4), (R - 12, CB - 14, 4)]:
+    d = np.abs(xs - px) + np.abs(ys - py)
+    paint(d < r, 0.98); paint((d < r) & (d > r - 1.4), 0.55)
+# medallion: rings, ticks, petals
+paint((rr > 63) & (rr < 66.5), light + 0.3)
+paint((rr > 58) & (rr < 59.2), light * 0.9)
+paint((rr > 69) & (rr < 70), light * 0.7, 0.8)
+ang = np.arctan2(ys - cy, xs - cx)
+tick = (rr > 70) & (rr < 76) & (np.abs(np.sin(ang * 12)) > 0.985)
+paint(tick, 0.95)
+for k in range(8):
+    a = k * np.pi / 4 + np.pi / 8
+    px, py = cx + 80 * np.cos(a), cy + 80 * np.sin(a)
+    d = np.abs(xs - px) + np.abs(ys - py)
+    paint(d < 5.5, 0.98); paint((d < 5.5) & (d > 3.6), 0.5)
+# rays from the medallion, faint
+ray = (rr > 86) & (rr < 118) & (np.abs(np.sin(ang * 16)) > 0.992)
+paint(ray & mask & ~dark, 0.9, 0.35)
+# sparkles
+for (sx, sy, sz) in [(46, 196, 8), (212, 206, 6), (52, 352, 6), (204, 346, 9), (40, 268, 4), (218, 282, 4), (150, 190, 4)]:
+    dd = np.minimum(np.abs(xs - sx) * 5 + np.abs(ys - sy), np.abs(xs - sx) + np.abs(ys - sy) * 5)
+    paint(dd < sz, 1.0)
+# soft glow on the gold so it reads as metal
+ga_s = ga
+rgb = gold(gv)
+def save(path, m, rgb_arr, a, box):
+    aa = np.where(m, a, 0)
+    im = Image.fromarray(np.dstack([np.clip(rgb_arr, 0, 255).astype(np.uint8), (np.clip(aa, 0, 1) * 255).astype(np.uint8)]), "RGBA").resize((256, 512), Image.LANCZOS)
+    im.crop(box).save(path)
+def gray(v): return np.repeat((np.clip(v, 0, 1) * 255)[..., None], 3, axis=2)
+save(os.path.join(D, "PackBody.tga"), body, gray(foil_b), 1.0, (0, 0, 256, 512))
+save(os.path.join(D, "PackTop.tga"), strip, gray(foil), 1.0, (0, 0, 256, 128))
+save(os.path.join(D, "PackTrim.tga"), body & (ga > 0), rgb, ga, (0, 0, 256, 512))
+save(os.path.join(D, "PackTrimTop.tga"), strip & (ga > 0), rgb, ga, (0, 0, 256, 128))
 print("ok")

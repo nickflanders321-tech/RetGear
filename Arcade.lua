@@ -1459,9 +1459,16 @@ local function afford()
 end
 
 local RW, RCARD, RGAP = 790, 140, 8
+local RH = 730   -- the pack screen covers the whole collection window
+-- the pack screen sits exactly over the collection window (or the middle of the screen if that is closed)
+local function revealPoint(r, dx, dy)
+  r:ClearAllPoints()
+  if frame and frame.IsShown and frame:IsShown() then r:SetPoint("CENTER", frame, "CENTER", dx or 0, dy or 0)
+  else r:SetPoint("CENTER", UIParent, "CENTER", dx or 0, dy or 0) end
+end
 local function dealPositions(i)
   local total = PACK_SIZE * RCARD + (PACK_SIZE - 1) * RGAP
-  return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -64
+  return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -math.floor((RH - RCARD * 358 / 256) / 2) - 14
 end
 
 local function startDeal()
@@ -1558,15 +1565,24 @@ function RG.ArcadeShowPull(sender, card, finish)
   playSound(nil, nil, "toast")
 end
 
+-- the tear-off strip and its gold trim move together
+local function stripSet(r, sc, dx, dy, rot, alpha)
+  for _, t in ipairs({ r.strip, r.stripTrim }) do
+    t:SetSize(140 * sc, 70 * sc); t:ClearAllPoints(); t:SetPoint("TOP", r.seal, "TOP", dx, dy)
+    if t.SetRotation then t:SetRotation(rot) end
+    t:SetAlpha(alpha)
+  end
+end
+
 local function showReveal(got, notes, meta)
   if detail then detail:Hide() end   -- a card window left open would sit on top of the pack
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
-    reveal:SetPoint("CENTER", 0, 40); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
-    reveal:SetSize(RW, 420)
+    reveal:SetPoint("CENTER", 0, 0); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
+    reveal:SetSize(RW, RH)
     reveal:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
     reveal:SetBackdropColor(0.055, 0.05, 0.08, 1); reveal:SetBackdropBorderColor(0.42, 0.36, 0.24, 1)
-    reveal.title = fs(reveal, "head", 15); reveal.title:SetPoint("TOP", 0, -18); reveal.title:SetTextColor(0.92, 0.86, 0.7)
+    reveal.title = fs(reveal, "head", 15); reveal.title:SetPoint("TOP", 0, -34); reveal.title:SetTextColor(0.92, 0.86, 0.7)
     reveal.fxFrame = CreateFrame("Frame", nil, reveal); reveal.fxFrame:SetAllPoints(reveal); reveal.fxFrame:SetFrameLevel(lv(reveal) + 1)
     reveal.burst = reveal.fxFrame:CreateTexture(nil, "ARTWORK"); reveal.burst:SetTexture(MEDIA .. "Rays"); reveal.burst:SetBlendMode("ADD"); reveal.burst:Hide()
     reveal.phase, reveal.burstLeft, reveal.burstMax, reveal.burstSpin, reveal.dealT = false, 0, 1, 0, 0
@@ -1579,25 +1595,35 @@ local function showReveal(got, notes, meta)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
     end
-    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(104, 208); reveal.seal:SetPoint("CENTER", 0, 14); reveal.seal:SetFrameLevel(lv(reveal) + 30)
+    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(140, 280); reveal.seal:SetPoint("CENTER", 0, 20); reveal.seal:SetFrameLevel(lv(reveal) + 30)
     reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
     reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0)
     -- the booster pack: a foil wrapper (drawn by us, tinted per set) with its crimped top strip, which tears off
     reveal.packBack = {}
     for k = 1, 2 do
-      local bt = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -2); bt:SetTexture(MEDIA .. "PackBody"); bt:SetSize(104, 208)
+      local bt = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -2); bt:SetTexture(MEDIA .. "PackBody"); bt:SetSize(140, 280)
       bt:SetPoint("CENTER", reveal.seal, "CENTER", k == 1 and -18 or 18, -3); bt:SetAlpha(0.8); bt:Hide(); reveal.packBack[k] = bt
     end
     local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "PackBody"); sealTex:SetAllPoints(reveal.seal)
     reveal.sealTex = sealTex
-    reveal.strip = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 3); reveal.strip:SetTexture(MEDIA .. "PackTop"); reveal.strip:SetSize(104, 52)
+    reveal.glowTex = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -4); reveal.glowTex:SetTexture(MEDIA .. "Glow"); reveal.glowTex:SetBlendMode("ADD")
+    reveal.glowTex:SetPoint("CENTER", reveal.seal, "CENTER", 0, 0); reveal.glowTex:SetSize(308, 420); reveal.glowTex:SetAlpha(0.35)
+    reveal.trim = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 1); reveal.trim:SetTexture(MEDIA .. "PackTrim"); reveal.trim:SetAllPoints(reveal.seal)
+    reveal.strip = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 3); reveal.strip:SetTexture(MEDIA .. "PackTop"); reveal.strip:SetSize(140, 70)
     reveal.strip:SetPoint("TOP", reveal.seal, "TOP", 0, 0)
+    reveal.stripTrim = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 4); reveal.stripTrim:SetTexture(MEDIA .. "PackTrimTop"); reveal.stripTrim:SetSize(140, 70)
+    reveal.stripTrim:SetPoint("TOP", reveal.seal, "TOP", 0, 0)
+    -- a holographic sheen sweeps across the foil
+    reveal.sheenF = CreateFrame("Frame", nil, reveal.seal); reveal.sheenF:SetAllPoints(reveal.seal); reveal.sheenF:SetFrameLevel(lv(reveal.seal) + 2)
+    if reveal.sheenF.SetClipsChildren then reveal.sheenF:SetClipsChildren(true) end
+    reveal.sheen = reveal.sheenF:CreateTexture(nil, "OVERLAY"); reveal.sheen:SetTexture(MEDIA .. "Foil"); reveal.sheen:SetBlendMode("ADD"); reveal.sheen:SetSize(308, 285); reveal.sheen:SetAlpha(0.35)
+    reveal.sheen:SetPoint("LEFT", reveal.sheenF, "LEFT", -140, 0)
     -- the set's emblem sits in the medallion
-    reveal.emb = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 1); reveal.emb:SetSize(44, 44); reveal.emb:SetPoint("TOP", reveal.seal, "TOP", 0, -84); reveal.emb:Hide()
+    reveal.emb = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 1); reveal.emb:SetSize(60, 60); reveal.emb:SetPoint("TOP", reveal.seal, "TOP", 0, -113); reveal.emb:Hide()
     reveal.embLight, reveal.embShadow = reveal.emb, reveal.emb   -- (older code hides these by name)
     reveal.sealCount = fs(reveal.seal, "title", 26); reveal.sealCount:SetPoint("CENTER", reveal.emb, "CENTER", 0, 0); reveal.sealCount:SetTextColor(1, 0.95, 0.8); reveal.sealCount:SetText("")
-    reveal.packName = fs(reveal.seal, "title", 12); reveal.packName:SetPoint("CENTER", reveal.seal, "TOP", 0, -50); reveal.packName:SetText("WAYPATH"); reveal.packName:SetTextColor(1, 0.96, 0.85)
-    reveal.packKind = fs(reveal.seal, "head", 10); reveal.packKind:SetPoint("CENTER", reveal.seal, "TOP", 0, -167); reveal.packKind:SetTextColor(1, 0.96, 0.85)
+    reveal.packName = fs(reveal.seal, "title", 15); reveal.packName:SetPoint("CENTER", reveal.seal, "TOP", 0, -66); reveal.packName:SetText("WAYPATH"); reveal.packName:SetTextColor(1, 0.96, 0.85)
+    reveal.packKind = fs(reveal.seal, "head", 12); reveal.packKind:SetPoint("CENTER", reveal.seal, "TOP", 0, -225); reveal.packKind:SetTextColor(1, 0.96, 0.85)
     reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY"); reveal.ribbon:Hide()
     reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetText("")
     reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Drag across the top to rip it open, or click it three times"); reveal.sealHint:SetTextColor(0.7, 0.67, 0.6)
@@ -1644,7 +1670,7 @@ local function showReveal(got, notes, meta)
       self:SetText(a.mute and "Sound: Off" or "Sound: On")
     end)
     reveal.snd:SetPoint("BOTTOM", -300, 20)
-    reveal.sum = fs(reveal, "body", 14); reveal.sum:SetPoint("TOP", 0, -276); reveal.sum:SetWidth(RW - 80); reveal.sum:SetTextColor(0.9, 0.86, 0.74)
+    reveal.sum = fs(reveal, "body", 14); reveal.sum:SetPoint("TOP", 0, -(math.floor((RH - RCARD * 358 / 256) / 2) + 14 + math.floor(RCARD * 358 / 256) + 26)); reveal.sum:SetWidth(RW - 80); reveal.sum:SetTextColor(0.9, 0.86, 0.74)
     reveal.all = gbtn(reveal, "Turn all", 120, 26, function()
       for i = 1, PACK_SIZE do
         local function go() if reveal:IsShown() then flip(i) end end
@@ -1686,16 +1712,16 @@ local function showReveal(got, notes, meta)
         if self.tear >= 1 then tearOpen(); return end
         local tt = math.max(self.tear, self.picks / 3 * 0.85)
         local k = 1 + 0.02 * math.sin(t * 4) + 0.12 * tt
-        self.seal:SetSize(104 * k, 208 * k)
-        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 2 * tt, 14 + math.cos(t * 47) * 1.5 * tt + 3 * math.sin(t * 1.6))
+        self.seal:SetSize(140 * k, 280 * k)
+        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 2 * tt, 20 + math.cos(t * 47) * 1.5 * tt + 3 * math.sin(t * 1.6))
         -- the strip lifts, tilts and pulls away as the tear goes on
-        self.strip:SetSize(104 * k, 52 * k)
-        self.strip:ClearAllPoints(); self.strip:SetPoint("TOP", self.seal, "TOP", 12 * tt, 20 * tt)
-        if self.strip.SetRotation then self.strip:SetRotation(-0.35 * tt) end
+        stripSet(self, k, 14 * tt, 24 * tt, -0.35 * tt, 1)
+        self.sheen:ClearAllPoints(); self.sheen:SetPoint("LEFT", self.sheenF, "LEFT", (-1.4 + 2.4 * ((t * 0.32) % 1)) * 140, 0)
+        self.glowTex:SetAlpha(0.28 + 0.07 * math.sin(t * 2) + 0.2 * tt)
         self.sealGlow:SetAlpha(0)
         local c = self.sealCol
         local r, g, b = c[1] + (1 - c[1]) * tt * 0.4, c[2] + (1 - c[2]) * tt * 0.4, c[3] + (1 - c[3]) * tt * 0.4
-        self.sealTex:SetVertexColor(r, g, b, 1); self.strip:SetVertexColor(r, g, b, 1)
+        self.sealTex:SetVertexColor(r, g, b, 1); self.strip:SetVertexColor(r, g, b, 1); self.glowTex:SetVertexColor(c[1], c[2], c[3], 1); self.sheen:SetVertexColor(1, 1, 1, 1)
       elseif self.phase == "deal" then
         self.dealT = self.dealT + dt
         local all = true
@@ -1715,17 +1741,15 @@ local function showReveal(got, notes, meta)
         -- the strip is thrown off and the wrapper drops away
         self.sealFade = self.sealFade - dt
         local k = 1 - math.max(0, self.sealFade) / 0.55
-        self.strip:ClearAllPoints(); self.strip:SetPoint("TOP", self.seal, "TOP", 40 + 150 * k, 20 + 120 * k - 160 * k * k)
-        if self.strip.SetRotation then self.strip:SetRotation(-0.35 - 1.6 * k) end
-        self.strip:SetAlpha(1 - k)
+        stripSet(self, 1, 40 + 170 * k, 24 + 140 * k - 190 * k * k, -0.35 - 1.6 * k, 1 - k)
         self.seal:SetAlpha(math.max(0, 1 - k * 1.4))
-        if self.sealFade <= 0 then self.sealFade = nil; self.seal:Hide(); self.seal:SetAlpha(1); self.strip:SetAlpha(1) end
+        if self.sealFade <= 0 then self.sealFade = nil; self.seal:Hide(); self.seal:SetAlpha(1); stripSet(self, 1, 0, 0, 0, 1) end
       end
       if self.shakeT > 0 then
         self.shakeT = self.shakeT - dt
         local m = 3.5 * self.shakeK * math.max(0, self.shakeT) / 0.35
-        self:ClearAllPoints(); self:SetPoint("CENTER", (math.random() - 0.5) * 2 * m, 40 + (math.random() - 0.5) * 2 * m)
-        if self.shakeT <= 0 then self:ClearAllPoints(); self:SetPoint("CENTER", 0, 40) end
+        revealPoint(self, (math.random() - 0.5) * 2 * m, (math.random() - 0.5) * 2 * m)
+        if self.shakeT <= 0 then revealPoint(self, 0, 0) end
       end
       if self.shardT > 0 then
         self.shardT = self.shardT - dt
@@ -1804,13 +1828,13 @@ local function showReveal(got, notes, meta)
   reveal.burst:Hide(); reveal.burstLeft = 0
   reveal.tear, reveal.picks, reveal.holding, reveal.shardT, reveal.shakeT = 0, 0, false, 0, 0
   for _, sh in ipairs(reveal.shards) do sh.tex:Hide() end
-  reveal:ClearAllPoints(); reveal:SetPoint("CENTER", 0, 40)
+  do local sc = frame and frame.GetScale and frame:GetScale(); reveal:SetScale(type(sc) == "number" and sc > 0 and sc or 1) end
+  revealPoint(reveal, 0, 0)
   reveal:Show()
   reveal.phase = "seal"
-  reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 14)
-  reveal.seal:Show(); reveal.seal:SetSize(104, 208); reveal.seal:SetAlpha(1)
-  reveal.strip:ClearAllPoints(); reveal.strip:SetPoint("TOP", reveal.seal, "TOP", 0, 0); reveal.strip:SetSize(104, 52)
-  if reveal.strip.SetRotation then reveal.strip:SetRotation(0) end; reveal.strip:SetAlpha(1); reveal.sealTex:SetAlpha(1)
+  reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 20)
+  reveal.seal:Show(); reveal.seal:SetSize(140, 280); reveal.seal:SetAlpha(1)
+  stripSet(reveal, 1, 0, 0, 0, 1); reveal.sealTex:SetAlpha(1)
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
     paint(w, g.card, g.finish, 1)
@@ -1823,7 +1847,7 @@ local function showReveal(got, notes, meta)
     c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.6, 0.6, 0.65 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
     if g.finish >= 3 or g.card.tier == 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
-    w:SetAlpha(0)
+    w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
   end
   reveal.again:SetEnabled(afford() and true or false)
 end
