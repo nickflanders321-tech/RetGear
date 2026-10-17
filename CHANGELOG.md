@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Map markers for quest objectives are now the gold "..." bubble the quest log uses, instead of blue discs.
 - The booster pack is redrawn with proper proportions and now stands under a tinted spotlight on a floor glow with a shadow. A soft holographic band sweeps across the foil (and stays inside the pack), and a dashed tear line shows where to rip.
 - The pack screen has a proper header, a double border, an info plaque with labelled rows (featured set, daily streak, guarantee) and, after the deal, a results plaque (best pull, new cards, sets, bonuses). The footer buttons are uniform, with a quiet sound link.
 - Today, Trade, Ledger and Sets pages are rebuilt with stat tiles, section titles, progress bars and aligned rows instead of plain text.

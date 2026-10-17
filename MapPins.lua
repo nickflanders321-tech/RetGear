@@ -79,7 +79,7 @@ end
 local pins, cache = {}, {}
 local KIND = {
   turnin = { "?", 1.0, 0.82, 0.15, "Hand in" },
-  obj = { "x", 0.45, 0.8, 1.0, "Objective" },
+  obj = { "...", 0.93, 0.78, 0.42, "Objective" },   -- the same gold "..." bubble the quest log uses
 }
 local function canvas()
   local m = WorldMapFrame
@@ -96,6 +96,8 @@ local function getPin(i)
   b.disc = b:CreateTexture(nil, "ARTWORK"); b.disc:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); b.disc:SetAllPoints(b)
   b.ring = b:CreateTexture(nil, "OVERLAY"); b.ring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.ring:SetAllPoints(b); b.ring:SetVertexColor(0.1, 0.08, 0.04, 1)
   b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE"); b.t:SetPoint("CENTER", 0, 0)
+  b.dots = {}
+  for d = 1, 3 do local t = b:CreateTexture(nil, "OVERLAY", nil, 2); t:SetColorTexture(0.16, 0.09, 0.03, 1); b.dots[d] = t end
   b.arrow = b:CreateTexture(nil, "OVERLAY"); b.arrow:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.arrow:SetSize(32, 32); b.arrow:SetPoint("CENTER"); b.arrow:SetVertexColor(1, 0.82, 0.2, 1); b.arrow:Hide()
   b:RegisterForClicks("LeftButtonUp")
   b:SetScript("OnClick", function(self) if self.wp and RG.ArrowTo then RG.ArrowTo(self.wp) end end)
@@ -140,8 +142,11 @@ local function refreshPins(force)
     if not b then return end
     local k = KIND[p.kind]
     b.wp, b.title, b.sub = p.wp, (k[5] .. ": " .. (p.title or "")), p.sub
-    b.disc:SetVertexColor(k[2], k[3], k[4], 1); b.t:SetText(k[1]); b.t:SetTextColor(0.1, 0.07, 0.02)
+    b.disc:SetVertexColor(k[2], k[3], k[4], 1); b.t:SetTextColor(0.1, 0.07, 0.02)
     local sz = 22 / scale
+    local dots = k[1] == "..."
+    b.t:SetText(dots and "" or k[1])
+    for d, t in ipairs(b.dots) do t:SetShown(dots); t:SetSize(sz * 0.14, sz * 0.14); t:ClearAllPoints(); t:SetPoint("CENTER", b, "CENTER", (d - 2) * sz * 0.23, -sz * 0.02) end
     b:SetSize(sz, sz); b.arrow:SetSize(sz * 1.5, sz * 1.5)
     b:ClearAllPoints(); b:SetPoint("CENTER", c, "TOPLEFT", p.wp[2] / 100 * w, -p.wp[3] / 100 * h)
     b.arrow:SetShown(RG.ArrowTarget and RG.ArrowTarget(p.wp) or false)
