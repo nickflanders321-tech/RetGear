@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.2
+- Fixed the Fishing & cooking page failing with an error about the Stranglethorn Fishing Extravaganza timer (and a related fishing-advice line).
+
 ## v1.0.1
 - The Arena and the cards window now close the main Waypath+ window when they open, so the two no longer draw on top of each other.
 

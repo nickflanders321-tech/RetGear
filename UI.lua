@@ -1964,7 +1964,8 @@ local function renderFish()
       table.concat(parts, ", "), s.gained > 0 and (GREEN .. "+" .. s.gained .. " skill|r") or "", (s.value or 0) > 0 and ("|cffffffff" .. RG.FishMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. "  ·  " .. RG.FishMoney(s.goldPerHour) .. "/hr|r") or "")) or "")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_14")
   end
-  local dst, dmin = RG.FishDerby and RG.FishDerby()
+  local dst, dmin
+  if RG.FishDerby then dst, dmin = RG.FishDerby() end
   if dst then
     n = n + 1
     local h, m = math.floor(dmin / 60), dmin % 60
@@ -1997,7 +1998,8 @@ local function renderFish()
       local name, link, quality = itemName(e.id)
       local ago = time() - (e.t or 0)
       local when = ago < 90 and "just now" or (ago < 5400 and (math.floor(ago / 60) .. " min ago") or (math.floor(ago / 3600) .. " h ago"))
-      local adv, advTip = RG.FishAdvice and RG.FishAdvice(e.id)
+      local adv, advTip
+      if RG.FishAdvice then adv, advTip = RG.FishAdvice(e.id) end
       setItem(getRow(n), e.id, link, name .. GREY .. "   x" .. (e.qty or 1) .. "|r", GREY .. (e.zone or "") .. "  ·  " .. when .. "|r" .. (adv and ("  ·  " .. adv) or ""), (e.v or 0) > 0 and (GOLD .. RG.FishMoney((e.v or 0) * (e.qty or 1)) .. "|r") or "", "", nil, quality, true)
     end
   end
@@ -2392,7 +2394,7 @@ end
 -- ---------------------------------------------------------------------------
 local function renderCards()
   local n = 0
-  local a, own, total, prints = RG.ArcadeStats and RG.ArcadeStats() or { coins = 0 }, 0, 0, 0
+  local a, own, total, prints = { coins = 0 }, 0, 0, 0
   if RG.ArcadeStats then a, own, total, prints = RG.ArcadeStats() end
   local price = RG.ArcadePackPrice or 25
   local coins = a.coins or 0
