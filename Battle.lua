@@ -12,6 +12,8 @@ B.MAXMANA, B.MAXHAND, B.MAXBOARD, B.DECK, B.HP = 10, 10, 7, 30, 30
 B.KW = { taunt = "Taunt", charge = "Charge", rush = "Rush", shield = "Divine Shield", stealth = "Stealth", windfury = "Windfury", lifesteal = "Lifesteal", poison = "Poisonous" }
 B.KWORDER = { "taunt", "charge", "rush", "shield", "stealth", "windfury", "lifesteal", "poison" }
 B.defs = {}
+-- going second: how the two seats are evened out (tuned by simulation, see tools/balance)
+B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 0 }
 
 local function hash(s) local h = 5381; for i = 1, #s do h = (h * 33 + s:byte(i)) % 2147483629 end return h end
 local function seeded(s) s = s % 2147483646 + 1; return function(n) s = (s * 48271) % 2147483647; return s % n + 1 end end
@@ -453,6 +455,8 @@ function B.new(o)
     for _ = 1, n do local k = table.remove(G.p[s].deck); if k then G.p[s].hand[#G.p[s].hand + 1] = k end end
   end
   local second = 3 - G.first
+  for _ = 1, B.TUNE.secondExtra do local k = table.remove(G.p[second].deck); if k then G.p[second].hand[#G.p[second].hand + 1] = k end end
+  G.p[second].armor = B.TUNE.secondArmor
   G.p[second].hand[#G.p[second].hand + 1] = "coin"
   return G
 end
@@ -503,7 +507,7 @@ function B.beginTurn(G)
   P.att, P.tempAtk, P.hpUsed = 0, 0, false
   for _, m in ipairs(P.board) do m.sick = false; m.att = 0; m.rushOnly = nil end
   ev(G, { t = "turn", side = s, n = G.turn })
-  draw1(G, s)
+  if not (B.TUNE.firstSkipDraw and G.turn == 1 and s == G.first) then draw1(G, s) end
   B.resolve(G)
 end
 

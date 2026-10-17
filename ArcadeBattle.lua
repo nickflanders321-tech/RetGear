@@ -205,7 +205,7 @@ end
 -- ---------------------------------------------------------------------------
 local function say(txt, hold)
   if not win then return end
-  win.msg:ClearAllPoints(); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, S.mode == "mull" and 462 or 372)
+  win.msg:ClearAllPoints(); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, S.mode == "mull" and 480 or 372)
   win.msg:SetText(txt or ""); S.msgT = clock + (hold or 3)
 end
 
@@ -766,7 +766,7 @@ local function makeBoard()
     w:HookScript("OnEnter", function(self) self.hov = true; if game and game.p[ME].hand[self.hslot] then preview(game.p[ME].hand[self.hslot], nil, 1) end; refresh() end)
     w:HookScript("OnLeave", function(self) self.hov = false; refresh() end)
     w:Hide(); ui.hand[i] = w
-    local b = bd:CreateTexture(nil, "ARTWORK"); b:SetTexture(U.MEDIA .. "Back"); b:SetTexCoord(0, 1, 0, 358 / 512); b:SetSize(24, 34); b:Hide(); ui.back[i] = b
+    local b = bd:CreateTexture(nil, "ARTWORK"); b:SetTexture(U.MEDIA .. "Back"); b:SetTexCoord(0, 1, 0, 358 / 512); b:SetSize(22, 31); b:Hide(); ui.back[i] = b
   end
   -- mana
   ui.mana = {}
@@ -789,7 +789,12 @@ local function makeBoard()
     S.sure = false; self:SetText("Concede"); game.over = true; game.winner = 3 - ME; S.endReason = S.pvp and "You conceded." or nil; if S.pvp and RG.Duel then RG.Duel.sendEnd("F") end; afterAction()
   end)
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
-  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 418); win.mullBtn:Hide()
+  -- the opening-hand table: a dark panel so the cards and the button read clearly over the board
+  win.mullPanel = CreateFrame("Frame", nil, bd, "BackdropTemplate")
+  win.mullPanel:SetSize(700, 268); pt(win.mullPanel, 600, 376); win.mullPanel:SetFrameLevel(U.lv(bd) + 3)
+  win.mullPanel:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); win.mullPanel:SetBackdropColor(0.03, 0.02, 0.09, 0.93); win.mullPanel:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
+  win.mullPanel:Hide()
+  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 270); win.mullBtn:Hide(); win.mullBtn:SetFrameLevel(U.lv(bd) + 120)
   -- the end screen
   win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 370); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
   local o = win.over
@@ -938,7 +943,7 @@ refresh = function()
   for i = 1, 10 do
     local b = ui.back[i]
     if i <= nb then
-      b:ClearAllPoints(); b:SetPoint("CENTER", win, "BOTTOMLEFT", 600 + (i - (nb + 1) / 2) * 26, 681); b:SetTexture(U.MEDIA .. RG.CardBackName()); b:Show()
+      b:ClearAllPoints(); b:SetPoint("CENTER", win, "BOTTOMLEFT", 600 + (i - (nb + 1) / 2) * 24, 684); b:SetTexture(U.MEDIA .. RG.CardBackName()); b:Show()
     else b:Hide() end
   end
   -- my hand
@@ -950,7 +955,7 @@ refresh = function()
     if key then
       local x = 600 - (n - 1) * step / 2 + (i - 1) * step
       local y = (w.hov and not mull) and 108 or 68
-      if mull then y = 332 end
+      if mull then y = 362 end
       local fresh = rawget(w, "gx") == nil
       if fresh and not mull then place(w, x, y, DECK_POS[1][1], DECK_POS[1][2]); pt(w, w.gx, w.gy) else place(w, x, y) end
       if fresh and mull then w.gx, w.gy = x, y; pt(w, x, y) end
@@ -968,9 +973,11 @@ refresh = function()
   end
   -- buttons
   win.endBtn:SetEnabled(mine and S.mode == "play")
+  Sh(win.endBtn, S.mode ~= "mull")
+  Sh(win.mullPanel, S.mode == "mull")
   local idle = mine and S.mode == "play" and #B.actions(game, ME) == 0
   win.endBtn:SetActive(idle and true or false)
-  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "OPENING HAND" or (game.cur == ME and "YOUR TURN" or (S.pvp and (string.upper(S.foeName or "") .. "'S TURN") or "OPPONENT'S TURN"))))
+  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "" or (game.cur == ME and "YOUR TURN" or (S.pvp and (string.upper(S.foeName or "") .. "'S TURN") or "OPPONENT'S TURN"))))
   if win.turnT.SetTextColor then if game.cur == ME or S.mode == "mull" then win.turnT:SetTextColor(0.96, 0.84, 0.5) else win.turnT:SetTextColor(0.82, 0.66, 0.98) end end
 end
 

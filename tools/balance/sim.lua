@@ -7,6 +7,7 @@ local dir = arg[0]:match("^(.*)/tools/balance/") or "."
 local RG = {}
 for _, f in ipairs({ "ArcadeCards.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
 local B = RG.Battle
+if arg[5] then dofile(arg[5])(B, RG) end   -- optional experiment patch
 local keys = {}
 for i, c in ipairs(RG.ARCADE_DATA) do
   local cc = { id = i, kind = c[1], name = c[2], tier = c[3], ref = c[4], text = c[5] }
