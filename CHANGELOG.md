@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Packs are no longer themed by set: every card can come out of every pack. There are now three kinds: a Pack (5 cards, 1 rare or better), a Jumbo Pack (8 cards, 2 rares or better) and a Super Jumbo Pack (12 cards, 3 rares or better). Reward packs are Jumbos with a guaranteed holo or better at the end. Bigger packs count for more toward the holo/full-art guarantee. The pack screen lays out 5, 8 or 12 cards in one or two rows, and each pack type has its own colour and size.
 - Map markers for quest objectives are now the gold "..." bubble the quest log uses, instead of blue discs.
 - The booster pack is redrawn with proper proportions and now stands under a tinted spotlight on a floor glow with a shadow. A soft holographic band sweeps across the foil (and stays inside the pack), and a dashed tear line shows where to rip.
 - The pack screen has a proper header, a double border, an info plaque with labelled rows (featured set, daily streak, guarantee) and, after the deal, a results plaque (best pull, new cards, sets, bonuses). The footer buttons are uniform, with a quiet sound link.

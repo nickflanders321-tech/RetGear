@@ -44,7 +44,16 @@ local NAME_ICON = {
   { "mine", "INV_Pick_02" }, { "deeps", "INV_Pick_02" }, { "depths", "INV_Pick_02" }, { "cavern", "INV_Pick_02" }, { "cave", "INV_Pick_02" },
 }
 local FREE_PACKS = true   -- beta: every pack is free (set to false to charge coins again)
-local PACK_PRICE, PACK_SIZE = FREE_PACKS and 0 or 25, 5
+-- three kinds of pack, and every card in the game can come out of any of them
+local PACKS = {
+  normal = { name = "Pack", size = 5, price = 25, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
+  jumbo = { name = "Jumbo Pack", size = 8, price = 45, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
+  super = { name = "Super Jumbo Pack", size = 12, price = 65, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
+}
+local PACK_ORDER = { "normal", "jumbo", "super" }
+local PACK_MAX = 12
+local function packPrice(kind) return FREE_PACKS and 0 or PACKS[kind or "normal"].price end
+local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
 -- How coins are earned (about 150 packs over a 1-60 climb):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 20
@@ -327,7 +336,6 @@ RG.ArcadeDaily = dailyCheck
 -- Packs, selling, duels
 -- ---------------------------------------------------------------------------
 local PITY = 7   -- a pack after this many without a holo or full art always has one
-local FEATURED_CHANCE = 0.35   -- each of the first four cards: chance it comes from the pack's featured set
 local STREAK_BONUS = 7         -- a reward seal for every 7th day in a row you break a seal
 local MANY_MAX = 10            -- most seals "Break all" opens at once
 
@@ -352,31 +360,19 @@ local function groupDigits(n)
   return t
 end
 
--- the set a seal is themed on: picked when the last seal is opened, so the seal you see is the one you get
-local function featuredSet(a)
-  local pool = {}
-  for _, s in ipairs(getSets()) do if s.cards[1] and s.cards[1].tier ~= 6 then pool[#pool + 1] = s end end   -- (the Raiders are rare enough already)
-  if #pool == 0 then return nil end
-  if a.featured then for _, s in ipairs(pool) do if s.name == a.featured then return s end end end
-  local s = pool[math.random(#pool)]
-  a.featured = s.name
-  return s
-end
-RG.ArcadeFeatured = function() local a = store(); local s = a and featuredSet(a); return s and s.name end
+RG.ArcadeFeatured = function() return nil end   -- (packs are no longer themed: every card can come out of every pack)
 local function yesterdayStr() return date and time and date("%Y-%m-%d", time() - 86400) or "yesterday" end
 
 -- one seal: pays for it, rolls the five cards, returns got, notes, meta
-local function openOne(a)
-  local bonus = (a.bonus or 0) > 0
-  local free = false
-  if bonus then a.bonus = a.bonus - 1
-  else
-    free = (a.free or 0) > 0
-    if free then a.free = a.free - 1
-    elseif (a.coins or 0) < PACK_PRICE then return nil, "A pack costs " .. PACK_PRICE .. " coins."
-    else a.coins = a.coins - PACK_PRICE end
-  end
-  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0 }
+local function openOne(a, kind)
+  kind = PACKS[kind or "normal"] and (kind or "normal") or "normal"
+  local def = PACKS[kind]
+  local bonus, free = false, false
+  if kind == "jumbo" and (a.bonus or 0) > 0 then bonus = true; a.bonus = a.bonus - 1   -- a reward pack is a jumbo
+  elseif kind == "normal" and (a.free or 0) > 0 then free = true; a.free = a.free - 1
+  elseif (a.coins or 0) < packPrice(kind) then return nil, "A " .. def.name:lower() .. " costs " .. packPrice(kind) .. " coins."
+  else a.coins = a.coins - packPrice(kind) end
+  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0, kind = kind, size = def.size }
   -- first seal of the day: the day's streak
   if a.packDay ~= today() then
     local n = (a.packDay == yesterdayStr()) and ((a.packStreak or 0) + 1) or 1
@@ -385,16 +381,14 @@ local function openOne(a)
     if n % STREAK_BONUS == 0 then a.bonus = (a.bonus or 0) + 1; meta.streakReward = true end
   end
   meta.streak = meta.streak or a.packStreak or 1
-  local feat = (not bonus) and featuredSet(a) or nil
-  meta.featured = feat and feat.name
   a.packs = (a.packs or 0) + 1
   local got, shiny, newCount = {}, false, 0
-  for i = 1, PACK_SIZE do
-    local c
-    if feat and i < PACK_SIZE and math.random() < FEATURED_CHANCE then c = feat.cards[math.random(#feat.cards)] else c = rollCard() end
+  local size = def.size
+  for i = 1, size do
+    local c = rollCard()
     local least = c.tier == 6 and 3 or 1
-    if i == PACK_SIZE then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- last card: rare or better (holo after a long dry spell or from a reward seal)
-    if bonus and i == PACK_SIZE - 1 then least = math.max(least, 2) end
+    if i > size - def.rares then least = math.max(least, 2) end   -- the last cards: rare or better (one in a pack, two in a jumbo, three in a super jumbo)
+    if i == size then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- the last card: holo after a long dry spell or from a reward pack
     local f = rollFinish(least)
     local isNew = owned(a, c.id) == 0
     local slot = a.cards[c.key or c.name] or {}
@@ -410,8 +404,7 @@ local function openOne(a)
       a.rarest = { name = c.name, finish = f, tier = c.tier }
     end
   end
-  a.pity = shiny and 0 or ((a.pity or 0) + 1)
-  if feat or bonus then a.featured = nil; featuredSet(a) end   -- the next seal's theme
+  a.pity = shiny and 0 or ((a.pity or 0) + def.weight)   -- a bigger pack counts for more dry packs
   local notes = {}
   local function note(x) if x then notes[#notes + 1] = x end end
   note(goalProgress(a, "packs2", 1)); note(goalProgress(a, "packs3", 1))
@@ -438,10 +431,10 @@ end
 
 local function pullScore(g) return g.finish * 10 + g.card.tier + (g.new and 0.5 or 0) end
 
-function RG.ArcadeOpenPack()
+function RG.ArcadeOpenPack(kind)
   local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
   dailyCheck()
-  local got, notes, meta = openOne(a)
+  local got, notes, meta = openOne(a, kind)
   if not got then return nil, notes end
   -- the best card comes last, as it does when you turn them one by one
   table.sort(got, function(x, y) return pullScore(x) < pullScore(y) end)
@@ -466,7 +459,7 @@ function RG.ArcadeOpenMany()
   local all, notes, many = {}, {}, { count = 0, new = 0, newPrint = 0, value = 0, bonus = 0 }
   local last
   for _ = 1, n do
-    local got, nt, meta = openOne(a)
+    local got, nt, meta = openOne(a, (a.bonus or 0) > 0 and "jumbo" or "normal")
     if not got then break end
     last = meta
     many.count = many.count + 1
@@ -481,9 +474,9 @@ function RG.ArcadeOpenMany()
   many.total = #all
   table.sort(all, function(x, y) return pullScore(x) > pullScore(y) end)
   local show = {}
-  for i = 1, math.min(PACK_SIZE, #all) do show[i] = all[i] end
+  for i = 1, math.min(5, #all) do show[i] = all[i] end
   table.sort(show, function(x, y) return pullScore(x) < pullScore(y) end)
-  local meta = { many = many, streak = last and last.streak, daily = last and last.daily, sets = {}, free = true }
+  local meta = { many = many, size = #show, kind = "normal", streak = last and last.streak, daily = last and last.daily, sets = {}, free = true }
   local seen = {}
   for _, g in ipairs(all) do
     local sn = setOf(g.card)
@@ -1412,7 +1405,8 @@ end
 
 local function burstAt(card, strength)
   reveal.burst:ClearAllPoints(); reveal.burst:SetPoint("CENTER", card, "CENTER", 0, 0)
-  local s = card.cw * (2.6 + strength * 0.5)
+  local sc0 = card.GetScale and card:GetScale(); if type(sc0) ~= "number" then sc0 = 1 end
+  local s = card.cw * sc0 * (2.6 + strength * 0.5)
   reveal.burst:SetSize(s, s)
   local t = card.fxset and TIER[card.card.tier][3] or { 1, 0.85, 0.5 }
   tintTex(reveal.burst, { math.min(1, t[1] + 0.3), math.min(1, t[2] + 0.3), math.min(1, t[3] + 0.3) }, 1)
@@ -1463,9 +1457,13 @@ local function flip(i)
   end)
 end
 
-local function afford()
+local function afford(kind)
   local a = store()
-  return a and (((a.bonus or 0) > 0) or ((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
+  if not a then return false end
+  kind = kind or "normal"
+  if kind == "jumbo" and (a.bonus or 0) > 0 then return true end
+  if kind == "normal" and (a.free or 0) > 0 then return true end
+  return (a.coins or 0) >= packPrice(kind)
 end
 
 local RW, RCARD, RGAP = 790, 136, 10
@@ -1477,9 +1475,23 @@ local function revealPoint(r, dx, dy)
   if frame and frame.IsShown and frame:IsShown() then r:SetPoint("CENTER", frame, "CENTER", dx or 0, dy or 0)
   else r:SetPoint("CENTER", UIParent, "CENTER", dx or 0, dy or 0) end
 end
-local function dealPositions(i)
-  local total = PACK_SIZE * RCARD + (PACK_SIZE - 1) * RGAP
-  return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -math.floor(335 - RCARD * 358 / 256 / 2)
+-- where the cards go: one row for a pack, two rows of four for a jumbo, two rows of six (a little smaller) for a super jumbo
+local function dealPositions(i, n)
+  n = n or PACK_SIZE
+  local per, sc, gap = n, 1, 10
+  if n > 8 then per, sc, gap = 6, 0.86, 8 elseif n > 5 then per = 4 end
+  local cw = RCARD * sc
+  local chh = cw * 358 / 256
+  local rows = math.ceil(n / per)
+  local rowGap = 18
+  local top = 335 - (rows * chh + (rows - 1) * rowGap) / 2
+  local row, col = math.floor((i - 1) / per), (i - 1) % per
+  local inRow = math.min(per, n - row * per)
+  local rowW = inRow * cw + (inRow - 1) * gap
+  return (RW - rowW) / 2 + col * (cw + gap), -(top + row * (chh + rowGap)), sc, cw
+end
+local function placeCard(c, x, y, sc)
+  c:SetScale(sc); c:ClearAllPoints(); c:SetPoint("TOPLEFT", reveal, "TOPLEFT", x / sc, y / sc)
 end
 
 local function startDeal()
@@ -1487,9 +1499,10 @@ local function startDeal()
   reveal.sealFade = 0.55; reveal.sealGlow:Hide()
   reveal.plaque:SetShown(false)
   reveal.title:SetText("Turn each card")
-  for i = 1, PACK_SIZE do reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
+  local n = #(reveal.got or {})
+  for i = 1, n do local x, y, sc = dealPositions(i, n); placeCard(reveal.cards[i], x, y, sc); reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
   setPlaque({ { "Tip", "Hold a card to peek at how rare it is, let go to turn it" } })
-  reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 30); reveal.spot:SetSize(760, 380)
+  reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 30); reveal.spot:SetSize(760, n > 5 and 520 or 380)
   playSound(nil, nil, "deal")
 end
 
@@ -1611,7 +1624,7 @@ local function showReveal(got, notes, meta)
     reveal.burst = reveal.fxFrame:CreateTexture(nil, "ARTWORK"); reveal.burst:SetTexture(MEDIA .. "Rays"); reveal.burst:SetBlendMode("ADD"); reveal.burst:Hide()
     reveal.phase, reveal.burstLeft, reveal.burstMax, reveal.burstSpin, reveal.dealT = false, 0, 1, 0, 0
     reveal.cards = {}
-    for i = 1, PACK_SIZE do
+    for i = 1, PACK_MAX do
       local c = makeCard(reveal, RCARD); c:SetFrameLevel(lv(reveal) + 3); c.noTip = true
       local x, y = dealPositions(i)
       c:SetPoint("TOPLEFT", reveal, "TOPLEFT", x, y); reveal.cards[i] = c
@@ -1727,13 +1740,14 @@ local function showReveal(got, notes, meta)
     local sep = reveal:CreateTexture(nil, "ARTWORK"); sep:SetColorTexture(0.72, 0.58, 0.3, 0.3); sep:SetHeight(1)
     sep:SetPoint("BOTTOMLEFT", 30, 66); sep:SetPoint("BOTTOMRIGHT", -30, 66)
     reveal.all = gbtn(reveal, "Turn all", 132, 30, function()
-      for i = 1, PACK_SIZE do
+      local n = #(reveal.got or {})
+      for i = 1, n do
         local function go() if reveal:IsShown() then flip(i) end end
-        if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5 + (i == PACK_SIZE and 0.5 or 0), go) else go() end
+        if C_Timer and C_Timer.After then C_Timer.After((i - 1) * (n > 5 and 0.35 or 0.5) + (i == n and 0.5 or 0), go) else go() end
       end
     end)
     reveal.all:SetPoint("BOTTOM", -160, 22)
-    reveal.again = gbtn(reveal, "Open another pack", 190, 30, function() if frame and frame.buyNow then frame.buyNow() end end, true)
+    reveal.again = gbtn(reveal, "Open another pack", 190, 30, function() if frame and frame.buyNow then frame.buyNow((reveal.meta and reveal.meta.many) and "normal" or reveal.kind) end end, true)
     reveal.again:SetPoint("BOTTOM", 0, 22)
     reveal.ok = gbtn(reveal, "Skip", 132, 30, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
     reveal.ok:SetPoint("BOTTOM", 160, 22)
@@ -1766,7 +1780,7 @@ local function showReveal(got, notes, meta)
         if self.pickIdle > 2 and self.picks > 0 then self.picks = 0 end
         if self.tear >= 1 then tearOpen(); return end
         local tt = math.max(self.tear, self.picks / 3 * 0.85)
-        local k = 1 + 0.015 * math.sin(t * 3) + 0.10 * tt
+        local k = (self.baseK or 1) * (1 + 0.015 * math.sin(t * 3) + 0.10 * tt)
         self.lastK = k
         self.seal:SetScale(k)
         self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 2 * tt / k, (20 + math.cos(t * 47) * 1.5 * tt + 4 * math.sin(t * 1.4)) / k)
@@ -1791,13 +1805,14 @@ local function showReveal(got, notes, meta)
         self.dealT = self.dealT + dt
         do local c = self.sealCol; self.spot:SetVertexColor(c[1], c[2], c[3], 0.2) end
         local all = true
-        for i = 1, PACK_SIZE do
+        local n = #(self.got or {})
+        for i = 1, n do
           local k = math.max(0, math.min(1, (self.dealT - (i - 1) * 0.09) / 0.4))
           local e = 1 - (1 - k) ^ 3
-          local x, y = dealPositions(i)
-          local cx = (RW - RCARD) / 2
+          local x, y, sc, cw = dealPositions(i, n)
+          local cx = (RW - cw) / 2
           local c = self.cards[i]
-          c:ClearAllPoints(); c:SetPoint("TOPLEFT", self, "TOPLEFT", cx + (x - cx) * e, y)
+          c:ClearAllPoints(); c:SetPoint("TOPLEFT", self, "TOPLEFT", (cx + (x - cx) * e) / sc, y / sc)
           c:SetAlpha(e)
           if k < 1 then all = false end
         end
@@ -1839,53 +1854,36 @@ local function showReveal(got, notes, meta)
   end
   reveal.got, reveal.flipped, reveal.notes, reveal.meta, reveal.record = got, 0, notes, meta, false
   meta = meta or {}
-  -- what kind of seal this is: reward, many at once, the day's first, or the featured set's colours
-  local col, title, info = { 1, 1, 1 }, "Open the pack", {}
+  -- what kind of pack this is: a pack, a jumbo, a super jumbo (a reward pack is a jumbo with extra promises), or several at once
+  local kind = (meta.kind and PACKS[meta.kind]) and meta.kind or "normal"
+  local def = PACKS[kind]
+  reveal.kind = kind
+  local col, title, info = def.col, def.name, {}
   if meta.bonus then
-    col, title = { 0.85, 0.6, 1 }, "Reward pack"
-    info[#info + 1] = { "Reward pack", "A rare and a holo or better inside" }
+    col, title = { 0.85, 0.6, 1 }, "Reward Jumbo Pack"
+    info[#info + 1] = { "Reward pack", "|cffd9a8ff" .. def.size .. " cards: two rares and a holo or better inside|r" }
   elseif meta.many then
     col, title = { 1, 0.85, 0.45 }, meta.many.count .. " packs"
     info[#info + 1] = { "Packs", GOLDHEX .. meta.many.count .. " packs at once|r   ·   the five best cards are shown" }
   else
-    if meta.featured then
-      local h = 0
-      for ch in meta.featured:gmatch(".") do h = (h * 31 + ch:byte()) % 997 end
-      local r, g, b = hsv(h / 997, 0.5, 1)
-      col = { r, g, b }
-      info[#info + 1] = { "Featured set", GOLDHEX .. meta.featured .. "|r   ·   more of its cards inside" }
-    end
-    if meta.daily then title = "Daily pack"; info[#info + 1] = { "Daily", "|cff7be08aDay " .. (meta.streak or 1) .. " in a row|r" } end
+    info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from the whole collection   ·   " .. def.rares .. " rare or better" }
+    if meta.daily then title = "Daily " .. def.name; info[#info + 1] = { "Daily", "|cff7be08aDay " .. (meta.streak or 1) .. " in a row|r" } end
   end
   if not meta.many then
     local pb = meta.pityBefore or 0
     if meta.bonus or pb >= PITY then info[#info + 1] = { "Guarantee", "|cffd9a8ffThis pack holds a holo or full art|r" }
-    else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") } end
+    else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") .. " worth of opening" } end
   end
   reveal.sealCol = col
   reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1); reveal.strip:SetVertexColor(col[1], col[2], col[3], 1)
-  -- the wrapper: tinted per set, with the set's emblem in the medallion; a reward pack is gold, several packs fan out
+  reveal.baseK = meta.many and 1.04 or (kind == "super" and 1.08 or (kind == "jumbo" and 1.04 or 1))
+  -- the wrapper: tinted by pack type, the rune in the medallion; several packs fan out
   reveal.emb:Hide(); reveal.sealCount:SetText(""); reveal.ribbon:Hide(); reveal.ribbonText:SetText("")
   for _, bt in ipairs(reveal.packBack) do bt:SetVertexColor(col[1] * 0.7, col[2] * 0.7, col[3] * 0.7, 1); bt:SetShown(meta.many and true or false) end
-  local kind = "MIXED"
-  if meta.bonus then kind = "REWARD"
-  elseif meta.many then kind = "x" .. meta.many.count
-  elseif meta.daily then kind = "DAILY"
-  elseif meta.featured then
-    local f = meta.featured
-    if f:find("^Places") or f == "All zones" then kind = "PLACES"
-    elseif f:find("bosses") or f:find("rares") or f == "Other NPCs" then kind = "NPCS"
-    else kind = "ITEMS" end
-  end
-  reveal.packKind:SetText(kind)
+  reveal.packKind:SetText(meta.many and ("x" .. meta.many.count) or (def.size .. " CARDS"))
+  reveal.packName:SetText(kind == "normal" and "WAYPATH" or (kind == "jumbo" and "JUMBO" or "SUPER JUMBO"))
   if meta.many then reveal.sealCount:SetText("x" .. meta.many.count)
-  elseif meta.bonus then reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(1, 0.9, 0.5, 0.95); reveal.emb:Show()
-  elseif meta.featured then
-    local sheet, cell = emblemFor(meta.featured)
-    local c0, r0 = cell % 4, math.floor(cell / 4)
-    reveal.emb:SetTexture(MEDIA .. sheet); reveal.emb:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, (r0 + 1) * 0.25)
-    reveal.emb:SetVertexColor(math.min(1, col[1] + 0.25), math.min(1, col[2] + 0.25), math.min(1, col[3] + 0.25), 0.95); reveal.emb:Show()
-  else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(0.9, 0.9, 1, 0.8); reveal.emb:Show() end
+  else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(math.min(1, col[1] + 0.3), math.min(1, col[2] + 0.3), math.min(1, col[3] + 0.3), 0.95); reveal.emb:Show() end
   reveal.sealFade = nil; reveal.seal:SetAlpha(1)
   setPlaque(info)
   reveal.plaque.bar:SetColorTexture(math.min(1, col[1] + 0.1), math.min(1, col[2] + 0.1), math.min(1, col[3] + 0.1), 1)
@@ -1899,10 +1897,11 @@ local function showReveal(got, notes, meta)
   revealPoint(reveal, 0, 0)
   reveal:Show()
   reveal.phase = "seal"
-  reveal.seal:SetScale(1); reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 20)
+  reveal.seal:SetScale(reveal.baseK or 1); reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 20 / (reveal.baseK or 1))
   reveal.seal:Show(); reveal.seal:SetSize(PKW, PKH); reveal.seal:SetAlpha(1)
   reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 24); reveal.spot:SetSize(640, 560)
   stripSet(reveal, 1, 0, 0, 0, 1); reveal.sealTex:SetAlpha(1)
+  for i = 1, PACK_MAX do reveal.cards[i]:Hide() end
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
     paint(w, g.card, g.finish, 1)
@@ -1917,7 +1916,7 @@ local function showReveal(got, notes, meta)
     if g.finish >= 3 or g.card.tier == 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
   end
-  reveal.again:SetEnabled(afford() and true or false)
+  reveal.again:SetEnabled(afford(meta.many and "normal" or kind) and true or false)
 end
 
 -- ---------------------------------------------------------------------------
@@ -2123,30 +2122,37 @@ local function build()
   frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.92, 0.88, 1)
   frame.buyNow = function(many)
     local got, free, notes, meta
-    if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack() end
+    if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack(type(many) == "string" and many or nil) end
     if not got then say(free or "") return end
     if meta and meta.bonus then playSound(nil, nil, "reward") end
     showReveal(got, notes, meta); RG.ArcadeRefresh(true)
   end
-  frame.buy = gbtn(frame, "Break a pack", 250, 34, function() frame.buyNow() end, true)
-  frame.buy:SetPoint("BOTTOM", 0, 20)
-  frame.buyAll = gbtn(frame, "Break all", 110, 28, function() frame.buyNow(true) end)
-  frame.buyAll:SetPoint("BOTTOM", 335, 23); frame.buyAll:Hide()
-  frame.duel = gbtn(frame, "Duel for coins", 150, 28, function()
+  -- the three packs: a pack (5 cards), a jumbo (8) and a super jumbo (12)
+  frame.packBtns = {}
+  local PX = { -110, 14, 138 }
+  for i, kind in ipairs(PACK_ORDER) do
+    local b = gbtn(frame, PACKS[kind].name, 118, 40, function() frame.buyNow(kind) end, i == 1)
+    b:SetPoint("BOTTOM", PX[i], 16)
+    frame.packBtns[kind] = b
+  end
+  frame.buy = frame.packBtns.normal
+  frame.buyAll = gbtn(frame, "All", 60, 28, function() frame.buyNow(true) end)
+  frame.buyAll:SetPoint("BOTTOM", 335, 22); frame.buyAll:Hide()
+  frame.duel = gbtn(frame, "Duel for coins", 104, 28, function()
     local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
     if win == nil then say(mine or "") return end
     say((win and ("Won! +" .. prize .. " coins.") or "Lost.") .. " " .. mine.name .. " (" .. FNAME[mf] .. ") vs " .. foe.name .. " (" .. FNAME[ff] .. ")" .. (goal and ("  ·  " .. goal) or ""))
     RG.ArcadeRefresh(true)
   end)
-  frame.duel:SetPoint("BOTTOM", -200, 23)
-  frame.sell = gbtn(frame, "Sell extras", 150, 28, function()
+  frame.duel:SetPoint("BOTTOM", -229, 22)
+  frame.sell = gbtn(frame, "Sell extras", 92, 28, function()
     local n, coins, g = RG.ArcadeSellExtras()
     say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
     RG.ArcadeRefresh(true)
   end)
-  frame.sell:SetPoint("BOTTOM", 200, 23)
-  frame.arena = gbtn(frame, "Arena", 96, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
-  frame.arena:SetPoint("BOTTOM", -340, 23)
+  frame.sell:SetPoint("BOTTOM", 251, 22)
+  frame.arena = gbtn(frame, "Arena", 76, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
+  frame.arena:SetPoint("BOTTOM", -327, 22)
   -- fit small screens
   local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
   if type(ph) == "number" and ph > 0 and ph < WINH + 30 then frame:SetScale(math.max(0.6, (ph - 30) / WINH)) end
@@ -2304,12 +2310,11 @@ function RG.ArcadeRefresh(keepMsg)
     local g = todaysGoals(a)
     local tw = (PGW - 2 * 16) / 3
     local streak = ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0)
-    local fset = featuredSet(a)
     pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", "one new every day, 3 saved at most", { 0.5, 0.88, 0.6 })
-    pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "a new top rank, or a 7th day running", { 0.85, 0.6, 1 })
-    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "next pack: " .. (fset and fset.name or "mixed"), GOLDC)
+    pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "a jumbo with two rares and a holo", { 0.85, 0.6, 1 })
+    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day gives a reward pack", GOLDC)
     pgHead(1, 298, "Limits and guarantees")
-    pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " packs without one", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
+    pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
     local dc = (a.day == today()) and (a.dayCoins or 0) or 0
     pgBar(2, 368, "Coins from quests, kills and skill-ups today", dc .. " / " .. DAY_CAP, dc / DAY_CAP, GOLDC)
     pgBar(3, 410, "Duel win streak   (each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
@@ -2381,9 +2386,15 @@ function RG.ArcadeRefresh(keepMsg)
   end
   local free = a.free or 0
   local bonus = a.bonus or 0
-  if bonus > 0 then frame.buy:SetText("Break a reward pack  (" .. bonus .. ")")
-  else frame.buy:SetText(free > 0 and ("Break a free pack  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free" or ("Break a pack  ·  " .. PACK_PRICE))) end
-  frame.buy:SetEnabled(afford() and true or false)
+  for _, kind in ipairs(PACK_ORDER) do
+    local d, b = PACKS[kind], frame.packBtns[kind]
+    local tag
+    if kind == "jumbo" and bonus > 0 then tag = "reward x" .. bonus
+    elseif kind == "normal" and free > 0 then tag = "free x" .. free
+    else tag = packPrice(kind) == 0 and "free" or (packPrice(kind) .. " coins") end
+    b:SetText((kind == "normal" and "Pack" or (kind == "jumbo" and "Jumbo" or "Super Jumbo")) .. "\n|cffa89bc9" .. d.size .. " cards  ·  " .. tag .. "|r")
+    b:SetEnabled(afford(kind) and true or false)
+  end
   local ready = RG.ArcadeSealsReady and RG.ArcadeSealsReady() or 0
   if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
 end
@@ -2393,6 +2404,7 @@ RG.ArcadeUI = { layoutText = layoutText, makeCard = makeCard, paint = paint, fs 
   owned = owned, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
 RG.ArcadePackPrice = PACK_PRICE
+RG.ArcadePacks = PACKS
 -- the Cards tab opens a pack straight away
 function RG.ArcadeBuyNow(many)
   RG.ShowArcade()
