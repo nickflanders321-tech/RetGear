@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Card art: places and NPCs get richer scenery (16 detailed landmarks instead of 8 plain shapes, stars in dark skies, haze between the ridges, lit ridge crests and a grassy foreground); item cards get a rarity-coloured spotlight behind a larger icon.
+- NPC cards now show a silhouette of their own creature type (beast, spider, dragon, wyrm, demon, flame, rock, giant, undead, humanoid, golem and more), bigger for bosses; item cards show an emblem of their gear slot (helm, shoulders, chest, gloves, boots, belt, legs, bracers, ring, amulet, cloak, weapons, shield, trinket) behind the icon.
 
 - Arena balance pass (about 400k self-play games with the built-in AI): the player who goes second starts with 5 Armor besides the Lucky Coin (first-player win rate 55% to 51%); hero powers retuned (Warrior 3 armor, Hunter 2 damage plus 1 armor, Paladin and Shaman cost 3, Priest heals 3 and gains 1 armor, Rogue dagger is 1/3, Warlock takes 1); vanilla minions and keyword prices lowered, shield and destroy spells costlier, buff, heal and armor spells cheaper; about 500 individual cards nudged by up to 2 mana or a stat point. Heroes now win 48-52%.
 - Arena: the opening-hand screen is tidied (cards sit on their own panel, the Keep button and message no longer overlap, the opponent's hand no longer touches their name).

@@ -514,6 +514,30 @@ local function hsv(h, s, v)
   if i == 0 then return v, t, p elseif i == 1 then return q, v, p elseif i == 2 then return p, v, t
   elseif i == 3 then return p, q, v elseif i == 4 then return t, p, v else return v, p, q end
 end
+-- the equipment slot of an item card picks its emblem on the 4x4 Slots sheet (0-based cell)
+local SLOT_CELL = { INVTYPE_HEAD = 0, INVTYPE_SHOULDER = 1, INVTYPE_CHEST = 2, INVTYPE_ROBE = 2, INVTYPE_HAND = 3, INVTYPE_FEET = 4, INVTYPE_WAIST = 5,
+  INVTYPE_LEGS = 6, INVTYPE_WRIST = 7, INVTYPE_FINGER = 8, INVTYPE_NECK = 9, INVTYPE_CLOAK = 10, INVTYPE_WEAPON = 11, INVTYPE_WEAPONMAINHAND = 11,
+  INVTYPE_WEAPONOFFHAND = 11, INVTYPE_2HWEAPON = 12, INVTYPE_RANGED = 13, INVTYPE_RANGEDRIGHT = 13, INVTYPE_THROWN = 13, INVTYPE_SHIELD = 14,
+  INVTYPE_HOLDABLE = 15, INVTYPE_TRINKET = 15 }
+local SLOT_WORDS = { { "helm", 0 }, { "crown", 0 }, { "circlet", 0 }, { "mask", 0 }, { "coif", 0 }, { "pauldron", 1 }, { "spaulder", 1 }, { "shoulder", 1 },
+  { "epaulet", 1 }, { "mantle", 1 }, { "breastplate", 2 }, { "chestguard", 2 }, { "robe", 2 }, { "hauberk", 2 }, { "tunic", 2 }, { "vest", 2 }, { "gauntlet", 3 },
+  { "glove", 3 }, { "handguard", 3 }, { "fists", 3 }, { "boot", 4 }, { "greave", 4 }, { "treads", 4 }, { "sabaton", 4 }, { "footwraps", 4 }, { "belt", 5 },
+  { "girdle", 5 }, { "waistband", 5 }, { "cord", 5 }, { "legguard", 6 }, { "leggings", 6 }, { "pants", 6 }, { "breeches", 6 }, { "legplates", 6 },
+  { "bracer", 7 }, { "wristguard", 7 }, { "wristwrap", 7 }, { "ring", 8 }, { "band", 8 }, { "signet", 8 }, { "seal", 8 }, { "choker", 9 }, { "amulet", 9 },
+  { "necklace", 9 }, { "pendant", 9 }, { "talisman", 9 }, { "cloak", 10 }, { "cape", 10 }, { "shroud", 10 }, { "staff", 12 }, { "greatstaff", 12 },
+  { "bow", 13 }, { "gun", 13 }, { "crossbow", 13 }, { "wand", 13 }, { "shield", 14 }, { "bulwark", 14 }, { "aegis", 14 }, { "orb", 15 }, { "idol", 15 },
+  { "trinket", 15 }, { "blade", 11 }, { "sword", 11 }, { "axe", 11 }, { "mace", 11 }, { "hammer", 11 }, { "dagger", 11 }, { "scythe", 12 } }
+local function slotOf(card)
+  local loc
+  if GetItemInfoInstant and card.ref then
+    local ok, _, _, _, el = pcall(GetItemInfoInstant, card.ref)
+    if ok and type(el) == "string" then loc = el end
+  end
+  if loc and SLOT_CELL[loc] then return SLOT_CELL[loc] end
+  local n = (card.name or ""):lower()
+  for _, w in ipairs(SLOT_WORDS) do if n:find(w[1], 1, true) then return w[2] end end
+  return 15
+end
 local function usesScene(card) return card and (card.kind == 2 or card.kind == 3) end
 
 -- builds the textures once on an art holder frame (frame) of size aw x ah; returns the scene object
@@ -521,15 +545,18 @@ local function newScene(frame, aw, ah, anchor)
   anchor = anchor or frame
   local sc = { aw = aw, ah = ah }
   local function tex(sub, file) local t = frame:CreateTexture(nil, "ARTWORK", nil, sub); t:SetTexture(MEDIA .. file); t:Hide(); return t end
-  sc.sky, sc.stars, sc.sun, sc.r1, sc.mist, sc.r2, sc.mo, sc.fore = tex(-6, "Sky"), tex(-5, "Stars"), tex(-4, "Glow"), tex(-3, "Ridge1"), tex(-2, "Mist"),
-    tex(-1, "Ridge1"), tex(0, "Motifs"), tex(1, "Fore")
+  sc.sky, sc.stars, sc.sun, sc.r1, sc.mist, sc.r2, sc.mo, sc.fore, sc.cr = tex(-6, "Sky"), tex(-5, "Stars"), tex(-4, "Glow"), tex(-3, "Ridge1"), tex(-2, "Mist"),
+    tex(-1, "Ridge1"), tex(0, "Motifs"), tex(1, "Fore"), tex(2, "Creatures")
   sc.sun:SetBlendMode("ADD"); sc.stars:SetBlendMode("ADD")
   sc.stars:SetAllPoints(anchor); sc.mist:SetAllPoints(anchor)
   sc.sky:SetAllPoints(anchor)
   sc.frame = anchor
   return sc
 end
-local function hideScene(sc) if sc then sc.sky:Hide(); sc.stars:Hide(); sc.sun:Hide(); sc.r1:Hide(); sc.mist:Hide(); sc.r2:Hide(); sc.mo:Hide(); sc.fore:Hide() end end
+local function hideScene(sc) if sc then sc.sky:Hide(); sc.stars:Hide(); sc.sun:Hide(); sc.r1:Hide(); sc.mist:Hide(); sc.r2:Hide(); sc.mo:Hide(); sc.fore:Hide(); sc.cr:Hide() end end
+-- NPC silhouettes: creature type (1 beast, 2 dragonkin, 3 demon, 4 elemental, 5 giant, 6 undead, 7 humanoid, 9 mechanical,
+-- 10 other) -> cells of the 4x4 Creatures sheet (0-based, row by row)
+local CREATURE_CELLS = { [1] = { 0, 1 }, [2] = { 2, 3 }, [3] = { 4, 5 }, [4] = { 6, 7 }, [5] = { 8, 9 }, [6] = { 10, 11 }, [7] = { 12, 13 }, [8] = { 0, 1 }, [9] = { 14 }, [10] = { 15, 3 } }
 local function setScene(sc, card, dim)
   local aw, ah = sc.aw, sc.ah
   local rnd = rngOf(seedOf((card.name or "?") .. "|" .. tostring(card.id or card.ref or 0)))
@@ -567,15 +594,26 @@ local function setScene(sc, card, dim)
   ridge(sc.r2, k2, 0.22 + rnd() * 0.12, 0.28, -0.03)
   -- a landmark standing on the near ridge
   local m = math.floor(rnd() * 16)
-  local col, row = m % 4, math.floor(m / 4)
   local mx = 0.18 + rnd() * 0.64
   local ms = (0.34 + rnd() * 0.16) * ah
   local flip = rnd() < 0.5
-  if flip then sc.mo:SetTexCoord((col + 1) * 0.25, col * 0.25, row * 0.25, row * 0.25 + 0.25)
-  else sc.mo:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.25, row * 0.25 + 0.25) end
-  sc.mo:ClearAllPoints(); sc.mo:SetPoint("BOTTOM", sc.frame, "BOTTOMLEFT", mx * aw, 0.07 * ah); sc.mo:SetSize(ms, ms)
+  local isNpc = card.kind == 2
+  if isNpc then
+    -- a creature of the NPC's own kind stands in front of the scenery, bigger for bosses
+    local cells = CREATURE_CELLS[card.ref] or CREATURE_CELLS[10]
+    m = cells[1 + math.floor(rnd() * #cells)]
+    mx = 0.34 + rnd() * 0.32
+    local txt = card.text or ""
+    ms = ((txt:find("Boss") and 0.92) or (txt:find("elite") and 0.82) or 0.72) * ah
+  end
+  local col, row = m % 4, math.floor(m / 4)
   local mr, mg, mb = hsv(hue - 0.02, 0.35, 0.12 + rnd() * 0.1)
-  sc.mo:SetVertexColor(mr * k, mg * k, mb * k, 1); sc.mo:Show()
+  local pic = isNpc and sc.cr or sc.mo
+  if isNpc then sc.mo:Hide() else sc.cr:Hide() end
+  if flip then pic:SetTexCoord((col + 1) * 0.25, col * 0.25, row * 0.25, row * 0.25 + 0.25)
+  else pic:SetTexCoord(col * 0.25, (col + 1) * 0.25, row * 0.25, row * 0.25 + 0.25) end
+  pic:ClearAllPoints(); pic:SetPoint("BOTTOM", sc.frame, "BOTTOMLEFT", mx * aw, (isNpc and 0.02 or 0.07) * ah); pic:SetSize(ms, ms)
+  pic:SetVertexColor(mr * k, mg * k, mb * k, 1); pic:Show()
   -- a dark grassy foreground
   local fr, fg, fb = hsv(hue, 0.3, 0.06)
   sc.fore:SetTexture(MEDIA .. "Fore"); sc.fore:ClearAllPoints(); sc.fore:SetPoint("BOTTOMLEFT", sc.frame, "BOTTOMLEFT", 0, 0); sc.fore:SetPoint("BOTTOMRIGHT", sc.frame, "BOTTOMRIGHT", 0, 0)
@@ -744,6 +782,7 @@ local function makeCard(parent, w)
   f.glow = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 1); f.glow:SetTexture(MEDIA .. "Glow"); f.glow:SetBlendMode("ADD"); f.glow:SetAllPoints(f.artClip)
   -- items: a spotlight in the rarity's colour behind the icon, so the picture is not a small icon on a dark window
   f.spot = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 2); f.spot:SetTexture(MEDIA .. "Glow"); f.spot:SetBlendMode("ADD"); f.spot:Hide()
+  f.emb = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 3); f.emb:SetTexture(MEDIA .. "Slots"); f.emb:SetBlendMode("ADD"); f.emb:Hide()
   f.rays = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 2); f.rays:SetTexture(MEDIA .. "Rays"); f.rays:SetBlendMode("ADD")
   f.rays:SetSize(aw * 1.5, aw * 1.5); f.rays:SetPoint("CENTER", f.artClip, "CENTER", 0, 0); f.rays:Hide()
   f.rune = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 3); f.rune:SetTexture(MEDIA .. "Rune"); f.rune:SetBlendMode("ADD")
@@ -845,7 +884,7 @@ local function paint(w, card, finish, copies)
   elseif rawget(w, "scn") then hideScene(w.scn) end
   if not finish then
     -- an empty slot in the binder: a silhouette and the collector number
-    w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide()
+    w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide(); w.emb:Hide()
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
     if scene then w.art:Hide() end
     w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
@@ -861,7 +900,11 @@ local function paint(w, card, finish, copies)
   if card.kind == 1 then
     w.spot:ClearAllPoints(); w.spot:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.spot:SetSize(w.ah * 1.7, w.ah * 1.7)
     w.spot:SetVertexColor(t[1], t[2], t[3], 0.55 + 0.08 * (card.tier or 1)); w.spot:Show()
-  else w.spot:Hide() end
+    local sl = slotOf(card); local c0, r0 = sl % 4, math.floor(sl / 4)
+    w.emb:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, r0 * 0.25 + 0.25)
+    w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.artClip, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
+    w.emb:SetVertexColor(t[1], t[2], t[3], 0.34); w.emb:Show()
+  else w.spot:Hide(); w.emb:Hide() end
   tintTex(w.frameTex, t, finish == 1 and 0.82 or 1)
   tintTex(w.gem, t, 1)
   tintTex(w.rune, t, fx.rune)
@@ -871,7 +914,7 @@ local function paint(w, card, finish, copies)
   if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
-    if card.kind == 3 then w.art:Hide() else placeIcon(full and 64 or 46); w.art:Show(); w.iconBack:Show(); w.iconEdge:Show() end
+    w.art:Hide()
   else placeIcon(full and 120 or 94) end
   if fx.rays then tintTex(w.rays, { 1, 0.86, 0.5 }, fx.rays); w.rays:Show() end
   if fx.foil > 0 then w.foil:Show() end
