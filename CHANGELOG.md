@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.5
+- Waypath+ now says everywhere that it is for every class and both factions (Horde and Alliance): the add-on description, the setup wizard welcome and the README.
+- The bank-alt walk-through (which goes to the Undercity Auction House) is now labelled as a Horde guide and no longer shows on Alliance characters. The fishing spots list says when its suggestions are written from the Horde side.
+
 ## v1.0.4
 - Smarter quest planner. A quest that is ready to hand in is now always counted, even when only the game knows where it goes (before, the plan could send you 968 yd away while a turn-in sat 141 yd from you).
 - The planner now weighs how much each task is worth: yellow and orange quests first, green next, grey last, and hand-ins ahead of pick-ups. It also adds worthwhile new quests within about 900 yd to the plan, so the next stop reflects what is actually around you.

@@ -53,6 +53,7 @@ function RG.AltGuideProgress()
 end
 -- The guide runs on an alt until every step is done (or you hide it).
 function RG.AltGuideActive()
+  if RG.PLAYER_FACTION == "Alliance" then return false end   -- the steps walk to the Undercity Auction House
   if not (RG.IsAlt and RG.IsAlt()) then return false end
   if prog().hidden then return false end
   local done, total = RG.AltGuideProgress()
