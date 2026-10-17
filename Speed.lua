@@ -629,6 +629,14 @@ local function fmtTime(sec)
   if not sec or sec <= 0 or sec > 5999 then return nil end
   return string.format("%d:%02d", math.floor(sec / 60), math.floor(sec % 60))
 end
+-- Arrow size: 50% to 300%. Mouse wheel over the arrow, /wp arrowsize 150, or the Settings tab.
+function RG.SetArrowScale(sc, quiet)
+  sc = math.max(0.5, math.min(3, tonumber(sc) or 1))
+  RG.db.arrowScale = sc
+  if arrow then arrow:SetScale(sc) end
+  if not quiet and RG.Notify then RG.Notify(string.format("Arrow size %d%%", math.floor(sc * 100 + 0.5))) end
+  return sc
+end
 local function buildArrow()
   if arrow then return end
   arrow = CreateFrame("Frame", "WaypathArrow", UIParent)
@@ -669,14 +677,13 @@ local function buildArrow()
   end)
   arrow:EnableMouseWheel(true)
   arrow:SetScript("OnMouseWheel", function(self, delta)
-    local sc = math.max(0.6, math.min(1.8, (RG.db.arrowScale or 1) + delta * 0.1))
-    RG.db.arrowScale = sc; self:SetScale(sc)
+    RG.SetArrowScale((RG.db.arrowScale or 1) + delta * 0.1, true)
   end)
   arrow:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:SetText("Waypoint arrow", GOLDC[1], GOLDC[2], GOLDC[3])
     GameTooltip:AddLine("Green: you're facing it. Red: it's behind you.", 1, 1, 1, true)
-    GameTooltip:AddLine("Drag: move  ·  Mouse wheel: resize", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine("Drag: move  ·  Mouse wheel: resize (or /wp arrowsize 150)", 0.7, 0.7, 0.7)
     GameTooltip:AddLine("Shift-click: on to the next stop", 0.7, 0.7, 0.7)
     GameTooltip:AddLine("Double-click or right-click: turn it off", 0.7, 0.7, 0.7)
     GameTooltip:Show()
@@ -1102,6 +1109,12 @@ SlashCmdList.WAYPATH = function(msg)
     local x, y = (rest or ""):match("([%d%.]+)[,%s]+([%d%.]+)")
     if x and y then RG.SetWaypoint(tonumber(x), tonumber(y)) else RG.Print("Usage: /wp way 45.2 60.8  (coordinates in your current zone)") end
     return
+  elseif cmd == "arrowsize" or cmd == "arrowscale" then
+    local v = tonumber((rest or ""):match("[%d%.]+"))
+    if not v then RG.Print("Arrow size is " .. math.floor((RG.db.arrowScale or 1) * 100 + 0.5) .. "%. Use " .. "/wp arrowsize 150 (50 to 300), or the mouse wheel over the arrow.") return end
+    if v > 3 then v = v / 100 end
+    RG.SetArrowScale(v)
+    if RG.RefreshArrow then RG.RefreshArrow() end
   elseif cmd == "unhide" then
     RG.db.ignoredQuests = {}; RG.MarkQuestsDirty(); RG.Print("Hidden quests are suggested again.")
   elseif cmd == "next" then

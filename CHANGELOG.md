@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.10
+- Arrow size: choose it from the Settings tab (click the Arrow size row to step bigger), with `/wp arrowsize 150` (50 to 300 percent), or the mouse wheel over the arrow, which now goes up to 300 percent.
+- A smoother arrow: the faceted lines are gone, so the 3D arrow is shaded smoothly and the glowing facet edges are removed. It reads cleaner at every size.
+
 ## v1.0.9
 - More clickable options. Shift + right-click a quest on the tracker for a small menu: arrow to it (or to its hand-in), open it in your quest log, or skip it for ten minutes so the plan moves on. The Now line has its own menu (arrow to it, skip this stop, open the quest plan), and a quest under "New quests nearby" can be sent to the arrow or hidden with "Don't suggest this quest" (`/wp unhide` brings them back). Shift-click the arrow itself to jump to the next stop. Plain right-click and double-click work as before.
 

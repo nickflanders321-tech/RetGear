@@ -96,7 +96,14 @@ def render(theta, size):
         a1 = ids[:s - dy, :s - dx]; b1 = ids[dy:, dx:]
         e = (a1 != b1) & (a1 >= 0) & (b1 >= 0)
         edge[:s - dy, :s - dx] = np.maximum(edge[:s - dy, :s - dx], e)
-    spec = np.clip(spec + edge * 0.55, 0, 1)
+    # smooth, not faceted: blend the shading across the facets (inside the silhouette only, so the rim stays crisp)
+    # and leave out the glowing facet lines
+    sm = max(2, int(s * 0.02))
+    cover = blur(alpha, sm)
+    inside = alpha > 0
+    body = np.where(inside, blur(body * alpha, sm) / np.maximum(cover, 1e-6), 0.0)
+    spec = np.where(inside, blur(spec * alpha, sm) / np.maximum(cover, 1e-6), 0.0)
+    spec = np.clip(spec, 0, 1)
     return body, spec, alpha
 
 def blur(a, r):

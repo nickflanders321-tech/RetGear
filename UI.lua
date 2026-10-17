@@ -2329,6 +2329,19 @@ local function renderSettings()
     setItem(getRow(n), nil, nil, "Accent colour", "Click to change: Mint, Gold, Sky, Rose, Violet or High contrast. Some text keeps its colour until /reload.", GOLD .. (RG.ACCENTS[cur] or RG.ACCENTS.mint)[1] .. "|r", "", "gold")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gem_Variety_01")
     rows[n].onClick = function() RG.SetAccent(nil) end
+    -- arrow size: click to step bigger (it wraps back to the smallest), or use the mouse wheel over the arrow
+    n = n + 1
+    local sizes = { 0.6, 0.8, 1, 1.25, 1.5, 2, 2.5, 3 }
+    local cs = RG.db.arrowScale or 1
+    setItem(getRow(n), nil, nil, "Arrow size", "Click to make the arrow bigger (it wraps round). Mouse wheel over the arrow, or /wp arrowsize 150, also work.", GOLD .. math.floor(cs * 100 + 0.5) .. "%|r", "")
+    rows[n].icon:SetTexture("Interface\\Icons\\Ability_Hunter_MarkedForDeath")
+    rows[n].onClick = function()
+      local nxt = sizes[1]
+      for _, v in ipairs(sizes) do if v > cs + 0.01 then nxt = v break end end
+      RG.SetArrowScale(nxt)
+      if RG.ArrowTo and RG.RefreshArrow then RG.RefreshArrow() end
+      RG.RefreshUI()
+    end
   end
   for _, grp in ipairs(ordered) do
    if #grp[2] > 0 then
