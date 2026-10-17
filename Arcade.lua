@@ -880,7 +880,11 @@ local function ensureModel(w)
   w.model = m
   m:SetScript("OnModelLoaded", function(self)
     pcall(function()
-      if self.creature then if self.SetFacing then self:SetFacing(0.5) end return end
+      if self.creature then
+        if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end
+        if self.SetFacing then self:SetFacing(0.5) end
+        return
+      end
       if self.Undress then self:Undress() end
       for _, id in ipairs((RG.ARCADE_GEAR or {})[self.cls or ""] or {}) do if self.TryOn then self:TryOn("item:" .. id) end end
       if self.SetFacing then self:SetFacing(0.4) end
@@ -1103,6 +1107,9 @@ local function hasArt(c)
   if c.kind == 3 then return RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name] and true or false end
   return false
 end
+-- how close the camera sits: upright creatures are framed head and chest, long low ones whole, so each is centred
+local ZOOM = { [7] = 0.6, [1] = 0.05, [2] = 0.1, [3] = 0.4, [4] = 0.3, [5] = 0.3, [6] = 0.5, [8] = 0.0, [9] = 0.25 }
+function RG.ArcadeModelZoom(c) return ZOOM[c and c.ref or 7] or 0.4 end
 local function dressCreature(w, c)
   local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
   if not id then return false end
@@ -1114,7 +1121,9 @@ local function dressCreature(w, c)
   if not m.SetDisplayInfo then m:Hide() return false end
   local ok = pcall(m.SetDisplayInfo, m, id)
   if not ok then m:Hide() return false end
-  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0.75) end
+  m.zoom = RG.ArcadeModelZoom(c)
+  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
+  if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
   if m.SetFacing then pcall(m.SetFacing, m, 0.5) end
   m:Show()
   return true
@@ -2507,7 +2516,7 @@ function RG.ArcadeRefresh(keepMsg)
   if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
 end
 
--- the picture a card shows, so the board can show the same one: "model", displayId | "tex", path, l, r, t, b | "icon", path
+-- the picture a card shows, so the board can show the same one: "model", displayId | "tex", path, l, r, t, b | "scene" | "icon", path
 function RG.ArcadePortrait(c)
   if c.kind == 2 and RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] then return "model", RG.ARCADE_NPC[c.name] end
   local e = c.kind == 3 and RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]
@@ -2515,10 +2524,11 @@ function RG.ArcadePortrait(c)
     local col, row = e[2] % 8, math.floor(e[2] / 8)
     return "tex", MEDIA .. "Places" .. e[1], (col * 120 + 18) / 1024, (col * 120 + 102) / 1024, row * 84 / 1024, (row + 1) * 84 / 1024
   end
+  if usesScene(c) then return "scene" end   -- the card paints its own little landscape
   return "icon", iconFor(c)
 end
 
-RG.ArcadeUI = { portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+RG.ArcadeUI = { modelZoom = RG.ArcadeModelZoom, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 

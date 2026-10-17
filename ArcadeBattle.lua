@@ -350,7 +350,7 @@ local function makeMinion(parent)
   local okm, mdl = pcall(CreateFrame, "DressUpModel", nil, m)
   if okm and mdl then
     mdl:SetSize(62, 62); mdl:SetPoint("CENTER", m, "TOP", 0, -44); mdl:SetFrameLevel(U.lv(m) + 2); mdl:Hide()
-    mdl:SetScript("OnModelLoaded", function(self) pcall(function() if self.SetFacing then self:SetFacing(0.5) end end) end)
+    mdl:SetScript("OnModelLoaded", function(self) pcall(function() if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end; if self.SetFacing then self:SetFacing(0.5) end end) end)
     m.mdl = mdl
   end
   local top = CreateFrame("Frame", nil, m); top:SetAllPoints(m); top:SetFrameLevel(U.lv(m) + 4)
@@ -383,7 +383,7 @@ end
 local function paintMinion(w, m, side)
   w.m, w.ref = m, m.uid
   w:Show()
-  local cc = m.key and not m.icon and cardObj(m.key)
+  local cc = m.key and not m.token and cardObj(m.key)
   -- the same picture the card shows: a creature's model, a place's painting, an item's icon
   local pk, p1, l, r, t, b = "icon", iconOf(m.key, m)
   if cc and U.portrait then pk, p1, l, r, t, b = U.portrait(cc) end
@@ -391,12 +391,17 @@ local function paintMinion(w, m, side)
   if pk == "model" and w.mdl and w.mdl.SetDisplayInfo then
     if w.mdlId ~= p1 then w.mdlOk = pcall(w.mdl.SetDisplayInfo, w.mdl, p1); w.mdlId = p1 end
     shownModel = w.mdlOk and true or false
-    if shownModel then if w.mdl.SetPortraitZoom then pcall(w.mdl.SetPortraitZoom, w.mdl, 0.75) end end
+    if shownModel then
+      w.mdl.zoom = cc and U.modelZoom and U.modelZoom(cc) or 0.4
+      if w.mdl.SetPortraitZoom then pcall(w.mdl.SetPortraitZoom, w.mdl, w.mdl.zoom) end
+      if w.mdl.SetPosition then pcall(w.mdl.SetPosition, w.mdl, 0, 0, 0) end
+    end
   end
   if w.mdl then w.mdl:SetShown(shownModel) end
   if pk == "tex" then w.icon:SetTexture(p1); w.icon:SetTexCoord(l, r, t, b)
-  else w.icon:SetTexture(pk == "icon" and p1 or iconOf(m.key, m)); w.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
-  U.hideScene(w.scn); w.icon:SetSize(66, 66); w.icon:SetShown(not shownModel)
+  else w.icon:SetTexture((pk == "icon" and p1) or iconOf(m.key, m)); w.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+  if pk == "scene" and cc then U.setScene(w.scn, cc, false) else U.hideScene(w.scn) end
+  w.icon:SetSize(66, 66); w.icon:SetShown(not shownModel and pk ~= "scene")
   local iron = m.kw.taunt
   w.tile:SetTexture(U.MEDIA .. (iron and "TileIron" or "Tile"))
   local c = side == 1 and TILE_ME or TILE_FOE
