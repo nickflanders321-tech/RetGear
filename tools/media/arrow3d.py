@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Render the 3D waypoint arrow as sprite sheets (Media/Arrow3D.tga, Media/Arrow3DSpec.tga).
 
-100 frames, 10 x 10 cells of 102 px on a 1024 px sheet; frame i shows the arrow turned
-i * 3.6 degrees counter-clockwise (0 = pointing straight up the screen). The body sheet is
+64 frames, 8 x 8 cells of 256 px on a 2048 px sheet (the highlight sheet is 1024 px); frame i shows the arrow turned
+i * 5.625 degrees; the game blends two neighbouring frames, so turning is continuous counter-clockwise (0 = pointing straight up the screen). The body sheet is
 grey shading with alpha, tinted in game with SetVertexColor; the spec sheet is the
 highlight, added on top. Everything is drawn here: no game art, no third-party files.
 Usage: python3 tools/media/arrow3d.py [out-dir]   (needs numpy)
@@ -10,7 +10,8 @@ Usage: python3 tools/media/arrow3d.py [out-dir]   (needs numpy)
 import sys, math, os
 import numpy as np
 
-FRAMES, COLS, CELL, SHEET, SS = 100, 10, 102, 1024, 4
+FRAMES, COLS, CELL, SHEET, SS = 64, 8, 256, 2048, 4
+SCELL, SSHEET = CELL // 2, SHEET // 2   # the highlight sheet is half size: it is soft
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'Media'
 EL = math.radians(58)          # camera elevation above the ground
 H = 0.30                       # arrow thickness
@@ -98,7 +99,7 @@ def render(theta, size):
         edge[:s - dy, :s - dx] = np.maximum(edge[:s - dy, :s - dx], e)
     # smooth, not faceted: blend the shading across the facets (inside the silhouette only, so the rim stays crisp)
     # and leave out the glowing facet lines
-    sm = max(2, int(s * 0.02))
+    sm = max(2, int(s * 0.011))
     cover = blur(alpha, sm)
     inside = alpha > 0
     body = np.where(inside, blur(body * alpha, sm) / np.maximum(cover, 1e-6), 0.0)
@@ -116,7 +117,7 @@ def down(a, k): return a.reshape(CELL, k, CELL, k).mean(axis=(1, 3))
 
 def main():
     big = CELL * SS
-    sheet_b = np.zeros((SHEET, SHEET, 4), np.uint8); sheet_s = np.zeros((SHEET, SHEET, 4), np.uint8)
+    sheet_b = np.zeros((SHEET, SHEET, 4), np.uint8); sheet_s = np.zeros((SSHEET, SSHEET, 4), np.uint8)
     for i in range(FRAMES):
         b, sp, a = render(math.radians(i * 360 / FRAMES), big)
         # soft ground shadow below the arrow, drawn dark into the body sheet
@@ -130,9 +131,11 @@ def main():
         g = np.clip(B * 255, 0, 255).astype(np.uint8)
         sheet_b[y0:y0 + CELL, x0:x0 + CELL, 0] = g; sheet_b[y0:y0 + CELL, x0:x0 + CELL, 1] = g; sheet_b[y0:y0 + CELL, x0:x0 + CELL, 2] = g
         sheet_b[y0:y0 + CELL, x0:x0 + CELL, 3] = np.clip(A * 255, 0, 255).astype(np.uint8)
-        s8 = np.clip(S * 255, 0, 255).astype(np.uint8)
-        for k in range(3): sheet_s[y0:y0 + CELL, x0:x0 + CELL, k] = s8
-        sheet_s[y0:y0 + CELL, x0:x0 + CELL, 3] = 255   # additive: the colour alone carries the light
+        S2 = S.reshape(SCELL, 2, SCELL, 2).mean(axis=(1, 3))
+        s8 = np.clip(S2 * 255, 0, 255).astype(np.uint8)
+        sy0, sx0 = r * SCELL, c * SCELL
+        for k in range(3): sheet_s[sy0:sy0 + SCELL, sx0:sx0 + SCELL, k] = s8
+        sheet_s[sy0:sy0 + SCELL, sx0:sx0 + SCELL, 3] = 255   # additive: the colour alone carries the light
     os.makedirs(OUT, exist_ok=True)
     for name, arr in (('Arrow3D.tga', sheet_b), ('Arrow3DSpec.tga', sheet_s)):
         write_tga(os.path.join(OUT, name), arr)

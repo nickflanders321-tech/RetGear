@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.11
+- A sharper arrow: the 3D arrow is drawn at four times the detail (256 px frames, 2048 px sheet) with much lighter smoothing, so it stays crisp even at 300 percent size.
+- A smoother arrow: it now turns every frame instead of about thirty times a second, easing towards its heading independent of frame rate, and blends between neighbouring frames so there are no visible steps. It keeps up with 144 Hz displays.
+
 ## v1.0.10
 - Arrow size: choose it from the Settings tab (click the Arrow size row to step bigger), with `/wp arrowsize 150` (50 to 300 percent), or the mouse wheel over the arrow, which now goes up to 300 percent.
 - A smoother arrow: the faceted lines are gone, so the 3D arrow is shaded smoothly and the glowing facet edges are removed. It reads cleaner at every size.

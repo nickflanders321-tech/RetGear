@@ -657,6 +657,11 @@ local function buildArrow()
   arrow.sheet:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3D")
   arrow.spec = arrow:CreateTexture(nil, "OVERLAY", nil, 2); arrow.spec:SetSize(100, 100); arrow.spec:SetPoint("CENTER", 0, 0)
   arrow.spec:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3DSpec"); arrow.spec:SetBlendMode("ADD")
+  -- the next frame, blended in by the fraction between two headings, so turning is continuous
+  arrow.sheet2 = arrow:CreateTexture(nil, "OVERLAY", nil, 1); arrow.sheet2:SetSize(100, 100); arrow.sheet2:SetPoint("CENTER", 0, 0)
+  arrow.sheet2:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3D")
+  arrow.spec2 = arrow:CreateTexture(nil, "OVERLAY", nil, 3); arrow.spec2:SetSize(100, 100); arrow.spec2:SetPoint("CENTER", 0, 0)
+  arrow.spec2:SetTexture("Interface\\AddOns\\Waypath\\Media\\Arrow3DSpec"); arrow.spec2:SetBlendMode("ADD")
   arrow.check = arrow:CreateTexture(nil, "OVERLAY"); arrow.check:SetSize(44, 44); arrow.check:SetPoint("CENTER")
   arrow.check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready"); arrow.check:Hide()
   -- text: destination above, distance and time below, travel hint under that
@@ -693,36 +698,57 @@ local function buildArrow()
   arrow.pulse = 0
   local shown, lastKey, arrivedAt = 0, nil, nil
   local acc = 0
-  local FR, COLS3, CELL3, SHEET3 = 100, 10, 102, 1024
+  local FR, COLS3, CELL3, SHEET3 = 64, 8, 256, 2048
   local function sync3d(self)
     local on = RG.db.arrow3d ~= false and self.tex:IsShown()
     self.tex:SetAlpha(on and 0 or 1)
-    self.sheet:SetShown(on); self.spec:SetShown(on)
+    self.sheet:SetShown(on); self.spec:SetShown(on); self.sheet2:SetShown(on); self.spec2:SetShown(on)
     if not on then return end
     local r, g, b = self.tex:GetVertexColor()
-    local idx = math.floor(((self.rot or 0) % (2 * math.pi)) / (2 * math.pi) * FR + 0.5) % FR
-    local col = idx % COLS3; local row = (idx - col) / COLS3
-    local l, rr, t, bt = col * CELL3 / SHEET3, (col + 1) * CELL3 / SHEET3, row * CELL3 / SHEET3, (row + 1) * CELL3 / SHEET3
+    -- two neighbouring frames, weighted by where the heading falls between them
+    local pos = ((self.rot or 0) % (2 * math.pi)) / (2 * math.pi) * FR
+    local i0 = math.floor(pos); local f = pos - i0
+    i0 = i0 % FR
+    local i1 = (i0 + 1) % FR
+    local function uv(idx)
+      local col = idx % COLS3; local row = (idx - col) / COLS3
+      return col * CELL3 / SHEET3, (col + 1) * CELL3 / SHEET3, row * CELL3 / SHEET3, (row + 1) * CELL3 / SHEET3
+    end
+    local l, rr, t, bt = uv(i0)
     self.sheet:SetTexCoord(l, rr, t, bt); self.spec:SetTexCoord(l, rr, t, bt)
-    self.sheet:SetVertexColor(r or 1, g or 1, b or 1)
+    l, rr, t, bt = uv(i1)
+    self.sheet2:SetTexCoord(l, rr, t, bt); self.spec2:SetTexCoord(l, rr, t, bt)
+    self.sheet:SetVertexColor(r or 1, g or 1, b or 1); self.sheet2:SetVertexColor(r or 1, g or 1, b or 1)
+    self.sheet:SetAlpha(1); self.sheet2:SetAlpha(f)
+    self.spec:SetAlpha(1 - f); self.spec2:SetAlpha(f)
   end
   arrow:SetScript("OnUpdate", function(self, dt)
     sync3d(self)
-    if self.pulse > 0 then self.pulse = math.max(0, self.pulse - dt * 2.5); local k = 1 + 0.18 * self.pulse; self.sheet:SetSize(100 * k, 100 * k); self.spec:SetSize(100 * k, 100 * k) end
+    if self.pulse > 0 then self.pulse = math.max(0, self.pulse - dt * 2.5); local k = 1 + 0.18 * self.pulse; local z = 100 * k; self.sheet:SetSize(z, z); self.spec:SetSize(z, z); self.sheet2:SetSize(z, z); self.spec2:SetSize(z, z) end
     if arrivedAt then
       local t = GetTime() - arrivedAt
       self:SetAlpha(math.max(0, 1 - math.max(0, t - 1.2) * 2))
       if t > 1.7 then arrivedAt = nil; self.check:Hide(); self.tex:Show(); self:SetAlpha(1); if not (InCombatLockdown and InCombatLockdown()) and C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide() end
       return
     end
-    acc = acc + dt; if acc < 0.03 then return end
+    -- every frame: ease towards the heading found by the slower pass below, so turning follows the display's frame rate
+    if rawget(self, "wang") then
+      local f = GetPlayerFacing and GetPlayerFacing()
+      if f and not (RG.IsSecret and RG.IsSecret(f)) then
+        local tg = self.wang - f
+        local df = (tg - shown + math.pi) % (2 * math.pi) - math.pi
+        shown = shown + df * (1 - math.exp(-dt * 20))
+        self.tex:SetRotation(shown); self.rot = shown
+      end
+    end
+    acc = acc + dt; if acc < 0.05 then return end
     local step = acc; acc = 0
     local wp = C_Map.GetUserWaypoint and C_Map.GetUserWaypoint()
     local mapID = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     local ppos = mapID and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
     local facing = GetPlayerFacing and GetPlayerFacing()
     if RG.IsSecret and RG.IsSecret(facing) then facing = nil end
-    if not (wp and ppos and facing) then self:Hide(); return end
+    if not (wp and ppos and facing) then self.wang = nil; self:Hide(); return end
     local key = wp.uiMapID .. ":" .. math.floor(wp.position.x * 1000) .. ":" .. math.floor(wp.position.y * 1000)
     if key ~= lastKey then lastKey = key; self.pulse = 1 end
     local label = lastPlaced and samePin({ map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }, lastPlaced) and lastLabel or nil
@@ -731,6 +757,7 @@ local function buildArrow()
     local c1, px, py = worldPos(mapID, ppos)
     local c2, tx, ty = worldPos(wp.uiMapID, wp.position)
     if not (c1 and c2 and c1 == c2) then
+      self.wang = nil
       -- another continent: point the way with travel steps instead
       self.tex:SetVertexColor(0.6, 0.6, 0.6); self.dist:SetText(GREY .. "another continent|r")
       local info = C_Map.GetMapInfo and C_Map.GetMapInfo(wp.uiMapID)
@@ -758,10 +785,8 @@ local function buildArrow()
       end
     end
     -- smooth turning
-    local target = math.atan2(dy, dx) - facing
-    local diff = (target - shown + math.pi) % (2 * math.pi) - math.pi
-    shown = shown + diff * math.min(1, step * 12)
-    self.tex:SetRotation(shown); self.rot = shown
+    self.wang = math.atan2(dy, dx)
+    local target = self.wang - facing
     local rel = (target + math.pi) % (2 * math.pi) - math.pi
     self.tex:SetVertexColor(angleColor(rel))
     -- distance and time to arrive at your current speed
