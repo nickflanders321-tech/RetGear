@@ -1023,7 +1023,7 @@ end
 -- an NPC card shows that creature's own model; a place card a piece of its zone's own world map
 local function hasArt(c)
   if c.kind == 2 then return RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] and true or false end
-  if c.kind == 3 then return RG.ARCADE_ZONE and RG.ARCADE_ZONE[c.name] and true or false end
+  if c.kind == 3 then return RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name] and true or false end
   return false
 end
 local function dressCreature(w, c)
@@ -1042,22 +1042,18 @@ local function dressCreature(w, c)
   m:Show()
   return true
 end
-local function zoneArt(w, c)
-  local folder = RG.ARCADE_ZONE and RG.ARCADE_ZONE[c.name]
-  if not folder then return false end
-  if not rawget(w, "zoneTex") then
-    w.zoneTex = w.artClip:CreateTexture(nil, "ARTWORK", nil, 1)
-    w.zoneTex:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); w.zoneTex:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
-  end
-  local rnd = rngOf(seedOf(c.name))
-  local tile = 1 + math.floor(rnd() * 12)
-  local fw = 0.62 + rnd() * 0.14
-  local fh = fw * w.ah / w.aw
-  local x0, y0 = rnd() * (1 - fw), rnd() * (1 - fh)
-  w.zoneTex:SetTexture("Interface\\WorldMap\\" .. folder .. "\\" .. folder .. tile)
-  w.zoneTex:SetTexCoord(x0, x0 + fw, y0, y0 + fh)
-  w.zoneTex:SetDesaturated(false); w.zoneTex:SetVertexColor(1, 1, 1, 1)
-  w.zoneTex:Show()
+-- a place card shows its own painting (Media/Arcade/PlacesN.tga, drawn by tools/arcade/art_places.py) in a gold frame
+local function placeArt(w, c, full)
+  local e = RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]
+  if not e then return false end
+  local u = w.u
+  local col, row = e[2] % 8, math.floor(e[2] / 8)
+  w.art:SetTexture(MEDIA .. "Places" .. e[1])
+  w.art:SetTexCoord(col * 120 / 1024, (col + 1) * 120 / 1024, row * 84 / 1024, (row + 1) * 84 / 1024)
+  local pw = (full and 200 or 186) * u; local ph = pw * 84 / 120
+  w.art:ClearAllPoints(); w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(pw, ph)
+  w.iconBack:ClearAllPoints(); w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize(pw + 7 * u, ph + 7 * u)
+  w.iconEdge:ClearAllPoints(); w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize(pw + 3 * u, ph + 3 * u)
   return true
 end
 
@@ -1118,7 +1114,6 @@ local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
   anim[w] = nil
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
-  local zt = rawget(w, "zoneTex"); if zt then zt:Hide() end
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
   if not card then w:Hide() return end
@@ -1133,7 +1128,7 @@ local function paint(w, card, finish, copies)
     w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize((sz + 7) * u, (sz + 7) * u)
     w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
   end
-  w.art:SetTexture(iconFor(card))
+  w.art:SetTexture(iconFor(card)); w.art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   local scene = usesScene(card) and not hasArt(card)   -- drawn scenery only where the game has no art for the card
   if scene then
     if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
@@ -1172,7 +1167,7 @@ local function paint(w, card, finish, copies)
   local full = finish == 4
   if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
   elseif card.kind == 2 and dressCreature(w, card) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
-  elseif card.kind == 3 and zoneArt(w, card) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide()
+  elseif card.kind == 3 and placeArt(w, card, full) then -- painting in its gold frame
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
     w.art:Hide()

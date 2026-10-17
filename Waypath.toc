@@ -84,6 +84,7 @@ FlightPaths.lua
 Flights.lua
 ArcadeCards.lua
 ArcadeArt.lua
+ArcadePlaces.lua
 ArcadeGear.lua
 ArcadeBalance.lua
 Battle.lua
