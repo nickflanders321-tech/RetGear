@@ -302,38 +302,181 @@ RG.ArcadeDaily = dailyCheck
 -- Packs, selling, duels
 -- ---------------------------------------------------------------------------
 local PITY = 7   -- a pack after this many without a holo or full art always has one
-function RG.ArcadeOpenPack()
-  local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
-  dailyCheck()
-  local free = (a.free or 0) > 0
-  if free then a.free = a.free - 1
-  elseif (a.coins or 0) < PACK_PRICE then return nil, "A pack costs " .. PACK_PRICE .. " coins."
-  else a.coins = a.coins - PACK_PRICE end
+local FEATURED_CHANCE = 0.35   -- each of the first four cards: chance it comes from the pack's featured set
+local STREAK_BONUS = 7         -- a reward seal for every 7th day in a row you break a seal
+local MANY_MAX = 10            -- most seals "Break all" opens at once
+
+-- about how many cards you open for one specific card at one print (for the "1 in N" line)
+local function cardOdds(c, f)
+  if not byTier then buildPools(); RG.ArcadePoolsDirty = nil end
+  local pool = byTier[c.tier]; if not pool or #pool == 0 or tierWeight <= 0 then return nil end
+  local least = c.tier == 6 and 3 or 1
+  local total = 0
+  for k = least, #FINISH do total = total + FINISH[k][2] end
+  local p = (TIER[c.tier][2] / tierWeight) / #pool * (FINISH[f][2] / total)
+  if p <= 0 then return nil end
+  return math.max(1, math.floor(1 / p + 0.5))
+end
+RG.ArcadeCardOdds = cardOdds
+local function groupDigits(n)
+  local t = tostring(n)
+  while true do
+    local r, k = t:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+    t = r; if k == 0 then break end
+  end
+  return t
+end
+
+-- the set a seal is themed on: picked when the last seal is opened, so the seal you see is the one you get
+local function featuredSet(a)
+  local pool = {}
+  for _, s in ipairs(getSets()) do if s.cards[1] and s.cards[1].tier ~= 6 then pool[#pool + 1] = s end end   -- (the Raiders are rare enough already)
+  if #pool == 0 then return nil end
+  if a.featured then for _, s in ipairs(pool) do if s.name == a.featured then return s end end end
+  local s = pool[math.random(#pool)]
+  a.featured = s.name
+  return s
+end
+RG.ArcadeFeatured = function() local a = store(); local s = a and featuredSet(a); return s and s.name end
+local function yesterdayStr() return date and time and date("%Y-%m-%d", time() - 86400) or "yesterday" end
+
+-- one seal: pays for it, rolls the five cards, returns got, notes, meta
+local function openOne(a)
+  local bonus = (a.bonus or 0) > 0
+  local free = false
+  if bonus then a.bonus = a.bonus - 1
+  else
+    free = (a.free or 0) > 0
+    if free then a.free = a.free - 1
+    elseif (a.coins or 0) < PACK_PRICE then return nil, "A pack costs " .. PACK_PRICE .. " coins."
+    else a.coins = a.coins - PACK_PRICE end
+  end
+  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0 }
+  -- first seal of the day: the day's streak
+  if a.packDay ~= today() then
+    local n = (a.packDay == yesterdayStr()) and ((a.packStreak or 0) + 1) or 1
+    a.packStreak, a.packDay = n, today()
+    meta.daily, meta.streak = true, n
+    if n % STREAK_BONUS == 0 then a.bonus = (a.bonus or 0) + 1; meta.streakReward = true end
+  end
+  meta.streak = meta.streak or a.packStreak or 1
+  local feat = (not bonus) and featuredSet(a) or nil
+  meta.featured = feat and feat.name
   a.packs = (a.packs or 0) + 1
   local got, shiny, newCount = {}, false, 0
   for i = 1, PACK_SIZE do
-    local c = rollCard()
+    local c
+    if feat and i < PACK_SIZE and math.random() < FEATURED_CHANCE then c = feat.cards[math.random(#feat.cards)] else c = rollCard() end
     local least = c.tier == 6 and 3 or 1
-    if i == PACK_SIZE then least = math.max(least, (a.pity or 0) >= PITY and 3 or 2) end   -- last card: rare or better (holo after a long dry spell)
+    if i == PACK_SIZE then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- last card: rare or better (holo after a long dry spell or from a reward seal)
+    if bonus and i == PACK_SIZE - 1 then least = math.max(least, 2) end
     local f = rollFinish(least)
     local isNew = owned(a, c.id) == 0
     local slot = a.cards[c.key or c.name] or {}
+    local newPrint = (not isNew) and (slot[f] or 0) == 0
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
-    got[#got + 1] = { card = c, finish = f, new = isNew }
+    got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
     local r = a.rarest
-    if not r or (f * 10 + c.tier) > (r.finish * 10 + r.tier) then a.rarest = { name = c.name, finish = f, tier = c.tier } end
+    if not r or (f * 10 + c.tier) > (r.finish * 10 + r.tier) then
+      if r then got[#got].record = true end
+      a.rarest = { name = c.name, finish = f, tier = c.tier }
+    end
   end
   a.pity = shiny and 0 or ((a.pity or 0) + 1)
+  if feat or bonus then a.featured = nil; featuredSet(a) end   -- the next seal's theme
   local notes = {}
   local function note(x) if x then notes[#notes + 1] = x end end
   note(goalProgress(a, "packs2", 1)); note(goalProgress(a, "packs3", 1))
   if shiny then note(goalProgress(a, "shiny", 1)) end
   if newCount > 0 then note(goalProgress(a, "new5", newCount)) end
   for _, s in ipairs(claimSets(a)) do notes[#notes + 1] = "Set complete: " .. s end
-  return got, free, notes
+  if meta.streakReward then notes[#notes + 1] = STREAK_BONUS .. " days in a row: a reward seal is waiting" end
+  -- set progress for the sets these cards belong to
+  local touched, order = {}, {}
+  for _, g in ipairs(got) do
+    local sn = setOf(g.card)
+    if not touched[sn] then touched[sn] = { gained = 0 }; order[#order + 1] = sn end
+    if g.new then touched[sn].gained = touched[sn].gained + 1 end
+  end
+  meta.sets = {}
+  for _, sn in ipairs(order) do
+    for _, s in ipairs(getSets()) do
+      if s.name == sn then meta.sets[#meta.sets + 1] = { name = sn, have = setProgress(a, s), total = #s.cards, gained = touched[sn].gained } end
+    end
+  end
+  table.sort(meta.sets, function(x, y) if x.gained ~= y.gained then return x.gained > y.gained end return x.name < y.name end)
+  return got, notes, meta
+end
+
+local function pullScore(g) return g.finish * 10 + g.card.tier + (g.new and 0.5 or 0) end
+
+function RG.ArcadeOpenPack()
+  local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
+  dailyCheck()
+  local got, notes, meta = openOne(a)
+  if not got then return nil, notes end
+  -- the best card comes last, as it does when you turn them one by one
+  table.sort(got, function(x, y) return pullScore(x) < pullScore(y) end)
+  return got, meta.free, notes, meta
+end
+
+-- how many seals could "Break all" open right now
+function RG.ArcadeSealsReady()
+  local a = store(); if not a then return 0 end
+  dailyCheck()
+  local n = (a.bonus or 0) + (a.free or 0)
+  if PACK_PRICE == 0 then n = math.max(n, 1) end
+  return math.min(MANY_MAX, n)
+end
+
+-- open several seals in one go; the five best cards are shown, the rest are counted
+function RG.ArcadeOpenMany()
+  local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
+  dailyCheck()
+  local n = RG.ArcadeSealsReady()
+  if n < 2 then return RG.ArcadeOpenPack() end
+  local all, notes, many = {}, {}, { count = 0, new = 0, newPrint = 0, value = 0, bonus = 0 }
+  local last
+  for _ = 1, n do
+    local got, nt, meta = openOne(a)
+    if not got then break end
+    last = meta
+    many.count = many.count + 1
+    if meta.bonus then many.bonus = many.bonus + 1 end
+    for _, g in ipairs(got) do
+      all[#all + 1] = g
+      if g.new then many.new = many.new + 1 elseif g.newPrint then many.newPrint = many.newPrint + 1 else many.value = many.value + g.value end
+    end
+    for _, x in ipairs(nt) do notes[#notes + 1] = x end
+  end
+  if many.count == 0 then return nil, "No seals to break." end
+  many.total = #all
+  table.sort(all, function(x, y) return pullScore(x) > pullScore(y) end)
+  local show = {}
+  for i = 1, math.min(PACK_SIZE, #all) do show[i] = all[i] end
+  table.sort(show, function(x, y) return pullScore(x) < pullScore(y) end)
+  local meta = { many = many, streak = last and last.streak, daily = last and last.daily, sets = {}, free = true }
+  local seen = {}
+  for _, g in ipairs(all) do
+    local sn = setOf(g.card)
+    if not seen[sn] then
+      seen[sn] = true
+      for _, s in ipairs(getSets()) do if s.name == sn then meta.sets[#meta.sets + 1] = { name = sn, have = setProgress(a, s), total = #s.cards, gained = 0 } end end
+    end
+  end
+  for _, g in ipairs(all) do if g.new then for _, m in ipairs(meta.sets) do if m.name == setOf(g.card) then m.gained = m.gained + 1 end end end end
+  table.sort(meta.sets, function(x, y) if x.gained ~= y.gained then return x.gained > y.gained end return x.name < y.name end)
+  return show, true, notes, meta
+end
+
+-- reward seals: a guaranteed rare, and a holo or better to finish
+function RG.ArcadeGrantBonus(n)
+  local a = store(); if not a then return end
+  a.bonus = (a.bonus or 0) + (n or 1)
+  return a.bonus
 end
 
 -- keep one of each print, sell the rest
@@ -989,13 +1132,23 @@ local function collectionList(a)
   return list
 end
 
-local function playSound(finish, tier)
-  if not (PlaySound and SOUNDKIT) then return end
+local function kit(...)   -- the first SOUNDKIT id this client has
+  if not SOUNDKIT then return nil end
+  for i = 1, select("#", ...) do local k = select(i, ...); if SOUNDKIT[k] then return SOUNDKIT[k] end end
+end
+-- role: "flip" (a card turns), "hover" (a rare card is nearby), "crack" (the seal tears), "pick" (a chip of the seal), "best" (personal best)
+local function playSound(finish, tier, role)
+  if not PlaySound then return end
   local id
-  if tier == 6 then id = SOUNDKIT.UI_LEGENDARY_LOOT_TOAST or SOUNDKIT.LEVEL_UP
-  elseif finish and finish >= 3 then id = SOUNDKIT.UI_EPICLOOT_TOAST or SOUNDKIT.IG_QUEST_LIST_COMPLETE
-  elseif finish == 2 then id = SOUNDKIT.IG_QUEST_LIST_OPEN
-  else id = SOUNDKIT.IG_BACKPACK_OPEN end
+  if role == "hover" then id = kit("IG_MAINMENU_OPTION_CHECKBOX_ON", "IG_CHARACTER_INFO_TAB")
+  elseif role == "pick" then id = kit("IG_CHARACTER_INFO_TAB", "IG_MAINMENU_OPTION_CHECKBOX_ON")
+  elseif role == "crack" then id = kit("IG_MAINMENU_OPEN", "IG_BACKPACK_OPEN", "IG_QUEST_LIST_OPEN")
+  elseif role == "best" then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP", "UI_EPICLOOT_TOAST")
+  elseif tier == 6 then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP")
+  elseif finish and finish >= 4 then id = kit("UI_EPICLOOT_TOAST", "UI_LEGENDARY_LOOT_TOAST", "IG_QUEST_LIST_COMPLETE")
+  elseif finish == 3 then id = kit("UI_EPICLOOT_TOAST", "IG_QUEST_LIST_COMPLETE")
+  elseif finish == 2 then id = kit("IG_QUEST_LIST_OPEN", "IG_ABILITY_PAGE_TURN")
+  else id = kit("IG_ABILITY_PAGE_TURN", "IG_BACKPACK_OPEN") end
   if id then pcall(PlaySound, id) end
 end
 
@@ -1025,8 +1178,26 @@ local function makeCover(card)
   c.glow:SetPoint("TOPLEFT", c, "TOPLEFT", -0.3 * card.cw, 0.22 * card.ch); c.glow:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0.3 * card.cw, -0.22 * card.ch); c.glow:Hide()
   c.tex = c:CreateTexture(nil, "ARTWORK"); c.tex:SetTexture(MEDIA .. "Back"); c.tex:SetTexCoord(0, 1, 0, CARD_V); c.tex:SetAllPoints(c)
   c.shine = c:CreateTexture(nil, "OVERLAY"); c.shine:SetColorTexture(1, 1, 1, 1); c.shine:SetBlendMode("ADD"); c.shine:SetAlpha(0); c.shine:SetPoint("TOPLEFT", 3, -3); c.shine:SetPoint("BOTTOMRIGHT", -3, 3)
-  c:SetScript("OnEnter", function(self) self.shine:SetAlpha(0.1) end)
-  c:SetScript("OnLeave", function(self) self.shine:SetAlpha(0) end)
+  c.peek = c:CreateTexture(nil, "OVERLAY"); c.peek:SetColorTexture(1, 1, 1, 1); c.peek:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 3, 3); c.peek:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -3, 3); c.peek:SetHeight(9); c.peek:Hide()
+  c.rare, c.cued, c.lift = false, false, 0
+  c:SetScript("OnEnter", function(self)
+    self.shine:SetAlpha(self.rare and 0.18 or 0.1)
+    if self.flipping == true then return end
+    self:ClearAllPoints(); self:SetPoint("CENTER", 0, 5)
+    if self.rare and not self.cued then self.cued = true; playSound(nil, nil, "hover") end   -- a card worth the wait is under your mouse
+  end)
+  c:SetScript("OnLeave", function(self)
+    self.shine:SetAlpha(0); self.peek:Hide()
+    if self.flipping == true then return end
+    self:ClearAllPoints(); self:SetPoint("CENTER", 0, 0)
+  end)
+  -- hold the mouse on a card to peek at how rare its print is, then let go to turn it
+  c:SetScript("OnMouseDown", function(self)
+    if self.flipping == true then return end
+    local col = self.peekCol or { 0.6, 0.6, 0.65 }
+    self.peek:SetColorTexture(col[1], col[2], col[3], 0.95); self.peek:Show()
+  end)
+  c:SetScript("OnMouseUp", function(self) self.peek:Hide() end)
   card.cover = c
   return c
 end
@@ -1036,6 +1207,10 @@ local function coverAnim(c, t)
   c.glow:SetVertexColor(r, g, b, 0.55 + 0.25 * math.sin(t * 3 + c.phase * 5))
 end
 
+local function oddsText(g)
+  if not g.odds then return "" end
+  return "   ·   about 1 in " .. groupDigits(g.odds) .. " cards"
+end
 local function summarize()
   local best, bi
   for i, g in ipairs(reveal.got) do
@@ -1043,11 +1218,30 @@ local function summarize()
     if not best or sc > best then best, bi = sc, i end
   end
   local g = reveal.got[bi]
-  local new = 0
-  for _, x in ipairs(reveal.got) do if x.new then new = new + 1 end end
-  local line = "Best pull: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")   ·   " .. new .. " new"
-  if reveal.notes and #reveal.notes > 0 then line = line .. "\n|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
-  reveal.sum:SetText(line)
+  local meta = reveal.meta or {}
+  local lines = {}
+  if meta.many then
+    local m = meta.many
+    lines[#lines + 1] = m.count .. " seals broken   ·   " .. m.total .. " cards   ·   " .. m.new .. " new" .. (m.newPrint > 0 and (", " .. m.newPrint .. " new prints") or "") ..
+      "   ·   duplicates worth " .. m.value .. " coins"
+    lines[#lines + 1] = "Best of the haul: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g)
+  else
+    local new = 0
+    for _, x in ipairs(reveal.got) do if x.new then new = new + 1 end end
+    lines[#lines + 1] = "Best pull: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g) .. "   ·   " .. new .. " new"
+  end
+  if reveal.record then lines[#lines + 1] = "|cffffd36bYour rarest pull yet!|r" end
+  if meta.sets then
+    local bits = {}
+    for i = 1, math.min(2, #meta.sets) do
+      local x = meta.sets[i]
+      if x.gained > 0 or i == 1 then bits[#bits + 1] = x.name .. " " .. x.have .. "/" .. x.total .. (x.gained > 0 and (" |cff7be08a(+" .. x.gained .. ")|r") or "") end
+    end
+    if #bits > 0 then lines[#lines + 1] = "|cffa89bc9Sets:|r " .. table.concat(bits, "   ·   ") end
+  end
+  if meta.daily and meta.streak then lines[#lines + 1] = "|cffa89bc9Seal streak:|r day " .. meta.streak .. (meta.streak % 7 == 0 and "  (reward seal earned)" or "") end
+  if reveal.notes and #reveal.notes > 0 then lines[#lines + 1] = "|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
+  reveal.sum:SetText(table.concat(lines, "\n"))
 end
 
 local function burstAt(card, strength)
@@ -1061,33 +1255,49 @@ local function burstAt(card, strength)
   reveal.burst:Show()
 end
 
+local function badgeFor(g)
+  if g.new then return GOLDHEX .. "NEW|r" end
+  if g.newPrint then local t = TIER[g.card.tier][3]; return string.format("|cff%02x%02x%02x", t[1] * 255, t[2] * 255, t[3] * 255) .. "NEW PRINT|r" end
+  return "|cff9a96b0Extra · " .. (g.value or 0) .. "c|r"
+end
 local function flip(i)
   local card = reveal.cards[i]
   local c = card.cover
   if not c or c.flipping == true or not c:IsShown() or reveal.phase then return end
-  c.flipping = true; anim[c] = nil
+  c.flipping = true; anim[c] = nil; c.peek:Hide()
+  c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0)
+  local g0 = reveal.got[i]
+  local weight = g0.card.tier == 6 and 3 or (g0.finish >= 3 and 2 or (g0.finish == 2 and 1 or 0))
+  local span = weight >= 2 and 0.6 or (weight == 1 and 0.34 or 0.22)   -- the better the card, the longer the wait
   local t = 0
   c:SetScript("OnUpdate", function(self, dt)
     t = t + dt
-    local k = 1 - t / 0.25
+    local k = 1 - t / span
     if k > 0.02 then
       self:SetWidth(math.max(1, card.cw * k))
+      if weight >= 2 then self:ClearAllPoints(); self:SetPoint("CENTER", math.sin(t * 60) * 2.5 * (1 - k), 0) end   -- it trembles
     else
       self:SetScript("OnUpdate", nil); self:Hide(); self.flipping = false
       local g = reveal.got[i]
       reveal.flipped = reveal.flipped + 1
-      card.new:SetText(g.new and (GOLDHEX .. "NEW|r") or "")
-      local big = g.card.tier == 6 and 3 or (g.finish >= 3 and 2 or (g.finish == 2 and 1 or 0))
+      card.new:SetText(badgeFor(g))
+      local big = weight
       playSound(g.finish, g.card.tier)
       if big > 0 then burstAt(card, big) end
-      if reveal.flipped >= #reveal.got then reveal.all:Hide(); reveal.ok:SetText("Done"); reveal.title:SetText("The seal is spent"); summarize() end
+      if big >= 2 then reveal.shakeT, reveal.shakeK = 0.35, big end
+      if g.record then reveal.record = true; reveal.title:SetText("Your rarest pull yet!"); playSound(nil, nil, "best") end
+      if reveal.flipped >= #reveal.got then
+        reveal.all:Hide(); reveal.ok:SetText("Done")
+        if not reveal.record then reveal.title:SetText("The seal is spent") end
+        reveal.share:Show(); summarize()
+      end
     end
   end)
 end
 
 local function afford()
   local a = store()
-  return a and (((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
+  return a and (((a.bonus or 0) > 0) or ((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
 end
 
 local RW, RCARD, RGAP = 790, 132, 14
@@ -1101,9 +1311,35 @@ local function startDeal()
   reveal.seal:Hide(); reveal.sealGlow:Hide()
   reveal.title:SetText("Turn each card")
   for i = 1, PACK_SIZE do reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
+  reveal.sum:SetText("|cff9a96b0Hold a card to peek at how rare it is, let go to turn it|r")
 end
 
-local function showReveal(got, notes)
+local function cursorXY()
+  if not GetCursorPosition then return 0, 0 end
+  local x, y = GetCursorPosition()
+  local sc = UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or 1
+  if type(x) ~= "number" or type(y) ~= "number" or type(sc) ~= "number" or sc == 0 then return 0, 0 end
+  return x / sc, y / sc
+end
+-- the seal gives way: shards fly, the table jolts, the cards are dealt
+local function tearOpen()
+  if reveal.phase ~= "seal" then return end
+  playSound(nil, nil, "crack")
+  local c = reveal.sealCol or { 1, 0.8, 0.5 }
+  for _, sh in ipairs(reveal.shards) do
+    local ang = math.random() * 6.283
+    local sp = 140 + math.random() * 260
+    sh.x, sh.y, sh.vx, sh.vy = (math.random() - 0.5) * 50, -10 + (math.random() - 0.5) * 50, math.cos(ang) * sp, math.sin(ang) * sp + 120
+    sh.tex:SetColorTexture(math.min(1, c[1] + math.random() * 0.3), math.min(1, c[2] + math.random() * 0.3), math.min(1, c[3] + math.random() * 0.3), 1)
+    sh.tex:SetSize(5 + math.random() * 8, 5 + math.random() * 8); sh.tex:SetAlpha(1); sh.tex:Show()
+  end
+  reveal.shardT = 0.8
+  reveal.shakeT, reveal.shakeK = 0.3, 1.5
+  reveal.holding, reveal.tear, reveal.picks = false, 0, 0
+  startDeal()
+end
+
+local function showReveal(got, notes, meta)
   if detail then detail:Hide() end   -- a card window left open would sit on top of the pack
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
@@ -1128,13 +1364,52 @@ local function showReveal(got, notes)
     reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0.7)
     local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seal"); sealTex:SetAllPoints(reveal.seal)
     reveal.sealTex = sealTex
-    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Click to break the seal"); reveal.sealHint:SetTextColor(0.9, 0.8, 0.6)
-    reveal.seal:EnableMouse(true); reveal.seal:SetScript("OnMouseUp", function() if reveal.phase == "seal" then startDeal() end end)
+    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Hold and drag to tear it open  ·  or click it three times"); reveal.sealHint:SetTextColor(0.9, 0.8, 0.6)
+    reveal.seal:EnableMouse(true)
+    reveal.sealCol = { 1, 1, 1 }
+    reveal.sealInfo = fs(reveal.seal, "body", 12); reveal.sealInfo:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -28); reveal.sealInfo:SetWidth(RW - 120); reveal.sealInfo:SetJustifyH("CENTER"); reveal.sealInfo:SetTextColor(0.78, 0.74, 0.92)
+    reveal.cracks = {}
+    for i = 1, 4 do
+      local ct = reveal.seal:CreateTexture(nil, "OVERLAY"); ct:SetColorTexture(1, 0.95, 0.8, 1); ct:SetSize(3, 34 + i * 8)
+      ct:SetPoint("CENTER", (i - 2.5) * 20, (i % 2 == 0) and 16 or -16)
+      if ct.SetRotation then ct:SetRotation((i - 2.5) * 0.55) end
+      ct:SetAlpha(0); reveal.cracks[i] = ct
+    end
+    reveal.shards = {}
+    for i = 1, 14 do
+      local st = reveal.fxFrame:CreateTexture(nil, "OVERLAY"); st:SetColorTexture(1, 0.8, 0.5, 1); st:SetSize(8, 8); st:Hide()
+      reveal.shards[i] = { tex = st, x = 0, y = 0, vx = 0, vy = 0 }
+    end
+    reveal.tear, reveal.picks, reveal.pickIdle, reveal.holdT, reveal.moved, reveal.hx, reveal.hy = 0, 0, 0, 0, 0, 0, 0
+    reveal.holding, reveal.record, reveal.shardT, reveal.shakeT, reveal.shakeK = false, false, 0, 0, 1
+    -- hold and drag (or hold a moment) to tear the seal; three plain clicks chip it open too
+    reveal.seal:SetScript("OnMouseDown", function()
+      if reveal.phase ~= "seal" then return end
+      reveal.holding, reveal.holdT, reveal.moved = true, 0, 0
+      reveal.hx, reveal.hy = cursorXY()
+    end)
+    reveal.seal:SetScript("OnMouseUp", function()
+      if reveal.phase ~= "seal" or not reveal.holding then return end
+      reveal.holding = false
+      if reveal.holdT < 0.25 and reveal.moved < 8 then
+        reveal.picks, reveal.pickIdle = reveal.picks + 1, 0
+        playSound(nil, nil, "pick")
+        if reveal.picks >= 3 then tearOpen() end
+      end
+    end)
+    reveal.share = gbtn(reveal, "Show off", 100, 26, function()
+      local bg
+      for _, g in ipairs(reveal.got or {}) do if not bg or g.finish * 10 + g.card.tier > bg.finish * 10 + bg.card.tier then bg = g end end
+      if not bg then return end
+      local msg = "Waypath+ cards: I pulled " .. bg.card.name .. " (" .. FNAME[bg.finish] .. ")" .. (bg.odds and (", about 1 in " .. groupDigits(bg.odds) .. " cards") or "") .. "!"
+      if ChatFrame_OpenChat then ChatFrame_OpenChat(msg) elseif RG.Print then RG.Print(msg) end
+    end)
+    reveal.share:SetPoint("BOTTOM", 290, 18); reveal.share:Hide()
     reveal.sum = fs(reveal, "body", 14); reveal.sum:SetPoint("TOP", 0, -276); reveal.sum:SetWidth(RW - 80); reveal.sum:SetTextColor(0.9, 0.86, 0.74)
     reveal.all = gbtn(reveal, "Turn all", 120, 26, function()
       for i = 1, PACK_SIZE do
         local function go() if reveal:IsShown() then flip(i) end end
-        if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5, go) else go() end
+        if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5 + (i == PACK_SIZE and 0.5 or 0), go) else go() end
       end
     end)
     reveal.all:SetPoint("BOTTOM", -150, 18)
@@ -1158,9 +1433,26 @@ local function showReveal(got, notes)
     reveal:SetScript("OnUpdate", function(self, dt)
       local t = GetTime and GetTime() or 0
       if self.phase == "seal" then
-        local k = 1 + 0.05 * math.sin(t * 4)
+        if self.holding then
+          self.holdT = self.holdT + dt
+          local x, y = cursorXY()
+          local d = math.sqrt((x - self.hx) ^ 2 + (y - self.hy) ^ 2)
+          if d > self.moved then self.moved = d end
+          self.tear = math.max(self.tear, math.min(1, math.max(d / 80, (self.holdT - 0.15) / 1.1)))
+        else
+          self.tear = math.max(0, self.tear - dt * 1.4)
+        end
+        self.pickIdle = self.pickIdle + dt
+        if self.pickIdle > 2 and self.picks > 0 then self.picks = 0 end
+        if self.tear >= 1 then tearOpen(); return end
+        local tt = math.max(self.tear, self.picks / 3 * 0.85)
+        local k = 1 + 0.05 * math.sin(t * 4) + 0.14 * tt
         self.seal:SetSize(150 * k, 150 * k)
-        self.sealGlow:SetAlpha(0.55 + 0.3 * math.sin(t * 5))
+        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 3 * tt, -10 + math.cos(t * 47) * 2 * tt)
+        self.sealGlow:SetAlpha(0.55 + 0.3 * math.sin(t * 5) + 0.35 * tt)
+        local c = self.sealCol
+        self.sealTex:SetVertexColor(c[1] + (1 - c[1]) * tt * 0.5, c[2] + (1 - c[2]) * tt * 0.5, c[3] + (1 - c[3]) * tt * 0.5, 1)
+        for _, ct in ipairs(self.cracks) do ct:SetAlpha(math.min(1, tt * 1.4)) end
       elseif self.phase == "deal" then
         self.dealT = self.dealT + dt
         local all = true
@@ -1176,6 +1468,21 @@ local function showReveal(got, notes)
         end
         if all then self.phase = false end
       end
+      if self.shakeT > 0 then
+        self.shakeT = self.shakeT - dt
+        local m = 3.5 * self.shakeK * math.max(0, self.shakeT) / 0.35
+        self:ClearAllPoints(); self:SetPoint("CENTER", (math.random() - 0.5) * 2 * m, 40 + (math.random() - 0.5) * 2 * m)
+        if self.shakeT <= 0 then self:ClearAllPoints(); self:SetPoint("CENTER", 0, 40) end
+      end
+      if self.shardT > 0 then
+        self.shardT = self.shardT - dt
+        for _, sh in ipairs(self.shards) do
+          sh.vy = sh.vy - 900 * dt; sh.x = sh.x + sh.vx * dt; sh.y = sh.y + sh.vy * dt
+          sh.tex:ClearAllPoints(); sh.tex:SetPoint("CENTER", self, "CENTER", sh.x, sh.y)
+          sh.tex:SetAlpha(math.max(0, self.shardT / 0.8))
+          if self.shardT <= 0 then sh.tex:Hide() end
+        end
+      end
       if self.burstLeft and self.burstLeft > 0 then
         self.burstLeft = self.burstLeft - dt
         local k = math.max(0, self.burstLeft / self.burstMax)
@@ -1186,13 +1493,45 @@ local function showReveal(got, notes)
       end
     end)
   end
-  reveal.got, reveal.flipped, reveal.notes = got, 0, notes
-  reveal.title:SetText("Break the seal")
+  reveal.got, reveal.flipped, reveal.notes, reveal.meta, reveal.record = got, 0, notes, meta, false
+  meta = meta or {}
+  -- what kind of seal this is: reward, many at once, the day's first, or the featured set's colours
+  local col, title, info = { 1, 1, 1 }, "Break the seal", {}
+  if meta.bonus then
+    col, title = { 0.85, 0.6, 1 }, "Reward seal"
+    info[#info + 1] = "|cffd9a8ffReward seal|r  ·  a rare and a holo or better inside"
+  elseif meta.many then
+    col, title = { 1, 0.85, 0.45 }, meta.many.count .. " seals"
+    info[#info + 1] = GOLDHEX .. meta.many.count .. " seals at once|r  ·  the five best cards are shown"
+  else
+    if meta.featured then
+      local h = 0
+      for ch in meta.featured:gmatch(".") do h = (h * 31 + ch:byte()) % 997 end
+      local r, g, b = hsv(h / 997, 0.5, 1)
+      col = { r, g, b }
+      info[#info + 1] = "Featured: " .. GOLDHEX .. meta.featured .. "|r  ·  more of its cards inside"
+    end
+    if meta.daily then title = "Daily seal"; info[#info + 1] = "|cff7be08aDaily seal|r  ·  day " .. (meta.streak or 1) .. " in a row" end
+  end
+  if not meta.many then
+    local pb = meta.pityBefore or 0
+    if meta.bonus or pb >= PITY then info[#info + 1] = "|cffd9a8ffThis seal holds a holo or full art|r"
+    else info[#info + 1] = "Holo or full art guaranteed within " .. (PITY - pb) .. " seal" .. (PITY - pb == 1 and "" or "s") end
+  end
+  reveal.sealCol = col
+  reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1)
+  reveal.sealInfo:SetText(table.concat(info, "\n"))
+  reveal.title:SetText(title)
   reveal.sum:SetText("")
-  reveal.all:Show(); reveal.ok:SetText("Skip")
+  reveal.all:Show(); reveal.share:Hide(); reveal.ok:SetText("Skip")
   reveal.burst:Hide(); reveal.burstLeft = 0
+  reveal.tear, reveal.picks, reveal.holding, reveal.shardT, reveal.shakeT = 0, 0, false, 0, 0
+  for _, ct in ipairs(reveal.cracks) do ct:SetAlpha(0) end
+  for _, sh in ipairs(reveal.shards) do sh.tex:Hide() end
+  reveal:ClearAllPoints(); reveal:SetPoint("CENTER", 0, 40)
   reveal:Show()
   reveal.phase = "seal"
+  reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, -10)
   reveal.seal:Show(); reveal.sealGlow:Show(); reveal.seal:SetSize(150, 150)
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
@@ -1200,6 +1539,9 @@ local function showReveal(got, notes)
     w.new:SetText("")
     local c = w.cover
     c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c:Show()
+    c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.peek:Hide(); c.cued = false
+    c.rare = (g.finish >= 3 or g.card.tier == 6) and true or false
+    c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.6, 0.6, 0.65 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
     if g.finish >= 3 or g.card.tier == 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0)
@@ -1406,14 +1748,17 @@ local function build()
   frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
   frame.next:SetPoint("BOTTOM", 330, 58)
   frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.92, 0.88, 1)
-  frame.buyNow = function()
-    local got, free, notes = RG.ArcadeOpenPack()
+  frame.buyNow = function(many)
+    local got, free, notes, meta
+    if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack() end
     if not got then say(free or "") return end
     playSound(2)
-    showReveal(got, notes); RG.ArcadeRefresh(true)
+    showReveal(got, notes, meta); RG.ArcadeRefresh(true)
   end
   frame.buy = gbtn(frame, "Break a seal", 250, 34, function() frame.buyNow() end, true)
   frame.buy:SetPoint("BOTTOM", 0, 20)
+  frame.buyAll = gbtn(frame, "Break all", 110, 28, function() frame.buyNow(true) end)
+  frame.buyAll:SetPoint("BOTTOM", 335, 23); frame.buyAll:Hide()
   frame.duel = gbtn(frame, "Duel for coins", 150, 28, function()
     local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
     if win == nil then say(mine or "") return end
@@ -1501,6 +1846,8 @@ function RG.ArcadeRefresh(keepMsg)
     local g = todaysGoals(a)
     local lines = { GOLDHEX .. "Today|r", "" }
     lines[#lines + 1] = "Free seals waiting: |cffffffff" .. (a.free or 0) .. "|r   (one new seal every day, up to 3 saved)"
+    lines[#lines + 1] = "Reward seals waiting: |cffffffff" .. (a.bonus or 0) .. "|r   (a new highest rank, and every 7th day in a row you break a seal)"
+    lines[#lines + 1] = "Seal streak: |cffffffff" .. ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0) .. "|r day" .. "s in a row   ·   next seal's set: |cffffffff" .. (featuredSet(a) and featuredSet(a).name or "none") .. "|r"
     lines[#lines + 1] = "Pity: |cffffffff" .. (a.pity or 0) .. "|r of " .. PITY .. " packs without a holo or full art"
     lines[#lines + 1] = "Quest, kill and skill coins today: |cffffffff" .. ((a.day == today()) and (a.dayCoins or 0) or 0) .. "|r of " .. DAY_CAP
     lines[#lines + 1] = "Duel win streak: |cffffffff" .. (a.streak or 0) .. "|r   (each win in a row pays +1, up to +4)"
@@ -1561,8 +1908,12 @@ function RG.ArcadeRefresh(keepMsg)
     frame.panel:SetText(table.concat(lines, "\n"))
   end
   local free = a.free or 0
-  frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free" or ("Break a seal  ·  " .. PACK_PRICE)))
+  local bonus = a.bonus or 0
+  if bonus > 0 then frame.buy:SetText("Break a reward seal  (" .. bonus .. ")")
+  else frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free" or ("Break a seal  ·  " .. PACK_PRICE))) end
   frame.buy:SetEnabled(afford() and true or false)
+  local ready = RG.ArcadeSealsReady and RG.ArcadeSealsReady() or 0
+  if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
 end
 
 RG.ArcadeUI = { makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
@@ -1571,9 +1922,9 @@ RG.ArcadeUI = { makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, 
 
 RG.ArcadePackPrice = PACK_PRICE
 -- the Cards tab opens a pack straight away
-function RG.ArcadeBuyNow()
+function RG.ArcadeBuyNow(many)
   RG.ShowArcade()
-  if frame and frame.buyNow then frame.buyNow() end
+  if frame and frame.buyNow then frame.buyNow(many) end
 end
 function RG.ShowArcade()
   if WaypathFrame and WaypathFrame.IsShown and WaypathFrame:IsShown() then WaypathFrame:Hide() end   -- never stack on the main window

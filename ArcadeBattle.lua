@@ -723,7 +723,14 @@ local function rankResult(a, won)
     opp = R.AI[S.level] or R.START
   end
   if not ranked then return { unranked = true } end
-  return R.apply(a, opp, won)
+  local res = R.apply(a, opp, won)
+  -- a reward seal for each new highest rank you reach (falling and climbing again earns nothing twice)
+  if res and res.promoted and res.after and res.after.key and RG.ArcadeGrantBonus and (a.rewardKey or 0) < res.after.key then
+    a.rewardKey = res.after.key
+    RG.ArcadeGrantBonus(1)
+    res.reward = true
+  end
+  return res
 end
 local function rankLine(res)
   if not res then return "" end
@@ -733,7 +740,7 @@ local function rankLine(res)
   local d = res.delta
   local txt = (d >= 0 and "|cff9fe39a+" or "|cffe39a9a") .. d .. " RR|r   " .. hex .. res.after.label .. "|r"
   if res.after.top then txt = txt .. "  |cffa89bc9(" .. res.after.rr .. " RR)|r" else txt = txt .. "  |cffa89bc9(" .. res.after.rr .. " / 100)|r" end
-  if res.promoted then txt = txt .. "\n|cffffd36bPROMOTED!|r" elseif res.demoted then txt = txt .. "\n|cffe39a9aDemoted|r" end
+  if res.promoted then txt = txt .. "\n|cffffd36bPROMOTED!|r" .. (res.reward and "  |cffd9a8ff+1 reward seal|r" or "") elseif res.demoted then txt = txt .. "\n|cffe39a9aDemoted|r" end
   if res.placement and res.placement <= RG.Rank.PLACEMENT then txt = txt .. "\n|cffa89bc9Placement game " .. res.placement .. " of " .. RG.Rank.PLACEMENT .. "|r" end
   return txt
 end
