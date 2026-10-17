@@ -13,7 +13,10 @@ B.KW = { taunt = "Taunt", charge = "Charge", rush = "Rush", shield = "Divine Shi
 B.KWORDER = { "taunt", "charge", "rush", "shield", "stealth", "windfury", "lifesteal", "poison" }
 B.defs = {}
 -- going second: how the two seats are evened out (tuned by simulation, see tools/balance)
-B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 0 }
+B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 0,
+  minionBase = 1,    -- a vanilla minion has 2 * cost + minionBase stats
+  kwExtra = {},      -- extra stat price per keyword or effect (feature name -> stats)
+  archCost = {} }    -- mana nudge per spell archetype
 
 local function hash(s) local h = 5381; for i = 1, #s do h = (h * 33 + s:byte(i)) % 2147483629 end return h end
 local function seeded(s) s = s % 2147483646 + 1; return function(n) s = (s * 48271) % 2147483647; return s % n + 1 end end
@@ -275,7 +278,7 @@ local function genMinion(c, r, cost, tribe, feats, bonus)
   local function add(name)
     local f = FEATURES[name]; if not f then return end
     local p, heavy = f.fn(d)
-    pen = pen + (p or 0); atkHeavy = atkHeavy + (heavy or 0)
+    pen = pen + (p or 0) + (B.TUNE.kwExtra[name] or 0); atkHeavy = atkHeavy + (heavy or 0)
   end
   if feats then for _, n in ipairs(feats) do add(n) end
   else
@@ -286,7 +289,7 @@ local function genMinion(c, r, cost, tribe, feats, bonus)
       if n2 and n2 ~= n1 and not ((n1 or ""):sub(1, 2) == (n2 or ""):sub(1, 2) and n2:find("_")) then add(n2) end
     end
   end
-  local tot = max(2, 2 * cost + 1 + (bonus and 2 or 0) - pen + (r(3) - 2))
+  local tot = max(2, 2 * cost + B.TUNE.minionBase + (bonus and 2 or 0) - pen + (r(3) - 2))
   local frac = 0.5 + (d.kw.taunt and 0.12 or 0) - atkHeavy * 0.25
   local hp = max(1, floor(tot * frac + 0.5)); local atk = tot - hp
   if atk < 1 and not d.kw.taunt then atk = 1; hp = max(1, tot - 1) end
@@ -298,7 +301,7 @@ end
 local function genSpell(c, r, cost, arch)
   local fn = ARCH[arch] or ARCH.bolt
   local ops, tgt, newCost = fn(cost)
-  return { type = "spell", cost = newCost or cost, ops = ops, tgt = tgt }
+  return { type = "spell", cost = newCost or cost, ops = ops, tgt = tgt, arch = arch }
 end
 
 local function genWeapon(c, r, cost)
@@ -345,6 +348,7 @@ function B.derive(c)
   d.key, d.name, d.kind, d.tier, d.lore = key, c.name, kind, tier, c.text
   d.cost = max(0, min(10, d.cost))
   -- balance pass: per-card nudges found by simulating thousands of duels (tools/balance, data in ArcadeBalance.lua)
+  if d.arch and B.TUNE.archCost[d.arch] then d.cost = max(0, min(10, d.cost + B.TUNE.archCost[d.arch])) end
   local bal = RG.ARCADE_BALANCE and RG.ARCADE_BALANCE[key]
   if bal then
     d.cost = max(0, min(10, d.cost + (bal.cost or 0)))

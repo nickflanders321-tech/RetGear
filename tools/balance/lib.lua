@@ -4,6 +4,8 @@ function M.load(dir)
   local RG = {}
   for _, f in ipairs({ "ArcadeCards.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
   local B = RG.Battle
+  local patch = os.getenv("BAL_PATCH")
+  if patch then dofile(patch)(B, RG) end
   local defs = {}
   for i, c in ipairs(RG.ARCADE_DATA) do
     local cc = { id = i, kind = c[1], name = c[2], tier = c[3], ref = c[4], text = c[5] }
