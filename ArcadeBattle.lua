@@ -1384,7 +1384,7 @@ local function buildMenu()
   -- play
   menu.play = U.gbtn(p, "Enter the Arena", 400, 58, function() startMatch() end, true); menu.play:SetPoint("TOPLEFT", 24, -494)
   menu.play:SetActive(true)
-  menu.pvp = U.gbtn(p, "Challenge a player", 220, 40, function()
+  menu.pvp = U.gbtn(p, "Challenge target", 150, 40, function()
     if not RG.DuelTarget then return end
     local ok, err, who = RG.DuelTarget()
     menu.msg:SetText(ok and ("Challenge sent to " .. who .. ".") or (err or ""))
@@ -1392,7 +1392,11 @@ local function buildMenu()
   menu.pvp:SetPoint("TOPLEFT", 440, -503)
   menu.pvp:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Friendly duel with another Waypath+ player"); GameTooltip:AddLine("Target them first (or type /wp duel Name). You both play your selected Arena deck. No coins change hands.", 1, 1, 1, true); GameTooltip:Show() end)
   menu.pvp:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
-  local rulesBtn = U.gbtn(p, "How to play", 120, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 672, -503)
+  menu.party = U.gbtn(p, "Duel your party", 150, 40, function() RG.ArenaPartyPanel() end)
+  menu.party:SetPoint("TOPLEFT", 598, -503)
+  menu.party:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Invite a party member"); GameTooltip:AddLine("Shows everyone in your group, who has Waypath+, and lets you send a duel invite with one click.", 1, 1, 1, true); GameTooltip:Show() end)
+  menu.party:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
+  local rulesBtn = U.gbtn(p, "How to play", 120, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 756, -503)
 
   -- rank and record
   local rb = CreateFrame("Frame", nil, p, "BackdropTemplate")
@@ -1584,6 +1588,86 @@ local function buildDeck()
   local clear = U.gbtn(dscr, "Clear", 80, 26, function() local a, dk = curDeck(); dk.cards = {}; deckRefresh() end); clear:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -128, 14)
   local fill = U.gbtn(dscr, "Auto-fill", 100, 26, function() local a, dk = curDeck(); fillDeck(a, dk); deckRefresh() end); fill:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -216, 14)
 end
+
+-- ---------------------------------------------------------------------------
+-- The party panel: everyone in your group, who has Waypath+, one click to challenge
+-- ---------------------------------------------------------------------------
+local party
+local PARTY_ROWS = 10
+local function partyRefresh()
+  if not (party and party.f:IsShown()) then return end
+  U = U or RG.ArcadeUI
+  local list = RG.DuelRoster and RG.DuelRoster() or {}
+  local now = GetTime and GetTime() or 0
+  local waited = now - (RG.duelPingT or 0)
+  local D = RG.Duel
+  party.empty:SetShown(#list == 0)
+  for i = 1, PARTY_ROWS do
+    local r, m = party.rows[i], list[i]
+    if m then
+      local cc = CLASS_COL[m.class] or { 0.9, 0.9, 0.9 }
+      r.name:SetText(m.name); r.name:SetTextColor(cc[1], cc[2], cc[3])
+      local st
+      if not m.online then st = "|cff808080offline|r"
+      elseif r.sentTo == m.full and D and D.state == "out" then st = "|cfff5d273invite sent, waiting...|r"
+      elseif m.seen then
+        local rk = m.seen.rating and RG.Rank and RG.Rank.info(m.seen.rating).label
+        st = "|cff7fe39aWaypath+ ready|r" .. (rk and ("  |cffa89bc9" .. rk .. "|r") or "")
+      elseif waited < 4 then st = "|cffa89bc9looking...|r"
+      else st = "|cffe39a9ano Waypath+ found|r" end
+      r.status:SetText(st)
+      r.btn:SetEnabled(m.online and not (D and D.state))
+      r.full, r.seen = m.full, m.seen
+      r.frame:Show()
+    else r.frame:Hide(); r.full = nil end
+  end
+  party.note:SetText(#list > PARTY_ROWS and ("Showing the first " .. PARTY_ROWS .. " of " .. #list .. " players.") or "")
+end
+local function buildParty()
+  U = RG.ArcadeUI
+  local f = CreateFrame("Frame", "WaypathPartyDuel", UIParent, "BackdropTemplate")
+  U.darkPanel(f, 420, 150 + PARTY_ROWS * 34)
+  f:SetPoint("CENTER", 0, 40); f:SetFrameStrata("DIALOG"); f:SetMovable(true); f:EnableMouse(true); f:SetClampedToScreen(true)
+  f:RegisterForDrag("LeftButton"); f:SetScript("OnDragStart", function(self) self:StartMoving() end); f:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+  if UISpecialFrames then table.insert(UISpecialFrames, "WaypathPartyDuel") end
+  party = { f = f, rows = {} }
+  local logo = f:CreateTexture(nil, "ARTWORK"); logo:SetTexture(RG.LOGO or ""); logo:SetSize(30, 30); logo:SetPoint("TOPLEFT", 16, -14)
+  local t = U.fs(f, "title", 18); t:SetPoint("TOPLEFT", 54, -16); t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); t:SetText("DUEL YOUR PARTY")
+  local sub = U.fs(f, "body", 12); sub:SetPoint("TOPLEFT", 18, -52); sub:SetWidth(384); sub:SetJustifyH("LEFT"); sub:SetTextColor(0.75, 0.72, 0.9)
+  sub:SetText("Everyone in your group who has Waypath+ can be challenged. You both play your selected Arena deck; friendly duels pay no coins.")
+  party.empty = U.fs(f, "body", 13); party.empty:SetPoint("TOP", 0, -120); party.empty:SetWidth(360); party.empty:SetTextColor(0.85, 0.8, 0.65)
+  party.empty:SetText("You are not in a group yet. Invite a friend with the normal party tools, then come back here, or use Challenge target.")
+  for i = 1, PARTY_ROWS do
+    local row = CreateFrame("Frame", nil, f)
+    row:SetSize(388, 30); row:SetPoint("TOPLEFT", 16, -96 - (i - 1) * 34)
+    local bg = row:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(row); bg:SetColorTexture(0.1, 0.08, 0.2, 0.6)
+    local r = { frame = row }
+    r.name = U.fs(row, "head", 13); r.name:SetPoint("LEFT", 10, 0); r.name:SetWidth(120); r.name:SetJustifyH("LEFT"); r.name:SetWordWrap(false)
+    r.status = U.fs(row, "body", 11); r.status:SetPoint("LEFT", 136, 0); r.status:SetWidth(170); r.status:SetJustifyH("LEFT")
+    r.btn = U.gbtn(row, "Duel", 64, 24, function()
+      if not r.full then return end
+      if not r.seen then RG.Print("No Waypath+ answer from " .. r.full .. " yet. They need the add-on to accept; sending the invite anyway.") end
+      RG.DuelChallenge(r.full); r.sentTo = r.full; partyRefresh()
+    end)
+    r.btn:SetPoint("RIGHT", -6, 0)
+    row:Hide(); party.rows[i] = r
+  end
+  party.note = U.fs(f, "body", 11); party.note:SetPoint("BOTTOM", 0, 50); party.note:SetTextColor(0.7, 0.65, 0.5)
+  local ref = U.gbtn(f, "Look again", 120, 28, function() if RG.DuelPing then RG.DuelPing() end; partyRefresh() end); ref:SetPoint("BOTTOMLEFT", 18, 14)
+  local cl = U.gbtn(f, "Close", 100, 28, function() f:Hide() end); cl:SetPoint("BOTTOMRIGHT", -18, 14)
+  f:SetScript("OnShow", function() if RG.DuelPing then RG.DuelPing() end; partyRefresh() end)
+  f:RegisterEvent("GROUP_ROSTER_UPDATE")
+  f:SetScript("OnEvent", function() if RG.DuelPing then RG.DuelPing() end; partyRefresh() end)
+  local acc = 0
+  f:SetScript("OnUpdate", function(_, dt) acc = acc + (dt or 0); if acc >= 1 then acc = 0; partyRefresh() end end)
+  f:Hide()
+end
+function RG.ArenaPartyPanel()
+  U = U or RG.ArcadeUI
+  if not party then buildParty() end
+  if party.f:IsShown() then party.f:Hide() else party.f:Show() end
+end
+function RG.DuelRosterChanged() partyRefresh() end
 
 function RG.BattleDeck() show("deck"); deckRefresh() end
 function RG.BattleMenu()

@@ -384,6 +384,8 @@ do
     if prefix ~= PREFIX then return end
     local me = UnitName and UnitName("player")
     if sender and me and short(sender) == short(me) then return end
+    local k = text and text:sub(1, 2)
+    if k == "H|" or k == "R|" then pcall(onHello, text, sender) return end
     ensure().onMessage(text, sender)
   end)
   local acc = 0
@@ -393,9 +395,65 @@ do
   end)
 end
 
+-- ---------------------------------------------------------------------------
+-- Party: who in your group has Waypath+, and a way to challenge them
+-- ---------------------------------------------------------------------------
+RG.duelSeen = RG.duelSeen or {}
+local function groupChannel()
+  if IsInGroup and LE_PARTY_CATEGORY_INSTANCE and IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end
+  if IsInRaid and IsInRaid() then return "RAID" end
+  if IsInGroup and IsInGroup() then return "PARTY" end
+end
+-- ask the group who has the add-on; answers arrive as whispers and are remembered in RG.duelSeen
+function RG.DuelPing()
+  local ch = groupChannel()
+  if not ch then return false end
+  RG.duelPingT = GetTime and GetTime() or 0
+  if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, "H|" .. tostring(RG.VERSION or "dev"), ch) end
+  return true
+end
+-- the people in your group (not you): { name, full, class, online, seen = { ver, rating } or nil }
+function RG.DuelRoster()
+  local out = {}
+  if not (GetNumGroupMembers and UnitName) then return out end
+  local n = GetNumGroupMembers() or 0
+  local raid = IsInRaid and IsInRaid()
+  for i = 1, raid and n or (n - 1) do
+    local unit = raid and ("raid" .. i) or ("party" .. i)
+    if UnitExists(unit) and not (UnitIsUnit and UnitIsUnit(unit, "player")) then
+      local name, realm = UnitName(unit)
+      if name and name ~= "" and name ~= "Unknown" then
+        local _, class = UnitClass(unit)
+        out[#out + 1] = { name = name, full = (realm and realm ~= "") and (name .. "-" .. realm) or name, class = class,
+          online = UnitIsConnected == nil or UnitIsConnected(unit) and true or false, level = UnitLevel and UnitLevel(unit) or 0, seen = RG.duelSeen[short(name)] }
+      end
+    end
+  end
+  table.sort(out, function(a, b)
+    if (a.seen ~= nil) ~= (b.seen ~= nil) then return a.seen ~= nil end
+    return a.name < b.name
+  end)
+  return out
+end
+local function onHello(text, sender)
+  local kind, ver, rating = text:match("^(%a)|([^|]*)|?([^|]*)")
+  if not sender or sender == "" then return end
+  RG.duelSeen[short(sender)] = { ver = ver, rating = tonumber(rating), t = GetTime and GetTime() or 0 }
+  if kind == "H" and C_ChatInfo and C_ChatInfo.SendAddonMessage then
+    local r = RG.ArenaPvPRating and RG.ArenaPvPRating() or 0
+    pcall(C_ChatInfo.SendAddonMessage, PREFIX, "R|" .. tostring(RG.VERSION or "dev") .. "|" .. tostring(r), "WHISPER", sender)
+  end
+  if RG.DuelRosterChanged then RG.DuelRosterChanged() end
+end
+RG.__duelHello = onHello
+
 local slashBase = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
+  if cmd and cmd:lower() == "duel" and (not rest or rest == "" or rest:lower() == "party") then
+    if RG.ArenaPartyPanel then RG.ArenaPartyPanel() else RG.Print("Duel a player with /wp duel PlayerName, or target them and use the Arena lobby.") end
+    return
+  end
   if cmd and cmd:lower() == "duel" and rest and rest ~= "" then
     local r = rest:lower()
     if r == "accept" then ensure().accept() return end
