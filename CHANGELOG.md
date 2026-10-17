@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.95.0
+- The cards window is easier to read: larger, brighter text for the subtitle, totals, tabs, buttons, search and page counter.
+
 ## v0.94.0
 - The card collection now opens with the cards you own first (new "Owned first" sort, the default), so you do not have to page past empty slots. The Showcase button no longer overlaps the search box, and an empty showcase explains how to fill it.
 

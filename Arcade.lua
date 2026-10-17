@@ -627,7 +627,7 @@ local function gbtn(parent, label, w, h, fn, big)
   local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
   b:SetSize(w, h or 24)
   b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-  b.label = fs(b, "head", big and 13 or 11); b.label:SetPoint("CENTER", 0, 0)
+  b.label = fs(b, "head", big and 15 or 12.5); b.label:SetPoint("CENTER", 0, 0)
   b.enabled, b.active = true, false
   function b:Paint(hover)
     local r, g, bl, a = 0.09, 0.07, 0.17, 0.95
@@ -651,10 +651,10 @@ end
 local function gtab(parent, label, w, fn)
   local b = CreateFrame("Button", nil, parent)
   b:SetSize(w, 24)
-  b.label = fs(b, "head", 12); b.label:SetPoint("CENTER", 0, 1); b.label:SetText(label)
+  b.label = fs(b, "head", 14); b.label:SetPoint("CENTER", 0, 1); b.label:SetText(label)
   b.line = b:CreateTexture(nil, "OVERLAY"); b.line:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 1); b.line:SetHeight(2)
   b.line:SetPoint("BOTTOMLEFT", 8, 0); b.line:SetPoint("BOTTOMRIGHT", -8, 0)
-  function b:SetActive(on) self.on = on and true or false; self.line:SetShown(self.on); if self.on then self.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]) else self.label:SetTextColor(0.62, 0.58, 0.78) end end
+  function b:SetActive(on) self.on = on and true or false; self.line:SetShown(self.on); if self.on then self.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]) else self.label:SetTextColor(0.84, 0.8, 0.96) end end
   b:SetScript("OnEnter", function(self) if not self.on then self.label:SetTextColor(0.9, 0.85, 1) end end)
   b:SetScript("OnLeave", function(self) self:SetActive(self.on) end)
   b:SetScript("OnClick", function() if fn then fn() end end)
@@ -1257,13 +1257,13 @@ local function build()
   -- title plate
   local plate = frame:CreateTexture(nil, "ARTWORK"); plate:SetTexture(MEDIA .. "Plate"); plate:SetSize(380, 48); plate:SetPoint("TOP", 0, -12)
   frame.title = fs(frame, "title", 22); frame.title:SetPoint("CENTER", plate, "CENTER", 0, 0); frame.title:SetText("THE HOARD"); frame.title:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
-  frame.tagline = fs(frame, "body", 12); frame.tagline:SetPoint("TOP", plate, "BOTTOM", 0, -4); frame.tagline:SetText("a collector's grimoire"); frame.tagline:SetTextColor(0.62, 0.58, 0.8)
+  frame.tagline = fs(frame, "body", 14); frame.tagline:SetPoint("TOP", plate, "BOTTOM", 0, -4); frame.tagline:SetText("a collector's grimoire"); frame.tagline:SetTextColor(0.8, 0.76, 0.95)
   frame.coinIcon = frame:CreateTexture(nil, "ARTWORK"); frame.coinIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01"); frame.coinIcon:SetSize(20, 20); frame.coinIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93); frame.coinIcon:SetPoint("TOPLEFT", 30, -22)
-  frame.coins = fs(frame, "head", 14); frame.coins:SetPoint("LEFT", frame.coinIcon, "RIGHT", 6, 0)
-  frame.free = fs(frame, "head", 10); frame.free:SetPoint("TOPLEFT", frame.coinIcon, "BOTTOMLEFT", 0, -3); frame.free:SetTextColor(0.5, 0.88, 0.6)
+  frame.coins = fs(frame, "head", 16); frame.coins:SetPoint("LEFT", frame.coinIcon, "RIGHT", 6, 0)
+  frame.free = fs(frame, "head", 12); frame.free:SetPoint("TOPLEFT", frame.coinIcon, "BOTTOMLEFT", 0, -3); frame.free:SetTextColor(0.5, 0.88, 0.6)
   local close = gbtn(frame, "X", 28, 24, function() frame:Hide() end); close:SetPoint("TOPRIGHT", -18, -18)
   local rule = frame:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(360, 14); rule:SetPoint("TOP", frame.tagline, "BOTTOM", 0, -4)
-  frame.sub = fs(frame, "body", 12); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -2); frame.sub:SetTextColor(0.78, 0.74, 0.9); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
+  frame.sub = fs(frame, "body", 14); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -2); frame.sub:SetSpacing(2); frame.sub:SetTextColor(0.94, 0.91, 1); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
 
   -- tabs
   frame.modes = {}
@@ -1277,23 +1277,23 @@ local function build()
   frame.filters = {}
   local labels = { [0] = "All", "Items", "NPCs", "Places", "Raiders" }
   for k = 0, 4 do
-    frame.filters[k] = gbtn(frame, labels[k], 58, 22, function() view.kind = k; view.page = 1; view.showcase = false; view.mode = "cards"; RG.ArcadeRefresh(true) end)
+    frame.filters[k] = gbtn(frame, labels[k], 60, 24, function() view.kind = k; view.page = 1; view.showcase = false; view.mode = "cards"; RG.ArcadeRefresh(true) end)
     frame.filters[k]:SetPoint("TOPLEFT", 34 + k * 62, -160)
   end
-  frame.showcase = gbtn(frame, "Showcase", 78, 22, function() view.showcase = not view.showcase; view.kind = 0; view.page = 1; view.mode = "cards"; RG.ArcadeRefresh(true) end)
+  frame.showcase = gbtn(frame, "Showcase", 80, 24, function() view.showcase = not view.showcase; view.kind = 0; view.page = 1; view.mode = "cards"; RG.ArcadeRefresh(true) end)
   frame.showcase:SetPoint("TOPLEFT", 34 + 5 * 62, -160)
-  frame.sortBtn = gbtn(frame, "Sort: Collection", 124, 22, function() view.sort = view.sort % #SORTS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.sortBtn = gbtn(frame, "Sort: Collection", 124, 24, function() view.sort = view.sort % #SORTS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
   frame.sortBtn:SetPoint("TOPRIGHT", -34, -160)
-  frame.showBtn = gbtn(frame, "Show: All", 100, 22, function() view.show = view.show % #SHOWS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
+  frame.showBtn = gbtn(frame, "Show: All", 100, 24, function() view.show = view.show % #SHOWS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
   frame.showBtn:SetPoint("RIGHT", frame.sortBtn, "LEFT", -6, 0)
   frame.searchBox = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
-  frame.searchBox:SetSize(96, 22); frame.searchBox:SetPoint("RIGHT", frame.showBtn, "LEFT", -6, 0)
+  frame.searchBox:SetSize(92, 24); frame.searchBox:SetPoint("RIGHT", frame.showBtn, "LEFT", -6, 0)
   frame.searchBox:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); frame.searchBox:SetBackdropColor(0.03, 0.02, 0.07, 0.95); frame.searchBox:SetBackdropBorderColor(0.45, 0.38, 0.25, 0.9)
-  setfont(frame.searchBox, "body", 12); frame.searchBox:SetTextColor(0.95, 0.9, 0.78); frame.searchBox:SetTextInsets(8, 6, 0, 0)
+  setfont(frame.searchBox, "body", 14); frame.searchBox:SetTextColor(0.95, 0.9, 0.78); frame.searchBox:SetTextInsets(8, 6, 0, 0)
   frame.searchBox:SetAutoFocus(false); frame.searchBox:SetMaxLetters(30)
   frame.searchBox:SetScript("OnTextChanged", function(self) local t = self:GetText() or ""; if t ~= view.search then view.search = t; view.page = 1; RG.ArcadeRefresh(true) end end)
   frame.searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  frame.searchHint = fs(frame.searchBox, "body", 12); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.5, 0.46, 0.62)
+  frame.searchHint = fs(frame.searchBox, "body", 14); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.72, 0.68, 0.85)
 
   -- the binder
   cells = {}
@@ -1323,12 +1323,12 @@ local function build()
   end
 
   -- footer
-  frame.msg = fs(frame, "body", 13); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
+  frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
   frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
   frame.prev:SetPoint("BOTTOM", 230, 58)
   frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
   frame.next:SetPoint("BOTTOM", 330, 58)
-  frame.pageText = fs(frame, "head", 12); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.78, 0.74, 0.9)
+  frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.92, 0.88, 1)
   frame.buyNow = function()
     local got, free, notes = RG.ArcadeOpenPack()
     if not got then say(free or "") return end
