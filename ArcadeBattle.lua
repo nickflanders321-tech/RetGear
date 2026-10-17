@@ -6,7 +6,7 @@ if not B then return end
 local U                      -- the card window's helpers, resolved when the arena first opens
 local win, game
 local W, H = 1180, 700       -- window
-local HW = 100               -- hand card width
+local HW = 116               -- hand card width
 local MW, MH = 88, 104       -- a minion on the board
 local S = { targeting = false, level = 2, busy = false, aiN = 0, held = 0, msgT = 0, mode = "menu", mull = {}, pkey = false }
 local gliding = {}      -- widgets easing to their place (see place())
@@ -151,17 +151,18 @@ local function paintCard(w, key, owner, live)
     decorate(w)
     w.pow:SetText(""); w.powLabel:Hide(); w.fin:SetText(""); w.num:SetText(""); w.count:SetText("")
     w.type:SetText(typeLine(d))
-    U.fitText(w.name, d.name, 196 * w.u, 15 * w.u, w.cw < 190 and 6.5 or 8, "head")
     w.name:ClearAllPoints(); w.name:SetPoint("TOPLEFT", w, "TOPLEFT", 40 * w.u, -13 * w.u); w.name:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 238 * w.u, -37 * w.u)
     if w.cw >= 190 then
+      U.layoutText(w, true)
+      U.fitText(w.name, d.name, 196 * w.u, 15 * w.u, 8, "head")
       w.text:SetText(hilite(d.text or "") .. (d.lore and d.lore ~= "" and ("\n\n|cff6b4a2e" .. d.lore .. "|r") or ""))
-    elseif w.cw >= 90 then   -- hand cards: a short line in a font you can read, the full card shows on hover
+    else   -- hand and board cards: the name on the parchment in a readable size, the effect line under it
+      w.name:SetText("")
       local t = (d.text or ""):gsub("%s+", " ")
-      if #t > 40 then t = t:sub(1, 38):gsub("%s*%S*$", "") .. "..." end
-      U.setfont(w.text, "body", 9)
+      if #t > 56 then t = t:sub(1, 54):gsub("%s*%S*$", "") .. "..." end
+      U.layoutText(w, false, d.name, hilite(t))
       w.text:SetTextColor(0.13, 0.08, 0.03)
-      w.text:SetText(hilite(t))
-    else w.text:SetText("") end
+    end
   end
   cardStats(w, d, live)
 end
@@ -375,12 +376,7 @@ local function paintMinion(w, m, side)
   w:Show()
   w.icon:SetTexture(iconOf(m.key, m))
   local cc = m.key and not m.icon and cardObj(m.key)
-  if cc and U.usesScene(cc) then
-    U.setScene(w.scn, cc, false)
-    if cc.kind == 3 then w.icon:Hide() else w.icon:SetSize(34, 34); w.icon:Show() end
-  else
-    U.hideScene(w.scn); w.icon:SetSize(66, 66); w.icon:Show()
-  end
+  U.hideScene(w.scn); w.icon:SetSize(66, 66); w.icon:Show()
   local iron = m.kw.taunt
   w.tile:SetTexture(U.MEDIA .. (iron and "TileIron" or "Tile"))
   local c = side == 1 and TILE_ME or TILE_FOE
@@ -1117,12 +1113,12 @@ refresh = function()
   -- my hand
   local n = #me.hand
   local mull = S.mode == "mull"
-  local step = n > 1 and math.min(mull and 116 or 88, 640 / (n - 1)) or 0
+  local step = n > 1 and math.min(mull and 130 or 112, 700 / (n - 1)) or 0
   for i = 1, 10 do
     local w, key = ui.hand[i], me.hand[i]
     if key then
       local x = 600 - (n - 1) * step / 2 + (i - 1) * step
-      local y = (w.hov and not mull) and 108 or 68
+      local y = (w.hov and not mull) and 128 or 88
       if mull then y = 362 end
       local fresh = rawget(w, "gx") == nil
       if fresh and not mull then place(w, x, y, DECK_POS[1][1], DECK_POS[1][2]); pt(w, w.gx, w.gy) else place(w, x, y) end

@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Cards are readable: on hand, board and collection cards the full name now sits on the parchment in a size you can read (two lines if it needs them) with the effect line under it, and hand cards are larger and no longer overlap their text.
+- Every card has a real game icon in the centre frame like the raider cards do: items keep their own icon, NPCs and places pick one from their name (dragon, troll, spider, city portal, mine and so on). The drawn scenery is gone.
+- Pack opening screen is flat and quiet: no glow, ribbon, stars or corner ornaments, a smaller seal, and the Arena button label no longer clips.
 
 - Side bar: less crowded. The sections under Quests (new quests, route, class quests, dungeon, upgrade, professions, reminders) now share one "+ MORE" row that lists what is in them (green when something is ready); click it to open them, "- SHOW LESS" to fold them again. Long lines no longer print over the line below (they wrap to two rows at most, or are cut with ...), and the text is a little larger and clearer.
 - Removed the clickable pick-up (!) markers on the world map: they showed quests you are not yet high enough level to take.

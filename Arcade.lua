@@ -19,6 +19,30 @@ local CREATURE_ICON = {
   [5] = "Spell_Nature_EarthElemental_Totem", [6] = "Spell_Shadow_AnimateDead", [7] = "INV_Misc_Head_Orc_01", [8] = "Ability_Hunter_Pet_Rabbit",
   [9] = "INV_Gizmo_01",
 }
+-- lowercase name fragments -> an icon from the game's own Interface\\Icons
+local NAME_ICON = {
+  { "stormwind", "Spell_Arcane_TeleportStormwind" }, { "orgrimmar", "Spell_Arcane_TeleportOrgrimmar" }, { "ironforge", "Spell_Arcane_TeleportIronForge" },
+  { "darnassus", "Spell_Arcane_TeleportDarnassus" }, { "undercity", "Spell_Arcane_TeleportUnderCity" }, { "thunder bluff", "Spell_Arcane_TeleportThunderBluff" },
+  { "onyxia", "INV_Misc_Head_Dragon_Black" }, { "nefarian", "INV_Misc_Head_Dragon_Black" }, { "black", "INV_Misc_Head_Dragon_Black" },
+  { "azure", "INV_Misc_Head_Dragon_Blue" }, { "bronze", "INV_Misc_Head_Dragon_Bronze" },
+  { "emeriss", "INV_Misc_Head_Dragon_Green" }, { "lethon", "INV_Misc_Head_Dragon_Green" }, { "ysondre", "INV_Misc_Head_Dragon_Green" }, { "taerar", "INV_Misc_Head_Dragon_Green" },
+  { "dragon", "INV_Misc_Head_Dragon_01" }, { "drake", "INV_Misc_Head_Dragon_01" }, { "whelp", "INV_Misc_Head_Dragon_01" }, { "wyrm", "INV_Misc_Head_Dragon_01" },
+  { "murloc", "INV_Misc_Head_Murloc_01" }, { "murk", "INV_Misc_Head_Murloc_01" }, { "gill", "INV_Misc_Head_Murloc_01" },
+  { "nerub", "INV_Misc_Head_Nerubian_01" }, { "spider", "Ability_Hunter_Pet_Spider" }, { "widow", "Ability_Hunter_Pet_Spider" },
+  { "troll", "INV_Misc_Head_Troll_01" }, { "zul", "INV_Misc_Head_Troll_01" }, { "hakkar", "INV_Misc_Head_Troll_01" }, { "witch doctor", "INV_Misc_Head_Troll_01" },
+  { "tauren", "INV_Misc_Head_Tauren_01" }, { "gnome", "INV_Misc_Head_Gnome_01" }, { "dwarf", "INV_Misc_Head_Dwarf_01" },
+  { "elf", "INV_Misc_Head_Elf_01" }, { "orc", "INV_Misc_Head_Orc_01" }, { "ogre", "INV_Misc_Head_Orc_01" },
+  { "skeleton", "INV_Misc_Bone_HumanSkull_01" }, { "lich", "INV_Misc_Bone_HumanSkull_01" }, { "bone", "INV_Misc_Bone_HumanSkull_01" }, { "crypt", "INV_Misc_Bone_HumanSkull_01" },
+  { "tomb", "INV_Misc_Bone_HumanSkull_01" }, { "graveyard", "INV_Misc_Bone_HumanSkull_01" }, { "scholomance", "INV_Misc_Bone_HumanSkull_01" },
+  { "undead", "INV_Misc_Head_Undead_01" }, { "forsaken", "INV_Misc_Head_Undead_01" }, { "ghoul", "INV_Misc_Head_Undead_01" }, { "zombie", "INV_Misc_Head_Undead_01" },
+  { "wolf", "Ability_Hunter_Pet_Wolf" }, { "worg", "Ability_Hunter_Pet_Wolf" }, { "fang", "Ability_Hunter_Pet_Wolf" },
+  { "bear", "Ability_Hunter_Pet_Bear" }, { "grizz", "Ability_Hunter_Pet_Bear" }, { "boar", "Ability_Hunter_Pet_Boar" }, { "razormane", "Ability_Hunter_Pet_Boar" },
+  { "bat", "Ability_Hunter_Pet_Bat" }, { "crab", "Ability_Hunter_Pet_Crab" }, { "croc", "Ability_Hunter_Pet_Crocolisk" }, { "raptor", "Ability_Hunter_Pet_Raptor" },
+  { "scorpid", "Ability_Hunter_Pet_Scorpid" }, { "scorpion", "Ability_Hunter_Pet_Scorpid" }, { "turtle", "Ability_Hunter_Pet_Turtle" }, { "tortoise", "Ability_Hunter_Pet_Turtle" },
+  { "vulture", "Ability_Hunter_Pet_Vulture" }, { "owl", "Ability_Hunter_Pet_Owl" }, { "hyena", "Ability_Hunter_Pet_Hyena" }, { "gorilla", "Ability_Hunter_Pet_Gorilla" },
+  { "tallstrider", "Ability_Hunter_Pet_TallStrider" }, { "serpent", "Ability_Hunter_Pet_WindSerpent" },
+  { "mine", "INV_Pick_02" }, { "deeps", "INV_Pick_02" }, { "depths", "INV_Pick_02" }, { "cavern", "INV_Pick_02" }, { "cave", "INV_Pick_02" },
+}
 local FREE_PACKS = true   -- beta: every pack is free (set to false to charge coins again)
 local PACK_PRICE, PACK_SIZE = FREE_PACKS and 0 or 25, 5
 -- How coins are earned (about 150 packs over a 1-60 climb):
@@ -628,9 +652,14 @@ local function iconFor(c)
     if C_Item and C_Item.GetItemIconByID then ic = C_Item.GetItemIconByID(c.ref) end
     if not ic and GetItemIcon then ic = GetItemIcon(c.ref) end
     return ic or "Interface\\Icons\\INV_Misc_QuestionMark"
-  elseif c.kind == 2 then
-    return "Interface\\Icons\\" .. (CREATURE_ICON[c.ref] or "INV_Misc_Head_Human_01")
   end
+  -- NPCs and places: the game's own icon, picked from the name first (a troll gets a troll head, a spider a spider),
+  -- then from the creature type
+  local n = (c.name or ""):lower()
+  for _, e in ipairs(NAME_ICON) do
+    if n:find(e[1], 1, true) then return "Interface\\Icons\\" .. e[2] end
+  end
+  if c.kind == 2 then return "Interface\\Icons\\" .. (CREATURE_ICON[c.ref] or "INV_Misc_Head_Human_01") end
   return "Interface\\Icons\\" .. (c.text == "Zone" and "INV_Misc_Map_01" or "INV_Misc_Map02")
 end
 
@@ -953,6 +982,8 @@ local function makeCard(parent, w)
   f.text = fs(f.top, "body", 12 * u); f.text:SetShadowColor(0, 0, 0, 0)
   f.text:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * u, -236 * u); f.text:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 232 * u, -322 * u)
   f.text:SetJustifyH("LEFT"); f.text:SetJustifyV("TOP"); f.text:SetTextColor(INK[1], INK[2], INK[3])
+  f.nameB = fs(f.top, "head", 10.5); f.nameB:SetShadowColor(0, 0, 0, 0); f.nameB:SetTextColor(INK[1], INK[2], INK[3])
+  f.nameB:SetJustifyH("CENTER"); f.nameB:SetJustifyV("TOP"); f.nameB:Hide()
   f.pow = fs(f.top, "title", 17 * u); f.pow:SetPoint("CENTER", f, "TOPLEFT", 208 * u, -327 * u); f.pow:SetTextColor(1, 0.92, 0.7)
   f.powLabel = fs(f.top, "head", 6.5 * u); f.powLabel:SetPoint("CENTER", f, "TOPLEFT", 207 * u, -314 * u); f.powLabel:SetTextColor(0.75, 0.7, 0.62); f.powLabel:SetText("POWER")
   f.num = fs(f.top, "head", 8 * u); f.num:SetPoint("LEFT", f, "TOPLEFT", 18 * u, -342 * u); f.num:SetTextColor(0.62, 0.58, 0.78)
@@ -1003,6 +1034,43 @@ local function dressModel(w, c, finish)
   return true
 end
 
+-- small cards: the name goes on the parchment in a size you can read (two lines if it needs them),
+-- with the effect or tier line beneath it. The tiny name plate on top stays empty.
+local function layoutText(w, big, name, text)
+  local u = w.u
+  w.text:ClearAllPoints()
+  if big then
+    w.nameB:Hide()
+    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -236 * u); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 232 * u, -322 * u)
+    if w.text.SetMaxLines then w.text:SetMaxLines(0) end
+    return
+  end
+  local bw, bh = 200 * u, 82 * u
+  local sz = w.cw >= 110 and 11 or 10
+  w.nameB:ClearAllPoints()
+  w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -239 * u); w.nameB:SetWidth(208 * u)
+  w.nameB:SetWordWrap(false); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
+  local lines = 1
+  local wd = w.nameB:GetStringWidth()
+  if type(wd) == "number" and wd > bw then
+    lines = 2
+    while sz > 9 and wd > bw * 1.85 do sz = sz - 0.5; setfont(w.nameB, "head", sz); w.nameB:SetText(name or ""); wd = w.nameB:GetStringWidth() end
+    w.nameB:SetWordWrap(true)
+    if w.nameB.SetMaxLines then w.nameB:SetMaxLines(2) end
+  elseif w.nameB.SetMaxLines then w.nameB:SetMaxLines(1) end
+  local nh = lines * (sz + 2)
+  w.nameB:SetHeight(nh); w.nameB:Show()
+  local tsz = 9
+  local room = bh - nh - 2
+  local tl = math.floor(room / (tsz + 2))
+  setfont(w.text, "body", tsz); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("TOP")
+  if text and text ~= "" and tl >= 1 then
+    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -(239 * u + nh + 2)); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 188 * u, -322 * u)
+    if w.text.SetMaxLines then w.text:SetMaxLines(tl) end
+    w.text:SetText(text)
+  else w.text:SetText("") end
+end
+
 -- card: the card; finish: 1-4 or nil (nothing owned); copies: how many you own
 local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
@@ -1023,7 +1091,7 @@ local function paint(w, card, finish, copies)
     w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
   end
   w.art:SetTexture(iconFor(card))
-  local scene = usesScene(card)
+  local scene = false   -- cards use the game's own icons, not drawn scenery
   if scene then
     if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
     setScene(w.scn, card, not finish)
@@ -1033,7 +1101,7 @@ local function paint(w, card, finish, copies)
     w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide(); w.emb:Hide()
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
     if scene then w.art:Hide() end
-    w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
+    w.nameB:Hide(); w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
     w.num:SetTextColor(0.5, 0.45, 0.6)
     return
   end
@@ -1043,14 +1111,16 @@ local function paint(w, card, finish, copies)
   w.fxset = fx
   local kc = KINDCOL[card.kind] or KINDCOL[1]
   w.glow:SetVertexColor(kc[1], kc[2], kc[3], 0.55)
-  if card.kind == 1 then
+  if card.kind ~= 4 then
     w.spot:ClearAllPoints(); w.spot:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.spot:SetSize(w.ah * 1.7, w.ah * 1.7)
     w.spot:SetVertexColor(t[1], t[2], t[3], 0.55 + 0.08 * (card.tier or 1)); w.spot:Show()
+  end
+  if card.kind == 1 then
     local sl = slotOf(card); local c0, r0 = sl % 4, math.floor(sl / 4)
     w.emb:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, r0 * 0.25 + 0.25)
     w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.artClip, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
     w.emb:SetVertexColor(t[1], t[2], t[3], 0.34); w.emb:Show()
-  else w.spot:Hide(); w.emb:Hide() end
+  else w.emb:Hide(); if card.kind == 4 then w.spot:Hide() end end
   tintTex(w.frameTex, t, finish == 1 and 0.82 or 1)
   tintTex(w.gem, t, 1)
   tintTex(w.rune, t, fx.rune)
@@ -1067,21 +1137,20 @@ local function paint(w, card, finish, copies)
   if fx.aura > 0 then w.aura:Show(); w.aura:SetAlpha(fx.aura) end
   if fx.sparks then for _, sp in ipairs(w.sparks) do sp:Show(); tintTex(sp, { 1, 0.95, 0.8 }, 0.8) end end
   -- text
-  fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head")
-  setfont(w.type, "head", math.max(7, 10 * u))
+  local compact = w.cw < 190
+  if compact then w.name:SetText("") else fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head") end
+  setfont(w.type, "head", math.max(8, 10 * u))
   w.type:SetText(KIND[card.kind] .. "  ·  " .. TIER[card.tier][1])
   setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
   setfont(w.num, "head", math.max(6.5, 8 * u))
   local big = w.cw >= 190
   w.text:SetShown(true)
+  layoutText(w, big, card.name, TIER[card.tier][1] .. " · " .. FINISH[finish][1])
   if big then
     setfont(w.text, "body", 12.5 * u)
     w.text:SetText((card.text or "") .. "\n\n|cff6b4a2e" .. FINISH[finish][1] .. " print|r")
-  else
-    setfont(w.text, "head", math.max(8, 13 * u)); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("MIDDLE")
-    w.text:SetText(TIER[card.tier][1] .. "\n|cff6b4a2e" .. FINISH[finish][1] .. "|r")
+    w.text:SetJustifyH("LEFT"); w.text:SetJustifyV("TOP")
   end
-  if big then w.text:SetJustifyH("LEFT"); w.text:SetJustifyV("TOP") end
   w.pow:SetText(power(card, finish)); setfont(w.pow, "title", math.max(8.5, 17 * u))
   w.powLabel:SetShown(w.cw >= 120)
   setfont(w.powLabel, "head", math.max(5.5, 6.5 * u))
@@ -1344,7 +1413,7 @@ local function afford()
   return a and (((a.bonus or 0) > 0) or ((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
 end
 
-local RW, RCARD, RGAP = 790, 132, 14
+local RW, RCARD, RGAP = 790, 140, 8
 local function dealPositions(i)
   local total = PACK_SIZE * RCARD + (PACK_SIZE - 1) * RGAP
   return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -64
@@ -1449,9 +1518,10 @@ local function showReveal(got, notes, meta)
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
     reveal:SetPoint("CENTER", 0, 40); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
-    darkPanel(reveal, RW, 420)
-    local plate = reveal:CreateTexture(nil, "ARTWORK"); plate:SetTexture(MEDIA .. "Plate"); plate:SetSize(300, 38); plate:SetPoint("TOP", 0, -10)
-    reveal.title = fs(reveal, "title", 16); reveal.title:SetPoint("CENTER", plate, "CENTER", 0, 0); reveal.title:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    reveal:SetSize(RW, 420)
+    reveal:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
+    reveal:SetBackdropColor(0.055, 0.05, 0.08, 1); reveal:SetBackdropBorderColor(0.42, 0.36, 0.24, 1)
+    reveal.title = fs(reveal, "head", 15); reveal.title:SetPoint("TOP", 0, -18); reveal.title:SetTextColor(0.92, 0.86, 0.7)
     reveal.fxFrame = CreateFrame("Frame", nil, reveal); reveal.fxFrame:SetAllPoints(reveal); reveal.fxFrame:SetFrameLevel(lv(reveal) + 1)
     reveal.burst = reveal.fxFrame:CreateTexture(nil, "ARTWORK"); reveal.burst:SetTexture(MEDIA .. "Rays"); reveal.burst:SetBlendMode("ADD"); reveal.burst:Hide()
     reveal.phase, reveal.burstLeft, reveal.burstMax, reveal.burstSpin, reveal.dealT = false, 0, 1, 0, 0
@@ -1464,10 +1534,10 @@ local function showReveal(got, notes, meta)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
     end
-    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(150, 150); reveal.seal:SetPoint("CENTER", 0, -10); reveal.seal:SetFrameLevel(lv(reveal) + 30)
+    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(112, 112); reveal.seal:SetPoint("CENTER", 0, -10); reveal.seal:SetFrameLevel(lv(reveal) + 30)
     reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
-    reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0.7)
-    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seals"); sealTex:SetAllPoints(reveal.seal)
+    reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0)
+    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seals"); sealTex:SetAllPoints(reveal.seal); sealTex:SetDesaturated(false)
     sealTex:SetTexCoord(0, 0.5, 0, 0.5)
     reveal.sealTex = sealTex
     -- the set's emblem, pressed into the wax: a light edge, a shadow and the figure itself
@@ -1478,10 +1548,10 @@ local function showReveal(got, notes, meta)
     reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 3); reveal.ribbon:SetTexture(MEDIA .. "Seals"); reveal.ribbon:SetTexCoord(0.5, 1, 0.68, 0.82)
     reveal.ribbon:SetSize(190, 53); reveal.ribbon:SetPoint("CENTER", reveal.seal, "CENTER", 0, -52); reveal.ribbon:SetVertexColor(1, 0.85, 0.4, 1); reveal.ribbon:Hide()
     reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetPoint("CENTER", reveal.ribbon, "CENTER", 0, 0); reveal.ribbonText:SetTextColor(0.22, 0.14, 0.04); reveal.ribbonText:SetText("")
-    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Hold and drag to tear it open  ·  or click it three times"); reveal.sealHint:SetTextColor(0.9, 0.8, 0.6)
+    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Drag to tear it open, or click it three times"); reveal.sealHint:SetTextColor(0.7, 0.67, 0.6)
     reveal.seal:EnableMouse(true)
     reveal.sealCol = { 1, 1, 1 }
-    reveal.sealInfo = fs(reveal.seal, "body", 12); reveal.sealInfo:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -28); reveal.sealInfo:SetWidth(RW - 120); reveal.sealInfo:SetJustifyH("CENTER"); reveal.sealInfo:SetTextColor(0.78, 0.74, 0.92)
+    reveal.sealInfo = fs(reveal.seal, "body", 12); reveal.sealInfo:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -30); reveal.sealInfo:SetWidth(RW - 120); reveal.sealInfo:SetJustifyH("CENTER"); reveal.sealInfo:SetTextColor(0.78, 0.74, 0.92)
     reveal.cracks = {}
     for i = 1, 4 do
       local ct = reveal.seal:CreateTexture(nil, "OVERLAY"); ct:SetColorTexture(1, 0.95, 0.8, 1); ct:SetSize(3, 34 + i * 8)
@@ -1522,7 +1592,7 @@ local function showReveal(got, notes, meta)
       if ChatFrame_OpenChat then ChatFrame_OpenChat(msg) elseif RG.Print then RG.Print(msg) end
     end)
     reveal.share:SetPoint("BOTTOM", 290, 18); reveal.share:Hide()
-    reveal.snd = gbtn(reveal, "Sound: On", 100, 22, function(self)
+    reveal.snd = gbtn(reveal, "Sound: On", 84, 22, function(self)
       local a = store(); if not a then return end
       a.mute = not a.mute
       self:SetText(a.mute and "Sound: Off" or "Sound: On")
@@ -1569,10 +1639,10 @@ local function showReveal(got, notes, meta)
         if self.pickIdle > 2 and self.picks > 0 then self.picks = 0 end
         if self.tear >= 1 then tearOpen(); return end
         local tt = math.max(self.tear, self.picks / 3 * 0.85)
-        local k = 1 + 0.05 * math.sin(t * 4) + 0.14 * tt
-        self.seal:SetSize(150 * k, 150 * k)
+        local k = 1 + 0.02 * math.sin(t * 4) + 0.12 * tt
+        self.seal:SetSize(112 * k, 112 * k)
         self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 3 * tt, -10 + math.cos(t * 47) * 2 * tt)
-        self.sealGlow:SetAlpha(0.55 + 0.3 * math.sin(t * 5) + 0.35 * tt)
+        self.sealGlow:SetAlpha(0)
         local c = self.sealCol
         self.sealTex:SetVertexColor(c[1] + (1 - c[1]) * tt * 0.5, c[2] + (1 - c[2]) * tt * 0.5, c[3] + (1 - c[3]) * tt * 0.5, 1)
         for _, ct in ipairs(self.cracks) do ct:SetAlpha(math.min(1, tt * 1.4)) end
@@ -1661,7 +1731,6 @@ local function showReveal(got, notes, meta)
     end
   end
   if meta.daily and not meta.many then
-    reveal.ribbon:Show(); reveal.ribbonText:SetText("DAY " .. (meta.streak or 1))
   end
   reveal.sealInfo:SetText(table.concat(info, "\n"))
   reveal.title:SetText(title)
@@ -1676,7 +1745,7 @@ local function showReveal(got, notes, meta)
   reveal:Show()
   reveal.phase = "seal"
   reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, -10)
-  reveal.seal:Show(); reveal.sealGlow:Show(); reveal.seal:SetSize(150, 150)
+  reveal.seal:Show(); reveal.seal:SetSize(112, 112)
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
     paint(w, g.card, g.finish, 1)
@@ -1917,8 +1986,8 @@ local function build()
     RG.ArcadeRefresh(true)
   end)
   frame.sell:SetPoint("BOTTOM", 200, 23)
-  frame.arena = gbtn(frame, "Waypath Arena", 110, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
-  frame.arena:SetPoint("BOTTOM", -335, 23)
+  frame.arena = gbtn(frame, "Arena", 96, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
+  frame.arena:SetPoint("BOTTOM", -340, 23)
   -- fit small screens
   local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
   if type(ph) == "number" and ph > 0 and ph < WINH + 30 then frame:SetScale(math.max(0.6, (ph - 30) / WINH)) end
@@ -2061,7 +2130,7 @@ function RG.ArcadeRefresh(keepMsg)
   if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
 end
 
-RG.ArcadeUI = { makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+RG.ArcadeUI = { layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
