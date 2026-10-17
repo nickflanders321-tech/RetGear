@@ -343,20 +343,29 @@ local function makeMinion(parent)
   local m = CreateFrame("Button", nil, parent)
   m:SetSize(MW, MH)
   m.glow = m:CreateTexture(nil, "BACKGROUND"); m.glow:SetTexture(U.MEDIA .. "Glow"); m.glow:SetBlendMode("ADD"); m.glow:SetSize(150, 150); m.glow:SetPoint("CENTER", m, "TOP", 0, -44); m.glow:Hide()
-  m.flashTex = m:CreateTexture(nil, "OVERLAY", nil, 6); m.flashTex:SetTexture(U.MEDIA .. "Glow"); m.flashTex:SetBlendMode("ADD"); m.flashTex:SetSize(170, 170); m.flashTex:SetPoint("CENTER", m, "TOP", 0, -44); m.flashTex:SetVertexColor(1, 0.9, 0.55, 1); m.flashTex:Hide()
   m.back = m:CreateTexture(nil, "BACKGROUND", nil, 2); m.back:SetColorTexture(0.05, 0.04, 0.1, 1); m.back:SetSize(66, 66); m.back:SetPoint("CENTER", m, "TOP", 0, -44)
   m.icon = m:CreateTexture(nil, "ARTWORK", nil, 1); m.icon:SetSize(66, 66); m.icon:SetPoint("CENTER", m, "TOP", 0, -44); m.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   m.scn = U.newScene(m, 66, 66, m.back)
-  m.tile = m:CreateTexture(nil, "ARTWORK", nil, 2); m.tile:SetSize(88, 88); m.tile:SetPoint("TOP", m, "TOP", 0, 0)
-  m.ice = m:CreateTexture(nil, "ARTWORK", nil, 3); m.ice:SetTexture(U.MEDIA .. "Ice"); m.ice:SetSize(84, 84); m.ice:SetPoint("CENTER", m.tile, "CENTER"); m.ice:SetAlpha(0.7); m.ice:Hide()
-  m.bubble = m:CreateTexture(nil, "ARTWORK", nil, 4); m.bubble:SetTexture(U.MEDIA .. "Bubble"); m.bubble:SetBlendMode("ADD"); m.bubble:SetSize(96, 96); m.bubble:SetPoint("CENTER", m.tile, "CENTER"); m.bubble:Hide()
-  m.atkB = m:CreateTexture(nil, "OVERLAY", nil, 1); m.atkB:SetTexture(U.MEDIA .. "BadgeAtk"); m.atkB:SetSize(32, 32); m.atkB:SetPoint("CENTER", m.tile, "BOTTOMLEFT", 8, 6)
-  m.hpB = m:CreateTexture(nil, "OVERLAY", nil, 1); m.hpB:SetTexture(U.MEDIA .. "BadgeHp"); m.hpB:SetSize(32, 32); m.hpB:SetPoint("CENTER", m.tile, "BOTTOMRIGHT", -8, 6)
-  m.atkT = U.fs(m, "title", 17, "OVERLAY", "OUTLINE"); m.atkT:SetPoint("CENTER", m.atkB, "CENTER", 0, 0)
-  m.hpT = U.fs(m, "title", 17, "OVERLAY", "OUTLINE"); m.hpT:SetPoint("CENTER", m.hpB, "CENTER", 0, 0)
-  m.name = U.fs(m, "head", 10, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "BOTTOM", 0, -2); m.name:SetWidth(MW + 6); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
-  m.zz = U.fs(m, "title", 14, "OVERLAY", "OUTLINE"); m.zz:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -8); m.zz:SetTextColor(0.7, 0.8, 1); m.zz:SetText("Zz")
-  m.fx = U.fs(m, "head", 9, "OVERLAY", "OUTLINE"); m.fx:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -8); m.fx:SetTextColor(1, 0.85, 0.5)
+  -- the picture is the card's own: its 3D model (a creature) or painting (a place), under a frame of badges and text
+  local okm, mdl = pcall(CreateFrame, "DressUpModel", nil, m)
+  if okm and mdl then
+    mdl:SetSize(62, 62); mdl:SetPoint("CENTER", m, "TOP", 0, -44); mdl:SetFrameLevel(U.lv(m) + 2); mdl:Hide()
+    mdl:SetScript("OnModelLoaded", function(self) pcall(function() if self.SetFacing then self:SetFacing(0.5) end end) end)
+    m.mdl = mdl
+  end
+  local top = CreateFrame("Frame", nil, m); top:SetAllPoints(m); top:SetFrameLevel(U.lv(m) + 4)
+  m.top = top
+  m.flashTex = top:CreateTexture(nil, "OVERLAY", nil, 6); m.flashTex:SetTexture(U.MEDIA .. "Glow"); m.flashTex:SetBlendMode("ADD"); m.flashTex:SetSize(170, 170); m.flashTex:SetPoint("CENTER", m, "TOP", 0, -44); m.flashTex:SetVertexColor(1, 0.9, 0.55, 1); m.flashTex:Hide()
+  m.tile = top:CreateTexture(nil, "ARTWORK", nil, 2); m.tile:SetSize(88, 88); m.tile:SetPoint("TOP", m, "TOP", 0, 0)
+  m.ice = top:CreateTexture(nil, "ARTWORK", nil, 3); m.ice:SetTexture(U.MEDIA .. "Ice"); m.ice:SetSize(84, 84); m.ice:SetPoint("CENTER", m.tile, "CENTER"); m.ice:SetAlpha(0.7); m.ice:Hide()
+  m.bubble = top:CreateTexture(nil, "ARTWORK", nil, 4); m.bubble:SetTexture(U.MEDIA .. "Bubble"); m.bubble:SetBlendMode("ADD"); m.bubble:SetSize(96, 96); m.bubble:SetPoint("CENTER", m.tile, "CENTER"); m.bubble:Hide()
+  m.atkB = top:CreateTexture(nil, "OVERLAY", nil, 1); m.atkB:SetTexture(U.MEDIA .. "BadgeAtk"); m.atkB:SetSize(32, 32); m.atkB:SetPoint("CENTER", m.tile, "BOTTOMLEFT", 8, 6)
+  m.hpB = top:CreateTexture(nil, "OVERLAY", nil, 1); m.hpB:SetTexture(U.MEDIA .. "BadgeHp"); m.hpB:SetSize(32, 32); m.hpB:SetPoint("CENTER", m.tile, "BOTTOMRIGHT", -8, 6)
+  m.atkT = U.fs(top, "title", 17, "OVERLAY", "OUTLINE"); m.atkT:SetPoint("CENTER", m.atkB, "CENTER", 0, 0)
+  m.hpT = U.fs(top, "title", 17, "OVERLAY", "OUTLINE"); m.hpT:SetPoint("CENTER", m.hpB, "CENTER", 0, 0)
+  m.name = U.fs(top, "head", 10, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "BOTTOM", 0, -2); m.name:SetWidth(MW + 6); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
+  m.zz = U.fs(top, "title", 14, "OVERLAY", "OUTLINE"); m.zz:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -8); m.zz:SetTextColor(0.7, 0.8, 1); m.zz:SetText("Zz")
+  m.fx = U.fs(top, "head", 9, "OVERLAY", "OUTLINE"); m.fx:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -8); m.fx:SetTextColor(1, 0.85, 0.5)
   m:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   m:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar(self.ref) end end)
   m:SetScript("OnEnter", function(self)
@@ -374,9 +383,20 @@ end
 local function paintMinion(w, m, side)
   w.m, w.ref = m, m.uid
   w:Show()
-  w.icon:SetTexture(iconOf(m.key, m))
   local cc = m.key and not m.icon and cardObj(m.key)
-  U.hideScene(w.scn); w.icon:SetSize(66, 66); w.icon:Show()
+  -- the same picture the card shows: a creature's model, a place's painting, an item's icon
+  local pk, p1, l, r, t, b = "icon", iconOf(m.key, m)
+  if cc and U.portrait then pk, p1, l, r, t, b = U.portrait(cc) end
+  local shownModel = false
+  if pk == "model" and w.mdl and w.mdl.SetDisplayInfo then
+    if w.mdlId ~= p1 then w.mdlOk = pcall(w.mdl.SetDisplayInfo, w.mdl, p1); w.mdlId = p1 end
+    shownModel = w.mdlOk and true or false
+    if shownModel then if w.mdl.SetPortraitZoom then pcall(w.mdl.SetPortraitZoom, w.mdl, 0.75) end end
+  end
+  if w.mdl then w.mdl:SetShown(shownModel) end
+  if pk == "tex" then w.icon:SetTexture(p1); w.icon:SetTexCoord(l, r, t, b)
+  else w.icon:SetTexture(pk == "icon" and p1 or iconOf(m.key, m)); w.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+  U.hideScene(w.scn); w.icon:SetSize(66, 66); w.icon:SetShown(not shownModel)
   local iron = m.kw.taunt
   w.tile:SetTexture(U.MEDIA .. (iron and "TileIron" or "Tile"))
   local c = side == 1 and TILE_ME or TILE_FOE

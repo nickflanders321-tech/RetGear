@@ -734,7 +734,7 @@ local function iconFor(c)
   -- then from the creature type
   local n = (c.name or ""):lower()
   for _, e in ipairs(NAME_ICON) do
-    if n:find(e[1], 1, true) then return "Interface\\Icons\\" .. e[2] end
+    if (" " .. n):find(" " .. e[1], 1, true) then return "Interface\\Icons\\" .. e[2] end   -- (at the start of a word: "howler" is not an owl)
   end
   if c.kind == 2 then return "Interface\\Icons\\" .. (CREATURE_ICON[c.ref] or "INV_Misc_Head_Human_01") end
   return "Interface\\Icons\\" .. (c.text == "Zone" and "INV_Misc_Map_01" or "INV_Misc_Map02")
@@ -2507,7 +2507,18 @@ function RG.ArcadeRefresh(keepMsg)
   if ready >= 2 then frame.buyAll:SetText("Break all  (" .. ready .. ")"); frame.buyAll:Show() else frame.buyAll:Hide() end
 end
 
-RG.ArcadeUI = { layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+-- the picture a card shows, so the board can show the same one: "model", displayId | "tex", path, l, r, t, b | "icon", path
+function RG.ArcadePortrait(c)
+  if c.kind == 2 and RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] then return "model", RG.ARCADE_NPC[c.name] end
+  local e = c.kind == 3 and RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]
+  if e then
+    local col, row = e[2] % 8, math.floor(e[2] / 8)
+    return "tex", MEDIA .. "Places" .. e[1], (col * 120 + 18) / 1024, (col * 120 + 102) / 1024, row * 84 / 1024, (row + 1) * 84 / 1024
+  end
+  return "icon", iconFor(c)
+end
+
+RG.ArcadeUI = { portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
