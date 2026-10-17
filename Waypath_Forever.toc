@@ -89,6 +89,7 @@ Arcade.lua
 ArcadeBattle.lua
 FishMode.lua
 Path.lua
+Paths.lua
 Speed.lua
 Guide.lua
 Travel.lua

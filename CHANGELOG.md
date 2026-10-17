@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Better GPS. When the arrow is blocked and has no learned path, it now leads to the game's own next leg of that quest (a door, cave mouth or stair) before the quest point. Without Shortest Path Forever installed, the arrow's tooltip and blocked hint mention it.
+- Shareable walking routes: `/wp trail export` shows your learned paths as text to copy, `/wp trail import` merges pasted paths, and `Paths.lua` can ship routes inside the add-on. The trail holds up to 20,000 points.
+
 ## v1.0.12
 - The 3D arrow is re-lit per pixel: crisp silhouette, rounded glassy edges, a real specular highlight and a rim light, instead of soft blurred shading. It reads as detailed instead of blurry.
 

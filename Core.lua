@@ -851,7 +851,8 @@ SlashCmdList.WAYPATH = function(msg)
   elseif cmd == "trail" then
     if rest == "reset" then RG.TrailReset(); RG.Print("Learned paths cleared.")
     elseif rest == "off" or rest == "on" then RG.db.trail = (rest == "on"); RG.Print("Learned paths " .. rest .. ".")
-    else RG.Print("Learned paths: " .. (RG.TrailSize and RG.TrailSize() or 0) .. " points remembered. /wp trail off | on | reset") end
+    elseif rest == "export" or rest == "import" then RG.ShowTrailBox(rest)
+    else RG.Print("Learned paths: " .. (RG.TrailSize and RG.TrailSize() or 0) .. " points remembered. /wp trail off | on | reset | export | import") end
   elseif cmd == "smart" then
     if RG.SmartToggle then RG.SmartToggle(rest == "on" or (rest ~= "off" and (RG.db.smart == false or RG.db.routeStyle == "guided"))) end
   elseif cmd == "weight" then

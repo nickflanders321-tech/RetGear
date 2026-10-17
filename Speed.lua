@@ -691,6 +691,7 @@ local function buildArrow()
     GameTooltip:AddLine("Drag: move  ·  Mouse wheel: resize (or /wp arrowsize 150)", 0.7, 0.7, 0.7)
     GameTooltip:AddLine("Shift-click: on to the next stop", 0.7, 0.7, 0.7)
     GameTooltip:AddLine("Double-click or right-click: turn it off", 0.7, 0.7, 0.7)
+    if not RG.SPFInstalled() then GameTooltip:AddLine("Tip: install Shortest Path Forever and this arrow plans routes around walls and mountains.", 0.9, 0.75, 0.35, true) end
     GameTooltip:Show()
   end)
   arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -698,6 +699,28 @@ local function buildArrow()
   arrow.pulse = 0
   local shown, lastKey, arrivedAt = 0, nil, nil
   local acc = 0
+  -- The game knows the next leg of a quest's way (a door, a cave mouth, a stair). When we are blocked and
+  -- have no learned path, lead to that point first.
+  local legQuest = {}
+  local function gameLeg(wp, key, cont, px, py, d)
+    if not (C_QuestLog and C_QuestLog.GetNextWaypoint) then return end
+    local qid = legQuest[key]
+    if qid == nil then
+      qid = false
+      for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+        if q.id and q.wp and samePin({ map = wp.uiMapID, x = wp.position.x * 100, y = wp.position.y * 100 }, { map = q.wp[1], x = q.wp[2], y = q.wp[3] }) then qid = q.id; break end
+      end
+      legQuest[key] = qid
+    end
+    if not qid then return end
+    local ok, m, x, y = pcall(C_QuestLog.GetNextWaypoint, qid)
+    if not (ok and m and x and y) then return end
+    local c, lx, ly = worldPos(m, CreateVector2D and CreateVector2D(x, y) or { x = x, y = y })
+    if not (c and c == cont) then return end
+    local dl = math.sqrt((lx - px) ^ 2 + (ly - py) ^ 2)
+    if dl < 25 or dl > d + 150 then return end
+    return lx - px, ly - py, "Blocked: the game's own next leg of this quest"
+  end
   local FR, COLS3, CELL3, SHEET3 = 64, 8, 256, 2048
   local function sync3d(self)
     local on = RG.db.arrow3d ~= false and self.tex:IsShown()
@@ -778,10 +801,15 @@ local function buildArrow()
     -- learned paths: when you are not getting closer, lead the way you went before
     local pathHint
     if RG.PathTick then
-      local ok, ox, oy, h = pcall(RG.PathTick, c1, px, py, tx, ty, d, GetUnitSpeed and GetUnitSpeed("player") or 0, step, key)
+      local ok, ox, oy, h, stuck = pcall(RG.PathTick, c1, px, py, tx, ty, d, GetUnitSpeed and GetUnitSpeed("player") or 0, step, key)
       if ok then
         if ox then dx, dy = ox, oy end
         pathHint = h
+        if stuck and not ox then
+          local okg, gx, gy, gh = pcall(gameLeg, wp, key, c1, px, py, d)
+          if okg and gx then dx, dy = gx, gy; pathHint = gh
+          elseif not RG.SPFInstalled() then pathHint = (h or "Blocked?") .. "  (Shortest Path Forever plans around this)" end
+        end
       end
     end
     -- smooth turning
@@ -814,6 +842,7 @@ local function spfApi()
   if RG.Opt("spf") and api and type(api.Navigate) == "function" then return api end
 end
 RG.SPFApi = spfApi
+function RG.SPFInstalled() return ShortestPathForever ~= nil and type(ShortestPathForever.API) == "table" end
 local function spfActive()
   local api = spfApi()
   if not (api and api.CurrentStop) then return false end
