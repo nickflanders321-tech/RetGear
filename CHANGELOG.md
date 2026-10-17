@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.96.0
+- Beta: card packs are free for now. (One switch in Arcade.lua puts the price back.)
+
 ## v0.95.0
 - The cards window is easier to read: larger, brighter text for the subtitle, totals, tabs, buttons, search and page counter.
 

@@ -19,7 +19,8 @@ local CREATURE_ICON = {
   [5] = "Spell_Nature_EarthElemental_Totem", [6] = "Spell_Shadow_AnimateDead", [7] = "INV_Misc_Head_Orc_01", [8] = "Ability_Hunter_Pet_Rabbit",
   [9] = "INV_Gizmo_01",
 }
-local PACK_PRICE, PACK_SIZE = 25, 5
+local FREE_PACKS = true   -- beta: every pack is free (set to false to charge coins again)
+local PACK_PRICE, PACK_SIZE = FREE_PACKS and 0 or 25, 5
 -- How coins are earned (about 150 packs over a 1-60 climb):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 20
@@ -100,7 +101,7 @@ local function give(kind, amount, capped)
   end
   -- once a day, after you have opened the cards window at least once, say when a pack is affordable
   local d = date and date("%Y-%m-%d") or "today"
-  if a.seen and (a.coins or 0) >= PACK_PRICE and a.hintDay ~= d then
+  if a.seen and PACK_PRICE > 0 and (a.coins or 0) >= PACK_PRICE and a.hintDay ~= d then
     a.hintDay = d
     if RG.Print then RG.Print("You have enough coins for a card pack. /wp cards") end
   end
@@ -1484,7 +1485,7 @@ function RG.ArcadeRefresh(keepMsg)
     frame.panel:SetText(table.concat(lines, "\n"))
   end
   local free = a.free or 0
-  frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or ("Break a seal  ·  " .. PACK_PRICE))
+  frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free in the beta" or ("Break a seal  ·  " .. PACK_PRICE)))
   frame.buy:SetEnabled(afford() and true or false)
 end
 
