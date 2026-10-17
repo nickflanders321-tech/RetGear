@@ -44,17 +44,17 @@ local NAME_ICON = {
   { "mine", "INV_Pick_02" }, { "deeps", "INV_Pick_02" }, { "depths", "INV_Pick_02" }, { "cavern", "INV_Pick_02" }, { "cave", "INV_Pick_02" },
 }
 local FREE_PACKS = true   -- beta: every pack of every kind is free (set to false at release to charge coins)
--- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 8,500 coins
+-- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 10,000 coins
 -- (XP, level-ups, quests, kills, skill-ups, goals, duels, set rewards, and the bonuses in ArcadeRewards.lua)
 -- plus about 190 packs' worth of free cards (daily packs, a reward Jumbo every 7th day, milestone, dungeon,
--- quest-line and gear packs, and the level 60 gift). Spent on packs at about 9 coins a card, with extras sold
+-- quest-line and gear packs, and the level 60 gift). Spent on packs at about 10 coins a card, with extras sold
 -- back, that gives a median of about 76% of the Master Set (every card, in any finish) at level 60: about 68%
 -- for a light player and about 90% for a heavy one. COLLECTOR_LUCK and the pack prices tune it.
 -- three kinds of pack, and every card in the game can come out of any of them
 local PACKS = {
-  normal = { name = "Pack", size = 5, price = 45, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
-  jumbo = { name = "Jumbo Pack", size = 8, price = 72, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
-  super = { name = "Super Jumbo Pack", size = 12, price = 104, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
+  normal = { name = "Pack", size = 5, price = 52, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
+  jumbo = { name = "Jumbo Pack", size = 8, price = 84, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
+  super = { name = "Super Jumbo Pack", size = 12, price = 120, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
 }
 local PACK_ORDER = { "normal", "jumbo", "super" }
 local PACK_MAX = 12
@@ -70,7 +70,7 @@ local function packPrice(kind) return FREE_PACKS and 0 or PACKS[kind or "normal"
 local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
 -- How coins are earned (about 6,500 coins over a 1-60 climb, see RELEASE BALANCE above):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
---   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 20
+--   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 4
 --   profession skill-ups: 1 coin per 2    duel win: 4
 -- Quests, kills and skill-ups together pay at most DAY_CAP coins per day, so grinding one thing all day doesn't run away.
 local DAY_CAP = 80
@@ -184,7 +184,7 @@ ev:SetScript("OnEvent", function(_, event, text, author, _, _, _, _, _, _, _, _,
     if type(text) == "string" and not (RG.IsSecret and RG.IsSecret(text)) and text:find("%d+") then give("skill", 0.5, true) end
     return
   elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then
-    if type(text) == "string" and not (RG.IsSecret and RG.IsSecret(text)) and text:find("dies", 1, true) then give("kill", 0.05, true) end
+    if type(text) == "string" and not (RG.IsSecret and RG.IsSecret(text)) and text:find("dies", 1, true) then give("kill", 0.25, true) end
     return
   end
   if event:find("^CHAT_MSG_") then
