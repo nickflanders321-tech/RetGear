@@ -5,6 +5,7 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local C = C_Container or {}
+local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
 table.insert(RG.OPTIONS, { key = "sortButton", label = "Sort button on my bags and bank", default = true })
 
 local BAGS = { 0, 1, 2, 3, 4 }

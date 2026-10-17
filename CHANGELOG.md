@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.93.0
+- Fixed the Gear guide page failing with "attempt to call a nil value": it used a game function this client does not provide. The same fix is applied in the bag sorter.
+
 ## v0.92.0
 - Clean-up of wonky spots: the search box no longer sits on top of the Route sub-tabs; the Arena's opening-hand screen no longer stacks the cards, the Keep button and the heroes on each other, and the opponent's card backs no longer cover their name; the Arena rules text has more line spacing.
 - If a page of the window hits an error it now says so on the page (and in chat, with the error text) instead of leaving half-drawn rows from the previous tab. The error line in chat no longer says "Waypath+" twice.

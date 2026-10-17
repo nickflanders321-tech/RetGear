@@ -3,6 +3,7 @@
 -- status bars and Character-window tabs along the bottom.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
+local GetItemInfo = function(...) return RG.ItemInfo(...) end   -- the game has no global GetItemInfo here; Core wraps C_Item.GetItemInfo
 
 -- ---------------------------------------------------------------------------
 -- Theme
