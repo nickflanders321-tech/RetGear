@@ -505,7 +505,8 @@ function RG.RefreshTracker()
     tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 40)
     return
   end
-  local MAXQ = 10
+  local compact = RG.Opt and RG.Opt("compactTracker")
+  local MAXQ = compact and 6 or 10
   -- 0. fishing: shows while you hold a pole or caught something in the last 10 minutes
   local fl, fright = nil, nil
   if RG.FishTrackerLines then fl, fright = RG.FishTrackerLines() end
@@ -513,13 +514,15 @@ function RG.RefreshTracker()
     local isFolded
     n = n + 1; y, isFolded = section(n, y, "Fishing", "fishing", fright)
     if not isFolded then
-      for _, l in ipairs(fl) do
-        n = n + 1
-        y = item(n, y, l[1], { single = true, right = l[2], onClick = l[3], tip = l[4] })
+      for i, l in ipairs(fl) do
+        if not compact or i <= 2 then   -- compact: your skill and the one thing to know; the rest is on the Fishing page
+          n = n + 1
+          y = item(n, y, l[1], { single = true, right = l[2], onClick = l[3], tip = l[4] })
+        end
       end
     end
     y = y + 5
-    MAXQ = 6 -- keep the tracker short while fishing
+    MAXQ = compact and 4 or 6 -- keep the tracker short while fishing
   end
   -- 0b. now: the one thing to do next (the same objective the arrow follows)
   do
@@ -568,7 +571,7 @@ function RG.RefreshTracker()
       end)
       local shownQ, hidden = 0, 0
       for _, g in ipairs(groups) do
-        if shownQ >= MAXQ then hidden = hidden + #g.list
+        if shownQ >= MAXQ or (compact and not g.here and not g.ready and (g.dist or 1e9) > 2500) then hidden = hidden + #g.list   -- compact: far zones fold into "+N more"
         else
           local zf = RG.db.trackerFold and RG.db.trackerFold["zone:" .. g.zone]
           n = n + 1

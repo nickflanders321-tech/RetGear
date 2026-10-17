@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.8
+- A shorter tracker. At higher levels the tracker could fill the screen, so by default it now keeps itself short: the Fishing block shows two lines (the rest is on the Fishing page), quests show up to six lines (four while fishing) with the ones in your zone and nearest first, far-away zones fold into "+N more in your quest log", and the Now block only adds the "Great / Okay" rating line when it is a warning. Turn it off in Settings ("Keep the tracker short") for the full list.
+
 ## v1.0.7
 - The arrow now follows the rest of the game's maps. Pick a quest on the world map or in your quest log and the arrow guides you to it (the turn-in if it is ready, otherwise the nearest objective). Ctrl-click the minimap and the arrow goes to that spot. Questie icons (world map and minimap) send the arrow where you Ctrl-click them, the same way they would with TomTom (Waypath+ answers for TomTom when TomTom is not installed). One switch in Settings, "Let map clicks drive the arrow".
 

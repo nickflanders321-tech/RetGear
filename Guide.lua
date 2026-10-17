@@ -681,14 +681,14 @@ function RG.NowLines()
       onRightClick = (obj.stop and obj.count and obj.count > 1) and function() RG.SkipStop(obj.stop); RG.SyncObjective(RG.Objective(true)); RG.RefreshTracker() end
         or (obj.kind == "goal" and function() RG.RemoveGoal(1) end) or nil } }
     -- how good it is, in a line of its own so the objective can use the full width
-    if obj.tag then
+    if obj.tag and not (opt("compactTracker") and (obj.tag == "Great" or obj.tag == "Okay")) then   -- compact: say it only when it is a warning
       out[#out + 1] = { text = obj.tagColor .. obj.tag .. "|r" .. GREY .. " · " .. ((obj.tagNote or ""):match("^[^;]*")) .. "|r", opts = { indent = 14, tip = tip, wp = obj.wp,
         onClick = function() if obj.wp then RG.Follow(obj.wp) end end } }
     end
     -- the one thing in the way, or the live objective list
     local shown = 0
     for _, rq in ipairs(obj.reqs or {}) do
-      if shown < 3 and ((obj.act == "doing" and rq.kind == "obj") or (obj.act == "pickup" and rq.kind == "req" and rq.ok == false)) then
+      if shown < (opt("compactTracker") and 2 or 3) and ((obj.act == "doing" and rq.kind == "obj") or (obj.act == "pickup" and rq.kind == "req" and rq.ok == false)) then
         shown = shown + 1
         out[#out + 1] = { text = (rq.ok and GREY or "|cffffffff") .. rq.text .. "|r", opts = { single = true, indent = 14, box = rq.ok and true or false } }
       end

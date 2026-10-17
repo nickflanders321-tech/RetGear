@@ -16,6 +16,7 @@ for _, o in ipairs({
   { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
+  { key = "compactTracker", label = "Keep the tracker short (fewer lines: quests near you first, a one-line fishing readout)", default = true },
   { key = "mapClicks",     label = "Let map clicks drive the arrow (quests picked on the map, minimap Ctrl-click, Questie and TomTom pins)", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
