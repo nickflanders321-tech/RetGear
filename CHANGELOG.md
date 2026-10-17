@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.94.0
+- The card collection now opens with the cards you own first (new "Owned first" sort, the default), so you do not have to page past empty slots. The Showcase button no longer overlaps the search box, and an empty showcase explains how to fill it.
+
 ## v0.93.0
 - Fixed the Gear guide page failing with "attempt to call a nil value": it used a game function this client does not provide. The same fix is applied in the bag sorter.
 

@@ -894,7 +894,7 @@ local GRIDX, GRIDY = 118, 150
 local WINW, WINH = 790, 730
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
 local SHOWS = { "All", "Owned", "Missing", "Extras" }
-local SORTS = { "Collection", "Rarity", "Name", "Power" }
+local SORTS = { "Owned first", "Collection", "Rarity", "Name", "Power" }
 local FNAME = { "Common", "Rare", "Holo", "Full art" }
 
 local function isPinned(a, c)
@@ -916,9 +916,13 @@ local function collectionList(a)
     if ok and view.showcase and not isPinned(a, c) then ok = false end
     if ok then list[#list + 1] = c end
   end
-  if view.sort == 2 then table.sort(list, function(x, y) if x.tier ~= y.tier then return x.tier > y.tier end return x.name < y.name end)
-  elseif view.sort == 3 then table.sort(list, function(x, y) return x.name < y.name end)
-  elseif view.sort == 4 then table.sort(list, function(x, y) return power(x, bestFinish(a, x.id) or 1) > power(y, bestFinish(a, y.id) or 1) end) end
+  if view.sort == 1 then
+    local have = {}
+    for _, c in ipairs(list) do have[c] = owned(a, c.id) > 0 end
+    table.sort(list, function(x, y) if have[x] ~= have[y] then return have[x] end return (x.id or 0) < (y.id or 0) end)
+  elseif view.sort == 3 then table.sort(list, function(x, y) if x.tier ~= y.tier then return x.tier > y.tier end return x.name < y.name end)
+  elseif view.sort == 4 then table.sort(list, function(x, y) return x.name < y.name end)
+  elseif view.sort == 5 then table.sort(list, function(x, y) return power(x, bestFinish(a, x.id) or 1) > power(y, bestFinish(a, y.id) or 1) end) end
   return list
 end
 
@@ -1283,7 +1287,7 @@ local function build()
   frame.showBtn = gbtn(frame, "Show: All", 100, 22, function() view.show = view.show % #SHOWS + 1; view.page = 1; RG.ArcadeRefresh(true) end)
   frame.showBtn:SetPoint("RIGHT", frame.sortBtn, "LEFT", -6, 0)
   frame.searchBox = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
-  frame.searchBox:SetSize(124, 22); frame.searchBox:SetPoint("RIGHT", frame.showBtn, "LEFT", -6, 0)
+  frame.searchBox:SetSize(96, 22); frame.searchBox:SetPoint("RIGHT", frame.showBtn, "LEFT", -6, 0)
   frame.searchBox:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); frame.searchBox:SetBackdropColor(0.03, 0.02, 0.07, 0.95); frame.searchBox:SetBackdropBorderColor(0.45, 0.38, 0.25, 0.9)
   setfont(frame.searchBox, "body", 12); frame.searchBox:SetTextColor(0.95, 0.9, 0.78); frame.searchBox:SetTextInsets(8, 6, 0, 0)
   frame.searchBox:SetAutoFocus(false); frame.searchBox:SetMaxLetters(30)
@@ -1389,9 +1393,9 @@ function RG.ArcadeRefresh(keepMsg)
       local c = list[(view.page - 1) * #cells + i]
       paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
     end
-    frame.pageText:SetText(view.page .. " / " .. pages .. (view.set and ("  ·  " .. view.set) or "") .. (view.showcase and "  ·  showcase" or ""))
+    frame.pageText:SetText(view.page .. " / " .. pages .. (view.set and ("  ·  " .. view.set) or ""))
     frame.prev:SetEnabled(view.page > 1); frame.next:SetEnabled(view.page < pages)
-    if #list == 0 then frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -260); frame.panel:SetText("|cff9a96b0Nothing matches. Change the search or the filters.|r") end
+    if #list == 0 then frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -260); frame.panel:SetText(view.showcase and "|cff9a96b0Your showcase is empty. Open a card you own and choose Showcase to pin it here.|r" or "|cff9a96b0Nothing matches. Change the search or the filters.|r") end
   elseif view.mode == "sets" then
     local sets = getSets()
     local per = 14
