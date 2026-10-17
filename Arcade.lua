@@ -1042,6 +1042,7 @@ local function startDeal()
 end
 
 local function showReveal(got, notes)
+  if detail then detail:Hide() end   -- a card window left open would sit on top of the pack
   if not reveal then
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
     reveal:SetPoint("CENTER", 0, 40); reveal:SetFrameStrata("FULLSCREEN_DIALOG")

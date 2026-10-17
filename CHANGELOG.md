@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.99.0
+- Cards: opening a pack now closes any card window left open, so the two no longer stack on top of each other.
+
 ## v0.98.0
 - Cards: a card's detail window no longer opens on top of a pack that is being opened; the free-pack button text fits.
 
