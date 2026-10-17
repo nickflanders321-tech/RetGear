@@ -914,10 +914,10 @@ local function makeBoard()
   for s = 1, 2 do
     for i = 1, 10 do
       local c = bd:CreateTexture(nil, "ARTWORK"); c:SetTexture(U.MEDIA .. "Crystal"); c:SetSize(24, 24)
-      c:SetPoint("CENTER", win, "BOTTOMLEFT", 1005 + ((i - 1) % 5) * 28, (s == 1 and 150 or 590) - math.floor((i - 1) / 5) * 28)
+      c:SetPoint("CENTER", win, "BOTTOMLEFT", 1005 + ((i - 1) % 5) * 28, (s == 1 and 166 or 604) - math.floor((i - 1) / 5) * 28)
       c:Hide(); ui.crystals[s][i] = c
     end
-    ui.mana[s] = U.fs(bd, "title", 19, "OVERLAY", "OUTLINE"); ui.mana[s]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, s == 1 and 186 or 626); ui.mana[s]:SetTextColor(0.6, 0.8, 1)
+    ui.mana[s] = U.fs(bd, "title", 19, "OVERLAY", "OUTLINE"); ui.mana[s]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, s == 1 and 204 or 640); ui.mana[s]:SetTextColor(0.6, 0.8, 1)
   end
   ui.deckT = { U.fs(bd, "head", 13, "OVERLAY"), U.fs(bd, "head", 13, "OVERLAY") }
   ui.deckT[1]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 108); ui.deckT[2]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 548)
