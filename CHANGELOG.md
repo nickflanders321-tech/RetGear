@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.0
+- New Cards tab in the main window: play The Arena, open a pack (free in the beta) and browse your collection without remembering a command. /wp cards and /wp arena still work.
+
 ## v0.99.0
 - Cards: opening a pack now closes any card window left open, so the two no longer stack on top of each other.
 

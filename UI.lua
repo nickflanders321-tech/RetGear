@@ -2390,6 +2390,30 @@ end
 -- ---------------------------------------------------------------------------
 -- Window
 -- ---------------------------------------------------------------------------
+local function renderCards()
+  local n = 0
+  local a, own, total, prints = RG.ArcadeStats and RG.ArcadeStats() or { coins = 0 }, 0, 0, 0
+  if RG.ArcadeStats then a, own, total, prints = RG.ArcadeStats() end
+  local price = RG.ArcadePackPrice or 25
+  local coins = a.coins or 0
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffThe Arena|r", "Duel the computer with the cards you have found. Every card plays as a minion, a spell or a weapon.  " .. GREY .. "Record " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.|r", GOLD .. "Play|r", "", "gold")
+  getRow(n).icon:SetTexture("Interface\\Icons\\Ability_Warrior_Challange")
+  getRow(n).onClick = function() if RG.ShowBattle then RG.ShowBattle() end end
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffOpen a pack|r", "Five cards: items, NPCs and places from the world, some as rare, holo or full art prints.", price == 0 and (GREEN .. "Free in the beta|r") or (GOLD .. price .. " coins|r"), "", price == 0 and "green" or ((coins >= price) and "gold" or nil))
+  getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+  getRow(n).onClick = function() if RG.ArcadeBuyNow then RG.ArcadeBuyNow() end end
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffYour collection|r", own .. " of " .. total .. " cards  ·  " .. prints .. " prints. Browse, sort, pin favourites to your showcase and trade extras.", GOLD .. "Open|r", "", nil)
+  getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+  getRow(n).onClick = function() if RG.ShowArcade then RG.ShowArcade() end end
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffCoins|r", "You earn coins from quests, kills, skill-ups and duel wins." .. GREY .. "  Today's goals and the full ledger are in the collection window.|r", GOLD .. coins .. "|r", "", nil)
+  getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+  return n
+end
+
 local TITLES = {
   route = { "Leveling route", "Your path from your starting zone to 60" },
   guide = { "Gear guide", "Upgrades for your spec by level, and where they come from" },
@@ -2403,6 +2427,7 @@ local TITLES = {
   flights = { "Flight paths", "Every flight master for your faction: click one and Waypath+ guides you there" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
+  cards = { "Cards", "Collect cards from the world and duel with them in The Arena" },
   group = { "Group play", "How grouping is going, your class duties, shared quests and finding a group" },
   spec  = { "2nd spec", "Pick any spec of your class: its stats, how to play it and its gear" },
   heal  = { "2nd spec gear", "Gear to start collecting for your 2nd spec, and where to find it" },
@@ -2420,6 +2445,7 @@ local FOOTERS = {
   fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
   mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
+  cards = "Click a row to play, open a pack or browse your collection  ·  /wp arena  ·  /wp cards",
   group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /wp lfg Scarlet Monastery posts your own",
   spec  = "Dual spec unlocks at level 40 at your class trainer  ·  /wp spec",
   heal  = "Pieces in your 2nd set are never sold  ·  the list updates twice a week  ·  /wp heal",
@@ -2465,6 +2491,7 @@ function RG.RefreshUINow()
   elseif state.tab == "heal" then n = renderHeal()
   elseif state.tab == "spec" then n = renderSpec()
   elseif state.tab == "group" then n = renderGroup()
+  elseif state.tab == "cards" then n = renderCards()
   elseif state.tab == "mail" then n = renderMail()
   elseif state.tab == "camp" then n = renderCamp()
   elseif state.tab == "fish" then n = renderFish()
@@ -2633,7 +2660,7 @@ local function build()
   strip:SetFrameLevel((frame:GetFrameLevel() or 1) + 1)
   RG.Round(strip, 0.105, 0.105, 0.105, 1, 12)
   local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "group", "Group" },
-    { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "settings", "Settings" } }
+    { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "cards", "Cards" }, { "settings", "Settings" } }
   local x = 16
   for _, d in ipairs(defs) do
     local b = CreateFrame("Button", nil, frame)

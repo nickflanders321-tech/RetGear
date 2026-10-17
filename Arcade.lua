@@ -1495,6 +1495,12 @@ RG.ArcadeUI = { makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, 
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
+RG.ArcadePackPrice = PACK_PRICE
+-- the Cards tab opens a pack straight away
+function RG.ArcadeBuyNow()
+  RG.ShowArcade()
+  if frame and frame.buyNow then frame.buyNow() end
+end
 function RG.ShowArcade()
   if not frame then build() end
   local a = store(); if a then a.seen = true end
