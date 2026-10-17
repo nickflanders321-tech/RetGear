@@ -91,6 +91,7 @@ FishMode.lua
 Path.lua
 Paths.lua
 Speed.lua
+GPS.lua
 Guide.lua
 Travel.lua
 NodeData.lua

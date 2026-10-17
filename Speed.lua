@@ -383,6 +383,11 @@ local function liveTurnIn(qid, title)
       map = inf and inf.parentMapID; guard = guard + 1
     end
   end
+  -- last resort: Questie's own database, when it is installed
+  if RG.QuestieWaypoint then
+    local w = RG.QuestieWaypoint(qid, "finish")
+    if w then return { w[1], w[2], w[3], title or w[4] } end
+  end
 end
 RG.QuestTurnInPoint = liveTurnIn
 
@@ -779,6 +784,15 @@ local function buildArrow()
     self.label:SetText(label or "")
     local c1, px, py = worldPos(mapID, ppos)
     local c2, tx, ty = worldPos(wp.uiMapID, wp.position)
+    local entHint
+    if not (c1 and c2 and c1 == c2) and RG.DungeonEntrance then
+      -- the target is inside a dungeon: lead to its door on the outside map
+      local ent = RG.DungeonEntrance(wp.uiMapID)
+      if ent then
+        local ec, ex, ey = worldPos(ent.map, CreateVector2D and CreateVector2D(ent.x, ent.y) or { x = ent.x, y = ent.y })
+        if ec and ec == c1 then c2, tx, ty = ec, ex, ey; entHint = "Dungeon entrance: " .. ent.name end
+      end
+    end
     if not (c1 and c2 and c1 == c2) then
       self.wang = nil
       -- another continent: point the way with travel steps instead
@@ -830,6 +844,7 @@ local function buildArrow()
       if legs and legs[1] and legs[1].how ~= "walk" then hint = "Fastest: " .. legs[1].text end
     end
     if pathHint then hint = pathHint end
+    if entHint and hint == "" then hint = entHint end
     if hint == "" and math.abs(rel) > 2.6 then hint = "It's behind you" end
     self.hint:SetText(hint)
   end)
