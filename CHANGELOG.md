@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.3
+- Gear guide: items with no zone listed no longer show a stray "·" separator.
+- Cards: opening a pack now dims the whole collection window behind it, so the cards underneath no longer peek out around the reveal.
+- The Arena: cards in your hand now show a short line of rules text you can read (hover for the full card), and your hero sits clear of the hand instead of under it.
+
 ## v1.0.2
 - Fixed the Fishing & cooking page failing with an error about the Stranglethorn Fishing Extravaganza timer (and a related fishing-advice line).
 

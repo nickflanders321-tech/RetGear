@@ -1081,6 +1081,17 @@ local function showReveal(got, notes)
     reveal.ok = gbtn(reveal, "Skip", 120, 26, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
     reveal.ok:SetPoint("BOTTOM", 150, 18)
     tinsert(UISpecialFrames, "WaypathArcadePack")
+    -- a dark veil over the collection window, so nothing of it peeks out around the pack
+    local dim = CreateFrame("Frame", nil, UIParent)
+    dim:SetFrameStrata("FULLSCREEN_DIALOG"); dim:SetFrameLevel(math.max(0, lv(reveal) - 1))
+    local dt = dim:CreateTexture(nil, "BACKGROUND"); dt:SetAllPoints(dim); dt:SetColorTexture(0.02, 0.02, 0.05, 0.88)
+    reveal.dim = dim
+    reveal:HookScript("OnShow", function()
+      dim:ClearAllPoints()
+      if frame and frame:IsShown() then dim:SetAllPoints(frame) else dim:SetSize(1, 1); dim:SetPoint("CENTER") end
+      dim:Show()
+    end)
+    reveal:HookScript("OnHide", function() dim:Hide() end)
     -- one update loop: the seal pulses, the cards are dealt, the burst fades
     reveal:SetScript("OnUpdate", function(self, dt)
       local t = GetTime and GetTime() or 0

@@ -122,6 +122,11 @@ local function paintCard(w, key, owner, live)
     w.name:ClearAllPoints(); w.name:SetPoint("TOPLEFT", w, "TOPLEFT", 40 * w.u, -13 * w.u); w.name:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 235 * w.u, -37 * w.u)
     if w.cw >= 190 then
       w.text:SetText(d.text .. (d.lore and d.lore ~= "" and ("\n\n|cff6b4a2e" .. d.lore .. "|r") or ""))
+    elseif w.cw >= 90 then   -- hand cards: a short line in a font you can read, the full card shows on hover
+      local t = (d.text or ""):gsub("%s+", " ")
+      if #t > 40 then t = t:sub(1, 38):gsub("%s*%S*$", "") .. "..." end
+      U.setfont(w.text, "body", 8.5)
+      w.text:SetText(t)
     else w.text:SetText("") end
   end
   cardStats(w, d, live)
@@ -186,9 +191,9 @@ end
 local function boardPos(side, i, n)
   return 600 - (n - 1) * 48 + (i - 1) * 96, side == 1 and 318 or 438
 end
-local HERO_POS = { [1] = { 600, 190 }, [2] = { 600, 592 } }
-local POWER_POS = { [1] = { 696, 176 }, [2] = { 696, 604 } }
-local WEAPON_POS = { [1] = { 504, 176 }, [2] = { 504, 604 } }
+local HERO_POS = { [1] = { 600, 206 }, [2] = { 600, 592 } }   -- yours sits above the hand, not under it
+local POWER_POS = { [1] = { 696, 192 }, [2] = { 696, 604 } }
+local WEAPON_POS = { [1] = { 504, 192 }, [2] = { 504, 604 } }
 
 local function floatText(x, y, txt, r, g, b, size)
   local f

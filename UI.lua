@@ -416,7 +416,7 @@ local function fillGuideItem(r, g, lvl)
         local wn = worn and GetItemInfo(worn)
         repl = GREY .. "  ·  " .. (wn and ("replaces " .. wn) or "fills an empty slot") .. "|r"
       end
-      setItem(r, g.id, link, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. (g.approx and "~" or "") .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r" .. repl, right, right2, accent, quality)
+      setItem(r, g.id, link, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. (g.approx and "~" or "") .. g.lvl .. "|r", g.src .. ((g.zone and g.zone ~= "") and (((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or "")) or "") .. repl, right, right2, accent, quality)
       r.onClick = function() RG.ShowItemSource(g, d and d > 0.5 and { note = GREEN .. string.format("+%.0f", d) .. "|r" .. GREY .. " over what you wear|r" } or nil) end
       if qIn then r.onRightClick = function() RG.OpenQuest(qsrc) end end
 end
@@ -619,7 +619,7 @@ local function renderGear()
     local sub = RG.SLOT_NAMES[slot]
     if nextUp then
       local nm = RG.ItemInfo(nextUp.g.id) or ("item " .. nextUp.g.id)
-      sub = sub .. GREY .. "  ·  next: |r" .. nm .. GREY .. " · " .. nextUp.g.zone .. "|r"
+      sub = sub .. GREY .. "  ·  next: |r" .. nm .. ((nextUp.g.zone and nextUp.g.zone ~= "") and (GREY .. " · " .. nextUp.g.zone .. "|r") or "")
     end
     setItem(r, id, link, link or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
     local slotName = RG.SLOT_NAMES[slot]
@@ -644,7 +644,7 @@ local function renderGear()
       local name, link2, quality = itemName(g.id)
       local own = RG.OwnState(g.id)
       local pill = own == "equipped" and (GREEN .. "Equipped|r") or (own == "owned" and (GOLD .. "In your bags|r") or (GREY .. "Not yet|r"))
-      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
+      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or ""), pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
     end
   end
   return n
@@ -895,7 +895,7 @@ local function renderProf()
         local own = RG.OwnState(g.id)
         local right = own == "equipped" and (GREEN .. "Equipped|r") or (can and (GREEN .. "You can make this|r") or (GREY .. "Needs " .. g.bs .. "|r"))
         local right2 = (g.lvl > lvl and (GREY .. "Wear at " .. g.lvl .. "|r")) or (d and d > 0.5 and (GREEN .. "Upgrade +" .. string.format("%.0f", d) .. "|r")) or ""
-        line(g.id, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. g.lvl .. "|r", g.src .. GREY .. "  ·  " .. g.zone .. "|r", right, right2, nil, can and not own and "green" or nil, quality)
+        line(g.id, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. g.lvl .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or ""), right, right2, nil, can and not own and "green" or nil, quality)
       end
     end
   end
@@ -1567,7 +1567,7 @@ local function renderHeal()
       end
       n = n + 1
       local r = getRow(n)
-      local hunt = nextG and ((RG.ItemInfo(nextG.id) or "item") .. GREY .. "  ·  " .. nextG.src .. ", " .. nextG.zone .. "|r") or nil
+      local hunt = nextG and ((RG.ItemInfo(nextG.id) or "item") .. GREY .. "  ·  " .. nextG.src .. ((nextG.zone and nextG.zone ~= "") and (", " .. nextG.zone) or "") .. "|r") or nil
       if p then
         local name, _, quality = RG.ItemInfo(p.link)
         local where = p.where == "worn" and "wearing it" or (p.where == "bank" and "in your bank" or "in your bags")
