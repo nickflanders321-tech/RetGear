@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Removed the Waypath+ quest bar (target buttons, quest-item buttons) and the WaypathTarget macro; the leftover macro is deleted from your macro list once. Quest-mob nameplate alerts stay.
+
 ## 1.1.1
 - **Fix: accepting a duel did nothing** if you had never opened the Waypath Arena that session. It now works straight away, and if you have no finished Arena deck one is built for the duel. Challenges stay open for 90 seconds and both players see progress messages in chat.
 - Player duels no longer refuse a deck with Raider cards: they are swapped for other cards from your collection for that duel only.

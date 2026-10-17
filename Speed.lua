@@ -9,8 +9,6 @@ local GOLDC = { 0.31, 0.82, 0.77 }
 for _, o in ipairs({
   { key = "autoQuest",     label = "Auto accept and turn in quests (hold Shift to pause)", default = true },
   { key = "autoReward",    label = "Auto pick quest rewards when the choice is clear", default = true },
-  { key = "targetBar",     label = "Quest target bar and WaypathTarget macro", default = true },
-  { key = "questItems",    label = "Buttons for quest items I need to use", default = true },
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
   { key = "arrow",         label = "Arrow to my map pin (/wp way 45 60)", default = true },
   { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
@@ -473,125 +471,14 @@ function RG.NearestSpot(turnin)
 end
 local targetSet = {}
 
-local MACRO = "WaypathTarget"
-local function updateMacro(list)
-  if not (CreateMacro and EditMacro and GetMacroIndexByName) then return end
-  local body = "/cleartarget\n"
-  for _, t in ipairs(list) do
-    local line = "/targetexact " .. t.name .. "\n"
-    if #body + #line > 250 then break end
-    body = body .. line
-  end
-  if #list == 0 then body = body .. "/run print(\"Waypath+: no quest mobs to target\")" end
-  local idx = GetMacroIndexByName(MACRO)
-  if idx and idx > 0 then EditMacro(idx, MACRO, nil, body)
-  else pcall(CreateMacro, MACRO, "INV_Misc_Spyglass_03", body, nil) end
-end
-
-local bar, targetBtns, itemBtns = nil, {}, {}
-local function buildBar()
-  if bar then return end
-  bar = CreateFrame("Frame", "WaypathSpeedBar", UIParent, "BackdropTemplate")
-  bar:SetSize(200, 30); bar:SetMovable(true); bar:SetClampedToScreen(true)
-  local pos = RG.db.speedBarPos
-  if pos then bar:SetPoint(pos[1], UIParent, pos[1], pos[2], pos[3]) else bar:SetPoint("CENTER", UIParent, "CENTER", 0, -230) end
-  local handle = CreateFrame("Frame", nil, bar)
-  handle:SetSize(12, 30); handle:SetPoint("LEFT"); handle:EnableMouse(true); handle:RegisterForDrag("LeftButton")
-  local ht = handle:CreateTexture(nil, "ARTWORK"); ht:SetAllPoints(); ht:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.5)
-  handle:SetScript("OnDragStart", function() if not combat() then bar:StartMoving() end end)
-  handle:SetScript("OnDragStop", function()
-    bar:StopMovingOrSizing()
-    local p, _, _, x, y = bar:GetPoint(); RG.db.speedBarPos = { p, x, y }
-  end)
-  handle:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+ quest bar"); GameTooltip:AddLine("Drag to move. Buttons: quest items to use, then quest mobs to target.", 1, 1, 1, true); GameTooltip:Show() end)
-  handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
-end
-
-local function secureButton(list, i, kind)
-  local b = list[i]
-  if b then return b end
-  b = CreateFrame("Button", "Waypath" .. kind .. i, bar, "SecureActionButtonTemplate, BackdropTemplate")
-  b:SetSize(28, 28)
-  b:RegisterForClicks("AnyUp", "AnyDown")
-  RG.Backdrop(b, { 0.05, 0.05, 0.06, 0.9 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.6 })
-  b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetPoint("TOPLEFT", 2, -2); b.icon:SetPoint("BOTTOMRIGHT", -2, 2); b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  b.count = b:CreateFontString(nil, "OVERLAY"); b.count:SetFont("Fonts\\ARIALN.TTF", 10, "OUTLINE"); b.count:SetPoint("BOTTOMRIGHT", -1, 1)
-  b:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    if self.link then GameTooltip:SetHyperlink(self.link) else GameTooltip:SetText(self.label or ""); if self.sub then GameTooltip:AddLine(self.sub, 0.8, 0.8, 0.8, true) end end
-    GameTooltip:Show()
-  end)
-  b:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  list[i] = b
-  return b
-end
-
--- Quest items: special items from your quest log, plus bag items that start a quest.
-local function questItems()
-  local out, seen = {}, {}
-  if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and GetQuestLogSpecialItemInfo then
-    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-      local info = C_QuestLog.GetInfo(i)
-      if info and not info.isHeader then
-        local link, icon, charges, showComplete = GetQuestLogSpecialItemInfo(i)
-        local done = info.questID and C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID)
-        if link and (not done or showComplete) and not seen[link] then
-          seen[link] = true
-          out[#out + 1] = { link = link, icon = icon, sub = info.title }
-        end
-      end
-    end
-  end
-  local C = C_Container
-  if C and C.GetContainerItemQuestInfo then
-    for bag = 0, 4 do
-      for slot = 1, (C.GetContainerNumSlots(bag) or 0) do
-        local q = C.GetContainerItemQuestInfo(bag, slot)
-        if q and q.questID and not q.isActive then
-          local info = C.GetContainerItemInfo(bag, slot)
-          if info and info.hyperlink and not seen[info.hyperlink] then
-            seen[info.hyperlink] = true
-            out[#out + 1] = { link = info.hyperlink, icon = info.iconFileID, sub = "Starts a quest" }
-          end
-        end
-      end
-    end
-  end
-  return out
-end
-
+-- The old quest target bar and WaypathTarget macro were removed. Delete the leftover macro once, out of combat.
 local function refreshBar()
-  if RG.IsAlt and RG.IsAlt() then if bar then bar:Hide() end return end
-  if combat() then pendingAfterCombat.bar = refreshBar; return end
-  local targets = RG.Opt("targetBar") and questTargets() or {}
-  local items = RG.Opt("questItems") and questItems() or {}
-  targetSet = {}
-  for _, t in ipairs(targets) do targetSet[t.name] = t end
-  if RG.Opt("targetBar") then updateMacro(targets) end
-  buildBar()
-  local x = 16
-  for _, b in ipairs(itemBtns) do b:Hide() end
-  for _, b in ipairs(targetBtns) do b:Hide() end
-  for i, it in ipairs(items) do
-    if i > 6 then break end
-    local b = secureButton(itemBtns, i, "QuestItem")
-    b:SetAttribute("type", "item"); b:SetAttribute("item", it.link)
-    b.link, b.label, b.sub = it.link, nil, nil
-    b.icon:SetTexture(it.icon or 134400); b.count:SetText("")
-    b:ClearAllPoints(); b:SetPoint("LEFT", bar, "LEFT", x, 0); b:Show(); x = x + 31
+  if WaypathSpeedBar then WaypathSpeedBar:Hide() end
+  if RG.db and not RG.db.targetMacroGone and GetMacroIndexByName and DeleteMacro and not (InCombatLockdown and InCombatLockdown()) then
+    local idx = GetMacroIndexByName("WaypathTarget")
+    if idx and idx > 0 then pcall(DeleteMacro, idx) end
+    RG.db.targetMacroGone = true
   end
-  if #items > 0 and #targets > 0 then x = x + 8 end
-  for i, t in ipairs(targets) do
-    if i > 8 then break end
-    local b = secureButton(targetBtns, i, "QuestTarget")
-    b:SetAttribute("type", "macro"); b:SetAttribute("macrotext", "/cleartarget\n/targetexact " .. t.name)
-    b.link, b.label, b.sub = nil, "Target " .. t.name, (t.have and t.need and (t.have .. "/" .. t.need .. "  ·  ") or "") .. (t.quest or "")
-    b.icon:SetTexture("Interface\\Icons\\Ability_Hunter_SniperShot")
-    b.count:SetText(t.have and t.need and (t.need - t.have) or "")
-    b:ClearAllPoints(); b:SetPoint("LEFT", bar, "LEFT", x, 0); b:Show(); x = x + 31
-  end
-  bar:SetWidth(math.max(40, x + 2))
-  bar:SetShown((#items + #targets) > 0)
 end
 RG.RefreshSpeedBar = refreshBar
 

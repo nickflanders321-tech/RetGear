@@ -206,7 +206,6 @@ local function buildPages()
     { "autoReward", "Pick the quest reward when the choice is clear", "Your upgrade first, then best vendor value. Asks when an upgrade for you and one for your 2nd spec compete." },
     { "autoArrow", "Arrow follows my next route step", "Never moves a pin you placed yourself." },
     { "sellJunk", "Sell grey junk and repair at vendors", "Anything worth more on the AH is kept, and you get a buy-back button if you sell it by mistake." },
-    { "targetBar", "Quest bar and WaypathTarget macro", "Click to target the quest mobs you still need and use quest items." },
   }
   for i, a in ipairs(auto) do
     local c = check(p4, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RG.db[a[1]] = v; if a[1] == "sellJunk" then RG.db.autoRepair = v end end)

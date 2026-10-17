@@ -284,7 +284,6 @@ function RG.ShowWelcome()
   b:SetText(GOLD .. "Waypath+|r walks you from level 1 to 60.\n\n"
     .. GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows your next steps and the most important reminders.\n"
     .. GOLD .. "•|r Quests are " .. GOLD .. "accepted and turned in for you|r (hold Shift to pause), and the best reward is picked.\n"
-    .. GOLD .. "•|r The " .. GOLD .. "quest bar|r targets quest mobs and uses quest items in one click.\n"
     .. GOLD .. "•|r Tooltips show a " .. GOLD .. RG.SCORE_NAME .. "|r, and better gear pops up with an Equip button.\n"
     .. GOLD .. "•|r Make " .. GOLD .. "camp|r for an hour of buffs.\n"
     .. GOLD .. "•|r Items worth more on the AH get a " .. GOLD .. "gold coin|r and are never vendored.\n"
