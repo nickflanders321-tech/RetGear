@@ -944,10 +944,10 @@ local function makeBoard()
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
   -- the opening-hand table: a dark panel so the cards and the button read clearly over the board
   win.mullPanel = CreateFrame("Frame", nil, bd, "BackdropTemplate")
-  win.mullPanel:SetSize(700, 268); pt(win.mullPanel, 600, 376); win.mullPanel:SetFrameLevel(U.lv(bd) + 3)
+  win.mullPanel:SetSize(700, 300); pt(win.mullPanel, 600, 400); win.mullPanel:SetFrameLevel(U.lv(bd) + 3)
   win.mullPanel:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); win.mullPanel:SetBackdropColor(0.03, 0.02, 0.09, 0.93); win.mullPanel:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
   win.mullPanel:Hide()
-  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 270); win.mullBtn:Hide(); win.mullBtn:SetFrameLevel(U.lv(bd) + 120)
+  win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 276); win.mullBtn:Hide(); win.mullBtn:SetFrameLevel(U.lv(bd) + 120)
   -- the end screen
   win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 370); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
   local o = win.over
@@ -1119,7 +1119,7 @@ refresh = function()
     if key then
       local x = 600 - (n - 1) * step / 2 + (i - 1) * step
       local y = (w.hov and not mull) and 128 or 88
-      if mull then y = 362 end
+      if mull then y = 404 end
       local fresh = rawget(w, "gx") == nil
       if fresh and not mull then place(w, x, y, DECK_POS[1][1], DECK_POS[1][2]); pt(w, w.gx, w.gy) else place(w, x, y) end
       if fresh and mull then w.gx, w.gy = x, y; pt(w, x, y) end

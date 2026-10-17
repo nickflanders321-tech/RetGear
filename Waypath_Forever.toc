@@ -83,6 +83,7 @@ FishLoot.lua
 FlightPaths.lua
 Flights.lua
 ArcadeCards.lua
+ArcadeArt.lua
 ArcadeGear.lua
 ArcadeBalance.lua
 Battle.lua

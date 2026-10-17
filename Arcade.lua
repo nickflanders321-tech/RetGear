@@ -803,6 +803,7 @@ local function ensureModel(w)
   w.model = m
   m:SetScript("OnModelLoaded", function(self)
     pcall(function()
+      if self.creature then if self.SetFacing then self:SetFacing(0.5) end return end
       if self.Undress then self:Undress() end
       for _, id in ipairs((RG.ARCADE_GEAR or {})[self.cls or ""] or {}) do if self.TryOn then self:TryOn("item:" .. id) end end
       if self.SetFacing then self:SetFacing(0.4) end
@@ -1019,6 +1020,47 @@ local function makeCard(parent, w)
   return f
 end
 
+-- an NPC card shows that creature's own model; a place card a piece of its zone's own world map
+local function hasArt(c)
+  if c.kind == 2 then return RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] and true or false end
+  if c.kind == 3 then return RG.ARCADE_ZONE and RG.ARCADE_ZONE[c.name] and true or false end
+  return false
+end
+local function dressCreature(w, c)
+  local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
+  if not id then return false end
+  local m = ensureModel(w)
+  if not m then return false end
+  m.creature = true
+  m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
+  m:SetFrameLevel(lv(w) + 2)
+  if not m.SetDisplayInfo then m:Hide() return false end
+  local ok = pcall(m.SetDisplayInfo, m, id)
+  if not ok then m:Hide() return false end
+  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0.75) end
+  if m.SetFacing then pcall(m.SetFacing, m, 0.5) end
+  m:Show()
+  return true
+end
+local function zoneArt(w, c)
+  local folder = RG.ARCADE_ZONE and RG.ARCADE_ZONE[c.name]
+  if not folder then return false end
+  if not rawget(w, "zoneTex") then
+    w.zoneTex = w.artClip:CreateTexture(nil, "ARTWORK", nil, 1)
+    w.zoneTex:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); w.zoneTex:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
+  end
+  local rnd = rngOf(seedOf(c.name))
+  local tile = 1 + math.floor(rnd() * 12)
+  local fw = 0.62 + rnd() * 0.14
+  local fh = fw * w.ah / w.aw
+  local x0, y0 = rnd() * (1 - fw), rnd() * (1 - fh)
+  w.zoneTex:SetTexture("Interface\\WorldMap\\" .. folder .. "\\" .. folder .. tile)
+  w.zoneTex:SetTexCoord(x0, x0 + fw, y0, y0 + fh)
+  w.zoneTex:SetDesaturated(false); w.zoneTex:SetVertexColor(1, 1, 1, 1)
+  w.zoneTex:Show()
+  return true
+end
+
 local function dressModel(w, c, finish)
   local m = ensureModel(w)
   if not m then return false end
@@ -1076,6 +1118,7 @@ local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
   anim[w] = nil
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
+  local zt = rawget(w, "zoneTex"); if zt then zt:Hide() end
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
   if not card then w:Hide() return end
@@ -1091,7 +1134,7 @@ local function paint(w, card, finish, copies)
     w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
   end
   w.art:SetTexture(iconFor(card))
-  local scene = false   -- cards use the game's own icons, not drawn scenery
+  local scene = usesScene(card) and not hasArt(card)   -- drawn scenery only where the game has no art for the card
   if scene then
     if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
     setScene(w.scn, card, not finish)
@@ -1111,7 +1154,7 @@ local function paint(w, card, finish, copies)
   w.fxset = fx
   local kc = KINDCOL[card.kind] or KINDCOL[1]
   w.glow:SetVertexColor(kc[1], kc[2], kc[3], 0.55)
-  if card.kind ~= 4 then
+  if card.kind ~= 4 and not scene then
     w.spot:ClearAllPoints(); w.spot:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.spot:SetSize(w.ah * 1.7, w.ah * 1.7)
     w.spot:SetVertexColor(t[1], t[2], t[3], 0.55 + 0.08 * (card.tier or 1)); w.spot:Show()
   end
@@ -1120,7 +1163,7 @@ local function paint(w, card, finish, copies)
     w.emb:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, r0 * 0.25 + 0.25)
     w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.artClip, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
     w.emb:SetVertexColor(t[1], t[2], t[3], 0.34); w.emb:Show()
-  else w.emb:Hide(); if card.kind == 4 then w.spot:Hide() end end
+  else w.emb:Hide(); if card.kind == 4 or scene then w.spot:Hide() end end
   tintTex(w.frameTex, t, finish == 1 and 0.82 or 1)
   tintTex(w.gem, t, 1)
   tintTex(w.rune, t, fx.rune)
@@ -1128,6 +1171,8 @@ local function paint(w, card, finish, copies)
   w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
   local full = finish == 4
   if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  elseif card.kind == 2 and dressCreature(w, card) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  elseif card.kind == 3 and zoneArt(w, card) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide()
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
     w.art:Hide()
@@ -1614,7 +1659,7 @@ local function showReveal(got, notes, meta)
     -- a dark veil over the collection window, so nothing of it peeks out around the pack
     local dim = CreateFrame("Frame", nil, UIParent)
     dim:SetFrameStrata("FULLSCREEN_DIALOG"); dim:SetFrameLevel(math.max(0, lv(reveal) - 1))
-    local dt = dim:CreateTexture(nil, "BACKGROUND"); dt:SetAllPoints(dim); dt:SetColorTexture(0.02, 0.02, 0.05, 0.88)
+    local dt = dim:CreateTexture(nil, "BACKGROUND"); dt:SetAllPoints(dim); dt:SetColorTexture(0.03, 0.03, 0.06, 1)
     reveal.dim = dim
     reveal:HookScript("OnShow", function()
       dim:ClearAllPoints()
