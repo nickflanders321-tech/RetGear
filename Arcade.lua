@@ -83,7 +83,7 @@ RG.ARCADE_CARDS = CARDS
 -- Raiders: super rare cards of characters you have met (you, your group, anyone who chats near you),
 -- shown as their race in the best raid armour of their class. Saved with the collection, so the set
 -- grows as you play. Holo or full art only.
-local RACE_DIR = { Human = "Human", Dwarf = "Dwarf", NightElf = "NightElf", Gnome = "Gnome", Orc = "Orc", Scourge = "Scourge", Undead = "Scourge", Tauren = "Tauren", Troll = "Troll" }
+local RACE_DIR = { Human = "Human", Dwarf = "Dwarf", NightElf = "NightElf", Gnome = "Gnome", Orc = "Orc", Scourge = "Scourge", Undead = "Scourge", Tauren = "Tauren", Troll = "Troll", BloodElf = "BloodElf", Draenei = "Draenei" }
 local MAX_RAIDERS = 400
 local byKey = {}
 for _, c in ipairs(CARDS) do byKey[c.name] = c end

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Blood elf and draenei Raiders now show their character model on their card (they fell back to scenery before).
 - No two cards share a picture any more: Raiders, creatures and places the game can't show a model or painting for get their own drawn scenery, seeded from their name (cards, pack reveal and board).
 - Raider cards and other text with non-Latin letters (Cyrillic, Chinese, Korean...) no longer show empty boxes: those strings switch to the game's own font automatically.
 - Creature models are framed by creature type (head and chest for upright humanoids, the whole body for long low beasts and dragonkin) so they sit centred in the card and on the board; basic cards like Orgrimmar Grunt show the same picture on the board as on the card.
