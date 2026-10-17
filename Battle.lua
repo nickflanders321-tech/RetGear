@@ -411,7 +411,7 @@ B.CLASSES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE
 B.HERO = {
   WARRIOR = { title = "Warrior", power = "Armor Up!", cost = 2, ops = { armor(3) }, text = "Gain 3 Armor." },
   PALADIN = { title = "Paladin", power = "Reinforce", cost = 3, ops = { summon(1, tok("hand")) }, text = "Summon a 1/1 Silver Hand Recruit." },
-  HUNTER = { title = "Hunter", power = "Steady Shot", cost = 3, ops = { dmg(3, "eface") }, text = "Deal 3 damage to the enemy hero." },
+  HUNTER = { title = "Hunter", power = "Steady Shot", cost = 2, ops = { dmg(3, "eface") }, text = "Deal 3 damage to the enemy hero." },
   ROGUE = { title = "Rogue", power = "Dagger Mastery", cost = 2, ops = { { op = "weapon", a = 1, d = 3 } }, text = "Equip a 1/3 Dagger." },
   PRIEST = { title = "Priest", power = "Lesser Heal", cost = 2, ops = { heal(3), armor(1) }, tgt = "any", text = "Restore 3 Health. Gain 1 Armor." },
   SHAMAN = { title = "Shaman", power = "Totemic Call", cost = 3, ops = { { op = "summon", n = 1, pick = {
