@@ -1138,6 +1138,7 @@ local function showReveal(got, notes)
     w.new:SetText("")
     local c = w.cover
     c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c:Show()
+    if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
     if g.finish >= 3 or g.card.tier == 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0)
   end

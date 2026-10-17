@@ -34,10 +34,41 @@ def make_board(w=1024, h=512):
     sg = sigil(int(h * 0.92), (214, 178, 100), seed=11, fine=1.0)
     a = np.asarray(sg).copy(); a[..., 3] = (a[..., 3] * 0.20).astype(np.uint8)
     img.alpha_composite(Image.fromarray(a, "RGBA"), (int(w / 2 - sg.size[0] / 2), int(cy - sg.size[1] / 2)))
-    # the dividing line
+    # structure: lanes inlaid in the table, a halo under each hero, a plaque on the divide and a plate for each side's
+    # mana and deck (positions follow ArcadeBattle.lua; the texture is stretched 1.15 x 1.37 on screen, so rings are ellipses here)
+    K = 2
+    ov = Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0)); od = ImageDraw.Draw(ov, "RGBA")
+    def R(x0, y0, x1, y1): return [x0 * K, y0 * K, x1 * K, y1 * K]
+    gold = (214, 178, 100)
+    for (y0, y1) in ((cy - 87, cy - 5), (cy + 5, cy + 88)):
+        od.rounded_rectangle(R(214, y0, 832, y1), 16 * K, fill=(40, 26, 58, 120), outline=gold + (110,), width=2 * K)
+        od.rounded_rectangle(R(220, y0 + 5, 826, y1 - 5), 12 * K, outline=gold + (45,), width=1 * K)
+    # plates for mana and deck on the right
+    for (y0, y1) in ((354, 446), (34, 126)):
+        od.rounded_rectangle(R(842, y0, 1012, y1), 12 * K, fill=(22, 14, 40, 190), outline=gold + (150,), width=2 * K)
+        od.rounded_rectangle(R(847, y0 + 5, 1007, y1 - 5), 9 * K, outline=gold + (50,), width=1 * K)
+    # halos under the heroes
+    for (hx, hy) in ((523, 361), (523, 79)):
+        for rr, al, wd in ((72, 40, 1), (66, 150, 2), (60, 70, 1)):
+            od.ellipse(R(hx - rr * 1.0, hy - rr * 0.84, hx + rr * 1.0, hy + rr * 0.84), outline=gold + (al,), width=wd * K)
+        od.ellipse(R(hx - 58, hy - 49, hx + 58, hy + 49), fill=(12, 8, 26, 200))
+        for sx in (-1, 1):
+            px, py = hx + sx * 72, hy
+            od.polygon([(px * K, (py - 7) * K), ((px + 6) * K, py * K), (px * K, (py + 7) * K), ((px - 6) * K, py * K)], fill=gold + (230,), outline=(40, 24, 8, 255))
+    ov = ov.resize((w, h), Image.LANCZOS)
+    img.alpha_composite(ov)
+    d = ImageDraw.Draw(img, "RGBA")
+    # the dividing line, broken by a plaque for the turn text
     for i in range(3):
         d.line([(60, cy + i - 1), (w - 60, cy + i - 1)], fill=(214, 178, 100, 150 - i * 40), width=1)
-    d.rectangle([w // 2 - 70, cy - 5, w // 2 + 70, cy + 5], fill=(14, 10, 28, 255), outline=(214, 178, 100, 220))
+    pl = Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0)); pd = ImageDraw.Draw(pl, "RGBA")
+    pd.rounded_rectangle(R(w // 2 - 110, cy - 14, w // 2 + 110, cy + 14), 13 * K, fill=(16, 10, 32, 255), outline=gold + (240,), width=2 * K)
+    pd.rounded_rectangle(R(w // 2 - 105, cy - 9, w // 2 + 105, cy + 9), 9 * K, outline=gold + (70,), width=1 * K)
+    for sx in (-1, 1):
+        px = w // 2 + sx * 122
+        pd.polygon([(px * K, (cy - 8) * K), ((px + 8) * K, cy * K), (px * K, (cy + 8) * K), ((px - 8) * K, cy * K)], fill=gold + (240,), outline=(40, 24, 8, 255))
+    img.alpha_composite(pl.resize((w, h), Image.LANCZOS))
+    d = ImageDraw.Draw(img, "RGBA")
     # frame
     for k, al in ((3, 255), (7, 120)):
         d.rectangle([k, k, w - 1 - k, h - 1 - k], outline=(180, 146, 80, al))
@@ -156,6 +187,26 @@ def make_ice(size=128):
     return im
 
 
+def make_backs():
+    """Four more card backs (Back2..Back5) by recolouring the original: crimson, emerald, azure and gilt."""
+    src = Image.open(os.path.join(art.OUT, "Back.tga")).convert("RGBA")
+    a = np.asarray(src).astype(np.float32)
+    rgb, al = a[..., :3], a[..., 3:]
+    lum = rgb.mean(axis=2, keepdims=True)
+    gold = (rgb[..., 0] - rgb[..., 2]) > 18   # warm pixels are the gold work (and its soft edge): keep them
+    out = {}
+    mixes = {"Back2": [2, 1, 0], "Back3": [1, 2, 0], "Back4": [1, 0, 2]}
+    for name, order in mixes.items():
+        c = rgb[..., order]
+        c = np.where(gold[..., None], rgb, c)
+        out[name] = Image.fromarray(np.dstack([np.clip(c, 0, 255), al]).astype(np.uint8), "RGBA")
+    g = np.clip(lum * np.array([1.22, 1.0, 0.62]) * 1.1, 0, 255)
+    g = np.where(gold[..., None], rgb, g)
+    out["Back5"] = Image.fromarray(np.dstack([g, al]).astype(np.uint8), "RGBA")
+    for name, im in out.items():
+        save(name, im, 256, 512)
+
+
 def main():
     save("Board", make_board(), 1024, 512)
     save("BadgeAtk", make_badge_atk(), 64, 64)
@@ -170,4 +221,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "only":
+        save("Board", make_board(), 1024, 512); make_backs()
+    else:
+        main()

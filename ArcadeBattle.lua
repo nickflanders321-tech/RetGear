@@ -9,7 +9,9 @@ local W, H = 1180, 700       -- window
 local HW = 100               -- hand card width
 local MW, MH = 88, 104       -- a minion on the board
 local S = { targeting = false, level = 2, busy = false, aiN = 0, held = 0, msgT = 0, mode = "menu", mull = {}, pkey = false }
-local ui = { hand = {}, mins = { {}, {} }, back = {}, crystals = { {}, {} }, pos = {}, floats = {}, dots = {}, trail = {} }
+local gliding = {}      -- widgets easing to their place (see place())
+local pt               -- defined below: put a widget's centre at x, y in the window
+local ui = { widgetOf = {}, hand = {}, mins = { {}, {} }, back = {}, crystals = { {}, {} }, pos = {}, floats = {}, dots = {}, trail = {} }
 
 local function Sh(f, on) if on then f:Show() else f:Hide() end end
 local function cap(s) return (s or ""):sub(1, 1):upper() .. (s or ""):sub(2) end
@@ -107,6 +109,12 @@ local function cardStats(w, d, live)
   end
 end
 -- paint a card widget (cached by key so models and art are not reloaded every refresh)
+-- rules keywords stand out in the card text
+local KEYWORDS = { "Divine Shield", "Battlecry", "Deathrattle", "Windfury", "Lifesteal", "Stealth", "Poisonous", "Taunt", "Charge", "Rush", "Freeze", "Silence" }
+local function hilite(t)
+  for _, k in ipairs(KEYWORDS) do t = t:gsub(k, "|cff8a3a08" .. k .. "|r") end
+  return t
+end
 local function paintCard(w, key, owner, live)
   local c = cardObj(key)
   if not c then w:Hide() return end
@@ -118,15 +126,16 @@ local function paintCard(w, key, owner, live)
     decorate(w)
     w.pow:SetText(""); w.powLabel:Hide(); w.fin:SetText(""); w.num:SetText(""); w.count:SetText("")
     w.type:SetText(typeLine(d))
-    U.fitText(w.name, d.name, 186 * w.u, 15 * w.u, 8, "head")
-    w.name:ClearAllPoints(); w.name:SetPoint("TOPLEFT", w, "TOPLEFT", 40 * w.u, -13 * w.u); w.name:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 235 * w.u, -37 * w.u)
+    U.fitText(w.name, d.name, 196 * w.u, 15 * w.u, w.cw < 190 and 6.5 or 8, "head")
+    w.name:ClearAllPoints(); w.name:SetPoint("TOPLEFT", w, "TOPLEFT", 40 * w.u, -13 * w.u); w.name:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 238 * w.u, -37 * w.u)
     if w.cw >= 190 then
-      w.text:SetText(d.text .. (d.lore and d.lore ~= "" and ("\n\n|cff6b4a2e" .. d.lore .. "|r") or ""))
+      w.text:SetText(hilite(d.text or "") .. (d.lore and d.lore ~= "" and ("\n\n|cff6b4a2e" .. d.lore .. "|r") or ""))
     elseif w.cw >= 90 then   -- hand cards: a short line in a font you can read, the full card shows on hover
       local t = (d.text or ""):gsub("%s+", " ")
       if #t > 40 then t = t:sub(1, 38):gsub("%s*%S*$", "") .. "..." end
-      U.setfont(w.text, "body", 8.5)
-      w.text:SetText(t)
+      U.setfont(w.text, "body", 9)
+      w.text:SetTextColor(0.13, 0.08, 0.03)
+      w.text:SetText(hilite(t))
     else w.text:SetText("") end
   end
   cardStats(w, d, live)
@@ -136,6 +145,12 @@ end
 -- Rewards and saved decks
 -- ---------------------------------------------------------------------------
 local function store() return U.store() end
+local BACKS = { "Back", "Back2", "Back3", "Back4", "Back5" }
+local BACK_NAMES = { "Midnight", "Crimson", "Emerald", "Azure", "Gilt" }
+function RG.CardBackName()
+  local a = U and U.store and U.store()
+  return BACKS[(a and a.cardBack) or 1] or "Back"
+end
 local function avail(a)   -- the keys you can put in a deck, and how many copies
   local out, keys = {}, {}
   for _, k in ipairs(B.BASIC) do out[k] = 2; keys[#keys + 1] = k end
@@ -297,6 +312,7 @@ local function makeMinion(parent)
   local m = CreateFrame("Button", nil, parent)
   m:SetSize(MW, MH)
   m.glow = m:CreateTexture(nil, "BACKGROUND"); m.glow:SetTexture(U.MEDIA .. "Glow"); m.glow:SetBlendMode("ADD"); m.glow:SetSize(150, 150); m.glow:SetPoint("CENTER", m, "TOP", 0, -44); m.glow:Hide()
+  m.flashTex = m:CreateTexture(nil, "OVERLAY", nil, 6); m.flashTex:SetTexture(U.MEDIA .. "Glow"); m.flashTex:SetBlendMode("ADD"); m.flashTex:SetSize(170, 170); m.flashTex:SetPoint("CENTER", m, "TOP", 0, -44); m.flashTex:SetVertexColor(1, 0.9, 0.55, 1); m.flashTex:Hide()
   m.back = m:CreateTexture(nil, "BACKGROUND", nil, 2); m.back:SetColorTexture(0.05, 0.04, 0.1, 1); m.back:SetSize(66, 66); m.back:SetPoint("CENTER", m, "TOP", 0, -44)
   m.icon = m:CreateTexture(nil, "ARTWORK", nil, 1); m.icon:SetSize(66, 66); m.icon:SetPoint("CENTER", m, "TOP", 0, -44); m.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   m.scn = U.newScene(m, 66, 66, m.back)
@@ -429,6 +445,32 @@ local function buildWindow()
   win.tokTip = U.fs(win.board, "head", 13, "OVERLAY", "OUTLINE"); win.tokTip:SetPoint("CENTER", win, "BOTTOMLEFT", 125, 480); win.tokTip:SetWidth(220); win.tokTip:SetJustifyH("CENTER"); win.tokTip:Hide()
 
   tick(function(dt)
+    -- glide, drop and lunge
+    for w in pairs(gliding) do
+      local settled = true
+      local k = math.min(1, dt * 16)
+      if rawget(w, "gx") ~= nil and rawget(w, "bx") ~= nil then
+        w.gx = w.gx + (w.bx - w.gx) * k; w.gy = w.gy + (w.by - w.gy) * k
+        if math.abs(w.bx - w.gx) > 0.4 or math.abs(w.by - w.gy) > 0.4 then settled = false else w.gx, w.gy = w.bx, w.by end
+        local ox, oy = 0, 0
+        local L = rawget(w, "lunge")
+        if L then
+          L.t = L.t + dt
+          local q = L.t / L.dur
+          if q >= 1 then w.lunge = nil else
+            local f = math.sin(math.pi * q); f = f * f * (q < 0.5 and 1 or 1)
+            ox, oy = L.dx * f, L.dy * f; settled = false
+          end
+        end
+        pt(w, w.gx + ox, w.gy + oy)
+      end
+      local fl = rawget(w, "flash")
+      if fl and w.flashTex then
+        w.flash = fl - dt
+        if w.flash <= 0 then w.flash = nil; w.flashTex:Hide() else w.flashTex:SetAlpha(math.min(1, w.flash / 0.35)); w.flashTex:Show(); settled = false end
+      end
+      if settled then gliding[w] = nil end
+    end
     -- messages fade, floats rise
     if win.msg and S.msgT > 0 and clock > S.msgT then win.msg:SetText(""); S.msgT = 0 end
     for _, f in ipairs(ui.floats) do
@@ -478,7 +520,24 @@ end
 -- ---------------------------------------------------------------------------
 -- The board
 -- ---------------------------------------------------------------------------
-local function pt(w, x, y) w:ClearAllPoints(); w:SetPoint("CENTER", win, "BOTTOMLEFT", x, y) end
+pt = function(w, x, y) w:ClearAllPoints(); w:SetPoint("CENTER", win, "BOTTOMLEFT", x, y) end
+-- Things glide to their place instead of jumping: a drawn card slides in from the deck, a summoned minion drops
+-- onto the board with a flash, attackers lunge at their target.
+local DECK_POS = { [1] = { 1065, 108 }, [2] = { 1065, 548 } }
+local function place(w, x, y, fromX, fromY)
+  w.bx, w.by = x, y
+  if rawget(w, "gx") == nil then
+    w.gx, w.gy = fromX or x, fromY or y
+    if fromX then w.fresh = true end
+  end
+  gliding[w] = true
+end
+local function unplace(w) w.gx, w.gy = nil, nil; gliding[w] = nil; w.lunge = nil end
+local function lunge(w, tx, ty)
+  if not w or rawget(w, "bx") == nil then return end
+  w.lunge = { t = 0, dur = 0.34, dx = (tx - w.bx) * 0.55, dy = (ty - w.by) * 0.55 }
+  gliding[w] = true
+end
 local GREEN, RED = { 0.3, 1, 0.4, 0.95 }, { 1, 0.3, 0.25, 0.95 }
 local logLines = {}
 local function logLine(txt)
@@ -491,6 +550,7 @@ local function strike(a, d)
   local p1, p2 = ui.pos[a], ui.pos[d]
   if not p1 or not p2 then return end
   ui.t1, ui.t2, ui.trailT = p1, p2, 0.35
+  lunge(ui.widgetOf[a], p2[1], p2[2])
 end
 
 local function banner(txt, r, g, b)
@@ -600,7 +660,8 @@ local function makeBoard()
   ui.power, ui.weapon = {}, {}
   for s = 1, 2 do
     local x, y = HERO_POS[s][1], HERO_POS[s][2]
-    pt(ui.hero[s], x, y)
+    place(ui.hero[s], x, y); ui.hero[s].gx, ui.hero[s].gy = x, y; pt(ui.hero[s], x, y)
+    ui.widgetOf["h" .. s] = ui.hero[s]
     ui.power[s] = makeSmall(bd, 62); pt(ui.power[s], POWER_POS[s][1], POWER_POS[s][2])
     ui.weapon[s] = makeSmall(bd, 56); pt(ui.weapon[s], WEAPON_POS[s][1], WEAPON_POS[s][2]); ui.weapon[s].cost:Hide(); ui.weapon[s].costT:Hide()
     ui.weapon[s]:Hide()
@@ -639,13 +700,13 @@ local function makeBoard()
       c:SetPoint("CENTER", win, "BOTTOMLEFT", 1005 + ((i - 1) % 5) * 28, (s == 1 and 150 or 590) - math.floor((i - 1) / 5) * 28)
       c:Hide(); ui.crystals[s][i] = c
     end
-    ui.mana[s] = U.fs(bd, "title", 16, "OVERLAY", "OUTLINE"); ui.mana[s]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, s == 1 and 186 or 626); ui.mana[s]:SetTextColor(0.6, 0.8, 1)
+    ui.mana[s] = U.fs(bd, "title", 19, "OVERLAY", "OUTLINE"); ui.mana[s]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, s == 1 and 186 or 626); ui.mana[s]:SetTextColor(0.6, 0.8, 1)
   end
-  ui.deckT = { U.fs(bd, "head", 12, "OVERLAY"), U.fs(bd, "head", 12, "OVERLAY") }
+  ui.deckT = { U.fs(bd, "head", 13, "OVERLAY"), U.fs(bd, "head", 13, "OVERLAY") }
   ui.deckT[1]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 108); ui.deckT[2]:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 548)
   for s = 1, 2 do ui.deckT[s]:SetTextColor(0.75, 0.72, 0.9) end
   win.endBtn = U.gbtn(bd, "End Turn", 150, 40, endTurn, true); pt(win.endBtn, 1065, 378)
-  win.turnT = U.fs(bd, "head", 13, "OVERLAY", "OUTLINE"); win.turnT:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 420); win.turnT:SetTextColor(0.9, 0.85, 0.7)
+  win.turnT = U.fs(bd, "head", 13, "OVERLAY", "OUTLINE"); win.turnT:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 378); win.turnT:SetTextColor(0.96, 0.84, 0.5)
   win.concede = U.gbtn(bd, "Concede", 90, 22, function(self)
     if not game or game.over then win:Hide() return end
     if not S.sure then S.sure = true; self:SetText("Sure?"); after(3, function() S.sure = false; if win.concede then win.concede:SetText("Concede") end end) return end
@@ -674,15 +735,20 @@ refresh = function()
     for i = 1, 7 do
       local w, m = ui.mins[s][i], P.board[i]
       if m then
+        local wasShown = rawget(w, "gx") ~= nil
         paintMinion(w, m, s)
         local x, y = boardPos(s, i, n)
-        pt(w, x, y)
+        if wasShown then place(w, x, y) else
+          place(w, x, y, x, y + (s == 1 and 46 or -46)); pt(w, w.gx, w.gy)   -- a new minion drops in
+          w.flash = 0.45
+        end
+        ui.widgetOf[m.uid] = w
         ui.pos[m.uid] = { x, y + 8 }
         local col
         if tg then if tg.valid[m.uid] then col = s == 1 and GREEN or RED end
         elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, 1, m) then col = GREEN end
         if col then w.glow:SetVertexColor(col[1], col[2], col[3], col[4]); w.glow:Show() else w.glow:Hide() end
-      else w:Hide() end
+      else w:Hide(); unplace(w) end
     end
   end
   -- heroes
@@ -715,44 +781,50 @@ refresh = function()
     -- mana
     for i = 1, 10 do
       local c = ui.crystals[s][i]
-      if i <= P.maxMana then c:Show(); c:SetTexture(U.MEDIA .. (i <= P.mana and "Crystal" or "CrystalDim")) else c:Hide() end
+      c:Show(); c:SetTexture(U.MEDIA .. (i <= P.mana and "Crystal" or "CrystalDim")); c:SetAlpha(i <= P.maxMana and 1 or 0.28)
     end
-    ui.mana[s]:SetText(P.mana .. "/" .. P.maxMana)
-    ui.deckT[s]:SetText("Deck " .. #P.deck .. "   Hand " .. #P.hand)
+    ui.mana[s]:SetText(P.mana .. " / " .. P.maxMana)
+    ui.deckT[s]:SetText("|cffa89bc9Deck|r |cffffffff" .. #P.deck .. "|r     |cffa89bc9Hand|r |cffffffff" .. #P.hand .. "|r")
   end
   -- opponent hand
   local nb = #foe.hand
   for i = 1, 10 do
     local b = ui.back[i]
     if i <= nb then
-      b:ClearAllPoints(); b:SetPoint("CENTER", win, "BOTTOMLEFT", 600 + (i - (nb + 1) / 2) * 26, 681); b:Show()
+      b:ClearAllPoints(); b:SetPoint("CENTER", win, "BOTTOMLEFT", 600 + (i - (nb + 1) / 2) * 26, 681); b:SetTexture(U.MEDIA .. RG.CardBackName()); b:Show()
     else b:Hide() end
   end
   -- my hand
   local n = #me.hand
-  local step = n > 1 and math.min(88, 640 / (n - 1)) or 0
+  local mull = S.mode == "mull"
+  local step = n > 1 and math.min(mull and 116 or 88, 640 / (n - 1)) or 0
   for i = 1, 10 do
     local w, key = ui.hand[i], me.hand[i]
     if key then
       local x = 600 - (n - 1) * step / 2 + (i - 1) * step
-      local y = (w.hov and S.mode ~= "mull") and 108 or 68
-      if S.mode == "mull" then y = 296 end
-      pt(w, x, y)
+      local y = (w.hov and not mull) and 108 or 68
+      if mull then y = 332 end
+      local fresh = rawget(w, "gx") == nil
+      if fresh and not mull then place(w, x, y, DECK_POS[1][1], DECK_POS[1][2]); pt(w, w.gx, w.gy) else place(w, x, y) end
+      if fresh and mull then w.gx, w.gy = x, y; pt(w, x, y) end
       w:SetFrameLevel(U.lv(win.board) + 10 + i * 6 + (w.hov and 80 or 0))
       w.hslot = i
       paintCard(w, key, 1)
-      w.fxset = w.fxset
       local can = mine and S.mode == "play" and not tg and B.canPlay(game, 1, i)
       Sh(w.playGlow, can)
-      Sh(w.xMark, S.mode == "mull" and S.mull[i])
-      w:SetAlpha(S.mode == "mull" and S.mull[i] and 0.6 or 1)
-    else w:Hide() end
+      Sh(w.xMark, mull and S.mull[i])
+      -- cards you can't afford this turn look dimmer, with a red cost
+      local dim = mine and S.mode == "play" and not tg and not can
+      w:SetAlpha(mull and S.mull[i] and 0.6 or (dim and 0.8 or 1))
+      if w.costT then w.costT:SetTextColor(dim and 1 or 1, dim and 0.4 or 1, dim and 0.4 or 1) end
+    else w:Hide(); unplace(w) end
   end
   -- buttons
   win.endBtn:SetEnabled(mine and S.mode == "play")
   local idle = mine and S.mode == "play" and #B.actions(game, 1) == 0
   win.endBtn:SetActive(idle and true or false)
-  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "Opening hand" or (game.cur == 1 and "Your turn" or "Opponent's turn")))
+  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "OPENING HAND" or (game.cur == 1 and "YOUR TURN" or "OPPONENT'S TURN")))
+  if win.turnT.SetTextColor then if game.cur == 1 or S.mode == "mull" then win.turnT:SetTextColor(0.96, 0.84, 0.5) else win.turnT:SetTextColor(0.82, 0.66, 0.98) end end
 end
 
 -- ---------------------------------------------------------------------------
@@ -792,7 +864,8 @@ local function startMatch()
   game = B.new({ decks = { expand(dk), aiDeck }, classes = { cls, aiCls }, names = { (UnitName and UnitName("player")) or "You", B.OPPONENTS[aiCls] }, seed = math.random(1, 2000000000) })
   S.mode, S.mull, S.targeting, S.finished, S.busy, S.aiN = "mull", {}, false, false, false, 0
   win.over:Hide(); logLines = {}; win.log:SetText("")
-  for _, w in ipairs(ui.hand) do w.pkey = false; w.hov = false end
+  for _, w in ipairs(ui.hand) do w.pkey = false; w.hov = false; unplace(w) end
+  for s2 = 1, 2 do for _, w in ipairs(ui.mins[s2]) do unplace(w) end end
   ui.pos = { h1 = HERO_POS[1], h2 = HERO_POS[2], power1 = ui.pos.power1 }
   show("board"); S.mode = "mull"
   win.pv:Hide()
@@ -830,6 +903,10 @@ local function refreshMenu()
   for c, b in pairs(menu.cls) do b:SetActive(c == cls) end
   for i, b in ipairs(menu.slots) do b:SetActive(i == (a.deckSel or 1)); local n = deckSize(deckOf(a, i)); b:SetText("Deck " .. i .. "  (" .. n .. ")") end
   for i, b in ipairs(menu.lvl) do b:SetActive(i == S.level) end
+  for i, b in ipairs(menu.backs or {}) do
+    local on = i == (a.cardBack or 1)
+    if on then b:SetBackdropBorderColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3], 1) else b:SetBackdropBorderColor(0.3, 0.27, 0.22, 0.9) end
+  end
   local h = B.HERO[cls]
   menu.power:SetText("|cfff5d273" .. h.power .. "|r  (2 mana):  " .. h.text)
   local n = deckSize(dk)
@@ -877,7 +954,20 @@ local function buildMenu()
     .. "A deck is 30 cards, two copies of each (one of each legendary). Cards you have not found yet are not available, but a few basic cards always are.")
   menu.rec = U.fs(p, "head", 12); menu.rec:SetPoint("BOTTOM", 0, 56); menu.rec:SetTextColor(0.75, 0.72, 0.9)
   local back = U.gbtn(p, "Back to cards", 130, 26, function() win:Hide(); if RG.ShowArcade then RG.ShowArcade() end end); back:SetPoint("BOTTOMLEFT", 24, 18)
-  menu.msg = U.fs(p, "head", 13); menu.msg:SetPoint("BOTTOMRIGHT", -24, 22); menu.msg:SetTextColor(1, 0.7, 0.5)
+  menu.msg = U.fs(p, "head", 13); menu.msg:SetPoint("BOTTOMRIGHT", -24, 74); menu.msg:SetTextColor(1, 0.7, 0.5)
+  -- card backs: pick the one your opponent's hand and your packs show
+  menu.backs = {}
+  for i, name in ipairs(BACKS) do
+    local b = CreateFrame("Button", nil, p, "BackdropTemplate")
+    b:SetSize(34, 48); b:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -24 - (#BACKS - i) * 42, 16)
+    b:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); b:SetBackdropColor(0, 0, 0, 1)
+    b.tex = b:CreateTexture(nil, "ARTWORK"); b.tex:SetTexture(U.MEDIA .. name); b.tex:SetTexCoord(0, 1, 0, 358 / 512); b.tex:SetPoint("TOPLEFT", 2, -2); b.tex:SetPoint("BOTTOMRIGHT", -2, 2)
+    b:SetScript("OnClick", function() local a = store(); if a then a.cardBack = i end; refreshMenu(); if RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end end)
+    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(BACK_NAMES[i] .. " card back"); GameTooltip:Show() end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    menu.backs[i] = b
+  end
+  local cbl = U.fs(p, "head", 12); cbl:SetPoint("RIGHT", menu.backs[1], "LEFT", -10, 0); cbl:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); cbl:SetText("CARD BACK")
 end
 
 -- ---------------------------------------------------------------------------
