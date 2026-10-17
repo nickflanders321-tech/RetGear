@@ -414,6 +414,38 @@ end
 -- ---------------------------------------------------------------------------
 local session = { start = nil, last = nil, catches = 0, skillStart = nil, items = {}, value = 0 }
 RG.FishSessionData = session
+-- Learning from your own catches: the loot tables we ship come from the classic database, and Forever
+-- drops some things (chests, crates, clams) in places that database does not list. Whatever you actually
+-- catch is added to that zone, so the Fishing page, the "Here:" line and the route all know about it.
+local learned = {}   -- zone .. ":" .. id -> true
+function RG.FishLearned(zone, id) return learned[zone .. ":" .. id] == true end
+local function applySeen(zone, id)
+  local L = RG.FISH_LOOT
+  if not (L and zone and zone ~= "" and id) then return end
+  L.zones[zone] = L.zones[zone] or {}
+  for _, c in ipairs(L.zones[zone]) do if c[1] == id then return end end
+  table.insert(L.zones[zone], { id, 0.3 })
+  learned[zone .. ":" .. id] = true
+  L.info = L.info or {}
+  if not L.info[id] then
+    local name, _, q = GetItemInfo and GetItemInfo(id)
+    L.info[id] = { name or ("Item " .. id), "misc", q or 1 }
+  end
+  lootIdx = nil
+end
+function RG.FishApplySeen()
+  local d = RG.db and RG.db.fish
+  for zone, items in pairs(d and d.seen or {}) do for id in pairs(items) do pcall(applySeen, zone, id) end end
+end
+function RG.FishSeenList()
+  local out = {}
+  local d = RG.db and RG.db.fish
+  for zone, items in pairs(d and d.seen or {}) do for id, n in pairs(items) do if learned[zone .. ":" .. id] then out[#out + 1] = { zone = zone, id = id, n = n } end end end
+  return out
+end
+local seenFrame = CreateFrame("Frame")
+seenFrame:RegisterEvent("PLAYER_LOGIN")
+seenFrame:SetScript("OnEvent", function() RG.FishApplySeen() end)
 local function onCatch()
   if not (IsFishingLoot and IsFishingLoot()) then return end
   local now = GetTime()
@@ -432,6 +464,12 @@ local function onCatch()
       local qty = select(3, GetLootSlotInfo(i)) or 1
       session.items[id] = (session.items[id] or 0) + qty
       d.caught[id] = (d.caught[id] or 0) + qty
+      local zn = GetRealZoneText and GetRealZoneText() or ""
+      if zn ~= "" then
+        d.seen = d.seen or {}; d.seen[zn] = d.seen[zn] or {}
+        d.seen[zn][id] = (d.seen[zn][id] or 0) + qty
+        pcall(applySeen, zn, id)
+      end
       -- the catch log: last 100 catches with what they were worth when caught
       local v = itemValue(id)
       session.value = (session.value or 0) + v * qty

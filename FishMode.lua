@@ -252,6 +252,10 @@ function RG.FishModeRefresh()
     for i = 1, math.min(3, #best.list) do bits[#bits + 1] = "|cffffffff" .. best.list[i].name .. "|r" .. GREY .. string.format(" %.0f%%|r", best.list[i].chance) end
     local txt = GREY .. "Here: |r" .. table.concat(bits, GREY .. "  ·  |r")
     if best.bestEv and best.bestEv.ev > 0 then txt = txt .. GREY .. "   Worth most: |r" .. GREEN .. best.bestEv.name .. "|r" end
+    -- rare finds you have caught in this water
+    local rare = {}
+    for _, e in ipairs(best.list) do if RG.FishLearned and RG.FishLearned(best.zone, e.id) then rare[#rare + 1] = e.name end end
+    if #rare > 0 then txt = txt .. "\n" .. GREY .. "Caught here too: |r|cff66dd88" .. table.concat(rare, ", ", 1, math.min(3, #rare)) .. "|r" end
     hud.odds:SetText(txt)
   else hud.odds:SetText("") end
   -- last catches, fading after a while

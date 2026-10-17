@@ -2108,7 +2108,9 @@ local function renderFish()
       local h = holds(e.id, 6)
       if h then sub = sub .. "\nHolds: " .. h end
       n = n + 1
-      setItem(getRow(n), e.id, link, nm, sub, pillFor(chance or e.best), "", nil, quality, true)
+      local seenHere = zoneName and RG.FishLearned and RG.FishLearned(zoneName, e.id) and chance ~= nil
+      if seenHere then sub = "|cff66dd88You caught this here|r" .. (sub ~= "" and ("  ·  " .. sub) or "") end
+      setItem(getRow(n), e.id, link, nm, sub, seenHere and (GREEN .. "caught|r") or pillFor(chance or e.best), "", nil, quality, true)
       local tip = { "Where it comes from (chance per catch):" }
       for _, z in ipairs(e.zones) do
         local full = RG.FISH_ZONES[z[1]]

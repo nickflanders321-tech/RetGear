@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fishing learns from you: anything you catch (a Sturdy Locked Chest, a crate, a clam) is added to that zone's list, so the Fishing page, the "Here:" line and the Fishing & cooking page show it from then on. `/wp fishseen` lists what you have added.
 - GPS data: when the game and our data cannot say where a quest is handed in, Waypath+ now asks Questie's own database (if Questie is installed). When a target is inside a dungeon, the arrow leads to the dungeon's door on the outside map. `/wp gpscheck` lists which map and quest data your game client offers.
 - Better GPS. When the arrow is blocked and has no learned path, it now leads to the game's own next leg of that quest (a door, cave mouth or stair) before the quest point. Without Shortest Path Forever installed, the arrow's tooltip and blocked hint mention it.
 - Shareable walking routes: `/wp trail export` shows your learned paths as text to copy, `/wp trail import` merges pasted paths, and `Paths.lua` can ship routes inside the add-on. The trail holds up to 20,000 points.

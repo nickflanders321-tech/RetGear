@@ -848,6 +848,10 @@ SlashCmdList.WAYPATH = function(msg)
     if RG.ToggleUI then RG.ToggleUI() end
   elseif cmd == "arrow3d" then
     RG.db.arrow3d = (rest ~= "off"); RG.Print("3D arrow " .. (RG.db.arrow3d and "on" or "off"))
+  elseif cmd == "fishseen" then
+    local l = RG.FishSeenList and RG.FishSeenList() or {}
+    if #l == 0 then RG.Print("No catches learned yet beyond the built-in tables.") end
+    for _, e in ipairs(l) do RG.Print(e.zone .. ": " .. ((RG.FISH_LOOT and RG.FISH_LOOT.info[e.id] or {})[1] or ("item " .. e.id)) .. " x" .. e.n) end
   elseif cmd == "gpscheck" then
     if RG.GPSCheck then RG.GPSCheck() end
   elseif cmd == "trail" then
