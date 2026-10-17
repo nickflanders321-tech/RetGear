@@ -895,7 +895,7 @@ local GRIDX, GRIDY = 118, 150
 local WINW, WINH = 790, 730
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
 local SHOWS = { "All", "Owned", "Missing", "Extras" }
-local SORTS = { "Owned first", "Collection", "Rarity", "Name", "Power" }
+local SORTS = { "Owned", "Collection", "Rarity", "Name", "Power" }
 local FNAME = { "Common", "Rare", "Holo", "Full art" }
 
 local function isPinned(a, c)
@@ -1264,7 +1264,7 @@ local function build()
   frame.free = fs(frame, "head", 12); frame.free:SetPoint("TOPLEFT", frame.coinIcon, "BOTTOMLEFT", 0, -3); frame.free:SetTextColor(0.5, 0.88, 0.6)
   local close = gbtn(frame, "X", 28, 24, function() frame:Hide() end); close:SetPoint("TOPRIGHT", -18, -18)
   local rule = frame:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(360, 14); rule:SetPoint("TOP", frame.tagline, "BOTTOM", 0, -4)
-  frame.sub = fs(frame, "body", 14); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -2); frame.sub:SetSpacing(2); frame.sub:SetTextColor(0.94, 0.91, 1); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
+  frame.sub = fs(frame, "body", 13); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -1); frame.sub:SetSpacing(1); frame.sub:SetTextColor(0.94, 0.91, 1); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
 
   -- tabs
   frame.modes = {}

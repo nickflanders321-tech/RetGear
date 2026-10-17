@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.97.0
+- Cards window: the sort button label fits its button and the totals no longer crowd the tabs.
+
 ## v0.96.0
 - Beta: card packs are free for now. (One switch in Arcade.lua puts the price back.)
 
