@@ -1362,6 +1362,18 @@ local function oddsText(g)
   if not g.odds then return "" end
   return "   ·   about 1 in " .. groupDigits(g.odds) .. " cards"
 end
+-- the plaque under the pack: up to four labelled rows
+local function setPlaque(rows)
+  local pq = reveal.plaque
+  local n = math.min(4, #rows)
+  for i = 1, 4 do
+    local r, row = pq.rows[i], rows[i]
+    r.lab:SetShown(row and true or false); r.val:SetShown(row and true or false); r.line:SetShown(row and i > 1 and true or false)
+    if row then r.lab:SetText(string.upper(row[1])); r.val:SetText(row[2]) end
+  end
+  pq:SetHeight(n * 24 + 10)
+  pq:SetShown(n > 0)
+end
 local function summarize()
   local best, bi
   for i, g in ipairs(reveal.got) do
@@ -1370,29 +1382,32 @@ local function summarize()
   end
   local g = reveal.got[bi]
   local meta = reveal.meta or {}
-  local lines = {}
+  local rows = {}
   if meta.many then
     local m = meta.many
-    lines[#lines + 1] = m.count .. " packs opened   ·   " .. m.total .. " cards   ·   " .. m.new .. " new" .. (m.newPrint > 0 and (", " .. m.newPrint .. " new prints") or "") ..
-      "   ·   duplicates worth " .. m.value .. " coins"
-    lines[#lines + 1] = "Best of the haul: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g)
+    rows[#rows + 1] = { "Best of the haul", GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g) }
+    rows[#rows + 1] = { m.count .. " packs", m.total .. " cards   ·   " .. m.new .. " new" .. (m.newPrint > 0 and (", " .. m.newPrint .. " new prints") or "") .. "   ·   duplicates worth " .. m.value .. " coins" }
   else
-    local new = 0
-    for _, x in ipairs(reveal.got) do if x.new then new = new + 1 end end
-    lines[#lines + 1] = "Best pull: " .. GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g) .. "   ·   " .. new .. " new"
+    local new, extra, worth = 0, 0, 0
+    for _, x in ipairs(reveal.got) do
+      if x.new then new = new + 1 else extra = extra + 1; worth = worth + (x.value or 0) end
+    end
+    rows[#rows + 1] = { "Best pull", GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g) }
+    rows[#rows + 1] = { "This pack", new .. " new" .. (extra > 0 and ("   ·   " .. extra .. " already owned, worth " .. worth .. " coins") or "") }
   end
-  if reveal.record then lines[#lines + 1] = "|cffffd36bYour rarest pull yet!|r" end
   if meta.sets then
     local bits = {}
     for i = 1, math.min(2, #meta.sets) do
       local x = meta.sets[i]
       if x.gained > 0 or i == 1 then bits[#bits + 1] = x.name .. " " .. x.have .. "/" .. x.total .. (x.gained > 0 and (" |cff7be08a(+" .. x.gained .. ")|r") or "") end
     end
-    if #bits > 0 then lines[#lines + 1] = "|cffa89bc9Sets:|r " .. table.concat(bits, "   ·   ") end
+    if #bits > 0 then rows[#rows + 1] = { "Sets", table.concat(bits, "   ·   ") } end
   end
-  if meta.daily and meta.streak then lines[#lines + 1] = "|cffa89bc9Pack streak:|r day " .. meta.streak .. (meta.streak % 7 == 0 and "  (reward pack earned)" or "") end
-  if reveal.notes and #reveal.notes > 0 then lines[#lines + 1] = "|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
-  reveal.sum:SetText(table.concat(lines, "\n"))
+  local extra = {}
+  if meta.daily and meta.streak then extra[#extra + 1] = "Pack streak: day " .. meta.streak .. (meta.streak % 7 == 0 and "  (reward pack earned)" or "") end
+  if reveal.notes and #reveal.notes > 0 then extra[#extra + 1] = "|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
+  if #extra > 0 then rows[#rows + 1] = { "Bonus", table.concat(extra, "   ·   ") } end
+  setPlaque(rows)
 end
 
 local function burstAt(card, strength)
@@ -1453,7 +1468,8 @@ local function afford()
   return a and (((a.bonus or 0) > 0) or ((a.free or 0) > 0) or (a.coins or 0) >= PACK_PRICE)
 end
 
-local RW, RCARD, RGAP = 790, 140, 8
+local RW, RCARD, RGAP = 790, 136, 10
+local PKW, PKH = 160, 320   -- the booster pack on screen (its art is 256x512)
 local RH = 730   -- the pack screen covers the whole collection window
 -- the pack screen sits exactly over the collection window (or the middle of the screen if that is closed)
 local function revealPoint(r, dx, dy)
@@ -1463,15 +1479,17 @@ local function revealPoint(r, dx, dy)
 end
 local function dealPositions(i)
   local total = PACK_SIZE * RCARD + (PACK_SIZE - 1) * RGAP
-  return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -math.floor((RH - RCARD * 358 / 256) / 2) - 14
+  return (RW - total) / 2 + (i - 1) * (RCARD + RGAP), -math.floor(335 - RCARD * 358 / 256 / 2)
 end
 
 local function startDeal()
   reveal.phase = "deal"; reveal.dealT = 0
   reveal.sealFade = 0.55; reveal.sealGlow:Hide()
+  reveal.plaque:SetShown(false)
   reveal.title:SetText("Turn each card")
   for i = 1, PACK_SIZE do reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
-  reveal.sum:SetText("|cff9a96b0Hold a card to peek at how rare it is, let go to turn it|r")
+  setPlaque({ { "Tip", "Hold a card to peek at how rare it is, let go to turn it" } })
+  reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 30); reveal.spot:SetSize(760, 380)
   playSound(nil, nil, "deal")
 end
 
@@ -1563,7 +1581,7 @@ end
 -- the tear-off strip and its gold trim move together
 local function stripSet(r, sc, dx, dy, rot, alpha)
   for _, t in ipairs({ r.strip, r.stripTrim }) do
-    t:SetSize(140 * sc, 70 * sc); t:ClearAllPoints(); t:SetPoint("TOP", r.seal, "TOP", dx, dy)
+    t:SetSize(PKW * sc, PKW / 2 * sc); t:ClearAllPoints(); t:SetPoint("TOP", r.seal, "TOP", dx, dy)
     if t.SetRotation then t:SetRotation(rot) end
     t:SetAlpha(alpha)
   end
@@ -1575,9 +1593,20 @@ local function showReveal(got, notes, meta)
     reveal = CreateFrame("Frame", "WaypathArcadePack", UIParent, "BackdropTemplate")
     reveal:SetPoint("CENTER", 0, 0); reveal:SetFrameStrata("FULLSCREEN_DIALOG")
     reveal:SetSize(RW, RH)
-    reveal:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-    reveal:SetBackdropColor(0.055, 0.05, 0.08, 1); reveal:SetBackdropBorderColor(0.42, 0.36, 0.24, 1)
-    reveal.title = fs(reveal, "head", 15); reveal.title:SetPoint("TOP", 0, -34); reveal.title:SetTextColor(0.92, 0.86, 0.7)
+    darkPanel(reveal, RW, RH):SetAlpha(0.5)
+    -- a thin inner rule, a spotlight behind the pack, and the header
+    local inner = CreateFrame("Frame", nil, reveal, "BackdropTemplate"); inner:SetPoint("TOPLEFT", 9, -9); inner:SetPoint("BOTTOMRIGHT", -9, 9)
+    inner:SetBackdrop({ edgeFile = WHITE, edgeSize = 1 }); inner:SetBackdropBorderColor(0.72, 0.58, 0.3, 0.3)
+    reveal.spot = reveal:CreateTexture(nil, "BACKGROUND", nil, 3); reveal.spot:SetTexture(MEDIA .. "Soft"); reveal.spot:SetBlendMode("ADD")
+    reveal.spot:SetSize(640, 560); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 24); reveal.spot:SetVertexColor(1, 1, 1, 0.35)
+    reveal.eyebrow = fs(reveal, "head", 11); reveal.eyebrow:SetPoint("TOP", 0, -26); reveal.eyebrow:SetTextColor(0.72, 0.58, 0.3); reveal.eyebrow:SetText("W A Y P A T H +     T R A D I N G     C A R D S")
+    reveal.title = fs(reveal, "title", 22); reveal.title:SetPoint("TOP", 0, -44); reveal.title:SetTextColor(1, 0.93, 0.74)
+    for side = -1, 1, 2 do
+      local ln = reveal:CreateTexture(nil, "ARTWORK"); ln:SetColorTexture(0.72, 0.58, 0.3, 0.55); ln:SetSize(150, 1); ln:SetPoint("TOP", side * 92, -84)
+      local fade = reveal:CreateTexture(nil, "ARTWORK"); fade:SetColorTexture(0.72, 0.58, 0.3, 0.25); fade:SetSize(110, 1); fade:SetPoint("TOP", side * 222, -84)
+    end
+    reveal.diamond = reveal:CreateTexture(nil, "ARTWORK"); reveal.diamond:SetColorTexture(1, 0.85, 0.5, 1); reveal.diamond:SetSize(7, 7); reveal.diamond:SetPoint("TOP", 0, -81)
+    if reveal.diamond.SetRotation then reveal.diamond:SetRotation(0.785) end
     reveal.fxFrame = CreateFrame("Frame", nil, reveal); reveal.fxFrame:SetAllPoints(reveal); reveal.fxFrame:SetFrameLevel(lv(reveal) + 1)
     reveal.burst = reveal.fxFrame:CreateTexture(nil, "ARTWORK"); reveal.burst:SetTexture(MEDIA .. "Rays"); reveal.burst:SetBlendMode("ADD"); reveal.burst:Hide()
     reveal.phase, reveal.burstLeft, reveal.burstMax, reveal.burstSpin, reveal.dealT = false, 0, 1, 0, 0
@@ -1590,41 +1619,65 @@ local function showReveal(got, notes, meta)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
     end
-    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(140, 280); reveal.seal:SetPoint("CENTER", 0, 20); reveal.seal:SetFrameLevel(lv(reveal) + 30)
+    reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(PKW, PKH); reveal.seal:SetPoint("CENTER", 0, 20); reveal.seal:SetFrameLevel(lv(reveal) + 30)
     reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
     reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0)
     -- the booster pack: a foil wrapper (drawn by us, tinted per set) with its crimped top strip, which tears off
+    -- it stands on a soft floor glow with a shadow under it
+    reveal.floor = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -6); reveal.floor:SetTexture(MEDIA .. "Soft"); reveal.floor:SetBlendMode("ADD")
+    reveal.floor:SetSize(330, 70); reveal.floor:SetPoint("CENTER", reveal.seal, "BOTTOM", 0, 0)
+    reveal.shadow = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -5); reveal.shadow:SetTexture(MEDIA .. "Soft"); reveal.shadow:SetVertexColor(0, 0, 0, 0.8)
+    reveal.shadow:SetSize(230, 36); reveal.shadow:SetPoint("CENTER", reveal.seal, "BOTTOM", 0, 6)
     reveal.packBack = {}
     for k = 1, 2 do
-      local bt = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -2); bt:SetTexture(MEDIA .. "PackBody"); bt:SetSize(140, 280)
-      bt:SetPoint("CENTER", reveal.seal, "CENTER", k == 1 and -18 or 18, -3); bt:SetAlpha(0.8); bt:Hide(); reveal.packBack[k] = bt
+      local bt = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -2); bt:SetTexture(MEDIA .. "PackBody"); bt:SetSize(PKW, PKH)
+      bt:SetPoint("CENTER", reveal.seal, "CENTER", k == 1 and -22 or 22, -3); bt:SetAlpha(0.8); bt:Hide(); reveal.packBack[k] = bt
     end
     local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "PackBody"); sealTex:SetAllPoints(reveal.seal)
     reveal.sealTex = sealTex
     reveal.glowTex = reveal.seal:CreateTexture(nil, "BACKGROUND", nil, -4); reveal.glowTex:SetTexture(MEDIA .. "Glow"); reveal.glowTex:SetBlendMode("ADD")
-    reveal.glowTex:SetPoint("CENTER", reveal.seal, "CENTER", 0, 0); reveal.glowTex:SetSize(308, 420); reveal.glowTex:SetAlpha(0.35)
+    reveal.glowTex:SetPoint("CENTER", reveal.seal, "CENTER", 0, 0); reveal.glowTex:SetSize(360, 480); reveal.glowTex:SetAlpha(0.3)
     reveal.trim = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 1); reveal.trim:SetTexture(MEDIA .. "PackTrim"); reveal.trim:SetAllPoints(reveal.seal)
-    reveal.strip = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 3); reveal.strip:SetTexture(MEDIA .. "PackTop"); reveal.strip:SetSize(140, 70)
+    reveal.strip = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 3); reveal.strip:SetTexture(MEDIA .. "PackTop"); reveal.strip:SetSize(PKW, PKW / 2)
     reveal.strip:SetPoint("TOP", reveal.seal, "TOP", 0, 0)
-    reveal.stripTrim = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 4); reveal.stripTrim:SetTexture(MEDIA .. "PackTrimTop"); reveal.stripTrim:SetSize(140, 70)
+    reveal.stripTrim = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 4); reveal.stripTrim:SetTexture(MEDIA .. "PackTrimTop"); reveal.stripTrim:SetSize(PKW, PKW / 2)
     reveal.stripTrim:SetPoint("TOP", reveal.seal, "TOP", 0, 0)
-    -- a holographic sheen sweeps across the foil
+    -- a soft holographic band sweeps across the foil; it stays inside a fixed panel on the pack (the texture slides, the panel doesn't)
     reveal.sheenF = CreateFrame("Frame", nil, reveal.seal); reveal.sheenF:SetAllPoints(reveal.seal); reveal.sheenF:SetFrameLevel(lv(reveal.seal) + 2)
-    if reveal.sheenF.SetClipsChildren then reveal.sheenF:SetClipsChildren(true) end
-    reveal.sheen = reveal.sheenF:CreateTexture(nil, "OVERLAY"); reveal.sheen:SetTexture(MEDIA .. "Foil"); reveal.sheen:SetBlendMode("ADD"); reveal.sheen:SetSize(308, 285); reveal.sheen:SetAlpha(0.35)
-    reveal.sheen:SetPoint("LEFT", reveal.sheenF, "LEFT", -140, 0)
+    reveal.sheen = reveal.sheenF:CreateTexture(nil, "OVERLAY"); reveal.sheen:SetTexture(MEDIA .. "PackSheen"); reveal.sheen:SetBlendMode("ADD"); reveal.sheen:SetAlpha(0.5)
+    reveal.sheen:SetPoint("TOPLEFT", reveal.sheenF, "TOPLEFT", 11, -68); reveal.sheen:SetPoint("BOTTOMRIGHT", reveal.sheenF, "BOTTOMRIGHT", -11, 30)
+    reveal.sheen:SetTexCoord(0.56, 0.91, 0, 1)
+    -- a dashed tear line shows where to rip
+    reveal.dashes = {}
+    for i = 1, 11 do
+      local d = reveal.sheenF:CreateTexture(nil, "OVERLAY", nil, 2); d:SetColorTexture(1, 0.95, 0.75, 1); d:SetSize(7, 2)
+      d:SetPoint("CENTER", reveal.sheenF, "TOPLEFT", 14 + (i - 1) * 13.2, -63); reveal.dashes[i] = d
+    end
     -- the set's emblem sits in the medallion
-    reveal.emb = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 1); reveal.emb:SetSize(60, 60); reveal.emb:SetPoint("TOP", reveal.seal, "TOP", 0, -113); reveal.emb:Hide()
+    reveal.emb = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 1); reveal.emb:SetSize(56, 56); reveal.emb:SetPoint("CENTER", reveal.seal, "TOP", 0, -158); reveal.emb:Hide()
     reveal.embLight, reveal.embShadow = reveal.emb, reveal.emb   -- (older code hides these by name)
-    reveal.sealCount = fs(reveal.seal, "title", 26); reveal.sealCount:SetPoint("CENTER", reveal.emb, "CENTER", 0, 0); reveal.sealCount:SetTextColor(1, 0.95, 0.8); reveal.sealCount:SetText("")
-    reveal.packName = fs(reveal.seal, "title", 15); reveal.packName:SetPoint("CENTER", reveal.seal, "TOP", 0, -66); reveal.packName:SetText("WAYPATH"); reveal.packName:SetTextColor(1, 0.96, 0.85)
-    reveal.packKind = fs(reveal.seal, "head", 12); reveal.packKind:SetPoint("CENTER", reveal.seal, "TOP", 0, -225); reveal.packKind:SetTextColor(1, 0.96, 0.85)
+    reveal.sealCount = fs(reveal.seal, "title", 24); reveal.sealCount:SetPoint("CENTER", reveal.emb, "CENTER", 0, 0); reveal.sealCount:SetTextColor(1, 0.95, 0.8); reveal.sealCount:SetText("")
+    reveal.packName = fs(reveal.seal, "title", 14); reveal.packName:SetPoint("CENTER", reveal.seal, "TOP", 0, -96); reveal.packName:SetText("WAYPATH"); reveal.packName:SetTextColor(1, 0.96, 0.85)
+    reveal.packKind = fs(reveal.seal, "head", 12); reveal.packKind:SetPoint("CENTER", reveal.seal, "TOP", 0, -232); reveal.packKind:SetTextColor(1, 0.96, 0.85)
     reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY"); reveal.ribbon:Hide()
     reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetText("")
-    reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Drag across the top to rip it open, or click it three times"); reveal.sealHint:SetTextColor(0.7, 0.67, 0.6)
+    reveal.sealHint = fs(reveal.seal, "head", 12); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -26); reveal.sealHint:SetText("Drag across the top to rip it open   ·   or click it three times"); reveal.sealHint:SetTextColor(0.85, 0.78, 0.6)
     reveal.seal:EnableMouse(true)
     reveal.sealCol = { 1, 1, 1 }
-    reveal.sealInfo = fs(reveal.seal, "body", 12); reveal.sealInfo:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -30); reveal.sealInfo:SetWidth(RW - 120); reveal.sealInfo:SetJustifyH("CENTER"); reveal.sealInfo:SetTextColor(0.78, 0.74, 0.92)
+    -- the info plaque under the pack (and, after the deal, the results)
+    local pq = CreateFrame("Frame", nil, reveal, "BackdropTemplate"); pq:SetWidth(680); pq:SetPoint("BOTTOM", 0, 78); pq:SetFrameLevel(lv(reveal) + 2)
+    pq:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); pq:SetBackdropColor(0.03, 0.025, 0.07, 0.94); pq:SetBackdropBorderColor(0.72, 0.58, 0.3, 0.55)
+    pq.bar = pq:CreateTexture(nil, "ARTWORK"); pq.bar:SetColorTexture(1, 0.85, 0.45, 1); pq.bar:SetPoint("TOPLEFT", 1, -1); pq.bar:SetPoint("BOTTOMLEFT", 1, 1); pq.bar:SetWidth(4)
+    pq.rows = {}
+    for i = 1, 4 do
+      local r = {}
+      r.lab = fs(pq, "head", 10.5); r.lab:SetPoint("TOPLEFT", 22, -(12 + (i - 1) * 24)); r.lab:SetWidth(96); r.lab:SetJustifyH("LEFT"); r.lab:SetTextColor(0.66, 0.6, 0.8)
+      r.val = fs(pq, "body", 13); r.val:SetPoint("TOPLEFT", 124, -(11 + (i - 1) * 24)); r.val:SetWidth(540); r.val:SetJustifyH("LEFT"); r.val:SetTextColor(0.93, 0.89, 0.78)
+      if r.val.SetWordWrap then r.val:SetWordWrap(false) end
+      r.line = pq:CreateTexture(nil, "ARTWORK"); r.line:SetColorTexture(1, 1, 1, 0.07); r.line:SetHeight(1); r.line:SetPoint("TOPLEFT", 16, -(8 + (i - 1) * 24 - 0)); r.line:SetPoint("TOPRIGHT", -12, -(8 + (i - 1) * 24))
+      pq.rows[i] = r
+    end
+    reveal.plaque = pq
     reveal.cracks = {}
     reveal.shards = {}
     for i = 1, 14 do
@@ -1648,7 +1701,7 @@ local function showReveal(got, notes, meta)
         if reveal.picks >= 3 then tearOpen() end
       end
     end)
-    reveal.share = gbtn(reveal, "Show off", 100, 26, function()
+    reveal.share = gbtn(reveal, "Show off", 132, 30, function()
       local bg
       for _, g in ipairs(reveal.got or {}) do if not bg or g.finish * 10 + g.card.tier > bg.finish * 10 + bg.card.tier then bg = g end end
       if not bg then return end
@@ -1658,25 +1711,32 @@ local function showReveal(got, notes, meta)
       if sent > 0 and RG.Print then RG.Print("Shown to the Waypath+ players in your " .. (sent > 1 and "group and guild." or "group or guild.")) end
       if ChatFrame_OpenChat then ChatFrame_OpenChat(msg) elseif RG.Print then RG.Print(msg) end
     end)
-    reveal.share:SetPoint("BOTTOM", 290, 18); reveal.share:Hide()
-    reveal.snd = gbtn(reveal, "Sound: On", 84, 22, function(self)
+    reveal.share:SetPoint("BOTTOM", -160, 22); reveal.share:Hide()
+    -- the sound switch is a quiet text link in the corner
+    local sn = CreateFrame("Button", nil, reveal); sn:SetSize(96, 20); sn:SetPoint("BOTTOMLEFT", 34, 27)
+    sn.label = fs(sn, "head", 11); sn.label:SetPoint("LEFT", 0, 0); sn.label:SetTextColor(0.6, 0.56, 0.7)
+    function sn:SetText(t) self.label:SetText(t) end
+    sn:SetScript("OnEnter", function(self) self.label:SetTextColor(1, 0.92, 0.7) end)
+    sn:SetScript("OnLeave", function(self) self.label:SetTextColor(0.6, 0.56, 0.7) end)
+    sn:SetScript("OnClick", function(self)
       local a = store(); if not a then return end
       a.mute = not a.mute
-      self:SetText(a.mute and "Sound: Off" or "Sound: On")
+      self:SetText(a.mute and "Sound: off" or "Sound: on")
     end)
-    reveal.snd:SetPoint("BOTTOM", -300, 20)
-    reveal.sum = fs(reveal, "body", 14); reveal.sum:SetPoint("TOP", 0, -(math.floor((RH - RCARD * 358 / 256) / 2) + 14 + math.floor(RCARD * 358 / 256) + 26)); reveal.sum:SetWidth(RW - 80); reveal.sum:SetTextColor(0.9, 0.86, 0.74)
-    reveal.all = gbtn(reveal, "Turn all", 120, 26, function()
+    reveal.snd = sn
+    local sep = reveal:CreateTexture(nil, "ARTWORK"); sep:SetColorTexture(0.72, 0.58, 0.3, 0.3); sep:SetHeight(1)
+    sep:SetPoint("BOTTOMLEFT", 30, 66); sep:SetPoint("BOTTOMRIGHT", -30, 66)
+    reveal.all = gbtn(reveal, "Turn all", 132, 30, function()
       for i = 1, PACK_SIZE do
         local function go() if reveal:IsShown() then flip(i) end end
         if C_Timer and C_Timer.After then C_Timer.After((i - 1) * 0.5 + (i == PACK_SIZE and 0.5 or 0), go) else go() end
       end
     end)
-    reveal.all:SetPoint("BOTTOM", -150, 18)
-    reveal.again = gbtn(reveal, "Open another pack", 170, 26, function() if frame and frame.buyNow then frame.buyNow() end end, true)
-    reveal.again:SetPoint("BOTTOM", 0, 18)
-    reveal.ok = gbtn(reveal, "Skip", 120, 26, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
-    reveal.ok:SetPoint("BOTTOM", 150, 18)
+    reveal.all:SetPoint("BOTTOM", -160, 22)
+    reveal.again = gbtn(reveal, "Open another pack", 190, 30, function() if frame and frame.buyNow then frame.buyNow() end end, true)
+    reveal.again:SetPoint("BOTTOM", 0, 22)
+    reveal.ok = gbtn(reveal, "Skip", 132, 30, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
+    reveal.ok:SetPoint("BOTTOM", 160, 22)
     tinsert(UISpecialFrames, "WaypathArcadePack")
     -- a dark veil over the collection window, so nothing of it peeks out around the pack
     local dim = CreateFrame("Frame", nil, UIParent)
@@ -1706,19 +1766,30 @@ local function showReveal(got, notes, meta)
         if self.pickIdle > 2 and self.picks > 0 then self.picks = 0 end
         if self.tear >= 1 then tearOpen(); return end
         local tt = math.max(self.tear, self.picks / 3 * 0.85)
-        local k = 1 + 0.02 * math.sin(t * 4) + 0.12 * tt
-        self.seal:SetSize(140 * k, 280 * k)
-        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 2 * tt, 20 + math.cos(t * 47) * 1.5 * tt + 3 * math.sin(t * 1.6))
+        local k = 1 + 0.015 * math.sin(t * 3) + 0.10 * tt
+        self.lastK = k
+        self.seal:SetScale(k)
+        self.seal:ClearAllPoints(); self.seal:SetPoint("CENTER", math.sin(t * 55) * 2 * tt / k, (20 + math.cos(t * 47) * 1.5 * tt + 4 * math.sin(t * 1.4)) / k)
         -- the strip lifts, tilts and pulls away as the tear goes on
-        stripSet(self, k, 14 * tt, 24 * tt, -0.35 * tt, 1)
-        self.sheen:ClearAllPoints(); self.sheen:SetPoint("LEFT", self.sheenF, "LEFT", (-1.4 + 2.4 * ((t * 0.32) % 1)) * 140, 0)
-        self.glowTex:SetAlpha(0.28 + 0.07 * math.sin(t * 2) + 0.2 * tt)
+        stripSet(self, 1, 14 * tt, 24 * tt, -0.35 * tt, 1)
+        -- the sheen: a band that sweeps across, then rests
+        local cyc = (t * 0.3) % 1
+        local sw = math.min(1, cyc / 0.45)
+        local u0 = 0.58 - 0.46 * sw
+        self.sheen:SetTexCoord(u0, u0 + 0.35, 0, 1)
+        self.sheen:SetAlpha(0.55 * math.sin(math.min(1, sw) * 3.1416) ^ 0.5)
+        for i, d in ipairs(self.dashes) do d:SetAlpha(math.max(0, (0.35 + 0.35 * math.sin(t * 3 - i * 0.35)) * (1 - tt * 3))) end
+        self.sealHint:SetAlpha(0.65 + 0.3 * math.sin(t * 2.2))
+        self.glowTex:SetAlpha(0.26 + 0.06 * math.sin(t * 2) + 0.2 * tt)
         self.sealGlow:SetAlpha(0)
         local c = self.sealCol
         local r, g, b = c[1] + (1 - c[1]) * tt * 0.4, c[2] + (1 - c[2]) * tt * 0.4, c[3] + (1 - c[3]) * tt * 0.4
         self.sealTex:SetVertexColor(r, g, b, 1); self.strip:SetVertexColor(r, g, b, 1); self.glowTex:SetVertexColor(c[1], c[2], c[3], 1); self.sheen:SetVertexColor(1, 1, 1, 1)
+        self.spot:SetVertexColor(c[1], c[2], c[3], 0.34 + 0.05 * math.sin(t * 1.7) + 0.12 * tt)
+        self.floor:SetVertexColor(c[1], c[2], c[3], 0.5)
       elseif self.phase == "deal" then
         self.dealT = self.dealT + dt
+        do local c = self.sealCol; self.spot:SetVertexColor(c[1], c[2], c[3], 0.2) end
         local all = true
         for i = 1, PACK_SIZE do
           local k = math.max(0, math.min(1, (self.dealT - (i - 1) * 0.09) / 0.4))
@@ -1738,7 +1809,8 @@ local function showReveal(got, notes, meta)
         local k = 1 - math.max(0, self.sealFade) / 0.55
         stripSet(self, 1, 40 + 170 * k, 24 + 140 * k - 190 * k * k, -0.35 - 1.6 * k, 1 - k)
         self.seal:SetAlpha(math.max(0, 1 - k * 1.4))
-        if self.sealFade <= 0 then self.sealFade = nil; self.seal:Hide(); self.seal:SetAlpha(1); stripSet(self, 1, 0, 0, 0, 1) end
+        self.spot:SetVertexColor(self.sealCol[1], self.sealCol[2], self.sealCol[3], 0.2 + 0.14 * (1 - k))
+        if self.sealFade <= 0 then self.sealFade = nil; self.seal:Hide(); self.seal:SetAlpha(1); self.seal:SetScale(1); stripSet(self, 1, 0, 0, 0, 1) end
       end
       if self.shakeT > 0 then
         self.shakeT = self.shakeT - dt
@@ -1771,24 +1843,24 @@ local function showReveal(got, notes, meta)
   local col, title, info = { 1, 1, 1 }, "Open the pack", {}
   if meta.bonus then
     col, title = { 0.85, 0.6, 1 }, "Reward pack"
-    info[#info + 1] = "|cffd9a8ffReward pack|r  ·  a rare and a holo or better inside"
+    info[#info + 1] = { "Reward pack", "A rare and a holo or better inside" }
   elseif meta.many then
     col, title = { 1, 0.85, 0.45 }, meta.many.count .. " packs"
-    info[#info + 1] = GOLDHEX .. meta.many.count .. " packs at once|r  ·  the five best cards are shown"
+    info[#info + 1] = { "Packs", GOLDHEX .. meta.many.count .. " packs at once|r   ·   the five best cards are shown" }
   else
     if meta.featured then
       local h = 0
       for ch in meta.featured:gmatch(".") do h = (h * 31 + ch:byte()) % 997 end
       local r, g, b = hsv(h / 997, 0.5, 1)
       col = { r, g, b }
-      info[#info + 1] = "Featured: " .. GOLDHEX .. meta.featured .. "|r  ·  more of its cards inside"
+      info[#info + 1] = { "Featured set", GOLDHEX .. meta.featured .. "|r   ·   more of its cards inside" }
     end
-    if meta.daily then title = "Daily pack"; info[#info + 1] = "|cff7be08aDaily pack|r  ·  day " .. (meta.streak or 1) .. " in a row" end
+    if meta.daily then title = "Daily pack"; info[#info + 1] = { "Daily", "|cff7be08aDay " .. (meta.streak or 1) .. " in a row|r" } end
   end
   if not meta.many then
     local pb = meta.pityBefore or 0
-    if meta.bonus or pb >= PITY then info[#info + 1] = "|cffd9a8ffThis pack holds a holo or full art|r"
-    else info[#info + 1] = "Holo or full art guaranteed within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") end
+    if meta.bonus or pb >= PITY then info[#info + 1] = { "Guarantee", "|cffd9a8ffThis pack holds a holo or full art|r" }
+    else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") } end
   end
   reveal.sealCol = col
   reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1); reveal.strip:SetVertexColor(col[1], col[2], col[3], 1)
@@ -1815,11 +1887,11 @@ local function showReveal(got, notes, meta)
     reveal.emb:SetVertexColor(math.min(1, col[1] + 0.25), math.min(1, col[2] + 0.25), math.min(1, col[3] + 0.25), 0.95); reveal.emb:Show()
   else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(0.9, 0.9, 1, 0.8); reveal.emb:Show() end
   reveal.sealFade = nil; reveal.seal:SetAlpha(1)
-  reveal.sealInfo:SetText(table.concat(info, "\n"))
+  setPlaque(info)
+  reveal.plaque.bar:SetColorTexture(math.min(1, col[1] + 0.1), math.min(1, col[2] + 0.1), math.min(1, col[3] + 0.1), 1)
   reveal.title:SetText(title)
-  reveal.sum:SetText("")
   reveal.all:Show(); reveal.share:Hide(); reveal.ok:SetText("Skip")
-  do local a = store(); reveal.snd:SetText(a and a.mute and "Sound: Off" or "Sound: On") end
+  do local a = store(); reveal.snd:SetText(a and a.mute and "Sound: off" or "Sound: on") end
   reveal.burst:Hide(); reveal.burstLeft = 0
   reveal.tear, reveal.picks, reveal.holding, reveal.shardT, reveal.shakeT = 0, 0, false, 0, 0
   for _, sh in ipairs(reveal.shards) do sh.tex:Hide() end
@@ -1827,8 +1899,9 @@ local function showReveal(got, notes, meta)
   revealPoint(reveal, 0, 0)
   reveal:Show()
   reveal.phase = "seal"
-  reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 20)
-  reveal.seal:Show(); reveal.seal:SetSize(140, 280); reveal.seal:SetAlpha(1)
+  reveal.seal:SetScale(1); reveal.seal:ClearAllPoints(); reveal.seal:SetPoint("CENTER", 0, 20)
+  reveal.seal:Show(); reveal.seal:SetSize(PKW, PKH); reveal.seal:SetAlpha(1)
+  reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 24); reveal.spot:SetSize(640, 560)
   stripSet(reveal, 1, 0, 0, 0, 1); reveal.sealTex:SetAlpha(1)
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
@@ -2033,6 +2106,8 @@ local function build()
     b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.07, 0.05, 0.14, 0.9); b:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8)
     b.left = fs(b, "body", 14); b.left:SetPoint("LEFT", 10, 0); b.left:SetJustifyH("LEFT")
     b.right = fs(b, "head", 12); b.right:SetPoint("RIGHT", -10, 0); b.right:SetJustifyH("RIGHT"); b.right:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    b.fillBg = b:CreateTexture(nil, "ARTWORK"); b.fillBg:SetColorTexture(1, 1, 1, 0.07); b.fillBg:SetHeight(3); b.fillBg:SetPoint("BOTTOMLEFT", 1, 1); b.fillBg:SetPoint("BOTTOMRIGHT", -1, 1)
+    b.fill = b:CreateTexture(nil, "OVERLAY"); b.fill:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.9); b.fill:SetHeight(3); b.fill:SetPoint("BOTTOMLEFT", 1, 1); b.fill:SetWidth(1)
     b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.13, 0.09, 0.22, 0.95); self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) end)
     b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.07, 0.05, 0.14, 0.9); self:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8) end)
     b:SetScript("OnClick", function(self) if self.act then self.act() end end)
@@ -2083,6 +2158,89 @@ local function categoryLine(a)
   return string.format("Items %d/%d  ·  NPCs %d/%d  ·  Places %d/%d  ·  Raiders %d/%d", have[1], tot[1], have[2], tot[2], have[3], tot[3], have[4], tot[4])
 end
 
+-- page widgets for the Today, Trade, Ledger and Sets screens: stat tiles, section titles, bars, aligned rows
+local PG = { tiles = {}, heads = {}, bars = {}, kvs = {}, boxes = {} }
+local PGX, PGW = 40, WINW - 80
+local DIM = { 0.66, 0.6, 0.8 }
+local function pgReset() for _, list in pairs(PG) do for _, w in ipairs(list) do w:Hide() end end end
+local function pgPlace(w, x, y, wd, ht) w:ClearAllPoints(); w:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -y); w:SetSize(wd, ht); w:Show() end
+local function pgTile(i, x, y, wd, ht, value, label, sub, col)
+  local t = PG.tiles[i]
+  if not t then
+    t = CreateFrame("Frame", nil, frame, "BackdropTemplate"); t:SetFrameLevel(lv(frame) + 2)
+    t:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); t:SetBackdropColor(0.06, 0.045, 0.13, 0.95); t:SetBackdropBorderColor(0.5, 0.41, 0.24, 0.75)
+    t.accent = t:CreateTexture(nil, "ARTWORK"); t.accent:SetColorTexture(1, 1, 1, 1); t.accent:SetPoint("TOPLEFT", 1, -1); t.accent:SetPoint("TOPRIGHT", -1, -1); t.accent:SetHeight(2)
+    t.lab = fs(t, "head", 10.5); t.lab:SetPoint("TOPLEFT", 14, -12); t.lab:SetTextColor(DIM[1], DIM[2], DIM[3])
+    t.val = fs(t, "title", 26); t.val:SetPoint("TOPLEFT", 14, -26); t.val:SetJustifyH("LEFT")
+    t.sub = fs(t, "body", 12); t.sub:SetPoint("BOTTOMLEFT", 14, 9); t.sub:SetJustifyH("LEFT"); t.sub:SetTextColor(0.66, 0.64, 0.76)
+    if t.sub.SetWordWrap then t.sub:SetWordWrap(false) end
+    PG.tiles[i] = t
+  end
+  col = col or GOLDC
+  pgPlace(t, x, y, wd, ht)
+  t.accent:SetColorTexture(col[1], col[2], col[3], 0.9)
+  t.lab:SetText(string.upper(label)); t.val:SetText(value); t.val:SetTextColor(col[1], col[2], col[3])
+  t.sub:SetWidth(wd - 28); t.sub:SetText(sub or "")
+  return t
+end
+local function pgHead(i, y, text, right)
+  local h = PG.heads[i]
+  if not h then
+    h = CreateFrame("Frame", nil, frame); h:SetFrameLevel(lv(frame) + 2)
+    h.t = fs(h, "head", 12.5); h.t:SetPoint("TOPLEFT", 0, 0); h.t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+    h.r = fs(h, "body", 12); h.r:SetPoint("TOPRIGHT", 0, -1); h.r:SetJustifyH("RIGHT"); h.r:SetTextColor(0.66, 0.64, 0.76)
+    h.line = h:CreateTexture(nil, "ARTWORK"); h.line:SetColorTexture(0.72, 0.58, 0.3, 0.4); h.line:SetHeight(1); h.line:SetPoint("BOTTOMLEFT", 0, 0); h.line:SetPoint("BOTTOMRIGHT", 0, 0)
+    PG.heads[i] = h
+  end
+  pgPlace(h, PGX, y, PGW, 20)
+  h.t:SetText(string.upper(text)); h.r:SetText(right or "")
+end
+local function pgBar(i, y, label, right, frac, col)
+  local b = PG.bars[i]
+  if not b then
+    b = CreateFrame("Frame", nil, frame); b:SetFrameLevel(lv(frame) + 2)
+    b.l = fs(b, "body", 13); b.l:SetPoint("TOPLEFT", 0, 0); b.l:SetJustifyH("LEFT")
+    b.r = fs(b, "head", 12); b.r:SetPoint("TOPRIGHT", 0, 0); b.r:SetJustifyH("RIGHT")
+    b.bg = b:CreateTexture(nil, "ARTWORK"); b.bg:SetColorTexture(1, 1, 1, 0.09); b.bg:SetHeight(6); b.bg:SetPoint("BOTTOMLEFT", 0, 2); b.bg:SetPoint("BOTTOMRIGHT", 0, 2)
+    b.fill = b:CreateTexture(nil, "OVERLAY"); b.fill:SetHeight(6); b.fill:SetPoint("BOTTOMLEFT", 0, 2)
+    PG.bars[i] = b
+  end
+  pgPlace(b, PGX, y, PGW, 36)
+  col = col or GOLDC
+  frac = math.max(0, math.min(1, frac or 0))
+  b.l:SetText(label); b.r:SetText(right or ""); b.r:SetTextColor(col[1], col[2], col[3])
+  b.fill:SetColorTexture(col[1], col[2], col[3], 0.95); b.fill:SetWidth(math.max(1, PGW * frac)); b.fill:SetShown(frac > 0)
+end
+local function pgKV(i, x, y, wd, label, value)
+  local r = PG.kvs[i]
+  if not r then
+    r = CreateFrame("Frame", nil, frame); r:SetFrameLevel(lv(frame) + 2)
+    r.l = fs(r, "body", 13); r.l:SetPoint("LEFT", 2, 0); r.l:SetTextColor(0.8, 0.77, 0.9)
+    r.v = fs(r, "head", 13); r.v:SetPoint("RIGHT", -2, 0); r.v:SetJustifyH("RIGHT"); r.v:SetTextColor(1, 0.97, 0.88)
+    r.line = r:CreateTexture(nil, "ARTWORK"); r.line:SetColorTexture(1, 1, 1, 0.08); r.line:SetHeight(1); r.line:SetPoint("BOTTOMLEFT", 0, 0); r.line:SetPoint("BOTTOMRIGHT", 0, 0)
+    PG.kvs[i] = r
+  end
+  pgPlace(r, x, y, wd, 26)
+  r.l:SetText(label); r.v:SetText(value)
+end
+local function pgBox(i, y, ht, title, text, col)
+  local b = PG.boxes[i]
+  if not b then
+    b = CreateFrame("Frame", nil, frame, "BackdropTemplate"); b:SetFrameLevel(lv(frame) + 2)
+    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.04, 0.03, 0.09, 0.94); b:SetBackdropBorderColor(0.5, 0.41, 0.24, 0.7)
+    b.bar = b:CreateTexture(nil, "ARTWORK"); b.bar:SetPoint("TOPLEFT", 1, -1); b.bar:SetPoint("BOTTOMLEFT", 1, 1); b.bar:SetWidth(4)
+    b.title = fs(b, "head", 14); b.title:SetPoint("TOPLEFT", 20, -12); b.title:SetJustifyH("LEFT")
+    b.text = fs(b, "body", 13); b.text:SetJustifyH("LEFT"); b.text:SetJustifyV("TOP"); b.text:SetSpacing(4); b.text:SetTextColor(0.86, 0.83, 0.94)
+    PG.boxes[i] = b
+  end
+  pgPlace(b, PGX, y, PGW, ht)
+  col = col or GOLDC
+  b.bar:SetColorTexture(col[1], col[2], col[3], 1)
+  b.title:SetText(title or ""); b.title:SetTextColor(col[1], col[2], col[3])
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 20, (title and title ~= "") and -36 or -12); b.text:SetWidth(PGW - 40); b.text:SetText(text or "")
+  return b
+end
+
 local function showRows(n) for i, b in ipairs(frame.rows) do b:SetShown(i <= n) end end
 
 function RG.ArcadeRefresh(keepMsg)
@@ -2091,11 +2249,12 @@ function RG.ArcadeRefresh(keepMsg)
   dailyCheck()
   frame.coins:SetText(GOLDHEX .. (a.coins or 0) .. "|r")
   frame.free:SetText((a.free or 0) > 0 and ((a.free) .. " free pack" .. (a.free > 1 and "s" or "")) or "")
-  frame.sub:SetText(own .. " of " .. total .. " cards  ·  " .. prints .. " prints  ·  " .. (a.wins or 0) .. " duel wins\n" .. categoryLine(a))
+  frame.sub:SetText(GOLDHEX .. own .. "|r of " .. total .. " cards   ·   " .. GOLDHEX .. prints .. "|r prints   ·   " .. GOLDHEX .. (a.wins or 0) .. "|r duel wins\n|cffa89bc9" .. categoryLine(a) .. "|r")
   if keepMsg ~= true then frame.msg:SetText("") end
   local cards = view.mode == "cards"
   for _, cell in ipairs(cells) do if not cards then cell:Hide() end end
   frame.panel:SetText("")
+  pgReset()
   frame.searchBox:SetShown(cards); frame.searchHint:SetShown(cards and (view.search or "") == "")
   frame.sortBtn:SetShown(cards); frame.showBtn:SetShown(cards)
   frame.sortBtn:SetText("Sort: " .. SORTS[view.sort]); frame.showBtn:SetText("Show: " .. SHOWS[view.show])
@@ -2122,18 +2281,19 @@ function RG.ArcadeRefresh(keepMsg)
     local pages = math.max(1, math.ceil(#sets / per))
     local pg = math.max(0, math.min(view.setPage or 0, pages - 1)); view.setPage = pg
     local first = pg * per
-    frame.panel:SetText("Complete a set to earn a coin reward. Click a set to browse it.   |cff9a96b0(" .. #sets .. " sets)|r")
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -196)
+    pgHead(1, 196, "Sets", "Complete a set for a coin reward   ·   click one to browse it   ·   " .. #sets .. " sets")
     showRows(math.max(0, math.min(per, #sets - first)))
     for i = 1, per do
       local s = sets[first + i]
       local b = frame.rows[i]
-      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -224 - (i - 1) * 29)
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -228 - (i - 1) * 28)
       if s then
         local have = setProgress(a, s)
         local done = have >= #s.cards
         b.left:SetText((done and "|cff7be08a" or "|cfff4ecd8") .. s.name .. "|r")
-        b.right:SetText(have .. "/" .. #s.cards .. (done and ("   |cff7be08adone|r") or ("   +" .. s.reward)))
+        b.right:SetText(have .. "/" .. #s.cards .. (done and ("   |cff7be08acomplete|r") or ("   |cffa89bc9+" .. s.reward .. " coins|r")))
+        b.fill:Show(); b.fillBg:Show()
+        b.fill:SetColorTexture(done and 0.48 or GOLDC[1], done and 0.88 or GOLDC[2], done and 0.54 or GOLDC[3], 0.95); b.fill:SetWidth(math.max(1, (PGW - 2) * have / math.max(1, #s.cards)))
         b.act = function() view.set = s.name; view.mode = "cards"; view.kind = 0; view.page = 1; view.show = 1; RG.ArcadeRefresh(true) end
       end
     end
@@ -2142,46 +2302,52 @@ function RG.ArcadeRefresh(keepMsg)
     frame.prev:SetEnabled(pg > 0); frame.next:SetEnabled(pg + 1 < pages)
   elseif view.mode == "today" then
     local g = todaysGoals(a)
-    local lines = { GOLDHEX .. "Today|r", "" }
-    lines[#lines + 1] = "Free packs waiting: |cffffffff" .. (a.free or 0) .. "|r   (one new pack every day, up to 3 saved)"
-    lines[#lines + 1] = "Reward packs waiting: |cffffffff" .. (a.bonus or 0) .. "|r   (a new highest rank, and every 7th day in a row you break a pack)"
-    lines[#lines + 1] = "Pack streak: |cffffffff" .. ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0) .. "|r day" .. "s in a row   ·   next pack's set: |cffffffff" .. (featuredSet(a) and featuredSet(a).name or "none") .. "|r"
-    lines[#lines + 1] = "Pity: |cffffffff" .. (a.pity or 0) .. "|r of " .. PITY .. " packs without a holo or full art"
-    lines[#lines + 1] = "Quest, kill and skill coins today: |cffffffff" .. ((a.day == today()) and (a.dayCoins or 0) or 0) .. "|r of " .. DAY_CAP
-    lines[#lines + 1] = "Duel win streak: |cffffffff" .. (a.streak or 0) .. "|r   (each win in a row pays +1, up to +4)"
-    lines[#lines + 1] = ""
-    lines[#lines + 1] = GOLDHEX .. "Goals|r"
+    local tw = (PGW - 2 * 16) / 3
+    local streak = ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0)
+    local fset = featuredSet(a)
+    pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", "one new every day, 3 saved at most", { 0.5, 0.88, 0.6 })
+    pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "a new top rank, or a 7th day running", { 0.85, 0.6, 1 })
+    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "next pack: " .. (fset and fset.name or "mixed"), GOLDC)
+    pgHead(1, 298, "Limits and guarantees")
+    pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " packs without one", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
+    local dc = (a.day == today()) and (a.dayCoins or 0) or 0
+    pgBar(2, 368, "Coins from quests, kills and skill-ups today", dc .. " / " .. DAY_CAP, dc / DAY_CAP, GOLDC)
+    pgBar(3, 410, "Duel win streak   (each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
+    pgHead(2, 464, "Today's goals", "new goals every day")
+    local n = 0
     for _, id in ipairs(g.pick) do
       for _, d in ipairs(GOALS) do
         if d[1] == id then
+          n = n + 1
           local done = g.done[id]
-          lines[#lines + 1] = (done and "|cff7be08a" or "|cfff4ecd8") .. d[2] .. "|r   " .. math.min(g.prog[id] or 0, d[3]) .. "/" .. d[3] .. "   ·   +" .. d[4] .. " coins" .. (done and "   done" or "")
+          local prog = math.min(g.prog[id] or 0, d[3])
+          pgBar(3 + n, 492 + (n - 1) * 42, (done and "|cff7be08a" or "|cfff4ecd8") .. d[2] .. "|r", done and "done" or (prog .. " / " .. d[3] .. "   ·   +" .. d[4] .. " coins"), prog / d[3], done and { 0.48, 0.88, 0.54 } or GOLDC)
         end
       end
     end
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -204)
-    frame.panel:SetText(table.concat(lines, "\n"))
   elseif view.mode == "trade" then
-    local lines = { GOLDHEX .. "Trade with your party|r", "", "Offer an extra copy from its card (Offer to group). Someone in your group answers with one of their own extras and the swap happens when you both agree.", "Raiders can't be traded." }
-    if trade.incoming then lines[#lines + 1] = ""; lines[#lines + 1] = "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r Pick one of your extras below to answer." end
-    if trade.out then lines[#lines + 1] = ""; lines[#lines + 1] = "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer." end
-    if trade.pending then lines[#lines + 1] = ""; lines[#lines + 1] = "Answer sent. Waiting for " .. trade.pending.from .. "." end
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -204)
-    local ptext = table.concat(lines, "\n")
-    frame.panel:SetText(ptext)
     local extras = {}
     for _, c in ipairs(CARDS) do
       if c.kind ~= 4 then
-        local s = a.cards[c.key or c.name]
-        if s then for f = 1, 4 do if (s[f] or 0) >= 2 then extras[#extras + 1] = { c = c, f = f, n = s[f] - 1 } end end end
+        local s2 = a.cards[c.key or c.name]
+        if s2 then for f = 1, 4 do if (s2[f] or 0) >= 2 then extras[#extras + 1] = { c = c, f = f, n = s2[f] - 1 } end end end
       end
     end
+    pgBox(1, 196, 104, "Trade with your party", "Offer an extra copy from its card (Offer to group). Someone in your group answers with one of their own extras, and the swap happens when you both agree.\n|cff9a96b0Raiders can't be traded.|r")
+    local y = 316
+    local status
+    if trade.incoming then status = { "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r  Pick one of your extras below to answer.", { 0.48, 0.88, 0.54 } }
+    elseif trade.out then status = { "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer.", GOLDC }
+    elseif trade.pending then status = { "Answer sent. Waiting for " .. trade.pending.from .. ".", GOLDC } end
+    if status then pgBox(2, y, 40, nil, status[1], status[2]); y = y + 54 end
+    pgHead(1, y, "Your extra copies", #extras > 0 and (#extras .. " to trade") or "")
     local n = math.min(8, #extras)
     showRows(n)
     for i = 1, n do
       local e = extras[i]
       local b = frame.rows[i]
-      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -400 - (i - 1) * 29)
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -(y + 30) - (i - 1) * 29)
+      b.fill:Hide(); b.fillBg:Hide()
       b.left:SetText(e.c.name .. "  |cff9a96b0(" .. FNAME[e.f] .. ")|r"); b.right:SetText("x" .. e.n .. " extra")
       b.act = function()
         local ok, msg
@@ -2189,21 +2355,29 @@ function RG.ArcadeRefresh(keepMsg)
         say(msg); RG.ArcadeRefresh(true)
       end
     end
-    if #extras == 0 then frame.panel:SetText(ptext .. "\n\n|cff9a96b0You have no extra copies to trade yet.|r") end
+    if #extras == 0 then
+      frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 44, -(y + 34)); frame.panel:SetWidth(PGW - 8)
+      frame.panel:SetText("|cff9a96b0No extra copies yet. Cards you pull twice show up here, ready to trade.|r")
+    end
   elseif view.mode == "stats" then
     local st = a.stats or {}
     local r = a.rarest
-    local lines = { GOLDHEX .. "The Ledger|r", "",
-      "Packs opened: |cffffffff" .. (a.packs or 0) .. "|r",
-      "Rarest pull: |cffffffff" .. (r and (r.name .. " (" .. FNAME[r.finish] .. ")") or "none yet") .. "|r",
-      "Duels: |cffffffff" .. (a.wins or 0) .. " won, " .. (a.losses or 0) .. " lost|r",
-      "", GOLDHEX .. "Coins earned|r",
-      string.format("XP %d  ·  level-ups %d  ·  quests %d  ·  kills %d", st.xp or 0, st.level or 0, st.quest or 0, st.kill or 0),
-      string.format("Skill-ups %d  ·  duels %d  ·  goals %d  ·  sets %d", st.skill or 0, st.duel or 0, st.goal or 0, st.sets or 0),
-      "", "Characters met: |cffffffff" .. (function() local n = 0; for _ in pairs(a.raiders or {}) do n = n + 1 end return n end)() .. "|r",
-    }
-    frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -204)
-    frame.panel:SetText(table.concat(lines, "\n"))
+    local n = 0
+    for _ in pairs(a.raiders or {}) do n = n + 1 end
+    local tw = (PGW - 2 * 16) / 3
+    pgTile(1, PGX, 196, tw, 78, tostring(a.packs or 0), "Packs opened", nil, GOLDC)
+    pgTile(2, PGX + tw + 16, 196, tw, 78, (a.wins or 0) .. " - " .. (a.losses or 0), "Duels  (won - lost)", nil, { 0.5, 0.78, 1 })
+    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 78, tostring(n), "Characters met", nil, { 0.5, 0.88, 0.6 })
+    pgBox(1, 290, 42, nil, "|cffa89bc9RAREST PULL|r          " .. (r and (GOLDHEX .. r.name .. "|r   (" .. FNAME[r.finish] .. ")") or "|cff9a96b0none yet, open some packs|r"), GOLDC)
+    local total = (st.xp or 0) + (st.level or 0) + (st.quest or 0) + (st.kill or 0) + (st.skill or 0) + (st.duel or 0) + (st.goal or 0) + (st.sets or 0)
+    pgHead(1, 366, "Coins earned", GOLDHEX .. total .. "|r coins in all")
+    local cw = (PGW - 30) / 2
+    local kv = { { "Experience", st.xp }, { "Level-ups", st.level }, { "Quests", st.quest }, { "Kills", st.kill },
+      { "Skill-ups", st.skill }, { "Duels", st.duel }, { "Daily goals", st.goal }, { "Completed sets", st.sets } }
+    for i, e in ipairs(kv) do
+      local col, row = math.floor((i - 1) / 4), (i - 1) % 4
+      pgKV(i, PGX + col * (cw + 30), 396 + row * 28, cw, e[1], tostring(e[2] or 0))
+    end
   end
   local free = a.free or 0
   local bonus = a.bonus or 0

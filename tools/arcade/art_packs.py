@@ -19,8 +19,8 @@ def sm(a, b, v):
     t = np.clip((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t)
 def blur(a, r): return gaussian_filter(a.astype(np.float32), r * S / 3)
 
-L, R, T, B = 14, 242, 10, 502
-CT, CB = 64, 448                       # crimp zones end / start
+L, R, T, B = 6, 250, 44, 468
+CT, CB = T + 54, B - 64                       # crimp zones end / start
 tooth = 2.6 * (np.abs(((xs / 3.5) % 1.0) - 0.5) * 2)
 mask = (xs > L) & (xs < R) & (ys > T + tooth) & (ys < B - tooth)
 dx = np.minimum(xs - L, R - xs)
@@ -53,9 +53,9 @@ def pointed(x0, x1, y0, y1, pt):
     xin = np.clip((np.minimum(xs - x0, x1 - xs)), 0, None)
     half = np.where(xin < pt, hh * xin / pt, hh)
     return (xs > x0) & (xs < x1) & (np.abs(ys - cy) < half)
-title = pointed(22, 234, 92, 150, 16)
-band = pointed(30, 226, 392, 432, 12)
-cx, cy = 128, 262
+title = pointed(16, 240, 128, 178, 16)
+band = pointed(26, 230, 352, 390, 12)
+cx, cy = 128, 252
 rr = np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2)
 disc = rr < 66
 dark = title | band | disc
@@ -65,7 +65,7 @@ foil += 0.10 * np.exp(-(rr / 110.0) ** 2) * (~dark)
 foil = np.clip(foil, 0, 1)
 
 # ---- tear line
-zig = 66 + 4.2 * np.abs(((xs / 13.0) % 1.0) - 0.5) * 2 + 1.5 * np.sin(xs / 7.0)
+zig = CT + 2 + 4.2 * np.abs(((xs / 13.0) % 1.0) - 0.5) * 2 + 1.5 * np.sin(xs / 7.0)
 strip = mask & (ys < zig); body = mask & (ys >= zig)
 edge_d = np.clip(ys - zig, 0, 8)
 foil_b = foil * (0.78 + 0.22 * sm(0, 8, edge_d))
@@ -94,7 +94,7 @@ def outline(shape, w=1.3):
     return shape & ~er
 paint(outline(title, 1.4), light + 0.25); paint(outline(band, 1.2), light + 0.2)
 # diamonds at the ends of the title banner and corners of the frame
-for (px, py, r) in [(30, 121, 6), (226, 121, 6), (L + 12, CT + 14, 4), (R - 12, CT + 14, 4), (L + 12, CB - 14, 4), (R - 12, CB - 14, 4)]:
+for (px, py, r) in [(26, 153, 6), (230, 153, 6), (L + 12, CT + 14, 4), (R - 12, CT + 14, 4), (L + 12, CB - 14, 4), (R - 12, CB - 14, 4)]:
     d = np.abs(xs - px) + np.abs(ys - py)
     paint(d < r, 0.98); paint((d < r) & (d > r - 1.4), 0.55)
 # medallion: rings, ticks, petals
@@ -113,7 +113,7 @@ for k in range(8):
 ray = (rr > 86) & (rr < 118) & (np.abs(np.sin(ang * 16)) > 0.992)
 paint(ray & mask & ~dark, 0.9, 0.35)
 # sparkles
-for (sx, sy, sz) in [(46, 196, 8), (212, 206, 6), (52, 352, 6), (204, 346, 9), (40, 268, 4), (218, 282, 4), (150, 190, 4)]:
+for (sx, sy, sz) in [(40, 214, 8), (214, 222, 6), (46, 322, 6), (208, 316, 9), (30, 262, 4), (224, 270, 4), (156, 204, 4)]:
     dd = np.minimum(np.abs(xs - sx) * 5 + np.abs(ys - sy), np.abs(xs - sx) + np.abs(ys - sy) * 5)
     paint(dd < sz, 1.0)
 # soft glow on the gold so it reads as metal
@@ -128,4 +128,17 @@ save(os.path.join(D, "PackBody.tga"), body, gray(foil_b), 1.0, (0, 0, 256, 512))
 save(os.path.join(D, "PackTop.tga"), strip, gray(foil), 1.0, (0, 0, 256, 128))
 save(os.path.join(D, "PackTrim.tga"), body & (ga > 0), rgb, ga, (0, 0, 256, 512))
 save(os.path.join(D, "PackTrimTop.tga"), strip & (ga > 0), rgb, ga, (0, 0, 256, 128))
+# a holographic band for the sheen sweep: iridescent, soft, alpha only where the band is (512 wide so it can slide)
+by, bx = np.mgrid[0:512, 0:512].astype(np.float32)
+along = (bx - 256) - (by - 256) * 0.5            # distance across a diagonal band
+band = np.exp(-(along / 34.0) ** 2)
+hue = np.clip(along / 60.0, -1, 1)
+rgb = np.dstack([np.clip(1.0 + 0.0 * hue, 0, 1), np.clip(1.0 - 0.35 * np.abs(hue) + 0.1 * hue, 0, 1), np.clip(1.0 - 0.1 * np.abs(hue) - 0.3 * hue, 0, 1)])
+edge = np.clip(np.minimum(bx, 511 - bx) / 24.0, 0, 1)
+sheen = np.dstack([(rgb * 255).astype(np.uint8), (np.clip(band * edge, 0, 1) * 255).astype(np.uint8)])
+Image.fromarray(sheen, "RGBA").save(os.path.join(D, "PackSheen.tga"))
+sy, sx2 = np.mgrid[0:128, 0:128].astype(np.float32)
+rr2 = np.sqrt((sx2 - 63.5) ** 2 + (sy - 63.5) ** 2) / 63.5
+sa = np.clip(1 - rr2, 0, 1) ** 1.6
+Image.fromarray(np.dstack([np.full((128, 128, 3), 255, np.uint8), (sa * 255).astype(np.uint8)]), "RGBA").save(os.path.join(D, "Soft.tga"))
 print("ok")

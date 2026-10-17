@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- The booster pack is redrawn with proper proportions and now stands under a tinted spotlight on a floor glow with a shadow. A soft holographic band sweeps across the foil (and stays inside the pack), and a dashed tear line shows where to rip.
+- The pack screen has a proper header, a double border, an info plaque with labelled rows (featured set, daily streak, guarantee) and, after the deal, a results plaque (best pull, new cards, sets, bonuses). The footer buttons are uniform, with a quiet sound link.
+- Today, Trade, Ledger and Sets pages are rebuilt with stat tiles, section titles, progress bars and aligned rows instead of plain text.
 - Place cards have their own painted landscape: all 376 places are painted by us (a sky for the time of day, hazy mountain layers, a lit landmark picked from the place's name such as a tower, keep, ruin arch, camp, ship, cave or volcano, and biome mood like snow, embers or spores), shown in a gold frame like the item cards. It replaces the map crops. (tools/arcade/art_places.py, Media/Arcade/Places1-4.tga, ArcadePlaces.lua)
 - Pack opening: a richer booster pack (brushed foil tinted per set with gold trim, ornate title and set banners, a medallion with the set emblem, a holographic sheen that sweeps across it and a soft aura), bigger on screen. The pack screen now covers the whole collection window instead of a smaller box, and no creature model shows through before the cards are dealt.
 - Arena layout: hand cards sit entirely below your hero (they no longer cover its portrait or health), your hero moved up a little, your own hero name no longer sits on top of your minions' names, the mulligan instruction is inside its panel above the cards instead of on top of them, and the End Turn / Reminder / Sound buttons are wide enough for their labels.
