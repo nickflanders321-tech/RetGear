@@ -2414,7 +2414,7 @@ local function renderCards()
   local price = RG.ArcadePackPrice or 25
   local coins = a.coins or 0
   n = n + 1
-  setItem(getRow(n), nil, nil, "|cffffffffThe Arena|r", "Duel the computer with the cards you have found. Every card plays as a minion, a spell or a weapon.  " .. GREY .. "Record " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.|r", GOLD .. "Play|r", "", "gold")
+  setItem(getRow(n), nil, nil, "|cffffffffWaypath Arena|r", "Duel the computer with the cards you have found. Every card plays as a minion, a spell or a weapon.  " .. GREY .. "Record " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.|r", GOLD .. "Play|r", "", "gold")
   getRow(n).icon:SetTexture("Interface\\Icons\\Ability_Warrior_Challange")
   getRow(n).onClick = function() if RG.ShowBattle then RG.ShowBattle() end end
   n = n + 1
@@ -2444,7 +2444,7 @@ local TITLES = {
   flights = { "Flight paths", "Every flight master for your faction: click one and Waypath+ guides you there" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
-  cards = { "Cards", "Collect cards from the world and duel with them in The Arena" },
+  cards = { "Cards", "Collect cards from the world and duel with them in Waypath Arena" },
   group = { "Group play", "How grouping is going, your class duties, shared quests and finding a group" },
   spec  = { "2nd spec", "Pick any spec of your class: its stats, how to play it and its gear" },
   heal  = { "2nd spec gear", "Gear to start collecting for your 2nd spec, and where to find it" },

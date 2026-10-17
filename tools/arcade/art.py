@@ -302,9 +302,11 @@ def make_back():
     sg = sigil(int(CW * 0.9), (226, 188, 98), seed=11)
     img.alpha_composite(sg, (int(cx - sg.size[0] / 2), int(cy - sg.size[1] / 2)))
     # centre: d20
-    d = ImageDraw.Draw(img, "RGBA")
-    d20(d, cx, cy, CW * 0.16, (240, 205, 120, 255), fill=(30, 18, 60, 255), width=S * 2)
-    f = font(int(CW * 0.1)); d.text((cx, cy), "20", font=f, anchor="mm", fill=(240, 205, 120, 255))
+    # centre: the Waypath+ logo (our own mark, tools/art/logo.png)
+    lg = Image.open(os.path.join(os.path.dirname(__file__), "..", "art", "logo.png")).convert("RGBA")
+    lg = lg.crop(lg.getbbox()); ld = int(CW * 0.44)
+    lg = lg.resize((ld, ld), Image.LANCZOS)
+    img.alpha_composite(lg, (int(cx - ld / 2), int(cy - ld / 2)))
     # glow in the centre
     gl = radial(w, h, cx, cy, CW * 0.3, 2.0)
     glow = np.zeros((h, w, 4), np.uint8); glow[..., 0] = 255; glow[..., 1] = 200; glow[..., 2] = 120; glow[..., 3] = (gl * 70).astype(np.uint8)

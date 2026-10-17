@@ -87,6 +87,7 @@ ArcadeGear.lua
 Battle.lua
 Arcade.lua
 ArcadeBattle.lua
+ArcadeDuel.lua
 FishMode.lua
 Path.lua
 Paths.lua

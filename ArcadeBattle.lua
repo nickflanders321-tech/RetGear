@@ -1,5 +1,5 @@
 -- ArcadeBattle.lua - the card duel: the board, the computer opponent, deck building (rules live in Battle.lua).
--- Opened from the cards window ("The Arena") or with /wp arena. Hidden like the cards.
+-- Opened from the cards window ("Waypath Arena") or with /wp arena. Hidden like the cards.
 local ADDON, RG = ...
 local B = RG.Battle
 if not B then return end
@@ -14,6 +14,10 @@ local pt               -- defined below: put a widget's centre at x, y in the wi
 local ui = { widgetOf = {}, hand = {}, mins = { {}, {} }, back = {}, crystals = { {}, {} }, pos = {}, floats = {}, dots = {}, trail = {} }
 
 local function Sh(f, on) if on then f:Show() else f:Hide() end end
+-- Which engine side is the local player? 1 against the computer; the guest of a player duel is side 2.
+local ME = 1
+local function E(v) return v == 1 and ME or 3 - ME end   -- screen slot (1 = me) to engine side
+local function V(s) return s == ME and 1 or 2 end         -- engine side to screen slot
 local function cap(s) return (s or ""):sub(1, 1):upper() .. (s or ""):sub(2) end
 local CLS_ICON = function(c) return "Interface\\Icons\\ClassIcon_" .. cap((c or "warrior"):lower()) end
 local POWER_ICON = { WARRIOR = "Ability_Warrior_DefensiveStance", PALADIN = "Spell_Holy_HolyBolt", HUNTER = "Ability_Marksmanship", ROGUE = "Ability_Rogue_Eviscerate",
@@ -223,8 +227,9 @@ end
 
 local function refresh() end   -- defined below
 local function afterAction() end
+local sendMove = function(act) end   -- replaced by the player-duel layer
 
-local function myTurn() return game and not game.over and game.phase == "play" and game.cur == 1 and not S.busy end
+local function myTurn() return game and not game.over and game.phase == "play" and game.cur == ME and not S.busy end
 
 local function clearTarget()
   S.targeting = false
@@ -245,9 +250,12 @@ local function doTarget(ref)
   if not t then return end
   if not t.valid[ref] then say("That is not a valid target.", 1.5) clearTarget() return end
   local ok, why
-  if t.kind == "play" then ok, why = B.play(game, 1, t.slot, ref)
-  elseif t.kind == "att" then ok, why = B.attack(game, 1, t.aref, ref)
-  elseif t.kind == "power" then ok, why = B.heroPower(game, 1, ref) end
+  if t.kind == "play" then ok, why = B.play(game, ME, t.slot, ref)
+    if ok then sendMove({ t = "play", i = t.slot, tgt = ref }) end
+  elseif t.kind == "att" then ok, why = B.attack(game, ME, t.aref, ref)
+    if ok then sendMove({ t = "att", a = t.aref, d = ref }) end
+  elseif t.kind == "power" then ok, why = B.heroPower(game, ME, ref)
+    if ok then sendMove({ t = "hp", tgt = ref }) end end
   S.targeting = false
   for _, d in ipairs(ui.dots) do d:Hide() end
   if not ok then say(why or "You cannot do that.", 2) end
@@ -260,26 +268,27 @@ local function onChar(ref)
   if S.targeting then doTarget(ref) return end
   if not myTurn() then say(S.busy and "The opponent is thinking..." or "Wait for your turn.", 1.5) return end
   local c = B.char(game, ref)
-  if not c or c.side ~= 1 then return end
-  local ok, why = B.canAttack(game, 1, c)
+  if not c or c.side ~= ME then return end
+  local ok, why = B.canAttack(game, ME, c)
   if not ok then say(why or "That cannot attack.", 2) return end
-  startTarget({ kind = "att", aref = ref, valid = targetSet(B.attackTargets(game, 1, c)), from = ref })
+  startTarget({ kind = "att", aref = ref, valid = targetSet(B.attackTargets(game, ME, c)), from = ref })
 end
 
 local function onHand(slot, btn)
   if not game then return end
-  if S.mode == "mull" then S.mull[slot] = not S.mull[slot] or nil; refresh() return end
+  if S.mode == "mull" then if S.mullSent then return end S.mull[slot] = not S.mull[slot] or nil; refresh() return end
   if btn == "RightButton" then clearTarget() return end
   if S.targeting then clearTarget() end
   if not myTurn() then say(S.busy and "The opponent is thinking..." or "Wait for your turn.", 1.5) return end
-  local ok, why = B.canPlay(game, 1, slot)
+  local ok, why = B.canPlay(game, ME, slot)
   if not ok then say(why or "You cannot play that.", 2) return end
-  local need = B.needsTarget(game, 1, slot)
+  local need = B.needsTarget(game, ME, slot)
   if need then
-    startTarget({ kind = "play", slot = slot, valid = targetSet(B.targets(game, 1, B.defs[game.p[1].hand[slot]].tgt)), from = "hand" .. slot })
+    startTarget({ kind = "play", slot = slot, valid = targetSet(B.targets(game, ME, B.defs[game.p[ME].hand[slot]].tgt)), from = "hand" .. slot })
     say("Choose a target.", 4)
   else
-    local ok2, why2 = B.play(game, 1, slot)
+    local ok2, why2 = B.play(game, ME, slot)
+    if ok2 then sendMove({ t = "play", i = slot }) end
     if not ok2 then say(why2 or "", 2) end
     afterAction()
   end
@@ -289,13 +298,13 @@ local function onPower()
   if not game or S.mode == "mull" then return end
   if S.targeting then clearTarget() return end
   if not myTurn() then return end
-  local ok, why = B.canHeroPower(game, 1)
+  local ok, why = B.canHeroPower(game, ME)
   if not ok then say(why or "You cannot use your hero power.", 2) return end
-  local h = B.HERO[game.p[1].class]
+  local h = B.HERO[game.p[ME].class]
   if h.tgt then
-    startTarget({ kind = "power", valid = targetSet(B.targets(game, 1, h.tgt)), from = "power1" })
+    startTarget({ kind = "power", valid = targetSet(B.targets(game, ME, h.tgt)), from = "power1" })
     say("Choose a target.", 4)
-  else B.heroPower(game, 1); afterAction() end
+  else B.heroPower(game, ME); sendMove({ t = "hp" }); afterAction() end
 end
 
 -- the thing shown big on the left: whatever you point at
@@ -330,7 +339,7 @@ local function makeMinion(parent)
   m:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar(self.ref) end end)
   m:SetScript("OnEnter", function(self)
     self.hov = true
-    if self.m and self.m.key and B.defs[self.m.key] then preview(self.m.key, self.m, self.m.side)
+    if self.m and self.m.key and B.defs[self.m.key] then preview(self.m.key, self.m, V(self.m.side))
     elseif self.m then
       -- a token has no card: describe it
       win.tokTip:SetText("|cfff5d273" .. self.m.name .. "|r\n" .. self.m.atk .. "/" .. self.m.hp .. (self.m.kw.taunt and "  Taunt" or "")); win.tokTip:Show()
@@ -388,7 +397,7 @@ local function makeHero(parent, side)
   h.arm = U.fs(h, "title", 16, "OVERLAY", "OUTLINE"); h.arm:SetPoint("TOPRIGHT", h, "TOPRIGHT", -2, -2); h.arm:SetTextColor(0.8, 0.85, 1)
   h.name = U.fs(h, "head", 11, "OVERLAY"); h.name:SetPoint("BOTTOM", h, "TOP", 0, 2); h.name:SetTextColor(0.96, 0.84, 0.5)
   h:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  h:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar("h" .. self.side) end end)
+  h:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar("h" .. E(self.side)) end end)
   return h
 end
 
@@ -427,7 +436,8 @@ local function buildWindow()
   if sc < 1 then win:SetScale(math.max(0.5, sc)) end
 
   win.close = U.gbtn(win, "X", 28, 24, function() win:Hide() end); win.close:SetPoint("TOPRIGHT", -8, -8); win.close:SetFrameLevel(U.lv(win) + 40)
-  win.title = U.fs(win, "title", 15); win.title:SetPoint("TOPLEFT", 16, -14); win.title:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); win.title:SetText("THE ARENA")
+  win.logo = win:CreateTexture(nil, "ARTWORK"); win.logo:SetTexture(RG.LOGO or ""); win.logo:SetSize(26, 26); win.logo:SetPoint("TOPLEFT", 14, -10)
+  win.title = U.fs(win, "title", 15); win.title:SetPoint("TOPLEFT", 46, -14); win.title:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); win.title:SetText("WAYPATH ARENA")
 
   -- screens
   win.menu = CreateFrame("Frame", nil, win); win.menu:SetAllPoints(win); win.menu:SetFrameLevel(U.lv(win) + 5)
@@ -575,14 +585,14 @@ local function consume()
     elseif e.t == "play" then
       local d = B.defs[e.key]
       if d then
-        logLine((e.side == 1 and "|cff9fe39a" or "|cffe39a9a") .. (e.side == 1 and "You play " or "Foe plays ") .. d.name .. "|r")
-        if e.side == 2 then preview(e.key, nil, 2) end
+        logLine((e.side == ME and "|cff9fe39a" or "|cffe39a9a") .. (e.side == ME and "You play " or (S.pvp and (S.foeName .. " plays ") or "Foe plays ")) .. d.name .. "|r")
+        if e.side ~= ME then preview(e.key, nil, 2) end
       end
     elseif e.t == "die" then logLine("|cffaaaaaa" .. (e.name or "A minion") .. " dies|r")
-    elseif e.t == "fatigue" then say((e.side == 1 and "You are" or "The foe is") .. " out of cards: " .. e.n .. " damage!", 3)
-    elseif e.t == "burn" then if e.side == 1 then say("Your hand is full. " .. (B.defs[e.key] and B.defs[e.key].name or "A card") .. " burns.", 3) end
+    elseif e.t == "fatigue" then say((e.side == ME and "You are" or "The foe is") .. " out of cards: " .. e.n .. " damage!", 3)
+    elseif e.t == "burn" then if e.side == ME then say("Your hand is full. " .. (B.defs[e.key] and B.defs[e.key].name or "A card") .. " burns.", 3) end
     elseif e.t == "turn" then
-      if S.mode == "play" then banner(e.side == 1 and "Your turn" or "Opponent's turn", e.side == 1 and 0.96 or 0.8, e.side == 1 and 0.82 or 0.6, e.side == 1 and 0.45 or 0.95) end
+      if S.mode == "play" then banner(e.side == ME and "Your turn" or "Opponent's turn", e.side == ME and 0.96 or 0.8, e.side == ME and 0.82 or 0.6, e.side == ME and 0.45 or 0.95) end
     end
   end
 end
@@ -591,8 +601,17 @@ local function finish()
   if S.finished then return end
   S.finished = true; S.busy = true
   local a = store()
-  local won = game.winner == 1
+  local won = game.winner == ME
   local lines, prize = {}, 0
+  if S.pvp then
+    if a then if won then a.pvpWins = (a.pvpWins or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1 end end
+    local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
+    win.over.title:SetText(t); win.over.title:SetTextColor(won and 1 or 0.9, won and 0.84 or 0.4, won and 0.4 or 0.4)
+    win.over.body:SetText((won and ("You beat |cfff5d273" .. (S.foeName or "your friend") .. "|r.") or ((S.foeName or "Your opponent") .. " wins this one.")) .. (S.endReason and ("\n" .. S.endReason) or "") .. "\nFriendly duel: no coins are won or lost.")
+    after(1.4, function() win.over:Show() end)
+    if RG.Duel and RG.Duel.ended then RG.Duel.ended() end
+    return
+  end
   if a then
     a.stats = a.stats or {}
     if won then
@@ -637,7 +656,9 @@ end
 local function endTurn()
   if not myTurn() then return end
   clearTarget()
-  B.endTurn(game, 1)
+  B.endTurn(game, ME)
+  sendMove({ t = "end" })
+  if S.pvp then afterAction() return end
   if not game.over and game.cur == 2 then S.busy = true end
   afterAction()
   if not game.over and game.cur == 2 then startAI() end
@@ -649,6 +670,12 @@ afterAction = function()
   if game and game.over then finish() end
 end
 
+function ui.bindHeroes()
+  for s = 1, 2 do
+    ui.widgetOf["h" .. E(s)] = ui.hero[s]
+    ui.pos["h" .. E(s)] = { HERO_POS[s][1], HERO_POS[s][2] }
+  end
+end
 local function makeBoard()
   local bd = win.board
   win.pv = U.makeCard(bd, 230); pt(win.pv, 125, 470); win.pv.noTip = true; win.pv.hover = false; win.pv:Hide()
@@ -661,33 +688,32 @@ local function makeBoard()
   for s = 1, 2 do
     local x, y = HERO_POS[s][1], HERO_POS[s][2]
     place(ui.hero[s], x, y); ui.hero[s].gx, ui.hero[s].gy = x, y; pt(ui.hero[s], x, y)
-    ui.widgetOf["h" .. s] = ui.hero[s]
     ui.power[s] = makeSmall(bd, 62); pt(ui.power[s], POWER_POS[s][1], POWER_POS[s][2])
     ui.weapon[s] = makeSmall(bd, 56); pt(ui.weapon[s], WEAPON_POS[s][1], WEAPON_POS[s][2]); ui.weapon[s].cost:Hide(); ui.weapon[s].costT:Hide()
     ui.weapon[s]:Hide()
-    ui.pos["h" .. s] = { x, y }
   end
   ui.pos.power1 = { POWER_POS[1][1], POWER_POS[1][2] }
+  ui.bindHeroes()
   ui.power[1]:RegisterForClicks("LeftButtonUp"); ui.power[1]:SetScript("OnClick", function() onPower() end)
   for s = 1, 2 do
     ui.power[s]:SetScript("OnEnter", function(self)
-      local h = B.HERO[game.p[s].class]
+      local h = B.HERO[game.p[E(s)].class]
       win.tokTip:SetText("|cfff5d273" .. h.power .. "|r  (2 mana)\n" .. h.text); win.tokTip:Show()
     end)
     ui.power[s]:SetScript("OnLeave", function() win.tokTip:Hide() end)
     ui.weapon[s]:SetScript("OnEnter", function(self)
-      local w = game.p[s].weapon
+      local w = game.p[E(s)].weapon
       if w then win.tokTip:SetText("|cfff5d273" .. (w.name or "Weapon") .. "|r\n" .. w.atk .. " attack, " .. w.dur .. " durability"); win.tokTip:Show() end
     end)
     ui.weapon[s]:SetScript("OnLeave", function() win.tokTip:Hide() end)
-    ui.hero[s]:SetScript("OnEnter", function() win.tokTip:SetText("|cfff5d273" .. game.p[s].name .. "|r\n" .. B.HERO[game.p[s].class].title); win.tokTip:Show() end)
+    ui.hero[s]:SetScript("OnEnter", function() win.tokTip:SetText("|cfff5d273" .. game.p[E(s)].name .. "|r\n" .. B.HERO[game.p[E(s)].class].title); win.tokTip:Show() end)
     ui.hero[s]:SetScript("OnLeave", function() win.tokTip:Hide() end)
   end
   -- hand
   for i = 1, 10 do
     local w = U.makeCard(bd, HW); w.noTip = true; w.hover = false; w.hslot = i
     w.onCard = function(self, btn) onHand(self.hslot, btn) end
-    w:HookScript("OnEnter", function(self) self.hov = true; if game and game.p[1].hand[self.hslot] then preview(game.p[1].hand[self.hslot], nil, 1) end; refresh() end)
+    w:HookScript("OnEnter", function(self) self.hov = true; if game and game.p[ME].hand[self.hslot] then preview(game.p[ME].hand[self.hslot], nil, 1) end; refresh() end)
     w:HookScript("OnLeave", function(self) self.hov = false; refresh() end)
     w:Hide(); ui.hand[i] = w
     local b = bd:CreateTexture(nil, "ARTWORK"); b:SetTexture(U.MEDIA .. "Back"); b:SetTexCoord(0, 1, 0, 358 / 512); b:SetSize(24, 34); b:Hide(); ui.back[i] = b
@@ -710,7 +736,7 @@ local function makeBoard()
   win.concede = U.gbtn(bd, "Concede", 90, 22, function(self)
     if not game or game.over then win:Hide() return end
     if not S.sure then S.sure = true; self:SetText("Sure?"); after(3, function() S.sure = false; if win.concede then win.concede:SetText("Concede") end end) return end
-    S.sure = false; self:SetText("Concede"); game.over = true; game.winner = 2; afterAction()
+    S.sure = false; self:SetText("Concede"); game.over = true; game.winner = 3 - ME; S.endReason = S.pvp and "You conceded." or nil; if S.pvp and RG.Duel then RG.Duel.sendEnd("F") end; afterAction()
   end)
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
   win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 418); win.mullBtn:Hide()
@@ -724,13 +750,13 @@ end
 
 refresh = function()
   if not (win and game and S.mode ~= "menu" and S.mode ~= "deck") then return end
-  local me, foe = game.p[1], game.p[2]
+  local me, foe = game.p[ME], game.p[3 - ME]
   local tg = S.targeting
   local mine = myTurn()
   ui.pos = { ["h1"] = ui.pos.h1, ["h2"] = ui.pos.h2, power1 = ui.pos.power1 }
   -- minions
   for s = 1, 2 do
-    local P = game.p[s]
+    local P = game.p[E(s)]
     local n = #P.board
     for i = 1, 7 do
       local w, m = ui.mins[s][i], P.board[i]
@@ -746,14 +772,14 @@ refresh = function()
         ui.pos[m.uid] = { x, y + 8 }
         local col
         if tg then if tg.valid[m.uid] then col = s == 1 and GREEN or RED end
-        elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, 1, m) then col = GREEN end
+        elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, ME, m) then col = GREEN end
         if col then w.glow:SetVertexColor(col[1], col[2], col[3], col[4]); w.glow:Show() else w.glow:Hide() end
       else w:Hide(); unplace(w) end
     end
   end
   -- heroes
   for s = 1, 2 do
-    local P, h = game.p[s], ui.hero[s]
+    local P, h = game.p[E(s)], ui.hero[s]
     h.icon:SetTexture(CLS_ICON(P.class))
     h.hpT:SetText(P.hp); h.hpT:SetTextColor(1, P.hp < P.maxhp and 0.5 or 1, P.hp < P.maxhp and 0.5 or 1)
     local atk = B.heroAtk(P)
@@ -762,8 +788,8 @@ refresh = function()
     h.name:SetText(P.name)
     Sh(h.ice, P.frozen)
     local col
-    if tg then if tg.valid["h" .. s] then col = s == 1 and GREEN or RED end
-    elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, 1, P) then col = GREEN end
+    if tg then if tg.valid["h" .. E(s)] then col = s == 1 and GREEN or RED end
+    elseif s == 1 and mine and S.mode == "play" and B.canAttack(game, ME, P) then col = GREEN end
     if col then h.glow:SetVertexColor(col[1], col[2], col[3], col[4]); h.glow:Show() else h.glow:Hide() end
     -- power and weapon
     local pw, hp = ui.power[s], B.HERO[P.class]
@@ -771,7 +797,7 @@ refresh = function()
     pw.costT:SetText(hp.cost)
     pw.icon:SetDesaturated(P.hpUsed and true or false)
     pw.tile:SetVertexColor(P.hpUsed and 0.5 or 1, P.hpUsed and 0.5 or 0.85, P.hpUsed and 0.55 or 0.5, 1)
-    Sh(pw.glow, s == 1 and mine and S.mode == "play" and B.canHeroPower(game, 1))
+    Sh(pw.glow, s == 1 and mine and S.mode == "play" and B.canHeroPower(game, ME))
     pt(pw, POWER_POS[s][1], POWER_POS[s][2])
     local wp = ui.weapon[s]
     if P.weapon then
@@ -810,7 +836,7 @@ refresh = function()
       w:SetFrameLevel(U.lv(win.board) + 10 + i * 6 + (w.hov and 80 or 0))
       w.hslot = i
       paintCard(w, key, 1)
-      local can = mine and S.mode == "play" and not tg and B.canPlay(game, 1, i)
+      local can = mine and S.mode == "play" and not tg and B.canPlay(game, ME, i)
       Sh(w.playGlow, can)
       Sh(w.xMark, mull and S.mull[i])
       -- cards you can't afford this turn look dimmer, with a red cost
@@ -821,10 +847,10 @@ refresh = function()
   end
   -- buttons
   win.endBtn:SetEnabled(mine and S.mode == "play")
-  local idle = mine and S.mode == "play" and #B.actions(game, 1) == 0
+  local idle = mine and S.mode == "play" and #B.actions(game, ME) == 0
   win.endBtn:SetActive(idle and true or false)
-  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "OPENING HAND" or (game.cur == 1 and "YOUR TURN" or "OPPONENT'S TURN")))
-  if win.turnT.SetTextColor then if game.cur == 1 or S.mode == "mull" then win.turnT:SetTextColor(0.96, 0.84, 0.5) else win.turnT:SetTextColor(0.82, 0.66, 0.98) end end
+  win.turnT:SetText(game.over and "" or (S.mode == "mull" and "OPENING HAND" or (game.cur == ME and "YOUR TURN" or (S.pvp and (string.upper(S.foeName or "") .. "'S TURN") or "OPPONENT'S TURN"))))
+  if win.turnT.SetTextColor then if game.cur == ME or S.mode == "mull" then win.turnT:SetTextColor(0.96, 0.84, 0.5) else win.turnT:SetTextColor(0.82, 0.66, 0.98) end end
 end
 
 -- ---------------------------------------------------------------------------
@@ -846,8 +872,24 @@ local function show(which)
   S.mode = which == "board" and S.mode or which
   Sh(win.menu, which == "menu"); Sh(win.deck, which == "deck"); Sh(win.board, which == "board")
   Sh(win.bg, which == "board")
-  win.title:SetText(which == "menu" and "THE ARENA" or which == "deck" and "DECK BUILDER" or "THE ARENA")
+  win.title:SetText(which == "menu" and "WAYPATH ARENA" or which == "deck" and "DECK BUILDER" or "WAYPATH ARENA")
   if which ~= "board" then for _, d in ipairs(ui.dots) do d:Hide() end end
+end
+
+local function beginGame(g)
+  game = g
+  S.gid = (S.gid or 0) + 1
+  S.mode, S.mull, S.targeting, S.finished, S.busy, S.aiN, S.mullSent = "mull", {}, false, false, false, 0, false
+  win.over:Hide(); logLines = {}; win.log:SetText("")
+  for _, w in ipairs(ui.hand) do w.pkey = false; w.hov = false; unplace(w) end
+  for s2 = 1, 2 do for _, w in ipairs(ui.mins[s2]) do unplace(w) end end
+  ui.pos = { power1 = ui.pos.power1 }; ui.bindHeroes()
+  show("board"); S.mode = "mull"
+  win.pv:Hide()
+  win.mullBtn:Show(); win.mullBtn:SetEnabled(true); win.mullBtn:SetText("Keep these cards")
+  say("Click any cards you want to swap, then keep the rest.", 600)
+  refresh()
+  logLine("|cfff5d273" .. (game.first == ME and "You go first." or ((S.pvp and (S.foeName or "Your friend") or "The foe") .. " goes first. You get the Lucky Coin.")) .. "|r")
 end
 
 local function startMatch()
@@ -860,23 +902,21 @@ local function startMatch()
   local aiDeck = B.randomDeck(aiPool(), cap, math.random)
   local cls = a.heroClass or select(2, UnitClass("player")) or "WARRIOR"
   local aiCls = B.CLASSES[math.random(#B.CLASSES)]
-  S.gid = (S.gid or 0) + 1
-  game = B.new({ decks = { expand(dk), aiDeck }, classes = { cls, aiCls }, names = { (UnitName and UnitName("player")) or "You", B.OPPONENTS[aiCls] }, seed = math.random(1, 2000000000) })
-  S.mode, S.mull, S.targeting, S.finished, S.busy, S.aiN = "mull", {}, false, false, false, 0
-  win.over:Hide(); logLines = {}; win.log:SetText("")
-  for _, w in ipairs(ui.hand) do w.pkey = false; w.hov = false; unplace(w) end
-  for s2 = 1, 2 do for _, w in ipairs(ui.mins[s2]) do unplace(w) end end
-  ui.pos = { h1 = HERO_POS[1], h2 = HERO_POS[2], power1 = ui.pos.power1 }
-  show("board"); S.mode = "mull"
-  win.pv:Hide()
-  win.mullBtn:Show()
-  say("Click any cards you want to swap, then keep the rest.", 600)
-  refresh()
-  logLine("|cfff5d273" .. (game.first == 1 and "You go first." or "The foe goes first. You get the Lucky Coin.") .. "|r")
+  ME, S.pvp, S.foeName, S.endReason = 1, false, nil, nil
+  beginGame(B.new({ decks = { expand(dk), aiDeck }, classes = { cls, aiCls }, names = { (UnitName and UnitName("player")) or "You", B.OPPONENTS[aiCls] }, seed = math.random(1, 2000000000) }))
 end
 
 function RG.BattleMulligan()
   if not game or S.mode ~= "mull" then return end
+  if S.pvp then
+    if S.mullSent then return end
+    S.mullSent = true
+    local set = {}
+    for i, v in pairs(S.mull) do if v then set[i] = true end end
+    win.mullBtn:SetEnabled(false); win.mullBtn:SetText("Waiting for " .. (S.foeName or "your friend") .. "...")
+    if RG.Duel then RG.Duel.mulligan(ME, set) end
+    return
+  end
   B.mulligan(game, 1, S.mull)
   local set = {}
   for i, k in ipairs(game.p[2].hand) do local d = B.defs[k]; if d and d.cost >= 4 and k ~= "coin" then set[i] = true end end
@@ -912,9 +952,10 @@ local function refreshMenu()
   local n = deckSize(dk)
   menu.deckInfo:SetText(n == B.DECK and "|cff9fe39aDeck ready|r" or ("|cffe39a9a" .. n .. " / " .. B.DECK .. " cards|r"))
   menu.play:SetEnabled(n == B.DECK)
+  if menu.pvp then menu.pvp:SetEnabled(n == B.DECK) end
   menu.play:SetText(n == B.DECK and "Enter the Arena" or "Finish your deck first")
   menu.lvlInfo:SetText(({ "Plays loosely with a plain deck.  Win: " .. REWARD[1] .. " coins.", "Plays sensibly.  Win: " .. REWARD[2] .. " coins.", "Plays carefully with a full deck, bosses included.  Win: " .. REWARD[3] .. " coins." })[S.level])
-  menu.rec:SetText("Arena record: " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.  Your first win each day pays +8 coins.")
+  menu.rec:SetText("Arena record: " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.  Your first win each day pays +8 coins." .. (((a.pvpWins or 0) + (a.pvpLoss or 0)) > 0 and ("  Player duels: " .. (a.pvpWins or 0) .. " won, " .. (a.pvpLoss or 0) .. " lost.") or ""))
 end
 local deckRefresh = function() end
 
@@ -922,7 +963,9 @@ local function buildMenu()
   local p = CreateFrame("Frame", nil, win.menu, "BackdropTemplate")
   U.darkPanel(p, 840, 660); p:SetPoint("CENTER", win, "CENTER", 0, -4)
   local function label(txt, y) local f = U.fs(p, "head", 12); f:SetPoint("TOPLEFT", 24, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt); return f end
-  local t = U.fs(p, "title", 28); t:SetPoint("TOP", 0, -22); t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); t:SetText("THE ARENA")
+  local t = U.fs(p, "title", 28); t:SetPoint("TOP", 0, -22); t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); t:SetText("WAYPATH ARENA")
+  local lg = p:CreateTexture(nil, "ARTWORK"); lg:SetTexture(RG.LOGO_LARGE or RG.LOGO); lg:SetSize(52, 52); lg:SetPoint("TOPLEFT", 24, -14)
+  local lg2 = p:CreateTexture(nil, "ARTWORK"); lg2:SetTexture(RG.LOGO_LARGE or RG.LOGO); lg2:SetSize(52, 52); lg2:SetPoint("TOPRIGHT", -24, -14)
   local sub = U.fs(p, "body", 13); sub:SetPoint("TOP", 0, -62); sub:SetTextColor(0.8, 0.76, 0.9); sub:SetText("Duel with the cards you have found. Every card plays as a minion, a spell or a weapon.")
   label("CHOOSE YOUR HERO", -100)
   for i, c in ipairs(B.CLASSES) do
@@ -945,6 +988,14 @@ local function buildMenu()
   end
   menu.lvlInfo = U.fs(p, "body", 13); menu.lvlInfo:SetPoint("TOPLEFT", 440, -283); menu.lvlInfo:SetWidth(380); menu.lvlInfo:SetJustifyH("LEFT"); menu.lvlInfo:SetTextColor(0.85, 0.8, 0.7)
   menu.play = U.gbtn(p, "Enter the Arena", 300, 46, function() startMatch() end, true); menu.play:SetPoint("TOP", 0, -334)
+  menu.pvp = U.gbtn(p, "Challenge a player", 220, 38, function()
+    if not RG.DuelTarget then return end
+    local ok, err, who = RG.DuelTarget()
+    menu.msg:SetText(ok and ("Challenge sent to " .. who .. ".") or (err or ""))
+  end)
+  menu.pvp:SetPoint("TOPLEFT", 596, -342)
+  menu.pvp:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Friendly duel with another Waypath+ player"); GameTooltip:AddLine("Target them first (or type /wp duel Name). You both play your selected Arena deck. No coins change hands.", 1, 1, 1, true); GameTooltip:Show() end)
+  menu.pvp:SetScript("OnLeave", function() GameTooltip:Hide() end)
   label("HOW IT PLAYS", -400)
   local rules = U.fs(p, "body", 13); rules:SetPoint("TOPLEFT", 24, -422); rules:SetWidth(790); rules:SetJustifyH("LEFT"); rules:SetJustifyV("TOP"); rules:SetTextColor(0.82, 0.78, 0.7); if rules.SetSpacing then rules:SetSpacing(3) end
   rules:SetText("Each hero has 30 health. You gain one more mana crystal every turn, up to ten, and draw a card.\n"
@@ -1127,7 +1178,7 @@ function RG.ShowBattle()
   if WaypathFrame and WaypathFrame.IsShown and WaypathFrame:IsShown() then WaypathFrame:Hide() end   -- never stack on the main window
   if not win then
     U = RG.ArcadeUI
-    if not U then if RG.Print then RG.Print("The Arena needs the card window files (Arcade.lua) to load.") end return end
+    if not U then if RG.Print then RG.Print("Waypath Arena needs the card window files (Arcade.lua) to load.") end return end
     buildWindow(); makeBoard(); buildMenu(); buildDeck()
     local a = store(); if a and a.level then S.level = a.level end
   end
@@ -1146,14 +1197,61 @@ SlashCmdList.WAYPATH = function(msg)
     if not ok then
       if win then win:Hide() end
       win = nil   -- rebuild next time
-      if RG.Print then RG.Print("The Arena hit a snag: " .. tostring(err)) end
+      if RG.Print then RG.Print("Waypath Arena hit a snag: " .. tostring(err)) end
     elseif not (win and win:IsShown()) then
-      if RG.Print then RG.Print("The Arena did not open. Try /reload and /wp arena again.") end
+      if RG.Print then RG.Print("Waypath Arena did not open. Try /reload and /wp arena again.") end
     end
     return
   end
   return slashBase(msg)
 end
+
+-- ---------------------------------------------------------------------------
+-- Hooks for player-versus-player duels (the messaging lives in ArcadeDuel.lua)
+-- ---------------------------------------------------------------------------
+function RG.ArenaPvPDeck()
+  local a = store(); if not a then return nil, "Your card collection is not ready yet." end
+  local dk = deckOf(a, a.deckSel or 1)
+  cleanDeck(a, dk)
+  if deckSize(dk) ~= B.DECK then return nil, "Your deck needs exactly " .. B.DECK .. " cards. Open the Arena menu to finish it." end
+  local list = expand(dk)
+  for _, k in ipairs(list) do
+    if not B.defs[k] then return nil, "A card in your deck is not ready yet." end
+    if k:sub(1, 1) == "@" then return nil, "Raider cards can't be used in player duels yet: take " .. k:sub(2) .. " out of your deck." end
+  end
+  return list, myClass(a), (UnitName and UnitName("player")) or "Player"
+end
+function RG.ArenaPvPStart(o)
+  if not win then RG.ShowBattle() end
+  if not win then return false end
+  ME, S.pvp, S.foeName, S.endReason = o.me, true, o.foeName, nil
+  beginGame(B.new({ decks = o.decks, classes = o.classes, names = o.names, seed = o.seed, first = o.first }))
+  win:Show()
+  return true
+end
+function RG.ArenaPvPApplyMull(set1, set2)
+  if not game or S.mode ~= "mull" then return end
+  B.mulligan(game, 1, set1); B.mulligan(game, 2, set2)
+  S.mode, S.mull = "play", {}
+  win.mullBtn:Hide(); say("", 0)
+  afterAction()
+end
+function RG.ArenaPvPMove(act)       -- the opponent's move, returns true and the engine seed afterwards
+  if not game or game.over or game.phase ~= "play" or game.cur == ME then return false end
+  clearTarget()
+  local ok
+  if act.t == "end" then ok = B.endTurn(game, 3 - ME) else ok = B.exec(game, 3 - ME, act) end
+  afterAction()
+  return ok and true or false, game.seed
+end
+function RG.ArenaPvPOver(winner, why)
+  if not game or game.over then return end
+  game.over, game.winner, S.endReason = true, winner, why
+  afterAction()
+end
+function RG.ArenaPvPState() return game, ME, S end
+function RG.ArenaPvPSeed() return game and game.seed end
+function RG.ArenaPvPSetSend(fn) sendMove = fn end
 
 -- test hooks
 RG.__battleGame = function() return game end
