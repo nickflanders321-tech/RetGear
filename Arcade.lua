@@ -1166,6 +1166,7 @@ local function refreshDetail()
 end
 
 local function openDetail(c)
+  if reveal and reveal:IsShown() then return end   -- finish opening the pack first
   local a = store()
   if not (a and c and owned(a, c.id) > 0) then return end
   if not detail then
@@ -1336,7 +1337,7 @@ local function build()
     playSound(2)
     showReveal(got, notes); RG.ArcadeRefresh(true)
   end
-  frame.buy = gbtn(frame, "Break a seal", 220, 34, function() frame.buyNow() end, true)
+  frame.buy = gbtn(frame, "Break a seal", 250, 34, function() frame.buyNow() end, true)
   frame.buy:SetPoint("BOTTOM", 0, 20)
   frame.duel = gbtn(frame, "Duel for coins", 150, 28, function()
     local win, mine, foe, mf, ff, prize, goal = RG.ArcadeDuel()
@@ -1485,7 +1486,7 @@ function RG.ArcadeRefresh(keepMsg)
     frame.panel:SetText(table.concat(lines, "\n"))
   end
   local free = a.free or 0
-  frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free in the beta" or ("Break a seal  ·  " .. PACK_PRICE)))
+  frame.buy:SetText(free > 0 and ("Break a free seal  (" .. free .. ")") or (PACK_PRICE == 0 and "Open a pack  ·  free" or ("Break a seal  ·  " .. PACK_PRICE)))
   frame.buy:SetEnabled(afford() and true or false)
 end
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.98.0
+- Cards: a card's detail window no longer opens on top of a pack that is being opened; the free-pack button text fits.
+
 ## v0.97.0
 - Cards window: the sort button label fits its button and the totals no longer crowd the tabs.
 
