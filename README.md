@@ -91,7 +91,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp log` · `log copy` · `log clear` | Play-test log: arrivals, skipped stops, pins you set yourself |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
 | `/wp way 45 60` | Pin a spot in your zone and follow the arrow |
-| `/wpmap` · `/wpmap off` · `pickups` · `quests` | Clickable quest markers on the world map (Ctrl+click the map to point the arrow anywhere); turn markers, pick-ups, or quest-log clicks on and off |
+| `/wpmap` · `/wpmap off` · `quests` | Clickable quest markers on the world map (Ctrl+click the map to point the arrow anywhere); turn markers or quest-log clicks on and off |
 | `/wp duel` · `/wp duel party` | Open the Arena lobby · list your party and send card-game duel invites |
 | `/wp pace` | Time at this level, last level and your average |
 | `/wp talents` · `/wp talents check` | Open the game's talent screen · show how unspent talent points are read on this client (for bug reports) |

@@ -395,7 +395,19 @@ local function folded(key)
   return v
 end
 local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
+-- The sections under Quests (new quests, route, class quests, dungeon, upgrade, professions, reminders) share one
+-- "More" row until you open it, so the side bar stays short: the first thing it shows is what to do now.
+local SECONDARY = { new = "New quests", route = "Route", pala = "Class quests", dungeon = "Dungeon", upgrade = "Upgrade", profs = "Professions", reminders = "Reminders" }
+local hints, skipped, moreOpen = {}, 0, false
 local function section(n, y, label, key, right)
+  if key and SECONDARY[key] and not moreOpen then
+    local name = SECONDARY[key]
+    if key == "dungeon" or key == "pala" then name = label:gsub("^Class quests: ", "Class quests"):gsub("%s*$", "") end
+    local plain = right and right:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") or ""
+    hints[#hints + 1] = { name = name, note = plain, urgent = right ~= nil and right:find(GREEN, 1, true) ~= nil }
+    skipped = skipped + 1
+    return y, true
+  end
   local b = line(n)
   b.onClick, b.onRightClick, b.tip, b.onDoubleClick, b.menu, b.wpClick = nil, nil, nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
@@ -408,11 +420,11 @@ local function section(n, y, label, key, right)
     end
     b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
   end
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); tfont(b.text, fontSize(11.5))
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); tfont(b.text, fontSize(12))
   b.text:SetWidth(W - 24); b.text:SetWordWrap(false)
   b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
   local lab = label:find("|", 1, true) and label or label:upper()
-  b.text:SetText((key and ("|cff707070" .. (isFolded and "+ " or "- ") .. "|r") or "") .. "|cff9a9a9a" .. lab .. "|r")
+  b.text:SetText((key and ("|cff8a8a8a" .. (isFolded and "+ " or "- ") .. "|r") or "") .. "|cffb4b4b4" .. lab .. "|r")
   tfont(b.right, fontSize(11)); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
   return y + 24, isFolded
@@ -427,20 +439,37 @@ local function item(n, y, text, opts)
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
   tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(12.5))
-  b.text:SetWidth(W - 24 - indent - rw)
-  b.text:SetWordWrap(not opts.single)
-  if b.text.SetMaxLines then b.text:SetMaxLines(opts.single and 1 or 0) end
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(13))
+  local avail = W - 24 - indent - rw
+  b.text:SetWidth(avail)
   b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
+  local multi = not opts.single and tostring(text):find("\n", 1, true)   -- text with its own line breaks lays itself out
+  -- a line that needs more than one row wraps to two at most, and its height comes from its width (the font's own
+  -- height reading can lag a frame behind and let the next row print over it)
+  b.text:SetWordWrap(false); if b.text.SetMaxLines then b.text:SetMaxLines(1) end
+  if not opts.single and not multi then b.text:SetWidth(0) end
   b.text:SetText(text); tcheck(b.text, text)
+  local rows = 1
+  if not opts.single and not multi then
+    local natural = b.text:GetStringWidth() or 0
+    rows = math.max(1, math.min(2, math.ceil(natural / math.max(1, avail) - 0.03)))
+    b.text:SetWidth(avail); b.text:SetWordWrap(true)
+    if b.text.SetMaxLines then b.text:SetMaxLines(2) end
+    b.text:SetText(text)
+  elseif multi then
+    b.text:SetWidth(avail); b.text:SetWordWrap(true)
+    if b.text.SetMaxLines then b.text:SetMaxLines(0) end
+    b.text:SetText(text)
+  end
   if opts.box ~= nil then
     b.box:Show(); b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\" .. (opts.box and "Disc" or "Ring"))
     if opts.box then b.box:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) else b.box:SetVertexColor(0.42, 0.42, 0.42, 1) end
     b.check:SetShown(opts.box and true or false)
   else b.box:Hide(); b.check:Hide() end
-  local h = opts.single and 15 or math.max(15, (b.text:GetStringHeight() or 14) + 2)
+  local rowH = fontSize(13) + 3
+  local h = opts.single and math.max(16, rowH) or (multi and math.max(16, (b.text:GetStringHeight() or 14) + 2) or math.max(16, rows * rowH))
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(h); b:Show()
-  return y + h + 3
+  return y + h + 4
 end
 
 -- Right-click on a tracker line: point the arrow at it (turning the arrow on if it was off).
@@ -537,6 +566,7 @@ function RG.RefreshTracker()
   tr.body:Show(); tr.min.t:SetText("-")
 
   local n, y = 0, 0
+  hints, skipped, moreOpen = {}, 0, RG.db.trackerMore == true
   -- bank alt: just the shopping list for your main
   if RG.IsAlt and RG.IsAlt() then
     tr.lvl:SetText("Bank alt for " .. (RG.MainName() or "your main")); tr.title:SetText("Waypath+")
@@ -982,6 +1012,24 @@ function RG.RefreshTracker()
       for i = 1, math.min(4, #rem) do local rr = rem[i]; n = n + 1; y = item(n, y, rr[1], { onClick = rr[2], wp = rr[4], tip = rr[4] and (GOLD .. "Click:|r arrow on / off") or nil }) end
       if #rem > 4 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rem - 4) .. " more  ·  turn reminders off in Settings|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("settings") end end }) end
     end
+  end
+  -- the sections that were folded into one row
+  y = y - 5 * skipped
+  if #hints > 0 and not moreOpen then
+    local parts, full = {}, {}
+    for _, h in ipairs(hints) do
+      local t = h.name .. ((h.note and h.note ~= "") and (": " .. h.note) or "")
+      parts[#parts + 1] = h.urgent and (GREEN .. t .. "|r") or (GREY .. t .. "|r")
+      full[#full + 1] = (h.urgent and GREEN or "|cffffffff") .. t .. "|r"
+    end
+    n = n + 1
+    y = item(n, y, "|cff8a8a8a+ MORE|r   " .. table.concat(parts, GREY .. "  ·  |r"),
+      { single = true, indent = 2, tip = table.concat(full, "\n") .. "\n\n" .. GOLD .. "Click:|r show these sections",
+        onClick = function() RG.db.trackerMore = true; RG.RefreshTracker() end })
+  elseif moreOpen then
+    n = n + 1
+    y = item(n, y, "|cff8a8a8a- SHOW LESS|r", { single = true, indent = 2, tip = "Fold the extra sections back into one row.",
+      onClick = function() RG.db.trackerMore = false; RG.RefreshTracker() end })
   end
   tr.body:SetHeight(math.max(10, y))
   tr:SetHeight(42 + y + 40)

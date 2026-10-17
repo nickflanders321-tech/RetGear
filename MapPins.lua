@@ -79,7 +79,6 @@ end
 local pins, cache = {}, {}
 local KIND = {
   turnin = { "?", 1.0, 0.82, 0.15, "Hand in" },
-  pickup = { "!", 1.0, 0.95, 0.45, "Pick up" },
   obj = { "x", 0.45, 0.8, 1.0, "Objective" },
 }
 local function canvas()
@@ -114,29 +113,6 @@ local function getPin(i)
   return b
 end
 
--- the quests you could pick up on this map, nearest to your level first (computed once per map, level and quest log)
-local function pickupsFor(mapID)
-  local key = mapID .. "|" .. (UnitLevel and UnitLevel("player") or 0) .. "|" .. (cache.logVersion or 0)
-  if cache.key == key then return cache.pick end
-  local out = {}
-  local lvl = UnitLevel and UnitLevel("player") or 1
-  local done = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
-  local onq = C_QuestLog and C_QuestLog.IsOnQuest
-  if RG.QDATA and done and RG.QuestForMe and RG.QuestPrereqsMet then
-    for id, d in pairs(RG.QDATA) do
-      if d.s and d.s[1] == mapID and d.n and not d.rep and (d.l or d.r or 1) >= lvl - 6 and RG.QuestForMe(d)
-         and not done(id) and not (onq and onq(id)) and RG.QuestPrereqsMet(id) then
-        out[#out + 1] = { kind = "pickup", wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n }, title = d.n,
-          sub = (d.s[4] and d.s[4] ~= "" and ("From " .. d.s[4] .. ". ") or "") .. "Level " .. tostring(d.l or d.r or "?"), lvl = d.l or d.r or lvl }
-      end
-    end
-    table.sort(out, function(a, b) local da, db = math.abs(a.lvl - lvl), math.abs(b.lvl - lvl); if da ~= db then return da < db end return a.title < b.title end)
-    while #out > 50 do table.remove(out) end
-  end
-  cache.key, cache.pick = key, out
-  return out
-end
-
 local lastKey
 local function refreshPins(force)
   local m = WorldMapFrame
@@ -155,7 +131,6 @@ local function refreshPins(force)
     for _, sp in ipairs(RG.QuestSpots and RG.QuestSpots() or {}) do
       if sp.wp and sp.wp[1] == mapID then list[#list + 1] = { kind = sp.turnin and "turnin" or "obj", wp = sp.wp, title = sp.quest, sub = sp.label or "" } end
     end
-    if not (RG.db and RG.db.mapPickups == false) then for _, p in ipairs(pickupsFor(mapID)) do list[#list + 1] = p end end
   end
   local n = 0
   for _, p in ipairs(list) do
@@ -229,8 +204,7 @@ SlashCmdList.WAYPATHMAP = function(msg)
   local m = (msg or ""):lower()
   if m == "off" then RG.db.mapPins = false; RG.Print("Map markers off.")
   elseif m == "on" then RG.db.mapPins = true; RG.Print("Map markers on.")
-  elseif m == "pickups" then RG.db.mapPickups = RG.db.mapPickups == false; RG.Print("Pick-up markers " .. (RG.db.mapPickups == false and "off." or "on."))
   elseif m == "quests" then RG.db.questClick = RG.db.questClick == false; RG.Print("Clicking a quest in the game's log points the arrow: " .. (RG.db.questClick == false and "off." or "on."))
-  else RG.Print("/wpmap on|off  (markers on the world map)  ·  /wpmap pickups  ·  /wpmap quests  (arrow when you click a quest in the quest log)") end
+  else RG.Print("/wpmap on|off  (markers on the world map)  ·  /wpmap quests  (arrow when you click a quest in the quest log)") end
   lastKey = nil; refreshPins(true)
 end
