@@ -16,6 +16,7 @@ for _, o in ipairs({
   { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
+  { key = "mapClicks",     label = "Let map clicks drive the arrow (quests picked on the map, minimap Ctrl-click, Questie and TomTom pins)", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
 
@@ -972,6 +973,92 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
     queueBar()
   end
 end)
+
+-- ===========================================================================
+-- Everything can drive the arrow: the world map, the minimap, Questie and TomTom-style pins
+-- ===========================================================================
+do
+  local function on() return RG.Opt and RG.Opt("mapClicks") end
+  local function title(qid) return (C_QuestLog and C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(qid)) or "Quest" end
+
+  -- 1. Pick a quest on the world map or in the quest log (the game "super-tracks" it): the arrow goes there
+  local lastQ
+  local function followSuper()
+    if not on() then return end
+    local S = C_SuperTrack
+    if not S then return end
+    if S.IsSuperTrackingUserWaypoint and S.IsSuperTrackingUserWaypoint() then return end   -- our own pin
+    local qid = S.GetSuperTrackedQuestID and S.GetSuperTrackedQuestID()
+    if not qid or qid == 0 then lastQ = nil; return end
+    if qid == lastQ then return end
+    lastQ = qid
+    local wp
+    for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do if q.id == qid and q.wp then wp = q.wp; break end end
+    wp = wp or liveTurnIn(qid, title(qid))
+    if wp and RG.Follow then RG.Follow({ wp[1], wp[2], wp[3], wp[4] or title(qid) }) end
+  end
+  local sf = CreateFrame("Frame")
+  pcall(sf.RegisterEvent, sf, "SUPER_TRACKING_CHANGED")
+  sf:SetScript("OnEvent", function() if C_Timer then C_Timer.After(0.1, followSuper) end end)
+
+  -- 2. Questie, and anything else that sets a TomTom waypoint on a Ctrl-click: send it to our arrow
+  local function installTomTom()
+    if rawget(_G, "TomTom") or not on() then return end
+    local T, uids = {}, {}
+    function T:AddWaypoint(map, x, y, opts)
+      if type(self) ~= "table" or self ~= T then map, x, y, opts = self, map, x, y end
+      if type(map) ~= "number" or type(x) ~= "number" or type(y) ~= "number" then return end
+      local label = type(opts) == "table" and (opts.title or opts.name) or nil
+      if RG.Follow then RG.Follow({ map, x * 100, y * 100, label or "Waypoint" }) end
+      local uid = { map, x, y, label }
+      uids[#uids + 1] = uid
+      return uid
+    end
+    function T:RemoveWaypoint() if RG.ClearWaypoint then RG.ClearWaypoint() end end
+    function T:ClearAllWaypoints() if RG.ClearWaypoint then RG.ClearWaypoint() end end
+    function T:SetCrazyArrow() end
+    function T:SetClosestWaypoint() end
+    function T:GetClosestWaypoint() return uids[#uids] end
+    function T:GetDistanceToWaypoint() return nil end
+    _G.TomTom = T
+  end
+
+  -- 3. Ctrl-click the minimap: the arrow goes to that spot
+  local OUT = { 466.6667, 400, 333.3333, 266.6667, 200, 133.3333 }
+  local INN = { 300, 240, 180, 120, 80, 50 }
+  local function minimapClick(_, btn)
+    if btn ~= "LeftButton" or not on() or not (IsControlKeyDown and IsControlKeyDown()) then return end
+    if not (Minimap and C_Map and C_Map.GetMapPosFromWorldPos and CreateVector2D) then return end
+    local c, px, py = playerWorld()
+    local map = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    if not (c and map and GetCursorPosition) then return end
+    local mx, my = Minimap:GetCenter()
+    local scale = Minimap:GetEffectiveScale()
+    local cx, cy = GetCursorPosition()
+    local dx, dy = cx / scale - mx, cy / scale - my
+    local radius = Minimap:GetWidth() / 2
+    if (dx * dx + dy * dy) > radius * radius then return end
+    local zoom = (Minimap.GetZoom and Minimap:GetZoom() or 0) + 1
+    local tbl = (IsIndoors and IsIndoors()) and INN or OUT
+    local k = (tbl[zoom] or tbl[1]) / Minimap:GetWidth()   -- yards per pixel
+    local f = 0
+    if GetCVar and GetCVar("rotateMinimap") == "1" and GetPlayerFacing then f = GetPlayerFacing() or 0 end
+    local E = (dx * math.cos(f) - dy * math.sin(f)) * k
+    local N = (dx * math.sin(f) + dy * math.cos(f)) * k
+    local ok, m2, pos = pcall(C_Map.GetMapPosFromWorldPos, c, CreateVector2D(px + N, py - E), map)   -- world x = north, y = west
+    if not ok then return end
+    if type(m2) == "table" then pos, m2 = m2, map end
+    if pos and pos.x and pos.y and RG.Follow then
+      RG.Follow({ m2 or map, pos.x * 100, pos.y * 100, "Minimap spot" })
+    end
+  end
+  local mf = CreateFrame("Frame")
+  mf:RegisterEvent("PLAYER_LOGIN")
+  mf:SetScript("OnEvent", function()
+    installTomTom()
+    if Minimap and Minimap.HookScript then pcall(Minimap.HookScript, Minimap, "OnMouseUp", minimapClick) end   -- a hook only: the minimap itself is never touched
+  end)
+end
 
 -- Remember where quests were offered, so a giver our data lacks is guided to next time (shared by all your characters).
 do

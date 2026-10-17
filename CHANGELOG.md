@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.7
+- The arrow now follows the rest of the game's maps. Pick a quest on the world map or in your quest log and the arrow guides you to it (the turn-in if it is ready, otherwise the nearest objective). Ctrl-click the minimap and the arrow goes to that spot. Questie icons (world map and minimap) send the arrow where you Ctrl-click them, the same way they would with TomTom (Waypath+ answers for TomTom when TomTom is not installed). One switch in Settings, "Let map clicks drive the arrow".
+
 ## v1.0.6
 - Quest givers the quest data does not know (new WoW Forever content, like the pilots at Steelgrill's Depot) are now picked up from the game. Waypath+ remembers where it was offered a quest when you talk to a giver (shared by all your characters) and also reads the game's own available-quest pins on your map, so those givers can show up under "New quests nearby" and in the next-stop plan.
 
