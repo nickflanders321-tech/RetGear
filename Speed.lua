@@ -196,10 +196,52 @@ local function availableQuests()
       if ok then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
     end
   end
+  -- quests the game has shown you that our data does not know (new WoW Forever content): remembered from when you talked to the giver
+  local faction = UnitFactionGroup and UnitFactionGroup("player")
+  for id, g in pairs((RG.db and RG.db.givers) or {}) do
+    local ql = g.l or lvl
+    if type(g) == "table" and g.m and not inLog[id] and not done(id) and not (RG.QDATA and RG.QDATA[id] and RG.QDATA[id].s)
+       and ql >= lvl - 5 and ql <= lvl + 3 and (not g.f or g.f == faction) then
+      list[#list + 1] = { id = id, name = g.n, lvl = ql, giver = g.g, wp = { g.m, g.x, g.y, g.g or g.n }, learned = true }
+    end
+  end
   availCache = list
   return list
 end
 RG.AvailableQuests = availableQuests
+
+-- Quests the game itself marks as available on this map (quest-line starters and offers), for givers our data lacks.
+local function offeredOnMap()
+  local out = {}
+  if not (C_Map and C_Map.GetBestMapForUnit) then return out end
+  local map, guard = C_Map.GetBestMapForUnit("player"), 0
+  local inLog = {}
+  for i = 1, (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries() or 0) do
+    local info = C_QuestLog.GetInfo(i)
+    if info and info.questID then inLog[info.questID] = true end
+  end
+  local lvl = UnitLevel("player") or 1
+  while map and map > 0 and guard < 3 do
+    if C_QuestLine and C_QuestLine.GetAvailableQuestLines then
+      local ok, list = pcall(C_QuestLine.GetAvailableQuestLines, map)
+      if ok and type(list) == "table" then
+        for _, e in ipairs(list) do
+          local id = e.questID
+          if id and e.x and e.y and not inLog[id] and not done(id) and not (RG.QDATA and RG.QDATA[id] and RG.QDATA[id].s) then
+            local ql = lvl
+            if C_QuestLog.GetQuestDifficultyLevel then local ok2, v = pcall(C_QuestLog.GetQuestDifficultyLevel, id); if ok2 and type(v) == "number" and v > 0 then ql = v end end
+            if ql >= lvl - 5 and ql <= lvl + 3 then
+              out[#out + 1] = { id = id, name = e.questName or ("Quest " .. id), lvl = ql, giver = nil, wp = { map, e.x * 100, e.y * 100, e.questName or "Quest giver" } }
+            end
+          end
+        end
+      end
+    end
+    local inf = C_Map.GetMapInfo and C_Map.GetMapInfo(map)
+    map = inf and inf.parentMapID; guard = guard + 1
+  end
+  return out
+end
 
 -- Your class quests from the quest database (every class, including Forever's
 -- new ones): the ones you can take now, then the next ones coming up (up to
@@ -243,10 +285,14 @@ function RG.NearbyNewQuests(max, valued)
   local c, px, py = playerWorld()
   if not c then return {} end
   local out = {}
-  for _, q in ipairs(availableQuests()) do
+  local seen = {}
+  local function take(q)
+    if seen[q.id] then return end
     local c2, x, y = toWorld(q.wp[1], q.wp[2], q.wp[3])
-    if c2 == c then q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); q.x, q.y = x, y; out[#out + 1] = q end
+    if c2 == c and x then seen[q.id] = true; q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); q.x, q.y = x, y; out[#out + 1] = q end
   end
+  for _, q in ipairs(availableQuests()) do take(q) end
+  for _, q in ipairs(offeredOnMap()) do take(q) end
   -- rank by what the quest is worth for the distance: yellow and orange quests first, grey ones last,
   -- quests that open a chain or sit in a busy hub (several givers close together) a little higher
   local W = { [0] = 0.12, [1] = 0.3, [2] = 0.6, [3] = 0.9, [4] = 1.0 }
@@ -926,6 +972,33 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
     queueBar()
   end
 end)
+
+-- Remember where quests were offered, so a giver our data lacks is guided to next time (shared by all your characters).
+do
+  local lf = CreateFrame("Frame")
+  for _, e in ipairs({ "GOSSIP_SHOW", "QUEST_DETAIL", "QUEST_GREETING" }) do pcall(lf.RegisterEvent, lf, e) end
+  local function learn(id, title, level)
+    if not (id and id > 0 and title and RG.db) then return end
+    if RG.QDATA and RG.QDATA[id] and RG.QDATA[id].s then return end
+    local c, px, py = playerWorld()
+    local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+    if not pos then return end
+    RG.db.givers = RG.db.givers or {}
+    local npc = (UnitName and (UnitName("npc") or UnitName("target"))) or nil
+    local old = RG.db.givers[id]
+    RG.db.givers[id] = { n = title, l = (level and level > 0 and level) or (old and old.l), m = map, x = pos.x * 100, y = pos.y * 100, g = npc,
+      f = UnitFactionGroup and UnitFactionGroup("player") or nil }
+    RG.MarkQuestsDirty()
+  end
+  lf:SetScript("OnEvent", function(_, event)
+    if event == "GOSSIP_SHOW" and C_GossipInfo and C_GossipInfo.GetAvailableQuests then
+      for _, q in ipairs(C_GossipInfo.GetAvailableQuests() or {}) do learn(q.questID, q.title, q.questLevel) end
+    elseif event == "QUEST_DETAIL" and GetQuestID then
+      learn(GetQuestID(), GetTitleText and GetTitleText(), nil)
+    end
+  end)
+end
 
 local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)

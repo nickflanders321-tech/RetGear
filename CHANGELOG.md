@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.6
+- Quest givers the quest data does not know (new WoW Forever content, like the pilots at Steelgrill's Depot) are now picked up from the game. Waypath+ remembers where it was offered a quest when you talk to a giver (shared by all your characters) and also reads the game's own available-quest pins on your map, so those givers can show up under "New quests nearby" and in the next-stop plan.
+
 ## v1.0.5
 - Waypath+ now says everywhere that it is for every class and both factions (Horde and Alliance): the add-on description, the setup wizard welcome and the README.
 - The bank-alt walk-through (which goes to the Undercity Auction House) is now labelled as a Horde guide and no longer shows on Alliance characters. The fishing spots list says when its suggestions are written from the Horde side.
