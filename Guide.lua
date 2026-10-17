@@ -153,7 +153,8 @@ end
 -- ===========================================================================
 -- The planner: your quest log (and the route's next pick-ups) as an ordered trip
 -- ===========================================================================
-local skipUntil = {}
+local skipUntil, skipQuest = {}, {}
+function RG.SkipQuest(title) skipQuest[title] = (GetTime and GetTime() or 0) + 600; if RG.MarkObjectiveDirty then RG.MarkObjectiveDirty() end end
 local function taskKey(t) return t.act .. ":" .. tostring(t.id or t.title) .. ":" .. tostring(t.label or "") end
 
 local function buildTasks()
@@ -268,7 +269,7 @@ local function planFromTasks(tasks, px, py)
     local best, bestCost, bestPt
     for _, t in ipairs(pending) do
       if ready(t) then
-        local skipped = (skipUntil[taskKey(t)] or 0) > now
+        local skipped = (skipUntil[taskKey(t)] or 0) > now or (skipQuest[t.title] or 0) > now
         for _, p in ipairs(t.pts) do
           local d = dist(cx, cy, p.x, p.y)
           local cover = 0
@@ -500,7 +501,7 @@ function RG.Objective(force)
 end
 function RG.MarkObjectiveDirty() cache.dirty = true end
 function RG.GuidePlan() RG.Objective(); return cache.plan end
-function RG.GuideReset() cache = { dirty = true, t = -99 }; lastObjKey = nil; skipUntil = {} end
+function RG.GuideReset() cache = { dirty = true, t = -99 }; lastObjKey = nil; skipUntil = {}; skipQuest = {} end
 
 -- Skip the current stop for a while (Next key, right-click in the plan).
 function RG.SkipStop(stop)
@@ -677,6 +678,13 @@ function RG.NowLines()
       tip = tip .. "\n\n" .. GOLD .. "Click:|r arrow to it\n" .. GOLD .. "Right-click:|r skip to the next stop\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Key:|r bind \"Next objective\" in Key Bindings, or /wp next"
     end
     out[#out + 1] = { text = head, opts = { indent = 2, right = dtext(obj.dist), tip = tip, wp = obj.wp,
+      menu = function()
+        local e = {}
+        if obj.wp then e[#e + 1] = { "Arrow to it", function() RG.Follow(obj.wp) end } end
+        if obj.stop and obj.count and obj.count > 1 then e[#e + 1] = { "Skip this stop", function() RG.SkipStop(obj.stop); RG.SyncObjective(RG.Objective(true)); RG.RefreshTracker() end } end
+        e[#e + 1] = { "Open the quest plan", function() if RG.ShowTab then RG.ShowTab("plan") end end }
+        return e, "Now"
+      end,
       onClick = function() if obj.wp then RG.Follow(obj.wp) end end,
       onRightClick = (obj.stop and obj.count and obj.count > 1) and function() RG.SkipStop(obj.stop); RG.SyncObjective(RG.Objective(true)); RG.RefreshTracker() end
         or (obj.kind == "goal" and function() RG.RemoveGoal(1) end) or nil } }

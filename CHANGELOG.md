@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.9
+- More clickable options. Shift + right-click a quest on the tracker for a small menu: arrow to it (or to its hand-in), open it in your quest log, or skip it for ten minutes so the plan moves on. The Now line has its own menu (arrow to it, skip this stop, open the quest plan), and a quest under "New quests nearby" can be sent to the arrow or hidden with "Don't suggest this quest" (`/wp unhide` brings them back). Shift-click the arrow itself to jump to the next stop. Plain right-click and double-click work as before.
+
 ## v1.0.8
 - A shorter tracker. At higher levels the tracker could fill the screen, so by default it now keeps itself short: the Fishing block shows two lines (the rest is on the Fishing page), quests show up to six lines (four while fishing) with the ones in your zone and nearest first, far-away zones fold into "+N more in your quest log", and the Now block only adds the "Great / Okay" rating line when it is a warning. Turn it off in Settings ("Keep the tracker short") for the full list.
 

@@ -30,6 +30,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Cards:** a tab with a collectible card game built from the world: items, NPCs and places drop into packs (free during the beta), every card has its own art, and The Arena lets you duel the computer with the cards you own. `/wp cards` opens your collection, `/wp arena` the duel.
 - **Flight paths**: a tab listing every flight master for your faction (learned or not, nearest first); click one and the arrow guides you there.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
+- **More clickable options**: Shift + right-click any quest, the Now line or a new quest on the tracker for a small menu (arrow to it or its hand-in, open it in your log, skip it for ten minutes, or stop suggesting it; `/wp unhide` brings hidden quests back). Shift-click the arrow to move on to the next stop.
 - **The arrow follows the map, too**: pick a quest on the world map or in your quest log and the arrow goes to it; Ctrl-click the minimap to send it to that spot; Ctrl-click a Questie icon (on the world map or the minimap) and it guides you there, the same way TomTom would. Turn it off in Settings ("Let map clicks drive the arrow").
 - **Arrow and map pins**: the arrow follows your next route step on its own (it never overrides a pin you placed). Double-click the arrow, or right-click it, to turn it off; the arrow switch in the tracker's header turns it on or off for good. Right-click any step, or click a quest giver, dungeon or trainer, to pin it. 74 route steps, 45 quest givers, 56 dungeon entrances and the Fishing/Cooking trainers have WoW Forever coordinates from QuestieDB. `/wp way 45 60` pins any spot.
 
@@ -80,6 +81,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp fp` · `/wp fp list` | Arrow to the nearest flight path you have not learned · open the Flight paths tab |
 | `/wp auto` | Auto accept / turn in on or off |
 | `/wp next` | Point the arrow at your current objective; press again to skip to the next stop |
+| `/wp unhide` | Suggest the new quests you chose "Don't suggest" for again |
 | `/wp plan` · `/wp plan chat` | Open the Quest plan tab · print the planned stops in chat |
 | `/wp near` · `/wp near go` | What is worth doing close by (rated) · arrow to the first |
 | `/wp why` | Why the guide chose this objective, and what it needs (ticked live) |

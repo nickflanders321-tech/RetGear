@@ -281,6 +281,7 @@ function RG.ClassQuests(max)
 end
 local markBase = RG.MarkQuestsDirty
 function RG.MarkQuestsDirty() classDirty = true; markBase() end
+function RG.IgnoreQuest(id) if id and RG.db then RG.db.ignoredQuests = RG.db.ignoredQuests or {}; RG.db.ignoredQuests[id] = true; RG.MarkQuestsDirty(); RG.Print("Won't suggest that quest again. " .. "/wp unhide brings them all back.") end end
 -- Nearest few quest givers with something for you, on your continent.
 function RG.NearbyNewQuests(max, valued)
   if not RG.Opt("newQuests") then return {} end
@@ -288,8 +289,9 @@ function RG.NearbyNewQuests(max, valued)
   if not c then return {} end
   local out = {}
   local seen = {}
+  local ign = RG.db and RG.db.ignoredQuests or {}
   local function take(q)
-    if seen[q.id] then return end
+    if seen[q.id] or ign[q.id] then return end
     local c2, x, y = toWorld(q.wp[1], q.wp[2], q.wp[3])
     if c2 == c and x then seen[q.id] = true; q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); q.x, q.y = x, y; out[#out + 1] = q end
   end
@@ -657,7 +659,10 @@ local function buildArrow()
   arrow.hint:SetTextColor(0.78, 0.82, 0.85); arrow.hint:SetShadowColor(0, 0, 0, 0.9); arrow.hint:SetShadowOffset(1, -1); arrow.hint:SetWidth(260); arrow.hint:SetWordWrap(true)
   -- right-click or double-click to turn it off; mouse wheel to resize
   local lastUp = 0
-  arrow:SetScript("OnMouseUp", function(_, btn)
+  arrow:SetScript("OnDragStart", function(self) self.dragged = true; self:StartMoving() end)
+  arrow:SetScript("OnMouseDown", function(self) self.dragged = false end)
+  arrow:SetScript("OnMouseUp", function(self, btn)
+    if btn == "LeftButton" and not self.dragged and IsShiftKeyDown and IsShiftKeyDown() and RG.SmartNext then RG.SmartNext(); return end   -- Shift-click: on to the next stop
     if btn == "RightButton" then RG.ClearWaypoint(); return end
     local now = GetTime()
     if now - lastUp < 0.35 then lastUp = 0; RG.ClearWaypoint(); RG.Notify("Arrow off") else lastUp = now end
@@ -672,6 +677,7 @@ local function buildArrow()
     GameTooltip:SetText("Waypoint arrow", GOLDC[1], GOLDC[2], GOLDC[3])
     GameTooltip:AddLine("Green: you're facing it. Red: it's behind you.", 1, 1, 1, true)
     GameTooltip:AddLine("Drag: move  ·  Mouse wheel: resize", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine("Shift-click: on to the next stop", 0.7, 0.7, 0.7)
     GameTooltip:AddLine("Double-click or right-click: turn it off", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
@@ -1096,6 +1102,8 @@ SlashCmdList.WAYPATH = function(msg)
     local x, y = (rest or ""):match("([%d%.]+)[,%s]+([%d%.]+)")
     if x and y then RG.SetWaypoint(tonumber(x), tonumber(y)) else RG.Print("Usage: /wp way 45.2 60.8  (coordinates in your current zone)") end
     return
+  elseif cmd == "unhide" then
+    RG.db.ignoredQuests = {}; RG.MarkQuestsDirty(); RG.Print("Hidden quests are suggested again.")
   elseif cmd == "next" then
     local s2 = RG.NearestSpot(false) or RG.NearestSpot(true)
     if s2 then RG.PinWaypoint(s2.wp) else RG.Print("No quest objectives with a known location near you.") end

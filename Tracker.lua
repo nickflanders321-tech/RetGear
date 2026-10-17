@@ -218,6 +218,55 @@ local function tcheck(fs, text)
   end
 end
 
+-- A small right-click menu of our own (not a Blizzard dropdown, so nothing can be blocked or tainted).
+local menuFrame, menuCatcher
+function RG.ShowMenu(entries, title)
+  if not entries or #entries == 0 then return end
+  if not menuFrame then
+    menuFrame = CreateFrame("Frame", "WaypathMenu", UIParent, "BackdropTemplate")
+    menuFrame:SetFrameStrata("FULLSCREEN_DIALOG"); menuFrame:SetClampedToScreen(true)
+    if RG.Round then RG.Round(menuFrame, 0.07, 0.07, 0.08, 0.97, 8) end
+    menuFrame.btns = {}
+    menuCatcher = CreateFrame("Button", nil, UIParent)
+    menuCatcher:SetAllPoints(UIParent); menuCatcher:SetFrameStrata("FULLSCREEN"); menuCatcher:RegisterForClicks("AnyUp")
+    menuCatcher:SetScript("OnClick", function() menuFrame:Hide() end)
+    menuFrame:SetScript("OnHide", function() menuCatcher:Hide() end)
+    menuFrame:Hide(); menuCatcher:Hide()
+    tinsert(UISpecialFrames, "WaypathMenu")
+  end
+  for _, b in ipairs(menuFrame.btns) do b:Hide() end
+  local y, wMax = 8, 150
+  local function row(i, text, fn, head)
+    local b = menuFrame.btns[i]
+    if not b then
+      b = CreateFrame("Button", nil, menuFrame)
+      b:SetHeight(20)
+      b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetPoint("LEFT", 10, 0); b.t:SetJustifyH("LEFT")
+      b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.1)
+      b:RegisterForClicks("LeftButtonUp")
+      b:SetScript("OnClick", function(self) menuFrame:Hide(); if self.fn then pcall(self.fn) end end)
+      menuFrame.btns[i] = b
+    end
+    if RG.Font then RG.Font(b.t, head and "regular" or "medium", head and 11 or 12) else b.t:SetFont("Fonts\\ARIALN.TTF", 12, "") end
+    b.t:SetText(text); b.fn = not head and fn or nil
+    b.hl:SetShown(not head)
+    b:ClearAllPoints(); b:SetPoint("TOPLEFT", 4, -y); b:SetPoint("TOPRIGHT", -4, -y)
+    b:Show()
+    wMax = math.max(wMax, (b.t:GetStringWidth() or 100) + 28)
+    y = y + 20
+  end
+  local i = 0
+  if title then i = i + 1; row(i, GREY .. title .. "|r", nil, true) end
+  for _, e in ipairs(entries) do i = i + 1; row(i, e[1], e[2]) end
+  menuFrame:SetSize(wMax, y + 8)
+  local cx, cy = GetCursorPosition()
+  local s = UIParent:GetEffectiveScale()
+  if type(s) ~= "number" or s <= 0 then s = 1 end
+  if type(cx) ~= "number" or type(cy) ~= "number" then cx, cy = 600, 600 end
+  menuFrame:ClearAllPoints(); menuFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", cx / s - 6, cy / s + 6)
+  menuCatcher:Show(); menuFrame:Show()
+end
+
 local function line(i)
   if lines[i] then return lines[i] end
   local b = CreateFrame("Button", nil, tr.body)
@@ -230,6 +279,7 @@ local function line(i)
   b.check = b:CreateTexture(nil, "OVERLAY"); b.check:SetSize(12, 12); b.check:SetPoint("CENTER", b.box, "CENTER", 0, 0); b.check:SetTexture("Interface\\AddOns\\Waypath\\Media\\Check"); b.check:SetVertexColor(0.05, 0.07, 0.07, 1)
   b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   b:SetScript("OnClick", function(self, btn)
+    if btn == "RightButton" and self.menu and IsShiftKeyDown and IsShiftKeyDown() then RG.ShowMenu(self.menu()); return end   -- Shift + right-click: more options
     if btn == "RightButton" and self.onRightClick then self.onRightClick(); return end
     if self.onDoubleClick then
       -- wait a moment so a double-click doesn't also do the single-click action
@@ -341,7 +391,7 @@ end
 local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
 local function section(n, y, label, key, right)
   local b = line(n)
-  b.onClick, b.onRightClick, b.tip, b.onDoubleClick = nil, nil, nil, nil
+  b.onClick, b.onRightClick, b.tip, b.onDoubleClick, b.menu = nil, nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
   local isFolded = folded(key)
   if key then
@@ -365,7 +415,7 @@ end
 local function item(n, y, text, opts)
   opts = opts or {}
   local b = line(n)
-  b.onClick, b.tip, b.onRightClick = opts.onClick, opts.tip, opts.onRightClick
+  b.onClick, b.tip, b.onRightClick, b.menu = opts.onClick, opts.tip, opts.onRightClick, opts.menu
   b.onDoubleClick = opts.wp and function() RG.ArrowTo(opts.wp) end or nil
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
   tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
@@ -406,7 +456,7 @@ local function questTip(q)
   end
   if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
   if q.complete and q.wp then
-    t = t .. "\n\n" .. GOLD .. "Click / right-click:|r arrow to the hand-in\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Shift-click:|r open in your quest log"
+    t = t .. "\n\n" .. GOLD .. "Click / right-click:|r arrow to the hand-in\n" .. GOLD .. "Double-click:|r arrow on / off\n" .. GOLD .. "Shift-click:|r open in your quest log\n" .. GOLD .. "Shift + right-click:|r more options"
   else
     t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Right-click:|r the arrow follows this quest\n" .. GOLD .. "Double-click:|r arrow on / off") or "")
   end
@@ -600,6 +650,13 @@ function RG.RefreshTracker()
                     onClick = function()
                       if q.complete and q.wp and not (IsShiftKeyDown and IsShiftKeyDown()) then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end
                     end,
+                    menu = function()
+                      local e = {}
+                      if q.wp then e[#e + 1] = { q.complete and "Arrow to the hand-in" or "Arrow to this quest", function() RG.Follow(q.wp) end } end
+                      e[#e + 1] = { "Open in your quest log", function() RG.OpenQuest(q.title, q.id) end }
+                      if not q.complete then e[#e + 1] = { "Skip it for now (10 min)", function() if RG.SkipQuest then RG.SkipQuest(q.title) end; RG.RefreshTracker() end } end
+                      return e, RG.LevelTag(q.level) .. q.title
+                    end,
                     -- right-click: the arrow follows this quest
                     onRightClick = function()
                       if q.wp then RG.Follow(q.wp)
@@ -643,7 +700,11 @@ function RG.RefreshTracker()
         n = n + 1
         y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r", wp = q.wp,
           tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map\n" .. GOLD .. "Double-click:|r arrow on / off",
-          onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.Follow(q.wp) end })
+          onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.Follow(q.wp) end,
+          menu = function()
+            return { { "Arrow to " .. (q.giver or "the quest giver"), function() RG.Follow(q.wp) end },
+                     { "Don't suggest this quest", function() if RG.IgnoreQuest then RG.IgnoreQuest(q.id) end; RG.RefreshTracker() end } }, RG.LevelTag(q.lvl) .. q.name
+          end })
       end
     end
     y = y + 5
