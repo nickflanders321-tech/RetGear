@@ -12,6 +12,7 @@ for _, o in ipairs({
   { key = "stoneReminder", label = "Remind me to sharpen my weapon", default = true },
   { key = "paperdoll",    label = "Show upgrade scores on my character screen", default = true },
   { key = "talentReminder", label = "Remind me to spend talent points", default = true },
+  { key = "arcadeToasts", label = "Show cards my friends pull and show off", default = true },
 }) do table.insert(RG.OPTIONS, o) end
 
 local function itemInfoInstant(x) return (C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant)(x) end

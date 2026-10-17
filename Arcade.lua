@@ -49,6 +49,7 @@ local function addRaider(name, class, race, sex)
   return true
 end
 
+RG.ArcadeAddRaider = addRaider
 local raidersLoaded
 local function store()
   if not WaypathDB then return nil end
@@ -1136,18 +1137,38 @@ local function kit(...)   -- the first SOUNDKIT id this client has
   if not SOUNDKIT then return nil end
   for i = 1, select("#", ...) do local k = select(i, ...); if SOUNDKIT[k] then return SOUNDKIT[k] end end
 end
--- role: "flip" (a card turns), "hover" (a rare card is nearby), "crack" (the seal tears), "pick" (a chip of the seal), "best" (personal best)
+-- our own sound effects (Media/Sounds, synthesised by tools/arcade/sounds.py); the Arena's Sound button silences them too
+local SND = "Interface\\AddOns\\Waypath\\Media\\Sounds\\"
+local function playFx(name)
+  local a = store()
+  if a and a.mute then return true end   -- muted counts as handled
+  if not PlaySoundFile then return false end
+  local ok, willPlay = pcall(PlaySoundFile, SND .. name .. ".ogg", "SFX")
+  return ok and willPlay ~= false
+end
+RG.ArcadeFx = playFx
+-- role: "flip" (a card turns), "hover" (a rare card is nearby), "crack" (the seal tears), "pick" (a chip of the seal), "best" (personal best), "deal", "reward", "toast"
 local function playSound(finish, tier, role)
-  if not PlaySound then return end
+  local fx
+  if role == "hover" or role == "pick" or role == "best" or role == "deal" or role == "reward" or role == "toast" then fx = role
+  elseif role == "crack" then fx = "crack"
+  elseif tier == 6 then fx = "flip_legend"
+  elseif finish and finish >= 4 then fx = "flip_full"
+  elseif finish == 3 then fx = "flip_holo"
+  elseif finish == 2 then fx = "flip_rare"
+  else fx = "flip_common" end
+  if playFx(fx) then return end
+  if not (PlaySound and SOUNDKIT) then return end
   local id
   if role == "hover" then id = kit("IG_MAINMENU_OPTION_CHECKBOX_ON", "IG_CHARACTER_INFO_TAB")
   elseif role == "pick" then id = kit("IG_CHARACTER_INFO_TAB", "IG_MAINMENU_OPTION_CHECKBOX_ON")
   elseif role == "crack" then id = kit("IG_MAINMENU_OPEN", "IG_BACKPACK_OPEN", "IG_QUEST_LIST_OPEN")
-  elseif role == "best" then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP", "UI_EPICLOOT_TOAST")
+  elseif role == "best" or role == "reward" or role == "toast" then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP", "UI_EPICLOOT_TOAST")
   elseif tier == 6 then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP")
   elseif finish and finish >= 4 then id = kit("UI_EPICLOOT_TOAST", "UI_LEGENDARY_LOOT_TOAST", "IG_QUEST_LIST_COMPLETE")
   elseif finish == 3 then id = kit("UI_EPICLOOT_TOAST", "IG_QUEST_LIST_COMPLETE")
   elseif finish == 2 then id = kit("IG_QUEST_LIST_OPEN", "IG_ABILITY_PAGE_TURN")
+  elseif role == "deal" then id = nil
   else id = kit("IG_ABILITY_PAGE_TURN", "IG_BACKPACK_OPEN") end
   if id then pcall(PlaySound, id) end
 end
@@ -1178,26 +1199,47 @@ local function makeCover(card)
   c.glow:SetPoint("TOPLEFT", c, "TOPLEFT", -0.3 * card.cw, 0.22 * card.ch); c.glow:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0.3 * card.cw, -0.22 * card.ch); c.glow:Hide()
   c.tex = c:CreateTexture(nil, "ARTWORK"); c.tex:SetTexture(MEDIA .. "Back"); c.tex:SetTexCoord(0, 1, 0, CARD_V); c.tex:SetAllPoints(c)
   c.shine = c:CreateTexture(nil, "OVERLAY"); c.shine:SetColorTexture(1, 1, 1, 1); c.shine:SetBlendMode("ADD"); c.shine:SetAlpha(0); c.shine:SetPoint("TOPLEFT", 3, -3); c.shine:SetPoint("BOTTOMRIGHT", -3, 3)
-  c.peek = c:CreateTexture(nil, "OVERLAY"); c.peek:SetColorTexture(1, 1, 1, 1); c.peek:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 3, 3); c.peek:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -3, 3); c.peek:SetHeight(9); c.peek:Hide()
-  c.rare, c.cued, c.lift = false, false, 0
+  -- hold the mouse on a card to peel its bottom edge up: you see the bottom of the card and a bar in its print's colour
+  c.fold = c:CreateTexture(nil, "OVERLAY"); c.fold:SetColorTexture(0, 0, 0, 0.5); c.fold:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 0, 0); c.fold:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0, 0); c.fold:SetHeight(7); c.fold:Hide()
+  c.peek = c:CreateTexture(nil, "OVERLAY", nil, 2); c.peek:SetColorTexture(1, 1, 1, 1); c.peek:SetSize(46, 5); c.peek:SetPoint("BOTTOM", c, "BOTTOM", 0, 1); c.peek:Hide()
+  c.rare, c.cued, c.peel, c.lift, c.holding = false, false, 0, 0, false
+  local function layout(self)
+    local ch = card.ch
+    local h = ch * (1 - 0.24 * self.peel)
+    self:SetHeight(h)
+    self:ClearAllPoints(); self:SetPoint("CENTER", 0, (ch - h) / 2 + self.lift)
+    self.tex:SetTexCoord(0, 1, 0, CARD_V * (1 - 0.24 * self.peel))
+    if self.peel > 0.05 then self.fold:Show() else self.fold:Hide() end
+    if self.peel > 0.5 then self.peek:Show() else self.peek:Hide() end
+  end
+  c.layout = layout
+  local function peelTick(self, dt)
+    if self.flipping == true then return end
+    self.peel = math.min(1, self.peel + dt * 3.5)
+    layout(self)
+  end
+  local function drop(self)
+    self.holding, self.peel = false, 0
+    if self.flipping ~= true then self:SetScript("OnUpdate", nil); layout(self) end
+  end
   c:SetScript("OnEnter", function(self)
     self.shine:SetAlpha(self.rare and 0.18 or 0.1)
     if self.flipping == true then return end
-    self:ClearAllPoints(); self:SetPoint("CENTER", 0, 5)
+    self.lift = 5; layout(self)
     if self.rare and not self.cued then self.cued = true; playSound(nil, nil, "hover") end   -- a card worth the wait is under your mouse
   end)
   c:SetScript("OnLeave", function(self)
-    self.shine:SetAlpha(0); self.peek:Hide()
-    if self.flipping == true then return end
-    self:ClearAllPoints(); self:SetPoint("CENTER", 0, 0)
+    self.shine:SetAlpha(0); self.lift = 0
+    drop(self)
+    if self.flipping ~= true then layout(self) end
   end)
-  -- hold the mouse on a card to peek at how rare its print is, then let go to turn it
   c:SetScript("OnMouseDown", function(self)
     if self.flipping == true then return end
     local col = self.peekCol or { 0.6, 0.6, 0.65 }
-    self.peek:SetColorTexture(col[1], col[2], col[3], 0.95); self.peek:Show()
+    self.peek:SetColorTexture(col[1], col[2], col[3], 1)
+    self.holding = true; self:SetScript("OnUpdate", peelTick)
   end)
-  c:SetScript("OnMouseUp", function(self) self.peek:Hide() end)
+  c:SetScript("OnMouseUp", function(self) drop(self) end)
   card.cover = c
   return c
 end
@@ -1257,14 +1299,16 @@ end
 
 local function badgeFor(g)
   if g.new then return GOLDHEX .. "NEW|r" end
-  if g.newPrint then local t = TIER[g.card.tier][3]; return string.format("|cff%02x%02x%02x", t[1] * 255, t[2] * 255, t[3] * 255) .. "NEW PRINT|r" end
+  if g.newPrint then local t = TIER[g.card.tier][3]; return string.format("|cff%02x%02x%02x", math.floor(t[1] * 255 + 0.5), math.floor(t[2] * 255 + 0.5), math.floor(t[3] * 255 + 0.5)) .. "NEW PRINT|r" end
   return "|cff9a96b0Extra · " .. (g.value or 0) .. "c|r"
 end
 local function flip(i)
   local card = reveal.cards[i]
   local c = card.cover
   if not c or c.flipping == true or not c:IsShown() or reveal.phase then return end
-  c.flipping = true; anim[c] = nil; c.peek:Hide()
+  c.flipping = true; anim[c] = nil
+  c.peel, c.lift, c.holding = 0, 0, false
+  c.fold:Hide(); c.peek:Hide(); c:SetHeight(card.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
   c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0)
   local g0 = reveal.got[i]
   local weight = g0.card.tier == 6 and 3 or (g0.finish >= 3 and 2 or (g0.finish == 2 and 1 or 0))
@@ -1312,6 +1356,7 @@ local function startDeal()
   reveal.title:SetText("Turn each card")
   for i = 1, PACK_SIZE do reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
   reveal.sum:SetText("|cff9a96b0Hold a card to peek at how rare it is, let go to turn it|r")
+  playSound(nil, nil, "deal")
 end
 
 local function cursorXY()
@@ -1324,7 +1369,7 @@ end
 -- the seal gives way: shards fly, the table jolts, the cards are dealt
 local function tearOpen()
   if reveal.phase ~= "seal" then return end
-  playSound(nil, nil, "crack")
+  playSound(nil, nil, "crack"); if playFx then playFx("tear") end
   local c = reveal.sealCol or { 1, 0.8, 0.5 }
   for _, sh in ipairs(reveal.shards) do
     local ang = math.random() * 6.283
@@ -1337,6 +1382,66 @@ local function tearOpen()
   reveal.shakeT, reveal.shakeK = 0.3, 1.5
   reveal.holding, reveal.tear, reveal.picks = false, 0, 0
   startDeal()
+end
+
+-- which of our own pictures goes on a set's seal: sheet, cell (0-15, row by row)
+local NPC_CELL = { beast = 1, dragonkin = 2, demon = 3, elemental = 4, giant = 5, undead = 6, humanoid = 7, mechanical = 9, creature = 10 }
+local function strHash(str)
+  local h = 0
+  for i = 1, #str do h = (h * 31 + str:byte(i)) % 100003 end
+  return h
+end
+local function emblemFor(setName)
+  setName = setName or ""
+  local zone = setName:match("^Places in (.+)$")
+  if zone then return "Motifs", strHash(zone) % 16 end
+  if setName == "All zones" then return "Motifs", 9 end
+  local ty = setName:match("^(%a+) bosses$") or setName:match("^(%a+) rares$")
+  if ty then
+    local cells = CREATURE_CELLS[NPC_CELL[ty:lower()] or 10] or CREATURE_CELLS[10]
+    return "Creatures", cells[1 + strHash(setName) % #cells]
+  end
+  if setName == "Other NPCs" then return "Creatures", 12 end
+  if setName == "Legendary items" then return "Slots", 11 end
+  local ilvl = setName:match("item level (%d+)")
+  if ilvl then return "Slots", (math.floor(tonumber(ilvl) / 10) + 3) % 16 end
+  return "Motifs", 5
+end
+RG.ArcadeEmblem = emblemFor
+
+-- a card a friend showed off (sent through ArcadeDuel's add-on channel)
+local toast
+function RG.ArcadeShowPull(sender, card, finish)
+  if not (card and finish and FNAME[finish]) then return end
+  if InCombatLockdown and InCombatLockdown() then return end
+  if RG.db and RG.db.arcadeToasts == false then return end
+  local now = GetTime and GetTime() or 0
+  RG.__pullAt = RG.__pullAt or {}
+  if RG.__pullAt[sender or "?"] and now - RG.__pullAt[sender or "?"] < 20 then return end   -- one card per friend every 20 seconds
+  RG.__pullAt[sender or "?"] = now
+  if not toast then
+    toast = CreateFrame("Button", "WaypathArcadeToast", UIParent, "BackdropTemplate")
+    toast:SetFrameStrata("DIALOG"); toast:SetPoint("TOP", UIParent, "TOP", 0, -170)
+    darkPanel(toast, 340, 200)
+    toast.card = makeCard(toast, 112); toast.card:SetPoint("LEFT", 22, 0); toast.card.noTip = true
+    toast.head = fs(toast, "head", 12); toast.head:SetPoint("TOPLEFT", toast.card, "TOPRIGHT", 14, -2); toast.head:SetWidth(170); toast.head:SetJustifyH("LEFT"); toast.head:SetTextColor(0.78, 0.74, 0.92)
+    toast.name = fs(toast, "title", 14); toast.name:SetPoint("TOPLEFT", toast.head, "BOTTOMLEFT", 0, -8); toast.name:SetWidth(170); toast.name:SetJustifyH("LEFT")
+    toast.kind = fs(toast, "body", 12); toast.kind:SetPoint("TOPLEFT", toast.name, "BOTTOMLEFT", 0, -8); toast.kind:SetWidth(170); toast.kind:SetJustifyH("LEFT"); toast.kind:SetTextColor(0.9, 0.86, 0.74)
+    toast.hint = fs(toast, "body", 11); toast.hint:SetPoint("BOTTOMRIGHT", -14, 10); toast.hint:SetTextColor(0.6, 0.58, 0.72); toast.hint:SetText("click to close")
+    toast.age = 0
+    toast:SetScript("OnClick", function(self) self:Hide() end)
+    toast:SetScript("OnUpdate", function(self, dt)
+      self.age = self.age + dt
+      if self.age > 9 then self:Hide() elseif self.age > 8 then self:SetAlpha(math.max(0, 9 - self.age)) end
+    end)
+  end
+  paint(toast.card, card, finish, 1)
+  local t = TIER[card.tier][3]
+  toast.head:SetText((sender or "Someone") .. " pulled")
+  toast.name:SetText(card.name); toast.name:SetTextColor(t[1], t[2], t[3])
+  toast.kind:SetText(KIND[card.kind] .. "  ·  " .. FNAME[finish] .. "\n" .. TIER[card.tier][1] .. (cardOdds(card, finish) and ("\nabout 1 in " .. groupDigits(cardOdds(card, finish)) .. " cards") or ""))
+  toast.age = 0; toast:SetAlpha(1); toast:Show()
+  playSound(nil, nil, "toast")
 end
 
 local function showReveal(got, notes, meta)
@@ -1362,8 +1467,17 @@ local function showReveal(got, notes, meta)
     reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(150, 150); reveal.seal:SetPoint("CENTER", 0, -10); reveal.seal:SetFrameLevel(lv(reveal) + 30)
     reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
     reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0.7)
-    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seal"); sealTex:SetAllPoints(reveal.seal)
+    local sealTex = reveal.seal:CreateTexture(nil, "ARTWORK"); sealTex:SetTexture(MEDIA .. "Seals"); sealTex:SetAllPoints(reveal.seal)
+    sealTex:SetTexCoord(0, 0.5, 0, 0.5)
     reveal.sealTex = sealTex
+    -- the set's emblem, pressed into the wax: a light edge, a shadow and the figure itself
+    reveal.embLight = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 1); reveal.embShadow = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 1); reveal.emb = reveal.seal:CreateTexture(nil, "ARTWORK", nil, 2)
+    for _, t in ipairs({ reveal.embLight, reveal.embShadow, reveal.emb }) do t:SetSize(66, 66); t:Hide() end
+    reveal.embLight:SetPoint("CENTER", reveal.seal, "CENTER", -1.5, 1.5); reveal.embShadow:SetPoint("CENTER", reveal.seal, "CENTER", 1.5, -1.5); reveal.emb:SetPoint("CENTER", reveal.seal, "CENTER", 0, 0)
+    reveal.sealCount = fs(reveal.seal, "title", 30); reveal.sealCount:SetPoint("CENTER", reveal.seal, "CENTER", 0, 4); reveal.sealCount:SetTextColor(0.25, 0.18, 0.08); reveal.sealCount:SetText("")
+    reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY", nil, 3); reveal.ribbon:SetTexture(MEDIA .. "Seals"); reveal.ribbon:SetTexCoord(0.5, 1, 0.68, 0.82)
+    reveal.ribbon:SetSize(190, 53); reveal.ribbon:SetPoint("CENTER", reveal.seal, "CENTER", 0, -52); reveal.ribbon:SetVertexColor(1, 0.85, 0.4, 1); reveal.ribbon:Hide()
+    reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetPoint("CENTER", reveal.ribbon, "CENTER", 0, 0); reveal.ribbonText:SetTextColor(0.22, 0.14, 0.04); reveal.ribbonText:SetText("")
     reveal.sealHint = fs(reveal.seal, "head", 11); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Hold and drag to tear it open  ·  or click it three times"); reveal.sealHint:SetTextColor(0.9, 0.8, 0.6)
     reveal.seal:EnableMouse(true)
     reveal.sealCol = { 1, 1, 1 }
@@ -1402,9 +1516,18 @@ local function showReveal(got, notes, meta)
       for _, g in ipairs(reveal.got or {}) do if not bg or g.finish * 10 + g.card.tier > bg.finish * 10 + bg.card.tier then bg = g end end
       if not bg then return end
       local msg = "Waypath+ cards: I pulled " .. bg.card.name .. " (" .. FNAME[bg.finish] .. ")" .. (bg.odds and (", about 1 in " .. groupDigits(bg.odds) .. " cards") or "") .. "!"
+      -- players in your group or guild with Waypath+ get the card itself; the chat box is filled in for everyone else
+      local sent = RG.ArcadeShareCard and RG.ArcadeShareCard(bg.card, bg.finish) or 0
+      if sent > 0 and RG.Print then RG.Print("Shown to the Waypath+ players in your " .. (sent > 1 and "group and guild." or "group or guild.")) end
       if ChatFrame_OpenChat then ChatFrame_OpenChat(msg) elseif RG.Print then RG.Print(msg) end
     end)
     reveal.share:SetPoint("BOTTOM", 290, 18); reveal.share:Hide()
+    reveal.snd = gbtn(reveal, "Sound: On", 100, 22, function(self)
+      local a = store(); if not a then return end
+      a.mute = not a.mute
+      self:SetText(a.mute and "Sound: Off" or "Sound: On")
+    end)
+    reveal.snd:SetPoint("BOTTOM", -300, 20)
     reveal.sum = fs(reveal, "body", 14); reveal.sum:SetPoint("TOP", 0, -276); reveal.sum:SetWidth(RW - 80); reveal.sum:SetTextColor(0.9, 0.86, 0.74)
     reveal.all = gbtn(reveal, "Turn all", 120, 26, function()
       for i = 1, PACK_SIZE do
@@ -1520,10 +1643,31 @@ local function showReveal(got, notes, meta)
   end
   reveal.sealCol = col
   reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1)
+  -- the wax: plain for a set seal (with the set's emblem on it), laurel and star for a reward, a stack for several
+  reveal.emb:Hide(); reveal.embLight:Hide(); reveal.embShadow:Hide(); reveal.ribbon:Hide(); reveal.sealCount:SetText(""); reveal.ribbonText:SetText("")
+  if meta.bonus then reveal.sealTex:SetTexCoord(0.5, 1, 0, 0.5)
+  elseif meta.many then reveal.sealTex:SetTexCoord(0, 0.5, 0.5, 1); reveal.sealCount:SetText("x" .. meta.many.count)
+  else
+    reveal.sealTex:SetTexCoord(0, 0.5, 0, 0.5)
+    if meta.featured then
+      local sheet, cell = emblemFor(meta.featured)
+      local c0, r0 = cell % 4, math.floor(cell / 4)
+      for _, t in ipairs({ reveal.embLight, reveal.embShadow, reveal.emb }) do
+        t:SetTexture(MEDIA .. sheet); t:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, (r0 + 1) * 0.25); t:Show()
+      end
+      reveal.embLight:SetVertexColor(math.min(1, col[1] + 0.35), math.min(1, col[2] + 0.35), math.min(1, col[3] + 0.35), 0.6)
+      reveal.embShadow:SetVertexColor(col[1] * 0.25, col[2] * 0.25, col[3] * 0.25, 0.55)
+      reveal.emb:SetVertexColor(col[1] * 0.62, col[2] * 0.62, col[3] * 0.62, 0.95)
+    end
+  end
+  if meta.daily and not meta.many then
+    reveal.ribbon:Show(); reveal.ribbonText:SetText("DAY " .. (meta.streak or 1))
+  end
   reveal.sealInfo:SetText(table.concat(info, "\n"))
   reveal.title:SetText(title)
   reveal.sum:SetText("")
   reveal.all:Show(); reveal.share:Hide(); reveal.ok:SetText("Skip")
+  do local a = store(); reveal.snd:SetText(a and a.mute and "Sound: Off" or "Sound: On") end
   reveal.burst:Hide(); reveal.burstLeft = 0
   reveal.tear, reveal.picks, reveal.holding, reveal.shardT, reveal.shakeT = 0, 0, false, 0, 0
   for _, ct in ipairs(reveal.cracks) do ct:SetAlpha(0) end
@@ -1539,7 +1683,8 @@ local function showReveal(got, notes, meta)
     w.new:SetText("")
     local c = w.cover
     c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c:Show()
-    c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.peek:Hide(); c.cued = false
+    c.peel, c.lift, c.holding = 0, 0, false; c.fold:Hide(); c.peek:Hide(); c:SetHeight(w.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
+    c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.cued = false
     c.rare = (g.finish >= 3 or g.card.tier == 6) and true or false
     c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.6, 0.6, 0.65 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
@@ -1752,7 +1897,7 @@ local function build()
     local got, free, notes, meta
     if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack() end
     if not got then say(free or "") return end
-    playSound(2)
+    if meta and meta.bonus then playSound(nil, nil, "reward") end
     showReveal(got, notes, meta); RG.ArcadeRefresh(true)
   end
   frame.buy = gbtn(frame, "Break a seal", 250, 34, function() frame.buyNow() end, true)

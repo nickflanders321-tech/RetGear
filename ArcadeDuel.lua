@@ -386,6 +386,7 @@ do
     if sender and me and short(sender) == short(me) then return end
     local k = text and text:sub(1, 2)
     if k == "H|" or k == "R|" then pcall(onHello, text, sender) return end
+    if k == "K|" then pcall(RG.__cardShown, text, sender) return end
     ensure().onMessage(text, sender)
   end)
   local acc = 0
@@ -435,6 +436,29 @@ function RG.DuelRoster()
   end)
   return out
 end
+-- Show off a card: players in your group or guild who have Waypath+ see it as a small pop-up (K|key|finish|class|race)
+function RG.ArcadeShareCard(card, finish)
+  if not (card and finish and C_ChatInfo and C_ChatInfo.SendAddonMessage) then return 0 end
+  local key = tostring(card.key or card.name):gsub("|", "")
+  local msg = "K|" .. key .. "|" .. finish .. "|" .. (card.class or "") .. "|" .. (card.race or "")
+  local n = 0
+  local ch = groupChannel()
+  if ch then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, ch); n = n + 1 end
+  if IsInGuild and IsInGuild() then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "GUILD"); n = n + 1 end
+  return n
+end
+RG.__cardShown = function(text, sender)
+  local key, finish, class, race = text:match("^K|([^|]+)|(%d)|?([^|]*)|?([^|]*)")
+  finish = tonumber(finish)
+  if not key or #key > 40 or not finish or finish < 1 or finish > 4 or not sender then return end
+  local U = RG.ArcadeUI
+  local card = U and U.byKey and U.byKey[key]
+  if not card and key:sub(1, 1) == "@" and class:match("^%u+$") and #class <= 12 and (race == "" or (race:match("^%a+$") and #race <= 16)) and RG.ArcadeAddRaider then
+    if RG.ArcadeAddRaider(key:sub(2), class, race ~= "" and race or nil, nil) then card = U.byKey[key] end   -- a character you have just met
+  end
+  if card and RG.ArcadeShowPull then RG.ArcadeShowPull(sender:match("^([^-]+)") or sender, card, finish) end
+end
+
 local function onHello(text, sender)
   local kind, ver, rating = text:match("^(%a)|([^|]*)|?([^|]*)")
   if not sender or sender == "" then return end
