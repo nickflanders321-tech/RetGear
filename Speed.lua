@@ -661,8 +661,27 @@ local function buildArrow()
     local wp = C_Map.GetUserWaypoint and C_Map.GetUserWaypoint()
     local mapID = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     local ppos = mapID and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
+    -- some maps (a new zone, a small sub-area) give no position: ask the pin's own map, then the maps above yours
+    if not ppos and wp and C_Map.GetPlayerMapPosition then
+      local tries, seen = { wp.uiMapID }, {}
+      local m = mapID
+      for _ = 1, 5 do
+        if not (m and C_Map.GetMapInfo) then break end
+        local info = C_Map.GetMapInfo(m); m = info and info.parentMapID
+        if m and m > 0 then tries[#tries + 1] = m end
+      end
+      for _, tm in ipairs(tries) do
+        if tm and not seen[tm] then
+          seen[tm] = true
+          local pp = C_Map.GetPlayerMapPosition(tm, "player")
+          if pp then mapID, ppos = tm, pp; break end
+        end
+      end
+    end
     local facing = GetPlayerFacing and GetPlayerFacing()
     if RG.IsSecret and RG.IsSecret(facing) then facing = nil end
+    -- no heading for a moment (mounted turns, cutscenes): keep the last one rather than losing the arrow
+    if facing then self.lastFacing = facing else facing = self.lastFacing end
     if not (wp and ppos and facing) then self.wang = nil; self:Hide(); return end
     local key = wp.uiMapID .. ":" .. math.floor(wp.position.x * 1000) .. ":" .. math.floor(wp.position.y * 1000)
     if key ~= lastKey then lastKey = key; self.pulse = 1 end
@@ -805,6 +824,8 @@ function RG.PinWaypoint(wp, quiet)
   lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
   local api = spfApi()
   if api then pcall(api.Navigate, "Waypath+", wp[1], wp[2] / 100, wp[3] / 100, wp[4]) end
+  -- you asked for it (a click, not the route moving on by itself): if the arrow was switched off, it comes back on
+  if not quiet and RG.db and not RG.Opt("arrow") then RG.db.arrow = true end
   if RG.RefreshArrow then RG.RefreshArrow() end
   if not quiet then RG.Notify("Pinned " .. wp[4] .. ": follow the arrow") end
 end

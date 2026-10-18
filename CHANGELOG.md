@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Arrow: clicking a quest, giver or step to pin it now turns the arrow back on if you had switched it off (it said "follow the arrow" and showed nothing). The arrow also keeps working in zones where the game gives no player position for the small area you stand in (it asks the pin's map and the maps above) and when the game briefly gives no heading.
 - World map markers: smaller and in the game's own look (dark bronze bubble, gold rim, cream dots; a yellow ? for a hand-in), and markers that would pile up on top of each other (a village with six quests) merge into one with a count and a tooltip that lists them.
 - Side bar: the "+ MORE" row no longer rides up over the last quest line (the space it saved for folded sections was over-counted).
 - Setup wizard: the Extras and Automation pages stack each option by the height of its own description, so a long description (like the 2nd spec one) no longer runs into the title below it.
