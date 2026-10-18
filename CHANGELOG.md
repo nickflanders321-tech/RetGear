@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Setup wizard: the Extras and Automation pages stack each option by the height of its own description, so a long description (like the 2nd spec one) no longer runs into the title below it.
+
 ## 1.3.0
 - Waypath Cards grows up: every card has its own picture (NPC models, painted places, item medallions, Raiders as class figures), three pack types (5 / 8 / 12 cards, free in the beta), new pack-opening and collection screens, and new ways to earn coins and packs: level milestones, dungeon bosses, quest-line finales, gear upgrades and a level-60 gift.
 - Raider cards frame the whole figure (head no longer cut off).

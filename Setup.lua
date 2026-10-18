@@ -71,6 +71,18 @@ local function check(parent, label, sub, getter, setter)
   c:SetScript("OnClick", function(self) setter(self:GetChecked() and true or false); if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or 856) end end)
   return c
 end
+-- stacks check rows from the top; each row is as tall as its own description, so a long one never runs into the next title
+local function stackChecks(list, parent, y0, make)
+  local y = y0
+  for _, a in ipairs(list) do
+    local c = make(a)
+    c:SetPoint("TOPLEFT", 0, -y)
+    local sh = c.sub and c.sub.GetStringHeight and c.sub:GetStringHeight()
+    if type(sh) ~= "number" or sh < 10 then sh = 12 end
+    y = y + math.max(34, 22 + sh) + 10
+  end
+  return y
+end
 local function choice(parent, label, desc, onPick, h)
   local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
   b:SetSize(W - 70, h or 68)
@@ -207,11 +219,11 @@ local function buildPages()
     { "autoArrow", "Arrow follows my next route step", "Never moves a pin you placed yourself." },
     { "sellJunk", "Sell grey junk and repair at vendors", "Anything worth more on the AH is kept, and you get a buy-back button if you sell it by mistake." },
   }
-  for i, a in ipairs(auto) do
+  stackChecks(auto, p4, 36, function(a)
     local c = check(p4, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RG.db[a[1]] = v; if a[1] == "sellJunk" then RG.db.autoRepair = v end end)
-    c:SetPoint("TOPLEFT", 0, -36 - (i - 1) * 46)
     table.insert(p4.refreshers, c.refresh)
-  end
+    return c
+  end)
 
   -- 5. Extras
   local p5 = newPage("Extras")
@@ -221,21 +233,21 @@ local function buildPages()
     { "newQuests", "Show new quests near me", "Turn this off if you also run Questie, so you don't see them twice." },
     { "groupDuties", "Group helper", "In a party: who needs a Blessing, Aura reminder, dispel and \"dying\" alerts, shared quests and LFG posts." },
   }
-  for i, a in ipairs(extras) do
+  local yEnd = stackChecks(extras, p5, 36, function(a)
     local c = check(p5, a[2], a[3], function() return RG.Opt(a[1]) end, function(v) RG.db[a[1]] = v; if a[1] == "groupDuties" then RG.db.groupAlerts = v end end)
-    c:SetPoint("TOPLEFT", 0, -36 - (i - 1) * 46)
     table.insert(p5.refreshers, c.refresh)
-  end
+    return c
+  end)
   local alt = text(p5, "GameFontHighlightSmall", GOLD .. "Bank alt?|r Just log in on it: Waypath+ notices it isn't your main and shows a shopping list of quest items to buy and mail, with a one-click button at the mailbox.", W - 70)
-  alt:SetPoint("TOPLEFT", 0, -36 - #extras * 46 - 6); alt:SetSpacing(2)
+  alt:SetPoint("TOPLEFT", 0, -yEnd); alt:SetSpacing(2)
   -- 2nd spec: one button per spec of your class
   local specLabel = text(p5, "GameFontNormal", GOLD .. "2nd spec:|r", 80)
-  specLabel:SetPoint("TOPLEFT", 0, -36 - #extras * 46 - 52)
+  specLabel:SetPoint("TOPLEFT", 0, -yEnd - 46)
   local specBtns, x = {}, 80
   for _, sp in ipairs(RG.SpecList and RG.SpecList() or {}) do
     do
       local b = CreateFrame("Button", nil, p5, "UIPanelButtonTemplate")
-      b:SetSize(math.max(84, (#sp.name * 7) + 20), 22); b:SetPoint("TOPLEFT", x, -36 - #extras * 46 - 48); b:SetText(sp.name)
+      b:SetSize(math.max(84, (#sp.name * 7) + 20), 22); b:SetPoint("TOPLEFT", x, -yEnd - 42); b:SetText(sp.name)
       b:SetScript("OnClick", function() if RG.IsMainSpec(sp) then RG.Print(sp.name .. " is your main spec. Pick a different one here.") return end; RG.SetSecondSpec(sp.key); RG.db.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
       b.key = sp.key
       specBtns[#specBtns + 1] = b; x = x + b:GetWidth() + 6
