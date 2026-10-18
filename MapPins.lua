@@ -95,7 +95,8 @@ local function getPin(i)
   b:SetSize(22, 22); b:SetFrameStrata("HIGH"); b:SetFrameLevel((c.GetFrameLevel and c:GetFrameLevel() or 1) + 40)
   b.disc = b:CreateTexture(nil, "ARTWORK"); b.disc:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); b.disc:SetAllPoints(b)
   b.ring = b:CreateTexture(nil, "OVERLAY"); b.ring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.ring:SetAllPoints(b); b.ring:SetVertexColor(0.1, 0.08, 0.04, 1)
-  b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE"); b.t:SetPoint("CENTER", 0, 0)
+  b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE"); b.t:SetPoint("CENTER", 0, 0)
+  b.count = b:CreateFontString(nil, "OVERLAY"); b.count:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE"); b.count:SetPoint("CENTER", b, "BOTTOMRIGHT", 0, 1); b.count:SetTextColor(1, 1, 1); b.count:Hide()
   b.dots = {}
   for d = 1, 3 do local t = b:CreateTexture(nil, "OVERLAY", nil, 2); t:SetColorTexture(0.16, 0.09, 0.03, 1); b.dots[d] = t end
   b.arrow = b:CreateTexture(nil, "OVERLAY"); b.arrow:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.arrow:SetSize(32, 32); b.arrow:SetPoint("CENTER"); b.arrow:SetVertexColor(1, 0.82, 0.2, 1); b.arrow:Hide()
@@ -134,22 +135,48 @@ local function refreshPins(force)
       if sp.wp and sp.wp[1] == mapID then list[#list + 1] = { kind = sp.turnin and "turnin" or "obj", wp = sp.wp, title = sp.quest, sub = sp.label or "" } end
     end
   end
-  local n = 0
+  -- markers that would sit on top of each other (a village with six quests) merge into one with a count
+  local sz = 17 / scale
+  local near = sz * 1.05
+  local groups = {}
   for _, p in ipairs(list) do
-    if n >= 80 then break end
+    local x, y = p.wp[2] / 100 * w, p.wp[3] / 100 * h
+    local g
+    for _, q in ipairs(groups) do
+      if math.abs(q.x - x) < near and math.abs(q.y - y) < near then g = q; break end
+    end
+    if not g then g = { x = x, y = y, items = {} }; groups[#groups + 1] = g end
+    g.items[#g.items + 1] = p
+    if p.kind == "turnin" then g.turnin = true end
+  end
+  local n = 0
+  for _, g in ipairs(groups) do
+    if n >= 60 then break end
     n = n + 1
     local b = getPin(n)
     if not b then return end
-    local k = KIND[p.kind]
-    b.wp, b.title, b.sub = p.wp, (k[5] .. ": " .. (p.title or "")), p.sub
-    b.disc:SetVertexColor(k[2], k[3], k[4], 1); b.t:SetTextColor(0.1, 0.07, 0.02)
-    local sz = 22 / scale
+    local first = g.items[1]
+    for _, p in ipairs(g.items) do if p.kind == "turnin" then first = p; break end end
+    local k = KIND[first.kind]
+    b.wp = first.wp
+    if #g.items == 1 then b.title, b.sub = (k[5] .. ": " .. (first.title or "")), first.sub
+    else
+      local names = {}
+      for i, p in ipairs(g.items) do if i <= 8 then names[#names + 1] = (p.kind == "turnin" and "Hand in: " or "") .. (p.title or "?") end end
+      b.title, b.sub = #g.items .. " quests here", table.concat(names, "\n") .. (#g.items > 8 and ("\n+" .. (#g.items - 8) .. " more") or "")
+    end
+    -- the game's own look: a dark bronze bubble, a gold rim, cream dots (a yellow ? for a hand-in)
+    b.disc:SetVertexColor(0.27, 0.18, 0.08, 1); b.ring:SetVertexColor(0.95, 0.8, 0.42, 1); b.t:SetTextColor(1, 0.85, 0.2)
     local dots = k[1] == "..."
     b.t:SetText(dots and "" or k[1])
-    for d, t in ipairs(b.dots) do t:SetShown(dots); t:SetSize(sz * 0.14, sz * 0.14); t:ClearAllPoints(); t:SetPoint("CENTER", b, "CENTER", (d - 2) * sz * 0.23, -sz * 0.02) end
+    for d, t in ipairs(b.dots) do t:SetColorTexture(0.98, 0.9, 0.62, 1); t:SetShown(dots); t:SetSize(sz * 0.14, sz * 0.14); t:ClearAllPoints(); t:SetPoint("CENTER", b, "CENTER", (d - 2) * sz * 0.23, -sz * 0.02) end
+    if b.count then
+      b.count:SetShown(#g.items > 1)
+      if #g.items > 1 then b.count:SetText(tostring(#g.items)) end
+    end
     b:SetSize(sz, sz); b.arrow:SetSize(sz * 1.5, sz * 1.5)
-    b:ClearAllPoints(); b:SetPoint("CENTER", c, "TOPLEFT", p.wp[2] / 100 * w, -p.wp[3] / 100 * h)
-    b.arrow:SetShown(RG.ArrowTarget and RG.ArrowTarget(p.wp) or false)
+    b:ClearAllPoints(); b:SetPoint("CENTER", c, "TOPLEFT", g.x, -g.y)
+    b.arrow:SetShown(RG.ArrowTarget and RG.ArrowTarget(first.wp) or false)
     b:Show()
   end
   for i = n + 1, #pins do pins[i]:Hide() end

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- World map markers: smaller and in the game's own look (dark bronze bubble, gold rim, cream dots; a yellow ? for a hand-in), and markers that would pile up on top of each other (a village with six quests) merge into one with a count and a tooltip that lists them.
 - Side bar: the "+ MORE" row no longer rides up over the last quest line (the space it saved for folded sections was over-counted).
 - Setup wizard: the Extras and Automation pages stack each option by the height of its own description, so a long description (like the 2nd spec one) no longer runs into the title below it.
 
