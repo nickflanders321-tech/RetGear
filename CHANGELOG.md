@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Arena board: items, spells and tokens (the ones with only an icon) now sit as a medallion on scenery of their own instead of a bare icon. Every NPC shows its model, every place its painting.
 - Fixed an error when a gear piece changed (item-level lookup for gear-upgrade bonuses is now guarded).
 - Spirit of Mograine, Blaumeux, Korth'azz and Zeliek, and Taerar, now show a visible model (the ghost/blank ones use their living look).
 - Raider cards use the game's own textured people of their class (picked from the name) instead of untextured player models, which showed all white.

@@ -344,7 +344,7 @@ local function makeMinion(parent)
   m:SetSize(MW, MH)
   m.glow = m:CreateTexture(nil, "BACKGROUND"); m.glow:SetTexture(U.MEDIA .. "Glow"); m.glow:SetBlendMode("ADD"); m.glow:SetSize(150, 150); m.glow:SetPoint("CENTER", m, "TOP", 0, -44); m.glow:Hide()
   m.back = m:CreateTexture(nil, "BACKGROUND", nil, 2); m.back:SetColorTexture(0.05, 0.04, 0.1, 1); m.back:SetSize(66, 66); m.back:SetPoint("CENTER", m, "TOP", 0, -44)
-  m.icon = m:CreateTexture(nil, "ARTWORK", nil, 1); m.icon:SetSize(66, 66); m.icon:SetPoint("CENTER", m, "TOP", 0, -44); m.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  m.icon = m:CreateTexture(nil, "ARTWORK", nil, 7); m.icon:SetSize(66, 66); m.icon:SetPoint("CENTER", m, "TOP", 0, -44); m.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   m.scn = U.newScene(m, 66, 66, m.back)
   -- the picture is the card's own: its 3D model (a creature) or painting (a place), under a frame of badges and text
   local okm, mdl = pcall(CreateFrame, "DressUpModel", nil, m)
@@ -400,8 +400,12 @@ local function paintMinion(w, m, side)
   if w.mdl then w.mdl:SetShown(shownModel) end
   if pk == "tex" then w.icon:SetTexture(p1); w.icon:SetTexCoord(l, r, t, b)
   else w.icon:SetTexture((pk == "icon" and p1) or iconOf(m.key, m)); w.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
-  if pk == "scene" and cc then U.setScene(w.scn, cc, false) else U.hideScene(w.scn) end
-  w.icon:SetSize(66, 66); w.icon:SetShown(not shownModel and pk ~= "scene")
+  -- an item, a spell or a token has only an icon: it sits as a medallion on scenery of its own, so no two look alike
+  local medal = (pk ~= "tex" and pk ~= "scene") and not shownModel
+  if pk == "scene" and cc then U.setScene(w.scn, cc, false)
+  elseif medal then U.setScene(w.scn, cc or { name = m.name or "?", kind = 3, id = #(m.key or m.name or "?") }, false)
+  else U.hideScene(w.scn) end
+  w.icon:SetSize(medal and 40 or 66, medal and 40 or 66); w.icon:SetShown(not shownModel and pk ~= "scene")
   local iron = m.kw.taunt
   w.tile:SetTexture(U.MEDIA .. (iron and "TileIron" or "Tile"))
   local c = side == 1 and TILE_ME or TILE_FOE
