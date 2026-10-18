@@ -882,7 +882,7 @@ local function ensureModel(w)
     pcall(function()
       if self.creature then
         if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end
-        if self.SetFacing then self:SetFacing(0.5) end
+        if self.SetFacing then self:SetFacing(self.face or 0.5) end
         return
       end
       if self.Undress then self:Undress() end
@@ -1130,6 +1130,18 @@ end
 -- how close the camera sits: upright creatures are framed head and chest, long low ones whole, so each is centred
 local ZOOM = { [7] = 0.6, [1] = 0.05, [2] = 0.1, [3] = 0.4, [4] = 0.3, [5] = 0.3, [6] = 0.5, [8] = 0.0, [9] = 0.25 }
 function RG.ArcadeModelZoom(c) return ZOOM[c and c.ref or 7] or 0.4 end
+-- two cards can share one creature model (Firemaw and Flamegor, a boss and its spirit): those stand on scenery of their own
+-- and face the other way, so no two cards look the same
+local sharedCount
+local function sharedModel(c)
+  if not sharedCount then
+    sharedCount = {}
+    for _, id in pairs(RG.ARCADE_NPC or {}) do sharedCount[id] = (sharedCount[id] or 0) + 1 end
+  end
+  local id = c and RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
+  return id and (sharedCount[id] or 0) > 1 or false
+end
+RG.ArcadeSharedModel = sharedModel
 local function dressCreature(w, c)
   local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
   if not id then return false end
@@ -1144,7 +1156,8 @@ local function dressCreature(w, c)
   m.zoom = RG.ArcadeModelZoom(c)
   if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
   if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
-  if m.SetFacing then pcall(m.SetFacing, m, 0.5) end
+  m.face = (sharedModel(c) and seedOf(c.name) % 2 == 1) and -0.5 or 0.5
+  if m.SetFacing then pcall(m.SetFacing, m, m.face) end
   m:Show()
   return true
 end
@@ -1294,7 +1307,12 @@ local function paint(w, card, finish, copies)
   end
   if card.kind == 4 and dressModel(w, card, finish) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
   elseif card.kind == 4 then ownScene()
-  elseif card.kind == 2 and dressCreature(w, card) then w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  elseif card.kind == 2 and dressCreature(w, card) then
+    w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+    if sharedModel(card) then
+      if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+      setScene(w.scn, card, false); w.spot:Hide()
+    end
   elseif card.kind == 2 then ownScene()
   elseif card.kind == 3 and placeArt(w, card, full) then -- painting in its gold frame
   elseif card.kind == 3 and not scene then ownScene()
@@ -2572,7 +2590,7 @@ end
 
 RG.ArcadeUI = { modelZoom = RG.ArcadeModelZoom, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
-  owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
+  owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
 RG.ArcadePackPrice = PACK_PRICE
 RG.ArcadePacks = PACKS
@@ -2589,10 +2607,64 @@ function RG.ShowArcade()
   if a and a.giftPending and not a.giftDone and RG.ArcadeClaimGift then RG.ArcadeClaimGift() end
 end
 
+-- /wp cardcheck: goes through every card in the game and lists the ones whose picture cannot be shown (a creature the game has
+-- no model for, an item it has no icon for). Takes about a minute; the result is a box to copy and paste.
+local checking
+local function cardCheck()
+  if checking then RG.Print("The card check is already running.") return end
+  local ok, m = pcall(CreateFrame, "DressUpModel", nil, UIParent)
+  if not ok or not m then RG.Print("This game cannot show models, so there is nothing to check.") return end
+  m:SetSize(64, 64); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -200, 200); m:Show()
+  checking = true
+  local list, bad, i, n = {}, {}, 0, 0
+  for _, c in ipairs(CARDS) do if c.kind == 1 or c.kind == 2 or c.kind == 3 then list[#list + 1] = c end end
+  RG.Print("Checking " .. #list .. " cards... about a minute.")
+  local step
+  local function verdict(c)
+    n = n + 1
+    if c.kind == 2 then
+      local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
+      if not id then bad[#bad + 1] = "NPC with no model id: " .. c.name
+      else
+        local fid = m.GetModelFileID and m:GetModelFileID()
+        if not fid or fid == 0 then bad[#bad + 1] = "NPC model will not load: " .. c.name .. " (display " .. id .. ")" end
+      end
+    elseif c.kind == 1 then
+      local ic = C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(c.ref) or GetItemIcon and GetItemIcon(c.ref)
+      if not ic then bad[#bad + 1] = "Item with no icon: " .. c.name .. " (" .. tostring(c.ref) .. ")" end
+    elseif c.kind == 3 then
+      if not (RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]) then bad[#bad + 1] = "Place with no painting: " .. c.name end
+    end
+  end
+  local function finish()
+    checking = false; m:Hide()
+    local out = { "Waypath+ card check: " .. n .. " cards looked at, " .. #bad .. " problem(s)", "" }
+    for _, l in ipairs(bad) do out[#out + 1] = l end
+    if #bad == 0 then out[#out + 1] = "Every picture loads." end
+    RG.ShowErrors(table.concat(out, "\n"), "Waypath+ card check  ·  Ctrl+A, Ctrl+C to copy")
+  end
+  step = function()
+    local prev = list[i]
+    if prev then verdict(prev) end
+    i = i + 1
+    local c = list[i]
+    if not c then finish() return end
+    if c.kind == 2 then
+      local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
+      if id and m.SetDisplayInfo then pcall(m.SetDisplayInfo, m, id) end
+      if C_Timer then C_Timer.After(0.12, step) else step() end
+    else
+      step()
+    end
+  end
+  step()
+end
+
 local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
   if cmd == "arcade" or cmd == "cards" then RG.ShowArcade() return end
+  if cmd == "cardcheck" then cardCheck() return end
   return base(msg)
 end

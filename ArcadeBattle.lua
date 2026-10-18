@@ -403,6 +403,7 @@ local function paintMinion(w, m, side)
   -- an item, a spell or a token has only an icon: it sits as a medallion on scenery of its own, so no two look alike
   local medal = (pk ~= "tex" and pk ~= "scene") and not shownModel
   if pk == "scene" and cc then U.setScene(w.scn, cc, false)
+  elseif shownModel and cc and U.sharedModel and U.sharedModel(cc) then U.setScene(w.scn, cc, false)
   elseif medal then U.setScene(w.scn, cc or { name = m.name or "?", kind = 3, id = #(m.key or m.name or "?") }, false)
   else U.hideScene(w.scn) end
   w.icon:SetSize(medal and 40 or 66, medal and 40 or 66); w.icon:SetShown(not shownModel and pk ~= "scene")

@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- New `/wp cardcheck`: goes through every card in the game (about a minute) and lists any creature model, item icon or place painting that can't be shown, as a box you can copy.
+- The 54 creature cards that share a model with another card (Firemaw/Flamegor, bosses and their spirits...) now stand on scenery of their own, on the card and on the board, so no two pictures match.
 - Arena board: items, spells and tokens (the ones with only an icon) now sit as a medallion on scenery of their own instead of a bare icon. Every NPC shows its model, every place its painting.
 - Fixed an error when a gear piece changed (item-level lookup for gear-upgrade bonuses is now guarded).
 - Spirit of Mograine, Blaumeux, Korth'azz and Zeliek, and Taerar, now show a visible model (the ghost/blank ones use their living look).
