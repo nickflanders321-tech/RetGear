@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- World map markers redesigned to be small and sleek: a dark glass dot with a thin teal rim (gold with a ? for a hand-in), set just beside the spot instead of on top of it, and drawn below the game's own icons, so they never hide the game's quest markers.
 - Arrow: clicking a quest, giver or step to pin it now turns the arrow back on if you had switched it off (it said "follow the arrow" and showed nothing). The arrow also keeps working in zones where the game gives no player position for the small area you stand in (it asks the pin's map and the maps above) and when the game briefly gives no heading.
 - World map markers: smaller and in the game's own look (dark bronze bubble, gold rim, cream dots; a yellow ? for a hand-in), and markers that would pile up on top of each other (a village with six quests) merge into one with a count and a tooltip that lists them.
 - Side bar: the "+ MORE" row no longer rides up over the last quest line (the space it saved for folded sections was over-counted).

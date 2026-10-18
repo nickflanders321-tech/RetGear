@@ -92,17 +92,18 @@ local function getPin(i)
   local c = canvas()
   if not c then return nil end
   local b = CreateFrame("Button", nil, c)
-  b:SetSize(22, 22); b:SetFrameStrata("HIGH"); b:SetFrameLevel((c.GetFrameLevel and c:GetFrameLevel() or 1) + 40)
+  b:SetSize(12, 12); b:SetFrameLevel((c.GetFrameLevel and c:GetFrameLevel() or 1) + 6); b:SetAlpha(0.9)
   b.disc = b:CreateTexture(nil, "ARTWORK"); b.disc:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); b.disc:SetAllPoints(b)
-  b.ring = b:CreateTexture(nil, "OVERLAY"); b.ring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.ring:SetAllPoints(b); b.ring:SetVertexColor(0.1, 0.08, 0.04, 1)
-  b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE"); b.t:SetPoint("CENTER", 0, 0)
-  b.count = b:CreateFontString(nil, "OVERLAY"); b.count:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE"); b.count:SetPoint("CENTER", b, "BOTTOMRIGHT", 0, 1); b.count:SetTextColor(1, 1, 1); b.count:Hide()
+  b.ring = b:CreateTexture(nil, "OVERLAY"); b.ring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.ring:SetAllPoints(b); b.ring:SetVertexColor(0.3, 0.85, 0.78, 1)
+  b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE"); b.t:SetPoint("CENTER", 0, 0)
+  b.count = b:CreateFontString(nil, "OVERLAY"); b.count:SetFont("Fonts\\FRIZQT__.TTF", 8, "OUTLINE"); b.count:SetPoint("CENTER", b, "TOPRIGHT", 1, 1); b.count:SetTextColor(1, 1, 1); b.count:Hide()
   b.dots = {}
   for d = 1, 3 do local t = b:CreateTexture(nil, "OVERLAY", nil, 2); t:SetColorTexture(0.16, 0.09, 0.03, 1); b.dots[d] = t end
   b.arrow = b:CreateTexture(nil, "OVERLAY"); b.arrow:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); b.arrow:SetSize(32, 32); b.arrow:SetPoint("CENTER"); b.arrow:SetVertexColor(1, 0.82, 0.2, 1); b.arrow:Hide()
   b:RegisterForClicks("LeftButtonUp")
   b:SetScript("OnClick", function(self) if self.wp and RG.ArrowTo then RG.ArrowTo(self.wp) end end)
   b:SetScript("OnEnter", function(self)
+    self:SetAlpha(1)
     if not GameTooltip then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetText(self.title or "", 1, 1, 1)
@@ -110,7 +111,7 @@ local function getPin(i)
     GameTooltip:AddLine("|cfff5d273Click:|r arrow on / off", 1, 1, 1)
     GameTooltip:Show()
   end)
-  b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  b:SetScript("OnLeave", function(self) self:SetAlpha(0.9); if GameTooltip then GameTooltip:Hide() end end)
   b:Hide()
   pins[i] = b
   return b
@@ -136,8 +137,8 @@ local function refreshPins(force)
     end
   end
   -- markers that would sit on top of each other (a village with six quests) merge into one with a count
-  local sz = 17 / scale
-  local near = sz * 1.05
+  local sz = 12 / scale
+  local near = sz * 1.3
   local groups = {}
   for _, p in ipairs(list) do
     local x, y = p.wp[2] / 100 * w, p.wp[3] / 100 * h
@@ -165,17 +166,22 @@ local function refreshPins(force)
       for i, p in ipairs(g.items) do if i <= 8 then names[#names + 1] = (p.kind == "turnin" and "Hand in: " or "") .. (p.title or "?") end end
       b.title, b.sub = #g.items .. " quests here", table.concat(names, "\n") .. (#g.items > 8 and ("\n+" .. (#g.items - 8) .. " more") or "")
     end
-    -- the game's own look: a dark bronze bubble, a gold rim, cream dots (a yellow ? for a hand-in)
-    b.disc:SetVertexColor(0.27, 0.18, 0.08, 1); b.ring:SetVertexColor(0.95, 0.8, 0.42, 1); b.t:SetTextColor(1, 0.85, 0.2)
-    local dots = k[1] == "..."
-    b.t:SetText(dots and "" or k[1])
-    for d, t in ipairs(b.dots) do t:SetColorTexture(0.98, 0.9, 0.62, 1); t:SetShown(dots); t:SetSize(sz * 0.14, sz * 0.14); t:ClearAllPoints(); t:SetPoint("CENTER", b, "CENTER", (d - 2) * sz * 0.23, -sz * 0.02) end
+    -- sleek and small: a dark glass dot with a thin coloured rim, set just beside the spot so the game's own icon stays clear
+    local turn = g.turnin
+    b.disc:SetVertexColor(0.06, 0.07, 0.1, 0.85)
+    if turn then b.ring:SetVertexColor(1, 0.82, 0.25, 1); b.t:SetTextColor(1, 0.85, 0.3)
+    else b.ring:SetVertexColor(0.3, 0.85, 0.78, 1); b.t:SetTextColor(0.5, 0.95, 0.9) end
+    b.t:SetText(turn and "?" or "")
+    for d, t in ipairs(b.dots) do
+      local on = (not turn) and d == 2
+      t:SetColorTexture(0.55, 0.96, 0.9, 1); t:SetShown(on); t:SetSize(sz * 0.3, sz * 0.3); t:ClearAllPoints(); t:SetPoint("CENTER", b, "CENTER", 0, 0)
+    end
     if b.count then
       b.count:SetShown(#g.items > 1)
       if #g.items > 1 then b.count:SetText(tostring(#g.items)) end
     end
     b:SetSize(sz, sz); b.arrow:SetSize(sz * 1.5, sz * 1.5)
-    b:ClearAllPoints(); b:SetPoint("CENTER", c, "TOPLEFT", g.x, -g.y)
+    b:ClearAllPoints(); b:SetPoint("CENTER", c, "TOPLEFT", g.x + sz * 0.9, -g.y + sz * 0.9)
     b.arrow:SetShown(RG.ArrowTarget and RG.ArrowTarget(first.wp) or false)
     b:Show()
   end
