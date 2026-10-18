@@ -1196,7 +1196,7 @@ local function dressModel(w, c, finish)
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
   if not pcall(m.SetDisplayInfo, m, id) then m:Hide() return false end
-  m.zoom = RG.ArcadeModelZoom({ ref = 7 })
+  m.zoom = 0.3   -- (the whole figure, head included)
   if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
   if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
   if m.SetFacing then pcall(m.SetFacing, m, 0.5) end
