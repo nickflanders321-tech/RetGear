@@ -917,8 +917,13 @@ end
 -- 5. Bag space
 -- ===========================================================================
 local function freeSlots()
+  -- only slots that take ordinary items: an ammo pouch, quiver or profession bag can be empty while the bags are "full"
   local C, free = C_Container, 0
-  for bag = 0, 4 do free = free + ((C and C.GetContainerNumFreeSlots and C.GetContainerNumFreeSlots(bag)) or 0) end
+  for bag = 0, 4 do
+    local n, kind
+    if C and C.GetContainerNumFreeSlots then n, kind = C.GetContainerNumFreeSlots(bag) elseif GetContainerNumFreeSlots then n, kind = GetContainerNumFreeSlots(bag) end
+    if type(n) == "number" and (kind == nil or kind == 0) then free = free + n end
+  end
   return free
 end
 RG.FreeSlots = freeSlots
@@ -960,7 +965,7 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
   elseif event == "UI_ERROR_MESSAGE" then
     local msg = tostring(a2 or a1 or ""):lower()
     if msg:find("quest log is full") or msg:find("inventory is full") or msg:find("bags are full") then
-      if not paused then paused = true; RG.Print("Auto quests paused: " .. msg .. ". They'll resume when you have room.") end
+      if not paused then paused = true; RG.Print("Auto quests paused: " .. (msg:gsub("[%.%s]+$", "")) .. ". They'll resume when you have room.") end
     end
   elseif event == "USER_WAYPOINT_UPDATED" or event == "SUPER_TRACKING_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
     refreshArrow()
