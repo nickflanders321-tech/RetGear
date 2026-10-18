@@ -520,7 +520,8 @@ function RG.RefreshTracker()
   W = RG.db.trackerWidth or 300
   tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
   tr:SetBackdropColor(0.06, 0.06, 0.065, RG.db.trackerAlpha or 0.5)
-  for _, b in ipairs(lines) do b:Hide(); b:SetWidth(W - 24) end
+  -- pairs, not ipairs: a folded section leaves a gap in the list, and ipairs stops at the first gap (old rows stayed on screen)
+  for _, b in pairs(lines) do b:Hide(); b:SetWidth(W - 24) end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
   local rate, eta
@@ -1043,6 +1044,9 @@ function RG.RefreshTracker()
     y = item(n, y, "|cff8a8a8a- SHOW LESS|r", { single = true, indent = 2, tip = "Fold the extra sections back into one row.",
       onClick = function() RG.db.trackerMore = false; RG.RefreshTracker() end })
   end
+  -- safety net: whatever the layout above did, no row past the last one it placed may stay on screen
+  tr.rowCount = n
+  for i, b in pairs(lines) do if i > n then b:Hide() end end
   tr.body:SetHeight(math.max(10, y))
   tr:SetHeight(42 + y + 40)
 end

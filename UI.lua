@@ -2497,7 +2497,7 @@ function RG.RefreshUI()
 end
 function RG.RefreshUINow()
   if not frame or not frame:IsShown() then return end
-  for _, r in ipairs(rows) do r:Hide() end
+  for _, r in pairs(rows) do r:Hide() end
   updateHeader()
   local n
   local okRender, errRender = pcall(function()
@@ -2519,7 +2519,7 @@ function RG.RefreshUINow()
   else n = renderAH() end
   end)
   if not okRender then
-    for _, r in ipairs(rows) do r:Hide() end
+    for _, r in pairs(rows) do r:Hide() end
     n = 0
     if RG.RecordError then pcall(RG.RecordError, tostring(errRender)) end
     local er = getRow(math.max(1, (type(n) == "number" and n or 0) + 1))
