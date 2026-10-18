@@ -399,13 +399,17 @@ local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) 
 -- "More" row until you open it, so the side bar stays short: the first thing it shows is what to do now.
 local SECONDARY = { new = "New quests", route = "Route", pala = "Class quests", dungeon = "Dungeon", upgrade = "Upgrade", profs = "Professions", reminders = "Reminders" }
 local hints, skipped, moreOpen = {}, 0, false
+local lastSkipped = false   -- the last section went into the "More" row: it drew nothing, so it leaves no gap either
+local function gap(y) if lastSkipped then return y end return y + 5 end
 local function section(n, y, label, key, right)
+  lastSkipped = false
   if key and SECONDARY[key] and not moreOpen then
     local name = SECONDARY[key]
     if key == "dungeon" or key == "pala" then name = label:gsub("^Class quests: ", "Class quests"):gsub("%s*$", "") end
     local plain = right and right:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") or ""
     hints[#hints + 1] = { name = name, note = plain, urgent = right ~= nil and right:find(GREEN, 1, true) ~= nil }
     skipped = skipped + 1
+    lastSkipped = true
     return y, true
   end
   local b = line(n)
@@ -580,7 +584,7 @@ function RG.RefreshTracker()
         for _, l in ipairs(gl) do n = n + 1; y = item(n, y, (isTarget(l[4]) and ARROW or "") .. l[1], { onClick = l[2], tip = l[3] .. (l[4] and ("\n" .. GOLD .. "Click:|r arrow on / off") or ""), wp = l[4] }) end
         n = n + 1; y = item(n, y, GREY .. "Hide this guide|r", { single = true, onClick = function() RG.AltGuideHide() end, tip = "/wp bankalt brings it back." })
       end
-      y = y + 5
+      y = gap(y)
     end
     local list = RG.ShoppingList and RG.ShoppingList() or {}
     n = n + 1; y = section(n, y, #list > 0 and "Buy and mail" or "Nothing to send right now")
@@ -608,7 +612,7 @@ function RG.RefreshTracker()
         end
       end
     end
-    y = y + 5
+    y = gap(y)
     MAXQ = compact and 4 or 6 -- keep the tracker short while fishing
   end
   -- 0b. now: the one thing to do next (the same objective the arrow follows)
@@ -617,7 +621,7 @@ function RG.RefreshTracker()
     if okN and nl and #nl > 0 then
       n = n + 1; y = section(n, y, "Now", nil, nl.right)
       for _, l in ipairs(nl) do n = n + 1; y = item(n, y, l.text, l.opts) end
-      y = y + 5
+      y = gap(y)
     end
   end
   -- 1. your quests: level, name, progress, distance
@@ -708,7 +712,7 @@ function RG.RefreshTracker()
         n = n + 1; y = item(n, y, GREY .. "+" .. hidden .. " more in your quest log|r", { single = true, indent = 12, onClick = function() if ToggleQuestLog then ToggleQuestLog() end end })
       end
     end
-    y = y + 5
+    y = gap(y)
   end
   -- 2. new quests to pick up nearby (not the ones the route already lists)
   do
@@ -744,7 +748,7 @@ function RG.RefreshTracker()
           end })
       end
     end
-    y = y + 5
+    y = gap(y)
   end
   -- 3. route: the zone you're in and its next tasks
   local r = currentEntry()
@@ -863,7 +867,7 @@ function RG.RefreshTracker()
           onClick = function() RG.UndoTick() end })
       end
     end
-    y = y + 5
+    y = gap(y)
   end
   -- 3b. hand-written class chain (paladin): the next step for your level
   local shownClassSteps = false
@@ -887,7 +891,7 @@ function RG.RefreshTracker()
             tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or "") .. "\nThe Route tab has the whole chain.",
             onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, first) end end, onRightClick = wp and function() RG.Follow(wp) end or nil })
         end
-        y = y + 5
+        y = gap(y)
       end
       break
     end
@@ -909,7 +913,7 @@ function RG.RefreshTracker()
             onClick = function() RG.PinWaypoint(wp) end })
         end
       end
-      y = y + 5
+      y = gap(y)
     end
   end
   -- 4. next dungeon: quests still to collect
@@ -947,7 +951,7 @@ function RG.RefreshTracker()
         n = n + 1; y = item(n, y, GOLD .. "Drops for you:|r " .. table.concat(parts, GREY .. ", |r"), { tip = GREY .. "Upgrades from your gear guide that drop here.|r", onClick = function() if RG.ShowTab then RG.ShowTab("gear") end end })
       end
     end
-    y = y + 5
+    y = gap(y)
   end
   -- 5. next upgrade (one line)
   local up = nextUpgrade()
@@ -962,7 +966,7 @@ function RG.RefreshTracker()
         onClick = function() if RG.ShowItemSource then RG.ShowItemSource(up.g, { note = GREEN .. string.format("+%.0f", up.d) .. "|r" .. GREY .. " over what you wear|r" }) end end,
         onRightClick = function() if RG.ShowTab then RG.ShowTab("guide") end end })
     end
-    y = y + 5
+    y = gap(y)
   end
   -- 5b. professions: the step you're on and what you're short of
   if RG.Opt("trackerProfs") and RG.ProfNow then
@@ -998,7 +1002,7 @@ function RG.RefreshTracker()
             onClick = function() if RG.ShowProf then RG.ShowProf(e.name) end end })
         end
       end
-      y = y + 5
+      y = gap(y)
     end
   end
   -- 6. reminders: the most important few
@@ -1014,7 +1018,7 @@ function RG.RefreshTracker()
     end
   end
   -- the sections that were folded into one row
-  y = y - 5 * skipped
+  lastSkipped = false
   if #hints > 0 and not moreOpen then
     local parts, full = {}, {}
     for _, h in ipairs(hints) do

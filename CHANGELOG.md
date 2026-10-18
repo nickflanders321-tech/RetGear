@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Side bar: the "+ MORE" row no longer rides up over the last quest line (the space it saved for folded sections was over-counted).
 - Setup wizard: the Extras and Automation pages stack each option by the height of its own description, so a long description (like the 2nd spec one) no longer runs into the title below it.
 
 ## 1.3.0
