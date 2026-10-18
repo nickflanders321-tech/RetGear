@@ -868,8 +868,58 @@ function RG.ArrowTarget(wp)
   local cur = currentPin()
   return wp and cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) or false
 end
+-- Dead: the arrow leads you back to your body. Following the way you walked before (learned paths) and Shortest
+-- Path Forever (when installed) both work off this pin like any other, so the way back is the fastest known one.
+local corpse = { active = false, wasOff = false, told = false }
+local function corpsePoint()
+  if not (C_Map and C_Map.GetBestMapForUnit) then return end
+  local m = C_Map.GetBestMapForUnit("player")
+  if not m then return end
+  local x, y
+  if C_DeathInfo and C_DeathInfo.GetCorpseMapPosition then
+    local ok, v = pcall(C_DeathInfo.GetCorpseMapPosition, m)
+    if ok and v then
+      if type(v) == "table" and v.GetXY then x, y = v:GetXY() elseif type(v) == "table" then x, y = v.x, v.y end
+    end
+  elseif GetCorpseMapPosition then
+    local ok, a, b = pcall(GetCorpseMapPosition, m)
+    if ok then x, y = a, b end
+  end
+  if type(x) == "number" and type(y) == "number" and (x > 0 or y > 0) then return m, x * 100, y * 100 end
+end
+local function corpseSync()
+  local ghost = UnitIsGhost and UnitIsGhost("player")
+  if ghost then
+    if inCombat() then return end
+    local m, x, y = corpsePoint()
+    if not m then return end    -- not released yet, or the game does not know where it is: try again in a moment
+    local cur = currentPin()
+    if corpse.active and cur and samePin(cur, { map = m, x = x, y = y }) then return end
+    if not corpse.active then
+      corpse.active = true; corpse.wasOff = not RG.Opt("arrow")
+      if corpse.wasOff and RG.db then RG.db.arrow = true end
+    end
+    RG.PinWaypoint({ m, x, y, "Your body" }, true)
+    if not corpse.told then corpse.told = true; RG.Notify("Run back to your body: follow the arrow") end
+  elseif corpse.active then
+    corpse.active = false; corpse.told = false
+    if RG.PinIsOurs and RG.PinIsOurs() then RG.ClearWaypoint() end
+    if corpse.wasOff and RG.db then RG.db.arrow = false end
+    corpse.wasOff = false
+    if RG.RefreshArrow then RG.RefreshArrow() end
+    if RG.RefreshTracker then RG.RefreshTracker() end
+  end
+end
+RG.CorpseSync = corpseSync
+do
+  local cf = CreateFrame("Frame")
+  for _, e in ipairs({ "PLAYER_DEAD", "PLAYER_ALIVE", "PLAYER_UNGHOST", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "PLAYER_REGEN_ENABLED" }) do pcall(cf.RegisterEvent, cf, e) end
+  cf:SetScript("OnEvent", function() if C_Timer then C_Timer.After(0.5, corpseSync) end end)
+  if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(2, function() if corpse.active or (UnitIsGhost and UnitIsGhost("player")) then corpseSync() end end) end
+end
 -- Called by the tracker with the next unfinished step that has a waypoint.
 function RG.AutoPin(key, wp)
+  if corpse.active then return end    -- the way back to your body comes first
   if not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
   if IsInInstance and IsInInstance() then return end
   local cur = currentPin()

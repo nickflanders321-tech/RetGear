@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.3.1
+- Dead: when you are a ghost the arrow leads you back to your body (pinned as "Your body", arrow switched on for the run even if you had it off, auto-follow of quests paused). Learned paths and Shortest Path Forever (if installed) plan the way like for any pin. When you come back to life the pin goes away and your arrow setting returns to what it was.
 - Bags: free-slot counting (bag reminder, and when auto quests resume after "inventory is full") now ignores empty slots in ammo pouches, quivers and profession bags, which cannot hold ordinary loot; before, they made a full bag look like it had room. The "paused" chat line no longer ends in two periods.
 - Side bar: fixed the jumbled, overlapping rows (several "+ MORE" lines stacked over the quest list). When a section folded into the "+ MORE" row it left a gap in the tracker's row list, and the code that hides old rows stopped at that gap, so rows from earlier layouts stayed on screen under the new ones. Old rows are now always hidden, and anything past the last placed row is hidden as a safety net (the same fix applies to the main window's row list).
 - Arrow: a single click on a tracker line (the NOW objective, quests, givers) pinned the spot and then the same click toggled the arrow straight back off ("Pinned ... / Arrow off"). A click now leaves the arrow on; clicking the same line again still turns it off.
