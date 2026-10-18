@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 1.3.0
+- Waypath Cards grows up: every card has its own picture (NPC models, painted places, item medallions, Raiders as class figures), three pack types (5 / 8 / 12 cards, free in the beta), new pack-opening and collection screens, and new ways to earn coins and packs: level milestones, dungeon bosses, quest-line finales, gear upgrades and a level-60 gift.
 - Raider cards frame the whole figure (head no longer cut off).
 - New `/wp cardcheck`: goes through every card in the game (about a minute) and lists any creature model, item icon or place painting that can't be shown, as a box you can copy.
 - The 54 creature cards that share a model with another card (Firemaw/Flamegor, bosses and their spirits...) now stand on scenery of their own, on the card and on the board, so no two pictures match.
