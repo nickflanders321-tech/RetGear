@@ -283,8 +283,16 @@ local function line(i)
     if btn == "RightButton" and self.onRightClick then self.onRightClick(); return end
     if btn == "LeftButton" and self.wpClick then
       -- a place: the line itself is the button. Your own click (tick, open) still runs; a plain click also sends the arrow.
+      -- if your click already pinned this spot (Follow), the arrow is on: toggling it again would switch it straight off
+      local was = RG.ArrowTarget and RG.ArrowTarget(self.wpClick)
       if self.onClick then self.onClick() end
-      if not (IsShiftKeyDown and IsShiftKeyDown()) then RG.ArrowTo(self.wpClick) end
+      if not (IsShiftKeyDown and IsShiftKeyDown()) then
+        if not was and RG.ArrowTarget and RG.ArrowTarget(self.wpClick) then
+          if RG.RefreshArrow then RG.RefreshArrow() end
+        else
+          RG.ArrowTo(self.wpClick)
+        end
+      end
       return
     end
     if self.onDoubleClick then
