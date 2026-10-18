@@ -135,7 +135,13 @@ local function slotLevel(slot)
   if not GetInventoryItemLink then return nil end
   local link = GetInventoryItemLink("player", slot)
   if not link or secret(link) then return nil end
-  local _, _, _, il = GetItemInfo(link)
+  -- item level: the detailed lookup first, then whichever item-info call this game build has
+  local il
+  if GetDetailedItemLevelInfo then local ok, v = pcall(GetDetailedItemLevelInfo, link); if ok then il = v end end
+  if type(il) ~= "number" then
+    local info = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if info then local ok, _, _, _, v = pcall(info, link); if ok then il = v end end
+  end
   if type(il) == "number" and il > 0 then return il end
   return nil
 end

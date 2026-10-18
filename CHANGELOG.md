@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fixed an error when a gear piece changed (item-level lookup for gear-upgrade bonuses is now guarded).
 - Spirit of Mograine, Blaumeux, Korth'azz and Zeliek, and Taerar, now show a visible model (the ghost/blank ones use their living look).
 - Raider cards use the game's own textured people of their class (picked from the name) instead of untextured player models, which showed all white.
 - Raider cards always show a character model in their class gear (race and sex picked from the name when never seen); names in Chinese, Korean and Cyrillic use fonts that have those letters.
