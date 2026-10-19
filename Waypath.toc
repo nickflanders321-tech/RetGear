@@ -111,5 +111,6 @@ Group.lua
 Bags.lua
 SourceInfo.lua
 ProfGuide.lua
+ProfNudge.lua
 UI.lua
 Compat.lua

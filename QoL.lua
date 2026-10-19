@@ -14,6 +14,8 @@ RG.OPTIONS = {
   { key = "autoRepair",   label = "Repair my gear at vendors",              default = true },
   { key = "reminders",    label = "Remind me about Blessings and Seals",    default = true },
   { key = "mineReminder", label = "Remind me to turn on Find Minerals",     default = true },
+  { key = "profReminder", label = "Remind me to pick up professions when I am near their trainers", default = true },
+  { key = "profQuests",   label = "Put profession starter quests (Camping 101, Craftsman's Writ...) in my route", default = false },
   { key = "tooltip",      label = "Show upgrade scores on item tooltips",       default = true },
   { key = "autoScan",     label = "Check prices when I open the Auction House", default = true },
   { key = "minimap",      label = "Show the minimap button",                default = true },

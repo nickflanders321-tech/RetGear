@@ -113,6 +113,24 @@ local function knowsSpell(name)
   return GetSpellInfo and GetSpellInfo(name) ~= nil
 end
 
+-- Profession starter quests (Camping 101, Craftsman's Writ, ...) are not part of the levelling route: they pull you off
+-- your quests to a trainer. They stay out of the route and the new-quest list unless you turn "profQuests" on or
+-- have already picked one up. A reminder near the trainers (ProfNudge.lua) covers professions instead.
+local PROF_QUEST = { "^Camping 101", "^Craftsman's Writ", "^An Enchanting Lesson", "^Stolen Enchanting Supplies", "^My First Alchemy Set",
+  "^My First Real Potion", "^I Need a Tailor", "^Leather Technique" }
+function RG.IsProfQuestName(name)
+  if not name then return false end
+  for _, p in ipairs(PROF_QUEST) do if name:find(p) then return true end end
+  return false
+end
+function RG.HideProfQuest(id, name)
+  if RG.Opt and RG.Opt("profQuests") then return false end
+  name = name or (id and RG.QDATA and RG.QDATA[id] and RG.QDATA[id].n)
+  if not RG.IsProfQuestName(name) then return false end
+  if id and C_QuestLog and C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(id) then return false end   -- you picked it up yourself
+  return true
+end
+
 -- entry = the route entry the step belongs to; text = the step text.
 -- Returns done (bool), reason (short text for the tooltip).
 function RG.StepAuto(entry, text)
@@ -126,7 +144,7 @@ function RG.StepAuto(entry, text)
         for _, id in ipairs(sq[i]) do
           -- repeatable quests are never marked done by the game: they don't hold a step open
           local rq = RG.QDATA and RG.QDATA[id]
-          local ok = (rq and rq.rep) or (isDone and isDone(id))
+          local ok = (rq and rq.rep) or (isDone and isDone(id)) or RG.HideProfQuest(id)
           -- one of a pair of either/or quests counts for both
           local d = not ok and RG.QDATA and RG.QDATA[id]
           if d and d.x and isDone then for _, x in ipairs(d.x) do if isDone(x) then ok = true break end end end

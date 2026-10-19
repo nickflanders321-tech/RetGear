@@ -12,7 +12,7 @@ R.route = {
 }
 R.travel = {
   { lvl = 6,  text = "Make Bloodhoof Village your home at its inn." },
-  { lvl = 10, text = "Ride the lifts up into Thunder Bluff: grab the flight path, visit your class trainer and learn your professions.", fp = "Thunder Bluff" },
+  { lvl = 10, text = "Ride the lifts up into Thunder Bluff: grab the flight path and visit your class trainer.", fp = "Thunder Bluff" },
   { lvl = 12, text = "Take the road east out of Mulgore into The Barrens. Grab Camp Taurajo's flight path on the way north, then the Crossroads, and make the Crossroads your home.", fp = "Crossroads" },
   { lvl = 14, text = "Run east from the Crossroads to Orgrimmar once for its flight path and the zeppelins.", fp = "Orgrimmar" },
   { lvl = 17, text = "Optional: the zeppelin from the towers outside Orgrimmar goes to Tirisfal (Undercity) for Silverpine, the Ruins of Lordaeron and Shadowfang Keep." },

@@ -15,7 +15,7 @@ local function durotar(name)
   }
   R.travel = {
     { lvl = 6,  text = "Make Razor Hill your home at its inn: most of Durotar's quests turn in there or at Sen'jin Village." },
-    { lvl = 10, text = "Run north into Orgrimmar: grab the flight path at the top of the tower, visit your class trainer and learn your professions.", fp = "Orgrimmar" },
+    { lvl = 10, text = "Run north into Orgrimmar: grab the flight path at the top of the tower and visit your class trainer.", fp = "Orgrimmar" },
     { lvl = 12, text = "Cross the bridge west into The Barrens and grab the Crossroads flight path. Make the Crossroads your home.", fp = "Crossroads" },
     { lvl = 17, text = "Optional: the zeppelin from the towers outside Orgrimmar goes to Tirisfal (Undercity) for Silverpine, the Ruins of Lordaeron and Shadowfang Keep." },
     { lvl = 30, text = "The other Orgrimmar zeppelin goes to Grom'gol in Stranglethorn. Grab Grom'gol, then Booty Bay at the south tip.", fp = "Booty Bay" },

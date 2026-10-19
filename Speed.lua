@@ -290,6 +290,7 @@ function RG.NearbyNewQuests(max, valued)
   local ign = RG.db and RG.db.ignoredQuests or {}
   local function take(q)
     if seen[q.id] or ign[q.id] then return end
+    if RG.HideProfQuest and RG.HideProfQuest(q.id, q.name) then return end
     local c2, x, y = toWorld(q.wp[1], q.wp[2], q.wp[3])
     if c2 == c and x then seen[q.id] = true; q.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2); q.x, q.y = x, y; out[#out + 1] = q end
   end

@@ -506,7 +506,7 @@ function RG.GuideReset() cache = { dirty = true, t = -99 }; lastObjKey = nil; sk
 -- Skip the current stop for a while (Next key, right-click in the plan).
 function RG.SkipStop(stop)
   if not stop then return end
-  local until_ = (GetTime and GetTime() or 0) + 600
+  local until_ = (GetTime and GetTime() or 0) + 3600   -- an hour: a skipped stop should not come straight back
   for _, it in ipairs(stop.items) do skipUntil[taskKey(it)] = until_ end
   RG.Log("skip", stopText(stop, true))
   cache.obj = nil; cache.dirty = true

@@ -6,7 +6,7 @@ R.route = {
   { o = 3, from = 1,  to = 12, kind = "zone", zone = "Zephras Isle", hub = "Shen'dar Village / Valanaar", notes = "Skyborne start. Zephras Isle runs to level 12: follow the main story from the starting grove to Shen'dar Village and Valanaar. Miners: it has its own Mining trainers and Copper." },
 }
 R.travel = {
-  { lvl = 12, text = "When Zephras is done, take your way off the island to Westfall (Sentinel Hill). Grab its flight path, visit your class trainer in Stormwind and learn your professions.", fp = "Sentinel Hill" },
+  { lvl = 12, text = "When Zephras is done, take your way off the island to Westfall (Sentinel Hill). Grab its flight path and visit your class trainer in Stormwind.", fp = "Sentinel Hill" },
   { lvl = 14, text = "Make Sentinel Hill or Lakeshire your base, then continue with the shared Alliance route." },
 }
 RG.RegisterRace("SkyborneA", R)

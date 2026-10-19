@@ -110,7 +110,7 @@ function RG.StepQuestLines(entry, i, myQuests)
   local out, doneN, total = {}, 0, 0
   for _, id in ipairs(ids) do
     local d = RG.QDATA[id]
-    if d and d.n and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) then
+    if d and d.n and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id)) then
       local done = isDone(id)
       if not done and d.x then for _, x in ipairs(d.x) do if isDone(x) then done = true break end end end
       total = total + 1
