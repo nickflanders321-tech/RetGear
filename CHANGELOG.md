@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Cards: hovering a turned card on the pack screen now always shows that card at full size; stray card tooltips from windows underneath no longer appear on top of it, and the gaps between cards no longer let the mouse through.
+- Arena: deck codes. "Deck code" in the deck editor shows your deck as one line of text to share; paste a friend's code and Load builds it from the cards you own.
+
 ## 1.4.0
 - Guide update (October 19): Krol'dok Stronghold is listed as a 40-45 dungeon (Blizzard corrected the earlier 40-55), and the Riverglades entry now says how to get in (the Tanaris boat or the new fork off the Redridge road) and where the Rog'mar flight point connects (Kargath, Flame Crest, Hammerfall, Stonard). The zone still has no Horde quest data, so no steps yet.
 - Desolace: a heads-up that Blizzard's October 8 beta notes raise the Gelkis and Magram centaur quests in the Valley of Bones to level 35.
