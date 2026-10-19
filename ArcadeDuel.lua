@@ -27,6 +27,15 @@ local WARN_SECS = 90
 
 local function short(n) return ((n or ""):match("^([^-]+)") or ""):lower() end
 
+-- what was sent and received, for /wp duel log (a duel that "does nothing" is nearly always a message that never arrived)
+local dlog = {}
+local function duelLog(line)
+  dlog[#dlog + 1] = string.format("%.0f  %s", GetTime and GetTime() or 0, line)
+  if #dlog > 60 then table.remove(dlog, 1) end
+end
+RG.duelLog = duelLog
+local onHello   -- defined further down; the message handler below needs it
+
 -- ---------------------------------------------------------------------------
 -- The protocol, written against an "env" so it can be tested with two simulated players
 -- ---------------------------------------------------------------------------
@@ -294,9 +303,7 @@ local function realEnv()
   function env.say(m, hold) end
   function env.myName() return (UnitName and UnitName("player")) or "" end
   function env.random(a, b) return math.random(a, b) end
-  function env.send(msg, target)
-    if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "WHISPER", target) end
-  end
+  function env.send(msg, target) RG.DuelXmit(msg, target) end
   function env.deck()
     local list, class, me, swapped, auto = RG.ArenaPvPDeck()
     if list and auto then env.print("You had no finished Arena deck, so one was built for this duel.") end
@@ -384,10 +391,23 @@ do
     if prefix ~= PREFIX then return end
     local me = UnitName and UnitName("player")
     if sender and me and short(sender) == short(me) then return end
-    local k = text and text:sub(1, 2)
+    if type(text) ~= "string" then return end
+    -- a message sent over the party channel because the whisper did not go through: "@Name|message"
+    if text:sub(1, 1) == "@" then
+      local to, rest = text:match("^@([^|]*)|(.*)$")
+      if not to or not me or short(to) ~= short(me) then return end
+      text = rest
+    end
+    duelLog("got  " .. tostring(channel) .. " from " .. tostring(sender) .. "  " .. text:sub(1, 30) .. " (" .. #text .. ")")
+    local k = text:sub(1, 2)
     if k == "H|" or k == "R|" then pcall(onHello, text, sender) return end
     if k == "K|" then pcall(RG.__cardShown, text, sender) return end
-    ensure().onMessage(text, sender)
+    local ok, err = xpcall(function() ensure().onMessage(text, sender) end, function(e) return tostring(e) end)
+    if not ok then
+      duelLog("ERROR " .. tostring(err))
+      if RG.Print then RG.Print("The duel hit an error: " .. tostring(err):sub(1, 200)) end
+      if RG.RecordError then pcall(RG.RecordError, "duel: " .. tostring(err)) end
+    end
   end)
   local acc = 0
   f:SetScript("OnUpdate", function(_, dt)
@@ -405,12 +425,28 @@ local function groupChannel()
   if IsInRaid and IsInRaid() then return "RAID" end
   if IsInGroup and IsInGroup() then return "PARTY" end
 end
+-- one way out for every duel message: a whisper; if the game refuses it, the party channel addressed to that player
+function RG.DuelXmit(msg, target)
+  local send = (C_ChatInfo and C_ChatInfo.SendAddonMessage) or SendAddonMessage
+  if not send then duelLog("no SendAddonMessage on this client") return false end
+  local ok, res = pcall(send, PREFIX, msg, "WHISPER", target)
+  local failed = (not ok) or res == false or (type(res) == "number" and res ~= 0)
+  duelLog("sent WHISPER to " .. tostring(target) .. "  " .. msg:sub(1, 30) .. " (" .. #msg .. ")  result " .. tostring(ok and res or ("error: " .. tostring(res))))
+  if not failed then return true end
+  local ch = groupChannel()
+  if not ch then return false end
+  local wrapped = "@" .. tostring(target) .. "|" .. msg
+  if #wrapped > 254 then duelLog("too long for the party fallback (" .. #wrapped .. ")") return false end
+  local ok2, res2 = pcall(send, PREFIX, wrapped, ch)
+  duelLog("sent " .. ch .. " (fallback) to " .. tostring(target) .. "  result " .. tostring(ok2 and res2 or ("error: " .. tostring(res2))))
+  return ok2 and not (res2 == false or (type(res2) == "number" and res2 ~= 0))
+end
 -- ask the group who has the add-on; answers arrive as whispers and are remembered in RG.duelSeen
 function RG.DuelPing()
   local ch = groupChannel()
   if not ch then return false end
   RG.duelPingT = GetTime and GetTime() or 0
-  if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, "H|" .. tostring(RG.VERSION or "dev"), ch) end
+  if C_ChatInfo and C_ChatInfo.SendAddonMessage then local okp, resp = pcall(C_ChatInfo.SendAddonMessage, PREFIX, "H|" .. tostring(RG.VERSION or "dev"), ch); duelLog("sent " .. ch .. " hello  result " .. tostring(okp and resp or "error")) end
   return true
 end
 -- the people in your group (not you): { name, full, class, online, seen = { ver, rating } or nil }
@@ -459,7 +495,7 @@ RG.__cardShown = function(text, sender)
   if card and RG.ArcadeShowPull then RG.ArcadeShowPull(sender:match("^([^-]+)") or sender, card, finish) end
 end
 
-local function onHello(text, sender)
+onHello = function(text, sender)
   local kind, ver, rating = text:match("^(%a)|([^|]*)|?([^|]*)")
   if not sender or sender == "" then return end
   RG.duelSeen[short(sender)] = { ver = ver, rating = tonumber(rating), t = GetTime and GetTime() or 0 }
@@ -480,6 +516,20 @@ SlashCmdList.WAYPATH = function(msg)
   end
   if cmd and cmd:lower() == "duel" and rest and rest ~= "" then
     local r = rest:lower()
+    if r == "log" then
+      if RG.ShowErrors then RG.ShowErrors(#dlog > 0 and table.concat(dlog, "\n") or "Nothing sent or received yet.", "Duel log") else for _, l in ipairs(dlog) do RG.Print(l) end end
+      return
+    end
+    if r == "ping" then
+      if not RG.DuelPing() then RG.Print("You are not in a group.") return end
+      RG.Print("Asking your group who has Waypath+...")
+      C_Timer.After(2, function()
+        local n = 0
+        for who, v in pairs(RG.duelSeen) do n = n + 1; RG.Print(who .. ": Waypath+ " .. tostring(v.ver)) end
+        if n == 0 then RG.Print("No answers. They may not have Waypath+, or messages are not getting through (see /wp duel log).") end
+      end)
+      return
+    end
     if r == "accept" then ensure().accept() return end
     if r == "decline" then ensure().decline() return end
     ensure().challenge(rest)
