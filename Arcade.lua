@@ -1359,6 +1359,18 @@ local function paint(w, card, finish, copies)
       if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
       setScene(w.scn, card, false); w.spot:Hide()
     end
+    -- some creatures have no model this client can draw (the card would show an empty glow): once the game has had a
+    -- moment to load it, a model that still reports no file gets the card's own drawn scenery behind it
+    if C_Timer and C_Timer.After then
+      local m = rawget(w, "model")
+      C_Timer.After(1.2, function()
+        if w.card ~= card or not m or not m:IsShown() then return end
+        local fid = m.GetModelFileID and m:GetModelFileID()
+        if fid and fid ~= 0 then return end
+        if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+        setScene(w.scn, card, false); w.spot:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.art:Hide()
+      end)
+    end
   elseif card.kind == 2 then ownScene()
   elseif card.kind == 3 and placeArt(w, card, full) then -- painting in its gold frame
   elseif card.kind == 3 and not scene then ownScene()
