@@ -94,6 +94,7 @@ ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua
 ArcadeMatch.lua
+ArcadeBoard.lua
 FishMode.lua
 Path.lua
 Paths.lua

@@ -1437,7 +1437,7 @@ local function buildMenu()
   menu.match = U.gbtn(p, "Find a match", 150, 40, function()
     if not RG.MatchToggle then return end
     local ok = RG.MatchToggle()
-    menu.msg:SetText(ok and "Searching for another Waypath+ player. You can keep this window open or play something else." or "")
+    menu.msg:SetText(ok and "Searching for another Waypath+ player..." or "")
     if RG.MatchChanged then RG.MatchChanged() end
   end)
   menu.match:SetPoint("TOPLEFT", 728, -503)
@@ -1448,7 +1448,7 @@ local function buildMenu()
     if not (M and menu.match and menu.match.SetText) then return end
     if M.searching then
       local n = M.count and M.count() or 0
-      menu.match:SetText(n > 0 and ("Searching... " .. n .. " nearby") or "Searching... (cancel)")
+      menu.match:SetText(n > 0 and ("Cancel (" .. n .. " found)") or "Cancel search")
     else menu.match:SetText("Find a match") end
   end
   local rulesBtn = U.gbtn(p, "How to play", 110, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 890, -503)
@@ -1459,6 +1459,7 @@ local function buildMenu()
   rb:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); rb:SetBackdropColor(0.06, 0.05, 0.13, 0.95); rb:SetBackdropBorderColor(0.6, 0.5, 0.28, 0.9)
   local function rl(txt, y) local f = U.fs(rb, "head", 11); f:SetPoint("TOPLEFT", 14, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt) end
   rl("RANKED LADDER", -10)
+  local lb = U.gbtn(rb, "Leaderboard", 96, 20, function() if RG.Leaderboard then RG.Leaderboard() end end); lb:SetPoint("TOPRIGHT", -10, -7)
   menu.rankName = U.fs(rb, "title", 20); menu.rankName:SetPoint("TOPLEFT", 14, -26)
   menu.rankSub = U.fs(rb, "body", 11); menu.rankSub:SetPoint("TOPRIGHT", -14, -32); menu.rankSub:SetTextColor(0.7, 0.66, 0.85)
   menu.rankBg = rb:CreateTexture(nil, "ARTWORK"); menu.rankBg:SetColorTexture(0.02, 0.02, 0.06, 1); menu.rankBg:SetSize(242, 10); menu.rankBg:SetPoint("TOPLEFT", 14, -58)
