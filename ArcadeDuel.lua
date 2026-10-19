@@ -425,21 +425,39 @@ local function groupChannel()
   if IsInRaid and IsInRaid() then return "RAID" end
   if IsInGroup and IsInGroup() then return "PARTY" end
 end
--- one way out for every duel message: a whisper; if the game refuses it, the party channel addressed to that player
+-- One way out for every duel message. Someone in your group is reached over the party channel (addressed to them as
+-- "@Name|message"): that works across realms and never depends on how the game spells a whisper target. Anyone else
+-- gets a whisper. If the first way is refused, the other is tried.
+local function inMyGroup(name)
+  local want = short(name)
+  if want == "" then return false end
+  for _, m in ipairs(RG.DuelRoster and RG.DuelRoster() or {}) do if short(m.name) == want then return true end end
+  return false
+end
 function RG.DuelXmit(msg, target)
   local send = (C_ChatInfo and C_ChatInfo.SendAddonMessage) or SendAddonMessage
   if not send then duelLog("no SendAddonMessage on this client") return false end
-  local ok, res = pcall(send, PREFIX, msg, "WHISPER", target)
-  local failed = (not ok) or res == false or (type(res) == "number" and res ~= 0)
-  duelLog("sent WHISPER to " .. tostring(target) .. "  " .. msg:sub(1, 30) .. " (" .. #msg .. ")  result " .. tostring(ok and res or ("error: " .. tostring(res))))
-  if not failed then return true end
-  local ch = groupChannel()
-  if not ch then return false end
-  local wrapped = "@" .. tostring(target) .. "|" .. msg
-  if #wrapped > 254 then duelLog("too long for the party fallback (" .. #wrapped .. ")") return false end
-  local ok2, res2 = pcall(send, PREFIX, wrapped, ch)
-  duelLog("sent " .. ch .. " (fallback) to " .. tostring(target) .. "  result " .. tostring(ok2 and res2 or ("error: " .. tostring(res2))))
-  return ok2 and not (res2 == false or (type(res2) == "number" and res2 ~= 0))
+  local function good(ok, res) return ok and not (res == false or (type(res) == "number" and res ~= 0)) end
+  local function viaGroup()
+    local ch = groupChannel()
+    if not ch then return false end
+    local wrapped = "@" .. tostring(target) .. "|" .. msg
+    if #wrapped > 254 then duelLog("too long for the party channel (" .. #wrapped .. ")") return false end
+    local ok, res = pcall(send, PREFIX, wrapped, ch)
+    duelLog("sent " .. ch .. " to " .. tostring(target) .. "  " .. msg:sub(1, 30) .. " (" .. #msg .. ")  result " .. tostring(ok and res or ("error: " .. tostring(res))))
+    return good(ok, res)
+  end
+  local function viaWhisper()
+    local ok, res = pcall(send, PREFIX, msg, "WHISPER", target)
+    duelLog("sent WHISPER to " .. tostring(target) .. "  " .. msg:sub(1, 30) .. " (" .. #msg .. ")  result " .. tostring(ok and res or ("error: " .. tostring(res))))
+    return good(ok, res)
+  end
+  if inMyGroup(target) then
+    if viaGroup() then return true end
+    return viaWhisper()
+  end
+  if viaWhisper() then return true end
+  return viaGroup()
 end
 -- ask the group who has the add-on; answers arrive as whispers and are remembered in RG.duelSeen
 function RG.DuelPing()
@@ -501,7 +519,7 @@ onHello = function(text, sender)
   RG.duelSeen[short(sender)] = { ver = ver, rating = tonumber(rating), t = GetTime and GetTime() or 0 }
   if kind == "H" and C_ChatInfo and C_ChatInfo.SendAddonMessage then
     local r = RG.ArenaPvPRating and RG.ArenaPvPRating() or 0
-    pcall(C_ChatInfo.SendAddonMessage, PREFIX, "R|" .. tostring(RG.VERSION or "dev") .. "|" .. tostring(r), "WHISPER", sender)
+    pcall(RG.DuelXmit, "R|" .. tostring(RG.VERSION or "dev") .. "|" .. tostring(r), sender)
   end
   if RG.DuelRosterChanged then RG.DuelRosterChanged() end
 end
