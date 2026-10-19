@@ -173,6 +173,10 @@ missing = []
 for qid, q in FOREVER['quests'].items():
     races = int(at(q, 6) or 0); ql = at(q, 5)
     if not at(q, 1) or (races and not races & HORDE) or (isinstance(ql, int) and ql > 62): continue
+    # quests open to every race but offered only by Alliance NPCs (Proving Grounds, Buying
+    # Friendship: Gelkis...) are Alliance quests in practice: tools/objectives/gen.py skips them too
+    givers = at(at(q, 2) or [], 1) or []
+    if givers and all(npc_faction(i) == 'A' for i in givers): continue
     if int(qid) not in have: missing.append((int(qid), at(q, 1)))
 if missing: warn('quest data', '%d Horde quests aren\'t in Objectives.lua, e.g. %s' % (len(missing), ', '.join('%s (%d)' % (n, i) for i, n in sorted(missing)[:5])))
 

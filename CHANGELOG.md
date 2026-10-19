@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.4.0
+- Guide update (October 19): Krol'dok Stronghold is listed as a 40-45 dungeon (Blizzard corrected the earlier 40-55), and the Riverglades entry now says how to get in (the Tanaris boat or the new fork off the Redridge road) and where the Rog'mar flight point connects (Kargath, Flame Crest, Hammerfall, Stonard). The zone still has no Horde quest data, so no steps yet.
+- Desolace: a heads-up that Blizzard's October 8 beta notes raise the Gelkis and Magram centaur quests in the Valley of Bones to level 35.
+- Fishing: the zone check now knows Thousand Needles, Zephras Isle, Alcaz Island, Jaguero Isle and the dungeons you can fish in (Wailing Caverns, Deadmines, Blackfathom, Scarlet Monastery, Maraudon, Sunken Temple), from Wowhead's WoW Forever fishing table. Before, fishing in Thousand Needles showed no skill check at all.
+- 2nd Spec tab: Forever changes from the latest beta notes (Protection Warrior and Paladin threat, Feral Cat and Bear: mana potions in forms, no health loss in Cat Form, 50% Bear threat; Penance mana cost).
+- Paladin class steps now have map pins: Bandarion Keep, the Frightened Paladin, and the Shadowfang Keep, Blackfathom Deeps and Deadmines entrances for the Wolf's Bane materials. The Wolf's Bane pins had slipped one step out of line; they match their steps again.
+- Map pins for the Warsong Saw Blades bank-alt quest (Pixel, Splintertree Post) and The Platinum Discs hand-in (Sage Truthseeker, Thunder Bluff).
 - Arena matchmaking: new "Find a match" button in the Arena menu (or /wp match). It pairs you with another Waypath+ player who is searching right now, on the same realm and faction, with a similar rank (the allowed gap widens the longer either of you waits, so nobody waits forever). One of you challenges and the other is accepted automatically, then it is a normal friendly duel. Searchers meet in a hidden chat channel that never shows in your chat windows; you only join it while searching, nothing is sent until you press the button, and it stops after five minutes or when you press it again. If a match falls through you go back to searching.
 - Cards: big creatures (dragons, giants and the raid bosses) are framed from further back, so Azuregos, Lethon, Magmadar and the rest are no longer a zoomed-in patch of skin. If one still looks too close or too far, /wp cardcam 1.3 pulls every creature camera back another 30% (/wp cardcam 0.8 moves in; /wp cardcam reset clears it).
 

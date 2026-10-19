@@ -1,7 +1,8 @@
 -- Waypath+ fishing (WoW Forever): where to fish for your skill, ranks, gear,
 -- fish to cook, and a live fishing session (skill, lure, catches, zone check).
 -- Data: WoW Forever beta guides (build 1.60.1) and the QuestieDB Forever item,
--- NPC and quest data. Zone skill levels are Classic's until Forever confirms them.
+-- NPC and quest data. Zone skill levels: Wowhead's WoW Forever beta table (2026-10, same as
+-- Classic, plus Zephras Isle, Thousand Needles and the dungeons); Blizzard hasn't confirmed them.
 local _, RG = ...
 local GOLD, GREEN, GREY, RED = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY, RG.COLORS.RED
 local ORANGE = "|cffff8040"
@@ -13,12 +14,18 @@ table.insert(RG.OPTIONS, { key = "fishTracker", label = "Fishing panel on the tr
 -- ---------------------------------------------------------------------------
 -- Skill at which every fish bites in a zone (catches start 95 below that).
 RG.FISH_ZONES = {
+  ["Zephras Isle"] = 25,
   ["Tirisfal Glades"] = 25, ["Durotar"] = 25, ["Mulgore"] = 25, ["Elwynn Forest"] = 25, ["Dun Morogh"] = 25, ["Teldrassil"] = 25,
   ["Undercity"] = 25, ["Orgrimmar"] = 25, ["Thunder Bluff"] = 25, ["Stormwind City"] = 25, ["Ironforge"] = 25, ["Darnassus"] = 25,
   ["The Barrens"] = 75, ["Silverpine Forest"] = 75, ["Darkshore"] = 75, ["Loch Modan"] = 75, ["Westfall"] = 75,
   ["Ashenvale"] = 150, ["Duskwood"] = 150, ["Hillsbrad Foothills"] = 150, ["Redridge Mountains"] = 150, ["Stonetalon Mountains"] = 150, ["Wetlands"] = 150,
   ["Alterac Mountains"] = 225, ["Arathi Highlands"] = 225, ["Desolace"] = 225, ["Dustwallow Marsh"] = 225, ["Stranglethorn Vale"] = 225, ["Swamp of Sorrows"] = 225,
+  ["Thousand Needles"] = 225, ["Alcaz Island"] = 225,
   ["Azshara"] = 300, ["Felwood"] = 300, ["Feralas"] = 300, ["The Hinterlands"] = 300, ["Moonglade"] = 300, ["Tanaris"] = 300, ["Un'Goro Crater"] = 300, ["Western Plaguelands"] = 300,
+  ["Jaguero Isle"] = 300,
+  -- dungeons with water (Wowhead's WoW Forever fishing table)
+  ["Blackfathom Deeps"] = 75, ["The Deadmines"] = 75, ["Wailing Caverns"] = 75, ["Scarlet Monastery"] = 225,
+  ["Maraudon"] = 300, ["The Temple of Atal'Hakkar"] = 300,
   ["Burning Steppes"] = 425, ["Deadwind Pass"] = 425, ["Eastern Plaguelands"] = 425, ["Silithus"] = 425, ["Winterspring"] = 425,
   ["Stratholme"] = 425, ["Scholomance"] = 425, ["Zul'Gurub"] = 425,
 }

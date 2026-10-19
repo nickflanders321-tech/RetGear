@@ -9,7 +9,7 @@ local H = { faction = "Horde", gen = true }   -- gen: zone quest steps come from
 H.route = {
   { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon in the ruins above Undercity (take the Orgrimmar zeppelin to Tirisfal if you started in Kalimdor). Several quests, with good weapon rewards." },
   { o = 21.5, from = 35, to = 40, kind = "dungeon", zone = "The Drowned City", hub = "Stranglethorn Vale", notes = "New Forever dungeon (35-40), off the coast of Stranglethorn Vale. Entrance details aren't confirmed yet." },
-  { o = 23.5, from = 40, to = 55, kind = "dungeon", zone = "Krol'dok Stronghold", hub = "Riverglades", notes = "New Forever dungeon (40-55) in an outdoor area of Riverglades. Entrance details aren't confirmed yet." },
+  { o = 23.5, from = 40, to = 45, kind = "dungeon", zone = "Krol'dok Stronghold", hub = "Riverglades", notes = "New Forever dungeon (40-45; first shown as 40-55, Blizzard corrected it): an outdoor ogre stronghold in the north of Riverglades. Entrance details aren't confirmed yet." },
   { o = 30.5, from = 48, to = 53, kind = "dungeon", zone = "Alcaz Prison", hub = "Alcaz Island", notes = "New Forever dungeon (48-53) in the prison on Alcaz Island, off Dustwallow Marsh. Entrance details aren't confirmed yet." },
   { o = 38.8, from = 55, to = 60, kind = "dungeon", zone = "Blackmaw Hold", hub = "Azshara", notes = "New Forever dungeon (55-60) behind the mysterious gate in Azshara. Entrance details aren't confirmed yet." },
   { o = 38.9, from = 58, to = 60, kind = "dungeon", zone = "The Shaper's Terrace", hub = "Un'Goro Crater", notes = "New Forever dungeon (58-60) in the hills of Un'Goro Crater. Entrance details aren't confirmed yet." },
@@ -27,12 +27,12 @@ H.route = {
   { o = 16.5, from = 29, to = 38, kind = "dungeon", zone = "Gnomeregan", hub = "Dun Morogh", notes = "Deep in Alliance land (Dun Morogh): most Horde groups skip it unless a quest sends them." },
   { o = 17, from = 26, to = 35, kind = "zone",    zone = "Thousand Needles", hub = "Freewind Post", fp = "Freewind Post", notes = "Miners: Iron starts showing up." },
   { o = 18, from = 33, to = 40, kind = "zone",    zone = "Arathi Highlands", hub = "Hammerfall", fp = "Hammerfall", notes = "Its quests are 34-42 in Forever, so come at 33, not 30. Miners: great Iron and Gold." },
-  { o = 19, from = 31, to = 40, kind = "zone",    zone = "Desolace", hub = "Shadowprey Village", fp = "Shadowprey", notes = "Kolkar and centaur quests. Miners: Iron." },
+  { o = 19, from = 31, to = 40, kind = "zone",    zone = "Desolace", hub = "Shadowprey Village", fp = "Shadowprey", notes = "Kolkar and centaur quests. Blizzard's October 8 beta notes raise the Gelkis and Magram (Valley of Bones) centaur quests to level 35, so leave them for a later visit if they don't show up. Miners: Iron." },
   { o = 20, from = 33, to = 45, kind = "dungeon", zone = "Scarlet Monastery", hub = "Tirisfal Glades", notes = "North-east Tirisfal Glades, past Brill (Orgrimmar zeppelin to Tirisfal from Kalimdor). Four wings: Graveyard, Library, Armory, Cathedral." },
   { o = 21, from = 32, to = 45, kind = "zone",    zone = "Stranglethorn Vale", hub = "Grom'gol Base Camp", fp = "Grom'gol", notes = "Nesingwary hunting quests. Miners: Iron and Mithril up north." },
   { o = 22, from = 36, to = 45, kind = "zone",    zone = "Dustwallow Marsh", hub = "Brackenwall Village", fp = "Brackenwall", notes = "" },
   { o = 22.5, from = 37, to = 46, kind = "dungeon", zone = "Razorfen Downs", hub = "The Barrens / Thousand Needles", notes = "South end of The Barrens, at the top of the Thousand Needles road." },
-  { o = 23, from = 36, to = 44, kind = "zone",    zone = "Riverglades", hub = "Powderfuse Port", notes = "New Forever zone (33-44): take the boat from Tanaris to Powderfuse Port. Quest data for it isn't out yet, so there are no steps here until it is." },
+  { o = 23, from = 36, to = 44, kind = "zone",    zone = "Riverglades", hub = "Powderfuse Port", notes = "New Forever zone (36-44): take the Steamwheedle boat from Tanaris to Powderfuse Port, or the new fork off the Redridge road to the Burning Steppes. Horde flight point Rog'mar links to Kargath, Flame Crest, Hammerfall and Stonard. Quest data for it isn't out yet, so there are no steps here until it is." },
   { o = 24, from = 38, to = 45, kind = "zone",    zone = "Badlands", hub = "Kargath", fp = "Kargath", notes = "Uldaman is here. Miners: Mithril." },
   { o = 25, from = 41, to = 51, kind = "dungeon", zone = "Uldaman", hub = "Badlands", notes = "In the north of the Badlands, near Kargath." },
   { o = 26, from = 38, to = 45, kind = "zone",    zone = "Swamp of Sorrows", hub = "Stonard", fp = "Stonard", notes = "Stonard quests, and Threat From the Sea for a weapon reward." },
@@ -100,7 +100,7 @@ H.dungeons = {
   ["Razorfen Kraul"] = { go = 30, prep = 28, quests = {
     { "Going, Going, Guano!", "Master Apothecary Faranell", "Undercity, The Apothecarium" },
     { "A Vengeful Fate", "Auld Stonespire", "Thunder Bluff" },
-    { "Willix the Importer", "Willix (escort)", "Inside Razorfen Kraul" },
+    { "Willix the Importer", "Willix the Importer (escort)", "Inside Razorfen Kraul" },
   } },
   ["Scarlet Monastery"] = { go = 33, prep = 31, quests = {
     { "Into the Scarlet Monastery", "Varimathras", "Undercity, Royal Quarter" },
@@ -111,7 +111,7 @@ H.dungeons = {
     { "Uldaman Reagent Run", "Jarkal Mossmeld", "Badlands, Kargath" },
     { "Power in Uldaman", "Tabetha", "Dustwallow Marsh" },
     { "Necklace Recovery", "Dran Droffers", "Orgrimmar, The Drag" },
-    { "The Platinum Discs", "Discs of Norgannon", "Inside Uldaman" },
+    { "The Platinum Discs", "Discs of Norgannon, then Sage Truthseeker (Thunder Bluff)", "Inside Uldaman" },
   } },
   ["Zul'Farrak"] = { go = 45, prep = 43, quests = {
     { "Divino-matic Rod", "Chief Engineer Bilgewhizzle", "Tanaris, Gadgetzan" },

@@ -408,7 +408,10 @@ for line in open(objs_tsv, encoding="utf-8"):
 FISH = {}
 for m, pts in fish.items():
     p, c = centre([(a, b) for a, b, _ in pts])
-    nm = next(n for a, b, n in pts if (a, b) == p)
+    # several pools can share the centre spot: name the fish school, not debris or wreckage,
+    # and pick the same one every run
+    here = sorted(n for a, b, n in pts if (a, b) == p)
+    nm = next((n for n in here if 'School' in n), here[0])
     FISH[m] = (p, "%s (%d pools around here)" % (nm, c))
 
 # dungeon entrances, for trainers who stand inside one (Annora in Uldaman)

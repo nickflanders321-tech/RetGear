@@ -63,7 +63,7 @@ S("WARRIOR", {
       "Shield Block on cooldown, Revenge every time it lights up, Sunder Armor on the skull.",
       "Tab through the pack with Sunder and Revenge to spread threat.",
       "Keep a one-hander with Stamina or Strength and the best shield you can find." },
-    forever = { "More Rage, buffed Revenge and Rend, Charge and Thunder Clap in Defensive Stance.", "Defiance and Bastion improve threat with a shield." },
+    forever = { "More Rage, buffed Revenge and Rend, Charge and Thunder Clap in Defensive Stance.", "Defiance and Bastion improve threat with a shield.", "Demoralizing Shout now makes threat, and Rage from damage taken was fixed and rebalanced (October 2026)." },
     source = "https://mobalytics.gg/wow-forever/classes/protection-warrior-guide-kalltorak" },
 })
 
@@ -87,7 +87,7 @@ S("PALADIN", {
       "Judgement the main target, then Holy Strike; tab around to Judge the others.",
       "Recast Consecration while the pack is healthy; melee the last one or two to save mana.",
       "Swift Judgement lets you Judge again on the same or another target." },
-    forever = { "Holy Strike and Seal of Fury are new, and make Protection work from leveling to 60.", "Improved Holy Strike was removed (September 2026)." },
+    forever = { "Holy Strike and Seal of Fury are new, and make Protection work from leveling to 60.", "Improved Holy Strike was removed (September 2026).", "Retribution Aura scales with spell power (6%); mana from Seal of Fury now needs its talent and no longer adds threat (October 2026)." },
     source = "https://mobalytics.gg/wow-forever/classes/protection-paladin-guide" },
   { key = "ret", name = "Retribution", role = "Melee DPS", kind = "melee", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Holy_AuraOfLight",
     stats = "Strength, then Agility (Intellect over Agility once you have Champion of the Light)",
@@ -158,7 +158,7 @@ S("PRIEST", {
     tips = { "Power Word: Shield and Renew between pulls; don't shield a Warrior or Druid tank at the start of a pull (it stops their Rage).",
       "Holy Fire, then Smite or wand depending on mana when you solo.",
       "Keep Power Word: Fortitude up on the group." },
-    forever = { "Penance is new for Discipline.", "Fear Ward is baseline for every priest." },
+    forever = { "Penance is new for Discipline; rank 1 costs 50% more mana since October 2026.", "Fear Ward is baseline for every priest." },
     source = "https://mobalytics.gg/wow-forever/classes/discipline-priest-guide" },
   { key = "holy", name = "Holy", role = "Healer", kind = "heal", tab = 2, icon = "Interface\\Icons\\Spell_Holy_Renew",
     weights = healer({ INT = 0.5, SPI = 0.7, MP5 = 2.0, CRIT = 8, RANGED_DPS = 2 }), model = "caster", hitCap = 0,
@@ -268,7 +268,7 @@ S("DRUID", {
   { key = "feral", name = "Feral (Cat)", role = "Melee DPS", kind = "melee", tab = 2, main = true, icon = "Interface\\Icons\\Ability_Druid_CatForm",
     stats = "Strength, then Agility and Stamina, then Intellect",
     tips = { "Rake on anything that lives 6+ seconds; Ferocious Bite at 5 combo points." },
-    forever = { "Cat and Bear Form now scale with your weapon's damage." },
+    forever = { "Cat and Bear Form now scale with your weapon's damage.", "Cat Form no longer lowers your maximum health, and mana potions work in Cat and Bear Form (October 2026)." },
     source = "https://mobalytics.gg/wow-forever/classes/feral-druid-guide" },
   { key = "bear", name = "Feral (Bear)", role = "Tank", kind = "tank", tab = 2, icon = "Interface\\Icons\\Ability_Racial_BearForm",
     weights = { STA = 1.2, AGI = 1.0, STR = 0.8, ARMOR = 0.06, DEF = 1.5, DODGE = 12, HIT = 8, CRIT = 4, AP = 0.3, INT = 0.1, WEAPON_DPS = 4 },
@@ -277,7 +277,7 @@ S("DRUID", {
     tips = { "Bear Form, Feral Charge in, Demoralizing Roar, then Maul and Swipe.",
       "Faerie Fire (Feral) to pull casters and keep armor down.",
       "Furor gives you Rage the moment you shift." },
-    forever = { "Bear Form scales with weapon damage, so a strong two-handed staff, mace or polearm matters.", "Feral Swiftness's dodge works in every form." },
+    forever = { "Bear Form scales with weapon damage, so a strong two-handed staff, mace or polearm matters.", "Feral Swiftness's dodge works in every form.", "Bear Form's threat bonus is 50%, Demoralizing Roar makes threat, and mana potions work in forms (October 2026)." },
     source = "https://mobalytics.gg/wow-forever/classes/feral-druid-guide" },
   { key = "resto", name = "Restoration", role = "Healer", kind = "heal", tab = 3, icon = "Interface\\Icons\\Spell_Nature_HealingTouch",
     weights = healer({ INT = 0.5, SPI = 0.6, MP5 = 2.0, CRIT = 6 }), model = "caster", hitCap = 0,
@@ -295,4 +295,4 @@ for class, list in pairs(RG.SPECS) do
   RG.SPEC_BY[class] = {}
   for _, s in ipairs(list) do s.class = class; RG.SPEC_BY[class][s.key] = s end
 end
-RG.SPECS_UPDATED = "2026-10-13"
+RG.SPECS_UPDATED = "2026-10-19"

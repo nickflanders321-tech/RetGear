@@ -40,6 +40,7 @@ PLACES = {
   "Thorium Point": "Grisha", "Marshal's Refuge": "Gryfe", "Bloodvenom Post": "Brakkar", "Flame Crest": "Vahgruk",
   "Everlook": "Yugrek", "Light's Hope": "Georgia", "Thunder Bluff": "Tal", "Tidefury Cove": "Nat Pagle",
   "Fenris Isle": "Thule Ravenclaw", "Deathknell chapel": "Shadow Priest Sarvis",
+  "Bandarion Keep": "Danitha Morr",
 }
 ROLES = [("flight path", 8), ("flight master", 8), ("innkeeper", 128), ("make it your home", 128), ("hearthstone", 128)]
 def anchor_point(name, zones):
@@ -91,10 +92,12 @@ def find_any(text, zones, hub=None):
     home = ui.get(zones[0]) if zones else None
     cands.sort(key=lambda c: (0 if c[1][0] == home else 1, c[0]))
     return cands[0][1]
-def find(text, zones):
+CLASS_KEYS = {'WARRIOR', 'PALADIN', 'HUNTER', 'ROGUE', 'PRIEST', 'SHAMAN', 'MAGE', 'WARLOCK', 'DRUID'}
+def find(text, zones, multiword=False):
     hits = []
     for name, e in npcs.items():
         if len(name) < 5: continue
+        if multiword and ' ' not in name: continue
         i = text.find(name)
         if i < 0:
             i = text.find(name[0] + name[1:].lower())
@@ -148,13 +151,21 @@ for m in re.finditer(r'\["([^"]+)\|(\d+)"\]\s*=\s*\{(.*?)\n  \},', steps_block, 
     texts = re.findall(r'"((?:[^"\\]|\\.)*)"', body)
     a = area(zone)
     zones = ([a] if a else []) + CAPITALS
+    roam = not a and zone.upper() in CLASS_KEYS   # class steps ("Paladin|20") send you anywhere
     res = {}
     for k, t in enumerate(texts, 1):
         total += 1
         w = find_any(t, zones, hubs.get(zone + '|' + frm))
+        if not w and roam:
+            # anywhere in the world, but only full names ("Frightened Paladin", not "Murloc" or "Steed")
+            w = find(t, sorted(ui), multiword=True)
         LOC = ('entrance', 'cave is', 'keep is', 'is in the', 'sits between', 'is here', 'right in your backyard', 'ride north')
         if zone in dungeons and any(k in t.lower() for k in LOC):
             w = dungeons[zone]
+        if not w and zone not in dungeons:
+            # a class or zone step that sends you into a dungeon ("drops in Shadowfang Keep"): its entrance
+            named = sorted((t.find(d), d) for d in dungeons if len(d) > 6 and t.find(d) >= 0)
+            if named: w = dungeons[named[0][1]]
         if w: res[k] = w[:4]; found += 1
         else: missing.append(zone + ': ' + t[:70])
     if res: out_steps[zone + '|' + frm] = res

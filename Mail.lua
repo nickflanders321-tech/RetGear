@@ -18,7 +18,7 @@ RG.MAIL_QUESTS = {
   { quest = "The Lost Pages", zone = "Ashenvale", lvl = 26, req = 20, giver = "Gurda Ragescar, near Splintertree Post",
     why = "12 Shredder Operating Manual pages make 3 chapters. They drop slowly from Wrathtail nagas, so buy the ones you're missing.",
     any = true, items = pages(16644, { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }) },
-  { quest = "Warsong Saw Blades", zone = "Ashenvale", lvl = 27, req = 22, giver = "Splintertree Post",
+  { quest = "Warsong Saw Blades", zone = "Ashenvale", lvl = 27, req = 22, giver = "Pixel, Splintertree Post",
     why = "Trade a Deadly Blunderbuss (Engineering) for the saw blades, which also finishes part of Warsong Supplies (2,750 XP).",
     items = { { 4369, 1, "Deadly Blunderbuss" } } },
   { quest = "Elixir of Agony (part 3)", zone = "Hillsbrad Foothills", lvl = 30, req = 24, giver = "Apothecary Lydon, Tarren Mill",
