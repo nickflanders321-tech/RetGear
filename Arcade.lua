@@ -882,6 +882,7 @@ local function ensureModel(w)
     pcall(function()
       if self.creature then
         if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end
+        if RG.ArcadeApplyCam then RG.ArcadeApplyCam(self) end
         if self.SetFacing then self:SetFacing(self.face or 0.5) end
         return
       end
@@ -1130,6 +1131,20 @@ end
 -- how close the camera sits: upright creatures are framed head and chest, long low ones whole, so each is centred
 local ZOOM = { [7] = 0.6, [1] = 0.05, [2] = 0.1, [3] = 0.4, [4] = 0.3, [5] = 0.3, [6] = 0.5, [8] = 0.0, [9] = 0.25 }
 function RG.ArcadeModelZoom(c) return ZOOM[c and c.ref or 7] or 0.4 end
+-- how far the camera sits back (1 = the game's own framing): dragons, giants and bosses are far bigger than the frame
+local CAM = { [1] = 1.3, [2] = 2.0, [3] = 1.4, [4] = 1.4, [5] = 1.8, [6] = 1.1, [7] = 1.0, [8] = 1.0, [9] = 1.3 }
+function RG.ArcadeCamScale(c)
+  local k = CAM[c and c.ref or 7] or 1
+  if c and (c.tier or 0) >= 4 then k = k * 1.3 end     -- Legendary NPCs are the raid bosses
+  return k * ((RG.db and tonumber(RG.db.cardCam)) or 1)
+end
+function RG.ArcadeApplyCam(m, c)
+  if not m then return end
+  if c then m.cam = RG.ArcadeCamScale(c) end
+  if not m.cam then return end
+  if m.SetCamDistanceScale then pcall(m.SetCamDistanceScale, m, m.cam)
+  elseif m.SetModelScale then pcall(m.SetModelScale, m, 1 / m.cam) end   -- no camera control on this client: shrink the creature instead
+end
 -- two cards can share one creature model (Firemaw and Flamegor, a boss and its spirit): those stand on scenery of their own
 -- and face the other way, so no two cards look the same
 local sharedCount
@@ -1155,6 +1170,7 @@ local function dressCreature(w, c)
   if not ok then m:Hide() return false end
   m.zoom = RG.ArcadeModelZoom(c)
   if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
+  RG.ArcadeApplyCam(m, c)
   if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
   m.face = (sharedModel(c) and seedOf(c.name) % 2 == 1) and -0.5 or 0.5
   if m.SetFacing then pcall(m.SetFacing, m, m.face) end
@@ -2588,7 +2604,7 @@ function RG.ArcadePortrait(c)
   return "icon", iconFor(c)
 end
 
-RG.ArcadeUI = { modelZoom = RG.ArcadeModelZoom, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+RG.ArcadeUI = { modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
 
@@ -2666,5 +2682,13 @@ SlashCmdList.WAYPATH = function(msg)
   cmd = cmd and cmd:lower()
   if cmd == "arcade" or cmd == "cards" then RG.ShowArcade() return end
   if cmd == "cardcheck" then cardCheck() return end
+  if cmd == "cardcam" then
+    local v = tonumber((msg or ""):match("^%s*%S+%s+(%S+)"))
+    if v and v >= 0.3 and v <= 4 then RG.db.cardCam = v; RG.Print("Card cameras pulled back by x" .. v .. ". Reopen the card window to see it.") 
+    elseif (msg or ""):lower():find("reset") then RG.db.cardCam = nil; RG.Print("Card cameras back to normal.")
+    else RG.Print("/wp cardcam 1.3 pulls the creature cameras back 30% (bigger number = smaller creature; 1 is the default, /wp cardcam reset clears it). Now: x" .. tostring(RG.db.cardCam or 1)) end
+    if RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end
+    return
+  end
   return base(msg)
 end

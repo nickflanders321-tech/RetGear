@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Cards: big creatures (dragons, giants and the raid bosses) are framed from further back, so Azuregos, Lethon, Magmadar and the rest are no longer a zoomed-in patch of skin. If one still looks too close or too far, /wp cardcam 1.3 pulls every creature camera back another 30% (/wp cardcam 0.8 moves in; /wp cardcam reset clears it).
+
 ## 1.3.2
 - Duels: found the cause of "the invite arrives and nothing happens": this client spells a player as "Justafew Beers" (a space) in chat events, but "Justafew-Beers" elsewhere, so the host ignored the guest's accept as coming from a stranger (and could not tell its own party echoes from other players). Both spellings are now the same player.
 - Duels: messages to someone in your group now go over the party channel (addressed to them), which also works when they are on another realm ("Justafew-Beers"); anyone else gets a whisper, and if the first way is refused the other is tried, so a duel message is no longer a silent dead end. The "who has Waypath+" replies are now heard (they were dropped by a coding slip, so the party list never showed who had the add-on). Errors during a duel are printed instead of swallowed. New: /wp duel ping (who in your group has Waypath+ and which version) and /wp duel log (what was sent and received).

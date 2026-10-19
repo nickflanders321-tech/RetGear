@@ -350,7 +350,7 @@ local function makeMinion(parent)
   local okm, mdl = pcall(CreateFrame, "DressUpModel", nil, m)
   if okm and mdl then
     mdl:SetSize(62, 62); mdl:SetPoint("CENTER", m, "TOP", 0, -44); mdl:SetFrameLevel(U.lv(m) + 2); mdl:Hide()
-    mdl:SetScript("OnModelLoaded", function(self) pcall(function() if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end; if self.SetFacing then self:SetFacing(0.5) end end) end)
+    mdl:SetScript("OnModelLoaded", function(self) pcall(function() if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end; if RG.ArcadeApplyCam then RG.ArcadeApplyCam(self) end; if self.SetFacing then self:SetFacing(0.5) end end) end)
     m.mdl = mdl
   end
   local top = CreateFrame("Frame", nil, m); top:SetAllPoints(m); top:SetFrameLevel(U.lv(m) + 4)
@@ -394,6 +394,7 @@ local function paintMinion(w, m, side)
     if shownModel then
       w.mdl.zoom = cc and U.modelZoom and U.modelZoom(cc) or 0.4
       if w.mdl.SetPortraitZoom then pcall(w.mdl.SetPortraitZoom, w.mdl, w.mdl.zoom) end
+      if cc and RG.ArcadeApplyCam then RG.ArcadeApplyCam(w.mdl, cc) end
       if w.mdl.SetPosition then pcall(w.mdl.SetPosition, w.mdl, 0, 0, 0) end
     end
   end
