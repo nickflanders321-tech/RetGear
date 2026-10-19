@@ -67,3 +67,21 @@ function R.apply(a, opp, won)
 end
 
 function R.rating(a) return a and a.rating or R.START end
+
+-- Seasons are calendar months. When a new month starts, last season's best rank pays out (coins, and a pack from
+-- Trailblazer up) and the ladder is pulled halfway back toward the start, so there is always something to climb.
+function R.seasonId() return date and date("%Y-%m") or "season" end
+function R.seasonName() return date and date("%B") or "this season" end
+function R.checkSeason(a)
+  if not a then return nil end
+  local id = R.seasonId()
+  if not a.season then a.season = id; return nil end
+  if a.season == id then return nil end
+  local prev = a.season
+  a.season = id
+  if (a.rGames or 0) < R.PLACEMENT then return nil end    -- still in placement: nothing to pay out yet
+  local info = R.info(a.rPeak or a.rating or R.START)
+  local rating = max(R.BASE, floor(((a.rating or R.START) + R.START) / 2 + 0.5))
+  a.rating, a.rPeak = rating, rating
+  return { prev = prev, peak = info, coins = info.tier * 12, packs = info.tier >= 4 and 1 or 0, rating = rating }
+end

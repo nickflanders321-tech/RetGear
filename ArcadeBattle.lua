@@ -221,6 +221,58 @@ local function expand(dk)
 end
 
 -- ---------------------------------------------------------------------------
+-- Deck codes: a deck as one line of text, to paste to a friend or into a post
+-- ---------------------------------------------------------------------------
+local CODE_HEAD = "WPD1"
+local function cardToken(k)
+  for i, bk in ipairs(B.BASIC) do if bk == k then return "b" .. i end end
+  local c = U.byKey[k]
+  if not c or c.kind == 4 then return nil end   -- Raiders exist only on your own collection
+  return tostring(c.id)
+end
+local function tokenCard(tok)
+  local n = tok:match("^b(%d+)$")
+  if n then return B.BASIC[tonumber(n)] end
+  local c = U.CARDS[tonumber(tok) or 0]
+  if not c or c.kind == 4 then return nil end
+  local k = c.key or c.name
+  if not B.defs[k] then B.derive(c) end
+  return B.defs[k] and k or nil
+end
+local function deckCode(a, dk)
+  local counts, order = {}, {}
+  for _, k in ipairs(expand(dk)) do
+    local t = cardToken(k)
+    if t then if not counts[t] then counts[t] = 0; order[#order + 1] = t end; counts[t] = counts[t] + 1 end
+  end
+  local parts = {}
+  for _, t in ipairs(order) do parts[#parts + 1] = t .. (counts[t] > 1 and ("x" .. counts[t]) or "") end
+  return CODE_HEAD .. "|" .. (a.heroClass or select(2, UnitClass("player")) or "WARRIOR") .. "|" .. table.concat(parts, ",")
+end
+local function deckImport(a, dk, code)
+  code = (code or ""):gsub("%s+", "")
+  local head, cls, body = code:match("^([^|]+)|([^|]*)|(.*)$")
+  if head ~= CODE_HEAD then return false, "That is not a Waypath deck code." end
+  local have = avail(a)
+  local cards, total, skipped = {}, 0, 0
+  for tok in body:gmatch("[^,]+") do
+    local t, n = tok:match("^(b?%d+)x?(%d*)$")
+    if not t then return false, "The deck code is damaged." end
+    n = tonumber(n) or 1
+    local k = tokenCard(t)
+    if not k then return false, "A card in that code is not in this version of Waypath+." end
+    for _ = 1, n do
+      if total >= B.DECK then break end
+      local cap = math.min(have[k] or 0, B.maxCopies(B.defs[k]))
+      if (cards[k] or 0) < cap then cards[k] = (cards[k] or 0) + 1; total = total + 1 else skipped = skipped + 1 end
+    end
+  end
+  dk.cards = cards
+  if CLASS_COL[cls] then a.heroClass = cls end
+  return true, total .. " cards loaded" .. (skipped > 0 and (", " .. skipped .. " not owned yet: craft or find them, then Auto-fill") or "")
+end
+
+-- ---------------------------------------------------------------------------
 -- The window
 -- ---------------------------------------------------------------------------
 local function say(txt, hold)
@@ -363,9 +415,12 @@ local function makeMinion(parent)
   m.hpB = top:CreateTexture(nil, "OVERLAY", nil, 1); m.hpB:SetTexture(U.MEDIA .. "BadgeHp"); m.hpB:SetSize(32, 32); m.hpB:SetPoint("CENTER", m.tile, "BOTTOMRIGHT", -8, 6)
   m.atkT = U.fs(top, "title", 17, "OVERLAY", "OUTLINE"); m.atkT:SetPoint("CENTER", m.atkB, "CENTER", 0, 0)
   m.hpT = U.fs(top, "title", 17, "OVERLAY", "OUTLINE"); m.hpT:SetPoint("CENTER", m.hpB, "CENTER", 0, 0)
-  m.name = U.fs(top, "head", 10, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "BOTTOM", 0, -2); m.name:SetWidth(MW + 6); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
-  m.zz = U.fs(top, "title", 14, "OVERLAY", "OUTLINE"); m.zz:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -8); m.zz:SetTextColor(0.7, 0.8, 1); m.zz:SetText("Zz")
-  m.fx = U.fs(top, "head", 9, "OVERLAY", "OUTLINE"); m.fx:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -8); m.fx:SetTextColor(1, 0.85, 0.5)
+  -- the name sits inside the tile, on a dark band across the top: nothing hangs below the tile to run into the hero or the turn banner
+  m.nameBand = top:CreateTexture(nil, "ARTWORK", nil, 3); m.nameBand:SetColorTexture(0.02, 0.015, 0.05, 0.62)
+  m.nameBand:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 4, -4); m.nameBand:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -4, -4); m.nameBand:SetHeight(14)
+  m.name = U.fs(top, "head", 10, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "TOP", 0, -6); m.name:SetWidth(MW - 10); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
+  m.zz = U.fs(top, "title", 14, "OVERLAY", "OUTLINE"); m.zz:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -20); m.zz:SetTextColor(0.7, 0.8, 1); m.zz:SetText("Zz")
+  m.fx = U.fs(top, "head", 9, "OVERLAY", "OUTLINE"); m.fx:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -20); m.fx:SetTextColor(1, 0.85, 0.5)
   m:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   m:SetScript("OnClick", function(self, btn) if btn == "RightButton" then clearTarget() else onChar(self.ref) end end)
   m:SetScript("OnEnter", function(self)
@@ -810,6 +865,9 @@ local function finish()
       a.bStreak = (a.bStreak or 0) + 1
       local g = U.goalProgress(a, "duel2", 1)
       if g then lines[#lines + 1] = g end
+      g = U.goalProgress(a, "win3", 1); if g then lines[#lines + 1] = g end
+      if S.level == 3 then g = U.goalProgress(a, "archm", 1); if g then lines[#lines + 1] = g end end
+      if a.bStreak % 3 == 0 then prize = prize + 6; lines[#lines + 1] = "Win streak of " .. a.bStreak .. ": +6 bonus" end
     else
       prize = 1; a.bLoss = (a.bLoss or 0) + 1; a.bStreak = 0
     end
@@ -974,6 +1032,31 @@ local function makeBoard()
     S.sure = false; self:SetText("Concede"); game.over = true; game.winner = 3 - ME; S.endReason = S.pvp and "You conceded." or nil; if S.pvp and RG.Duel then RG.Duel.sendEnd("F") end; afterAction()
   end)
   win.concede:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 14, 10)
+  -- emotes (player duels): six friendly lines, shown as a speech bubble by your hero or theirs
+  local EMOTES = { "Greetings!", "Well played.", "Thanks!", "Wow!", "Oops.", "Your move." }
+  RG.ARENA_EMOTES = EMOTES
+  win.bubbles = {}
+  for k = 1, 2 do
+    local b = CreateFrame("Frame", nil, bd, "BackdropTemplate"); b:SetSize(150, 34); b:SetFrameLevel(U.lv(bd) + 90)
+    b:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); b:SetBackdropColor(0.97, 0.94, 0.85, 0.97); b:SetBackdropBorderColor(0.6, 0.45, 0.2, 1)
+    b.t = U.fs(b, "head", 12, "OVERLAY"); b.t:SetPoint("CENTER"); b.t:SetTextColor(0.15, 0.1, 0.05)
+    pt(b, 790, k == 1 and 262 or 590); b:Hide(); win.bubbles[k] = b
+  end
+  win.emoteMenu = CreateFrame("Frame", nil, bd, "BackdropTemplate"); win.emoteMenu:SetSize(150, #EMOTES * 26 + 42); win.emoteMenu:SetFrameLevel(U.lv(bd) + 100)
+  win.emoteMenu:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); win.emoteMenu:SetBackdropColor(0.03, 0.02, 0.09, 0.96); win.emoteMenu:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
+  win.emoteMenu:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 110, 36); win.emoteMenu:Hide()
+  for i, txt in ipairs(EMOTES) do
+    local b = U.gbtn(win.emoteMenu, txt, 134, 22, function() win.emoteMenu:Hide(); RG.ArenaEmote(i) end)
+    b:SetPoint("TOPLEFT", 8, -8 - (i - 1) * 26)
+  end
+  win.emoteMute = U.gbtn(win.emoteMenu, "Hide their emotes", 134, 22, function(self)
+    local a = store(); if not a then return end
+    a.noEmotes = not a.noEmotes
+    self:SetText(a.noEmotes and "Show their emotes" or "Hide their emotes")
+  end)
+  win.emoteMute:SetPoint("BOTTOMLEFT", 8, 8)
+  win.emoteBtn = U.gbtn(bd, "Emote", 80, 22, function() win.emoteMenu:SetShown(not win.emoteMenu:IsShown()) end)
+  win.emoteBtn:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 110, 10); win.emoteBtn:Hide()
   -- the opening-hand table: a dark panel so the cards and the button read clearly over the board
   win.mullPanel = CreateFrame("Frame", nil, bd, "BackdropTemplate")
   win.mullPanel:SetSize(760, 260); pt(win.mullPanel, 600, 392); win.mullPanel:SetFrameLevel(U.lv(bd) + 3)
@@ -1176,6 +1259,10 @@ refresh = function()
   Sh(win.mullPanel, S.mode == "mull"); Sh(win.mullTitle, S.mode == "mull")
   local idle = mine and S.mode == "play" and #B.actions(game, ME) == 0
   win.endBtn:SetActive(idle and true or false)
+  if win.emoteBtn then
+    local on = S.pvp and not game.over and true or false
+    Sh(win.emoteBtn, on); if not on then win.emoteMenu:Hide() end
+  end
   win.turnT:SetText(game.over and "" or (S.mode == "mull" and "" or (game.cur == ME and "YOUR TURN" or (S.pvp and (string.upper(S.foeName or "") .. "'S TURN") or "OPPONENT'S TURN"))))
   if win.turnT.SetTextColor then if game.cur == ME or S.mode == "mull" then win.turnT:SetTextColor(0.96, 0.84, 0.5) else win.turnT:SetTextColor(0.82, 0.66, 0.98) end end
 end
@@ -1321,7 +1408,7 @@ local function refreshMenu()
     menu.rankBar:SetWidth(inf.top and 242 or math.max(2, 242 * inf.rr / 100))
     if inf.top then menu.rankPts:SetText(inf.rr .. " RR above the summit") else menu.rankPts:SetText(inf.rr .. " / 100 RR   |cffa89bc9" .. inf.toNext .. " to promotion|r") end
     local g = a.rGames or 0
-    menu.rankSub:SetText(g < R.PLACEMENT and ("Placement " .. g .. "/" .. R.PLACEMENT) or ("Peak " .. R.info(a.rPeak or R.rating(a)).label))
+    menu.rankSub:SetText(g < R.PLACEMENT and ("Placement " .. g .. "/" .. R.PLACEMENT) or ("Peak " .. R.info(a.rPeak or R.rating(a)).label .. "  ·  " .. (R.seasonName and R.seasonName() or "")))
   end
   menu.rec:SetText("|cfff5d273" .. (a.bWins or 0) .. "|r won   |cffe39a9a" .. (a.bLoss or 0) .. "|r lost")
   menu.rec2:SetText("|cfff5d273" .. (a.pvpWins or 0) .. "|r won   |cffe39a9a" .. (a.pvpLoss or 0) .. "|r lost")
@@ -1505,6 +1592,7 @@ end
 local D = { cost = nil, typ = nil, page = 1, search = "", cells = {}, rows = {}, list = {}, per = 15 }
 local function deckCountOf(dk, key) return dk.cards[key] or 0 end
 local function curDeck() local a = store(); return a, deckOf(a, a.deckSel or 1) end
+RG.__deckCode, RG.__deckImport = function() local a, dk = curDeck(); return deckCode(a, dk) end, function(code) local a, dk = curDeck(); return deckImport(a, dk, code) end
 local function limitFor(a, key) local have = avail(a); return have[key] or 0 end
 
 local function computeList()
@@ -1643,6 +1731,25 @@ local function buildDeck()
   local done = U.gbtn(dscr, "Done", 100, 26, function() RG.BattleMenu() end, true); done:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -20, 14)
   local clear = U.gbtn(dscr, "Clear", 80, 26, function() local a, dk = curDeck(); dk.cards = {}; deckRefresh() end); clear:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -128, 14)
   local fill = U.gbtn(dscr, "Auto-fill", 100, 26, function() local a, dk = curDeck(); fillDeck(a, dk); deckRefresh() end); fill:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -216, 14)
+  -- deck code box: "Share" fills it with your deck's code (select all, copy); paste a friend's code and press Load
+  local cb = CreateFrame("Frame", nil, dscr, "BackdropTemplate")
+  cb:SetSize(520, 92); cb:SetPoint("BOTTOM", win, "BOTTOM", 0, 56); cb:SetFrameStrata("DIALOG"); cb:Hide()
+  cb:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); cb:SetBackdropColor(0.05, 0.04, 0.1, 0.98); cb:SetBackdropBorderColor(0.7, 0.55, 0.25, 1)
+  local cbt = U.fs(cb, "body", 12); cbt:SetPoint("TOPLEFT", 12, -10); cbt:SetTextColor(0.9, 0.85, 0.7); cbt:SetText("Deck code: copy it to share, or paste one and press Load")
+  local eb = CreateFrame("EditBox", nil, cb, "BackdropTemplate")
+  eb:SetSize(496, 24); eb:SetPoint("TOPLEFT", 12, -32); eb:SetAutoFocus(false); eb:SetMaxLetters(600)
+  eb:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 1 }); eb:SetBackdropColor(0.03, 0.02, 0.07, 0.95); eb:SetBackdropBorderColor(0.45, 0.38, 0.25, 0.9)
+  U.setfont(eb, "body", 12); eb:SetTextColor(0.95, 0.9, 0.78); eb:SetTextInsets(6, 6, 0, 0)
+  eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  local load = U.gbtn(cb, "Load", 90, 24, function()
+    local a, dk = curDeck(); local ok, msg = deckImport(a, dk, eb:GetText())
+    RG.Print(ok and ("Deck code: " .. msg .. ".") or ("Deck code: " .. msg)); if ok then deckRefresh() end
+  end); load:SetPoint("BOTTOMLEFT", 12, 8)
+  local closeB = U.gbtn(cb, "Close", 90, 24, function() cb:Hide() end); closeB:SetPoint("BOTTOMRIGHT", -12, 8)
+  local share = U.gbtn(dscr, "Deck code", 100, 26, function()
+    if cb:IsShown() then cb:Hide() return end
+    local a, dk = curDeck(); eb:SetText(deckCode(a, dk)); cb:Show(); eb:SetFocus(); eb:HighlightText()
+  end); share:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -324, 14)
 end
 
 -- ---------------------------------------------------------------------------
@@ -1826,6 +1933,26 @@ function RG.ArenaPvPOver(winner, why)
   if not game or game.over then return end
   game.over, game.winner, S.endReason = true, winner, why
   afterAction()
+end
+local function bubble(k, text)
+  local b = win and win.bubbles and win.bubbles[k]
+  if not b then return end
+  b.t:SetText(text); b:Show()
+  b.tok = (b.tok or 0) + 1
+  local mine = b.tok
+  after(3.5, function() if b.tok == mine then b:Hide() end end)
+end
+-- you say something (player duels only): the opponent gets it as a bubble by their hero, you see it by yours
+function RG.ArenaEmote(i)
+  if not (S.pvp and RG.Duel and RG.Duel.sendEmote and RG.ARENA_EMOTES) then return end
+  if RG.Duel.sendEmote(i) then bubble(1, RG.ARENA_EMOTES[i] or "") end
+end
+-- your opponent said something
+function RG.ArenaPvPEmote(i)
+  if not (S.pvp and RG.ARENA_EMOTES and RG.ARENA_EMOTES[i]) then return end
+  local a = store()
+  if a and a.noEmotes then return end
+  bubble(2, RG.ARENA_EMOTES[i])
 end
 function RG.ArenaPvPState() return game, ME, S end
 function RG.ArenaPvPRating() U = U or RG.ArcadeUI; local a = U and store(); return RG.Rank and RG.Rank.rating(a) or 1000 end

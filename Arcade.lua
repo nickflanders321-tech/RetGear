@@ -316,6 +316,7 @@ end
 local GOALS = {
   { "packs2", "Open 2 packs", 2, 5 }, { "packs3", "Open 3 packs", 3, 8 }, { "duel2", "Win 2 duels", 2, 5 },
   { "shiny", "Pull a holo or full art", 1, 8 }, { "new5", "Find 5 new cards", 5, 6 }, { "sell", "Sell your extras", 1, 3 },
+  { "win3", "Win 3 arena duels", 3, 9 }, { "archm", "Beat the Archmage", 1, 10 },
 }
 local function today() return date and date("%Y-%m-%d") or "today" end
 local function todaysGoals(a)
@@ -350,6 +351,10 @@ local function dailyCheck()
   local a = store(); if not a then return end
   if a.freeDay ~= today() then a.freeDay = today(); a.free = math.min(3, (a.free or 0) + 1) end
   todaysGoals(a)
+  local sz = RG.Rank and RG.Rank.checkSeason and RG.Rank.checkSeason(a)
+  if sz and RG.ArcadeGrant then
+    RG.ArcadeGrant("Season over: you reached " .. sz.peak.label .. ". New season, your rank is now " .. RG.Rank.info(sz.rating).label, sz.coins, sz.packs > 0 and { normal = sz.packs } or nil)
+  end
 end
 RG.ArcadeDaily = dailyCheck
 
@@ -570,6 +575,29 @@ function RG.ArcadeGrantBonus(n)
   local a = store(); if not a then return end
   a.bonus = (a.bonus or 0) + (n or 1)
   return a.bonus
+end
+
+-- Crafting: pick a card you are missing (or a finish you do not have) and pay coins for it. The price follows how rare
+-- the subject is and how fancy the finish is; Raiders (your own characters) cannot be crafted.
+local CRAFT_BASE = { 40, 80, 160, 320, 640 }
+local CRAFT_FINISH = { 1, 2, 5, 12 }
+function RG.ArcadeCraftCost(c, f)
+  if not c or c.kind == 4 or (c.tier or 6) > 5 then return nil end
+  return (CRAFT_BASE[c.tier] or 640) * (CRAFT_FINISH[f or 1] or 1)
+end
+function RG.ArcadeCraft(c, f)
+  local a = store(); if not a then return false, "Nothing to craft with yet." end
+  local cost = RG.ArcadeCraftCost(c, f)
+  if not cost then return false, "That card cannot be crafted." end
+  if (a.coins or 0) < cost then return false, "Crafting " .. c.name .. " (" .. FINISH[f][1] .. ") costs " .. cost .. " coins. You have " .. (a.coins or 0) .. "." end
+  local key = c.key or c.name
+  a.coins = a.coins - cost
+  local slot = a.cards[key] or {}
+  slot[f] = (slot[f] or 0) + 1
+  a.cards[key] = slot
+  a.stats = a.stats or {}; a.stats.crafted = (a.stats.crafted or 0) + cost
+  a.crafted = (a.crafted or 0) + 1
+  return true, "Crafted " .. c.name .. " (" .. FINISH[f][1] .. ") for " .. cost .. " coins."
 end
 
 -- keep one of each print, sell the rest
@@ -1809,19 +1837,6 @@ local function showReveal(got, notes, meta)
       c.new = fs(c, "title", 12, "OVERLAY"); c.new:SetPoint("BOTTOM", c, "TOP", 0, 4)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
-      -- hold the mouse over a turned card to read it at full size
-      c:HookScript("OnEnter", function(self)
-        local cv = self.cover
-        if not self.card or not self.known or (cv and cv:IsShown()) or reveal.phase or not reveal.insp then return end
-        local ins = reveal.insp
-        paint(ins, self.card, self.finish, nil)
-        ins:ClearAllPoints()
-        local cx, rx = self:GetCenter(), reveal:GetCenter()
-        local left = type(cx) == "number" and type(rx) == "number" and cx < rx
-        ins:SetPoint(left and "TOPRIGHT" or "TOPLEFT", reveal, left and "TOPRIGHT" or "TOPLEFT", left and -16 or 16, -96)
-        ins:Show()
-      end)
-      c:HookScript("OnLeave", function() if reveal.insp then reveal.insp:Hide() end end)
     end
     reveal.insp = makeCard(reveal, 230); reveal.insp:SetFrameLevel(lv(reveal) + 40); reveal.insp.noTip = true; reveal.insp:EnableMouse(false); reveal.insp:Hide()
     reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(PKW, PKH); reveal.seal:SetPoint("CENTER", 0, 20); reveal.seal:SetFrameLevel(lv(reveal) + 30)
@@ -1967,8 +1982,34 @@ local function showReveal(got, notes, meta)
     end)
     reveal:HookScript("OnHide", function() dim:Hide() end)
     -- one update loop: the seal pulses, the cards are dealt, the burst fades
+    reveal:EnableMouse(true)   -- the gaps between cards must not let the mouse reach the windows underneath
     reveal:SetScript("OnUpdate", function(self, dt)
       local t = GetTime and GetTime() or 0
+      -- a card tooltip from a window underneath (or left behind by one) never belongs on the pack screen
+      if GameTooltip and GameTooltip:IsShown() then
+        local o = GameTooltip:GetOwner()
+        if o and o.card and not (o.IsDescendantOf and o:IsDescendantOf(self)) then GameTooltip:Hide() end
+      end
+      -- hold the mouse over a turned card to read it at full size (polled, so it cannot miss an enter or leave)
+      if self.insp and not self.phase then
+        local hit
+        for i = 1, #(self.got or {}) do
+          local c = self.cards[i]
+          if c and c:IsShown() and c.card and c.known and not (c.cover and c.cover:IsShown()) and c:IsMouseOver() then hit = c break end
+        end
+        local ins = self.insp
+        if hit then
+          if ins.src ~= hit or ins.card ~= hit.card then
+            ins.src = hit
+            paint(ins, hit.card, hit.finish, nil)
+            ins:ClearAllPoints()
+            local cx, rx = hit:GetCenter(), self:GetCenter()
+            local left = type(cx) == "number" and type(rx) == "number" and cx < rx
+            ins:SetPoint(left and "TOPRIGHT" or "TOPLEFT", self, left and "TOPRIGHT" or "TOPLEFT", left and -16 or 16, -96)
+          end
+          ins:Show()
+        elseif ins:IsShown() then ins:Hide(); ins.src = nil end
+      end
       if self.phase == "seal" then
         if self.holding then
           self.holdT = self.holdT + dt
@@ -2152,20 +2193,24 @@ local function refreshDetail()
   local c = detail.data
   local slot = a.cards[c.key or c.name] or {}
   local f = detail.finish
-  if (slot[f] or 0) == 0 then f = bestFinish(a, c.id) or 1; detail.finish = f end
-  paint(detail.card, c, bestFinish(a, c.id) and f or nil, owned(a, c.id))
+  local have = slot[f] or 0
+  paint(detail.card, c, f, have > 0 and owned(a, c.id) or nil)   -- a print you do not have is shown as a preview
   local t = TIER[c.tier][3]
   detail.name:SetText(c.name); detail.name:SetTextColor(t[1], t[2], t[3])
   detail.kind:SetText(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1])
   detail.flavor:SetText(c.text or "")
   detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r\nPower: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
-    .. "\nOwned: |cffffffff" .. owned(a, c.id) .. "|r")
+    .. "\nOwned: |cffffffff" .. owned(a, c.id) .. "|r" .. (have == 0 and ("\n|cffe0b36bYou do not have this print yet|r") or ""))
   for k = 1, 4 do
     local n = slot[k] or 0
     local b = detail.prints[k]
     b:SetText(FNAME[k] .. " x" .. n)
-    b:SetEnabled(n > 0); b:SetActive(k == f)
+    b:SetEnabled(true); b:SetActive(k == f)
   end
+  local cost = RG.ArcadeCraftCost(c, f)
+  detail.craft:SetText(cost and ("Craft " .. FNAME[f] .. "  ·  " .. cost .. " coins") or "Cannot be crafted")
+  detail.craft:SetEnabled(cost ~= nil and (a.coins or 0) >= cost)
+  detail.pin:SetEnabled(owned(a, c.id) > 0); detail.duel:SetEnabled(owned(a, c.id) > 0)
   detail.pin:SetText(isPinned(a, c) and "Remove from showcase" or "Add to showcase")
   detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
   detail.offer:SetEnabled(c.kind ~= 4 and (slot[f] or 0) >= 2)
@@ -2174,11 +2219,11 @@ end
 local function openDetail(c)
   if reveal and reveal:IsShown() then return end   -- finish opening the pack first
   local a = store()
-  if not (a and c and owned(a, c.id) > 0) then return end
+  if not (a and c) then return end
   if not detail then
     detail = CreateFrame("Frame", "WaypathArcadeCard", UIParent, "BackdropTemplate")
     detail:SetPoint("CENTER", 100, 0); detail:SetFrameStrata("FULLSCREEN_DIALOG")
-    darkPanel(detail, 640, 420)
+    darkPanel(detail, 640, 470)
     tinsert(UISpecialFrames, "WaypathArcadeCard")
     detail.card = makeCard(detail, 230); detail.card:SetPoint("TOPLEFT", 30, -40); detail.card:SetFrameLevel(lv(detail) + 3); detail.card.noTip = true
     local X0 = 290
@@ -2212,6 +2257,11 @@ local function openDetail(c)
       local ok, msg = RG.ArcadeOffer(detail.data, detail.finish); say(msg)
     end)
     detail.offer:SetPoint("BOTTOMLEFT", X0 + 164, 44)
+    detail.craft = gbtn(detail, "Craft", 324, 28, function()
+      local ok, msg = RG.ArcadeCraft(detail.data, detail.finish); say(msg)
+      refreshDetail(); if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+    end, true)
+    detail.craft:SetPoint("BOTTOMLEFT", X0, 152)
   end
   detail.data, detail.finish = c, bestFinish(a, c.id) or 1
   detail:Show(); refreshDetail()
@@ -2226,7 +2276,7 @@ local function cell_click(self, btn)
   local c = self.card
   if not c then return end
   local a = store()
-  if owned(a, c.id) == 0 then return end
+  if owned(a, c.id) == 0 then openDetail(c) return end   -- a missing card opens so it can be crafted
   if btn == "RightButton" then
     local on = RG.ArcadePin(c); say(on and (c.name .. " added to your showcase.") or (c.name .. " removed from your showcase."))
     RG.ArcadeRefresh(true)

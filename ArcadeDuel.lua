@@ -15,6 +15,7 @@
 --   T|seq|seed|attacker|target                attacked
 --   W|seq|seed|target                         hero power
 --   E|seq|seed                                end of turn
+--   J|n                                       emote number n (1-6)
 --   F                                         conceded      Z   ran out of time      Y   games out of step
 local ADDON, RG = ...
 if not (RG and RG.Battle) then return end
@@ -44,6 +45,7 @@ local onHello   -- defined further down; the message handler below needs it
 local function newDuel(env)
   local D = { state = nil }
   local mySide, seq, rseq
+  local emoteIn, emoteOut = -10, -10
 
   local function reset()
     D.state, D.peer, D.peerShort, D.side, D.mull, D.deck, D.class, D.name = nil, nil, nil, nil, {}, nil, nil, nil
@@ -167,6 +169,16 @@ local function newDuel(env)
 
   function D.sendEnd(op) if D.peer then send(op) end D.closeSoon = true end
 
+  -- emotes: one of six friendly lines (J|number), at most one every two seconds
+  function D.sendEmote(i)
+    i = tonumber(i)
+    if D.state ~= "play" or not D.peer or not i or i < 1 or i > 6 then return false end
+    if env.now() - emoteOut < 2 then return false end
+    emoteOut = env.now()
+    send("J|" .. i)
+    return true
+  end
+
   function D.ended()
     reset()
   end
@@ -202,6 +214,14 @@ local function newDuel(env)
       return
     end
     if short(sender) ~= D.peerShort then return end
+    if op == "J" then   -- an emote: shown, but it neither moves the game nor resets the opponent's turn clock
+      local i = tonumber(a)
+      if D.state == "play" and i and i >= 1 and i <= 6 and env.now() - emoteIn >= 1.5 then
+        emoteIn = env.now()
+        if env.emote then env.emote(i) end
+      end
+      return
+    end
     D.lastRecv = env.now()
     if op == "X" then
       fail((D.peer or "Your opponent") .. " did not accept: " .. (a or "declined") .. ".")
@@ -303,6 +323,7 @@ local function realEnv()
   function env.now() return GetTime and GetTime() or 0 end
   function env.print(m) if RG.Print then RG.Print(m) end end
   function env.say(m, hold) end
+  function env.emote(i) if RG.ArenaPvPEmote then RG.ArenaPvPEmote(i) end end
   function env.myName() return (UnitName and UnitName("player")) or "" end
   function env.random(a, b) return math.random(a, b) end
   function env.send(msg, target) RG.DuelXmit(msg, target) end
