@@ -93,6 +93,7 @@ ArcadeRewards.lua
 ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua
+ArcadeMatch.lua
 FishMode.lua
 Path.lua
 Paths.lua

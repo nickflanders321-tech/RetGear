@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Arena matchmaking: new "Find a match" button in the Arena menu (or /wp match). It pairs you with another Waypath+ player who is searching right now, on the same realm and faction, with a similar rank (the allowed gap widens the longer either of you waits, so nobody waits forever). One of you challenges and the other is accepted automatically, then it is a normal friendly duel. Searchers meet in a hidden chat channel that never shows in your chat windows; you only join it while searching, nothing is sent until you press the button, and it stops after five minutes or when you press it again. If a match falls through you go back to searching.
 - Cards: big creatures (dragons, giants and the raid bosses) are framed from further back, so Azuregos, Lethon, Magmadar and the rest are no longer a zoomed-in patch of skin. If one still looks too close or too far, /wp cardcam 1.3 pulls every creature camera back another 30% (/wp cardcam 0.8 moves in; /wp cardcam reset clears it).
 
 ## 1.3.2

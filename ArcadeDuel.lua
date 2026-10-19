@@ -341,6 +341,7 @@ local function realEnv()
   end
   -- the invitation box
   function env.invite(from, class, onYes, onNo)
+    if RG.MatchExpects and RG.MatchExpects(from) then env.print("Match found: " .. tostring(from) .. ". Starting the duel.") onYes() return end
     local U = RG.ArcadeUI
     if not U then onNo() return end
     local f = RG.__duelInvite

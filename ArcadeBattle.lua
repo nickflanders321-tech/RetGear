@@ -1422,7 +1422,7 @@ local function buildMenu()
   -- play
   menu.play = U.gbtn(p, "Enter the Arena", 400, 58, function() startMatch() end, true); menu.play:SetPoint("TOPLEFT", 24, -494)
   menu.play:SetActive(true)
-  menu.pvp = U.gbtn(p, "Challenge target", 150, 40, function()
+  menu.pvp = U.gbtn(p, "Challenge target", 136, 40, function()
     if not RG.DuelTarget then return end
     local ok, err, who = RG.DuelTarget()
     menu.msg:SetText(ok and ("Challenge sent to " .. who .. ".") or (err or ""))
@@ -1430,11 +1430,28 @@ local function buildMenu()
   menu.pvp:SetPoint("TOPLEFT", 440, -503)
   menu.pvp:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Friendly duel with another Waypath+ player"); GameTooltip:AddLine("Target them first (or type /wp duel Name). You both play your selected Arena deck. No coins change hands.", 1, 1, 1, true); GameTooltip:Show() end)
   menu.pvp:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
-  menu.party = U.gbtn(p, "Duel your party", 150, 40, function() RG.ArenaPartyPanel() end)
-  menu.party:SetPoint("TOPLEFT", 598, -503)
+  menu.party = U.gbtn(p, "Duel your party", 136, 40, function() RG.ArenaPartyPanel() end)
+  menu.party:SetPoint("TOPLEFT", 584, -503)
   menu.party:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Invite a party member"); GameTooltip:AddLine("Shows everyone in your group, who has Waypath+, and lets you send a duel invite with one click.", 1, 1, 1, true); GameTooltip:Show() end)
   menu.party:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
-  local rulesBtn = U.gbtn(p, "How to play", 120, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 756, -503)
+  menu.match = U.gbtn(p, "Find a match", 150, 40, function()
+    if not RG.MatchToggle then return end
+    local ok = RG.MatchToggle()
+    menu.msg:SetText(ok and "Searching for another Waypath+ player. You can keep this window open or play something else." or "")
+    if RG.MatchChanged then RG.MatchChanged() end
+  end)
+  menu.match:SetPoint("TOPLEFT", 728, -503)
+  menu.match:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Matchmaking"); GameTooltip:AddLine("Finds another Waypath+ player who is searching right now (same realm and faction) with a similar rank, and starts a friendly duel. Nothing is sent until you press this, and it stops when you press it again.", 1, 1, 1, true); GameTooltip:Show() end)
+  menu.match:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
+  function RG.MatchChanged()
+    local M = RG.Match
+    if not (M and menu.match and menu.match.SetText) then return end
+    if M.searching then
+      local n = M.count and M.count() or 0
+      menu.match:SetText(n > 0 and ("Searching... " .. n .. " nearby") or "Searching... (cancel)")
+    else menu.match:SetText("Find a match") end
+  end
+  local rulesBtn = U.gbtn(p, "How to play", 110, 40, function() menu.rulesBox:SetShown(not menu.rulesBox:IsShown()) end); rulesBtn:SetPoint("TOPLEFT", 890, -503)
 
   -- rank and record
   local rb = CreateFrame("Frame", nil, p, "BackdropTemplate")
