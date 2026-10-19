@@ -1222,6 +1222,7 @@ end
 
 -- small cards: the name goes on the parchment in a size you can read (two lines if it needs them),
 -- with the effect or tier line beneath it. The tiny name plate on top stays empty.
+local FINCOL = { { 0.72, 0.72, 0.8 }, { 0.5, 0.74, 1 }, { 0.86, 0.62, 1 }, { 1, 0.86, 0.42 } }   -- header label colour by finish
 local function layoutText(w, big, name, text)
   local u = w.u
   w.text:ClearAllPoints()
@@ -1253,7 +1254,8 @@ local function layoutText(w, big, name, text)
   local tl = math.floor(room / (tsz + 2))
   setfont(w.text, "body", tsz); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("TOP")
   if text and text ~= "" and tl >= 1 then
-    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -(239 * u + nh + 2)); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 232 * u, -322 * u)
+    -- the rules text stays left of the power badge (which sits in the bottom right corner) and above the ribbon
+    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -(239 * u + nh + 2)); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 186 * u, -316 * u)
     if w.text.SetMaxLines then w.text:SetMaxLines(tl) end
     w.text:SetText(text)
   else w.text:SetText("") end
@@ -1342,14 +1344,18 @@ local function paint(w, card, finish, copies)
   if fx.sparks then for _, sp in ipairs(w.sparks) do sp:Show(); tintTex(sp, { 1, 0.95, 0.8 }, 0.8) end end
   -- text
   local compact = w.cw < 190
-  if compact then w.name:SetText("") else fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head") end
+  if compact then
+    -- small cards carry the name on the parchment; the header strip says how the print was made, in its colour
+    local fc = FINCOL[finish] or FINCOL[1]
+    setfont(w.name, "head", math.max(7, 9.5 * u)); w.name:SetText(FINISH[finish][1]:upper()); w.name:SetTextColor(fc[1], fc[2], fc[3])
+  else fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head"); w.name:SetTextColor(0.98, 0.94, 0.82) end
   setfont(w.type, "head", math.max(8, 10 * u))
   w.type:SetText(KIND[card.kind] .. "  ·  " .. TIER[card.tier][1])
   setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
   setfont(w.num, "head", math.max(6.5, 8 * u))
   local big = w.cw >= 190
   w.text:SetShown(true)
-  layoutText(w, big, card.name, TIER[card.tier][1] .. " · " .. FINISH[finish][1])
+  layoutText(w, big, card.name, card.text or "")
   if big then
     setfont(w.text, "body", 12.5 * u)
     w.text:SetText((card.text or "") .. "\n\n|cff6b4a2e" .. FINISH[finish][1] .. " print|r")
@@ -1614,6 +1620,8 @@ local function flip(i)
       local g = reveal.got[i]
       reveal.flipped = reveal.flipped + 1
       card.new:SetText(badgeFor(g))
+      -- a plain duplicate steps back, so the new and the notable cards are what you see
+      if not g.new and not g.newPrint and g.finish < 3 and g.card.tier < 5 and #reveal.got > 5 then card:SetAlpha(0.6) else card:SetAlpha(1) end
       local big = weight
       playSound(g.finish, g.card.tier)
       if big > 0 then burstAt(card, big) end
@@ -1801,7 +1809,21 @@ local function showReveal(got, notes, meta)
       c.new = fs(c, "title", 12, "OVERLAY"); c.new:SetPoint("BOTTOM", c, "TOP", 0, 4)
       local cover = makeCover(c)
       cover:SetScript("OnClick", function() flip(i) end)
+      -- hold the mouse over a turned card to read it at full size
+      c:HookScript("OnEnter", function(self)
+        local cv = self.cover
+        if not self.card or not self.known or (cv and cv:IsShown()) or reveal.phase or not reveal.insp then return end
+        local ins = reveal.insp
+        paint(ins, self.card, self.finish, nil)
+        ins:ClearAllPoints()
+        local cx, rx = self:GetCenter(), reveal:GetCenter()
+        local left = type(cx) == "number" and type(rx) == "number" and cx < rx
+        ins:SetPoint(left and "TOPRIGHT" or "TOPLEFT", reveal, left and "TOPRIGHT" or "TOPLEFT", left and -16 or 16, -96)
+        ins:Show()
+      end)
+      c:HookScript("OnLeave", function() if reveal.insp then reveal.insp:Hide() end end)
     end
+    reveal.insp = makeCard(reveal, 230); reveal.insp:SetFrameLevel(lv(reveal) + 40); reveal.insp.noTip = true; reveal.insp:EnableMouse(false); reveal.insp:Hide()
     reveal.seal = CreateFrame("Frame", nil, reveal); reveal.seal:SetSize(PKW, PKH); reveal.seal:SetPoint("CENTER", 0, 20); reveal.seal:SetFrameLevel(lv(reveal) + 30)
     reveal.sealGlow = reveal.seal:CreateTexture(nil, "BACKGROUND"); reveal.sealGlow:SetTexture(MEDIA .. "Glow"); reveal.sealGlow:SetBlendMode("ADD"); reveal.sealGlow:SetSize(300, 300); reveal.sealGlow:SetPoint("CENTER")
     reveal.sealGlow:SetVertexColor(1, 0.4, 0.3, 0)
@@ -1910,10 +1932,21 @@ local function showReveal(got, notes, meta)
     local sep = reveal:CreateTexture(nil, "ARTWORK"); sep:SetColorTexture(0.72, 0.58, 0.3, 0.3); sep:SetHeight(1)
     sep:SetPoint("BOTTOMLEFT", 30, 66); sep:SetPoint("BOTTOMRIGHT", -30, 66)
     reveal.all = gbtn(reveal, "Turn all", 132, 30, function()
-      local n = #(reveal.got or {})
-      for i = 1, n do
+      -- the plain cards go first, quickly; the better the card the longer the beat before it, and the best one turns last
+      local order = {}
+      for i = 1, #(reveal.got or {}) do
+        local cv = reveal.cards[i].cover
+        if cv and cv:IsShown() and not cv.flipping then order[#order + 1] = i end
+      end
+      local function score(i) local g = reveal.got[i]; return g.finish * 10 + g.card.tier + (g.new and 0.5 or 0) end
+      table.sort(order, function(x, y) local sx, sy = score(x), score(y); if sx ~= sy then return sx < sy end return x < y end)
+      local t = 0.05
+      for k, i in ipairs(order) do
+        local g = reveal.got[i]
+        local weight = g.card.tier == 6 and 3 or (g.finish >= 3 and 2 or (g.finish == 2 and 1 or 0))
+        if k > 1 then t = t + ((k == #order) and 1.0 or (weight >= 2 and 0.8 or (weight == 1 and 0.45 or 0.27))) end
         local function go() if reveal:IsShown() then flip(i) end end
-        if C_Timer and C_Timer.After then C_Timer.After((i - 1) * (n > 5 and 0.35 or 0.5) + (i == n and 0.5 or 0), go) else go() end
+        if C_Timer and C_Timer.After then C_Timer.After(t, go) else go() end
       end
     end)
     reveal.all:SetPoint("BOTTOM", -160, 22)
