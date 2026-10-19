@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Cards: the art is now checked automatically. About 45 seconds after login (out of combat, once per update) Waypath+ tries every creature model in the background and remembers the ones your client cannot draw, so those cards show their own scenery from the start. /wp cardscan runs it again; /wp cardcheck still gives a copyable list. A new offline audit (tools/arcade) runs on every push and fails if any card lacks a model id or painting.
 - Cards: an NPC whose model this client cannot draw (Spirit of the Damned, Sleeping Dragon and others showed an empty glow) now gets the card's own drawn scenery instead of a blank picture.
 - Cards: hovering a turned card on the pack screen now always shows that card at full size; stray card tooltips from windows underneath no longer appear on top of it, and the gaps between cards no longer let the mouse through.
 - Arena: deck codes. "Deck code" in the deck editor shows your deck as one line of text to share; paste a friend's code and Load builds it from the cards you own.

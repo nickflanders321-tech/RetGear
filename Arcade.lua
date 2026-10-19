@@ -1188,6 +1188,8 @@ RG.ArcadeSharedModel = sharedModel
 local function dressCreature(w, c)
   local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
   if not id then return false end
+  local mem = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.badModel
+  if mem and mem[id] then return false end     -- the art check found that this client cannot draw it: scenery instead
   local m = ensureModel(w)
   if not m then return false end
   m.creature = true
@@ -2771,10 +2773,59 @@ local function cardCheck()
   step()
 end
 
+-- The same check runs by itself in the background: shortly after login, out of combat, and again whenever the card list
+-- changes, each creature model is tried once and the ones this client cannot draw are remembered, so those cards go straight to
+-- their own drawn scenery instead of showing an empty glow.
+local scanning
+local function scanModels()
+  if scanning or not (CreateFrame and C_Timer and C_Timer.After) then return end
+  local a = WaypathDB and WaypathDB.arcade
+  if not a then return end
+  local sig = #CARDS .. ":" .. tostring(RG.VERSION)
+  if a.artScan == sig then return end
+  local ok, m = pcall(CreateFrame, "DressUpModel", nil, UIParent)
+  if not ok or not m or not m.SetDisplayInfo or not m.GetModelFileID then return end
+  scanning = true
+  m:SetSize(32, 32); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -200, 200); m:Show()
+  local list, i, prev, retried = {}, 0, nil, false
+  for _, c in ipairs(CARDS) do
+    local id = c.kind == 2 and RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
+    if id then list[#list + 1] = id end
+  end
+  a.badModel = {}
+  local function step()
+    if InCombatLockdown and InCombatLockdown() then C_Timer.After(10, step) return end
+    if prev then
+      local fid = m:GetModelFileID()
+      if (not fid or fid == 0) and not retried then retried = true; C_Timer.After(0.5, step) return end   -- slow to load: one more look
+      if not fid or fid == 0 then a.badModel[prev] = true end
+      retried = false
+    end
+    i = i + 1
+    prev = list[i]
+    if not prev then
+      scanning = false; m:Hide(); a.artScan = sig
+      local n = 0; for _ in pairs(a.badModel) do n = n + 1 end
+      a.badCount = n
+      return
+    end
+    pcall(m.SetDisplayInfo, m, prev)
+    C_Timer.After(0.25, step)
+  end
+  step()
+end
+RG.ArcadeScanModels = scanModels
+do
+  local f = CreateFrame("Frame")
+  f:RegisterEvent("PLAYER_ENTERING_WORLD")
+  f:SetScript("OnEvent", function(self) self:UnregisterAllEvents(); C_Timer.After(45, function() pcall(scanModels) end) end)
+end
+
 local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
+  if cmd == "cardscan" then local a = WaypathDB and WaypathDB.arcade; if a then a.artScan = nil end; RG.Print("Checking every creature picture in the background (about " .. math.ceil(#CARDS * 0.3 / 60) .. " minutes)."); scanModels() return end
   if cmd == "arcade" or cmd == "cards" then RG.ShowArcade() return end
   if cmd == "cardcheck" then cardCheck() return end
   if cmd == "cardcam" then

@@ -26,3 +26,8 @@ jobs:
           done
       - name: Every Horde race and class gets a complete route (tools/audit)
         run: lua tools/audit/audit.lua --markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Every card has its art (tools/arcade)
+        run: |
+          lua tools/arcade/audit_art.lua
+          pip install pillow
+          python3 tools/arcade/audit_places_img.py
