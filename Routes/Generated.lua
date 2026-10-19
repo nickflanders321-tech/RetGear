@@ -73,11 +73,11 @@ RG.GEN_STEPS = {
   F = {
     ["Westfall|10"] = {
       { t = "At Sentinel Hill (level 12): The People's Militia, Testing the Wells, Murloc Gills. From Gryan Stoutmantle, Alba Fairmoon.", q = { 12, 92742, 92744 }, w = { 1436, 52.9, 53.7, "Sentinel Hill" } },
-      { t = "Odd Child (level 10): My First Alchemy Set, My First Real Potion.", q = { 92109, 92110 }, w = { 1436, 43.0, 72.9, "Odd Child" } },
       { t = "Verna Furlbrow (levels 10-14): Westfall Stew, Poor Old Blanchy.", q = { 36, 151 }, w = { 1436, 59.9, 19.4, "Verna Furlbrow" } },
       { t = "Salma Saldean (levels 12-13): Goretusk Liver Pie, Westfall Stew.", q = { 22, 38 }, w = { 1436, 56.4, 30.5, "Salma Saldean" } },
       { t = "Farmer Furlbrow (level 12): The Forgotten Heirloom.", q = { 64 }, w = { 1436, 60.0, 19.4, "Farmer Furlbrow" } },
-      { t = "At Sentinel Hill (levels 14-17): Patrolling Westfall, The State of the Mines, The People's Militia, Red Leather Bandanas, Moonbrook Espionage, Explosive Consultation. From Captain Danuvin, Alba Fairmoon, Gryan Stoutmantle and others.", q = { 102, 92745, 13, 153, 92747, 92748, 14 }, w = { 1436, 52.9, 53.7, "Sentinel Hill" } },
+      { t = "Odd Child (level 10): My First Alchemy Set, My First Real Potion.", q = { 92109, 92110 }, w = { 1436, 42.8, 72.8, "Odd Child" } },
+      { t = "At Sentinel Hill (levels 14-17): Patrolling Westfall, The People's Militia, The State of the Mines, Red Leather Bandanas, Moonbrook Espionage, Explosive Consultation. From Captain Danuvin, Gryan Stoutmantle, Alba Fairmoon and others.", q = { 102, 13, 92745, 153, 92747, 14, 92748 }, w = { 1436, 52.9, 53.7, "Sentinel Hill" } },
       { t = "At Stormwind City (level 16): A Dynamite Plan, Detonation at a Distance, Explosive Consultation. From Sprite Jumpsprocket, Jasper Fel.", q = { 92749, 92750, 92751, 92752 }, w = { 1453, 61.9, 30.6, "Stormwind City" } },
       { t = "Ozwin Ironsprocket (level 15): Harvesting the Harvesters.", q = { 92909, 92911 }, w = { 1436, 51.5, 32.3, "Ozwin Ironsprocket" } },
       { t = "Captain Grayson (levels 16-19): Keeper of the Flame, The Coast Isn't Clear.", q = { 103, 152 }, w = { 1436, 30.0, 86.0, "Captain Grayson" } },
@@ -137,7 +137,7 @@ RG.GEN_STEPS = {
     },
     ["Redridge Mountains|15"] = {
       { t = "At Lakeshire (levels 14-18): Messenger to Stormwind, Dry Times, A Free Lunch, Hilary's Necklace, The Lost Tools, Redridge Goulash, The Price of Shoes. From Magistrate Solomon, Barkeep Daniels, Darcy and others.", q = { 120, 116, 129, 3741, 125, 92, 118 }, w = { 1433, 21.9, 44.8, "Lakeshire" } },
-      { t = "Guard Parker (levels 15-16): Visit the Herbalist, Encroaching Gnolls.", q = { 130, 244 }, w = { 1433, 10.2, 71.5, "Guard Parker" } },
+      { t = "Guard Parker (levels 15-16): Visit the Herbalist, Encroaching Gnolls.", q = { 130, 244 }, w = { 1433, 10.4, 71.3, "Guard Parker" } },
       { t = "At Stormwind City (level 14): Messenger to Stormwind. From General Marcus Jonathan.", q = { 121 }, w = { 1453, 69.2, 82.7, "Stormwind City" } },
       { t = "At Lakeshire (levels 14-15): Messenger to Westfall, Delivering Daffodils. From Magistrate Solomon, Martie Jainrose.", q = { 143, 131 }, w = { 1433, 21.9, 44.8, "Lakeshire" } },
       { t = "Gryan Stoutmantle (level 14): Messenger to Westfall.", q = { 144 }, w = { 1436, 56.3, 47.5, "Gryan Stoutmantle" } },

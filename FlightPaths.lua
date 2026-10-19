@@ -41,7 +41,7 @@ RG.FLIGHTS = {
   { "The Sepulcher", "Silverpine Forest", 1421, 45.6, 42.6, "H", 2226, "Karos Razok" },
   { "Stonetalon Peak", "Stonetalon Mountains", 1442, 36.4, 7.2, "A", 4407, "Teloren" },
   { "Sun Rock Retreat", "Stonetalon Mountains", 1442, 45.1, 59.8, "H", 4312, "Tharm" },
-  { "Stormwind", "Stormwind City", 1453, 71.0, 72.5, "A", 352, "Dungar Longdrink" },
+  { "Stormwind", "Stormwind City", 1453, 71.3, 72.2, "A", 352, "Dungar Longdrink" },
   { "Booty Bay", "Stranglethorn Vale", 1434, 27.5, 77.8, "A", 2859, "Gyll" },
   { "Booty Bay", "Stranglethorn Vale", 1434, 26.9, 77.1, "H", 2858, "Gringer" },
   { "Grom'gol", "Stranglethorn Vale", 1434, 32.5, 29.4, "H", 1387, "Thysta" },
