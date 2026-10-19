@@ -25,7 +25,9 @@ local INVITE_SECS = 90      -- how long a challenge stays open
 local TURN_SECS = 120       -- the opponent must act within this long on their turn
 local WARN_SECS = 90
 
-local function short(n) return ((n or ""):match("^([^-]+)") or ""):lower() end
+-- Players come as "Name-Realm", and on this client the chat events spell it "Name Realm" (a space): both mean the player "Name"
+local function short(n) return ((n or ""):match("^([^%- ]+)") or ""):lower() end
+local function whisperName(n) n = tostring(n or ""); return (n:gsub(" ", "-")) end
 
 -- what was sent and received, for /wp duel log (a duel that "does nothing" is nearly always a message that never arrived)
 local dlog = {}
@@ -435,6 +437,7 @@ local function inMyGroup(name)
   return false
 end
 function RG.DuelXmit(msg, target)
+  target = whisperName(target)
   local send = (C_ChatInfo and C_ChatInfo.SendAddonMessage) or SendAddonMessage
   if not send then duelLog("no SendAddonMessage on this client") return false end
   local function good(ok, res) return ok and not (res == false or (type(res) == "number" and res ~= 0)) end
