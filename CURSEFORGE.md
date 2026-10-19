@@ -6,6 +6,17 @@
 
 ---
 
+## NEW: duel your friends at cards
+Waypath Cards is now a real two-player game. Group up, open the Arena and challenge anyone in your party who has Waypath+.
+- **Player-versus-player duels:** `/wp duel PlayerName`, the **Duel your party** button, or target someone and press **Challenge target**. They get an invitation box with Accept and Decline.
+- **Your own deck, your own cards:** each of you plays your selected Arena deck, built from the cards you have actually found. No deck yet? One is built for you.
+- **A proper match:** a versus splash screen, opening-hand mulligan, mana crystals, taunt, charge, rush, shield, freeze, stealth and spells, a turn clock and a Concede button.
+- **Friendly and fair:** duels cost and win no coins. Both games run the same rules and check each other after every move, so a duel can never show two different boards.
+- **Works across realms,** and the party list shows who has Waypath+ and which version. `/wp duel ping` checks your group; `/wp duel log` shows what was sent if a duel ever stalls.
+- Both players need the same Waypath+ version.
+
+---
+
 ## Leveling and the GPS
 - **A route for every race, Horde and Alliance:** Orc, Troll, Tauren, Undead, Human, Dwarf, Night Elf, Gnome and Skyborne each start in their own zone, then follow the shared route to 60.
 - **The arrow:** double-click any quest, step, quest giver, trainer, flight master or farming spot and the arrow takes you there. It also follows the world map, your quest log, the minimap (Ctrl-click) and Questie icons.
@@ -34,12 +45,13 @@ Every item, NPC, place and raider you meet becomes a card, and every card has it
 - **Four finishes** for every card: Common, Rare, Holo and Full art.
 - **Earn coins and packs by playing:** XP, level-ups, quests, kills and skill points, plus level milestones (10, 20, 30, 40, 45, 50, 55 to 59), dungeon boss clears, the last quest of a quest line, gear upgrades, and a big present for reaching level 60: five packs of each size and three guaranteed cards of 105 power or more.
 - **Collect:** pages for Collection, Sets, Today, Trade and Ledger; progress bars on every set, a showcase, link cards in chat, trade and offer cards to your group, and sell extras.
-- **Waypath Arena:** build a deck and duel the computer with the cards you own, or duel another Waypath+ player, with a ranked ladder and a versus splash screen. Opening hand mulligan, mana crystals, taunt, charge, rush, shield, freeze, stealth and spells.
+- **Waypath Arena:** build a deck and duel the computer with the cards you own, or duel a friend in your party (see above), with a ranked ladder and a versus splash screen. Opening hand mulligan, mana crystals, taunt, charge, rush, shield, freeze, stealth and spells.
 - `/wp cards` opens the collection; `/wp cardcheck` tests every card picture in your game.
 
 ## Done for you
 - **Smart tracker** on the right: your quests by zone with level colors, progress and distance, new quests nearby, your route, class quests, dungeon, upgrade, professions and reminders in one tidy "More" row.
 - **In a party:** reminders for blessings and auras, alerts when someone needs a cleanse or is about to die, and a run report after every dungeon.
+- **Never lost:** if you die, the arrow leads you back to your body.
 - **Quiet error catcher:** `/wp errors` gives you a copy-ready report.
 
 ---
