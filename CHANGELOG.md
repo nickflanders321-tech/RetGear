@@ -1,9 +1,6 @@
 # Changelog
 
-## v1.4.1
-- Quest, gear, map and profession data updated from WoW Forever's latest game data.
-
-## Unreleased
+## v1.5.0
 - Cards only mode: one switch that turns off the whole guide (route, tracker, arrow, quest and vendor helpers, pop-ups, tooltips) and leaves only the trading cards, packs, Arena, duels and ranks. Choose it on the "How much help do you want?" page of setup, in the first-login question for a new character, in Settings under "This character", or with /wp cardsonly on|off. With it on, /wp opens the cards.
 - Cards: small cards in the collection show the name, rarity and power only, and hovering one shows it at full size beside the window. Every creature stands on a sky and ridge of its own, so models and drawn cards match. Pack covers glow in the colour of what is inside (blue rare, purple holo, gold full art), the pack summary is three short lines, "Open pack" is the big gold button, and the Today tab shows a dot when a free pack is waiting or how many goals are done.
 - Arena: hits flash where they land, big hits are larger and shake the screen, a breaking shield flashes gold, and adding or removing a card in the deck editor has a sound.
@@ -12,6 +9,12 @@
 - Cards: an NPC whose model this client cannot draw (Spirit of the Damned, Sleeping Dragon and others showed an empty glow) now gets the card's own drawn scenery instead of a blank picture.
 - Cards: hovering a turned card on the pack screen now always shows that card at full size; stray card tooltips from windows underneath no longer appear on top of it, and the gaps between cards no longer let the mouse through.
 - Arena: deck codes. "Deck code" in the deck editor shows your deck as one line of text to share; paste a friend's code and Load builds it from the cards you own.
+- Arena leaderboard: a ranked board you can open and scroll (all, your realm, or near your rank). Waypath+ players show up on it automatically; "Share my rank" turns that off. It works between players with no server, so it fills as people play.
+- Arena: PvP emotes, monthly ranked seasons with a payout, new daily goals (win three duels, beat the Archmage), a +6 coin bonus for every third PvE win, and card crafting from duplicates.
+- Professions are no longer part of the route (they kept pulling you back to their quests): instead you get one short reminder when you walk past a profession trainer and have a free slot. Turn it off in Settings.
+
+## v1.4.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
 ## 1.4.0
 - Guide update (October 19): Krol'dok Stronghold is listed as a 40-45 dungeon (Blizzard corrected the earlier 40-55), and the Riverglades entry now says how to get in (the Tanaris boat or the new fork off the Redridge road) and where the Rog'mar flight point connects (Kargath, Flame Crest, Hammerfall, Stonard). The zone still has no Horde quest data, so no steps yet.
