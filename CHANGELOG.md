@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Download size: the painted card textures (place paintings, card backs, board) are stored with fewer colour steps, which looks the same at card size and cuts the download from about 15 MB to 7 MB.
+
 ## v1.5.0
 - Cards only mode: one switch that turns off the whole guide (route, tracker, arrow, quest and vendor helpers, pop-ups, tooltips) and leaves only the trading cards, packs, Arena, duels and ranks. Choose it on the "How much help do you want?" page of setup, in the first-login question for a new character, in Settings under "This character", or with /wp cardsonly on|off. With it on, /wp opens the cards.
 - Cards: small cards in the collection show the name, rarity and power only, and hovering one shows it at full size beside the window. Every creature stands on a sky and ridge of its own, so models and drawn cards match. Pack covers glow in the colour of what is inside (blue rare, purple holo, gold full art), the pack summary is three short lines, "Open pack" is the big gold button, and the Today tab shows a dot when a free pack is waiting or how many goals are done.
