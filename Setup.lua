@@ -15,6 +15,7 @@ RG.PRESETS = {
   full = { label = "Full guidance", desc = "Everything on: route, arrow, auto quests, reminders and alerts. Best while you learn the game.", off = {} },
   balanced = { label = "Balanced", desc = "All the help, less chatter: no fight reports in chat, no quest-mob pings, fewer pop-ups.",
     off = { "nameplateAlert", "levelBanner", "wellFed" } },
+  cardsonly = { label = "Cards only", desc = "No guide and no helpers: just the trading cards, packs and Arena. Turn it off any time in Settings or with /wp cardsonly off.", off = {}, cards = true },
   minimal = { label = "Minimal", desc = "Tracker, tooltips and vendor safety only. You drive; Waypath+ stays quiet.",
     on = { "tracker", "tooltip", "upgradeToast", "sellJunk", "autoRepair", "profitWatch", "autoScan", "minimap", "arrow", "bagReminder", "rewardPicker", "healSet" } },
 }
@@ -24,6 +25,7 @@ function RG.ApplyPreset(name)
   for _, k in ipairs(allKeys()) do
     if p.on then RG.db[k] = false else RG.db[k] = nil end
   end
+  RG.db.cardsOnly = p.cards and true or nil
   for _, k in ipairs(p.on or {}) do RG.db[k] = true end
   for _, k in ipairs(p.off or {}) do RG.db[k] = false end
   RG.db.preset = name
@@ -202,10 +204,10 @@ local function buildPages()
   local btns = {}
   local function pick(name) RG.db.preset = name; for k, b in pairs(btns) do b.select(k == name) end end
   local y = -38
-  for _, name in ipairs({ "full", "balanced", "minimal" }) do
+  for _, name in ipairs({ "full", "balanced", "minimal", "cardsonly" }) do
     local pr = RG.PRESETS[name]
     local b = choice(p3, pr.label, pr.desc, function() pick(name) end)
-    b:SetPoint("TOPLEFT", 0, y); y = y - 76
+    b:SetPoint("TOPLEFT", 0, y); y = y - 70
     btns[name] = b
   end
   local note = text(p3, "GameFontHighlightSmall", GREY .. "You'll fine-tune the big switches on the next page.|r", W - 70); note:SetPoint("TOPLEFT", 0, y - 4)
@@ -280,6 +282,14 @@ end
 -- ---------------------------------------------------------------------------
 local function show(i)
   -- leaving a page: apply what it set
+  if page == 3 and i > 3 and RG.db.preset == "cardsonly" then
+    -- cards only needs none of the remaining pages: switch it on and finish
+    RG.ApplyPreset("cardsonly"); RG.SetCardsOnly(true)
+    RG.db.welcomed, RG.db.setupDone = true, true
+    wiz:Hide()
+    RG.Print("Cards only is on: just the trading cards, packs and Arena (/wp cards). /wp cardsonly off brings the guide back.")
+    return
+  end
   if page == 2 and i > 2 then applyPlan(plan) end
   if page == 5 and i == 6 then RG.ApplyPreset(RG.db.preset or "full"); applyPlan(plan) end
   page = i

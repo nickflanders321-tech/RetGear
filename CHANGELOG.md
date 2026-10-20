@@ -4,6 +4,10 @@
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
 ## Unreleased
+- Cards only mode: one switch that turns off the whole guide (route, tracker, arrow, quest and vendor helpers, pop-ups, tooltips) and leaves only the trading cards, packs, Arena, duels and ranks. Choose it on the "How much help do you want?" page of setup, in the first-login question for a new character, in Settings under "This character", or with /wp cardsonly on|off. With it on, /wp opens the cards.
+- Cards: small cards in the collection show the name, rarity and power only, and hovering one shows it at full size beside the window. Every creature stands on a sky and ridge of its own, so models and drawn cards match. Pack covers glow in the colour of what is inside (blue rare, purple holo, gold full art), the pack summary is three short lines, "Open pack" is the big gold button, and the Today tab shows a dot when a free pack is waiting or how many goals are done.
+- Arena: hits flash where they land, big hits are larger and shake the screen, a breaking shield flashes gold, and adding or removing a card in the deck editor has a sound.
+- /wp cardscale 1.2 makes the card window bigger or smaller (0.6 to 1.6).
 - Cards: the art is now checked automatically. About 45 seconds after login (out of combat, once per update) Waypath+ tries every creature model in the background and remembers the ones your client cannot draw, so those cards show their own scenery from the start. /wp cardscan runs it again; /wp cardcheck still gives a copyable list. A new offline audit (tools/arcade) runs on every push and fails if any card lacks a model id or painting.
 - Cards: an NPC whose model this client cannot draw (Spirit of the Damned, Sleeping Dragon and others showed an empty glow) now gets the card's own drawn scenery instead of a blank picture.
 - Cards: hovering a turned card on the pack screen now always shows that card at full size; stray card tooltips from windows underneath no longer appear on top of it, and the gaps between cards no longer let the mouse through.

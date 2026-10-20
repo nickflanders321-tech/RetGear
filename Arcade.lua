@@ -1360,6 +1360,11 @@ local function paint(w, card, finish, copies)
     if sharedModel(card) then
       if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
       setScene(w.scn, card, false); w.spot:Hide()
+    else
+      -- every creature stands on a sky and ridge of its own (no silhouette: the model is the creature), so the models
+      -- from the game's files and the drawn cards share one look
+      if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+      setScene(w.scn, card, false); w.scn.mo:Hide(); w.scn.cr:Hide(); w.spot:Hide()
     end
     -- some creatures have no model this client can draw (the card would show an empty glow): once the game has had a
     -- moment to load it, a model that still reports no file gets the card's own drawn scenery behind it
@@ -1392,12 +1397,12 @@ local function paint(w, card, finish, copies)
     setfont(w.name, "head", math.max(7, 9.5 * u)); w.name:SetText(FINISH[finish][1]:upper()); w.name:SetTextColor(fc[1], fc[2], fc[3])
   else fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head"); w.name:SetTextColor(0.98, 0.94, 0.82) end
   setfont(w.type, "head", math.max(8, 10 * u))
-  w.type:SetText(KIND[card.kind] .. "  ·  " .. TIER[card.tier][1])
+  w.type:SetText(w.cw < 120 and TIER[card.tier][1] or (KIND[card.kind] .. "  ·  " .. TIER[card.tier][1]))
   setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
   setfont(w.num, "head", math.max(6.5, 8 * u))
   local big = w.cw >= 190
   w.text:SetShown(true)
-  layoutText(w, big, card.name, card.text or "")
+  layoutText(w, big, card.name, w.cw < 120 and "" or (card.text or ""))   -- (the grid shows the name and power; the rest is on the inspect card)
   if big then
     setfont(w.text, "body", 12.5 * u)
     w.text:SetText((card.text or "") .. "\n\n|cff6b4a2e" .. FINISH[finish][1] .. " print|r")
@@ -1565,9 +1570,10 @@ local function makeCover(card)
   return c
 end
 local function coverAnim(c, t)
-  local h = (t * 0.35 + c.phase) % 1
-  local r, g, b = 0.6 + 0.4 * math.sin(h * 6.283), 0.6 + 0.4 * math.sin(h * 6.283 + 2.09), 0.6 + 0.4 * math.sin(h * 6.283 + 4.19)
-  c.glow:SetVertexColor(r, g, b, 0.55 + 0.25 * math.sin(t * 3 + c.phase * 5))
+  -- the glow takes the colour of what is inside: blue rare, purple holo, gold full art, red for a top card
+  local pc = c.peekCol or { 1, 1, 1 }
+  local k = 0.5 + 0.5 * math.sin(t * (c.rare and 3 or 2) + c.phase * 5)
+  c.glow:SetVertexColor(pc[1], pc[2], pc[3], (c.rare and 0.45 or 0.28) + (c.rare and 0.3 or 0.15) * k)
 end
 
 local function oddsText(g)
@@ -1609,16 +1615,20 @@ local function summarize()
   end
   if meta.sets then
     local bits = {}
-    for i = 1, math.min(2, #meta.sets) do
+    for i = 1, math.min(1, #meta.sets) do
       local x = meta.sets[i]
-      if x.gained > 0 or i == 1 then bits[#bits + 1] = x.name .. " " .. x.have .. "/" .. x.total .. (x.gained > 0 and (" |cff7be08a(+" .. x.gained .. ")|r") or "") end
+      bits[#bits + 1] = x.name .. " " .. x.have .. "/" .. x.total .. (x.gained > 0 and (" |cff7be08a(+" .. x.gained .. ")|r") or "")
     end
-    if #bits > 0 then rows[#rows + 1] = { "Sets", table.concat(bits, "   ·   ") } end
-  end
+    reveal.setBits = bits
+  else reveal.setBits = nil end
   local extra = {}
   if meta.daily and meta.streak then extra[#extra + 1] = "Pack streak: day " .. meta.streak .. (meta.streak % 7 == 0 and "  (reward pack earned)" or "") end
   if reveal.notes and #reveal.notes > 0 then extra[#extra + 1] = "|cff7be08a" .. table.concat(reveal.notes, "   ·   ") .. "|r" end
-  if #extra > 0 then rows[#rows + 1] = { "Bonus", table.concat(extra, "   ·   ") } end
+  -- one short third line for everything else (set progress, streak, bonuses), so the screen stays calm
+  local more = {}
+  for _, b in ipairs(reveal.setBits or {}) do more[#more + 1] = b end
+  for _, b in ipairs(extra) do more[#more + 1] = b end
+  if #more > 0 then rows[#rows + 1] = { "Progress", table.concat(more, "   ·   ") } end
   setPlaque(rows)
 end
 
@@ -2175,7 +2185,7 @@ local function showReveal(got, notes, meta)
     c.rare = (g.finish >= 3 or g.card.tier == 6) and true or false
     c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.6, 0.6, 0.65 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
-    if g.finish >= 3 or g.card.tier == 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
+    if g.finish >= 2 or g.card.tier >= 5 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
   end
   reveal.again:SetEnabled(afford(meta.many and "normal" or kind) and true or false)
@@ -2375,9 +2385,23 @@ local function build()
     c:SetFrameLevel(lv(frame) + 3)
     c:SetPoint("TOPLEFT", frame, "TOPLEFT", gx0 + ((i - 1) % COLS) * GRIDX, -196 - math.floor((i - 1) / COLS) * GRIDY)
     c.onCard = cell_click
+    c.noTip = true     -- the card is shown at full size beside the window instead of a text tooltip
+    c:HookScript("OnEnter", function(self)
+      if not self.card or not self.known or not frame.insp then return end
+      local ins = frame.insp
+      paint(ins, self.card, self.finish, self.copies)
+      ins:ClearAllPoints()
+      local right = frame:GetRight() or 0
+      local sw = UIParent and UIParent:GetWidth() or 1920
+      if right + 250 < sw then ins:SetPoint("TOPLEFT", frame, "TOPRIGHT", 8, -150) else ins:SetPoint("TOPRIGHT", frame, "TOPLEFT", -8, -150) end
+      ins:Show()
+    end)
+    c:HookScript("OnLeave", function() if frame.insp then frame.insp:Hide() end end)
     cells[i] = c
   end
   frame.cells = cells
+  frame.insp = makeCard(frame, 230); frame.insp:SetFrameLevel(lv(frame) + 40); frame.insp.noTip = true; frame.insp.hover = false; frame.insp:EnableMouse(false); frame.insp:Hide()
+  frame:HookScript("OnHide", function() frame.insp:Hide() end)
   -- the text screens (Sets, Today, Trade, Ledger)
   frame.panel = fs(frame, "body", 14); frame.panel:SetPoint("TOPLEFT", 40, -200); frame.panel:SetWidth(WINW - 80); frame.panel:SetJustifyH("LEFT"); frame.panel:SetJustifyV("TOP"); frame.panel:SetSpacing(6)
   frame.panel:SetTextColor(0.9, 0.86, 0.74)
@@ -2421,6 +2445,24 @@ local function build()
     frame.packBtns[kind] = b
   end
   frame.buy = frame.packBtns.normal
+  -- the normal pack is what people come here to do: it is the big gold button, the rest stay quiet
+  do
+    local b = frame.packBtns.normal
+    b:SetSize(130, 46); b:ClearAllPoints(); b:SetPoint("BOTTOM", PX[1] - 5, 13)
+    b.Paint = function(self, hover)
+      local on = self.enabled
+      self:SetBackdropColor(on and (hover and 0.42 or 0.32) or 0.12, on and (hover and 0.29 or 0.21) or 0.1, on and 0.06 or 0.14, 0.98)
+      self:SetBackdropBorderColor(on and 1 or 0.3, on and 0.84 or 0.27, on and 0.4 or 0.22, 1)
+      self.label:SetTextColor(on and 1 or 0.45, on and 0.95 or 0.43, on and 0.75 or 0.5)
+    end
+    b.glow = b:CreateTexture(nil, "BACKGROUND"); b.glow:SetTexture(MEDIA .. "Soft"); b.glow:SetBlendMode("ADD")
+    b.glow:SetPoint("TOPLEFT", -22, 16); b.glow:SetPoint("BOTTOMRIGHT", 22, -16); b.glow:SetVertexColor(1, 0.8, 0.35, 0.3)
+    b:SetScript("OnUpdate", function(self)
+      local t = GetTime and GetTime() or 0
+      self.glow:SetAlpha(self.enabled and (0.35 + 0.25 * math.sin(t * 2)) or 0)
+    end)
+    b:Paint(false)
+  end
   frame.buyAll = gbtn(frame, "All", 64, 28, function() frame.buyNow(true) end)
   frame.buyAll:SetPoint("BOTTOM", 329, 22); frame.buyAll:Hide()
   frame.duel = gbtn(frame, "Duel", 64, 28, function()
@@ -2552,6 +2594,13 @@ function RG.ArcadeRefresh(keepMsg)
   for k, b in pairs(frame.filters) do b:SetShown(cards); b:SetActive(cards and not view.showcase and k == view.kind) end
   frame.showcase:SetShown(cards); frame.showcase:SetActive(cards and view.showcase)
   for k, t in pairs(frame.modes) do t:SetActive(k == view.mode) end
+  -- the Today tab says when there is something waiting: a free pack to open, or goals still to do
+  do
+    local g, n = todaysGoals(a), 0
+    for _ in pairs(g.done or {}) do n = n + 1 end
+    local t = frame.modes.today
+    if t and t.label then t.label:SetText((a.free or 0) > 0 and "TODAY  |cff7be08a•|r" or (n < #g.pick and ("TODAY  " .. n .. "/" .. #g.pick) or "TODAY")) end
+  end
   frame.prev:SetShown(cards); frame.next:SetShown(cards); frame.pageText:SetShown(cards)
   showRows(0)
 
@@ -2716,6 +2765,13 @@ function RG.ShowArcade()
   if WaypathFrame and WaypathFrame.IsShown and WaypathFrame:IsShown() then WaypathFrame:Hide() end   -- never stack on the main window
   if not frame then build() end
   local a = store(); if a then a.seen = true end
+  -- window size: the screen-fit scale, times your own setting (/wp cardscale 1.2)
+  do
+    local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
+    local fit = (type(ph) == "number" and ph > 0 and ph < WINH + 30) and math.max(0.6, (ph - 30) / WINH) or 1
+    local mine = a and tonumber(a.uiScale) or 1
+    frame:SetScale(fit * mine)
+  end
   frame:Show(); RG.ArcadeRefresh()
   if a and a.giftPending and not a.giftDone and RG.ArcadeClaimGift then RG.ArcadeClaimGift() end
 end
@@ -2825,6 +2881,13 @@ local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):match("^%s*(%S+)")
   cmd = cmd and cmd:lower()
+  if cmd == "cardscale" then
+    local a = store()
+    local v = tonumber((msg or ""):match("^%s*%S+%s+(%S+)"))
+    if a and v and v >= 0.6 and v <= 1.6 then a.uiScale = v; RG.Print("Card window size set to x" .. v .. ".") if frame and frame:IsShown() then RG.ShowArcade() end
+    else RG.Print("/wp cardscale 1.2 makes the card window 20% bigger (0.6 to 1.6; 1 is normal). Now: x" .. tostring(a and a.uiScale or 1)) end
+    return
+  end
   if cmd == "cardscan" then local a = WaypathDB and WaypathDB.arcade; if a then a.artScan = nil end; RG.Print("Checking every creature picture in the background (about " .. math.ceil(#CARDS * 0.3 / 60) .. " minutes)."); scanModels() return end
   if cmd == "arcade" or cmd == "cards" then RG.ShowArcade() return end
   if cmd == "cardcheck" then cardCheck() return end

@@ -2380,6 +2380,10 @@ local function renderSettings()
     action("Make this character a bank alt", "No leveling guide here: a shopping list of quest items to buy and mail to " .. (RG.MainName() or "your main") .. ", plus the vendor and mailbox helpers (reloads)", function() RG.SetCharMode("alt"); ReloadUI() end)
     if not isMain then action("Make this my main", "Your bank alts buy and mail for this character", function() RG.db.main = RG.PlayerKey(); RG.Print(UnitName("player") .. " is now your main."); RG.RefreshUI() end) end
   end
+  action(RG.CardsOnly() and "Turn Cards only off" or "Cards only mode", RG.CardsOnly() and "Brings the guide, tracker and helpers back (reloads)" or "Turns off the guide, tracker, arrow and every helper and pop-up: only the trading cards, packs and Arena stay (reloads)", function()
+    RG.SetCardsOnly(not RG.CardsOnly())
+    if ReloadUI then ReloadUI() end
+  end)
   action("Start this character over", "A brand new, empty profile for this character: settings back to defaults, route, quests and plans cleared (reloads; asks first)", function()
     if StaticPopupDialogs and StaticPopup_Show then
       StaticPopupDialogs.WAYPATH_RESET_PROFILE = { text = "Start " .. (UnitName("player") or "this character") .. " over with a brand new Waypath+ profile?\n\nIts settings, ticked steps, quests and plans are cleared. Other characters and Auction House prices aren't touched.",

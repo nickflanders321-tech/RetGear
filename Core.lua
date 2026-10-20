@@ -178,6 +178,8 @@ RG.InitDB = InitDB
 -- the character bank alts buy and mail for.
 -- ---------------------------------------------------------------------------
 RG.PlayerKey = charKey
+-- "Cards only" mode (see Mode.lua): the guide and helpers are off for this character
+function RG.CardsOnly() return RG.db ~= nil and RG.db.cardsOnly == true end
 function RG.CharMode()
   local r = RG.root
   return r and r.chars and r.chars[charKey()] or nil
@@ -202,7 +204,13 @@ function RG.AskCharMode()
   local main = RG.MainName()
   StaticPopupDialogs.WAYPATH_NEW_CHAR = {
     text = "|cffffd100Waypath+|r: first time on %s.\n\n|cffffd100New profile|r: the full leveling guide with this character's own settings, route progress and professions. Your other characters keep theirs.\n\n|cffffd100Bank alt|r: no leveling guide. A shopping list of quest items to buy and mail" .. (main and (" to " .. main) or " to your main") .. ", and the vendor and mailbox helpers.",
-    button1 = "New profile", button2 = "Bank alt",
+    button1 = "New profile", button2 = "Bank alt", button3 = "Cards only",
+    OnAlt = function()
+      RG.SetCharMode("profile")
+      RG.db.welcomed, RG.db.setupDone = true, true
+      RG.SetCardsOnly(true)
+      RG.Print("Cards only: the guide and helpers are off for " .. (UnitName("player") or "this character") .. ". /wp cardsonly off brings them back.")
+    end,
     OnAccept = function()
       RG.SetCharMode("profile")
       RG.Print("New profile for " .. (UnitName("player") or "this character") .. ".")
@@ -592,7 +600,7 @@ end
 -- Tooltip line
 -- ---------------------------------------------------------------------------
 local function OnTooltip(tooltip)
-  if not RG.db or not RG.Opt("tooltip") or not tooltip.GetItem then return end
+  if not RG.db or RG.CardsOnly() or not RG.Opt("tooltip") or not tooltip.GetItem then return end
   local _, link = tooltip:GetItem()
   if not link then return end
   local loc = RG.EquipLoc(link)
@@ -712,6 +720,12 @@ f:SetScript("OnEvent", function(_, event, arg1)
   elseif event == "PLAYER_LOGIN" then
     -- a character Waypath+ hasn't seen: the first one gets a full profile, any
     -- later one is asked: its own new profile, or a bank alt
+    if RG.CardsOnly() then
+      -- the cards-only switch: no guide messages, no questions, no news
+      if not RG.CharMode() then RG.SetCharMode("profile") end
+      RG.db.welcomed, RG.db.setupDone = true, true
+      return
+    end
     if not RG.CharMode() then
       local others = 0
       for k in pairs(RG.root.chars) do if k ~= RG.PlayerKey() then others = others + 1 end end
@@ -777,7 +791,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
       if RG.db then RG.db.allianceBetaSeen = true end
       RG.Print("Loaded. Alliance routes are new: quest steps come from WoW Forever's quest data, the zone order and travel tips are hand-written. Professions and some gear sources are still being matched to Alliance towns, so tell me (/wp report) if a step looks wrong.")
     elseif not RG.RaceSupported then RG.Print("Loaded. Your starting zone isn't in the route yet: it picks up from level 12, which is the same for every race on your side.") end
-  elseif RG.IsAlt() then
+  elseif RG.IsAlt() or RG.CardsOnly() then
     return
   elseif event == "PLAYER_LEVEL_UP" then
     if not RG.db.levelAlerts then return end

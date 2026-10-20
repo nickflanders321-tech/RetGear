@@ -1,0 +1,3 @@
+-- last file loaded: the slash command goes through the "Cards only" check (see Mode.lua)
+local _, RG = ...
+if RG and RG.WrapCardsOnlySlash then RG.WrapCardsOnlySlash() end

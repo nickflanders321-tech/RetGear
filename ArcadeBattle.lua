@@ -557,6 +557,9 @@ local function buildWindow()
 
   -- floating numbers and the aiming dots
   for i = 1, 14 do local f = { live = false }; f.fs = U.fs(win.fx, "title", 22, "OVERLAY", "OUTLINE"); f.fs:Hide(); ui.floats[i] = f end
+  -- impact flash: a soft burst where something is hit, red for damage and gold for a shield breaking
+  win.flash = win.fx:CreateTexture(nil, "OVERLAY"); win.flash:SetTexture(U.MEDIA .. "Glow"); win.flash:SetBlendMode("ADD"); win.flash:Hide()
+  ui.flashT = 0
   for i = 1, 16 do local d = win.fx:CreateTexture(nil, "OVERLAY"); d:SetTexture(U.MEDIA .. "Glow"); d:SetBlendMode("ADD"); d:SetSize(26, 26); d:Hide(); ui.dots[i] = d end
   for i = 1, 10 do local d = win.fx:CreateTexture(nil, "OVERLAY"); d:SetTexture(U.MEDIA .. "Glow"); d:SetBlendMode("ADD"); d:SetSize(30, 30); d:SetVertexColor(1, 0.55, 0.2, 1); d:Hide(); ui.trail[i] = d end
   for i = 1, 24 do local t = win.fx:CreateTexture(nil, "OVERLAY"); t:SetTexture(U.MEDIA .. "Glow"); t:SetBlendMode("ADD"); t:SetSize(12, 12); t:Hide(); ui.embers[i] = { tex = t, live = false } end
@@ -684,6 +687,21 @@ local function buildWindow()
       else win.clockT:SetText("") end
     end
     -- strike trail
+    if ui.flashT and ui.flashT > 0 then
+      ui.flashT = ui.flashT - dt
+      local k = math.max(0, ui.flashT) / 0.3
+      win.flash:SetAlpha(k)
+      local sz = (ui.flashSize or 120) * (1.6 - 0.6 * k)
+      win.flash:SetSize(sz, sz)
+      if ui.flashT <= 0 then win.flash:Hide() end
+    end
+    if ui.shakeT and ui.shakeT > 0 then
+      ui.shakeT = ui.shakeT - dt
+      local m = 5 * math.max(0, ui.shakeT) / 0.25
+      win.fx:ClearAllPoints(); win.fx:SetPoint("TOPLEFT", win, "TOPLEFT", (math.random() - 0.5) * 2 * m, (math.random() - 0.5) * 2 * m)
+      win.fx:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", (math.random() - 0.5) * 2 * m, (math.random() - 0.5) * 2 * m)
+      if ui.shakeT <= 0 then win.fx:ClearAllPoints(); win.fx:SetAllPoints(win) end
+    end
     if ui.trailT and ui.trailT > 0 then
       ui.trailT = ui.trailT - dt
       local k = 1 - math.max(0, ui.trailT) / 0.35
@@ -748,12 +766,18 @@ local function consume()
   for _, e in ipairs(evs) do
     local p = e.tgt and ui.pos[e.tgt]
     if e.t == "dmg" and p then
-      floatText(p[1], p[2], "-" .. e.n, 1, 0.3, 0.3, 26)
+      floatText(p[1], p[2], "-" .. e.n, 1, 0.3, 0.3, e.n >= 5 and 34 or 26)
+      win.flash:ClearAllPoints(); win.flash:SetPoint("CENTER", win.fx, "BOTTOMLEFT", p[1], p[2]); win.flash:SetVertexColor(1, 0.25, 0.15, 1)
+      ui.flashT, ui.flashSize = 0.3, e.n >= 5 and 220 or 150; win.flash:Show()
+      if e.n >= 5 then ui.shakeT = 0.25 end
       local w = ui.widgetOf[e.tgt]
       if w then w.shk = 0.3; ui.shaking[w] = true; gliding[w] = nil end
       sfx("hit")
     elseif e.t == "heal" and p then floatText(p[1], p[2], "+" .. e.n, 0.4, 1, 0.5, 24)
-    elseif e.t == "pop" and p then floatText(p[1], p[2], "Shield!", 1, 0.9, 0.5, 18)
+    elseif e.t == "pop" and p then
+      floatText(p[1], p[2], "Shield!", 1, 0.9, 0.5, 18)
+      win.flash:ClearAllPoints(); win.flash:SetPoint("CENTER", win.fx, "BOTTOMLEFT", p[1], p[2]); win.flash:SetVertexColor(1, 0.9, 0.5, 1)
+      ui.flashT, ui.flashSize = 0.3, 140; win.flash:Show()
     elseif e.t == "armor" and p then floatText(p[1], p[2], "+" .. e.n .. " armor", 0.8, 0.85, 1, 16)
     elseif e.t == "freeze" and p then floatText(p[1], p[2], "Frozen", 0.5, 0.85, 1, 16)
     elseif e.t == "silence" and p then floatText(p[1], p[2], "Silenced", 0.8, 0.8, 0.8, 16)
@@ -1662,6 +1686,7 @@ local function addCard(key)
   if deckCountOf(dk, key) >= limitFor(a, key) then D.hint:SetText("You cannot add more copies of that."); return end
   dk.cards[key] = deckCountOf(dk, key) + 1
   D.hint:SetText("")
+  sfx("draw")
   deckRefresh()
 end
 local function removeCard(key)
@@ -1669,6 +1694,7 @@ local function removeCard(key)
   local n = deckCountOf(dk, key)
   if n <= 0 then return end
   dk.cards[key] = n > 1 and n - 1 or nil
+  sfx("play")
   deckRefresh()
 end
 
