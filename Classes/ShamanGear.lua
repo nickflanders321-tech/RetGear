@@ -149,7 +149,7 @@ RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
 RG.CLASS_GEAR_A.SHAMAN = {
   { id = 9603, slot = "2H", lvl = 5, how = "Quest", src = "The Relics of Wakening (Athridas Bearmantle)", zone = "Teldrassil", score = 97, q = 483, gen = true },  -- Gritroot Staff
   { id = 3103, slot = "2H", lvl = 7, how = "Quest", src = "Protecting the Herd (Rudra Amberstill)", zone = "Dun Morogh", score = 119, q = 314, gen = true },  -- Coldridge Hammer
-  { id = 6215, slot = "2H", lvl = 8, how = "Quest", src = "Wanted:  \"Hogger\"", zone = "Elwynn Forest", score = 127, q = 176, gen = true },  -- Balanced Fighting Stick
+  { id = 6215, slot = "2H", lvl = 8, how = "Quest", src = "WANTED: \"Hogger\"", zone = "Elwynn Forest", score = 127, q = 176, gen = true },  -- Balanced Fighting Stick
   { id = 5617, slot = "Legs", lvl = 8, how = "Quest", src = "Bashal'Aran (Asterion)", zone = "Darkshore", score = 5, q = 957, gen = true },  -- Vagabond Leggings
   { id = 3511, slot = "Back", lvl = 10, how = "Quest", src = "Red Leather Bandanas (Scout Galiaan)", zone = "Westfall", score = 2, q = 153, gen = true },  -- Cloak of the People's Militia
   { id = 1928, slot = "2H", lvl = 11, how = "Rare mob", src = "Defias Magician", zone = "Westfall", score = 152, bl = 17, gen = true },  -- Defias Mage Staff

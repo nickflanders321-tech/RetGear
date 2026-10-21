@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.2
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.5.1
 - Download size: the painted card textures (place paintings, card backs, board) are stored with fewer colour steps, which looks the same at card size and cuts the download from about 15 MB to 7 MB.
 

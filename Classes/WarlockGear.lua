@@ -176,7 +176,7 @@ RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
 RG.CLASS_GEAR_A.WARLOCK = {
   { id = 9603, slot = "2H", lvl = 5, how = "Quest", src = "The Relics of Wakening (Athridas Bearmantle)", zone = "Teldrassil", score = 1, q = 483, gen = true },  -- Gritroot Staff
   { id = 18957, slot = "Main Hand", lvl = 5, how = "Quest", src = "Druid of the Claw (Oben Rageclaw)", zone = "Teldrassil", score = 1, q = 2561, gen = true },  -- Brushwood Blade
-  { id = 6215, slot = "2H", lvl = 8, how = "Quest", src = "Wanted:  \"Hogger\"", zone = "Elwynn Forest", score = 1, q = 176, gen = true },  -- Balanced Fighting Stick
+  { id = 6215, slot = "2H", lvl = 8, how = "Quest", src = "WANTED: \"Hogger\"", zone = "Elwynn Forest", score = 1, q = 176, gen = true },  -- Balanced Fighting Stick
   { id = 5604, slot = "Ranged", lvl = 8, how = "Quest", src = "Bashal'Aran (Asterion)", zone = "Darkshore", score = 47, q = 957, gen = true },  -- Elven Wand
   { id = 5071, slot = "Ranged", lvl = 9, how = "Rare mob", src = "Strider Clutchmother", zone = "Darkshore", score = 52, bl = 20, gen = true },  -- Shadow Wand
   { id = 1561, slot = "Chest", lvl = 10, how = "Quest", src = "The Killing Fields (Farmer Saldean)", zone = "Westfall", score = 2, q = 9, gen = true },  -- Harvester's Robe
@@ -259,7 +259,7 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 16791, slot = "Wrist", lvl = 33, how = "Quest", src = "Book of the Ancients (Azore Aldamort)", zone = "Desolace", score = 6, q = 6027, gen = true },  -- Silkstream Cuffs
   { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 15, bl = 37, gen = true },  -- Illusionary Rod
   { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 14, bl = 37, gen = true },  -- Hypnotic Blade
-  { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 159, q = 685, gen = true },  -- Rod of Sorrow
+  { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 159, q = 685, gen = true },  -- Rod of Sorrow
   { id = 15864, slot = "Wrist", lvl = 34, how = "Quest", src = "Ghost-o-plasm Round Up (Hornizz Brimbuzzle)", zone = "Desolace", score = 7, q = 6134, gen = true },  -- Condor Bracers
   { id = 15106, slot = "2H", lvl = 35, how = "Quest", src = "The Completed Orb of Dar'Orahil (Menara Voidrender)", zone = "", score = 23, q = 4964, gen = true },  -- Staff of Dar'Orahil
   { id = 15108, slot = "Off Hand", lvl = 35, how = "Quest", src = "The Completed Orb of Dar'Orahil (Menara Voidrender)", zone = "", score = 16, q = 4964, gen = true },  -- Orb of Dar'Orahil

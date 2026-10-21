@@ -149,8 +149,8 @@ RG.CLASS_GEAR.HUNTER = {
 RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
 RG.CLASS_GEAR_A.HUNTER = {
   { id = 9603, slot = "2H", lvl = 5, how = "Quest", src = "The Relics of Wakening (Athridas Bearmantle)", zone = "Teldrassil", score = 7, q = 483, gen = true },  -- Gritroot Staff
-  { id = 6215, slot = "2H", lvl = 8, how = "Quest", src = "Wanted:  \"Hogger\"", zone = "Elwynn Forest", score = 13, q = 176, gen = true },  -- Balanced Fighting Stick
-  { id = 6085, slot = "Chest", lvl = 8, how = "Quest", src = "Wanted:  \"Hogger\"", zone = "Elwynn Forest", score = 3, q = 176, gen = true },  -- Footman Tunic
+  { id = 6215, slot = "2H", lvl = 8, how = "Quest", src = "WANTED: \"Hogger\"", zone = "Elwynn Forest", score = 13, q = 176, gen = true },  -- Balanced Fighting Stick
+  { id = 6085, slot = "Chest", lvl = 8, how = "Quest", src = "WANTED: \"Hogger\"", zone = "Elwynn Forest", score = 3, q = 176, gen = true },  -- Footman Tunic
   { id = 5617, slot = "Legs", lvl = 8, how = "Quest", src = "Bashal'Aran (Asterion)", zone = "Darkshore", score = 2, q = 957, gen = true },  -- Vagabond Leggings
   { id = 3511, slot = "Back", lvl = 10, how = "Quest", src = "Red Leather Bandanas (Scout Galiaan)", zone = "Westfall", score = 4, q = 153, gen = true },  -- Cloak of the People's Militia
   { id = 3578, slot = "Legs", lvl = 10, how = "Quest", src = "The Killing Fields (Farmer Saldean)", zone = "Westfall", score = 5, q = 9, gen = true },  -- Harvester's Pants

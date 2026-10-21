@@ -139,7 +139,7 @@ RG.CLASS_GEAR.ROGUE = {
 RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
 RG.CLASS_GEAR_A.ROGUE = {
   { id = 18957, slot = "Main Hand", lvl = 5, how = "Quest", src = "Druid of the Claw (Oben Rageclaw)", zone = "Teldrassil", score = 72, q = 2561, gen = true },  -- Brushwood Blade
-  { id = 6085, slot = "Chest", lvl = 8, how = "Quest", src = "Wanted:  \"Hogger\"", zone = "Elwynn Forest", score = 3, q = 176, gen = true },  -- Footman Tunic
+  { id = 6085, slot = "Chest", lvl = 8, how = "Quest", src = "WANTED: \"Hogger\"", zone = "Elwynn Forest", score = 3, q = 176, gen = true },  -- Footman Tunic
   { id = 5617, slot = "Legs", lvl = 8, how = "Quest", src = "Bashal'Aran (Asterion)", zone = "Darkshore", score = 4, q = 957, gen = true },  -- Vagabond Leggings
   { id = 4766, slot = "Main Hand", lvl = 8, how = "Vendor", src = "Morhan Coppertongue", zone = "Loch Modan", score = 85, also = { { how = "Vendor", src = "Lizzarik", zone = "The Barrens" } }, gen = true },  -- Feral Blade
   { id = 1009, slot = "Main Hand", lvl = 8, how = "Quest", src = "A Pilot's Revenge", zone = "Dun Morogh", score = 84, q = 417, gen = true },  -- Compact Hammer

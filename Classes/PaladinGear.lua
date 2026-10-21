@@ -152,7 +152,7 @@ RG.CLASS_GEAR.PALADIN = {
 RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
 RG.CLASS_GEAR_A.PALADIN = {
   { id = 3103, slot = "2H", lvl = 7, how = "Quest", src = "Protecting the Herd (Rudra Amberstill)", zone = "Dun Morogh", score = 119, q = 314, gen = true },  -- Coldridge Hammer
-  { id = 6084, slot = "Legs", lvl = 8, how = "Quest", src = "Wanted:  \"Hogger\"", zone = "Elwynn Forest", score = 7, q = 176, gen = true },  -- Stormwind Guard Leggings
+  { id = 6084, slot = "Legs", lvl = 8, how = "Quest", src = "WANTED: \"Hogger\"", zone = "Elwynn Forest", score = 7, q = 176, gen = true },  -- Stormwind Guard Leggings
   { id = 3511, slot = "Back", lvl = 10, how = "Quest", src = "Red Leather Bandanas (Scout Galiaan)", zone = "Westfall", score = 2, q = 153, gen = true },  -- Cloak of the People's Militia
   { id = 5320, slot = "Feet", lvl = 11, how = "Quest", src = "Stolen Booty (Gazlowe)", zone = "The Barrens", score = 5, q = 888, gen = true },  -- Padded Lamellar Boots
   { id = 1566, slot = "2H", lvl = 12, how = "Quest", src = "The People's Militia (Gryan Stoutmantle)", zone = "Westfall", score = 158, q = 14, gen = true },  -- Edge of the People's Militia

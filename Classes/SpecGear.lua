@@ -2505,7 +2505,7 @@ RG.SPEC_GEAR_A.HUNTER = {
     { id = 16791, slot = "Wrist", lvl = 33, how = "Quest", src = "Book of the Ancients (Azore Aldamort)", zone = "Desolace", score = 4, q = 6027, gen = true },  -- Silkstream Cuffs
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 29, bl = 37, gen = true },  -- Illusionary Rod
     { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 16, bl = 40, gen = true },  -- Swine Fists
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 5, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 5, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 10758, slot = "2H", lvl = 35, how = "Dungeon", src = "Ragglesnout", zone = "Razorfen Downs", score = 20, bl = 40, gen = true },  -- X'caliboar
     { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, bl = 40, gen = true },  -- Worn Running Boots
     { id = 3985, slot = "Waist", lvl = 35, how = "Rare mob", src = "Mok'rash", zone = "Stranglethorn Vale", score = 7, bl = 50, gen = true },  -- Monogrammed Sash
@@ -2717,8 +2717,8 @@ RG.SPEC_GEAR_A.MAGE = {
     { id = 16791, slot = "Wrist", lvl = 33, how = "Quest", src = "Book of the Ancients (Azore Aldamort)", zone = "Desolace", score = 6, q = 6027, gen = true },  -- Silkstream Cuffs
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 17, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 17, bl = 37, gen = true },  -- Hypnotic Blade
-    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 96, q = 685, gen = true },  -- Rod of Sorrow
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 7, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 96, q = 685, gen = true },  -- Rod of Sorrow
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 7, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 9517, slot = "2H", lvl = 35, how = "Quest", src = "Celestial Power (Tabetha)", zone = "", score = 28, q = 1958, gen = true },  -- Celestial Stave
     { id = 4120, slot = "Chest", lvl = 35, how = "Quest", src = "The Curse of the Tides (Catelyn the Blade)", zone = "Stranglethorn Vale", score = 13, q = 611, gen = true },  -- Robe of Crystal Waters
     { id = 6791, slot = "Feet", lvl = 35, how = "Quest", src = "The Karnitol Shipwreck (Kreldig Ungor)", zone = "Desolace", score = 8, q = 1457, gen = true },  -- Hellion Boots
@@ -2835,8 +2835,8 @@ RG.SPEC_GEAR_A.MAGE = {
     { id = 16791, slot = "Wrist", lvl = 33, how = "Quest", src = "Book of the Ancients (Azore Aldamort)", zone = "Desolace", score = 4, q = 6027, gen = true },  -- Silkstream Cuffs
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 11, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 14, bl = 37, gen = true },  -- Hypnotic Blade
-    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 96, q = 685, gen = true },  -- Rod of Sorrow
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 4, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 96, q = 685, gen = true },  -- Rod of Sorrow
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 4, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 9517, slot = "2H", lvl = 35, how = "Quest", src = "Celestial Power (Tabetha)", zone = "", score = 26, q = 1958, gen = true },  -- Celestial Stave
     { id = 4120, slot = "Chest", lvl = 35, how = "Quest", src = "The Curse of the Tides (Catelyn the Blade)", zone = "Stranglethorn Vale", score = 8, q = 611, gen = true },  -- Robe of Crystal Waters
     { id = 7515, slot = "Off Hand", lvl = 35, how = "Quest", src = "Celestial Power (Tabetha)", zone = "", score = 14, q = 1958, gen = true },  -- Celestial Orb
@@ -2951,7 +2951,7 @@ RG.SPEC_GEAR_A.PALADIN = {
     { id = 7685, slot = "Off Hand", lvl = 33, how = "Dungeon", src = "Bloodmage Thalnos", zone = "Scarlet Monastery", score = 12, bl = 34, gen = true },  -- Orb of the Forgotten Seer
     { id = 7712, slot = "Shoulder", lvl = 33, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 7, bl = 37, gen = true },  -- Mantle of Doan
     { id = 15865, slot = "Off Hand", lvl = 34, how = "Quest", src = "Ghost-o-plasm Round Up (Hornizz Brimbuzzle)", zone = "Desolace", score = 5, q = 6134, gen = true },  -- Anchorhold Buckler
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 6, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 6, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 4120, slot = "Chest", lvl = 35, how = "Quest", src = "The Curse of the Tides (Catelyn the Blade)", zone = "Stranglethorn Vale", score = 10, q = 611, gen = true },  -- Robe of Crystal Waters
     { id = 6791, slot = "Feet", lvl = 35, how = "Quest", src = "The Karnitol Shipwreck (Kreldig Ungor)", zone = "Desolace", score = 6, q = 1457, gen = true },  -- Hellion Boots
     { id = 3985, slot = "Waist", lvl = 35, how = "Rare mob", src = "Mok'rash", zone = "Stranglethorn Vale", score = 7, bl = 50, gen = true },  -- Monogrammed Sash
@@ -3075,7 +3075,7 @@ RG.SPEC_GEAR_A.PALADIN = {
     { id = 7712, slot = "Shoulder", lvl = 33, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 5, bl = 37, gen = true },  -- Mantle of Doan
     { id = 1602, slot = "Main Hand", lvl = 34, how = "Rare mob", src = "Crushridge Warmonger", zone = "Alterac Mountains", score = 90, bl = 40, gen = true },  -- Sickle Axe
     { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 14, bl = 40, gen = true },  -- Worn Running Boots
-    { id = 4745, slot = "Wrist", lvl = 35, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 15, q = 685, gen = true },  -- War Rider Bracers
+    { id = 4745, slot = "Wrist", lvl = 35, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 15, q = 685, gen = true },  -- War Rider Bracers
     { id = 12253, slot = "Back", lvl = 36, how = "Vendor", src = "Masat T'andr", zone = "Swamp of Sorrows", score = 10, gen = true },  -- Brilliant Red Cloak
     { id = 19509, slot = "Feet", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 20, bl = 40, gen = true },  -- Dusty Mail Boots
     { id = 4109, slot = "Feet", lvl = 36, how = "Quest", src = "Excelsior (Drizzlik)", zone = "Stranglethorn Vale", score = 15, q = 628, gen = true },  -- Excelsior Boots
@@ -3208,8 +3208,8 @@ RG.SPEC_GEAR_A.PRIEST = {
     { id = 7712, slot = "Shoulder", lvl = 33, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 10, bl = 37, gen = true },  -- Mantle of Doan
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 18, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 17, bl = 37, gen = true },  -- Hypnotic Blade
-    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 64, q = 685, gen = true },  -- Rod of Sorrow
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 6, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 64, q = 685, gen = true },  -- Rod of Sorrow
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 6, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 4120, slot = "Chest", lvl = 35, how = "Quest", src = "The Curse of the Tides (Catelyn the Blade)", zone = "Stranglethorn Vale", score = 13, q = 611, gen = true },  -- Robe of Crystal Waters
     { id = 6791, slot = "Feet", lvl = 35, how = "Quest", src = "The Karnitol Shipwreck (Kreldig Ungor)", zone = "Desolace", score = 8, q = 1457, gen = true },  -- Hellion Boots
     { id = 3985, slot = "Waist", lvl = 35, how = "Rare mob", src = "Mok'rash", zone = "Stranglethorn Vale", score = 8, bl = 50, gen = true },  -- Monogrammed Sash
@@ -3334,7 +3334,7 @@ RG.SPEC_GEAR_A.PRIEST = {
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 15, bl = 37, gen = true },  -- Illusionary Rod
     { id = 15104, slot = "Feet", lvl = 34, how = "Quest", src = "Malin's Request (Skuerto)", zone = "Arathi Highlands", score = 10, q = 697, gen = true },  -- Wingborne Boots
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 15, bl = 37, gen = true },  -- Hypnotic Blade
-    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 64, q = 685, gen = true },  -- Rod of Sorrow
+    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 64, q = 685, gen = true },  -- Rod of Sorrow
     { id = 4746, slot = "Chest", lvl = 35, how = "Quest", src = "Solution to Doom (Theldurin the Lost)", zone = "Uldaman", score = 14, q = 709, gen = true },  -- Doomsayer's Robe
     { id = 6791, slot = "Feet", lvl = 35, how = "Quest", src = "The Karnitol Shipwreck (Kreldig Ungor)", zone = "Desolace", score = 9, q = 1457, gen = true },  -- Hellion Boots
     { id = 3985, slot = "Waist", lvl = 35, how = "Rare mob", src = "Mok'rash", zone = "Stranglethorn Vale", score = 6, bl = 50, gen = true },  -- Monogrammed Sash
@@ -3623,7 +3623,7 @@ RG.SPEC_GEAR_A.SHAMAN = {
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 13, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 14, bl = 37, gen = true },  -- Hypnotic Blade
     { id = 15865, slot = "Off Hand", lvl = 34, how = "Quest", src = "Ghost-o-plasm Round Up (Hornizz Brimbuzzle)", zone = "Desolace", score = 4, q = 6134, gen = true },  -- Anchorhold Buckler
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 5, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 5, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 3985, slot = "Waist", lvl = 35, how = "Rare mob", src = "Mok'rash", zone = "Stranglethorn Vale", score = 8, bl = 50, gen = true },  -- Monogrammed Sash
     { id = 23178, slot = "Back", lvl = 36, how = "Dungeon", src = "Lady Falther'ess", zone = "Razorfen Downs", score = 14, bl = 40, gen = true },  -- Mantle of Lady Falther'ess
     { id = 10769, slot = "Neck", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 4, bl = 39, gen = true },  -- Glowing Eye of Mordresh
@@ -3734,7 +3734,7 @@ RG.SPEC_GEAR_A.SHAMAN = {
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 13, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 15, bl = 37, gen = true },  -- Hypnotic Blade
     { id = 15865, slot = "Off Hand", lvl = 34, how = "Quest", src = "Ghost-o-plasm Round Up (Hornizz Brimbuzzle)", zone = "Desolace", score = 5, q = 6134, gen = true },  -- Anchorhold Buckler
-    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "Wanted!  Marez Cowl", zone = "Arathi Highlands", score = 6, q = 684, gen = true },  -- Arcane Runed Bracers
+    { id = 4744, slot = "Wrist", lvl = 34, how = "Quest", src = "WANTED: Marez Cowl", zone = "Arathi Highlands", score = 6, q = 684, gen = true },  -- Arcane Runed Bracers
     { id = 4120, slot = "Chest", lvl = 35, how = "Quest", src = "The Curse of the Tides (Catelyn the Blade)", zone = "Stranglethorn Vale", score = 10, q = 611, gen = true },  -- Robe of Crystal Waters
     { id = 3985, slot = "Waist", lvl = 35, how = "Rare mob", src = "Mok'rash", zone = "Stranglethorn Vale", score = 8, bl = 50, gen = true },  -- Monogrammed Sash
     { id = 23178, slot = "Back", lvl = 36, how = "Dungeon", src = "Lady Falther'ess", zone = "Razorfen Downs", score = 15, bl = 40, gen = true },  -- Mantle of Lady Falther'ess
@@ -3849,7 +3849,7 @@ RG.SPEC_GEAR_A.WARLOCK = {
     { id = 16791, slot = "Wrist", lvl = 33, how = "Quest", src = "Book of the Ancients (Azore Aldamort)", zone = "Desolace", score = 8, q = 6027, gen = true },  -- Silkstream Cuffs
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 18, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 15, bl = 37, gen = true },  -- Hypnotic Blade
-    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 127, q = 685, gen = true },  -- Rod of Sorrow
+    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 127, q = 685, gen = true },  -- Rod of Sorrow
     { id = 15864, slot = "Wrist", lvl = 34, how = "Quest", src = "Ghost-o-plasm Round Up (Hornizz Brimbuzzle)", zone = "Desolace", score = 8, q = 6134, gen = true },  -- Condor Bracers
     { id = 15106, slot = "2H", lvl = 35, how = "Quest", src = "The Completed Orb of Dar'Orahil (Menara Voidrender)", zone = "", score = 24, q = 4964, gen = true },  -- Staff of Dar'Orahil
     { id = 15108, slot = "Off Hand", lvl = 35, how = "Quest", src = "The Completed Orb of Dar'Orahil (Menara Voidrender)", zone = "", score = 16, q = 4964, gen = true },  -- Orb of Dar'Orahil
@@ -3963,7 +3963,7 @@ RG.SPEC_GEAR_A.WARLOCK = {
     { id = 16791, slot = "Wrist", lvl = 33, how = "Quest", src = "Book of the Ancients (Azore Aldamort)", zone = "Desolace", score = 5, q = 6027, gen = true },  -- Silkstream Cuffs
     { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 12, bl = 37, gen = true },  -- Illusionary Rod
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 13, bl = 37, gen = true },  -- Hypnotic Blade
-    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 127, q = 685, gen = true },  -- Rod of Sorrow
+    { id = 5247, slot = "Ranged", lvl = 34, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 127, q = 685, gen = true },  -- Rod of Sorrow
     { id = 15105, slot = "2H", lvl = 35, how = "Quest", src = "The Completed Orb of Noh'Orahil (Menara Voidrender)", zone = "", score = 19, q = 4975, gen = true },  -- Staff of Noh'Orahil
     { id = 4120, slot = "Chest", lvl = 35, how = "Quest", src = "The Curse of the Tides (Catelyn the Blade)", zone = "Stranglethorn Vale", score = 10, q = 611, gen = true },  -- Robe of Crystal Waters
     { id = 15107, slot = "Off Hand", lvl = 35, how = "Quest", src = "The Completed Orb of Noh'Orahil (Menara Voidrender)", zone = "", score = 13, q = 4975, gen = true },  -- Orb of Noh'Orahil
@@ -4192,7 +4192,7 @@ RG.SPEC_GEAR_A.WARRIOR = {
     { id = 1602, slot = "Main Hand", lvl = 34, how = "Rare mob", src = "Crushridge Warmonger", zone = "Alterac Mountains", score = 117, bl = 40, gen = true },  -- Sickle Axe
     { id = 7714, slot = "Main Hand", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 107, bl = 37, gen = true },  -- Hypnotic Blade
     { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 14, bl = 40, gen = true },  -- Worn Running Boots
-    { id = 4745, slot = "Wrist", lvl = 35, how = "Quest", src = "Wanted!  Otto and Falconcrest", zone = "Arathi Highlands", score = 15, q = 685, gen = true },  -- War Rider Bracers
+    { id = 4745, slot = "Wrist", lvl = 35, how = "Quest", src = "WANTED: Otto and Falconcrest", zone = "Arathi Highlands", score = 15, q = 685, gen = true },  -- War Rider Bracers
     { id = 12253, slot = "Back", lvl = 36, how = "Vendor", src = "Masat T'andr", zone = "Swamp of Sorrows", score = 10, gen = true },  -- Brilliant Red Cloak
     { id = 19509, slot = "Feet", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 20, bl = 40, gen = true },  -- Dusty Mail Boots
     { id = 4109, slot = "Feet", lvl = 36, how = "Quest", src = "Excelsior (Drizzlik)", zone = "Stranglethorn Vale", score = 16, q = 628, gen = true },  -- Excelsior Boots
