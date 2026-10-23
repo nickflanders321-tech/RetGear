@@ -31,3 +31,5 @@ jobs:
           lua tools/arcade/audit_art.lua
           pip install pillow
           python3 tools/arcade/audit_places_img.py
+      - name: Route coverage by zone (tools/audit)
+        run: python3 tools/audit/coverage.py --markdown >> "$GITHUB_STEP_SUMMARY"

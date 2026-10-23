@@ -23,22 +23,31 @@ def fetch(url, timeout=20):
         return r.read().decode('utf-8', 'replace')
 
 # --- 1. game build -----------------------------------------------------------
+# WoW Forever builds are 1.60 and up. The beta runs under wow_classic_beta; the live game's product name isn't
+# public yet, so every likely product is asked and the newest Forever build wins (Classic Era, 1.15, and the other
+# Classic versions are ignored by the version check).
+FOREVER = re.compile(r'^1\.(6\d|[7-9]\d)\.\d+\.\d{4,6}$')
+def _ver(v): return tuple(int(x) for x in v.split('.'))
 def live_build():
-    product = os.environ.get('FOREVER_PRODUCT', 'wow_classic_beta')
-    for url in ('http://us.patch.battle.net:1119/%s/versions' % product,
-                'https://us.version.battle.net/%s/versions' % product):
-        try:
-            txt = fetch(url)
-            for line in txt.splitlines():
-                if line.startswith('us|'):
-                    m = re.search(r'\|(\d+\.\d+\.\d+\.\d+)\|', line)
-                    if m: return m.group(1), url
-        except Exception as e:
-            print('note: %s: %s' % (url, e), file=sys.stderr)
+    products = (os.environ.get('FOREVER_PRODUCT') or 'wow_forever wow_classic_forever wow_classic_era wow_classic wow_classic_beta').split()
+    best = (None, None)
+    for product in products:
+        for url in ('http://us.patch.battle.net:1119/%s/versions' % product,
+                    'https://us.version.battle.net/%s/versions' % product):
+            try:
+                txt = fetch(url)
+                for line in txt.splitlines():
+                    if line.startswith('us|'):
+                        for v in re.findall(r'\|(\d+\.\d+\.\d+\.\d+)\|', line):
+                            if FOREVER.match(v) and (not best[0] or _ver(v) > _ver(best[0])): best = (v, url)
+                break
+            except Exception as e:
+                print('note: %s: %s' % (url, e), file=sys.stderr)
+    if best[0]: return best
     src = state.get('game_build_source') or 'https://blizztrack.com/view/wow_classic_beta?type=versions'
     try:
-        m = re.search(r'\b(1\.\d{2}\.\d+\.\d{4,6})\b', fetch(src))
-        if m: return m.group(1), src
+        found = [v for v in re.findall(r'\b(1\.\d{2}\.\d+\.\d{4,6})\b', fetch(src)) if FOREVER.match(v)]
+        if found: return max(found, key=_ver), src
     except Exception as e:
         print('note: %s: %s' % (src, e), file=sys.stderr)
     return None, None

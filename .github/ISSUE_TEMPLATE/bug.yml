@@ -1,0 +1,19 @@
+name: Error or something broken
+description: A Lua error, a window that doesn't open, or a feature that stopped working.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "In game, type **/wp errors**, press Ctrl+A, Ctrl+C, and paste it below (it includes the version and game build)."
+  - type: textarea
+    id: errors
+    attributes:
+      label: The /wp errors box
+      render: text
+  - type: textarea
+    id: what
+    attributes:
+      label: What were you doing when it happened?
+    validations:
+      required: true

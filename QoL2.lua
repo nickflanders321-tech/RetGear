@@ -494,7 +494,10 @@ function RG.ReportStep()
   end
   if RG.LogSummary and RG.db and RG.db.ptlog and #RG.db.ptlog > 0 then L[#L + 1] = ""; L[#L + 1] = RG.LogSummary() end
   L[#L + 1] = ""
-  L[#L + 1] = "What looked wrong? (write here, then paste this whole box into an issue at github.com/nickflanders321-tech/RetGear/issues)"
+  local errs = WaypathDB and WaypathDB.errors
+  if errs and errs[1] then L[#L + 1] = "Last error (" .. #errs .. " recorded): " .. tostring(errs[1].msg):sub(1, 200) end
+  if RG.CardsOnly and RG.CardsOnly() then L[#L + 1] = "Cards only mode is on." end
+  L[#L + 1] = "What looked wrong? (write here, then paste this whole box into a new issue: github.com/nickflanders321-tech/RetGear/issues/new/choose)"
   RG.ShowErrors(table.concat(L, "\n"), "Waypath+ step report  ·  Ctrl+A, Ctrl+C to copy")
 end
 

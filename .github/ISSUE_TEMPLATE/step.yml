@@ -1,0 +1,21 @@
+name: Wrong or confusing route step
+description: A step sends you to the wrong place, lists the wrong quests, or doesn't tick off.
+title: "Step: "
+labels: ["route"]
+body:
+  - type: markdown
+    attributes:
+      value: "In game, type **/wp report** (or press the note button in the Waypath+ window), press Ctrl+A, Ctrl+C, and paste it below. It has the version, your zone and position, and the step you are on."
+  - type: textarea
+    id: report
+    attributes:
+      label: The /wp report box
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What was wrong, and what should it say?
+    validations:
+      required: true
