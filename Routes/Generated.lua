@@ -499,10 +499,16 @@ RG.GEN_STEPS = {
       { t = "Kirsta Deepshadow (levels 56-58): Unfinished Business.", q = { 6004, 6023, 6025 }, w = { 1422, 51.9, 28.1, "Kirsta Deepshadow" } },
       { t = "Alchemist Arbington (level 57): Skeletal Fragments, Mold Rhymes With....", q = { 5537, 5538 }, w = { 1422, 42.7, 83.8, "Alchemist Arbington" } },
     },
-    ["Azshara|47"] = {
-      { t = "Loh'atu (level 47): Spiritual Unrest, A Land Filled with Hatred.", q = { 5535, 5536 }, w = { 1447, 11.4, 78.2, "Loh'atu" } },
+    ["Azshara|54"] = {
+      { t = "Duke Hydraxis (levels 56-57): Poisoned Water, Stormers and Rumblers.", q = { 6804, 6805 }, w = { 1447, 79.3, 73.7, "Duke Hydraxis" } },
       { t = "Kim'jael (level 53): Kim'jael Indeed!, Kim'jael's \"Missing\" Equipment.", q = { 3601, 5534 }, w = { 1447, 53.5, 21.8, "Kim'jael" } },
-      { t = "Duke Hydraxis (level 56): Poisoned Water.", q = { 6804 }, w = { 1447, 79.3, 73.7, "Duke Hydraxis" } },
+      { t = "Loramus Thalipedes (levels 57-58): Loramus, Breaking the Ward, The Name of the Beast.", q = { 3141, 3508, 3509 }, w = { 1447, 60.8, 66.3, "Loramus Thalipedes" } },
+      { t = "Duke Hydraxis (level 60): Eye of the Emberseer, The Molten Core.", q = { 6821, 6822 }, w = { 1447, 79.3, 73.7, "Duke Hydraxis" } },
+      { t = "Lord Arkkoroc (level 58): The Name of the Beast.", q = { 3510, 3511 }, w = { 1447, 77.1, 42.8, "Lord Arkkoroc" } },
+      { t = "Loramus Thalipedes (level 58): Azsharite, The Formation of Felbane.", q = { 3602, 3621 }, w = { 1447, 60.8, 66.3, "Loramus Thalipedes" } },
+      { t = "Narain Soothfancy (level 60): The Wrath of Neptulon.", q = { 8729 }, w = { 1446, 65.2, 18.6, "Narain Soothfancy" } },
+      { t = "Duke Hydraxis (level 60): Agent of Hydraxis, Hands of the Enemy, A Hero's Reward.", q = { 6823, 6824, 7486 }, w = { 1447, 79.3, 73.7, "Duke Hydraxis" } },
+      { t = "Spirit of Azuregos (level 60): Azuregos's Magical Ledger.", q = { 8575 }, w = { 1447, 53.0, 81.7, "Spirit of Azuregos" } },
     },
     ["Winterspring|53"] = {
       { t = "At Everlook (levels 52-56): The Everlook Report, Duke Nicholas Zverenhoff, Chillwind Horns, Are We There, Yeti?, Trouble in Winterspring!, Return to Tinkee. From Gregor Greystone, Felnok Steelspring, Umi Rumplesnicker and others.", q = { 6028, 6030, 4809, 3783, 6603, 4810 }, w = { 1452, 61.4, 38.8, "Everlook" } },

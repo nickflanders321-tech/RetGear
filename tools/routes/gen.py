@@ -46,7 +46,7 @@ ALLIANCE_ZONES = [
     ('Feralas', 41, 48, [357]), ('The Hinterlands', 43, 49, [47]), ('Searing Gorge', 45, 50, [51]),
     ('Tanaris', 41, 50, [440]), ("Un'Goro Crater", 50, 55, [490]), ('Felwood', 50, 56, [361]),
     ('Burning Steppes', 50, 58, [46]), ('Blasted Lands', 50, 58, [4]), ('Western Plaguelands', 51, 58, [28]),
-    ('Azshara', 47, 55, [16]), ('Winterspring', 53, 59, [618]), ('Silithus', 55, 60, [1377]),
+    ('Azshara', 54, 60, [16]), ('Winterspring', 53, 59, [618]), ('Silithus', 55, 60, [1377]),
     ('Eastern Plaguelands', 54, 60, [139]),
 ]
 

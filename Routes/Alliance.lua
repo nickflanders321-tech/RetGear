@@ -58,7 +58,7 @@ A.route = {
   { o = 34, from = 52, to = 60, kind = "dungeon", zone = "Blackrock Depths", hub = "Searing Gorge / Burning Steppes", notes = "Huge dungeon under Blackrock Mountain: plan two or three runs." },
   { o = 35, from = 50, to = 58, kind = "zone", zone = "Blasted Lands", hub = "Nethergarde Keep", fp = "Nethergarde Keep", notes = "Reached through the Swamp of Sorrows." },
   { o = 36, from = 51, to = 58, kind = "zone", zone = "Western Plaguelands", hub = "Chillwind Camp", fp = "Chillwind Camp", notes = "Tirion Fordring's chain starts here." },
-  { o = 37, from = 47, to = 55, kind = "zone", zone = "Azshara", hub = "Talrendis Point", fp = "Talrendis Point", notes = "Few quests, good for a break from the grind." },
+  { o = 38.2, from = 54, to = 60, kind = "zone", zone = "Azshara", hub = "Talrendis Point", fp = "Talrendis Point", notes = "Most of its quests are level 57-60 in WoW Forever: come here late, between Winterspring and Silithus. Blackmaw Hold (55-60) is behind the gate here." },
   { o = 38, from = 53, to = 59, kind = "zone", zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Miners: rich Thorium." },
   { o = 38.5, from = 54, to = 60, kind = "zone", zone = "Eastern Plaguelands", hub = "Light's Hope Chapel", fp = "Light's Hope Chapel", notes = "Tirion Fordring's chain ends in Mark of Fordring." },
   { o = 39.5, from = 58, to = 60, kind = "zone", zone = "Mount Hyjal", hub = "Mount Hyjal", notes = "New Forever zone, level 60: through Darkwhisper Gorge in southern Winterspring. The Cenarion Circle is rebuilding here; the Hyjal Summit (20) and Barrow Deeps (10) raids open December 9. Steps come from WoW Forever's quest data and fill in as it is published." },
