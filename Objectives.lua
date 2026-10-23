@@ -3704,7 +3704,7 @@ RG.QDATA = {
 [98341]={e={1450,43.9,73.4,"Avatar of Saeyleenan"},s={1450,56.2,30.6,"Dendrite Starblaze"},n="The Great Windborne Cat Spirit",r=20,l=20,ra="SA"},
 [98342]={e={1450,58.4,73.5,"Great Cat Spirit"},s={1450,58.4,73.5,"Great Cat Spirit"},n="The Great Cat Spirit",r=20,l=20,ra="T",cl="D",cq=true,o={{"i","Relic of the Fang",{},{{1450,72.4,66.0,0}}},{"i","Relic of the Claw",{},{{1450,75.2,67.2,0}}},{"i","Relic of the Silent Shadow",{},{{1450,74.4,65.4,0}}}}},
 [98362]={e={1456,76.5,27.2,"Turak Runetotem"},s={1450,56.2,30.6,"Dendrite Starblaze"},n="To Thunder Bluff",r=20,l=20,ra="TS",cl="D",cq=true},
-[98372]={e={1431,17.0,54.9,"Night Watch Guard"},n="An Unfortunate End",r=1,l=1,ra="HDNGA"},
+[98372]={e={1431,17.0,54.9,"Night Watch Guard"},n="An Unfortunate End",r=1,l=60},
 [98389]={e={1420,31.1,66.4,"Aramis Hammerhand"},s={1420,31.1,66.4,"Aramis Hammerhand"},n="A Light in the Darkness",r=2,l=4,ra="OUTRS",o={{"k","?",{"Webbed Forsaken","Forsaken Adventurer"},{{1420,24.9,59.4,1},{1420,24.7,60.3,2}}}}},
 [98394]={e={1450,58.4,73.5,"Great Cat Spirit"},s={1450,56.2,30.6,"Dendrite Starblaze"},n="The Great Cat Spirit",r=20,l=20,ra="N",cl="D",cq=true},
 [98396]={e={1450,58.4,73.5,"Great Cat Spirit"},s={1450,58.4,73.5,"Great Cat Spirit"},n="The Great Cat Spirit",r=20,l=20,ra="N",cl="D",cq=true,o={{"i","Relic of the Fang",{},{{1450,72.4,66.0,0}}},{"i","Relic of the Claw",{},{{1450,75.2,67.2,0}}},{"i","Relic of the Silent Shadow",{},{{1450,74.4,65.4,0}}}}},

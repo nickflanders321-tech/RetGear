@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.4
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## Unreleased
 - Launch ready: Riverglades, Mount Hyjal and (for the Horde) Shen'dralas are in the route for both factions. Their steps build themselves from WoW Forever's quest data as soon as it is published, and any other new zone that shows up in the data with enough quests is added to the route on its own (with steps and map pins), so launch-day content needs no update to appear.
 - Route: Alliance Azshara moves to levels 54-60, where its quests actually are in WoW Forever (18 quests instead of 5).
