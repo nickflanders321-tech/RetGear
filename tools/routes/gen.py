@@ -21,6 +21,10 @@ def _sorted_pairs(kv):
 D = json.load(open(sys.argv[2], encoding='utf-8'), object_pairs_hook=_sorted_pairs)
 OUT = (sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')).rstrip('/') + '/'
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
+def areas_of(uimap, also=()):
+    """Every area (and sub-area) that sits on one world map: a new zone's quests are filed under its sub-areas too."""
+    return sorted({a for a, m in ui.items() if m == uimap} | set(also))
+RIVERGLADES, HYJAL, SHENDRALAS = areas_of(2548), areas_of(2482, [616]), areas_of(2652, [16651])
 
 RACE_BITS = {'O': 2, 'U': 16, 'T': 32, 'R': 128, 'S': 8589934592,
              'H': 1, 'D': 4, 'N': 8, 'G': 64, 'A': 4294967296}
@@ -37,7 +41,8 @@ ALLIANCE_ZONES = [
     ('Ashenvale', 20, 30, [331]), ('Wetlands', 21, 31, [11]), ('Hillsbrad Foothills', 22, 35, [267]),
     ('Dustwallow Marsh', 35, 45, [15]), ('Thousand Needles', 30, 42, [400]), ('Desolace', 31, 41, [405]),
     ('Arathi Highlands', 33, 40, [45]), ('Stranglethorn Vale', 32, 48, [33]), ('Swamp of Sorrows', 35, 42, [8]),
-    ('Badlands', 37, 44, [3]), ('Alterac Mountains', 33, 40, [36]), ("Shen'Dralas", 38, 43, [16651]),
+    ('Badlands', 37, 44, [3]), ('Alterac Mountains', 33, 40, [36]), ("Shen'Dralas", 38, 43, SHENDRALAS),
+    ('Riverglades', 36, 44, RIVERGLADES), ('Mount Hyjal', 58, 60, HYJAL),
     ('Feralas', 41, 48, [357]), ('The Hinterlands', 43, 49, [47]), ('Searing Gorge', 45, 50, [51]),
     ('Tanaris', 41, 50, [440]), ("Un'Goro Crater", 50, 55, [490]), ('Felwood', 50, 56, [361]),
     ('Burning Steppes', 50, 58, [46]), ('Blasted Lands', 50, 58, [4]), ('Western Plaguelands', 51, 58, [28]),
@@ -58,6 +63,8 @@ HORDE_ZONES = [
     ("Un'Goro Crater", 50, 55, [490], 0), ('Felwood', 51, 55, [361], 0), ('Burning Steppes', 50, 58, [46], 0),
     ('Winterspring', 55, 60, [618], 0), ('Western & Eastern Plaguelands', 52, 60, [28, 139], 0),
     ('Azshara', 50, 58, [16], 0), ('Silithus', 55, 60, [1377], 0),
+    # new WoW Forever zones: their quests arrive with the launch data, and the steps build themselves then
+    ('Riverglades', 36, 44, RIVERGLADES, 0), ("Shen'dralas", 38, 43, SHENDRALAS, 0), ('Mount Hyjal', 58, 60, HYJAL, 0),
 ]
 HORDE_ANCHORS = {
     406: [('Sun Rock Retreat', 'Innkeeper Jayka')], 267: [('Tarren Mill', 'Innkeeper Shay')],
@@ -402,6 +409,60 @@ for letter in sorted(by_race):
         lines.append('    },')
     lines.append('  },')
 lines.append('}')
+
+# ---------------------------------------------------------------------------
+# Zones nobody has listed yet: any world map with enough quests for a faction that no leg, dungeon or city
+# covers becomes a route entry of its own (RG.GEN_AUTO, added to the route by Profile.lua), with generated steps.
+# On launch day a brand-new zone shows up in the route within an hour of its quest data, without a code change.
+# ---------------------------------------------------------------------------
+AUTO_MIN = 12
+covered = set()
+for leg in LEGS: covered |= {ui.get(z) for z in leg[4]} | set(leg[4])
+for _, areas in DUNGEONS + ALLY_DUNGEONS: covered |= {ui.get(a) for a in areas} | set(areas)
+SKIP_MAPS = set()
+for m in re.finditer(r'\[(\d+)\]\s*=\s*(\d+),\s*--\s*Referenced dungeon area', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read()):
+    SKIP_MAPS.add(int(m.group(2)))
+SKIP_NAMES = ('Warsong Gulch', 'Arathi Basin', 'Alterac Valley', 'Orgrimmar', 'Thunder Bluff', 'Undercity', 'Stormwind', 'Ironforge', 'Darnassus')
+auto = {'X': [], 'F': []}
+by_map = {}
+for qid, q in D['quests'].items():
+    z, ql, races, classes, sflags = at(q, 8), at(q, 5), int(at(q, 6) or 0), at(q, 10), at(q, 9)
+    if not isinstance(z, int) or z <= 0 or classes or (sflags or 0) & 1: continue
+    m = ui.get(z)
+    if not m or m in covered or z in covered or m in SKIP_MAPS: continue
+    if not ql or ql < 10 or ql > 60: continue
+    for letter, mask in (('X', HORDE_ALL), ('F', ALLY_ALL)):
+        if races and not races & mask: continue
+        by_map.setdefault((letter, m), []).append((ql, z))
+for (letter, m), qs in sorted(by_map.items()):
+    name = MAPNAME.get(m) or ''
+    if len(qs) < AUTO_MIN or not name or any(n in name for n in SKIP_NAMES): continue
+    lv = sorted(q[0] for q in qs)
+    lo, hi = lv[len(lv) // 5], lv[min(len(lv) - 1, len(lv) * 9 // 10)]
+    if hi - lo < 2: lo, hi = max(1, hi - 3), hi
+    areas = sorted({q[1] for q in qs})
+    steps = build(letter, name, lo, hi, areas)
+    if not steps: continue
+    auto[letter].append((name, lo, hi, len(qs), steps[0][2][3]))
+    by_race.setdefault(letter, []).append((name, lo, steps))
+    print('AUTO new zone %s %-22s %2d-%2d: %2d steps, %3d quests' % (letter, name, lo, hi, len(steps), len(qs)), file=sys.stderr)
+lines.append('-- RG.GEN_AUTO[X = Horde, F = Alliance] = zones found in the quest data that no hand-written route entry lists yet')
+lines.append('RG.GEN_AUTO = {')
+for letter in ('X', 'F'):
+    lines.append('  %s = {' % letter)
+    for name, lo, hi, n, hub in auto[letter]:
+        lines.append('    { zone = %s, from = %d, to = %d, n = %d, hub = %s },' % (lstr(name), lo, hi, n, lstr(hub)))
+    lines.append('  },')
+lines.append('}')
+# the auto zones' steps go into GEN_STEPS too
+extra = []
+for letter in ('X', 'F'):
+    for zone_name, lo, steps in [e for e in by_race.get(letter, []) if any(e[0] == a[0] and e[1] == a[1] for a in auto[letter])]:
+        extra.append('RG.GEN_STEPS.%s[%s] = {' % (letter, lstr('%s|%d' % (zone_name, lo))))
+        for text, ids, (mm, x, y, label) in steps:
+            extra.append('  { t = %s, q = { %s }, w = { %d, %.1f, %.1f, %s } },' % (lstr(text), ', '.join(map(str, ids)), mm, x, y, lstr(label)))
+        extra.append('}')
+lines.extend(extra)
 def emit_dungeons(var, dlist, ally):
     lines.append('-- %s[route name] = { {id, name, giver, where, waypoint, level, required level, ra = races, cl = classes}, ... }' % var)
     lines.append('%s = {' % var)

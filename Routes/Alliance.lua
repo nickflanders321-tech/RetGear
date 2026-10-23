@@ -40,6 +40,7 @@ A.route = {
   { o = 21, from = 33, to = 45, kind = "dungeon", zone = "Scarlet Monastery", hub = "Tirisfal Glades", notes = "North-east Tirisfal Glades. Alliance groups usually run it from a flight to Undercity's side; four wings." },
   { o = 22, from = 32, to = 48, kind = "zone", zone = "Stranglethorn Vale", hub = "Booty Bay / Rebel Camp", fp = "Booty Bay", notes = "Nesingwary hunting quests and Booty Bay. Miners: Iron and Mithril up north." },
   { o = 23, from = 35, to = 42, kind = "zone", zone = "Swamp of Sorrows", hub = "Stormwind side: Blasted Lands border", notes = "Small Alliance quest set; Stonard is Horde." },
+  { o = 23.5, from = 36, to = 44, kind = "zone", zone = "Riverglades", hub = "Powderfuse Port", notes = "New Forever zone (about 36-44) on the eastern coast: the Steamwheedle boat from Tanaris to Powderfuse Port, or north through Redridge and east before the Burning Steppes. The Brotherhood of the Horse are your allies here. Krol'dok Stronghold (40-45) is in the north. Steps come from WoW Forever's quest data and fill in as it is published." },
   { o = 24, from = 37, to = 44, kind = "zone", zone = "Badlands", hub = "Dustbelch Grotto / Uldaman", notes = "Uldaman is here. Miners: Mithril." },
   { o = 24.5, from = 37, to = 46, kind = "dungeon", zone = "Razorfen Downs", hub = "The Barrens / Thousand Needles", notes = "South end of The Barrens." },
   { o = 25, from = 38, to = 43, kind = "zone", zone = "Shen'Dralas", hub = "Shen'Dralas", notes = "New Forever zone, quests from level 38." },
@@ -60,6 +61,7 @@ A.route = {
   { o = 37, from = 47, to = 55, kind = "zone", zone = "Azshara", hub = "Talrendis Point", fp = "Talrendis Point", notes = "Few quests, good for a break from the grind." },
   { o = 38, from = 53, to = 59, kind = "zone", zone = "Winterspring", hub = "Everlook", fp = "Everlook", notes = "Miners: rich Thorium." },
   { o = 38.5, from = 54, to = 60, kind = "zone", zone = "Eastern Plaguelands", hub = "Light's Hope Chapel", fp = "Light's Hope Chapel", notes = "Tirion Fordring's chain ends in Mark of Fordring." },
+  { o = 39.5, from = 58, to = 60, kind = "zone", zone = "Mount Hyjal", hub = "Mount Hyjal", notes = "New Forever zone, level 60: through Darkwhisper Gorge in southern Winterspring. The Cenarion Circle is rebuilding here; the Hyjal Summit (20) and Barrow Deeps (10) raids open December 9. Steps come from WoW Forever's quest data and fill in as it is published." },
   { o = 39, from = 55, to = 60, kind = "zone", zone = "Silithus", hub = "Cenarion Hold", fp = "Cenarion Hold", notes = "Endgame quests; Cenarion Hold is the hub." },
   { o = 40, from = 56, to = 60, kind = "dungeon", zone = "Stratholme, Scholomance, Dire Maul, LBRS/UBRS", hub = "Level 58-60", notes = "The level 58-60 dungeons for pre-raid gear: the gear guide's pre-raid checklist says which ones drop yours." },
 }

@@ -118,6 +118,22 @@ buildGuide(nil)
 -- Route: faction zones + race starting zones + class milestones
 -- ---------------------------------------------------------------------------
 local route, travel, steps = {}, {}, {}
+-- Zones found in WoW Forever's quest data that no hand-written entry lists yet (Routes/Generated.lua, RG.GEN_AUTO):
+-- a zone that arrives with new content is in the route, with its generated steps, before anyone writes it up.
+do
+  local auto = RG.GEN_AUTO and RG.GEN_AUTO[faction == "Alliance" and "F" or "X"]
+  if auto and H.route then
+    local have = {}
+    for _, r in ipairs(H.route) do have[r.zone] = true end
+    for _, z in ipairs(auto) do
+      if not have[z.zone] then
+        have[z.zone] = true
+        H.route[#H.route + 1] = { from = z.from, to = z.to, kind = "zone", zone = z.zone, hub = z.hub or z.zone, auto = true,
+          notes = "New zone, found in WoW Forever's quest data (" .. (z.n or 0) .. " quests, levels " .. z.from .. "-" .. z.to .. "). The steps are built from that data; travel tips follow in an update." }
+      end
+    end
+  end
+end
 if faction == "Alliance" and own.token == "PALADIN" then   -- Forsaken paladin quests, not yours
   own = { weights = own.weights }
   RG.CLASS_QUESTS = {}

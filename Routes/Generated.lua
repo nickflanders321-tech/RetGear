@@ -384,6 +384,10 @@ RG.GEN_STEPS = {
       { t = "Warug (level 40): Valley of Bones.", q = { 92841 }, w = { 1443, 75.0, 68.2, "Warug" } },
       { t = "Orgrul (level 42): Mountain of Bones.", q = { 92844 }, w = { 2652, 35.6, 12.0, "Orgrul" } },
     },
+    ["Riverglades|36"] = {
+    },
+    ["Mount Hyjal|58"] = {
+    },
     ["Feralas|41"] = {
       { t = "At Feathermoon Stronghold (levels 43-44): The Ruins of Solarsal, Against the Hatecrest, The Missing Courier, The High Wilderness, The Knife Revealed, Psychometric Reading. From Shandris Feathermoon, Latronicus Moonspear, Angelas Moonbreeze and others.", q = { 2866, 3130, 4124, 2982, 4129, 2869, 4125, 4130 }, w = { 1444, 31.0, 43.5, "Feathermoon Stronghold" } },
       { t = "At Feathermoon Stronghold (level 44): The Woodpaw Gnolls. From Ginro Hearthkindle.", q = { 4131 }, w = { 1444, 31.0, 43.5, "Feathermoon Stronghold" } },
@@ -1185,6 +1189,21 @@ RG.GEN_STEPS = {
       { t = "Jonathan the Revelator (level 60): Treasure of the Timeless One.", q = { 8745 }, w = { 1451, 25.9, 91.0, "Jonathan the Revelator" } },
       { t = "At Cenarion Hold (level 60): The Calling. From Geologist Larksbane.", q = { 8315 }, w = { 1451, 49.2, 34.2, "Cenarion Hold" } },
     },
+    ["Riverglades|36"] = {
+    },
+    ["Shen'dralas|38"] = {
+      { t = "Nerlokh (levels 38-40): Ravaging Ravagers, Facing the Truth, Outing Outcasts.", q = { 93035, 93041, 93037 }, w = { 2652, 21.2, 23.2, "Nerlokh" } },
+      { t = "Uthek the Wise (level 38): Valley of Bones.", q = { 93034 }, w = { 1443, 36.2, 79.2, "Uthek the Wise" } },
+    },
+    ["Mount Hyjal|58"] = {
+    },
+  },
+}
+-- RG.GEN_AUTO[X = Horde, F = Alliance] = zones found in the quest data that no hand-written route entry lists yet
+RG.GEN_AUTO = {
+  X = {
+  },
+  F = {
   },
 }
 -- RG.GEN_DUNGEONS[route name] = { {id, name, giver, where, waypoint, level, required level, ra = races, cl = classes}, ... }
