@@ -12,7 +12,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    from Tanaris to Powderfuse Port (or the new fork off the Redridge road), Horde flight point
    Rog'mar (links to Kargath, Flame Crest, Hammerfall, Stonard), Krol'dok Stronghold is a
    40-45 dungeon. Still no Horde hubs or quests anywhere on 2026-10-19 (the beta stops at 30).
-   Add steps as soon as Horde quest data or a guide names the hubs.
+   Add steps as soon as Horde quest data or a guide names the hubs. (Since 2026-10-23 the generator
+   builds Riverglades, Mount Hyjal and Shen'dralas steps by itself as soon as their quests are in
+   QuestieDB's Forever data, and adds any other unlisted zone with 12+ quests: check the result and
+   write travel notes once launch data is in.)
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -46,6 +49,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- 2026-10-23 (launch prep): new-zone generation (Riverglades, Mount Hyjal, Shen'dralas, plus any
+  unlisted zone, RG.GEN_AUTO), Alliance Azshara moved to 54-60 from the quest data, route coverage
+  report in CI (tools/audit/coverage.py), the watcher accepts any product name for the live build.
 
 - v1.4.0: the last 4 "Horde quests not in Objectives.lua" were Alliance quests (only Alliance
   NPCs give them); the cross-check now skips them like the generator, so the list is clean.

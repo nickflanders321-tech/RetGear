@@ -347,9 +347,17 @@ local function goalProgress(a, id, n)
   end
 end
 -- one free pack a day (up to 3 saved)
+local LAUNCH = 1793829600   -- WoW Forever launch: November 4 2026, 3 p.m. PDT
 local function dailyCheck()
   local a = store(); if not a then return end
-  if a.freeDay ~= today() then a.freeDay = today(); a.free = math.min(3, (a.free or 0) + 1) end
+  -- launch week (WoW Forever opens November 4 2026, 3 p.m. PDT): two free packs a day instead of one, and a gift once
+  local now = time and time() or 0
+  local launchWeek = now >= LAUNCH and now < LAUNCH + 7 * 86400
+  if a.freeDay ~= today() then a.freeDay = today(); a.free = math.min(launchWeek and 5 or 3, (a.free or 0) + (launchWeek and 2 or 1)) end
+  if now >= LAUNCH and now < LAUNCH + 14 * 86400 and not a.launchGift and RG.ArcadeGrant then
+    a.launchGift = true
+    RG.ArcadeGrant("Welcome to WoW Forever! Launch gift", 100, { jumbo = 1 })
+  end
   todaysGoals(a)
   local sz = RG.Rank and RG.Rank.checkSeason and RG.Rank.checkSeason(a)
   if sz and RG.ArcadeGrant then

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+- Launch ready: Riverglades, Mount Hyjal and (for the Horde) Shen'dralas are in the route for both factions. Their steps build themselves from WoW Forever's quest data as soon as it is published, and any other new zone that shows up in the data with enough quests is added to the route on its own (with steps and map pins), so launch-day content needs no update to appear.
+- Route: Alliance Azshara moves to levels 54-60, where its quests actually are in WoW Forever (18 quests instead of 5).
+- Minimap button: right-click opens a menu with the guide, tracker, arrow, trading cards, Arena, "Find an Arena match", the leaderboard, settings and Cards only. In Cards only mode the button stays and opens the cards.
+- Setup: "Only here for the trading cards?" on the first page switches Cards only on in one click.
+- /wp perf measures Waypath+ for ten seconds and shows its memory and how many milliseconds per second each part of the guide uses.
+- Cards: launch week gives two free packs a day (up to 5 saved) and a one-time launch gift (a jumbo pack and 100 coins). November is the "Launch Season" for Arena ranks, and leaderboard entries from the beta drop off when the live game opens.
+- Bug reports: /wp report now includes your last error and links straight to the new GitHub issue forms (wrong step, or error).
+
 ## v1.5.3
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
