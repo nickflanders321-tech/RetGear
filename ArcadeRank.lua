@@ -71,7 +71,10 @@ function R.rating(a) return a and a.rating or R.START end
 -- Seasons are calendar months. When a new month starts, last season's best rank pays out (coins, and a pack from
 -- Trailblazer up) and the ladder is pulled halfway back toward the start, so there is always something to climb.
 function R.seasonId() return date and date("%Y-%m") or "season" end
-function R.seasonName() return date and date("%B") or "this season" end
+function R.seasonName()
+  if R.seasonId() == "2026-11" then return "Launch Season" end   -- the first live season: WoW Forever opens November 4
+  return date and date("%B") or "this season"
+end
 function R.checkSeason(a)
   if not a then return nil end
   local id = R.seasonId()

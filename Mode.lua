@@ -9,9 +9,25 @@ RG = RG or {}
 
 local made = setmetatable({}, { __mode = "k" })   -- frames the guide created
 RG.featureFrames = made
-local function guard(fn)
+-- /wp perf: while it samples, every wrapped handler adds the time it took to its file's total
+local perf = { on = false, ms = {} }
+RG.Perf = perf
+local function here()
+  local st = debugstack and debugstack(2, 8, 0) or ""
+  for f in st:gmatch("([%w_]+%.lua)") do if f ~= "Mode.lua" then return f end end
+  return "?"
+end
+local function guard(fn, label)
   if type(fn) ~= "function" then return fn end
-  return function(...) if RG.CardsOnly() then return end return fn(...) end
+  label = label or here()
+  return function(...)
+    if RG.CardsOnly() then return end
+    if not perf.on then return fn(...) end
+    local t0 = debugprofilestop()
+    local a, b, c, d = fn(...)
+    perf.ms[label] = (perf.ms[label] or 0) + (debugprofilestop() - t0)
+    return a, b, c, d
+  end
 end
 
 local saved
@@ -111,10 +127,34 @@ function RG.WrapCardsOnlySlash()
       else RG.SetCardsOnly(false); RG.Print("Cards only is off. Reloading...") if ReloadUI then ReloadUI() end end
       return
     end
+    if cmd == "perf" then RG.PerfSample() return end
     if RG.CardsOnly() and not CARD_CMDS[cmd or ""] then
       if RG.ShowArcade then RG.ShowArcade() end
       return
     end
     return base(msg)
   end
+end
+
+-- /wp perf: ten seconds of measuring, then memory and the cost of each part of the guide, in milliseconds per second
+function RG.PerfSample()
+  if not (debugprofilestop and C_Timer and C_Timer.After) then RG.Print("This client can't time add-ons.") return end
+  if perf.on then RG.Print("Already measuring...") return end
+  perf.ms, perf.on = {}, true
+  local t0 = debugprofilestop()
+  RG.Print("Measuring Waypath+ for 10 seconds: play as you normally would...")
+  C_Timer.After(10, function()
+    perf.on = false
+    local secs = math.max(0.001, (debugprofilestop() - t0) / 1000)
+    local mem
+    if UpdateAddOnMemoryUsage and GetAddOnMemoryUsage then pcall(UpdateAddOnMemoryUsage); local ok, kb = pcall(GetAddOnMemoryUsage, "Waypath"); if ok then mem = kb end end
+    local list, total = {}, 0
+    for k, v in pairs(perf.ms) do list[#list + 1] = { k, v / secs }; total = total + v / secs end
+    table.sort(list, function(a, b) return a[2] > b[2] end)
+    local parts = {}
+    for i = 1, math.min(6, #list) do parts[#parts + 1] = string.format("%s %.2f", list[i][1]:gsub("%.lua$", ""), list[i][2]) end
+    RG.Print(string.format("Memory %s  ·  guide %.2f ms per second (a frame at 60 fps has 16.7 ms)%s", mem and string.format("%.1f MB", mem / 1024) or "?", total,
+      #parts > 0 and ("  ·  busiest: " .. table.concat(parts, ", ")) or ""))
+    if total > 2 then RG.Print("That is more than it should be. Please send this line with /wp report.") end
+  end)
 end

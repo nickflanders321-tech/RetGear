@@ -14,6 +14,7 @@ local CLASS_ID = {}; for i, c in ipairs(CLASSES) do CLASS_ID[c] = i end
 local MIN_GAMES = 5            -- placement games before a rank is shown to others
 local MAX_ENTRIES = 1500
 local KEEP_SECS = 30 * 86400   -- someone not heard of for 30 days drops off the board
+local LAUNCH = 1793829600      -- WoW Forever launch (November 4 2026, 3 p.m. PDT): beta ranks don't carry over to the live board
 local GOSSIP_MAX = 7           -- entries in one gossip message
 local PER_SENDER = 5           -- seconds between messages accepted from the same sender
 
@@ -56,7 +57,7 @@ local function newBoard(env)
     local now, n = env.now(), 0
     lastFrom = {}
     for k, e in pairs(db.entries) do
-      if now - e.seen > KEEP_SECS then db.entries[k] = nil else n = n + 1 end
+      if now - e.seen > KEEP_SECS or (now >= LAUNCH and (e.seen or 0) < LAUNCH) then db.entries[k] = nil else n = n + 1 end
     end
     if n > MAX_ENTRIES then
       local all = {}
