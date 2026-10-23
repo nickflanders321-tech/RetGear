@@ -127,6 +127,16 @@ local function buildPages()
   intro:SetPoint("TOPLEFT", crest, "TOPRIGHT", 22, 2); intro:SetSpacing(3)
   local tips = text(p1, "GameFontHighlight", GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows what to do next.\n" .. GOLD .. "•|r " .. GOLD .. "/wp|r or the minimap button opens the full guide.\n" .. GOLD .. "•|r Hold " .. GOLD .. "Shift|r at a quest giver to stop Waypath+ accepting for you.", W - 70)
   tips:SetPoint("TOPLEFT", 0, -130); tips:SetSpacing(6)
+  -- the shortcut for players who only want the card game
+  local justCards = choice(p1, "Only here for the trading cards?", "Cards only: no guide, tracker or helpers, just the cards, packs and Arena. Click to switch it on and skip the rest of setup.", function()
+    RG.db.preset = "cardsonly"; RG.ApplyPreset("cardsonly"); RG.SetCardsOnly(true)
+    RG.db.welcomed, RG.db.setupDone = true, true
+    if wiz then wiz:Hide() end
+    RG.Print("Cards only is on: /wp or the minimap button opens the cards. /wp cardsonly off brings the guide back.")
+    if RG.MinimapButton then pcall(RG.MinimapButton) end
+    if RG.ShowArcade then RG.ShowArcade() end
+  end, 60)
+  justCards:SetPoint("TOPLEFT", 0, -230)
 
   -- 2. Character and professions
   local p2 = newPage("Your character")

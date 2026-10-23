@@ -352,6 +352,67 @@ local function placeMinimap()
   local a = math.rad(RG.db.mmAngle or 200)
   mm:ClearAllPoints(); mm:SetPoint("CENTER", Minimap, "CENTER", math.cos(a) * 104, math.sin(a) * 104)
 end
+-- The minimap button's right-click menu: everything Waypath+ has, one click away (our own small frame, not the game's
+-- dropdown menus, so it can't taint anything)
+local mmMenu
+local function menuItems()
+  local co = RG.CardsOnly and RG.CardsOnly()
+  local items = {}
+  local function add(label, fn, on) items[#items + 1] = { label, fn, on } end
+  if not co then
+    add("Guide", function() if RG.ToggleUI then RG.ToggleUI() end end)
+    add("Tracker", function() RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end end, RG.Opt("tracker"))
+    add("Arrow", function() RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end end, RG.Opt("arrow"))
+  end
+  add("Trading cards", function() if RG.ShowArcade then RG.ShowArcade() end end)
+  add("Arena", function() if RG.ShowBattle then RG.ShowBattle() end end)
+  add((RG.Match and RG.Match.searching) and "Stop searching" or "Find an Arena match", function() if RG.MatchToggle then RG.MatchToggle() end end)
+  add("Leaderboard", function() if RG.Leaderboard then RG.Leaderboard() end end)
+  if not co then add("Settings", function() if RG.ShowTab then RG.ShowTab("settings") end end) end
+  add(co and "Turn Cards only off" or "Cards only mode", function()
+    if RG.SetCardsOnly then RG.SetCardsOnly(not co); if ReloadUI then ReloadUI() end end
+  end)
+  return items
+end
+local function showMenu(anchor)
+  if not mmMenu then
+    mmMenu = CreateFrame("Frame", "WaypathMinimapMenu", UIParent, "BackdropTemplate")
+    mmMenu:SetFrameStrata("DIALOG"); mmMenu:SetClampedToScreen(true); mmMenu:EnableMouse(true)
+    RG.Round(mmMenu, 0.08, 0.08, 0.08, 0.97, 8)
+    mmMenu.rows = {}
+    mmMenu:SetScript("OnUpdate", function(self, dt)
+      -- closes once the mouse has been away for a moment
+      if self:IsMouseOver(8, -8, -8, 8) or (anchor and anchor:IsMouseOver()) then self.away = 0 else self.away = (self.away or 0) + dt; if self.away > 0.6 then self:Hide() end end
+    end)
+    tinsert(UISpecialFrames, "WaypathMinimapMenu")
+  end
+  local items = menuItems()
+  local W, RH = 190, 22
+  for i, it in ipairs(items) do
+    local b = mmMenu.rows[i]
+    if not b then
+      b = CreateFrame("Button", nil, mmMenu)
+      b:SetSize(W - 12, RH); b:SetPoint("TOPLEFT", 6, -6 - (i - 1) * RH)
+      b.hl = b:CreateTexture(nil, "BACKGROUND"); b.hl:SetAllPoints(); b.hl:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.15); b.hl:Hide()
+      b.t = RG.NewText(b, "GameFontHighlightSmall"); b.t:SetPoint("LEFT", 8, 0); b.t:SetJustifyH("LEFT")
+      b.state = RG.NewText(b, "GameFontHighlightSmall"); b.state:SetPoint("RIGHT", -8, 0)
+      b:SetScript("OnEnter", function(self) self.hl:Show() end)
+      b:SetScript("OnLeave", function(self) self.hl:Hide() end)
+      mmMenu.rows[i] = b
+    end
+    b.t:SetText(it[1])
+    if it[3] == nil then b.state:SetText("") else b.state:SetText(it[3] and (GREEN .. "on|r") or (GREY .. "off|r")) end
+    b:SetScript("OnClick", function() mmMenu:Hide(); pcall(it[2]) end)
+    b:Show()
+  end
+  for i = #items + 1, #mmMenu.rows do mmMenu.rows[i]:Hide() end
+  mmMenu:SetSize(W, #items * RH + 12)
+  mmMenu:ClearAllPoints(); mmMenu:SetPoint("TOPRIGHT", anchor, "BOTTOMLEFT", 8, 8)
+  mmMenu.away = 0
+  mmMenu:Show()
+end
+RG.ShowMinimapMenu = showMenu
+
 function RG.MinimapButton()
   if not Minimap then return end
   if not mm then
@@ -361,8 +422,9 @@ function RG.MinimapButton()
     local ring = mm:CreateTexture(nil, "OVERLAY"); ring:SetSize(54, 54); ring:SetPoint("TOPLEFT"); ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     mm:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
     mm:RegisterForClicks("LeftButtonUp", "RightButtonUp"); mm:RegisterForDrag("LeftButton")
-    mm:SetScript("OnClick", function(_, btn)
-      if btn == "RightButton" then RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
+    mm:SetScript("OnClick", function(self, btn)
+      if btn == "RightButton" then if mmMenu and mmMenu:IsShown() then mmMenu:Hide() else showMenu(self) end
+      elseif RG.CardsOnly and RG.CardsOnly() then if RG.ShowArcade then RG.ShowArcade() end
       elseif IsShiftKeyDown and IsShiftKeyDown() then RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
       elseif IsControlKeyDown and IsControlKeyDown() then if RG.ShowTab then RG.ShowTab("settings") end
       elseif RG.ToggleUI then RG.ToggleUI() end
@@ -374,8 +436,13 @@ function RG.MinimapButton()
     mm:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
     mm:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+", GOLDC[1], GOLDC[2], GOLDC[3])
-      GameTooltip:AddLine("Click: open the guide", 1, 1, 1); GameTooltip:AddLine("Right-click: show or hide the tracker", 1, 1, 1)
-      GameTooltip:AddLine("Shift-click: arrow on or off", 1, 1, 1); GameTooltip:AddLine("Ctrl-click: settings", 1, 1, 1); GameTooltip:AddLine("Drag: move this button", 0.6, 0.6, 0.6)
+      if RG.CardsOnly and RG.CardsOnly() then
+        GameTooltip:AddLine("Click: trading cards", 1, 1, 1); GameTooltip:AddLine("Right-click: menu (Arena, match, leaderboard)", 1, 1, 1)
+      else
+        GameTooltip:AddLine("Click: open the guide", 1, 1, 1); GameTooltip:AddLine("Right-click: menu (tracker, arrow, cards, Arena...)", 1, 1, 1)
+        GameTooltip:AddLine("Shift-click: arrow on or off", 1, 1, 1); GameTooltip:AddLine("Ctrl-click: settings", 1, 1, 1)
+      end
+      GameTooltip:AddLine("Drag: move this button", 0.6, 0.6, 0.6)
       GameTooltip:Show()
     end)
     mm:SetScript("OnLeave", function() GameTooltip:Hide() end)
