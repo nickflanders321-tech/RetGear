@@ -189,9 +189,9 @@ RG.GEN_STEPS = {
       { t = "Abercrombie (levels 27-30): Ghoulish Effigy, Ogre Thieves, Note to the Mayor.", q = { 133, 134, 160 }, w = { 1431, 28.1, 31.5, "Abercrombie" } },
       { t = "At Darkshire (levels 28-30): The Legend of Stalvan, Translate Abercrombie's Note, Wait for Sirra to Finish, Translation to Ello, Bride of the Embalmer. From Tavernkeep Smitts, Lord Ello Ebonlocke, Commander Althea Ebonlocke and others.", q = { 79, 251, 80, 401, 97, 252, 253 }, w = { 1431, 73.9, 44.4, "Darkshire" } },
       { t = "Sven Yorgen (levels 28-29): Proving Your Worth, Seeking Wisdom.", q = { 323, 269 }, w = { 1431, 7.8, 34.1, "Sven Yorgen" } },
-      { t = "Glorin Steelbrow (level 29): Blessed Arm, Lightforge Ingots.", q = { 322, 526 }, w = { 1437, 10.6, 60.6, "Glorin Steelbrow" } },
-      { t = "At Stormwind City (level 29): Armed and Ready, The Doomed Fleet. From Grimand Elmore, Bishop Farthing.", q = { 325, 270 }, w = { 1453, 49.9, 46.0, "Stormwind City" } },
-      { t = "Glorin Steelbrow (level 29): Lightforge Iron.", q = { 321 }, w = { 1437, 10.6, 60.6, "Glorin Steelbrow" } },
+      { t = "At Stormwind City (level 29): The Doomed Fleet. From Bishop Farthing.", q = { 270 }, w = { 1453, 49.9, 46.0, "Stormwind City" } },
+      { t = "Glorin Steelbrow (level 29): Blessed Arm, Lightforge Iron, Lightforge Ingots.", q = { 322, 321, 526 }, w = { 1437, 10.6, 60.6, "Glorin Steelbrow" } },
+      { t = "At Stormwind City (level 29): Armed and Ready. From Grimand Elmore.", q = { 325 }, w = { 1453, 59.7, 33.8, "Stormwind City" } },
     },
     ["Ashenvale|20"] = {
       { t = "At Astranaar (levels 19-21): Raene's Cleansing, The Zoram Strand, On Guard in Stonetalon, Pridewings of Stonetalon. From Raene Wolfrunner, Shindrell Swiftfire, Sentinel Thenysil.", q = { 991, 1008, 1070, 1134 }, w = { 1440, 37.0, 49.2, "Astranaar" } },
@@ -1004,8 +1004,8 @@ RG.GEN_STEPS = {
       { t = "At Grom'gol Base Camp (levels 45-46): The Singing Crystals, The Mind's Eye, Saving Yenniku. From Kin'weelay.", q = { 589, 591, 592 }, w = { 1434, 31.5, 29.8, "Grom'gol Base Camp" } },
     },
     ["Dustwallow Marsh|36"] = {
-      { t = "At Brackenwall Village (levels 35-37): Theramore Spies, The Troll Witchdoctor, The Black Shield, Hungry!, Questioning Reethe, The Theramore Docks. From Nazeer Bloodpike, Krog, Mudcrush Durtfeet and others.", q = { 1201, 1240, 1321, 1177, 1273, 1202, 1276, 1322 }, w = { 1445, 35.6, 31.9, "Brackenwall Village" } },
-      { t = "At Brackenwall Village (level 37): The Black Shield. From Do'gol.", q = { 1323 }, w = { 1445, 35.6, 31.9, "Brackenwall Village" } },
+      { t = "At Brackenwall Village (levels 35-37): Theramore Spies, The Troll Witchdoctor, The Black Shield, Hungry!, Questioning Reethe, The Theramore Docks. From Nazeer Bloodpike, Krog, Mudcrush Durtfeet and others.", q = { 1201, 1240, 1321, 1177, 1273, 1202, 1322, 1323 }, w = { 1445, 35.6, 31.9, "Brackenwall Village" } },
+      { t = "At Brackenwall Village (level 37): The Black Shield. From Krog.", q = { 1276 }, w = { 1445, 35.6, 31.9, "Brackenwall Village" } },
       { t = "\"Stinky\" Ignatz (level 37): Stinky's Escape.", q = { 1270 }, w = { 1445, 46.9, 17.5, "\"Stinky\" Ignatz" } },
       { t = "\"Swamp Eye\" Jarl (level 35): Soothing Spices, Jarl Needs Eyes, Jarl Needs a Blade.", q = { 1218, 1206, 1203 }, w = { 1445, 55.4, 26.3, "\"Swamp Eye\" Jarl" } },
       { t = "At Brackenwall Village (level 40): Report to Zor. From Nazeer Bloodpike.", q = { 1262 }, w = { 1445, 35.6, 31.9, "Brackenwall Village" } },

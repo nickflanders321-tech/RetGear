@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.5
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.5.4
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
