@@ -59,6 +59,17 @@ local function plain(text) return ((text or ""):gsub("|T.-|t", ""):gsub("|c%x%x%
 -- open steps, falling back to any zone that fits.
 local function currentEntry()
   local lvl = UnitLevel("player")
+  -- standing in a new zone that has no steps yet (WoW Forever's quest data for it isn't out): stay with it
+  -- instead of sending you somewhere else; the tracker shows its quests from your log
+  local here = GetRealZoneText and GetRealZoneText() or ""
+  if here ~= "" then
+    for _, r in ipairs(RG.ROUTE) do
+      if r.kind == "zone" and r.zone == here and lvl >= r.from - 1 and lvl <= r.to then
+        local steps = RG.STEPS[r.zone .. "|" .. r.from]
+        if steps and #steps == 0 then return r end
+      end
+    end
+  end
   if RG.SmartEntry then
     local ok, pick = pcall(RG.SmartEntry)
     if ok and pick then return pick end
@@ -774,6 +785,7 @@ function RG.RefreshTracker()
     local isFolded
     local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
     if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
+    if #steps == 0 then right = GOLD .. "new zone|r" end
     n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
     if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" then
       local ok, alts = pcall(RG.SmartAlternatives, r)
@@ -863,7 +875,9 @@ function RG.RefreshTracker()
             onRightClick = wp and function() RG.Follow(wp) end or nil })
         end
       end
-      if shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+      if shown == 0 and #steps == 0 then
+        n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here; they show up above. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+      elseif shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       if shown > 0 and RG.TravelSummary then
         local tip = RG.TravelSummary(r.zone)
         if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end

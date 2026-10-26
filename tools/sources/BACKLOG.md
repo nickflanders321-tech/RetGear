@@ -52,6 +52,12 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Done
 
+- v1.7.0 (launch prep): new zones without quest data show "steps coming" (not "Done") and the
+  tracker stays with one you're standing in; card packs cost coins from the launch on (were
+  free forever); launch time fixed to 3 p.m. PST; the leaderboard channel waits for the default
+  channels and spreads check-ins; CurseForge uploads go out as Release and always include the
+  newest WoW Forever game version; CURSEFORGE.md rewritten to lead with leveling.
+
 - v1.6.0: Fishing tab: the Blump Family Fishing Pole is marked as an Alliance quest reward for
   the Horde (it pointed Horde players at a quest they can't take), the new Ravaged Fishing Pole
   is listed, and the pole/lure bonuses were checked against the launch build (Classic values

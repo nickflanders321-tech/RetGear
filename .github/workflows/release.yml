@@ -18,11 +18,13 @@ jobs:
     env:
       # CurseForge upload: set the CF_API_KEY secret (Settings > Secrets and variables >
       # Actions). The project ID comes from X-Curse-Project-ID in Waypath.toc (or a
-      # CF_PROJECT_ID variable). CF_RELEASE_TYPE (alpha, beta or release; beta by
-      # default) and CF_GAME_VERSION (1.60.1 by default) are optional variables.
+      # CF_PROJECT_ID variable). CF_RELEASE_TYPE (alpha, beta or release; release by
+      # default since the WoW Forever launch) and CF_GAME_VERSION (1.60.1 by default;
+      # the newest WoW Forever version CurseForge lists is always added too, so a new
+      # game patch never makes the upload fail or hides the file) are optional variables.
       CF_API_KEY: ${{ secrets.CF_API_KEY }}
       CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
-      CF_RELEASE_TYPE: ${{ vars.CF_RELEASE_TYPE || 'beta' }}
+      CF_RELEASE_TYPE: ${{ vars.CF_RELEASE_TYPE || 'release' }}
       CF_GAME_VERSION: ${{ vars.CF_GAME_VERSION || '1.60.1' }}
     steps:
       - uses: actions/checkout@v4
@@ -103,9 +105,16 @@ jobs:
           [ -n "$CF_PROJECT_ID" ] || CF_PROJECT_ID=$(sed -n 's/^## X-Curse-Project-ID: *\([0-9]*\).*/\1/p' Waypath.toc | head -1)
           [ -n "$CF_PROJECT_ID" ] || { echo "No CurseForge project ID"; exit 1; }
           ids=$(curl -sSf -H "X-Api-Token: $CF_API_KEY" https://wow.curseforge.com/api/game/versions | python3 -c '
-          import json, os, sys
+          import json, os, re, sys
           want = [w.strip() for w in os.environ["CF_GAME_VERSION"].split(",")]
-          print(json.dumps(sorted({g["id"] for g in json.load(sys.stdin) if g.get("name") in want})))')
+          versions = json.load(sys.stdin)
+          ids = {g["id"] for g in versions if g.get("name") in want}
+          # plus the newest WoW Forever version (1.60 and up), so a launch or patch version is covered
+          forever = [g for g in versions if re.match(r"^1\.(6\d|[7-9]\d)\.\d+$", g.get("name") or "")]
+          if forever:
+              newest = max(forever, key=lambda g: tuple(int(x) for x in g["name"].split(".")))
+              ids.add(newest["id"]); print("newest Forever version on CurseForge: " + newest["name"], file=sys.stderr)
+          print(json.dumps(sorted(ids)))')
           echo "CurseForge game versions for $CF_GAME_VERSION: $ids"
           [ "$ids" != "[]" ] || { echo "No CurseForge game version named $CF_GAME_VERSION"; exit 1; }
           meta=$(python3 -c '

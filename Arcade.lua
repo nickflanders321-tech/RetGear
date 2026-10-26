@@ -43,7 +43,10 @@ local NAME_ICON = {
   { "tallstrider", "Ability_Hunter_Pet_TallStrider" }, { "serpent", "Ability_Hunter_Pet_WindSerpent" },
   { "mine", "INV_Pick_02" }, { "deeps", "INV_Pick_02" }, { "depths", "INV_Pick_02" }, { "cavern", "INV_Pick_02" }, { "cave", "INV_Pick_02" },
 }
-local FREE_PACKS = true   -- beta: every pack of every kind is free (set to false at release to charge coins)
+-- WoW Forever launch: November 4 2026, 3 p.m. PST (23:00 UTC)
+local LAUNCH = 1793833200
+-- beta: every pack of every kind is free; from the launch on, packs cost coins (the balance below)
+local FREE_PACKS = (time and time() or LAUNCH) < LAUNCH
 -- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 10,000 coins
 -- (XP, level-ups, quests, kills, skill-ups, goals, duels, set rewards, and the bonuses in ArcadeRewards.lua)
 -- plus about 190 packs' worth of free cards (daily packs, a reward Jumbo every 7th day, milestone, dungeon,
@@ -347,10 +350,9 @@ local function goalProgress(a, id, n)
   end
 end
 -- one free pack a day (up to 3 saved)
-local LAUNCH = 1793829600   -- WoW Forever launch: November 4 2026, 3 p.m. PDT
 local function dailyCheck()
   local a = store(); if not a then return end
-  -- launch week (WoW Forever opens November 4 2026, 3 p.m. PDT): two free packs a day instead of one, and a gift once
+  -- launch week (WoW Forever opens November 4 2026, 3 p.m. PST): two free packs a day instead of one, and a gift once
   local now = time and time() or 0
   local launchWeek = now >= LAUNCH and now < LAUNCH + 7 * 86400
   if a.freeDay ~= today() then a.freeDay = today(); a.free = math.min(launchWeek and 5 or 3, (a.free or 0) + (launchWeek and 2 or 1)) end

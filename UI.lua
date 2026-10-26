@@ -989,6 +989,8 @@ local function renderRoute()
   for _, r in ipairs(list) do
     local e = { r = r, key = r.zone .. "|" .. r.from }
     e.steps = RG.STEPS and RG.STEPS[e.key]
+    -- a new zone whose quests aren't in WoW Forever's data yet has an empty step list: that's "steps coming", not "done"
+    if e.steps and #e.steps == 0 then e.steps, e.pending = nil, true end
     e.past = lvl > r.to
     e.dq = r.kind == "dungeon" and RG.DUNGEON_QUESTS[r.zone]
     e.dqDone = e.dq and RG.DungeonQuestsDone and RG.DungeonQuestsDone(e.dq)
@@ -1048,6 +1050,10 @@ local function renderRoute()
     local open = e.steps and not e.done and ((state.open[e.key] == nil and openDefault) or state.open[e.key] == true)
     local left = e.steps and (#e.steps - e.doneN) or 0
     local meta = (KIND[r.kind] or "") .. (e.steps and (GREY .. "   ·   " .. (e.done and ("all " .. #e.steps .. " done") or (left .. " to do")) .. (open and "  ·  hide" or "") .. "|r") or "")
+    if e.pending and not e.done then
+      meta = (KIND[r.kind] or "") .. GOLD .. "   ·   steps coming|r"
+      if now then sub = sub .. GREY .. "  ·  Until the steps arrive, take the quests you find here: the tracker follows them.|r" end
+    end
     local accent = e.done and nil or (now and "gold" or (r.kind == "pala" and "gold" or (r.kind == "dungeon" and "purple" or (r.kind == "travel" and "blue" or nil))))
     setItem(row, nil, nil, titleText, e.done and "" or sub, status, meta, accent, nil, e.done)
     if e.steps and not e.done then row.onClick = function() state.open[e.key] = not open; RG.RefreshUI() end end

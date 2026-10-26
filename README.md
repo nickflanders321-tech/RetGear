@@ -4,7 +4,7 @@
 
 An all-in-one leveling companion for World of Warcraft: Forever, for **every class and both factions (Horde and Alliance)**: your route with an arrow, a quest tracker, travel tips, gear upgrades, a 2nd spec, professions, fishing and gold.
 
-> **Beta.** Works on English game clients (enUS/enGB). Found a bug? Type `/wp errors`, copy the text and post it on the [issue tracker](https://github.com/nickflanders321-tech/RetGear/issues).
+> **Ready for the WoW Forever launch.** Works on English game clients (enUS/enGB). Found a bug? Type `/wp report` and post it on the [issue tracker](https://github.com/nickflanders321-tech/RetGear/issues).
 
 **What's covered:**
 - **Questing, for every race, class and faction:** Horde (Orc, Troll, Tauren, Undead, Skyborne) and Alliance (Human, Dwarf, Night Elf, Gnome, Skyborne) each get their own starting zones (Horde: Valley of Trials and Durotar; Camp Narache and Mulgore; Deathknell, Brill and Silverpine; Zephras Isle; Alliance: Northshire Valley and Elwynn Forest, Coldridge Valley and Dun Morogh, Shadowglen and Teldrassil, Zephras Isle), then your faction's route to 60 with travel tips from your home city. Alliance routes are in beta. Starting-zone steps are built from WoW Forever's quest data, stop by stop, and tick themselves off. Every class sees its own class quests (including Forever's new ones, like the Forsaken paladin chain, Orc mages and Troll warlocks) on the tracker, and each dungeon lists the quests that race and class can take.
@@ -26,7 +26,7 @@ A six-page **setup wizard** asks how much help you want (Full guidance, Balanced
 - **Bag icons**: a green arrow on items that are upgrades for you, your 2nd spec's icon on pieces for your 2nd set.
 - **Pop-ups**: Equip button for upgrades, level-up banner, "keep for the AH" and "Buy back" warnings at vendors.
 - **Ore alerts**: a heads-up when you walk near a spot where a vein you can mine (and that still gives skill) spawns, with direction and distance.
-- **Cards:** a tab with a collectible card game built from the world: items, NPCs and places drop into packs (free during the beta), every card has its own art, and Waypath Arena lets you duel the computer with the cards you own. `/wp cards` opens your collection, `/wp arena` the duel.
+- **Cards:** a tab with a collectible card game built from the world: items, NPCs and places drop into packs (earned by playing, two free a day in launch week), every card has its own art, and Waypath Arena lets you duel the computer with the cards you own. `/wp cards` opens your collection, `/wp arena` the duel.
 - **Flight paths**: a tab listing every flight master for your faction (learned or not, nearest first); click one and the arrow guides you there.
 - **Travel tips**: when the guide sends you to another zone, the quickest way there with your hearthstone, known flight paths, zeppelins and boats.
 - **Arrow size**: mouse wheel over the arrow, `/wp arrowsize 150` (50 to 300), or the Arrow size row in Settings.

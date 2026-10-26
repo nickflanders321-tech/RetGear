@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.0
+- Launch ready: a new zone whose quests aren't in WoW Forever's data yet (Riverglades and Mount Hyjal on day one) no longer shows as "Done" in the Route tab. It says "steps coming", and if you're standing in it at the right level the tracker stays with it instead of sending you elsewhere. Its steps appear in an update as soon as the live quest data has them.
+- Cards: packs are free until WoW Forever opens (November 4, 3 p.m. PST). From then on they cost coins you earn by playing, and launch week brings two free packs a day plus a launch gift. The launch time was an hour early; it now matches Blizzard's.
+- Leaderboard: the short check-in on the hidden leaderboard channel waits until your General and Trade channels are joined, so it can't take channel 1 and shift your chat numbers on a slow launch-day login, and players' check-ins are spread over a few seconds instead of all landing at once.
+
 ## v1.6.0
 - Fishing: Horde players were sent to "The Family and the Fishing Pole" for the Blump Family Fishing Pole, but that is an Alliance quest in Auberdine. The Fishing tab now says so (buy a Strong Fishing Pole instead); Alliance players still see the quest.
 - Fishing: the new WoW Forever Ravaged Fishing Pole (+15 Fishing, needs Fishing 50 and level 20) is in the pole list. Pole and lure bonuses were checked against the launch build and match.

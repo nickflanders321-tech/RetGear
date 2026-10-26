@@ -14,7 +14,7 @@ local CLASS_ID = {}; for i, c in ipairs(CLASSES) do CLASS_ID[c] = i end
 local MIN_GAMES = 5            -- placement games before a rank is shown to others
 local MAX_ENTRIES = 1500
 local KEEP_SECS = 30 * 86400   -- someone not heard of for 30 days drops off the board
-local LAUNCH = 1793829600      -- WoW Forever launch (November 4 2026, 3 p.m. PDT): beta ranks don't carry over to the live board
+local LAUNCH = 1793833200      -- WoW Forever launch (November 4 2026, 3 p.m. PST): beta ranks don't carry over to the live board
 local GOSSIP_MAX = 7           -- entries in one gossip message
 local PER_SENDER = 5           -- seconds between messages accepted from the same sender
 
@@ -232,16 +232,29 @@ local function leaveCh() if joined and LeaveChannelByName then pcall(LeaveChanne
 -- A short, clock-aligned visit to the shared channel every 15 minutes (at :00, :15, :30, :45 for everyone), so
 -- players who are online at the same time overlap and swap what they know.
 local sessionEnd = 0
+-- Only once the game's own channels (General, Trade...) are joined: a custom channel joined before them would
+-- take /1 and shift the player's channel numbers, which matters on busy launch-day servers where joins are slow.
+local enteredAt = 0
+local function defaultChannelsReady()
+  if not GetChannelList or GetTime() - enteredAt > 120 then return true end   -- someone who left every channel
+  local ok, first = pcall(GetChannelList)
+  return ok and first ~= nil
+end
 local function startSession()
   local b = board()
   if sessionEnd > GetTime() then return end
-  if InCombatLockdown and InCombatLockdown() then return end
-  if IsInInstance then local inst, kind = IsInInstance(); if inst and kind ~= "none" then return end end
-  sessionEnd = GetTime() + 70
-  joinCh()
-  env.after(6, function() b.announce("CHANNEL") end)
-  env.after(36, function() b.announce("CHANNEL") end)
-  env.after(70, function() leaveCh() end)
+  -- a few seconds' spread so every Waypath+ player on the realm doesn't join in the same second
+  -- (the 70-second visits still overlap)
+  sessionEnd = GetTime() + 85
+  env.after(math.random(0, 15), function()
+    if InCombatLockdown and InCombatLockdown() then sessionEnd = 0 return end
+    if IsInInstance then local inst, kind = IsInInstance(); if inst and kind ~= "none" then sessionEnd = 0 return end end
+    if not defaultChannelsReady() then sessionEnd = 0 return end
+    joinCh()
+    env.after(6, function() b.announce("CHANNEL") end)
+    env.after(36, function() b.announce("CHANNEL") end)
+    env.after(70, function() leaveCh() end)
+  end)
 end
 local lastSlot = -1
 local f = CreateFrame("Frame")
@@ -255,6 +268,7 @@ f:SetScript("OnEvent", function(_, ev, prefix, text, channel, sender)
     pcall(board().onMessage, text, sender, channel)
     if RG.BoardChanged then pcall(RG.BoardChanged) end
   elseif ev == "PLAYER_ENTERING_WORLD" then
+    if prefix then enteredAt = GetTime() end   -- first argument: isInitialLogin
     board().prune()
     env.after(15, function() shareNear(); startSession() end)
   elseif ev == "GROUP_ROSTER_UPDATE" then
