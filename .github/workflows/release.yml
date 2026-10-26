@@ -121,5 +121,6 @@ jobs:
           import json, sys
           print(json.dumps({"changelog": open("release-notes.md", encoding="utf-8").read(), "changelogType": "markdown",
             "displayName": "Waypath+ " + sys.argv[1], "gameVersions": json.loads(sys.argv[2]), "releaseType": sys.argv[3]}))' "$v" "$ids" "$CF_RELEASE_TYPE")
-          curl -sSf -H "X-Api-Token: $CF_API_KEY" -F "metadata=$meta" -F "file=@.release/Waypath-$v.zip" \
+          # --form-string: the metadata is sent as is (with -F, a ";" in the changelog cut it short: HTTP 400)
+          curl -sS --fail-with-body -H "X-Api-Token: $CF_API_KEY" --form-string "metadata=$meta" -F "file=@.release/Waypath-$v.zip" \
             "https://wow.curseforge.com/api/projects/$CF_PROJECT_ID/upload-file"
