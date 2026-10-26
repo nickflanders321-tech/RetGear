@@ -14,7 +14,9 @@ for id, n in pairs(npcs) do
       for _, p in ipairs(list) do if p[1] and p[1] >= 0 then pts[#pts + 1] = string.format("%.2f,%.2f", p[1], p[2]) end end
       if #pts > 0 then parts[#parts + 1] = z .. ":" .. table.concat(pts, ";") end
     end
-    if #parts > 0 then f:write(id, "\t", n[1], "\t", n[13] or "", "\t", n[15] or 0, "\t", n[14] or "", "\t", table.concat(parts, "|"), "\n") end
+    -- some Forever rows carry an empty table instead of a string/number (e.g. friendly = {}), so only write plain values
+    local function plain(v, default) local t = type(v); if t == "string" or t == "number" then return v end; return default end
+    if #parts > 0 and plain(n[1]) then f:write(id, "\t", n[1], "\t", plain(n[13], ""), "\t", plain(n[15], 0), "\t", plain(n[14], ""), "\t", table.concat(parts, "|"), "\n") end
   end
 end
 f:close()

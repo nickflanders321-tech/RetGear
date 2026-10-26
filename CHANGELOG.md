@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5.6
+- Quest, gear, map and profession data updated from WoW Forever's latest game data (includes corrected quest names in the Skyborne starting zone).
+
 ## v1.5.5
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
