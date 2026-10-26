@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.6.0
+- Fishing: Horde players were sent to "The Family and the Fishing Pole" for the Blump Family Fishing Pole, but that is an Alliance quest in Auberdine. The Fishing tab now says so (buy a Strong Fishing Pole instead); Alliance players still see the quest.
+- Fishing: the new WoW Forever Ravaged Fishing Pole (+15 Fishing, needs Fishing 50 and level 20) is in the pole list. Pole and lure bonuses were checked against the launch build and match.
+- Guide sources refreshed for launch (November 4): Riverglades and Shen'dralas level ranges from new guides; still no Horde quest data for Riverglades, so its steps fill in automatically once WoW Forever publishes it.
+
 ## v1.5.6
 - Quest, gear, map and profession data updated from WoW Forever's latest game data (includes corrected quest names in the Skyborne starting zone).
 

@@ -24,11 +24,12 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Engineering, First Aid, Leatherworking, Tailoring). Replace with WoW Forever's route as
    soon as wow-professions.com or wowtbc.gg publish it (2026-10-19: wow-professions.com still
    calls its 225-300 untested and adapted from Classic; the beta stops at 225).
-4. **Fishing pole and lure bonuses are Classic values** (zone skills now follow Wowhead's
-   WoW Forever beta table, v1.4.0; Blizzard hasn't confirmed either). Beta tooltips reported by
-   wofwforever.com show bigger pole bonuses (Strong 45, Blump 27, Big Iron 42) and a new
-   Ravaged Fishing Pole (+31, Fishing 50, level 20, source unknown): update when confirmed. New Forever lures/hat ("Secret" Bait, Shiny Silver Coin, Wide-Brimmed
-   Fishing Hat) have no published source yet.
+4. **Fishing: a few WoW Forever items still lack a source.** Pole and lure bonuses are
+   confirmed as the Classic values on build 1.60.1.70532 (Endgame Tools: Big Iron +20; Warcraft
+   Tavern's list), so the bigger beta numbers wofwforever.com reported are dropped (2026-10-26).
+   The Ravaged Fishing Pole (+15, Fishing 50, level 20; foreverchanges.pro) is in the list since
+   v1.6.0 but where it drops isn't published. Same for the new lures and the Wide-Brimmed Fishing
+   Hat. Fill in the "how" texts in Fish.lua RG.FISH_GEAR when a source names them.
 5. **Route steps without a map pin:** 46 of 82 hand-written steps have one (v1.4.0). Most
    of the rest are steps inside a dungeon, where a pin wouldn't help; still open: Old Fire Eye
    (Paladin Wolf's Bane finale, not in the Forever NPC data) and Olric Frostvale.
@@ -46,9 +47,15 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Guides disagree on Thousand Needles (Forever Era 25-35, Decarebia 20-30, Endgame Tools 23-40) and Arathi Highlands (all say 30-40, but Forever's own quest data starts at 33). Our windows: Horde TN 26-35, Arathi 33-40 (2026-10-16).
 - Blizzard's October 8 beta notes raise the Desolace Valley of Bones Gelkis and Magram quests to level 35 (was 30); QuestieDB's Forever data still says 30 (2026-10-19). The Desolace route note mentions it; follow the quest data until it changes.
 - Searing Gorge (guides 43-53, ours 48-54) and Horde Azshara (guides 45-55, ours 50-58): Forever's own quest data backs our windows (Searing Gorge quests: a quarter below 48, median 50; Azshara median 57), so they stay (2026-10-19).
+- Shen'dralas: Leprestore's 1-60 guide puts it at 40-50 (one coarse bucket, 2026-10-14); ours is 38-43. Wait for launch quest data or more guides before moving it (2026-10-26).
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.6.0: Fishing tab: the Blump Family Fishing Pole is marked as an Alliance quest reward for
+  the Horde (it pointed Horde players at a quest they can't take), the new Ravaged Fishing Pole
+  is listed, and the pole/lure bonuses were checked against the launch build (Classic values
+  hold). New sources: ForeverChanges, Leprestore, Warcraft Tavern fishing, Endgame Tools items.
 
 - 2026-10-23 (launch prep): new-zone generation (Riverglades, Mount Hyjal, Shen'dralas, plus any
   unlisted zone, RG.GEN_AUTO), Alliance Azshara moved to 54-60 from the quest data, route coverage

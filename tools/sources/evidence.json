@@ -7,7 +7,8 @@
     "wowforeverbuilds": {"url": "https://wowforeverbuilds.com/leveling/route/horde", "date": "2026-09-17", "build": "1.60.1 beta"},
     "decarebia": {"url": "https://wowforeverguides.com/leveling", "date": "2026-10-09", "build": "beta"},
     "mobalytics": {"url": "https://mobalytics.gg/wow-forever/guides/zone-map-level-ranges", "date": "2026-10-05", "build": "1.60.1 beta"},
-    "wow4ever": {"url": "https://wow4ever.quest/en/articles/guia-subida-1-60-wow-forever", "date": "2026-10-10", "build": "beta"}
+    "wow4ever": {"url": "https://wow4ever.quest/en/articles/guia-subida-1-60-wow-forever", "date": "2026-10-10", "build": "beta"},
+    "leprestore": {"url": "https://leprestore.com/guides/world-of-warcraft-forever/wow-forever-riverglades-guide/", "date": "2026-10-17", "build": "beta (Shen'Dralas from their 1-60 guide, 2026-10-14)"}
   },
   "zones": {
     "Stonetalon Mountains":  {"foreverera": [15, 27], "wowhandbook": [15, 25], "endgametools": [13, 32], "wowforeverbuilds": [25, 30], "decarebia": [15, 25], "mobalytics": [15, 27], "wow4ever": [15, 25]},
@@ -20,7 +21,7 @@
     "Dustwallow Marsh":      {"foreverera": [35, 45], "wowhandbook": [36, 43], "endgametools": [33, 50], "wowforeverbuilds": [40, 50], "decarebia": [30, 40], "mobalytics": [35, 45]},
     "Badlands":              {"foreverera": [35, 45], "wowhandbook": [36, 45], "endgametools": [33, 50], "wowforeverbuilds": [40, 50], "mobalytics": [35, 45]},
     "Swamp of Sorrows":      {"foreverera": [35, 45], "wowhandbook": [36, 43], "endgametools": [33, 50], "mobalytics": [35, 45]},
-    "Riverglades":           {"foreverera": [33, 44], "wowhandbook": [36, 44], "endgametools": [33, 54], "decarebia": [36, 44]},
+    "Riverglades":           {"foreverera": [33, 44], "wowhandbook": [36, 44], "endgametools": [33, 54], "decarebia": [36, 44], "leprestore": [35, 45]},
     "Tanaris":               {"foreverera": [40, 50], "wowhandbook": [40, 50], "endgametools": [38, 54], "wowforeverbuilds": [40, 50], "decarebia": [40, 50], "mobalytics": [40, 50]},
     "Feralas":               {"foreverera": [40, 50], "wowhandbook": [41, 49], "endgametools": [38, 54], "wowforeverbuilds": [40, 50], "decarebia": [40, 50], "mobalytics": [40, 50]},
     "The Hinterlands":       {"foreverera": [40, 50], "wowhandbook": [41, 56], "endgametools": [38, 54], "wowforeverbuilds": [40, 50], "decarebia": [40, 50], "mobalytics": [40, 50]},
@@ -40,6 +41,8 @@
     "Westfall":              {"foreverera": [10, 20], "endgametools": [8, 24], "wowforeverbuilds": [10, 20], "decarebia": [9, 18], "mobalytics": [10, 20]},
     "Loch Modan":            {"foreverera": [10, 20], "endgametools": [8, 24], "wowforeverbuilds": [10, 20], "decarebia": [10, 18], "mobalytics": [10, 20]},
     "Darkshore":             {"foreverera": [10, 20], "endgametools": [8, 24], "wowforeverbuilds": [10, 20], "decarebia": [11, 19], "mobalytics": [10, 20]},
+    "Shen'Dralas":           {"leprestore": [40, 50]},
+    "Shen'dralas":           {"leprestore": [40, 50]},
     "Alterac Mountains":     {"foreverera": [30, 40], "wowhandbook": [27, 39], "endgametools": [28, 44], "mobalytics": [30, 40]}
   }
 }

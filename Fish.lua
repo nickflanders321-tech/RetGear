@@ -51,8 +51,9 @@ RG.FISH_ROUTE = {
 -- Poles, lures and fishing gear. bonus = Fishing skill (Classic values in the beta).
 RG.FISH_GEAR = {
   { kind = "pole", id = 6256,  bonus = 0,  how = "Fishing supply vendors (Lizbeth Cromwell, Undercity), about 23c" },
-  { kind = "pole", id = 12225, bonus = 3,  how = "Quest: The Family and the Fishing Pole" },
+  { kind = "pole", id = 12225, bonus = 3,  how = "Alliance quest (The Family and the Fishing Pole, Auberdine): the Horde can't take it; buy a Strong Fishing Pole instead" },
   { kind = "pole", id = 6365,  bonus = 5,  skill = 10, how = "Fishing vendors, about 9s: Lizbeth Cromwell (Undercity), Shankys (Orgrimmar), Kilxx (Ratchet)" },
+  { kind = "pole", id = 285094, bonus = 15, skill = 50, how = "New in WoW Forever (level 20, Fishing 50); where it drops isn't published yet, so check the AH" },
   { kind = "pole", id = 6367,  bonus = 20, skill = 100, how = "Shellfish Traps underwater in Desolace (level 25); also on the AH" },
   { kind = "pole", id = 19022, bonus = 25, skill = 100, how = "Horde quest Snapjaws, Mon! from Katoom the Angler, Revantusk Village, The Hinterlands (level 44)" },
   { kind = "pole", id = 19970, bonus = 35, skill = 300, how = "Win the Stranglethorn Fishing Extravaganza (Master Angler)" },
@@ -82,6 +83,7 @@ if RG.PLAYER_FACTION == "Alliance" then
   RG.FISH_GEAR_A = {
     [6256] = "Fishing supply vendors in Stormwind, Ironforge and Darnassus, about 23c",
     [6365] = "Fishing vendors, about 9s, in Stormwind, Ironforge and Darnassus",
+    [12225] = "Quest: The Family and the Fishing Pole (Gubber Blump, Auberdine, Darkshore)",
     [19022] = "A Horde quest (Hinterlands); the Alliance can't take it. Buy a Strong Fishing Pole or look on the AH",
     [6530] = "Fishing vendors, 1s (Stormwind, Ironforge, Darnassus, Booty Bay)",
     [6533] = "Fishing vendors, 2s 50c (Stormwind, Ironforge, Darnassus, Booty Bay)",
