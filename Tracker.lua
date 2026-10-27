@@ -797,6 +797,19 @@ function RG.RefreshTracker()
           tip = GOLD .. "Smart route|r picks the zone that suits your level, position and quest log.\n\n" .. (function() local t = {} for _, o in ipairs(alts) do t[#t + 1] = "|cffffffff" .. o.r.zone .. "|r: " .. o.why end return table.concat(t, "\n") end)() .. "\n\n" .. GOLD .. "/wp smart|r turns this off." })
       end
     end
+    -- a flight master you haven't learned yet, close by: grab it while you're here
+    if not isFolded and RG.NearbyFlight then
+      local fe = RG.NearbyFlight()
+      if fe then
+        n = n + 1
+        y = item(n, y, (isTarget(fe.wp) and ARROW or RG.PIN or "") .. GOLD .. "Grab the " .. fe.node .. " flight path|r", { single = true, indent = 2, wp = fe.wp,
+          right = GREY .. math.floor(fe.dist) .. " yd|r",
+          tip = GOLD .. "Flight path nearby:|r " .. fe.node .. " (" .. fe.zone .. ")" .. (fe.npc and (", from " .. fe.npc) or "") .. ".\nLearn it now and you can fly back here later instead of running." ..
+            (fe.known == nil and ("\n" .. GREY .. "Already have it? Talk to any flight master once and Waypath+ remembers which ones you know.|r") or "") ..
+            "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map",
+          onRightClick = function() RG.PinWaypoint(fe.wp) end })
+      end
+    end
     if not isFolded and qlines then
       local sk = key .. "#" .. firstOpen
       local wp = RG.StepWaypoint and RG.StepWaypoint(r, firstOpen)

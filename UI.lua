@@ -1039,6 +1039,12 @@ local function renderRoute()
       local k = RG.KnowsFP(r.fp)
       if k == false and lvl >= r.from - 1 then status = GOLD .. "Grab the " .. r.fp .. " flight path|r"
       elseif k == true and r.kind ~= "travel" then sub = sub .. GREY .. "  ·  flight path learned|r" end
+    elseif r.kind == "zone" and not e.done and RG.ZoneFlights and lvl >= r.from - 1 then
+      -- no flight path written on the entry: name the zone's own flight paths you don't have yet
+      local missing = {}
+      for _, node in ipairs(RG.ZoneFlights(r.zone)) do if RG.KnowsFP(node) == false then missing[#missing + 1] = node end end
+      if #missing == 1 then status = GOLD .. "Grab the " .. missing[1] .. " flight path|r"
+      elseif #missing > 1 then status = GOLD .. "Grab " .. #missing .. " flight paths|r"; sub = sub .. GREY .. "  ·  flight paths here: " .. table.concat(missing, ", ") .. "|r" end
     end
     if e.dq then
       if e.dqDone then status = GREEN .. "Quests done|r"
@@ -2207,7 +2213,7 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan" } },

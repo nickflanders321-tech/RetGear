@@ -698,7 +698,9 @@ function RG.Professions()
 end
 -- Do we know a flight path whose name contains this text? nil = never seen a flight master yet.
 function RG.KnowsFP(part)
-  if not RG.db.fps or not next(RG.db.fps) then return nil end
+  -- nil = we can't tell yet (no flight master visited since Waypath+ was installed); a character
+  -- Waypath+ has followed from level 1 starts with an empty, complete list (fpsAll)
+  if not RG.db.fps or (not next(RG.db.fps) and not RG.db.fpsAll) then return nil end
   part = part:lower()
   for name in pairs(RG.db.fps) do if name:lower():find(part, 1, true) then return true end end
   return false
@@ -718,6 +720,8 @@ f:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" and arg1 == ADDON then
     InitDB()
   elseif event == "PLAYER_LOGIN" then
+    -- a brand-new character knows no flight paths yet: remember that, so the reminders work before its first flight
+    if RG.db.fps == nil and UnitLevel and (UnitLevel("player") or 99) <= 2 then RG.db.fps, RG.db.fpsAll = {}, true end
     -- a character Waypath+ hasn't seen: the first one gets a full profile, any
     -- later one is asked: its own new profile, or a bank alt
     if RG.CardsOnly() then

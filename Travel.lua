@@ -12,7 +12,7 @@ local FP = {
   ["Stranglethorn Vale"] = "Grom'gol", ["Searing Gorge"] = "Thorium Point", ["Burning Steppes"] = "Flame Crest", ["Eastern Plaguelands"] = "Light's Hope",
   ["Durotar"] = "Orgrimmar", ["Orgrimmar"] = "Orgrimmar", ["The Barrens"] = "Crossroads", ["Mulgore"] = "Thunder Bluff", ["Thunder Bluff"] = "Thunder Bluff",
   ["Stonetalon Mountains"] = "Sun Rock Retreat", ["Ashenvale"] = "Splintertree Post", ["Thousand Needles"] = "Freewind Post", ["Desolace"] = "Shadowprey Village",
-  ["Dustwallow Marsh"] = "Brackenwall Village", ["Tanaris"] = "Gadgetzan", ["Feralas"] = "Camp Mojache", ["Azshara"] = "Valormok",
+  ["Dustwallow Marsh"] = "Brackenwall Village", ["Tanaris"] = "Gadgetzan", ["Feralas"] = "Camp Mojache", ["Azshara"] = "Valormok", ["Riverglades"] = "Rog'mar",
   ["Felwood"] = "Bloodvenom Post", ["Winterspring"] = "Everlook", ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Moonglade"] = "Nighthaven",
 }
 local ALLY_FP = {

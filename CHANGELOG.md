@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.0
+- Flight paths: when you pass close to a flight master you haven't learned yet, the tracker shows "Grab the ... flight path" with the distance (click for the arrow), and a chat line reminds you once per flight path. Turn it off in Settings ("Remind me to grab flight paths I walk past").
+- Route tab: every zone now names the flight paths you still need there, not only the ones written into the guide. Riverglades lists the Horde's Rog'mar flight path and Azshara lists Valormok.
+- A new character knows which flight paths it has from the start. Before, Waypath+ only knew once you had talked to a flight master, so new characters got no reminders until then.
+- WoW Forever's new flight masters are added automatically as soon as they appear in the game data.
+
 ## v1.7.0
 - Launch ready: a new zone whose quests aren't in WoW Forever's data yet (Riverglades and Mount Hyjal on day one) no longer shows as "Done" in the Route tab. It says "steps coming", and if you're standing in it at the right level the tracker stays with it instead of sending you elsewhere. Its steps appear in an update as soon as the live quest data has them.
 - Cards: packs are free until WoW Forever opens (November 4, 3 p.m. PST). From then on they cost coins you earn by playing, and launch week brings two free packs a day plus a launch gift. The launch time was an hour early; it now matches Blizzard's.

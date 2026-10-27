@@ -78,6 +78,60 @@ SlashCmdList.WAYPATH = function(msg)
   return base(msg)
 end
 
+-- ---------------------------------------------------------------------------
+-- Flight path reminders: walking past a flight master you haven't learned yet is the cheapest
+-- time to grab it (it saves a long run later). The tracker shows the nearest one in range, the
+-- Route tab names a zone's flight paths, and a chat line says so once per flight path.
+-- ---------------------------------------------------------------------------
+table.insert(RG.OPTIONS, { key = "fpNudge", label = "Remind me to grab flight paths I walk past", default = true })
+local NEAR_YARDS, NUDGE_YARDS = 350, 160
+
+-- the flight paths of your faction (and neutral ones) in a zone: { "Crossroads", ... }
+function RG.ZoneFlights(zone)
+  local out, fac = {}, myFaction()
+  zone = (zone or ""):lower()   -- "Shen'dralas" / "Shen'Dralas"
+  for _, f in ipairs(RG.FLIGHTS or {}) do
+    if f[2]:lower() == zone and (not fac or f[6] == "N" or f[6] == fac) then out[#out + 1] = f[1] end
+  end
+  return out
+end
+
+-- the nearest flight path you haven't learned (or may not have: no data yet) within range, or nil
+local near, nearAt = nil, -10
+function RG.NearbyFlight()
+  if not RG.Opt("fpNudge") then return nil end
+  local now = GetTime and GetTime() or 0
+  if now - nearAt < 2 then return near end
+  nearAt, near = now, nil
+  if UnitOnTaxi and UnitOnTaxi("player") then return nil end
+  if IsInInstance then local inst = IsInInstance(); if inst then return nil end end
+  for _, e in ipairs(RG.FlightList()) do
+    if not e.dist or e.dist > NEAR_YARDS then break end      -- sorted nearest first
+    if e.known ~= true then near = e break end
+  end
+  return near
+end
+
+-- once per flight path and character: a chat line when you come close to one you don't have
+local acc = 0
+local nf = CreateFrame("Frame")
+nf:SetScript("OnUpdate", function(_, dt)
+  acc = acc + (dt or 0)
+  if acc < 3 then return end
+  acc = 0
+  if not RG.db or (RG.CardsOnly and RG.CardsOnly()) then return end
+  if InCombatLockdown and InCombatLockdown() then return end
+  local e = RG.NearbyFlight()
+  if not (e and e.dist and e.dist <= NUDGE_YARDS) then return end
+  RG.db.fpNudged = RG.db.fpNudged or {}
+  if RG.db.fpNudged[e.node] then return end
+  RG.db.fpNudged[e.node] = true
+  local who = e.npc and (" from " .. e.npc) or ""
+  RG.Print(RG.COLORS.GOLD .. "Flight path nearby:|r " .. e.node .. " (" .. e.zone .. "), " .. math.floor(e.dist) .. " yd. Learn it" .. who ..
+    " now and you can fly back here later." .. (e.known == nil and " (Already have it? Talk to any flight master once and Waypath+ remembers which ones you know.)" or "") .. " /wp fp points the arrow.")
+  if RG.RefreshTracker then RG.RefreshTracker() end
+end)
+
 -- Nearest fishing pool/school on this zone's map (spots are the centre of each pool cluster).
 function RG.NearestPool()
   local FL = RG.FISH_LOOT
