@@ -11,6 +11,7 @@ RG.CLASS_GEAR.DRUID = {
   { id = 2976, slot = "Hands", lvl = 10, how = "Rare mob", src = "Pyrewood Tailor", zone = "Silverpine Forest", score = 4, bl = 15, gen = true },  -- Hunting Gloves
   { id = 10637, slot = "Hands", lvl = 10, how = "Quest", src = "Sample for Helbrim (Apothecary Zinge)", zone = "Undercity", score = 4, q = 1358, gen = true },  -- Brewer's Gloves
   { id = 4909, slot = "Legs", lvl = 10, how = "Quest", src = "Rites of the Earthmother (Cairne Bloodhoof)", zone = "Mulgore", score = 8, q = 776, gen = true },  -- Kodo Hunter's Leggings
+  { id = 14563, slot = "Back", lvl = 12, how = "Rare mob", src = "Razormane Berserker", zone = "The Barrens", score = 3, bl = 19, gen = true },  -- Prospector's Cloak
   { id = 4777, slot = "2H", lvl = 13, how = "Vendor", src = "Wallace the Blind", zone = "Silverpine Forest", score = 96, also = { { how = "Vendor", src = "Lizzarik", zone = "The Barrens" }, { how = "Vendor", src = "Vrang Wildgore", zone = "The Barrens" } }, gen = true },  -- Ironwood Maul
   { id = 15444, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 96, q = 5730, gen = true },  -- Staff of Orgrimmar
   { id = 14149, slot = "Back", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 8, bl = 16, gen = true },  -- Subterranean Cape

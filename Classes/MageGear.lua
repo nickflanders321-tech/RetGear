@@ -15,6 +15,7 @@ RG.CLASS_GEAR.MAGE = {
   { id = 3449, slot = "Back", lvl = 12, how = "Quest", src = "Pyrewood Ambush (Deathstalker Faerleia)", zone = "Silverpine Forest", score = 1, q = 452, gen = true },  -- Mystic Shawl
   { id = 15444, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 3, q = 5730, gen = true },  -- Staff of Orgrimmar
   { id = 14150, slot = "Chest", lvl = 13, how = "Dungeon", src = "Jergosh the Invoker", zone = "Ragefire Chasm", score = 3, bl = 16, gen = true },  -- Robe of Evocation
+  { id = 14364, slot = "Feet", lvl = 13, how = "Rare mob", src = "Razormane Flesheater", zone = "The Barrens", score = 2, bl = 19, gen = true },  -- Mystic's Slippers
   { id = 3457, slot = "Legs", lvl = 13, how = "Quest", src = "Wand to Bethor", zone = "Silverpine Forest", score = 3, q = 491, gen = true },  -- Stamped Trousers
   { id = 1929, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Evoker", zone = "The Deadmines", score = 1, bl = 18, also = { { how = "Dungeon", src = "Defias Wizard", zone = "The Deadmines", bl = 19 } }, gen = true },  -- Silk-threaded Trousers
   { id = 15443, slot = "Main Hand", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 1, q = 5730, gen = true },  -- Kris of Orgrimmar
@@ -188,9 +189,11 @@ RG.CLASS_GEAR_A.MAGE = {
   { id = 12296, slot = "Ranged", lvl = 12, how = "Quest", src = "The People's Militia (Gryan Stoutmantle)", zone = "Westfall", score = 64, q = 14, gen = true },  -- Spark of the People's Militia
   { id = 7739, slot = "Back", lvl = 13, how = "Quest", src = "Tharnariun's Hope (Tharnariun Treetender)", zone = "Darkshore", score = 1, q = 2139, gen = true },  -- Timberland Cape
   { id = 4782, slot = "Chest", lvl = 13, how = "Vendor", src = "Aldren Cordon", zone = "Loch Modan", score = 3, also = { { how = "Vendor", src = "Franklin Hamar", zone = "Redridge Mountains" }, { how = "Vendor", src = "Kiknikle", zone = "The Barrens" } }, gen = true },  -- Solstice Robe
+  { id = 14364, slot = "Feet", lvl = 13, how = "Rare mob", src = "Razormane Flesheater", zone = "The Barrens", score = 2, bl = 19, gen = true },  -- Mystic's Slippers
   { id = 7738, slot = "Hands", lvl = 13, how = "Quest", src = "Tharnariun's Hope (Tharnariun Treetender)", zone = "Darkshore", score = 3, q = 2139, gen = true },  -- Evergreen Gloves
   { id = 1929, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Evoker", zone = "The Deadmines", score = 1, bl = 18, also = { { how = "Dungeon", src = "Defias Wizard", zone = "The Deadmines", bl = 19 } }, gen = true },  -- Silk-threaded Trousers
   { id = 5326, slot = "Ranged", lvl = 13, how = "Quest", src = "The Escape (Wizzlecrank's Shredder)", zone = "The Barrens", score = 68, q = 863, gen = true },  -- Flaring Baton
+  { id = 14370, slot = "Legs", lvl = 14, how = "Rare mob", src = "Razormane Flesheater", zone = "The Barrens", score = 2, bl = 19, gen = true },  -- Mystic's Woolies
   { id = 2089, slot = "Main Hand", lvl = 14, how = "Quest", src = "Red Silk Bandanas (Scout Riell)", zone = "The Deadmines", score = 1, q = 214, gen = true },  -- Scrimshaw Dagger
   { id = 6341, slot = "Off Hand", lvl = 14, how = "Dungeon", src = "Fel Steed", zone = "Shadowfang Keep", score = 1, bl = 20, gen = true },  -- Eerie Stable Lantern
   { id = 7509, slot = "Chest", lvl = 15, how = "Quest", src = "Manaweave Robe (Wynne Larson)", zone = "", score = 4, q = 1941, gen = true },  -- Manaweave Robe

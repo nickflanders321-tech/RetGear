@@ -21,6 +21,7 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 5326, slot = "Ranged", lvl = 13, how = "Quest", src = "The Escape (Wizzlecrank's Shredder)", zone = "The Barrens", score = 68, q = 863, gen = true },  -- Flaring Baton
   { id = 14148, slot = "Wrist", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 1, bl = 16, gen = true },  -- Crystalline Cuffs
   { id = 15452, slot = "Wrist", lvl = 13, how = "Quest", src = "Returning the Lost Satchel (Maur Grimtotem)", zone = "Ragefire Chasm", score = 1, q = 5724, gen = true },  -- Featherbead Bracers
+  { id = 14370, slot = "Legs", lvl = 14, how = "Rare mob", src = "Razormane Flesheater", zone = "The Barrens", score = 3, bl = 19, gen = true },  -- Mystic's Woolies
   { id = 6341, slot = "Off Hand", lvl = 14, how = "Dungeon", src = "Fel Steed", zone = "Shadowfang Keep", score = 2, bl = 20, gen = true },  -- Eerie Stable Lantern
   { id = 5306, slot = "2H", lvl = 15, how = "Quest", src = "Cry of the Thunderhawk (Jorn Skyseer)", zone = "The Barrens", score = 3, q = 913, gen = true },  -- Wind Rider Staff
   { id = 10919, slot = "Hands", lvl = 15, how = "Quest", src = "Dig Rat Stew (Grub)", zone = "", score = 2, q = 862, also = { { how = "Quest", src = "Serpentbloom (Apothecary Zamah)", zone = "Wailing Caverns", q = 962 } }, gen = true },  -- Apothecary Gloves
@@ -193,6 +194,7 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 1929, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Evoker", zone = "The Deadmines", score = 2, bl = 18, also = { { how = "Dungeon", src = "Defias Wizard", zone = "The Deadmines", bl = 19 } }, gen = true },  -- Silk-threaded Trousers
   { id = 15945, slot = "Off Hand", lvl = 13, how = "Rare mob", src = "Shadowclaw", zone = "Darkshore", score = 2, bl = 13, gen = true },  -- Runic Stave
   { id = 5326, slot = "Ranged", lvl = 13, how = "Quest", src = "The Escape (Wizzlecrank's Shredder)", zone = "The Barrens", score = 68, q = 863, gen = true },  -- Flaring Baton
+  { id = 14370, slot = "Legs", lvl = 14, how = "Rare mob", src = "Razormane Flesheater", zone = "The Barrens", score = 3, bl = 19, gen = true },  -- Mystic's Woolies
   { id = 2089, slot = "Main Hand", lvl = 14, how = "Quest", src = "Red Silk Bandanas (Scout Riell)", zone = "The Deadmines", score = 1, q = 214, gen = true },  -- Scrimshaw Dagger
   { id = 6341, slot = "Off Hand", lvl = 14, how = "Dungeon", src = "Fel Steed", zone = "Shadowfang Keep", score = 2, bl = 20, gen = true },  -- Eerie Stable Lantern
   { id = 6659, slot = "Legs", lvl = 15, how = "Quest", src = "Escape Through Stealth (Volcor)", zone = "Darkshore", score = 4, q = 995, gen = true },  -- Scarab Trousers

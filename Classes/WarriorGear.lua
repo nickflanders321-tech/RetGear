@@ -14,6 +14,7 @@ RG.CLASS_GEAR.WARRIOR = {
   { id = 5328, slot = "Waist", lvl = 10, how = "Quest", src = "The Disruption Ends (Thork)", zone = "The Barrens", score = 5, q = 872, gen = true },  -- Cinched Belt
   { id = 3586, slot = "2H", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 182, q = 99, gen = true },  -- Logsplitter
   { id = 5320, slot = "Feet", lvl = 11, how = "Quest", src = "Stolen Booty (Gazlowe)", zone = "The Barrens", score = 5, q = 888, gen = true },  -- Padded Lamellar Boots
+  { id = 14563, slot = "Back", lvl = 12, how = "Rare mob", src = "Razormane Berserker", zone = "The Barrens", score = 3, bl = 19, gen = true },  -- Prospector's Cloak
   { id = 2818, slot = "Legs", lvl = 12, how = "Quest", src = "Pyrewood Ambush (Deathstalker Faerleia)", zone = "Silverpine Forest", score = 6, q = 452, gen = true },  -- Stretched Leather Trousers
   { id = 15424, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 184, q = 5730, gen = true },  -- Axe of Orgrimmar
   { id = 14149, slot = "Back", lvl = 13, how = "Dungeon", src = "Taragaman the Hungerer", zone = "Ragefire Chasm", score = 6, bl = 16, gen = true },  -- Subterranean Cape
@@ -23,10 +24,10 @@ RG.CLASS_GEAR.WARRIOR = {
   { id = 10400, slot = "Legs", lvl = 13, how = "Dungeon", src = "Defias Overseer", zone = "The Deadmines", score = 9, bl = 18, also = { { how = "Dungeon", src = "Defias Taskmaster", zone = "The Deadmines", bl = 19 } }, gen = true },  -- Blackened Defias Leggings
   { id = 14147, slot = "Wrist", lvl = 13, how = "Dungeon", src = "Jergosh the Invoker", zone = "Ragefire Chasm", score = 3, bl = 16, gen = true },  -- Cavedweller Bracers
   { id = 4778, slot = "2H", lvl = 14, how = "Vendor", src = "Kizz Bluntstrike", zone = "Stranglethorn Vale", score = 203, also = { { how = "Vendor", src = "Wallace the Blind", zone = "Silverpine Forest" }, { how = "Vendor", src = "Lizzarik", zone = "The Barrens" } }, gen = true },  -- Heavy Spiked Mace
+  { id = 14564, slot = "Hands", lvl = 14, how = "Rare mob", src = "Razormane Berserker", zone = "The Barrens", score = 8, bl = 19, gen = true },  -- Prospector's Mitts
   { id = 10413, slot = "Hands", lvl = 14, how = "Dungeon", src = "Druid of the Fang", zone = "Wailing Caverns", score = 7, bl = 20, gen = true },  -- Gloves of the Fang
   { id = 5314, slot = "Back", lvl = 15, how = "Quest", src = "Consumed by Hatred (Mankrik)", zone = "The Barrens", score = 3, q = 899, gen = true },  -- Boar Hunter's Cape
   { id = 4788, slot = "Feet", lvl = 15, how = "Vendor", src = "Alexandre Lefevre", zone = "Silverpine Forest", score = 5, also = { { how = "Vendor", src = "Pizznukle", zone = "The Barrens" } }, gen = true },  -- Agile Boots
-  { id = 5312, slot = "Hands", lvl = 15, how = "Quest", src = "Free From the Hold (Gilthares Firebough)", zone = "The Barrens", score = 8, q = 898, gen = true },  -- Riveted Gauntlets
   { id = 5310, slot = "Legs", lvl = 15, how = "Quest", src = "The Guns of Northwatch (Captain Thalo'thas Brightsun)", zone = "The Barrens", score = 8, q = 891, gen = true },  -- Sea Dog Britches
   { id = 5351, slot = "Ring", lvl = 15, how = "Quest", src = "Hezrul Bloodmark (Regthar Deathgate)", zone = "The Barrens", score = 3, q = 852, gen = true },  -- Bounty Hunter's Ring
   { id = 12978, slot = "Waist", lvl = 15, how = "Dungeon", src = "Lord Pythas", zone = "Wailing Caverns", score = 11, bl = 21, gen = true },  -- Stormbringer Belt
@@ -166,6 +167,7 @@ RG.CLASS_GEAR_A.WARRIOR = {
   { id = 1928, slot = "2H", lvl = 11, how = "Rare mob", src = "Defias Magician", zone = "Westfall", score = 150, bl = 17, gen = true },  -- Defias Mage Staff
   { id = 5320, slot = "Feet", lvl = 11, how = "Quest", src = "Stolen Booty (Gazlowe)", zone = "The Barrens", score = 5, q = 888, gen = true },  -- Padded Lamellar Boots
   { id = 1566, slot = "2H", lvl = 12, how = "Quest", src = "The People's Militia (Gryan Stoutmantle)", zone = "Westfall", score = 158, q = 14, gen = true },  -- Edge of the People's Militia
+  { id = 14563, slot = "Back", lvl = 12, how = "Rare mob", src = "Razormane Berserker", zone = "The Barrens", score = 3, bl = 19, gen = true },  -- Prospector's Cloak
   { id = 12522, slot = "Hands", lvl = 12, how = "Quest", src = "Bingles' Missing Supplies (Bingles Blastenheimer)", zone = "Loch Modan", score = 2, q = 2038, gen = true },  -- Bingles' Flying Gloves
   { id = 1436, slot = "Legs", lvl = 12, how = "Quest", src = "In Defense of the King's Lands (Captain Rugelfuss)", zone = "Loch Modan", score = 9, q = 217, gen = true },  -- Frontier Britches
   { id = 6186, slot = "2H", lvl = 13, how = "Quest", src = "Gathering Idols (Magmar Fellhew)", zone = "Loch Modan", score = 183, q = 297, gen = true },  -- Trogg Slicer

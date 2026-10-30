@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.8.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.8.0
 - Flight paths: when you pass close to a flight master you haven't learned yet, the tracker shows "Grab the ... flight path" with the distance (click for the arrow), and a chat line reminds you once per flight path. Turn it off in Settings ("Remind me to grab flight paths I walk past").
 - Route tab: every zone now names the flight paths you still need there, not only the ones written into the guide. Riverglades lists the Horde's Rog'mar flight path and Azshara lists Valormok.
