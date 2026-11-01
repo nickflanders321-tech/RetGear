@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.8.3
 - First start: the setup's first page is now one clear choice, side by side: "Full Waypath+ (leveling guide and cards)" or "Cards only (just the card game)". Cards only switches everything else off at once and opens the cards; Full carries on with the usual minute of setup. Closing the window without choosing asks again at the next login instead of quietly picking the full guide.
 
 ## v1.8.2
