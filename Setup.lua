@@ -5,6 +5,7 @@ local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 
 local W, H = 540, 490
 local wiz
+local show   -- (page navigation, defined below; the first page's choices use it)
 
 -- ---------------------------------------------------------------------------
 -- Presets: which helpers are on. Anything not listed keeps its default.
@@ -119,24 +120,37 @@ local function newPage(title)
 end
 
 local function buildPages()
-  -- 1. Welcome
-  local p1 = newPage("Welcome, " .. (UnitName("player") or "adventurer") .. "!")
-  local crest = p1:CreateTexture(nil, "ARTWORK"); crest:SetSize(44, 44); crest:SetPoint("TOPLEFT", 4, -42); crest:SetTexture(RG.LOGO_LARGE)
-  local ring = p1:CreateTexture(nil, "OVERLAY"); ring:SetSize(74, 74); ring:SetPoint("CENTER", crest, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-  local intro = text(p1, "GameFontHighlight", GOLD .. "Waypath+|r walks you from level 1 to 60, for every class and both factions: the route and quests, the arrow, gear upgrades, professions, camping and gold.\n\nThis takes about a minute. Every choice can be changed later in Settings, or by running " .. GOLD .. "/wp setup|r again.", W - 140)
-  intro:SetPoint("TOPLEFT", crest, "TOPRIGHT", 22, 2); intro:SetSpacing(3)
-  local tips = text(p1, "GameFontHighlight", GOLD .. "•|r The " .. GOLD .. "tracker|r on the right shows what to do next.\n" .. GOLD .. "•|r " .. GOLD .. "/wp|r or the minimap button opens the full guide.\n" .. GOLD .. "•|r Hold " .. GOLD .. "Shift|r at a quest giver to stop Waypath+ accepting for you.", W - 70)
-  tips:SetPoint("TOPLEFT", 0, -130); tips:SetSpacing(6)
-  -- the shortcut for players who only want the card game
-  local justCards = choice(p1, "Only here for the trading cards?", "Cards only: no guide, tracker or helpers, just the cards, packs and Arena. Click to switch it on and skip the rest of setup.", function()
-    RG.db.preset = "cardsonly"; RG.ApplyPreset("cardsonly"); RG.SetCardsOnly(true)
-    RG.db.welcomed, RG.db.setupDone = true, true
-    if wiz then wiz:Hide() end
-    RG.Print("Cards only is on: /wp or the minimap button opens the cards. /wp cardsonly off brings the guide back.")
-    if RG.MinimapButton then pcall(RG.MinimapButton) end
-    if RG.ShowArcade then RG.ShowArcade() end
-  end, 60)
-  justCards:SetPoint("TOPLEFT", 0, -230)
+  -- 1. Welcome: the first thing anyone sees is the one big choice. The full guide, or only the card game.
+  local p1 = newPage("Welcome, " .. (UnitName("player") or "adventurer") .. "! How do you want to use Waypath+?")
+  local intro = text(p1, "GameFontHighlight", "Pick one. You can switch at any time in Settings, from the minimap button's menu, or with " .. GOLD .. "/wp cardsonly|r.", W - 70)
+  intro:SetPoint("TOPLEFT", 0, -36); intro:SetSpacing(3)
+  local function bigChoice(y, icon, label, desc, onPick)
+    local c = choice(p1, label, desc, onPick, 120)
+    c:SetPoint("TOPLEFT", 0, y)
+    c.title:ClearAllPoints(); c.title:SetPoint("TOPLEFT", 78, -14)
+    if RG.StyleText then RG.StyleText(c.title, "GameFontNormalLarge") end
+    c.desc:ClearAllPoints(); c.desc:SetPoint("TOPLEFT", c.title, "BOTTOMLEFT", 0, -6); c.desc:SetWidth(W - 70 - 96)
+    local ic = c:CreateTexture(nil, "ARTWORK"); ic:SetSize(52, 52); ic:SetPoint("LEFT", 14, 0); ic:SetTexture(icon)
+    if icon ~= RG.LOGO_LARGE then ic:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+    return c
+  end
+  local full = bigChoice(-74, RG.LOGO_LARGE, "Full Waypath+  (leveling guide and cards)",
+    "The route from 1 to 60 with the arrow and tracker, quests accepted and handed in for you, gear upgrades, professions, gold and travel tips, plus the trading card game. A minute of setup follows.",
+    function() show(2) end)
+  local cards = bigChoice(-204, "Interface\\Icons\\INV_Misc_Ticket_Tarot_Stack_01", "Cards only  (just the card game)",
+    "Only the trading cards, packs, Arena duels and the leaderboard. The guide, tracker, arrow, quest automation, tooltips and every other helper stay off. Open the cards with /wp or the minimap button.",
+    function()
+      RG.db.preset = "cardsonly"; RG.ApplyPreset("cardsonly"); RG.SetCardsOnly(true)
+      RG.db.welcomed, RG.db.setupDone = true, true
+      if wiz then wiz:Hide() end
+      RG.Print("Cards only is on: /wp or the minimap button opens the cards. Settings, the minimap menu or /wp cardsonly off brings the guide back.")
+      if RG.MinimapButton then pcall(RG.MinimapButton) end
+      if RG.ShowArcade then RG.ShowArcade() end
+    end)
+  table.insert(p1.refreshers, function()
+    local co = RG.CardsOnly and RG.CardsOnly()
+    full.select(not co); cards.select(co and true or false)
+  end)
 
   -- 2. Character and professions
   local p2 = newPage("Your character")
@@ -290,7 +304,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Frame and navigation
 -- ---------------------------------------------------------------------------
-local function show(i)
+show = function(i)
   -- leaving a page: apply what it set
   if page == 3 and i > 3 and RG.db.preset == "cardsonly" then
     -- cards only needs none of the remaining pages: switch it on and finish
@@ -308,8 +322,8 @@ local function show(i)
     if k == i then for _, r in ipairs(p.refreshers) do r() end end
   end
   wiz.back:SetEnabled(i > 1)
-  wiz.next:SetText(i == #pages and "Open the guide" or (i == 1 and "Let's go" or "Next"))
-  wiz.skip:SetShown(i < #pages)
+  wiz.next:SetText(i == #pages and "Open the guide" or (i == 1 and "Full guide" or "Next"))
+  wiz.skip:SetShown(i > 1 and i < #pages)   -- the first page is the choice itself: no way past it without making it
   for k, d in ipairs(wiz.dots) do d:SetVertexColor(k == i and 1 or 0.35, k == i and 0.82 or 0.35, k == i and 0 or 0.35, 1) end
 end
 local function finish(open)
@@ -333,7 +347,10 @@ function RG.ShowSetup()
     RG.DialogBackdrop(wiz)
     RG.DialogHeader(wiz, "Waypath+ Setup", 300)
     local close = CreateFrame("Button", nil, wiz, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", -4, -4)
-    close:SetScript("OnClick", function() finish(false) end)
+    close:SetScript("OnClick", function()
+      if page == 1 then wiz:Hide(); RG.Print("No choice made yet: Waypath+ asks again next time you log in (/wp setup asks now).") return end
+      finish(false)
+    end)
     wiz.back = CreateFrame("Button", nil, wiz, "UIPanelButtonTemplate"); wiz.back:SetSize(100, 24); wiz.back:SetPoint("BOTTOMLEFT", 22, 20); wiz.back:SetText("Back")
     wiz.next = CreateFrame("Button", nil, wiz, "UIPanelButtonTemplate"); wiz.next:SetSize(130, 24); wiz.next:SetPoint("BOTTOMRIGHT", -22, 20)
     wiz.skip = CreateFrame("Button", nil, wiz, "UIPanelButtonTemplate"); wiz.skip:SetSize(110, 24); wiz.skip:SetPoint("RIGHT", wiz.next, "LEFT", -8, 0); wiz.skip:SetText("Skip setup")

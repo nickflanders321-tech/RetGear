@@ -32,6 +32,7 @@
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
 ## Unreleased
+- First start: the setup's first page is now one clear choice, side by side: "Full Waypath+ (leveling guide and cards)" or "Cards only (just the card game)". Cards only switches everything else off at once and opens the cards; Full carries on with the usual minute of setup. Closing the window without choosing asks again at the next login instead of quietly picking the full guide.
 - Launch ready: Riverglades, Mount Hyjal and (for the Horde) Shen'dralas are in the route for both factions. Their steps build themselves from WoW Forever's quest data as soon as it is published, and any other new zone that shows up in the data with enough quests is added to the route on its own (with steps and map pins), so launch-day content needs no update to appear.
 - Route: Alliance Azshara moves to levels 54-60, where its quests actually are in WoW Forever (18 quests instead of 5).
 - Minimap button: right-click opens a menu with the guide, tracker, arrow, trading cards, Arena, "Find an Arena match", the leaderboard, settings and Cards only. In Cards only mode the button stays and opens the cards.
