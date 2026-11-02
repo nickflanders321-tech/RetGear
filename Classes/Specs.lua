@@ -87,7 +87,7 @@ S("PALADIN", {
       "Judgement the main target, then Holy Strike; tab around to Judge the others.",
       "Recast Consecration while the pack is healthy; melee the last one or two to save mana.",
       "Swift Judgement lets you Judge again on the same or another target." },
-    forever = { "Holy Strike and Seal of Fury are new, and make Protection work from leveling to 60.", "Improved Holy Strike was removed (September 2026).", "Retribution Aura scales with spell power (6%); mana from Seal of Fury now needs its talent and no longer adds threat (October 2026)." },
+    forever = { "Holy Strike and Seal of Fury are new, and make Protection work from leveling to 60.", "Improved Holy Strike was removed (September 2026).", "Retribution Aura scales with spell power (6%); mana from Seal of Fury now needs its talent and no longer adds threat (October 2026).", "Righteous Fury is learned at level 10 (was 16) and raises all threat you make by 33%; Seal of Fury's taunt lasts 3 sec (server hotfix found in the game data, October 30-31)." },
     source = "https://mobalytics.gg/wow-forever/classes/protection-paladin-guide" },
   { key = "ret", name = "Retribution", role = "Melee DPS", kind = "melee", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Holy_AuraOfLight",
     stats = "Strength, then Agility (Intellect over Agility once you have Champion of the Light)",
@@ -172,7 +172,7 @@ S("PRIEST", {
   { key = "shadow", name = "Shadow", role = "Ranged DPS", kind = "caster", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
     stats = "Intellect and Spirit, then Stamina",
     tips = { "Mind Blast, Shadow Word: Pain, Mind Flay until the mob reaches you, then wand." },
-    forever = { "Troll priests get Hex of Weakness and Shadowguard." },
+    forever = { "Troll priests get Hex of Weakness and Shadowguard.", "Shadow Word: Death hits you back for 30% of your maximum health (was 10%) when the target survives: save it for the kill. Cure Disease and Abolish Disease work in Shadowform (server hotfix found in the game data, October 31)." },
     source = "https://mobalytics.gg/wow-forever/classes/shadow-priest-guide" },
 })
 
@@ -295,4 +295,4 @@ for class, list in pairs(RG.SPECS) do
   RG.SPEC_BY[class] = {}
   for _, s in ipairs(list) do s.class = class; RG.SPEC_BY[class][s.key] = s end
 end
-RG.SPECS_UPDATED = "2026-10-19"
+RG.SPECS_UPDATED = "2026-11-02"

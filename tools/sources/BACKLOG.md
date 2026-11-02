@@ -16,6 +16,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    builds Riverglades, Mount Hyjal and Shen'dralas steps by itself as soon as their quests are in
    QuestieDB's Forever data, and adds any other unlisted zone with 12+ quests: check the result and
    write travel notes once launch data is in.)
+   Since v1.9.0 the travel tips route into Riverglades (Steamwheedle ship, walk-ins from Redridge and the
+   Burning Steppes, Rog'mar flights); add walk-ins from the Badlands and Swamp of Sorrows if more guides
+   confirm them (only Mmonster lists them, 2026-11-02).
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -47,10 +50,17 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Guides disagree on Thousand Needles (Forever Era 25-35, Decarebia 20-30, Endgame Tools 23-40) and Arathi Highlands (all say 30-40, but Forever's own quest data starts at 33). Our windows: Horde TN 26-35, Arathi 33-40 (2026-10-16).
 - Blizzard's October 8 beta notes raise the Desolace Valley of Bones Gelkis and Magram quests to level 35 (was 30); QuestieDB's Forever data still says 30 (2026-10-19). The Desolace route note mentions it; follow the quest data until it changes.
 - Searing Gorge (guides 43-53, ours 48-54) and Horde Azshara (guides 45-55, ours 50-58): Forever's own quest data backs our windows (Searing Gorge quests: a quarter below 48, median 50; Azshara median 57), so they stay (2026-10-19).
-- Shen'dralas: Leprestore's 1-60 guide puts it at 40-50 (one coarse bucket, 2026-10-14); ours is 38-43. Wait for launch quest data or more guides before moving it (2026-10-26).
+- Shen'dralas: Leprestore 40-50 (2026-10-14), Skycoach 40-45 (2026-09-30, "40+, not confirmed"), Eternadex's route window 41-43 (2026-10-18), Mmonster no range yet (2026-10-21); ours is 38-43. Guides agree it starts around 40, so it may move up 2 levels; wait for launch quest data before moving it (2026-11-02).
+- Server hotfixes from October 23-31 (Righteous Fury at level 10, Shadow Word: Death 30% backlash, racials) come from game-data readers, not Blizzard posts; the 2nd Spec tab says so. Recheck against Blizzard's launch notes (2026-11-02).
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.9.0: travel tips know the new zones (Riverglades on the Eastern Kingdoms with the Steamwheedle
+  ship and walk-ins, Shen'dralas from Desolace, Mount Hyjal from Winterspring with the Tainted
+  Foothills flight path, the Zephras Isle skyship, the Valanaar inn); before, Riverglades was treated as
+  Kalimdor and travel only sent you to Tanaris. 2nd Spec notes from the October 30-31 server hotfixes.
+  Six new sources (SOURCES.md), evidence.json gains Mount Hyjal and second opinions on Shen'dralas.
 
 - v1.7.0 (launch prep): new zones without quest data show "steps coming" (not "Done") and the
   tracker stays with one you're standing in; card packs cost coins from the launch on (were

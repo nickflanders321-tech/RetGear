@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.9.0
+- Travel tips know WoW Forever's new zones. Riverglades now sits in the Eastern Kingdoms where it belongs: the guide routes you there by the Steamwheedle ship from Tanaris to Powderfuse Port or on foot from Redridge or the Burning Steppes, instead of only pointing you at Tanaris, and once you're there it no longer suggests flights to Kalimdor. Shen'dralas is reached south from Desolace, Mount Hyjal from Winterspring (with the Tainted Foothills flight path from Everlook), and Horde players get the skyship between Mulgore's Skywatcher Plateau and Zephras Isle. An inn bound in Valanaar counts for your hearthstone.
+- 2nd Spec tab: Protection Paladins learn Righteous Fury at level 10 now (it also adds 33% threat), and Shadow Priests get a warning that Shadow Word: Death hits back for 30% of your health if the target survives (Cure and Abolish Disease now work in Shadowform). From the last pre-launch server hotfixes.
+- Guide sources refreshed for launch day: new-zone level ranges from two more guides (Riverglades 35-45, Shen'dralas 40-45, Mount Hyjal 55-60).
+
 ## v1.8.4
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

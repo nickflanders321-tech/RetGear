@@ -13,13 +13,14 @@ local FP = {
   ["Durotar"] = "Orgrimmar", ["Orgrimmar"] = "Orgrimmar", ["The Barrens"] = "Crossroads", ["Mulgore"] = "Thunder Bluff", ["Thunder Bluff"] = "Thunder Bluff",
   ["Stonetalon Mountains"] = "Sun Rock Retreat", ["Ashenvale"] = "Splintertree Post", ["Thousand Needles"] = "Freewind Post", ["Desolace"] = "Shadowprey Village",
   ["Dustwallow Marsh"] = "Brackenwall Village", ["Tanaris"] = "Gadgetzan", ["Feralas"] = "Camp Mojache", ["Azshara"] = "Valormok", ["Riverglades"] = "Rog'mar",
+  ["Mount Hyjal"] = "Tainted Foothills",
   ["Felwood"] = "Bloodvenom Post", ["Winterspring"] = "Everlook", ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Moonglade"] = "Nighthaven",
 }
 local ALLY_FP = {
   ["Teldrassil"] = "Rut'theran Village", ["Darkshore"] = "Auberdine", ["Ashenvale"] = "Astranaar", ["Stonetalon Mountains"] = "Stonetalon Peak",
   ["Desolace"] = "Nijel's Point", ["Feralas"] = "Feathermoon Stronghold", ["Dustwallow Marsh"] = "Theramore", ["Tanaris"] = "Gadgetzan",
   ["Un'Goro Crater"] = "Marshal's Refuge", ["Silithus"] = "Cenarion Hold", ["Winterspring"] = "Everlook", ["Felwood"] = "Talonbranch Glade",
-  ["Azshara"] = "Talrendis Point", ["Moonglade"] = "Nighthaven", ["The Barrens"] = "Ratchet",
+  ["Azshara"] = "Talrendis Point", ["Moonglade"] = "Nighthaven", ["The Barrens"] = "Ratchet", ["Mount Hyjal"] = "Tainted Foothills", ["Riverglades"] = "Farholde Keep",
   ["Dun Morogh"] = "Ironforge", ["Ironforge"] = "Ironforge", ["Loch Modan"] = "Thelsamar", ["Wetlands"] = "Menethil Harbor", ["Arathi Highlands"] = "Refuge Pointe",
   ["Hillsbrad Foothills"] = "Southshore", ["The Hinterlands"] = "Aerie Peak", ["Western Plaguelands"] = "Chillwind Camp", ["Eastern Plaguelands"] = "Light's Hope",
   ["Searing Gorge"] = "Thorium Point", ["Burning Steppes"] = "Morgan's Vigil", ["Redridge Mountains"] = "Lakeshire", ["Duskwood"] = "Darkshire",
@@ -43,7 +44,7 @@ local INN_TOWN = { ["Brill"] = "Tirisfal Glades", ["Sen'jin Village"] = "Durotar
   ["Bloodhoof Village"] = "Mulgore", ["Sun Rock Retreat"] = "Stonetalon Mountains", ["Splintertree Post"] = "Ashenvale", ["Freewind Post"] = "Thousand Needles",
   ["Shadowprey Village"] = "Desolace", ["Brackenwall Village"] = "Dustwallow Marsh", ["Gadgetzan"] = "Tanaris", ["Camp Mojache"] = "Feralas",
   ["Everlook"] = "Winterspring", ["Light's Hope Chapel"] = "Eastern Plaguelands", ["Thorium Point"] = "Searing Gorge", ["Cenarion Hold"] = "Silithus",
-  ["Marshal's Refuge"] = "Un'Goro Crater", ["Bloodvenom Post"] = "Felwood", ["Valormok"] = "Azshara",
+  ["Marshal's Refuge"] = "Un'Goro Crater", ["Bloodvenom Post"] = "Felwood", ["Valormok"] = "Azshara", ["Valanaar"] = "Zephras Isle",
   -- Alliance
   ["Goldshire"] = "Elwynn Forest", ["Stormwind"] = "Stormwind City", ["Stormwind City"] = "Stormwind City", ["Kharanos"] = "Dun Morogh", ["Ironforge"] = "Ironforge",
   ["Thelsamar"] = "Loch Modan", ["Menethil Harbor"] = "Wetlands", ["Sentinel Hill"] = "Westfall", ["Lakeshire"] = "Redridge Mountains", ["Darkshire"] = "Duskwood",
@@ -55,7 +56,7 @@ local INN_TOWN = { ["Brill"] = "Tirisfal Glades", ["Sen'jin Village"] = "Durotar
 local EK = { ["Tirisfal Glades"] = 1, ["Undercity"] = 1, ["Silverpine Forest"] = 1, ["Hillsbrad Foothills"] = 1, ["Alterac Mountains"] = 1, ["Arathi Highlands"] = 1,
   ["The Hinterlands"] = 1, ["Western Plaguelands"] = 1, ["Eastern Plaguelands"] = 1, ["Wetlands"] = 1, ["Loch Modan"] = 1, ["Dun Morogh"] = 1, ["Badlands"] = 1,
   ["Searing Gorge"] = 1, ["Burning Steppes"] = 1, ["Redridge Mountains"] = 1, ["Elwynn Forest"] = 1, ["Westfall"] = 1, ["Duskwood"] = 1,
-  ["Stranglethorn Vale"] = 1, ["Deadwind Pass"] = 1, ["Swamp of Sorrows"] = 1, ["Blasted Lands"] = 1,
+  ["Stranglethorn Vale"] = 1, ["Deadwind Pass"] = 1, ["Swamp of Sorrows"] = 1, ["Blasted Lands"] = 1, ["Riverglades"] = 1,
   ["Stormwind City"] = 1, ["Ironforge"] = 1 }
 local function continent(z) if EK[z] then return "EK" end return "K" end
 
@@ -73,6 +74,9 @@ local BORDERS = {
   { "Stonetalon Mountains", "Ashenvale" }, { "Stonetalon Mountains", "Desolace" }, { "Desolace", "Feralas" }, { "Feralas", "Thousand Needles" },
   { "Thousand Needles", "Tanaris" }, { "Tanaris", "Un'Goro Crater" }, { "Un'Goro Crater", "Silithus" }, { "Ashenvale", "Felwood" },
   { "Ashenvale", "Azshara" }, { "Ashenvale", "Darkshore" }, { "Felwood", "Winterspring" }, { "Felwood", "Moonglade" }, { "Winterspring", "Moonglade" },
+  -- WoW Forever's new zones: Riverglades off the Redridge road to the Burning Steppes, Shen'dralas south
+  -- of Desolace through the Valley of Bones, Mount Hyjal through Darkwhisper Gorge in Winterspring
+  { "Riverglades", "Redridge Mountains" }, { "Riverglades", "Burning Steppes" }, { "Desolace", "Shen'dralas" }, { "Winterspring", "Mount Hyjal" },
   -- Alliance towns and zones
   { "Dun Morogh", "Ironforge", 2 }, { "Elwynn Forest", "Stormwind City", 2 }, { "Elwynn Forest", "Redridge Mountains" }, { "Elwynn Forest", "Duskwood" },
   { "Teldrassil", "Darnassus", 3 }, { "Wetlands", "Loch Modan" }, { "Stranglethorn Vale", "Blasted Lands", 20 },
@@ -87,6 +91,10 @@ local RIDES = {
   { "Stranglethorn Vale", "Durotar", "Zeppelin from Grom'gol to Orgrimmar", "H" },
   { "The Barrens", "Stranglethorn Vale", "Boat from Ratchet to Booty Bay" },
   { "Stranglethorn Vale", "The Barrens", "Boat from Booty Bay to Ratchet" },
+  { "Tanaris", "Riverglades", "Steamwheedle ship from Steamwheedle Port to Powderfuse Port" },
+  { "Riverglades", "Tanaris", "Steamwheedle ship from Powderfuse Port to Steamwheedle Port" },
+  { "Mulgore", "Zephras Isle", "Skyship from the Skywatcher Plateau to Valanaar", "H" },
+  { "Zephras Isle", "Mulgore", "Skyship from Valanaar to the Skywatcher Plateau", "H" },
   -- Alliance: the boats of the Wetlands and Teldrassil, and the Deeprun Tram
   { "Teldrassil", "Darkshore", "Boat from Rut'theran Village to Auberdine", "A" },
   { "Darkshore", "Teldrassil", "Boat from Auberdine to Rut'theran Village", "A" },
@@ -105,7 +113,7 @@ local DESTINATION = {
   ["The Deadmines"] = "Westfall", ["The Stockade"] = "Stormwind City", ["Stormwind Stockade"] = "Stormwind City", ["Sunken Temple"] = "Swamp of Sorrows", ["Dire Maul"] = "Feralas",
   ["Western & Eastern Plaguelands"] = "Western Plaguelands", ["Stratholme, Scholomance, Dire Maul, LBRS/UBRS"] = "Burning Steppes",
   ["Excavation Site"] = "Wetlands", ["City of Dalaran"] = "Hillsbrad Foothills", ["The Temple of Atal'Hakkar"] = "Swamp of Sorrows",
-  ["Riverglades"] = "Tanaris", ["Valley of Trials"] = "Durotar", ["Camp Narache"] = "Mulgore",
+  ["Krol'dok Stronghold"] = "Riverglades", ["Valley of Trials"] = "Durotar", ["Camp Narache"] = "Mulgore",
 }
 function RG.TravelZone(name)
   ensure()
