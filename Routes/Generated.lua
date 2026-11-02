@@ -120,7 +120,7 @@ RG.GEN_STEPS = {
       { t = "Asterion (levels 12-13): Bashal'Aran.", q = { 955, 956, 957 }, w = { 1439, 44.2, 36.3, "Asterion" } },
       { t = "Sentinel Tysha Moonblade (level 12): The Fall of Ameth'Aran.", q = { 953 }, w = { 1439, 40.3, 59.7, "Sentinel Tysha Moonblade" } },
       { t = "At Auberdine (levels 16-17): For Love Eternal, Cleansing of the Infected, Cave Mushrooms, Deep Ocean, Vast Sea, Fruit of the Sea, Onu. From Cerellean Whiteclaw, Tharnariun Treetender, Barithras Moonshade and others.", q = { 963, 2138, 947, 982, 1138, 948 }, w = { 1439, 37.0, 44.1, "Auberdine" } },
-      { t = "Sentinel Aynasha (level 15): One Shot. One Kill..", q = { 5713 }, w = { 1439, 45.9, 90.3, "Sentinel Aynasha" } },
+      { t = "Sentinel Aynasha (level 15): One Shot.  One Kill..", q = { 5713 }, w = { 1439, 45.9, 90.3, "Sentinel Aynasha" } },
       { t = "At Auberdine (levels 18-20): The Tower of Althalaxx, Tharnariun's Hope, The Blackwood Corrupted, The Absent Minded Prospector, Holy Diver, A Lost Master. From Sentinel Elissa Starbreeze, Tharnariun Treetender, Thundris Windweaver and others.", q = { 965, 2139, 4763, 729, 87760, 986, 993 }, w = { 1439, 37.0, 44.1, "Auberdine" } },
       { t = "At Stormwind City (level 17): Business in Auberdine, Making Do. From Borgus Steelhand, Baros Alexston.", q = { 97894, 97926 }, w = { 1453, 59.4, 34.3, "Stormwind City" } },
       { t = "Onu (levels 17-20): The Master's Glaive, Mathystra Relics.", q = { 944, 951 }, w = { 1439, 43.5, 76.3, "Onu" } },
