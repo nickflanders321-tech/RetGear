@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Speed: the tracker no longer re-lays-out lines that haven't changed (about half the text work per refresh, and no hide-and-show of every row), waits until a fight is over instead of refreshing during it, the nearby-quest search only looks at quests in your level window (about three times faster), and quests you have already finished drop their objective map spots after login (up to about a megabyte less memory on a high-level character).
+
 ## v1.9.0
 - Travel tips know WoW Forever's new zones. Riverglades now sits in the Eastern Kingdoms where it belongs: the guide routes you there by the Steamwheedle ship from Tanaris to Powderfuse Port or on foot from Redridge or the Burning Steppes, instead of only pointing you at Tanaris, and once you're there it no longer suggests flights to Kalimdor. Shen'dralas is reached south from Desolace, Mount Hyjal from Winterspring (with the Tainted Foothills flight path from Everlook), and Horde players get the skyship between Mulgore's Skywatcher Plateau and Zephras Isle. An inn bound in Valanaar counts for your hearthstone.
 - 2nd Spec tab: Protection Paladins learn Righteous Fury at level 10 now (it also adds 33% threat), and Shadow Priests get a warning that Shadow Word: Death hits back for 30% of your health if the target survives (Cure and Abolish Disease now work in Shadowform). From the last pre-launch server hotfixes.
