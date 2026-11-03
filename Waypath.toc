@@ -64,6 +64,7 @@ Professions\Generated.lua
 Profile.lua
 Waypoints.lua
 Objectives.lua
+QuestNotes.lua
 Core.lua
 Mode.lua
 GateOn.lua

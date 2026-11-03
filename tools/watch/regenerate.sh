@@ -32,6 +32,11 @@ python3 tools/fishloot/gen.py "$T/classic.sql" "$T/qdb" "$T/fl_obj.tsv" "$T/fl_i
 python3 tools/flights/gen.py "$T/classic.sql" "$T/qdb" "$T/npcs.tsv" .
 python3 tools/arcade/gen.py "$T/classic.sql" "$T/qdb" .
 python3 tools/arcade/gear.py "$T/classic.sql" .
+# quest tags and notes from Polestar's forever-db (CC BY 4.0 layer); a failed download keeps the last QuestNotes.lua
+rm -rf "$T/ps"
+if git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fitzforge/polestar "$T/ps" && git -C "$T/ps" sparse-checkout set forever-db; then
+  python3 tools/questnotes/gen.py "$T/ps/forever-db" .
+fi
 # both checks must pass
 $LUA tools/audit/audit.lua > "$T/audit.txt" || { cat "$T/audit.txt"; exit 1; }
 python3 tools/audit/crosscheck.py . "$T/forever.json" "$T/forever_gear.json" "$LUA"
