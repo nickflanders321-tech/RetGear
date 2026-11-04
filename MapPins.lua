@@ -119,6 +119,7 @@ end
 
 local lastKey
 local function refreshPins(force)
+  if RG.CardsOnly and RG.CardsOnly() then return end
   local m = WorldMapFrame
   if not (m and m.IsShown and m:IsShown() and m.GetMapID) then return end
   local mapID = m:GetMapID()

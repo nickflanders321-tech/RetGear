@@ -177,7 +177,7 @@ function RG.UpdateBagArrows()
     end
   end)
 end
-local function queueArrows() if C_Timer then C_Timer.After(0.1, function() pcall(RG.UpdateBagArrows) end) end end
+local function queueArrows() if RG.CardsOnly and RG.CardsOnly() then return end; if C_Timer then C_Timer.After(0.1, function() pcall(RG.UpdateBagArrows) end) end end
 if hooksecurefunc then
   for _, fn in ipairs({ "ToggleBag", "OpenBag", "OpenAllBags", "ToggleAllBags", "OpenBackpack", "ToggleBackpack", "ContainerFrame_Update" }) do
     if _G[fn] then hooksecurefunc(fn, queueArrows) end

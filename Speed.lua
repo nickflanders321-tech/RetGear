@@ -916,10 +916,11 @@ do
   local cf = CreateFrame("Frame")
   for _, e in ipairs({ "PLAYER_DEAD", "PLAYER_ALIVE", "PLAYER_UNGHOST", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "PLAYER_REGEN_ENABLED" }) do pcall(cf.RegisterEvent, cf, e) end
   cf:SetScript("OnEvent", function() if C_Timer then C_Timer.After(0.5, corpseSync) end end)
-  if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(2, function() if corpse.active or (UnitIsGhost and UnitIsGhost("player")) then corpseSync() end end) end
+  if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(2, function() if RG.CardsOnly and RG.CardsOnly() then return end; if corpse.active or (UnitIsGhost and UnitIsGhost("player")) then corpseSync() end end) end
 end
 -- Called by the tracker with the next unfinished step that has a waypoint.
 function RG.AutoPin(key, wp)
+  if RG.CardsOnly and RG.CardsOnly() then return end
   if corpse.active then return end    -- the way back to your body comes first
   if not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
   if IsInInstance and IsInInstance() then return end
@@ -1082,6 +1083,7 @@ do
   local OUT = { 466.6667, 400, 333.3333, 266.6667, 200, 133.3333 }
   local INN = { 300, 240, 180, 120, 80, 50 }
   local function minimapClick(_, btn)
+    if RG.CardsOnly and RG.CardsOnly() then return end
     if btn ~= "LeftButton" or not on() or not (IsControlKeyDown and IsControlKeyDown()) then return end
     if not (Minimap and C_Map and C_Map.GetMapPosFromWorldPos and CreateVector2D) then return end
     local c, px, py = playerWorld()

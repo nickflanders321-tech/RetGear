@@ -29,7 +29,7 @@ def fetch(url, timeout=20):
 FOREVER = re.compile(r'^1\.(6\d|[7-9]\d)\.\d+\.\d{4,6}$')
 def _ver(v): return tuple(int(x) for x in v.split('.'))
 def live_build():
-    products = (os.environ.get('FOREVER_PRODUCT') or 'wow_forever wow_classic_forever wow_classic_era wow_classic wow_classic_beta').split()
+    products = (os.environ.get('FOREVER_PRODUCT') or 'wow_forever wow_camelot wowcamelot wow_classic_forever wow_classic_era wow_classic wow_classic_beta wow_camelot_ptr').split()
     best = (None, None)
     for product in products:
         for url in ('http://us.patch.battle.net:1119/%s/versions' % product,

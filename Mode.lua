@@ -7,107 +7,61 @@ local _, RG = ...
 RG = RG or {}
 -- (RG.CardsOnly() is defined in Core.lua, which every file can rely on)
 
-local made = setmetatable({}, { __mode = "k" })   -- frames the guide created
+-- IMPORTANT: nothing here replaces or writes to anything that belongs to the game (CreateFrame, C_Timer, hooksecurefunc,
+-- GameTooltip...). Writing to those, even putting the same value back, "taints" them for the whole session, and the game
+-- then blocks its own actions and blames Waypath+ ("blocked from an action only available to the Blizzard UI"). Up to
+-- 1.9.1 this file did exactly that; it now only reads the list of frames.
+--
+-- How the switch works: the frames the guide's files create while they load (between GateOn.lua and GateOff.lua in the .toc)
+-- are noted by walking the game's frame list before and after. With Cards only on, at login those frames are silenced
+-- (no events, no update loop, hidden). The few things that don't live on a frame (game hooks and timers) check
+-- RG.CardsOnly() themselves.
+local made = {}          -- the guide's frames
 RG.featureFrames = made
--- /wp perf: while it samples, every wrapped handler adds the time it took to its file's total
+local lastBefore         -- the last frame that existed when a gated block of files began
+local function lastFrame()
+  if not EnumerateFrames then return nil end
+  local f, last = EnumerateFrames(), nil
+  while f do last = f; f = EnumerateFrames(f) end
+  return last
+end
+function RG.GateOn()
+  lastBefore = lastFrame() or false
+end
+function RG.GateOff()
+  if lastBefore == nil or not EnumerateFrames then return end
+  local f = lastBefore and EnumerateFrames(lastBefore) or EnumerateFrames()
+  while f do made[#made + 1] = f; f = EnumerateFrames(f) end
+  lastBefore = nil
+end
+local function silence()
+  for _, f in ipairs(made) do
+    pcall(function()
+      if f.UnregisterAllEvents then f:UnregisterAllEvents() end
+      if f.GetScript and f.SetScript and f:GetScript("OnUpdate") then f:SetScript("OnUpdate", nil) end
+      if f.IsShown and f:IsShown() and not (f.IsProtected and f:IsProtected()) then f:Hide() end
+    end)
+  end
+end
+RG.SilenceGuide = silence
+if CreateFrame then
+  local lf = CreateFrame("Frame")
+  lf:RegisterEvent("ADDON_LOADED"); lf:RegisterEvent("PLAYER_LOGIN")
+  lf:SetScript("OnEvent", function(_, event, name)
+    if event == "ADDON_LOADED" and name ~= "Waypath" then return end
+    if RG.CardsOnly and RG.CardsOnly() then silence() end
+  end)
+end
+-- /wp perf: memory now, and the add-on's CPU time when the game's script profiler is on
 local perf = { on = false, ms = {} }
 RG.Perf = perf
-local function here()
-  local st = debugstack and debugstack(2, 8, 0) or ""
-  for f in st:gmatch("([%w_]+%.lua)") do if f ~= "Mode.lua" then return f end end
-  return "?"
-end
-local function guard(fn, label)
-  if type(fn) ~= "function" then return fn end
-  label = label or here()
-  return function(...)
-    if RG.CardsOnly() then return end
-    if not perf.on then return fn(...) end
-    local t0 = debugprofilestop()
-    local a, b, c, d = fn(...)
-    perf.ms[label] = (perf.ms[label] or 0) + (debugprofilestop() - t0)
-    return a, b, c, d
-  end
-end
-
-local saved
-local HOOKED = { "GameTooltip", "ItemRefTooltip", "CharacterFrame", "GameMenuFrame", "Minimap", "WorldMapFrame", "ContainerFrame1", "ContainerFrameCombinedBags" }
-
-function RG.GateOn()
-  if saved then return end
-  saved = { frames = {} }
-  local origCreate = CreateFrame
-  saved.CreateFrame = origCreate
-  CreateFrame = function(...)
-    local f = origCreate(...)
-    if type(f) ~= "table" then return f end   -- (nothing to wrap)
-    made[f] = true
-    local ss, hs = f.SetScript, f.HookScript
-    if type(ss) == "function" then
-      f.SetScript = function(self, ev, fn) if ev == "OnEvent" or ev == "OnUpdate" then fn = guard(fn) end return ss(self, ev, fn) end
-    end
-    if type(hs) == "function" then
-      f.HookScript = function(self, ev, fn) if ev == "OnEvent" or ev == "OnUpdate" then fn = guard(fn) end return hs(self, ev, fn) end
-    end
-    return f
-  end
-  if C_Timer then
-    saved.After, saved.NewTicker = C_Timer.After, C_Timer.NewTicker
-    if saved.After then C_Timer.After = function(d, fn) return saved.After(d, guard(fn)) end end
-    if saved.NewTicker then C_Timer.NewTicker = function(d, fn, n) return saved.NewTicker(d, guard(fn), n) end end
-  end
-  if hooksecurefunc then
-    saved.hooksecurefunc = hooksecurefunc
-    hooksecurefunc = function(a, b, c)
-      if type(a) == "table" then return saved.hooksecurefunc(a, b, guard(c)) end
-      return saved.hooksecurefunc(a, guard(b))
-    end
-  end
-  if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-    saved.post = TooltipDataProcessor.AddTooltipPostCall
-    TooltipDataProcessor.AddTooltipPostCall = function(t, fn) return saved.post(t, guard(fn)) end
-  end
-  if ChatFrame_AddMessageEventFilter then
-    saved.filter = ChatFrame_AddMessageEventFilter
-    ChatFrame_AddMessageEventFilter = function(ev, fn) return saved.filter(ev, function(...) if RG.CardsOnly() then return false end return fn(...) end) end
-  end
-  -- hooks on the game's own frames
-  for _, name in ipairs(HOOKED) do
-    local o = _G[name]
-    if type(o) == "table" and type(o.HookScript) == "function" and rawget(o, "HookScript") == nil then
-      local orig = o.HookScript
-      o.HookScript = function(self, ev, fn) return orig(self, ev, guard(fn)) end
-      saved.frames[#saved.frames + 1] = o
-    end
-  end
-  local wm = _G.WorldMapFrame
-  local sc = wm and wm.ScrollContainer
-  if type(sc) == "table" and type(sc.HookScript) == "function" and rawget(sc, "HookScript") == nil then
-    local orig = sc.HookScript
-    sc.HookScript = function(self, ev, fn) return orig(self, ev, guard(fn)) end
-    saved.frames[#saved.frames + 1] = sc
-  end
-end
-
-function RG.GateOff()
-  if not saved then return end
-  CreateFrame = saved.CreateFrame
-  if C_Timer then C_Timer.After, C_Timer.NewTicker = saved.After, saved.NewTicker end
-  if saved.hooksecurefunc then hooksecurefunc = saved.hooksecurefunc end
-  if saved.post then TooltipDataProcessor.AddTooltipPostCall = saved.post end
-  if saved.filter then ChatFrame_AddMessageEventFilter = saved.filter end
-  for _, o in ipairs(saved.frames) do o.HookScript = nil end
-  saved = nil
-end
 
 -- Turn the mode on or off for this character. Everything the guide put on screen goes away at once.
 function RG.SetCardsOnly(on)
   if not RG.db then return end
   RG.db.cardsOnly = on and true or nil
   if on then
-    for f in pairs(made) do
-      if f.IsShown and f:IsShown() and f.Hide then pcall(f.Hide, f) end
-    end
+    silence()
     if _G.WaypathTracker and _G.WaypathTracker.Hide then _G.WaypathTracker:Hide() end
   end
 end
@@ -136,25 +90,19 @@ function RG.WrapCardsOnlySlash()
   end
 end
 
--- /wp perf: ten seconds of measuring, then memory and the cost of each part of the guide, in milliseconds per second
+-- /wp perf: ten seconds of measuring, then memory and (with the game's script profiler on) CPU time
 function RG.PerfSample()
-  if not (debugprofilestop and C_Timer and C_Timer.After) then RG.Print("This client can't time add-ons.") return end
+  if not (C_Timer and C_Timer.After) then return end
   if perf.on then RG.Print("Already measuring...") return end
-  perf.ms, perf.on = {}, true
-  local t0 = debugprofilestop()
+  perf.on = true
+  local cpu0 = GetAddOnCPUUsage and pcall(UpdateAddOnCPUUsage) and GetAddOnCPUUsage("Waypath") or nil
   RG.Print("Measuring Waypath+ for 10 seconds: play as you normally would...")
   C_Timer.After(10, function()
     perf.on = false
-    local secs = math.max(0.001, (debugprofilestop() - t0) / 1000)
-    local mem
+    local mem, cpu
     if UpdateAddOnMemoryUsage and GetAddOnMemoryUsage then pcall(UpdateAddOnMemoryUsage); local ok, kb = pcall(GetAddOnMemoryUsage, "Waypath"); if ok then mem = kb end end
-    local list, total = {}, 0
-    for k, v in pairs(perf.ms) do list[#list + 1] = { k, v / secs }; total = total + v / secs end
-    table.sort(list, function(a, b) return a[2] > b[2] end)
-    local parts = {}
-    for i = 1, math.min(6, #list) do parts[#parts + 1] = string.format("%s %.2f", list[i][1]:gsub("%.lua$", ""), list[i][2]) end
-    RG.Print(string.format("Memory %s  ·  guide %.2f ms per second (a frame at 60 fps has 16.7 ms)%s", mem and string.format("%.1f MB", mem / 1024) or "?", total,
-      #parts > 0 and ("  ·  busiest: " .. table.concat(parts, ", ")) or ""))
-    if total > 2 then RG.Print("That is more than it should be. Please send this line with /wp report.") end
+    if cpu0 and UpdateAddOnCPUUsage then pcall(UpdateAddOnCPUUsage); local ok, c = pcall(GetAddOnCPUUsage, "Waypath"); if ok and c then cpu = (c - cpu0) / 10 end end
+    RG.Print(string.format("Memory %s%s", mem and string.format("%.1f MB", mem / 1024) or "?",
+      (cpu and cpu > 0) and string.format("  ·  %.2f ms of CPU per second (a frame at 60 fps has 16.7 ms)", cpu) or "  ·  CPU time needs the game's script profiler (/console scriptProfile 1, then /reload)"))
   end)
 end

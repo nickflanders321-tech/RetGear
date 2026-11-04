@@ -320,6 +320,7 @@ end
 
 -- You searched yourself: Waypath+ stops its searches for this visit.
 local function userSearched()
+  if RG.CardsOnly and RG.CardsOnly() then return end
   if ours then return end
   if mode == "items" then
     yielded = true

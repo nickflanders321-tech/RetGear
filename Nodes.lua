@@ -135,7 +135,7 @@ local function check()
 end
 
 if C_Timer and C_Timer.NewTicker then
-  C_Timer.NewTicker(2, function() if RG.db then pcall(check) end end)
+  C_Timer.NewTicker(2, function() if RG.db and not RG.CardsOnly() then pcall(check) end end)
 end
 
 -- A tracker reminder while you're near one (click: pin it and follow the arrow).

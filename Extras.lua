@@ -217,6 +217,7 @@ local SLOT_FRAMES = {
 }
 local dollTexts, dollTotal = {}, nil
 local function updatePaperdoll()
+  if RG.CardsOnly and RG.CardsOnly() then return end
   local show = RG.Opt("paperdoll")
   local scores, worst, total = {}, nil, 0
   for slot in pairs(SLOT_FRAMES) do

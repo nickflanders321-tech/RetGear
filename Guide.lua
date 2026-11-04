@@ -757,6 +757,7 @@ end)
 
 -- a slow heartbeat: re-plan as you move, reach goals, keep the arrow honest
 local function beat()
+  if RG.CardsOnly and RG.CardsOnly() then return end   -- (Cards only: the guide's heartbeat stops; switching back reloads)
   if RG.db and UnitLevel and not (RG.IsAlt and RG.IsAlt()) then
     local ok = pcall(function()
       local obj = RG.Objective()

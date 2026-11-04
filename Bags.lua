@@ -171,6 +171,7 @@ local function makeButton(parent, bank)
 end
 local bagBtn, bankBtn
 local function place()
+  if RG.CardsOnly and RG.CardsOnly() then return end
   local show = RG.Opt("sortButton")
   -- combined bags (modern UI) or the classic backpack
   local host = (ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() and ContainerFrameCombinedBags) or ContainerFrame1

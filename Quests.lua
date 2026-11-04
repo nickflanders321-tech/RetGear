@@ -255,6 +255,8 @@ function RG.OpenQuest(title, qid)
   end
   if not idx then return false end
   qid = qid or id
+  -- opening the game's quest log from add-on code during a fight upsets the game's own window layout (it blames us)
+  if InCombatLockdown and InCombatLockdown() then RG.Print("The quest log opens after the fight.") return false end
   local ok = pcall(function()
     local frame = QuestLogFrame
     if frame then

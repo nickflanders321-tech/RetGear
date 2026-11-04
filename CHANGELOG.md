@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.9.2
+- Fixed the "Waypath+ has been blocked from an action only available to the Blizzard UI" pop-ups, and the errors in nameplates, party frames, action bars and the combat log that came with them. The Cards only switch replaced a few of the game's own functions for a moment while Waypath+ loaded; on the launch client that made the game treat its own code as an add-on's ("taint") for the whole session. Waypath+ now never replaces or writes to anything that belongs to the game, and Cards only still turns the guide off.
+- Clicking a quest on the tracker during a fight no longer opens the quest log (it opens after the fight), which also upset the game's window layout.
+
 ## v1.9.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

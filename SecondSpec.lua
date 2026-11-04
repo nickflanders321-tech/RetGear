@@ -325,6 +325,7 @@ RG.HealSet, RG.HealScore, RG.HealDelta, RG.IsHealKeeper, RG.HealInvalidate = RG.
 -- ---------------------------------------------------------------------------
 local function icon(s) return "|T" .. (s.icon or "Interface\\Icons\\INV_Misc_QuestionMark") .. ":14:14:0:0:64:64:5:59:5:59|t " end
 local function OnTooltip(tooltip, data)
+  if RG.CardsOnly and RG.CardsOnly() then return end
   if not on() or (tooltip ~= GameTooltip and tooltip ~= ItemRefTooltip) then return end
   if (UnitLevel("player") or 1) < 25 then return end
   local link

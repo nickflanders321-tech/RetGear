@@ -523,6 +523,7 @@ local function questTip(q)
 end
 
 function RG.RefreshTracker()
+  if RG.CardsOnly and RG.CardsOnly() then return end
   if not RG.db or not RG.db then return end
   if not RG.Opt("tracker") then if tr then tr:Hide() end return end
   if not tr then build() end
@@ -1091,7 +1092,7 @@ end)
 
 -- Refresh on the things that change the tracker, at most a few times a second.
 local pending
-local function queue() if pending then return end; pending = true; C_Timer.After(0.4, function() pending = nil; RG.RefreshTracker() end) end
+local function queue() if RG.CardsOnly and RG.CardsOnly() then return end; if pending then return end; pending = true; C_Timer.After(0.4, function() pending = nil; RG.RefreshTracker() end) end
 RG.QueueTracker = queue
 local ev = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "TAXIMAP_OPENED", "SKILL_LINES_CHANGED", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "TRAINER_SHOW" }) do pcall(ev.RegisterEvent, ev, e) end

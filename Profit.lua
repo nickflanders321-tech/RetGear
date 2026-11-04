@@ -140,6 +140,7 @@ end
 -- Tooltip line
 -- ---------------------------------------------------------------------------
 local function OnTooltip(tooltip, data)
+  if RG.CardsOnly and RG.CardsOnly() then return end
   if not on() or tooltip ~= GameTooltip and tooltip ~= ItemRefTooltip then return end
   local id = data and data.id
   if not id and tooltip.GetItem then local _, link = tooltip:GetItem(); id = link and tonumber(link:match("item:(%d+)")) end
@@ -202,7 +203,7 @@ function RG.UpdateBagMarks()
   local skip = on() and RG.ProfitSkip() or {}
   pcall(eachBagButton, function(b, bag, slot) mark(b, skip[bag .. ":" .. slot]) end)
 end
-local function queueMarks() C_Timer.After(0.05, RG.UpdateBagMarks) end
+local function queueMarks() if RG.CardsOnly and RG.CardsOnly() then return end; C_Timer.After(0.05, RG.UpdateBagMarks) end
 if hooksecurefunc then
   for _, fn in ipairs({ "ToggleBag", "OpenBag", "OpenAllBags", "ToggleAllBags", "OpenBackpack", "ToggleBackpack", "ContainerFrame_Update" }) do
     if _G[fn] then hooksecurefunc(fn, queueMarks) end
