@@ -557,7 +557,7 @@ RG.QDATA = {
 [1067]={e={1456,22.8,20.9,"Apothecary Zamah"},s={1424,61.4,19.1,"Apothecary Lydon"},n="Return to Thunder Bluff",r=13,l=23,ps={1066},ra="OUTRS"},
 [1068]={e={1413,35.3,27.9,"Seereth Stonebreak"},s={1413,35.3,27.9,"Seereth Stonebreak"},n="Shredding Machines",r=13,l=23,ps={1062},ra="OUTRS",o={{"k","XT:4",{"XT:4"},{{1442,67.2,46.7,1}}},{"k","XT:9",{"XT:9"},{{1442,64.1,56.6,1}}}}},
 [1069]={e={1413,62.4,37.6,"Mebok Mizzyrix"},s={1413,62.4,37.6,"Mebok Mizzyrix"},n="Deepmoss Spider Eggs",r=15,l=20,o={{"i","Deepmoss Egg",{},{{1442,61.4,56.7,0}}}}},
-[1086]={e={1456,22.8,20.9,"Apothecary Zamah"},s={1456,22.8,20.9,"Apothecary Zamah"},n="The Flying Machine Airport",r=13,l=23,ps={1067},ra="OUTRS"},
+[1086]={e={1456,22.8,20.9,"Apothecary Zamah"},s={1456,22.8,20.9,"Apothecary Zamah"},n="The Flying Machine Airport",r=13,l=23,ps={1067},ra="OUTRS",o={{"o","Venture Co. Copter Pad",{},{{1442,66.5,45.5,0}}}}},
 [1087]={e={1442,45.9,60.4,"Braelyn Firehand"},s={1442,45.9,60.4,"Braelyn Firehand"},n="Cenarius' Legacy",r=20,l=25,ra="OUTRS",o={{"k","Son of Cenarius",{"Son of Cenarius"},{{1442,35.8,12.6,1}}},{"k","Daughter of Cenarius",{"Daughter of Cenarius"},{{1442,36.5,13.1,1}}},{"k","Cenarion Botanist",{"Cenarion Botanist"},{{1442,36.0,14.6,1}}}}},
 [1088]={e={1442,45.9,60.4,"Braelyn Firehand"},s={1442,45.9,60.4,"Braelyn Firehand"},n="Ordanus",r=20,l=29,ps={1087},ra="OUTRS",o={{"i","Ordanus' Head",{"Keeper Ordanus"},{{1440,62.0,51.4,1}}}}},
 [1089]={e={1442,26.6,10.9,"Talon Den Hoard"},s={1442,45.9,60.4,"Braelyn Firehand"},n="The Den",r=20,l=29,ps={1088},ra="OUTRS",o={{"i","Sleepers' Key",{},{{1442,25.6,11.4,0}}},{"i","Claw Key",{},{{1442,29.6,15.8,0}}},{"i","Barrow Key",{},{{1442,28.0,13.8,0}}}}},
