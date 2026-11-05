@@ -71,12 +71,13 @@ local function tokenCount(a, kind)
 end
 local function packPrice(kind) return FREE_PACKS and 0 or PACKS[kind or "normal"].price end
 local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
--- How coins are earned (about 6,500 coins over a 1-60 climb, see RELEASE BALANCE above):
+-- How coins are earned, before the x1.2 EARN_RATE (about 6,500 coins over a 1-60 climb, see RELEASE BALANCE above):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 4
 --   profession skill-ups: 1 coin per 2    duel win: 4
 -- Quests, kills and skill-ups together pay at most DAY_CAP coins per day, so grinding one thing all day doesn't run away.
-local DAY_CAP = 80
+local DAY_CAP = 96            -- (80 before 1.9.3, raised with EARN_RATE)
+local EARN_RATE = 1.2         -- every coin earned from play counts 20% more (launch feedback: packs came too slowly)
 local COLLECTOR_LUCK = 0.10   -- each card has this chance to be one you do not own yet (a small mercy, so the last cards do not take forever)
 local MASTER_GOAL = 0.75
 
@@ -137,6 +138,7 @@ local function give(kind, amount, capped)
   local a = store(); if not a then return end
   a.acc = type(a.acc) == "table" and a.acc or {}
   a.stats = a.stats or {}
+  amount = amount * EARN_RATE
   if capped then
     local today = date and date("%Y-%m-%d") or "today"
     if a.day ~= today then a.day, a.dayCoins = today, 0 end

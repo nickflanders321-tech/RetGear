@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Cards: you earn 20% more coins from playing (XP, levels, quests, kills, skill-ups and duel wins), and the daily limit on quest, kill and skill-up coins goes up to match (80 to 96).
+
 ## v1.10.0
 - 2nd Spec tab updated for the launch build (Blizzard's November 2 notes): Bear Form's threat bonus is now 115% and Defensive Stance's 80%; Shamans have Totemic Call instead of Totemic Projection, Lava Burst is gone, top-rank Lightning Bolt hits harder, Riptide heals over time only and Stormstrike has a 6 sec cooldown; Hunters' traps share one 30 sec cooldown; Mutilate now sits at the end of the Assassination tree; Ice Lance hits frozen targets for 300% and Frost Blast is gone. The Righteous Fury and Shadow Word: Death notes are now confirmed by Blizzard.
 - Ruins of Lordaeron: every dungeon quest can be picked up at level 15 since launch.
