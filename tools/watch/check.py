@@ -23,13 +23,14 @@ def fetch(url, timeout=20):
         return r.read().decode('utf-8', 'replace')
 
 # --- 1. game build -----------------------------------------------------------
-# WoW Forever builds are 1.60 and up. The beta runs under wow_classic_beta; the live game's product name isn't
-# public yet, so every likely product is asked and the newest Forever build wins (Classic Era, 1.15, and the other
-# Classic versions are ignored by the version check).
+# WoW Forever builds are 1.60 and up. The live game runs under the product `wowf` (BlizzTrack labels it "Stress
+# Test"; it carried the launch build 1.60.1.70790 on November 4, 2026), the beta under wow_classic_beta. Every likely
+# product is asked and the newest Forever build wins (Classic Era, 1.15, and the other Classic versions are ignored
+# by the version check).
 FOREVER = re.compile(r'^1\.(6\d|[7-9]\d)\.\d+\.\d{4,6}$')
 def _ver(v): return tuple(int(x) for x in v.split('.'))
 def live_build():
-    products = (os.environ.get('FOREVER_PRODUCT') or 'wow_forever wow_camelot wowcamelot wow_classic_forever wow_classic_era wow_classic wow_classic_beta wow_camelot_ptr').split()
+    products = (os.environ.get('FOREVER_PRODUCT') or 'wowf wow_forever wow_camelot wowcamelot wow_classic_forever wow_classic_era wow_classic wow_classic_beta wow_camelot_ptr').split()
     best = (None, None)
     for product in products:
         for url in ('http://us.patch.battle.net:1119/%s/versions' % product,
@@ -44,13 +45,15 @@ def live_build():
             except Exception as e:
                 print('note: %s: %s' % (url, e), file=sys.stderr)
     if best[0]: return best
-    src = state.get('game_build_source') or 'https://blizztrack.com/view/wow_classic_beta?type=versions'
-    try:
-        found = [v for v in re.findall(r'\b(1\.\d{2}\.\d+\.\d{4,6})\b', fetch(src)) if FOREVER.match(v)]
-        if found: return max(found, key=_ver), src
-    except Exception as e:
-        print('note: %s: %s' % (src, e), file=sys.stderr)
-    return None, None
+    srcs = [state.get('game_build_source') or 'https://blizztrack.com/view/wowf?type=versions',
+            'https://blizztrack.com/view/wowf?type=versions', 'https://blizztrack.com/view/wow_classic_beta?type=versions']
+    for src in dict.fromkeys(srcs):
+        try:
+            found = [v for v in re.findall(r'\b(1\.\d{2}\.\d+\.\d{4,6})\b', fetch(src)) if FOREVER.match(v)]
+            if found and (not best[0] or _ver(max(found, key=_ver)) > _ver(best[0])): best = (max(found, key=_ver), src)
+        except Exception as e:
+            print('note: %s: %s' % (src, e), file=sys.stderr)
+    return best
 
 build, where = live_build()
 out['build_changed'] = 'false'
