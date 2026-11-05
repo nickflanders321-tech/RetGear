@@ -77,6 +77,11 @@ jobs:
           json.dump(new, open(p + '.new', 'w'), indent=2)
           PY
 
+      - name: Players' quest reports (/wp share issues)
+        id: community
+        continue-on-error: true
+        run: python3 tools/community/import.py "${{ github.repository }}" Objectives.lua
+
       - name: "New game build: interface number and a compatibility issue"
         id: build
         if: steps.check.outputs.build_changed == 'true'
@@ -101,6 +106,10 @@ jobs:
           if [ "${{ steps.regen.outcome }}" = "success" ] && ! git diff --quiet -- $gen; then
             release=true; notes="- Quest, gear, map and profession data updated from WoW Forever's latest game data."
           fi
+          if [ "${{ steps.community.outcome }}" = "success" ] && ! git diff --quiet -- CommunityQuests.lua; then
+            release=true; notes="$notes
+          - Quests players found and shared with /wp share are now in the guide (new WoW Forever content our data didn't have yet)."
+          fi
           if [ "${{ steps.build.outputs.toc_changed }}" = "true" ]; then
             release=true; notes="$notes
           - Works with WoW Forever build ${{ steps.check.outputs.new_build }}."
@@ -112,7 +121,11 @@ jobs:
           import sys
           v, notes = sys.argv[1], sys.argv[2].strip()
           p = 'CHANGELOG.md'; s = open(p, encoding='utf-8').read()
-          s = s.replace('# Changelog\n\n', '# Changelog\n\n## v%s\n%s\n\n' % (v, notes), 1)
+          if s.startswith('# Changelog\n\n## Unreleased\n'):
+              # hand-written notes waiting for a release go out with this one, under its number
+              s = s.replace('## Unreleased\n', '## v%s\n%s\n' % (v, notes), 1)
+          else:
+              s = s.replace('# Changelog\n\n', '# Changelog\n\n## v%s\n%s\n\n' % (v, notes), 1)
           open(p, 'w', encoding='utf-8').write(s)
           PY
           fi

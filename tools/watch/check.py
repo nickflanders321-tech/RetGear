@@ -94,7 +94,7 @@ try:
     last = int(state.get('last_issue_seen') or 0)
     for it in json.loads(raw):
         if 'pull_request' in it: continue
-        if it['number'] > last and not any(l['name'] == 'needs-claude' for l in it.get('labels', [])) \
+        if it['number'] > last and not any(l['name'] in ('needs-claude', 'quests') for l in it.get('labels', [])) \
            and it.get('user', {}).get('login') != 'github-actions[bot]':
             new.append(it['number'])
     if new: state['last_issue_seen'] = max(new)

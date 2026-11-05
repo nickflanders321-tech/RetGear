@@ -509,6 +509,7 @@ SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.-)%s*$")
   cmd = cmd and cmd:lower(); rest = rest and rest:lower() or ""
   if cmd == "report" then RG.ReportStep(); return end
+  if cmd == "share" or cmd == "contribute" then RG.ShareFinds(); return end
   if cmd == "tour" then RG.ShowTour(1); return end
   if cmd == "theme" or cmd == "accent" then RG.SetAccent((msg or ""):match("^%s*%S+%s+(%S+)")); return end
   if cmd == "errors" or cmd == "error" or cmd == "debug" or cmd == "bug" then

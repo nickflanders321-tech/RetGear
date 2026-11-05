@@ -1,0 +1,15 @@
+name: Share quests you found
+description: Quests Waypath+ doesn't know yet (new WoW Forever content). They go into everyone's guide in the next data update.
+title: "Quests found"
+labels: ["quests"]
+body:
+  - type: markdown
+    attributes:
+      value: "In game, type **/wp share**, press Ctrl+A, Ctrl+C, and paste the box below. It only has quest names and IDs, levels, and where their givers and hand-ins stand (map and position). Nothing about you or your character beyond your faction."
+  - type: textarea
+    id: finds
+    attributes:
+      label: The /wp share box
+      render: text
+    validations:
+      required: true

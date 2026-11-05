@@ -1134,8 +1134,26 @@ do
     RG.db.givers[id] = { n = title, l = (level and level > 0 and level) or (old and old.l), m = map, x = pos.x * 100, y = pos.y * 100, g = npc,
       f = UnitFactionGroup and UnitFactionGroup("player") or nil }
     RG.MarkQuestsDirty()
+    -- once, after a handful: say how to hand them on (new zones fill in faster with players' finds)
+    if not old and not RG.db.shareHinted then
+      local k = 0; for _ in pairs(RG.db.givers) do k = k + 1 end
+      if k >= 5 then RG.db.shareHinted = true; RG.Print("You've found " .. k .. " quests Waypath+ doesn't know yet (new WoW Forever content). Type /wp share to copy them for a bug report, and they'll be in everyone's guide in the next update.") end
+    end
   end
+  -- and where a quest our data lacks is handed in (QUEST_PROGRESS / QUEST_COMPLETE at its ender)
+  local function learnEnd(id)
+    if not (id and id > 0 and RG.db) then return end
+    if RG.QDATA and RG.QDATA[id] and RG.QDATA[id].e then return end
+    local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+    if not pos then return end
+    RG.db.enders = RG.db.enders or {}
+    local npc = (UnitName and (UnitName("npc") or UnitName("target"))) or nil
+    RG.db.enders[id] = { n = GetTitleText and GetTitleText() or nil, m = map, x = pos.x * 100, y = pos.y * 100, g = npc, f = UnitFactionGroup and UnitFactionGroup("player") or nil }
+  end
+  pcall(lf.RegisterEvent, lf, "QUEST_PROGRESS"); pcall(lf.RegisterEvent, lf, "QUEST_COMPLETE")
   lf:SetScript("OnEvent", function(_, event)
+    if (event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE") and GetQuestID then learnEnd(GetQuestID()) return end
     if event == "GOSSIP_SHOW" and C_GossipInfo and C_GossipInfo.GetAvailableQuests then
       for _, q in ipairs(C_GossipInfo.GetAvailableQuests() or {}) do learn(q.questID, q.title, q.questLevel) end
     elseif event == "QUEST_DETAIL" and GetQuestID then
@@ -1189,3 +1207,58 @@ _G.WaypathAPI = {
   -- The step Waypath+ is guiding you on: { zone, from, to } or nil.
   CurrentZone = function() local e = RG.CurrentRouteEntry and RG.CurrentRouteEntry(); return e and { zone = e.zone, from = e.from, to = e.to } or nil end,
 }
+
+-- ===========================================================================
+-- /wp share: the quests this character found that Waypath+'s data doesn't know yet (new WoW Forever content), as text
+-- to paste into a GitHub issue. Each one becomes part of everyone's guide in the next data update (tools/community).
+-- Nothing is ever sent anywhere by the add-on itself: you copy it and paste it, or don't.
+-- ===========================================================================
+function RG.ShareFinds()
+  local out, n = { "WPQ1 " .. tostring(RG.VERSION) .. " " .. tostring(UnitFactionGroup and UnitFactionGroup("player") or "?") }, 0
+  local function clean(v) return (tostring(v or ""):gsub("[|\r\n]", " ")) end
+  local ids = {}
+  for id in pairs((RG.db and RG.db.givers) or {}) do ids[id] = true end
+  for id in pairs((RG.db and RG.db.enders) or {}) do ids[id] = true end
+  local sorted = {}
+  for id in pairs(ids) do sorted[#sorted + 1] = id end
+  table.sort(sorted)
+  for _, id in ipairs(sorted) do
+    local g, e = RG.db.givers and RG.db.givers[id], RG.db.enders and RG.db.enders[id]
+    local d = RG.QDATA and RG.QDATA[id]
+    -- only quests the published data doesn't have at all (one it knows without a giver starts from an item or object)
+    local fresh = not d or d.community
+    local needS, needE = fresh and g and not (d and d.s and not d.community), fresh and e and not (d and d.e and not d.community)
+    if (needS or needE) and type(id) == "number" then
+      local t = g or e
+      out[#out + 1] = table.concat({ id, clean(t.n), t.l or "", t.f or "",
+        needS and string.format("%d,%.1f,%.1f,%s", g.m or 0, g.x or 0, g.y or 0, clean(g.g)) or "",
+        needE and string.format("%d,%.1f,%.1f,%s", e.m or 0, e.x or 0, e.y or 0, clean(e.g)) or "" }, "|")
+      n = n + 1
+    end
+  end
+  if n == 0 then RG.Print("Nothing new to share yet: every quest you've seen is already in Waypath+'s data. Thanks for checking!") return end
+  out[#out + 1] = ""
+  out[#out + 1] = "Paste this whole box into a new issue: github.com/nickflanders321-tech/RetGear/issues/new?template=quests.yml"
+  RG.ShowErrors(table.concat(out, "\n"), "Quests you found that Waypath+ doesn't know yet (" .. n .. ")  ·  Ctrl+A, Ctrl+C to copy")
+end
+
+-- Players' finds (CommunityQuests.lua, from /wp share reports): quests WoW Forever's published data doesn't have yet
+-- join the quest table, so the new-quests list, the tracker and the arrow can use them. Data that arrives later
+-- from QuestieDB always wins.
+do
+  local FAC = { Horde = "OUTRS", Alliance = "HDNGA" }
+  for id, c in pairs(RG.COMMUNITY_Q or {}) do
+    if RG.QDATA and c.n then
+      local d = RG.QDATA[id]
+      if not d then
+        d = { n = c.n, l = c.l, r = c.l and math.max(1, c.l - 4) or nil, ra = c.f and FAC[c.f] or nil, community = true }
+        if not (d.ra and not d.ra:find(RG.RACE_LETTER or "?", 1, true)) then RG.QDATA[id] = d else d = nil end
+      end
+      if d then
+        if not d.s and c.s then d.s = c.s end
+        if not d.e and c.e then d.e = c.e end
+      end
+    end
+  end
+  RG.COMMUNITY_Q = nil
+end
