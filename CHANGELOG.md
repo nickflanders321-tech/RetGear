@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Cards: you can trade any card you own, not just extra copies (Raiders still can't be traded). The Trade tab lists every card, extras first, with pages, and marks the ones that are your only copy; offering one says so, and a card you trade away completely leaves your showcase.
 - Route notes: Riverglades has your faction's base (Rog'mar for the Horde, Farholde Keep for the Alliance; Powderfuse Port is neutral), and Mount Hyjal names the Tainted Foothills flight from Everlook and the Summit of Eternity hub.
 - New: /wp share. Waypath+ already remembers quests you meet that its data doesn't know (new WoW Forever content, like Riverglades right now); /wp share puts them in a box to paste into the "Share quests you found" form on GitHub. Every shared quest goes into everyone's guide in the next hourly update. You get one reminder after finding five. The add-on never sends anything by itself.
 - Cards: you earn 20% more coins from playing (XP, levels, quests, kills, skill-ups and duel wins), and the daily limit on quest, kill and skill-up coins goes up to match (80 to 96).

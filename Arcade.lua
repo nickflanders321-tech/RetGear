@@ -693,12 +693,14 @@ function RG.ArcadePin(card)
 end
 
 -- ---------------------------------------------------------------------------
--- Trading with your party (one card for one card, both from your extras)
+-- Trading with your party (one card for one card; any card you own except Raiders, your last copy included)
 -- ---------------------------------------------------------------------------
 local PREFIX = "WPCARD"
 local trade = { out = nil, incoming = nil }
 RG.ArcadeTrade = trade
-local function extraOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) >= 2 end
+local function countOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) or 0 end
+local function extraOf(a, c, f) return countOf(a, c, f) >= 2 end
+local function ownsOf(a, c, f) return countOf(a, c, f) >= 1 end
 local function tradable(c) return c and c.kind ~= 4 end
 local function sendAddon(msg, channel, target)
   if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, target) end
@@ -706,16 +708,16 @@ end
 function RG.ArcadeOffer(c, f)
   local a = store(); if not a or not c then return false, "Pick a card first." end
   if not tradable(c) then return false, "Raider cards can't be traded." end
-  if not extraOf(a, c, f) then return false, "Only extra copies can be traded: you keep one of each print." end
+  if not ownsOf(a, c, f) then return false, "You don't have that card in that print." end
   if not (IsInGroup and IsInGroup()) then return false, "Join a party to trade." end
   trade.out = { key = c.key or c.name, finish = f }
   sendAddon("O|" .. (c.key or c.name) .. "|" .. f, IsInRaid and IsInRaid() and "RAID" or "PARTY")
-  return true, "Offered " .. c.name .. " (" .. FINISH[f][1] .. ") to your group. Waiting for someone to answer."
+  return true, "Offered " .. c.name .. " (" .. FINISH[f][1] .. ") to your group. Waiting for someone to answer." .. (extraOf(a, c, f) and "" or "  (It's your only copy of that print: it leaves your collection if the trade goes through.)")
 end
 function RG.ArcadeAcceptOffer(c, f)
   local a = store(); local o = trade.incoming
   if not (a and o) then return false, "No offer to answer." end
-  if not tradable(c) or not extraOf(a, c, f) then return false, "Pick one of your extra cards to give back." end
+  if not tradable(c) or not ownsOf(a, c, f) then return false, "Pick one of your cards to give back." end
   sendAddon("A|" .. o.key .. "|" .. o.finish .. "|" .. (c.key or c.name) .. "|" .. f, "WHISPER", o.from)
   trade.pending = { give = { key = c.key or c.name, finish = f }, get = { key = o.key, finish = o.finish }, from = o.from }
   trade.incoming = nil
@@ -726,6 +728,10 @@ local function addCard(a, key, f, n)
   local slot = a.cards[key] or {}
   slot[f] = math.max(0, (slot[f] or 0) + n)
   a.cards[key] = slot
+  -- a card traded away completely leaves the showcase too
+  if n < 0 and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) == 0 and a.showcase then
+    for i = #a.showcase, 1, -1 do if a.showcase[i] == key then table.remove(a.showcase, i) end end
+  end
 end
 local function onAddon(prefix, text, channel, sender)
   if prefix ~= PREFIX or type(text) ~= "string" then return end
@@ -738,7 +744,7 @@ local function onAddon(prefix, text, channel, sender)
     if RG.ArcadeRefresh then RG.ArcadeRefresh(); RG.ArcadeMsg((sender or "Someone") .. " offers " .. p1 .. " (" .. FINISH[tonumber(p2)][1] .. "). Open the Trade tab to answer.") end
   elseif op == "A" and trade.out and trade.out.key == p1 and trade.out.finish == tonumber(p2) and byKey[p3] and FINISH[tonumber(p4) or 0] then
     local c = byKey[p1]
-    if extraOf(a, c, tonumber(p2)) and tradable(byKey[p3]) then
+    if ownsOf(a, c, tonumber(p2)) and tradable(byKey[p3]) then
       addCard(a, p1, tonumber(p2), -1); addCard(a, p3, tonumber(p4), 1)
       sendAddon("C|" .. p3 .. "|" .. p4 .. "|" .. p1 .. "|" .. p2, "WHISPER", sender)
       trade.out = nil
@@ -2249,7 +2255,7 @@ local function refreshDetail()
   detail.pin:SetEnabled(owned(a, c.id) > 0); detail.duel:SetEnabled(owned(a, c.id) > 0)
   detail.pin:SetText(isPinned(a, c) and "Remove from showcase" or "Add to showcase")
   detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
-  detail.offer:SetEnabled(c.kind ~= 4 and (slot[f] or 0) >= 2)
+  detail.offer:SetEnabled(c.kind ~= 4 and (slot[f] or 0) >= 1)
 end
 
 local function openDetail(c)
@@ -2434,9 +2440,9 @@ local function build()
 
   -- footer
   frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
-  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
+  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
   frame.prev:SetPoint("BOTTOM", 230, 58)
-  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
+  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
   frame.next:SetPoint("BOTTOM", 330, 58)
   frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.92, 0.88, 1)
   frame.buyNow = function(many)
@@ -2677,38 +2683,54 @@ function RG.ArcadeRefresh(keepMsg)
       end
     end
   elseif view.mode == "trade" then
-    local extras = {}
+    -- every card you own can be traded (not Raiders): extra copies first, then your only copies
+    local list = {}
     for _, c in ipairs(CARDS) do
       if c.kind ~= 4 then
         local s2 = a.cards[c.key or c.name]
-        if s2 then for f = 1, 4 do if (s2[f] or 0) >= 2 then extras[#extras + 1] = { c = c, f = f, n = s2[f] - 1 } end end end
+        if s2 then for f = 1, 4 do if (s2[f] or 0) >= 1 then list[#list + 1] = { c = c, f = f, n = s2[f] } end end end
       end
     end
-    pgBox(1, 196, 104, "Trade with your party", "Offer an extra copy from its card (Offer to group). Someone in your group answers with one of their own extras, and the swap happens when you both agree.\n|cff9a96b0Raiders can't be traded.|r")
+    table.sort(list, function(x, y)
+      local ex, ey = x.n >= 2, y.n >= 2
+      if ex ~= ey then return ex end
+      if x.c.name ~= y.c.name then return x.c.name < y.c.name end
+      return x.f > y.f
+    end)
+    pgBox(1, 196, 104, "Trade with your party", "Offer any card you own (Offer to group, here or on the card itself). Someone in your group answers with one of theirs, and the swap happens when you both agree. Extra copies are listed first; giving away your only copy of a print takes it out of your collection.\n|cff9a96b0Raiders can't be traded.|r")
     local y = 316
     local status
-    if trade.incoming then status = { "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r  Pick one of your extras below to answer.", { 0.48, 0.88, 0.54 } }
+    if trade.incoming then status = { "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r  Pick one of your cards below to answer.", { 0.48, 0.88, 0.54 } }
     elseif trade.out then status = { "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer.", GOLDC }
     elseif trade.pending then status = { "Answer sent. Waiting for " .. trade.pending.from .. ".", GOLDC } end
     if status then pgBox(2, y, 40, nil, status[1], status[2]); y = y + 54 end
-    pgHead(1, y, "Your extra copies", #extras > 0 and (#extras .. " to trade") or "")
-    local n = math.min(8, #extras)
-    showRows(n)
+    local per = status and 6 or 8
+    local pages = math.max(1, math.ceil(#list / per))
+    local pg = math.max(0, math.min(view.tradePage or 0, pages - 1)); view.tradePage = pg
+    pgHead(1, y, "Your cards", #list > 0 and (#list .. " you can trade") or "")
+    local n = math.min(per, #list - pg * per)
+    showRows(math.max(0, n))
     for i = 1, n do
-      local e = extras[i]
+      local e = list[pg * per + i]
       local b = frame.rows[i]
       b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -(y + 30) - (i - 1) * 29)
       b.fill:Hide(); b.fillBg:Hide()
-      b.left:SetText(e.c.name .. "  |cff9a96b0(" .. FNAME[e.f] .. ")|r"); b.right:SetText("x" .. e.n .. " extra")
+      b.left:SetText(e.c.name .. "  |cff9a96b0(" .. FNAME[e.f] .. ")|r")
+      b.right:SetText(e.n >= 2 and ("x" .. (e.n - 1) .. " extra") or "|cffe0a060your only copy|r")
       b.act = function()
         local ok, msg
         if trade.incoming then ok, msg = RG.ArcadeAcceptOffer(e.c, e.f) else ok, msg = RG.ArcadeOffer(e.c, e.f) end
         say(msg); RG.ArcadeRefresh(true)
       end
     end
-    if #extras == 0 then
+    if pages > 1 then
+      frame.prev:Show(); frame.next:Show(); frame.pageText:Show()
+      frame.pageText:SetText((pg + 1) .. " / " .. pages)
+      frame.prev:SetEnabled(pg > 0); frame.next:SetEnabled(pg + 1 < pages)
+    end
+    if #list == 0 then
       frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 44, -(y + 34)); frame.panel:SetWidth(PGW - 8)
-      frame.panel:SetText("|cff9a96b0No extra copies yet. Cards you pull twice show up here, ready to trade.|r")
+      frame.panel:SetText("|cff9a96b0No cards yet. Open a pack and your cards show up here, ready to trade.|r")
     end
   elseif view.mode == "stats" then
     local st = a.stats or {}
