@@ -65,7 +65,7 @@ H.dungeons = {
   ["Alcaz Prison"] = { go = 48, prep = 46, quests = {} },
   ["Blackmaw Hold"] = { go = 55, prep = 53, quests = {} },
   ["The Shaper's Terrace"] = { go = 58, prep = 56, quests = {} },
-  ["Ruins of Lordaeron"] = { go = 16, prep = 15, note = "Enter at 16 to be able to take every quest. Run out rather than hearthing: Captain Truman at the entrance takes the Head of the Baron.", quests = {
+  ["Ruins of Lordaeron"] = { go = 16, prep = 15, note = "Since the launch build every dungeon quest here can be taken at level 15 (Blizzard's November 2 notes); 16 is still the comfortable level to go in. Run out rather than hearthing: Captain Truman at the entrance takes the Head of the Baron.", quests = {
     { "The Wrath of Rath'mael", "Deathguard Kristof", "Tirisfal Glades, tents between Brill and Undercity" },
     { "Light's Justice", "Morbin Lightbane", "Undercity, Royal Quarter" },
     { "The New Plague", "Theodore Griffs", "Undercity, The Apothecarium" },

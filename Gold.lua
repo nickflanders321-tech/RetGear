@@ -10,12 +10,13 @@
 local _, RG = ...
 
 RG.GOLD = {
-  updated = "2026-10-12",
-  note = "Forever's economy is brand new (beta, launch Nov 4 2026). Prices are still settling, so the live AH prices next to each tip matter more than any guide.",
+  updated = "2026-11-05",
+  note = "Forever's economy is brand new (launched Nov 4 2026). Prices are still settling, so the live AH prices next to each tip matter more than any guide.",
   tips = {
     -- Every level
     { cat = "Auction House", from = 1, to = 60, title = "Never vendor without checking", text = "Anything with a gold coin in your bags is worth more on the AH. Waypath+ keeps it out of the junk sale and lists it on the Auction House tab." },
     { cat = "Auction House", from = 1, to = 60, title = "Undercut a little, not a lot", text = "List 1 copper under the cheapest auction. Big undercuts just lower the price for everyone, including you next time. Remember the AH keeps 5% and you lose the deposit if it doesn't sell." },
+    { cat = "Forever", from = 1, to = 60, title = "Budget for class training", text = "Training every class ability from 1 to 60 costs about 206-207 gold in WoW Forever, the same for every class (warlocks pay less on spells because their pet Grimoires cost extra). Keep enough back for your next trainer visit before you spend on the AH." },
     { cat = "Farming", from = 1, to = 60, title = "Loot everything while you quest", text = "Questing pays best when you also loot every mob and sell grey items. Don't stop to farm until your bags are full of things that are actually worth money." },
     { cat = "Farming", from = 5, to = 60, title = "Cloth is money", text = "Humanoids drop cloth that tailors and First Aid users always need. Sell it in full stacks of 20 on the AH, never at a vendor.", ids = { 2589, 2592, 4306, 4338, 14047 } },
     -- Mining
@@ -56,6 +57,7 @@ RG.GOLD = {
     "boostroom.com/blog/wow-forever-gold-making-guide-best-ways-to-farm-gold",
     "expcarry.com/wow-forever-mining-guide",
     "icy-veins.com/wow-forever/blacksmithing",
+    "Blizzard WoW Forever launch notes (November 2, 2026)",
   },
 }
 

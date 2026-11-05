@@ -63,7 +63,7 @@ S("WARRIOR", {
       "Shield Block on cooldown, Revenge every time it lights up, Sunder Armor on the skull.",
       "Tab through the pack with Sunder and Revenge to spread threat.",
       "Keep a one-hander with Stamina or Strength and the best shield you can find." },
-    forever = { "More Rage, buffed Revenge and Rend, Charge and Thunder Clap in Defensive Stance.", "Defiance and Bastion improve threat with a shield.", "Demoralizing Shout now makes threat, and Rage from damage taken was fixed and rebalanced (October 2026)." },
+    forever = { "More Rage, buffed Revenge and Rend, Charge and Thunder Clap in Defensive Stance.", "Defiance and Bastion improve threat with a shield.", "Demoralizing Shout now makes threat, and Rage from damage taken was fixed and rebalanced (October 2026).", "Defensive Stance's threat bonus is 80% (was 30%) since the launch build (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/protection-warrior-guide-kalltorak" },
 })
 
@@ -87,7 +87,7 @@ S("PALADIN", {
       "Judgement the main target, then Holy Strike; tab around to Judge the others.",
       "Recast Consecration while the pack is healthy; melee the last one or two to save mana.",
       "Swift Judgement lets you Judge again on the same or another target." },
-    forever = { "Holy Strike and Seal of Fury are new, and make Protection work from leveling to 60.", "Improved Holy Strike was removed (September 2026).", "Retribution Aura scales with spell power (6%); mana from Seal of Fury now needs its talent and no longer adds threat (October 2026).", "Righteous Fury is learned at level 10 (was 16) and raises all threat you make by 33%; Seal of Fury's taunt lasts 3 sec (server hotfix found in the game data, October 30-31)." },
+    forever = { "Holy Strike and Seal of Fury are new, and make Protection work from leveling to 60.", "Improved Holy Strike was removed (September 2026).", "Retribution Aura scales with spell power (6%); mana from Seal of Fury now needs its talent and no longer adds threat (October 2026).", "Righteous Fury is learned at level 10 (was 16) and raises all threat you make by 33%; Seal of Fury's taunt lasts 3 sec (confirmed in Blizzard's November 2 launch notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/protection-paladin-guide" },
   { key = "ret", name = "Retribution", role = "Melee DPS", kind = "melee", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Holy_AuraOfLight",
     stats = "Strength, then Agility (Intellect over Agility once you have Champion of the Light)",
@@ -119,8 +119,8 @@ S("HUNTER", {
     stats = "Agility, then Strength, then Intellect",
     tips = { "Open at range, then pull the mob off your pet and finish in melee with Raptor Strike, Strider Kick and Mongoose Bite.",
       "Deterrence (5 min cooldown) is for emergencies and Counterattack procs.",
-      "Frost Trap to slow packs, Explosive Trap for area damage in groups." },
-    forever = { "Survival was reworked into a full melee spec." },
+      "Frost Trap to slow packs, Explosive Trap for area damage in groups: since launch all traps share one 30 sec cooldown, so pick one per pull." },
+    forever = { "Survival was reworked into a full melee spec.", "All traps share a 30 sec cooldown, and roots from Entrapment and Counterattack have diminishing returns (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/survival-hunter-guide" },
 })
 
@@ -132,7 +132,7 @@ S("ROGUE", {
     tips = { "Cheap Shot from behind for 2 combo points, keep Slice and Dice up, build with Mutilate.",
       "Sap one of a pair or three, then Evasion or Blind for the rest.",
       "Thistle Tea gives 100 energy back (5 min cooldown)." },
-    forever = { "Assassination focuses on poison damage." },
+    forever = { "Assassination focuses on poison damage: Deadly and Instant Poison scale twice as hard with Attack Power since launch.", "Mutilate moved to the end of the tree (31 points) in the launch build, so until then build combo points with Sinister Strike (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/assassination-rogue-guide" },
   { key = "combat", name = "Combat", role = "Melee DPS", kind = "melee", tab = 2, main = true, icon = "Interface\\Icons\\Ability_BackStab",
     stats = "Agility, then Strength, then Stamina",
@@ -172,7 +172,7 @@ S("PRIEST", {
   { key = "shadow", name = "Shadow", role = "Ranged DPS", kind = "caster", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
     stats = "Intellect and Spirit, then Stamina",
     tips = { "Mind Blast, Shadow Word: Pain, Mind Flay until the mob reaches you, then wand." },
-    forever = { "Troll priests get Hex of Weakness and Shadowguard.", "Shadow Word: Death hits you back for 30% of your maximum health (was 10%) when the target survives: save it for the kill. Cure Disease and Abolish Disease work in Shadowform (server hotfix found in the game data, October 31)." },
+    forever = { "Troll priests get Hex of Weakness and Shadowguard.", "Shadow Word: Death hits you back for 30% of your maximum health (was 10%) when the target survives: save it for the kill. Cure Disease and Abolish Disease work in Shadowform (confirmed in Blizzard's November 2 launch notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/shadow-priest-guide" },
 })
 
@@ -184,12 +184,12 @@ S("SHAMAN", {
     tips = { "Lightning Bolt is your main damage.",
       "Flame Shock for damage, Frost Shock to kite, Earth Shock to interrupt.",
       "Keep Lightning Shield up; Stoneclaw Totem tanks for you in a pinch." },
-    forever = { "Totemic Projection moves your totems; Call of the Ancestors drops all four at once.", "Shamans can't use wands." },
+    forever = { "Totemic Call (30 sec cooldown) replaced Totemic Projection; Call of the Ancestors drops all four totems at once.", "Lava Burst was removed in the launch build, and top-rank Lightning Bolt hits much harder (Blizzard's November 2 notes).", "Shamans can't use wands." },
     source = "https://mobalytics.gg/wow-forever/classes/elemental-shaman-guide" },
   { key = "enh", name = "Enhancement", role = "Melee DPS", kind = "melee", tab = 2, main = true, icon = "Interface\\Icons\\Spell_Nature_LightningShield",
     stats = "Strength, Intellect (Mental Dexterity turns it into Attack Power) and Agility, then Stamina and Spirit",
     tips = { "Rockbiter with a two-hander, Flametongue with a one-hander and shield.", "Lightning Bolt to pull, then Stormstrike and a shock." },
-    forever = { "Maelstrom Weapon is buffed for Enhancement." },
+    forever = { "Maelstrom Weapon is buffed for Enhancement.", "Stormstrike hits for 150% weapon damage on a 6 sec cooldown since the launch build (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/enhancement-shaman-guide" },
   { key = "resto", name = "Restoration", role = "Healer", kind = "heal", tab = 3, icon = "Interface\\Icons\\Spell_Nature_MagicImmunity",
     weights = healer({ INT = 0.7, MP5 = 2.4, SPI = 0.15, CRIT = 9, STA = 0.2 }), model = "caster", shield = true, hitCap = 0, weapons = { 4, 10, 13, 15 },
@@ -198,7 +198,7 @@ S("SHAMAN", {
       "Pre-cast a low-rank Healing Wave rather than spamming Lesser Healing Wave.",
       "Rank 1 Earth Shock is a cheap interrupt.",
       "Healing Stream or Mana Spring by what the group needs; Strength of Earth when most of the group uses Attack Power." },
-    forever = { "Riptide is a new shaman heal.", "Totemic Projection and Call of the Ancestors make totems easier to manage." },
+    forever = { "Riptide is a new shaman heal; since launch it heals over time only, with a 12 sec cooldown.", "Totemic Call (replaced Totemic Projection) and Call of the Ancestors make totems easier to manage." },
     source = "https://mobalytics.gg/wow-forever/classes/restoration-shaman-guide" },
 })
 
@@ -224,7 +224,7 @@ S("MAGE", {
   { key = "frost", name = "Frost", role = "Ranged DPS", kind = "caster", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Frost_FrostBolt02",
     stats = "Intellect, then Spirit, then Stamina",
     tips = { "Frostbolt, then Ice Lance on frozen targets." },
-    forever = { "Ice Lance and Fingers of Frost are new; Chill was weakened." },
+    forever = { "Ice Lance and Fingers of Frost are new; Chill was weakened.", "Since launch Ice Lance deals 300% damage to frozen targets on an 8 sec cooldown, Ice Barrier adds Frost damage, and Frost Blast was removed (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/frost-mage-guide" },
 })
 
@@ -277,7 +277,7 @@ S("DRUID", {
     tips = { "Bear Form, Feral Charge in, Demoralizing Roar, then Maul and Swipe.",
       "Faerie Fire (Feral) to pull casters and keep armor down.",
       "Furor gives you Rage the moment you shift." },
-    forever = { "Bear Form scales with weapon damage, so a strong two-handed staff, mace or polearm matters.", "Feral Swiftness's dodge works in every form.", "Bear Form's threat bonus is 50%, Demoralizing Roar makes threat, and mana potions work in forms (October 2026)." },
+    forever = { "Bear Form scales with weapon damage, so a strong two-handed staff, mace or polearm matters.", "Feral Swiftness's dodge works in every form.", "Demoralizing Roar makes threat and mana potions work in forms (October 2026).", "Bear Form's threat bonus is 115% (was 50%) since the launch build (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/feral-druid-guide" },
   { key = "resto", name = "Restoration", role = "Healer", kind = "heal", tab = 3, icon = "Interface\\Icons\\Spell_Nature_HealingTouch",
     weights = healer({ INT = 0.5, SPI = 0.6, MP5 = 2.0, CRIT = 6 }), model = "caster", hitCap = 0,
@@ -295,4 +295,4 @@ for class, list in pairs(RG.SPECS) do
   RG.SPEC_BY[class] = {}
   for _, s in ipairs(list) do s.class = class; RG.SPEC_BY[class][s.key] = s end
 end
-RG.SPECS_UPDATED = "2026-11-02"
+RG.SPECS_UPDATED = "2026-11-05"

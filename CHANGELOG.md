@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.10.0
+- 2nd Spec tab updated for the launch build (Blizzard's November 2 notes): Bear Form's threat bonus is now 115% and Defensive Stance's 80%; Shamans have Totemic Call instead of Totemic Projection, Lava Burst is gone, top-rank Lightning Bolt hits harder, Riptide heals over time only and Stormstrike has a 6 sec cooldown; Hunters' traps share one 30 sec cooldown; Mutilate now sits at the end of the Assassination tree; Ice Lance hits frozen targets for 300% and Frost Blast is gone. The Righteous Fury and Shadow Word: Death notes are now confirmed by Blizzard.
+- Ruins of Lordaeron: every dungeon quest can be picked up at level 15 since launch.
+- Gold tab: a new tip to keep money back for class training (about 206-207 gold from 1 to 60).
+
 ## v1.9.3
 - Works with the WoW Forever launch build 1.60.1.70790: every game function Waypath+ uses was checked against it, and the update check now watches the live game (it was still reading the closed beta).
 
