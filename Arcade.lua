@@ -75,8 +75,7 @@ local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 4
 --   profession skill-ups: 1 coin per 2    duel win: 4
--- Quests, kills and skill-ups together pay at most DAY_CAP coins per day, so grinding one thing all day doesn't run away.
-local DAY_CAP = 96            -- (80 before 1.9.3, raised with EARN_RATE)
+-- There is no daily limit (there was one up to 1.11.0); quests, kills and skill-ups are still counted per day for the Today tab.
 local EARN_RATE = 1.2         -- every coin earned from play counts 20% more (launch feedback: packs came too slowly)
 local COLLECTOR_LUCK = 0.10   -- each card has this chance to be one you do not own yet (a small mercy, so the last cards do not take forever)
 local MASTER_GOAL = 0.75
@@ -143,8 +142,6 @@ local function give(kind, amount, capped)
     local today = date and date("%Y-%m-%d") or "today"
     if a.day ~= today then a.day, a.dayCoins = today, 0 end
     a.dayCoins = a.dayCoins or 0
-    amount = math.min(amount, math.max(0, DAY_CAP - a.dayCoins))
-    if amount <= 0 then return end
   end
   a.acc[kind] = (a.acc[kind] or 0) + amount
   local coins = math.floor(a.acc[kind])
@@ -2668,7 +2665,7 @@ function RG.ArcadeRefresh(keepMsg)
     pgHead(1, 298, "Limits and guarantees")
     pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
     local dc = (a.day == today()) and (a.dayCoins or 0) or 0
-    pgBar(2, 368, "Coins from quests, kills and skill-ups today", dc .. " / " .. DAY_CAP, dc / DAY_CAP, GOLDC)
+    pgBar(2, 368, "Coins from quests, kills and skill-ups today   (no daily limit)", tostring(dc), math.min(1, dc / 100), GOLDC)
     pgBar(3, 410, "Duel win streak   (each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
     pgHead(2, 464, "Today's goals", "new goals every day")
     local n = 0

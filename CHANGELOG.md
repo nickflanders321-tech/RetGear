@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Cards: no more daily limit on coins from quests, kills and skill-ups. Everything you do pays, however long you play.
+
 ## v1.11.0
 - Cards: you can trade any card you own, not just extra copies (Raiders still can't be traded). The Trade tab lists every card, extras first, with pages, and marks the ones that are your only copy; offering one says so, and a card you trade away completely leaves your showcase.
 - Route notes: Riverglades has your faction's base (Rog'mar for the Horde, Farholde Keep for the Alliance; Powderfuse Port is neutral), and Mount Hyjal names the Tainted Foothills flight from Everlook and the Summit of Eternity hub.
