@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.11.2
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.11.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - Cards: no more daily limit on coins from quests, kills and skill-ups. Everything you do pays, however long you play.
