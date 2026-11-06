@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.16.0
 
 - Sharper icons: the sidebar, the header switches, Settings, the fold buttons and the tracker use new line icons drawn for Waypath+ (crisp at small sizes, brass when on) instead of shrunken game icons; reminders get a small bell instead of a big note icon. The line under your name is shorter so it no longer gets cut off.
 - The Arena board is a real tabletop now: a carved walnut frame with brass corner fittings, a leather playfield lit from above, stitched rows where the minions stand, stone alcoves for the heroes and their power and weapon, a beam with a compass medallion between the two sides, and a wooden shelf with trays for mana, decks and a brass plate for End Turn. Minions stand in stone arches (a shield for Taunt) and heroes in a stone ring, with the portrait trimmed to the frame. Messages ("Not enough mana") show above the board instead of on the centre beam, the turn label sits above End Turn, empty mana slots are easier to see, and the hero power and weapon sockets are lighter.
