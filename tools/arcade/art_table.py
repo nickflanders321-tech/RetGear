@@ -140,7 +140,7 @@ def make_tabletop():
         d.polygon([tip, l, (mx, my), rr], fill=(226, 186, 104, 255) if k % 4 == 0 else (168, 128, 62, 255))
     d.ellipse((mx - 4 * K, my - 4 * K, mx + 4 * K, my + 4 * K), fill=(250, 220, 150, 255))
     # 5. stone alcoves for the heroes and sockets for the hero power and weapon
-    def alcove(x, y, rad):
+    def alcove(x, y, rad, deep=0.5):
         cxp, cyp = P(x, y)
         box = (cxp - rad * K, cyp - rad * K, cxp + rad * K, cyp + rad * K)
         nonlocal img
@@ -151,9 +151,9 @@ def make_tabletop():
         img = paste(img, stone, disk)
         img = bevel_ring(img, box, 5 * K, ellipse=True)
         inner = (box[0] + 12 * K, box[1] + 12 * K, box[2] - 12 * K, box[3] - 12 * K)
-        img = shade(img, mask(lambda dd: dd.ellipse(inner, fill=255)), 0.5, blur=8)
+        img = shade(img, mask(lambda dd: dd.ellipse(inner, fill=255)), deep, blur=8)
     for (x, y) in ((600, 218), (600, 592)): alcove(x, y, 64)
-    for (x, y) in ((696, 204), (504, 204), (696, 604), (504, 604)): alcove(x, y, 34)
+    for (x, y) in ((696, 204), (504, 204), (696, 604), (504, 604)): alcove(x, y, 30, deep=0.78)
     # 6. the shelf on the right: decks, mana trays and a brass plate for End Turn
     sx0 = 994
     shelf = mask(lambda dd: dd.rounded_rectangle((sx0 * K, 22 * K, (W - 22) * K, (H - 22) * K), 18 * K, fill=255))

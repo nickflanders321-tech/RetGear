@@ -277,7 +277,7 @@ end
 -- ---------------------------------------------------------------------------
 local function say(txt, hold)
   if not win then return end
-  win.msg:ClearAllPoints(); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, S.mode == "mull" and 480 or 372)
+  win.msg:ClearAllPoints(); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, S.mode == "mull" and 480 or 506)
   win.msg:SetText(txt or ""); S.msgT = clock + (hold or 3)
 end
 
@@ -584,7 +584,7 @@ local function buildWindow()
   for i = 1, 10 do local d = win.fx:CreateTexture(nil, "OVERLAY"); d:SetTexture(U.MEDIA .. "Glow"); d:SetBlendMode("ADD"); d:SetSize(30, 30); d:SetVertexColor(1, 0.55, 0.2, 1); d:Hide(); ui.trail[i] = d end
   for i = 1, 24 do local t = win.fx:CreateTexture(nil, "OVERLAY"); t:SetTexture(U.MEDIA .. "Glow"); t:SetBlendMode("ADD"); t:SetSize(12, 12); t:Hide(); ui.embers[i] = { tex = t, live = false } end
   ui.reticle = win.fx:CreateTexture(nil, "OVERLAY"); ui.reticle:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring"); ui.reticle:SetBlendMode("ADD"); ui.reticle:SetSize(46, 46); ui.reticle:Hide()
-  win.msg = U.fs(win.fx, "head", 15, "OVERLAY", "OUTLINE"); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 372); win.msg:SetTextColor(1, 0.95, 0.75); win.msg:SetText("")
+  win.msg = U.fs(win.fx, "head", 15, "OVERLAY", "OUTLINE"); win.msg:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 506); win.msg:SetTextColor(1, 0.95, 0.75); win.msg:SetText("")
   win.banner = U.fs(win.fx, "title", 40, "OVERLAY", "OUTLINE"); win.banner:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 378); win.banner:SetText(""); win.banner:Hide()
   win.tokTip = U.fs(win.board, "head", 13, "OVERLAY", "OUTLINE"); win.tokTip:SetPoint("CENTER", win, "BOTTOMLEFT", 125, 480); win.tokTip:SetWidth(220); win.tokTip:SetJustifyH("CENTER"); win.tokTip:Hide()
 
@@ -1070,7 +1070,7 @@ local function makeBoard()
     a.mute = not a.mute or nil; self:SetText(a.mute and "Sound: Off" or "Sound: On")
   end)
   pt(win.sndBtn, 1065, 312)
-  win.turnT = U.fs(bd, "head", 13, "OVERLAY", "OUTLINE"); win.turnT:SetPoint("CENTER", win, "BOTTOMLEFT", 600, 378); win.turnT:SetTextColor(0.96, 0.84, 0.5)
+  win.turnT = U.fs(bd, "head", 13, "OVERLAY", "OUTLINE"); win.turnT:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 436); win.turnT:SetTextColor(0.96, 0.84, 0.5)
   win.clockT = U.fs(bd, "head", 12, "OVERLAY", "OUTLINE"); win.clockT:SetPoint("CENTER", win, "BOTTOMLEFT", 1065, 412)
   win.concede = U.gbtn(bd, "Concede", 90, 22, function(self)
     if not game or game.over then win:Hide() return end
@@ -1259,12 +1259,12 @@ refresh = function()
       local lit = i <= P.mana
       if lit and rawget(c, "wasLit") == false and ui.manaSeen then c.pop = 0.45 end     -- a crystal that fills up pops
       c.wasLit = lit
-      c:Show(); c:SetTexture(U.MEDIA .. (lit and "Crystal" or "CrystalDim")); c:SetAlpha(i <= P.maxMana and 1 or 0.28)
+      c:Show(); c:SetTexture(U.MEDIA .. (lit and "Crystal" or "CrystalDim")); c:SetAlpha(i <= P.maxMana and 1 or 0.4)
     end
     ui.manaSeen = true
     ui.mana[s]:SetText(P.mana .. " / " .. P.maxMana)
     local low = #P.deck <= 3
-    ui.deckT[s]:SetText("|cffa89bc9Deck|r " .. (low and "|cffff6a5a" or "|cffffffff") .. #P.deck .. (low and " !" or "") .. "|r     |cffa89bc9Hand|r |cffffffff" .. #P.hand .. "|r")
+    ui.deckT[s]:SetText("|cffc9b48aDeck|r " .. (low and "|cffff6a5a" or "|cffffffff") .. #P.deck .. (low and " !" or "") .. "|r     |cffc9b48aHand|r |cffffffff" .. #P.hand .. "|r")
   end
   -- opponent hand
   local nb = #foe.hand
