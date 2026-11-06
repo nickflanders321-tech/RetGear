@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.14.0
 
 - Waypath+ no longer sends you to quests you can't pick up yet. It now checks everything the quest data knows decides whether a giver offers a quest, not just level and earlier quests: the profession and skill it needs, reputation, the next step of a chain you're already past, breadcrumbs to a quest you already have, quests only offered while another is in your log, maximum level, specializations. Route steps count quests you can never take (another branch, a later step, a profession you don't have) as done, so steps no longer stay stuck on them, and show why the others aren't ready ("needs Skinning", "after ...").
 - When the data is still wrong, the game corrects it: if you talk to a quest giver and a quest Waypath+ expected isn't offered, it stops suggesting that quest until you level up or hand in a quest at that giver.
