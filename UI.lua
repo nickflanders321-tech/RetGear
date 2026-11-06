@@ -2250,7 +2250,7 @@ local SETTING_GROUPS = {
   { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts" } },
-  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan" } },
+  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan", "ahProgress" } },
   { "Interface", { "minimap", "sounds", "quietErrors" } },
 }
 local function renderGroup()

@@ -8,6 +8,7 @@
 - When you reach an objective's hunting area the arrow shows "In the area" with a check instead of spinning around the creatures.
 - Objectives Waypath+ has no data for fall back to the area the game itself shows, where the game provides one.
 - New /wp poicheck: shows which quest-area helpers this game build has, to help us improve the arrow.
+- **You can see when the Auction House scan is done.** A slim bar above the Auction House shows the price scan as it runs: "waiting for the server" and then auctions read for a full scan, or items checked with a percentage and time left for a normal scan. When it finishes, the bar turns green with a check and chat says how many prices were updated. Can be turned off in Settings (Professions, bags and gold).
 
 ## v1.16.0
 

@@ -18,6 +18,7 @@ RG.OPTIONS = {
   { key = "profQuests",   label = "Put profession starter quests (Camping 101, Craftsman's Writ...) in my route", default = false },
   { key = "tooltip",      label = "Show upgrade scores on item tooltips",       default = true },
   { key = "autoScan",     label = "Check prices when I open the Auction House", default = true },
+  { key = "ahProgress",   label = "Show price-scan progress above the Auction House", default = true },
   { key = "minimap",      label = "Show the minimap button",                default = true },
   { key = "trackerInter", label = "Modern font in the tracker (turn off if its text looks blank)", default = true },
   { key = "sounds",       label = "Play sounds for pop-ups",                default = true },

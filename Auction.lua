@@ -224,6 +224,12 @@ end
 local function watched(id) return id and (wanted()[id] or isTracked(id)) end
 
 local batch                  -- (the modern AH's current request, below)
+-- progress, for the bar on the Auction House (below)
+local prog = { total = 0, start = 0, fullI = 0, fullTotal = 0, doneAt = nil, doneText = nil }
+local function finished(text)
+  prog.doneAt, prog.doneText = GetTime(), text
+  RG.Print(text)
+end
 local function stop(msg)
   queue, pending, mode, batch = {}, nil, nil, nil
   runner:SetScript("OnUpdate", nil)
@@ -233,7 +239,18 @@ end
 RG.StopAHScan = function() stop() end
 function RG.AHScanState()
   if mode == "full" then return "reading the full scan" end
-  if mode == "items" then return #queue + (pending and 1 or 0) .. " items left" end
+  if mode == "items" then return #queue + (pending and 1 or 0) + (batch and #batch or 0) .. " items left" end
+  return nil
+end
+-- How far the scan is: done, total, phase ("wait" = waiting for the server's full-scan answer).
+function RG.AHScanProgress()
+  if mode == "full" then
+    if prog.fullTotal > 0 then return prog.fullI, prog.fullTotal, "read" end
+    return 0, 0, "wait"
+  elseif mode == "items" then
+    local left = #queue + (pending and 1 or 0) + (batch and #batch or 0)
+    return math.max(0, prog.total - left), prog.total, "items"
+  end
   return nil
 end
 
@@ -254,6 +271,7 @@ local function readFull(total, getInfo, isModern)
   local i = isModern and 0 or 1
   local last = isModern and total - 1 or total
   mode = "full"
+  prog.fullI, prog.fullTotal = 0, math.max(1, total)
   runner:SetScript("OnUpdate", function()
     local stopAt = math.min(last, i + CHUNK - 1)
     for k = i, stopAt do
@@ -268,6 +286,7 @@ local function readFull(total, getInfo, isModern)
       end
     end
     i = stopAt + 1
+    prog.fullI = math.min(prog.fullTotal, i - (isModern and 0 or 1))
     if i > last then
       runner:SetScript("OnUpdate", nil)
       local n = 0
@@ -277,8 +296,8 @@ local function readFull(total, getInfo, isModern)
           record(id, math.floor(best[id]), count[id], v and math.floor(v + 0.5)); n = n + 1
         else record(id, nil, 0) end
       end
-      mode = nil
-      RG.Print("Auction House prices updated: " .. n .. " items from a full scan (" .. total .. " auctions).")
+      mode = nil; prog.fullTotal = 0
+      finished("Auction House scan finished: " .. n .. " price" .. (n == 1 and "" or "s") .. " updated from a full scan (" .. total .. " auctions).")
       if RG.RefreshUI then RG.RefreshUI() end
     end
   end)
@@ -300,7 +319,7 @@ local batchAt, batchTries = 0, 0
 local announce = false   -- chat lines only when you asked for the scan
 local function sendBatch()
   if C_AuctionHouse.IsThrottledMessageSystemReady and not C_AuctionHouse.IsThrottledMessageSystemReady() then return end
-  if #queue == 0 then stop(announce and "Auction House prices updated." or nil); return end
+  if #queue == 0 then local n = prog.total; stop(); finished("Auction House scan finished: " .. n .. " price" .. (n == 1 and "" or "s") .. " checked."); return end
   local ids, keys = {}, {}
   while #queue > 0 and #ids < BATCH do
     local id = table.remove(queue, 1)
@@ -318,7 +337,7 @@ local function sendNext()
   local canQuery = CanSendAuctionQuery and CanSendAuctionQuery()
   if not canQuery then return end
   local id = table.remove(queue, 1)
-  if not id then stop(announce and "Auction House prices updated." or nil); return end
+  if not id then local n = prog.total; stop(); finished("Auction House scan finished: " .. n .. " price" .. (n == 1 and "" or "s") .. " checked."); return end
   local name = RG.ItemInfo(id)
   if not name then RG.RequestItem(id); if #queue > 0 then queue[#queue + 1] = id end; return end
   pending, pendingAt = id, GetTime()
@@ -327,8 +346,13 @@ local function sendNext()
 end
 local function runItems()
   queue = staleIDs()
-  if #queue == 0 then if announce then RG.Print("Auction House prices are up to date.") end return end
+  if #queue == 0 then
+    prog.doneAt, prog.doneText = GetTime(), "Auction House prices are up to date."
+    if announce then RG.Print("Auction House prices are up to date.") end
+    return
+  end
   mode = "items"
+  prog.total, prog.start = #queue, GetTime()
   if announce then RG.Print("Checking " .. #queue .. " price" .. (#queue > 1 and "s" or "") .. ". Search for anything yourself and Waypath+ steps aside.") end
   local modern = modernAH()
   runner:SetScript("OnUpdate", function()
@@ -359,6 +383,8 @@ end
 
 function RG.ScanAH(manual)
   if not ahOpen() then RG.Print("Open the Auction House first, then /wp scan."); return end
+  if RG.ShowAHProgress then RG.ShowAHProgress() end
+  prog.doneAt = nil
   if mode then if manual then RG.Print("Already checking prices (" .. RG.AHScanState() .. ").") end return end
   wantedSet = nil
   announce = manual and true or false
@@ -369,7 +395,7 @@ function RG.ScanAH(manual)
   if canFull and modernAH() and C_AuctionHouse.ReplicateItems then
     stats.full = stats.full + 1
     RG.db.lastFullScan = now
-    mode = "full"
+    mode = "full"; prog.fullTotal, prog.start = 0, GetTime()
     if announce then RG.Print("Full price scan: one request for the whole Auction House (the game allows one every 15 minutes)...") end
     ours = true; pcall(C_AuctionHouse.ReplicateItems); ours = false
     -- if the server never answers, fall back to item searches
@@ -380,7 +406,7 @@ function RG.ScanAH(manual)
     local canQuery, canAll = CanSendAuctionQuery()
     if canAll then
       RG.db.lastFullScan = now
-      mode = "full"
+      mode = "full"; prog.fullTotal, prog.start = 0, GetTime()
       if announce then RG.Print("Full price scan: one request for the whole Auction House (the game may pause for a moment)...") end
       ours = true; pcall(QueryAuctionItems, "", nil, nil, 0, nil, nil, true, false); ours = false
       return
@@ -474,6 +500,91 @@ if hooksecurefunc then
   if QueryAuctionItems then hooksecurefunc("QueryAuctionItems", userSearched) end
 end
 
+
+-- ---------------------------------------------------------------------------
+-- Progress bar on top of the Auction House: what's being scanned, how far along, and when it's finished.
+-- (our own frame on UIParent, only anchored to the AH window: the Blizzard frame itself is never touched)
+-- ---------------------------------------------------------------------------
+local pbar
+local function fmtNum(n) n = math.floor(n); return n >= 1000 and string.format("%d,%03d", math.floor(n / 1000), n % 1000) or tostring(n) end
+local function ahWindow() return (AuctionHouseFrame and AuctionHouseFrame:IsShown() and AuctionHouseFrame) or (AuctionFrame and AuctionFrame:IsShown() and AuctionFrame) end
+local function progressBar()
+  if pbar then return pbar end
+  local b = CreateFrame("Frame", nil, UIParent)
+  b:SetSize(380, 30); b:SetFrameStrata("HIGH"); b:Hide()
+  local bg = b:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0.063, 0.11, 0.153, 0.94)
+  local edge = b:CreateTexture(nil, "BORDER"); edge:SetPoint("TOPLEFT", -1, 1); edge:SetPoint("BOTTOMRIGHT", 1, -1); edge:SetColorTexture(0.847, 0.71, 0.416, 0.55)
+  bg:SetDrawLayer("BORDER", 1)
+  local track = b:CreateTexture(nil, "ARTWORK"); track:SetPoint("BOTTOMLEFT", 8, 5); track:SetPoint("BOTTOMRIGHT", -8, 5); track:SetHeight(4); track:SetColorTexture(1, 1, 1, 0.08)
+  local fill = b:CreateTexture(nil, "ARTWORK", nil, 1); fill:SetPoint("TOPLEFT", track); fill:SetPoint("BOTTOMLEFT", track); fill:SetWidth(1)
+  local text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  pcall(text.SetFont, text, RG.FONTS and RG.FONTS.medium or STANDARD_TEXT_FONT, 11, "")
+  text:SetPoint("TOPLEFT", 9, -5); text:SetPoint("TOPRIGHT", -9, -5); text:SetJustifyH("LEFT"); text:SetTextColor(0.94, 0.89, 0.78)
+  local right = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  pcall(right.SetFont, right, RG.FONTS and RG.FONTS.medium or STANDARD_TEXT_FONT, 11, "")
+  right:SetPoint("TOPRIGHT", -9, -5); right:SetJustifyH("RIGHT"); right:SetTextColor(0.62, 0.66, 0.70)
+  b.track, b.fill, b.text, b.right = track, fill, text, right
+  b:EnableMouse(true)
+  b:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Waypath+ price scan")
+    GameTooltip:AddLine("Waypath+ checks the prices of your gear upgrades and profession materials. Searching for anything yourself pauses it; /wp scan or the Scan prices button finishes it.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  local acc = 0
+  b:SetScript("OnUpdate", function(self, el)
+    acc = acc + el; if acc < 0.15 then return end; acc = 0
+    local win = ahWindow()
+    if not win then self:Hide(); return end
+    local a = RG.ACCENT or { 0.847, 0.71, 0.416 }
+    local done, total, phase = RG.AHScanProgress()
+    local w = math.max(1, self.track:GetWidth() or 1)
+    if phase then
+      local frac = total > 0 and done / total or 0
+      if phase == "wait" then
+        -- the server is putting the full list together: a slow sweep so it's clearly working
+        frac = (GetTime() * 0.35) % 1
+        self.text:SetText("Scanning the Auction House: waiting for the server...")
+        self.right:SetText(math.floor(GetTime() - prog.start) .. "s")
+      elseif phase == "read" then
+        self.text:SetText("Scanning the Auction House: reading the full list")
+        self.right:SetText(fmtNum(done) .. " / " .. fmtNum(total))
+      else
+        local eta = ""
+        local spent = GetTime() - prog.start
+        if done >= 5 and spent > 3 then
+          local left = (total - done) * spent / done
+          eta = left >= 60 and ("  ~" .. math.ceil(left / 60) .. " min left") or ("  ~" .. math.max(1, math.floor(left)) .. "s left")
+        end
+        self.text:SetText("Checking prices: " .. done .. " / " .. total .. " items")
+        self.right:SetText(math.floor(frac * 100 + 0.5) .. "%" .. eta)
+      end
+      self.fill:SetColorTexture(a[1], a[2], a[3], 0.95)
+      self.fill:SetWidth(math.max(1, w * math.min(1, frac)))
+      self:SetAlpha(1); self:Show()
+    elseif prog.doneAt and GetTime() - prog.doneAt < 25 then
+      self.text:SetText("|TInterface\\RaidFrame\\ReadyCheck-Ready:12:12:0:0|t " .. (prog.doneText or "Auction House scan finished."))
+      self.right:SetText("")
+      self.fill:SetColorTexture(0.42, 0.78, 0.48, 0.95); self.fill:SetWidth(w)
+      local age = GetTime() - prog.doneAt
+      self:SetAlpha(age > 22 and math.max(0, (25 - age) / 3) or 1); self:Show()
+    else
+      self:Hide()
+    end
+  end)
+  pbar = b
+  return b
+end
+local function showProgress()
+  if RG.CardsOnly and RG.CardsOnly() then return end
+  if RG.Opt and RG.Opt("ahProgress") == false then return end
+  local win = ahWindow(); if not win then return end
+  local b = progressBar()
+  b:ClearAllPoints(); b:SetPoint("BOTTOM", win, "TOP", 0, 6)
+  b:Show()
+end
+RG.ShowAHProgress = showProgress
 -- ---------------------------------------------------------------------------
 -- Events
 -- ---------------------------------------------------------------------------
@@ -484,7 +595,7 @@ end
 f:SetScript("OnEvent", function(_, event)
   if event == "AUCTION_HOUSE_SHOW" then
     yielded = false
-    if RG.Opt("autoScan") then C_Timer.After(0.5, function() if ahOpen() and not yielded then RG.ScanAH() end end) end
+    if RG.Opt("autoScan") then C_Timer.After(0.5, function() if ahOpen() and not yielded then RG.ScanAH() end; showProgress() end) end
   elseif event == "AUCTION_HOUSE_CLOSED" then
     -- a full scan that's already being read keeps going; searches stop
     if mode == "items" then stop() end
