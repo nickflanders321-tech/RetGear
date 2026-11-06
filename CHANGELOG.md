@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Duels against players: you pick your hero before every duel. Challenging someone (target, party list or /wp duel Name), accepting a challenge, and "Find a match" each open a hero choice first, with your last duel hero selected and each hero's power shown. The accept box tells you which hero the challenger picked. Your hero against the computer is chosen separately, as before.
 - Card game fixes from a full review:
   - Arena and quick-duel wins now get the +20% coin boost like everything else you earn (they were left out).
   - A duel against a player no longer adds to, or breaks, your win streak against the computer (it has its own streak now), and the end screen shows the right streak for each.

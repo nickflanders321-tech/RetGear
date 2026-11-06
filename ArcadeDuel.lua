@@ -378,8 +378,13 @@ local function realEnv()
       f.no = U.gbtn(f, "Decline", 120, 28, function() end); f.no:SetPoint("BOTTOMRIGHT", -40, 16)
       RG.__duelInvite = f
     end
-    f.b:SetText("|cfff5d273" .. from .. "|r challenges you to a friendly card duel. Your selected Arena deck will be used. No coins are won or lost.")
-    f.yes:SetScript("OnClick", function() f:Hide(); onYes() end)
+    f.b:SetText("|cfff5d273" .. from .. "|r challenges you to a friendly card duel. Your selected Arena deck will be used, and you pick your hero next. No coins are won or lost.")
+    f.yes:SetScript("OnClick", function()
+      f:Hide()
+      if RG.ArenaPickHero then
+        RG.ArenaPickHero("ACCEPT " .. tostring(from):upper() .. "'S DUEL", (from or "They") .. " plays " .. tostring(class and RG.Battle.HERO[class] and RG.Battle.HERO[class].title or class or "a hero") .. ". Pick yours.", "Accept", function() onYes() end, function() onNo() end)
+      else onYes() end
+    end)
     f.no:SetScript("OnClick", function() f:Hide(); onNo() end)
     f:Show()
     env.print(from .. " challenges you to a card duel. Accept or decline in the box at the top of your screen, or type /wp duel accept.")
@@ -399,14 +404,22 @@ local function ensure()
   return D
 end
 
-function RG.DuelChallenge(name) return ensure().challenge(name) end
+-- a challenge you start yourself asks which hero you'll play first; matchmaking's automatic one (auto = true) uses the
+-- hero picked when you started searching
+function RG.DuelChallenge(name, auto, onSent)
+  if auto or not RG.ArenaPickHero then local ok = ensure().challenge(name); if ok and onSent then onSent() end return ok end
+  RG.ArenaPickHero("CHALLENGE " .. tostring(name):upper(), "Pick the hero you'll play against " .. tostring(name) .. ".", "Send challenge", function()
+    if ensure().challenge(name) and onSent then onSent() end
+  end)
+  return true
+end
 function RG.DuelTarget()
   if not (UnitExists and UnitExists("target") and UnitIsPlayer and UnitIsPlayer("target")) then
     return false, "Target the player you want to duel, or type /wp duel PlayerName."
   end
   local n = UnitName("target")
   if not n or n == UnitName("player") then return false, "Pick another player to duel." end
-  return ensure().challenge(n), nil, n
+  return RG.DuelChallenge(n), nil, n
 end
 
 do
@@ -577,7 +590,7 @@ SlashCmdList.WAYPATH = function(msg)
     end
     if r == "accept" then ensure().accept() return end
     if r == "decline" then ensure().decline() return end
-    ensure().challenge(rest)
+    RG.DuelChallenge(rest)
     return
   end
   return slashBase(msg)

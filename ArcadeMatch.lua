@@ -180,7 +180,7 @@ function env.broadcast(msg)
   local ok = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "CHANNEL", id)
   return ok
 end
-function env.challenge(name) if RG.DuelChallenge then RG.DuelChallenge(name) end end
+function env.challenge(name) if RG.DuelChallenge then RG.DuelChallenge(name, true) end end
 
 local M = newMM(env)
 RG.Match = M

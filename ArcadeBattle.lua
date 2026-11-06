@@ -1537,8 +1537,8 @@ local function buildMenu()
   menu.play:SetActive(true)
   menu.pvp = U.gbtn(p, "Challenge target", 136, 40, function()
     if not RG.DuelTarget then return end
-    local ok, err, who = RG.DuelTarget()
-    menu.msg:SetText(ok and ("Challenge sent to " .. who .. ".") or (err or ""))
+    local ok, err, who = RG.DuelTarget()   -- (asks for your hero first, then sends)
+    menu.msg:SetText(ok and ("Choose your hero to challenge " .. who .. ".") or (err or ""))
   end)
   menu.pvp:SetPoint("TOPLEFT", 440, -503)
   menu.pvp:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Friendly duel with another Waypath+ player"); GameTooltip:AddLine("Target them first (or type /wp duel Name). You both play your selected Arena deck. No coins change hands.", 1, 1, 1, true); GameTooltip:Show() end)
@@ -1549,9 +1549,13 @@ local function buildMenu()
   menu.party:SetScript("OnLeave", function(self) self:Paint(false); GameTooltip:Hide() end)
   menu.match = U.gbtn(p, "Find a match", 150, 40, function()
     if not RG.MatchToggle then return end
-    local ok = RG.MatchToggle()
-    menu.msg:SetText(ok and "Searching for another Waypath+ player..." or "")
-    if RG.MatchChanged then RG.MatchChanged() end
+    if RG.Match and RG.Match.searching then RG.MatchToggle(); menu.msg:SetText(""); if RG.MatchChanged then RG.MatchChanged() end return end
+    -- pick the hero first: the match itself starts on its own once someone is found
+    RG.ArenaPickHero("FIND A MATCH", "Pick the hero you'll play. The duel starts by itself as soon as another Waypath+ player is found.", "Search", function()
+      local ok = RG.MatchToggle()
+      menu.msg:SetText(ok and "Searching for another Waypath+ player..." or "")
+      if RG.MatchChanged then RG.MatchChanged() end
+    end)
   end)
   menu.match:SetPoint("TOPLEFT", 728, -503)
   menu.match:SetScript("OnEnter", function(self) self:Paint(true); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Matchmaking"); GameTooltip:AddLine("Finds another Waypath+ player who is searching right now (same realm and faction) with a similar rank, and starts a friendly duel. Nothing is sent until you press this, and it stops when you press it again.", 1, 1, 1, true); GameTooltip:Show() end)
@@ -1838,7 +1842,7 @@ local function buildParty()
     r.btn = U.gbtn(row, "Duel", 64, 24, function()
       if not r.full then return end
       if not r.seen then RG.Print("No Waypath+ answer from " .. r.full .. " yet. They need the add-on to accept; sending the invite anyway.") end
-      RG.DuelChallenge(r.full); r.sentTo = r.full; partyRefresh()
+      RG.DuelChallenge(r.full, false, function() r.sentTo = r.full; partyRefresh() end)
     end)
     r.btn:SetPoint("RIGHT", -6, 0)
     row:Hide(); party.rows[i] = r
@@ -1931,7 +1935,64 @@ function RG.ArenaPvPDeck()
     list = deck
     if #list ~= B.DECK then return nil, "Could not build a duel deck without your Raider cards." end
   end
-  return list, myClass(a), (UnitName and UnitName("player")) or "Player", swapped, auto
+  return list, a.pvpClass or myClass(a), (UnitName and UnitName("player")) or "Player", swapped, auto
+end
+
+-- Choosing your hero for a duel against a player: a small box with the nine heroes (your last duel hero picked), shown
+-- before a challenge goes out and when you accept one. onPick(class) runs on "Duel"; onCancel on "Cancel" or Escape.
+function RG.ArenaPickHero(title, sub, okText, onPick, onCancel)
+  U = U or RG.ArcadeUI
+  local a = store()
+  if not (U and a) then onPick(nil) return end
+  local f = RG.__heroPick
+  if not f then
+    f = CreateFrame("Frame", "WaypathDuelHero", UIParent, "BackdropTemplate")
+    U.darkPanel(f, 520, 214)
+    f:SetPoint("TOP", UIParent, "TOP", 0, -110); f:SetFrameStrata("FULLSCREEN_DIALOG"); f:EnableMouse(true)
+    tinsert(UISpecialFrames, "WaypathDuelHero")
+    f.t = U.fs(f, "title", 16); f.t:SetPoint("TOP", 0, -14); f.t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3])
+    f.s = U.fs(f, "body", 12); f.s:SetPoint("TOP", 0, -38); f.s:SetWidth(480); f.s:SetTextColor(0.85, 0.82, 0.74)
+    f.btn = {}
+    for i, c in ipairs(B.CLASSES) do
+      local b = CreateFrame("Button", nil, f, "BackdropTemplate")
+      b:SetSize(50, 66); b:SetPoint("TOPLEFT", 26 + (i - 1) * 52, -62)
+      b:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); b:SetBackdropColor(0.06, 0.05, 0.12, 0.95)
+      b.ico = b:CreateTexture(nil, "ARTWORK"); b.ico:SetTexture(CLS_ICON(c)); b.ico:SetSize(38, 38); b.ico:SetPoint("TOP", 0, -5); b.ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+      b.nm = U.fs(b, "head", 9); b.nm:SetPoint("BOTTOM", 0, 5); b.nm:SetText(B.HERO[c].title); local cc = CLASS_COL[c]; b.nm:SetTextColor(cc[1], cc[2], cc[3])
+      b:SetScript("OnClick", function() f.pick = c; f.paint() end)
+      b:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(B.HERO[c].title)
+        local h = B.HERO[c]
+        GameTooltip:AddLine((h.power or "Hero power") .. " (" .. (h.cost or 2) .. " mana): " .. (h.text or ""), 1, 1, 1, true)
+        GameTooltip:Show()
+      end)
+      b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+      f.btn[c] = b
+    end
+    f.desc = U.fs(f, "body", 12); f.desc:SetPoint("TOP", 0, -136); f.desc:SetWidth(480); f.desc:SetTextColor(0.72, 0.7, 0.86)
+    f.ok = U.gbtn(f, "Duel", 150, 30, function() end, true); f.ok:SetPoint("BOTTOMLEFT", 80, 14)
+    f.no = U.gbtn(f, "Cancel", 150, 30, function() end); f.no:SetPoint("BOTTOMRIGHT", -80, 14)
+    function f.paint()
+      for c, b in pairs(f.btn) do
+        local on = c == f.pick
+        local cc = CLASS_COL[c]
+        b:SetBackdropBorderColor(on and cc[1] or 0.3, on and cc[2] or 0.27, on and cc[3] or 0.36, 1)
+        b.ico:SetDesaturated(not on); b.ico:SetAlpha(on and 1 or 0.7)
+      end
+      local h = B.HERO[f.pick]
+      f.desc:SetText(h and ("|cffffffff" .. h.title .. "|r  ·  " .. (h.power or "Hero power") .. " (" .. (h.cost or 2) .. " mana): " .. (h.text or "")) or "")
+    end
+    RG.__heroPick = f
+  end
+  f.t:SetText(title or "CHOOSE YOUR HERO"); f.s:SetText(sub or "")
+  f.pick = a.pvpClass or myClass(a)
+  if not B.HERO[f.pick] then f.pick = "WARRIOR" end
+  f.ok:SetText(okText or "Duel")
+  local decided = false
+  f.ok:SetScript("OnClick", function() decided = true; a.pvpClass = f.pick; f:Hide(); onPick(f.pick) end)
+  f.no:SetScript("OnClick", function() f:Hide() end)
+  f:SetScript("OnHide", function() if not decided then decided = true; if onCancel then onCancel() end end end)
+  f.paint(); f:Show()
 end
 function RG.ArenaPvPStart(o)
   U = U or RG.ArcadeUI
