@@ -123,11 +123,13 @@ function RG.StepQuestLines(entry, i, myQuests)
     local d = RG.QDATA[id]
     if d and d.n and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id)) then
       local done = isDone(id)
-      if not done and d.x then for _, x in ipairs(d.x) do if isDone(x) then done = true break end end end
+      local q = byId[id]
+      local why, never
+      if not done and not q then why, never = RG.QuestBlocked(id, d, isDone) end
+      if never then done = true end   -- the other branch, a later step, or not for you: nothing to do here
       total = total + 1
       if done then doneN = doneN + 1
       else
-        local q = byId[id]
         local l = { id = id, name = d.n, level = d.l }
         if q and q.complete then
           l.act, l.npc = "turnin", d.e and d.e[4]
@@ -135,19 +137,9 @@ function RG.StepQuestLines(entry, i, myQuests)
         elseif q then
           l.act, l.prog, l.wp = "doing", q.prog, q.wp
         else
-          -- what's still in the way: an earlier quest, or your level
-          local need
-          if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then need = p break end end end
-          if not need and d.ps then
-            local any = false
-            for _, p in ipairs(d.ps) do if isDone(p) then any = true break end end
-            if not any then need = d.ps[1] end
-          end
-          if need then
-            local pd = RG.QDATA[need]
-            l.act, l.npc = "later", "after " .. ((pd and pd.n) or "an earlier quest")
-          elseif (d.r or 1) > lvl then
-            l.act, l.npc = "later", "at level " .. d.r
+          -- what's still in the way: an earlier quest, your level, a profession, reputation...
+          if why then
+            l.act, l.npc = "later", why
           else
             l.act, l.npc = "pickup", d.s and d.s[4]
             l.noGiver = not d.s
@@ -176,9 +168,8 @@ function RG.QuestPrereqsMet(id)
   if not d then return true end
   local done = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
   if not done then return true end
-  if d.pg then for _, p in ipairs(d.pg) do if not done(p) then return false end end end
-  if d.ps then local any = false; for _, p in ipairs(d.ps) do if done(p) then any = true break end end; if not any then return false end end
-  if d.x then for _, p in ipairs(d.x) do if done(p) then return false end end end
+  local why = RG.QuestBlocked(id, d, done)
+  if why and not why:find("^at level") then return false end
   return (d.r or 1) <= (UnitLevel("player") or 1) + 2
 end
 function RG.DungeonQuestsDone(dq)

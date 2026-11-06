@@ -52,6 +52,7 @@ def lstr(s): return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
 out, nq, nobj, npts = [], 0, 0, 0
 for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
+    reqSkill, minRep, maxRep, nextQ, parentQ, crumbFor, reqSpell, maxLvl, untilDone, startWith, disabledBy = [at(q, i) for i in range(14, 25)]
     races = int(races or 0); classes = int(classes or 0)
     if races and not (races & HORDE): continue
     if qlvl and qlvl > 62: continue
@@ -116,6 +117,22 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         if preG: parts.append('pg={%s}' % ','.join(str(x) for x in preG))
         if preS: parts.append('ps={%s}' % ','.join(str(x) for x in preS))
         if excl: parts.append('x={%s}' % ','.join(str(x) for x in excl))
+        # the rest of what decides whether the giver offers it (QuestieDB's quest fields 18-36)
+        def pair(v):
+            v = [at(v, 1), at(v, 2)] if v is not None else None
+            return v if v and v[0] is not None and v[1] is not None else None
+        if pair(reqSkill): parts.append('sk={%d,%d}' % tuple(pair(reqSkill)))
+        if pair(minRep): parts.append('rp={%d,%d}' % tuple(pair(minRep)))
+        if pair(maxRep): parts.append('rx={%d,%d}' % tuple(pair(maxRep)))
+        if isinstance(nextQ, int) and nextQ > 0: parts.append('nx=%d' % nextQ)
+        if isinstance(parentQ, int) and parentQ > 0: parts.append('pa=%d' % parentQ)
+        if isinstance(crumbFor, int) and crumbFor > 0: parts.append('bc=%d' % crumbFor)
+        if isinstance(reqSpell, int) and reqSpell != 0: parts.append('sp=%d' % reqSpell)
+        if isinstance(maxLvl, int) and maxLvl > 0: parts.append('mx=%d' % maxLvl)
+        if isinstance(untilDone, int) and untilDone > 0: parts.append('uc=%d' % untilDone)
+        if isinstance(startWith, int) and startWith > 0: parts.append('sw=%d' % startWith)
+        dis = [disabledBy] if isinstance(disabledBy, int) else [x for x in (disabledBy.values() if isinstance(disabledBy, dict) else disabledBy or []) if isinstance(x, int)]
+        if dis: parts.append('dq={%s}' % ','.join(str(x) for x in dis))
     if (sflags or 0) & 1: parts.append('rep=true')
     if ra: parts.append('ra="%s"' % ra)
     if cl: parts.append('cl="%s"' % cl)
@@ -132,6 +149,9 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '-- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.',
         '-- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,',
         '--   pg = {all of these first}, ps = {any of these first}, x = {done one of these: this one is gone},',
+        '--   sk = {skill, rank}, rp = {faction, min rep}, rx = {faction, max rep}, nx = next in chain (taken or done: this one is gone),',
+        '--   pa = parent quest (only while it is in your log), bc = breadcrumb for (that one taken or done: gone), sp = spell known (negative: not known),',
+        '--   mx = max level, uc = gone once this is done, sw = only once this is taken or done, dq = {not while these are in your log},',
         '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
         '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... } }',

@@ -181,6 +181,7 @@ local function availableQuests()
   if not availDirty and availCache then return availCache end
   availDirty = false
   local list, inLog = {}, {}
+  local function logged(q) return inLog[q] or false end
   if not (RG.QDATA and C_QuestLog) then availCache = list; return list end
   for i = 1, (C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries() or 0) do
     local info = C_QuestLog.GetInfo(i)
@@ -189,11 +190,7 @@ local function availableQuests()
   local lvl = UnitLevel("player")
   for id, d in pairs(RG.QDATA) do
     if d.s and d.n and lvl >= (d.r or 1) and (d.l or 1) >= lvl - 5 and (d.l or 1) <= lvl + 3 and not inLog[id] and not done(id) and RG.QuestForMe(d) then
-      local ok = true
-      if d.x then for _, p in ipairs(d.x) do if done(p) or inLog[p] then ok = false break end end end
-      if d.pg then for _, p in ipairs(d.pg) do if not done(p) then ok = false break end end end
-      if ok and d.ps then ok = false; for _, p in ipairs(d.ps) do if done(p) then ok = true break end end end
-      if ok then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
+      if not RG.QuestBlocked(id, d, done, logged) then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
     end
   end
   -- quests the game has shown you that our data does not know (new WoW Forever content): remembered from when you talked to the giver
@@ -263,6 +260,11 @@ function RG.ClassQuests(max)
           if d.x then for _, p in ipairs(d.x) do if done(p) or inLog[p] then ok = false break end end end
           if ok and d.pg then for _, p in ipairs(d.pg) do if not (done(p) or inLog[p]) then ok = false break end end end
           if ok and d.ps then ok = false; for _, p in ipairs(d.ps) do if done(p) or inLog[p] then ok = true break end end end
+          -- everything else that keeps the giver from offering it (counting the quest before it as done while you're on it)
+          if ok then
+            local why = RG.QuestBlocked(id, d, function(q) return done(q) or inLog[q] end, function(q) return inLog[q] or false end)
+            if why and not why:find("^at level") then ok = false end
+          end
           if ok then
             list[#list + 1] = { id = id, name = d.n, lvl = d.l, req = d.r or 1, now = lvl >= (d.r or 1), giver = d.s[4],
               wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } }
@@ -1151,8 +1153,81 @@ do
     local npc = (UnitName and (UnitName("npc") or UnitName("target"))) or nil
     RG.db.enders[id] = { n = GetTitleText and GetTitleText() or nil, m = map, x = pos.x * 100, y = pos.y * 100, g = npc, f = UnitFactionGroup and UnitFactionGroup("player") or nil }
   end
+  -- What a giver did NOT offer. Our data can miss a requirement (a hidden earlier quest, reputation, a changed level
+  -- in WoW Forever), so when you talk to a giver and a quest we expected isn't in the list, Waypath+ stops sending you
+  -- there until you level up or hand in a quest at that giver.
+  local byGiver
+  local function giverQuests(name)
+    if not byGiver then
+      byGiver = {}
+      for id, d in pairs(RG.QDATA or {}) do
+        local g = d.s and d.s[4]
+        if g and g ~= "" then byGiver[g] = byGiver[g] or {}; table.insert(byGiver[g], id) end
+      end
+    end
+    return byGiver[name]
+  end
+  local function noteOffers(ids, titles)
+    if not (RG.db and RG.QDATA and UnitName) then return end
+    local npc = UnitName("npc")
+    if not npc or (UnitIsPlayer and UnitIsPlayer("npc")) then return end
+    local list = giverQuests(npc)
+    if not list then return end
+    local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    local info = map and C_Map.GetMapInfo and C_Map.GetMapInfo(map)
+    local parent = info and info.parentMapID
+    local lvl = UnitLevel("player") or 1
+    local isDone = C_QuestLog.IsQuestFlaggedCompleted or function() return false end
+    RG.db.notOffered = RG.db.notOffered or {}
+    local changed = false
+    for _, id in ipairs(list) do
+      local d = RG.QDATA[id]
+      local offered = ids[id] or (d.n and titles[d.n])
+      if offered then
+        if RG.db.notOffered[id] then RG.db.notOffered[id] = nil; changed = true end
+      elseif not d.rep and RG.QuestForMe(d) and not isDone(id) and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id))
+         and (not map or not d.s[1] or d.s[1] == map or parent == d.s[1])
+         and not RG.QuestBlocked(id, d) then
+        -- we thought you could take it here and now, and the game says no
+        RG.db.notOffered[id] = lvl; changed = true
+      end
+    end
+    if changed then RG.MarkQuestsDirty(); if RG.QueueTracker then RG.QueueTracker() end end
+  end
+  local function gossipOffers()
+    local ids, titles = {}, {}
+    for _, q in ipairs((C_GossipInfo and C_GossipInfo.GetAvailableQuests and C_GossipInfo.GetAvailableQuests()) or {}) do
+      if q.questID then ids[q.questID] = true end
+      if q.title then titles[q.title] = true end
+    end
+    return ids, titles
+  end
+  local function greetingOffers()
+    local ids, titles = {}, {}
+    for i = 1, (GetNumAvailableQuests and GetNumAvailableQuests() or 0) do
+      local t = GetAvailableTitle and GetAvailableTitle(i)
+      if t then titles[t] = true end
+    end
+    return ids, titles
+  end
+  RG.__noteOffers = noteOffers   -- (tests)
+  pcall(lf.RegisterEvent, lf, "PLAYER_LEVEL_UP"); pcall(lf.RegisterEvent, lf, "QUEST_TURNED_IN")
   pcall(lf.RegisterEvent, lf, "QUEST_PROGRESS"); pcall(lf.RegisterEvent, lf, "QUEST_COMPLETE")
-  lf:SetScript("OnEvent", function(_, event)
+  lf:SetScript("OnEvent", function(_, event, a1)
+    if event == "PLAYER_LEVEL_UP" then if RG.db then RG.db.notOffered = nil end return end
+    if event == "QUEST_TURNED_IN" then
+      -- handing something in can open the next quest at that giver (or anywhere in a chain): look again
+      local d = RG.QDATA and a1 and RG.QDATA[a1]
+      local at = d and d.e and d.e[4]
+      for id in pairs((RG.db and RG.db.notOffered) or {}) do
+        local q = RG.QDATA and RG.QDATA[id]
+        if not q or (at and q.s and q.s[4] == at) then RG.db.notOffered[id] = nil end
+      end
+      RG.MarkQuestsDirty()
+      return
+    end
+    if event == "GOSSIP_SHOW" then pcall(noteOffers, gossipOffers()) end
+    if event == "QUEST_GREETING" then pcall(noteOffers, greetingOffers()) return end
     if (event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE") and GetQuestID then learnEnd(GetQuestID()) return end
     if event == "GOSSIP_SHOW" and C_GossipInfo and C_GossipInfo.GetAvailableQuests then
       for _, q in ipairs(C_GossipInfo.GetAvailableQuests() or {}) do learn(q.questID, q.title, q.questLevel) end

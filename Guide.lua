@@ -136,6 +136,13 @@ function RG.QuestRequirements(id)
     for i, p in ipairs(d.ps) do local pd = RG.QDATA[p]; if i <= 2 then names[#names + 1] = (pd and pd.n) or tostring(p) end end
     out[#out + 1] = { text = "Finish " .. table.concat(names, " or ") .. (#d.ps > 2 and " or another" or ""), ok = any, kind = "req" }
   end
+  -- anything else that keeps the giver from offering it (profession, reputation, a branch you didn't take...)
+  if not inLog and not isDone(id) and RG.QuestBlocked then
+    local why = RG.QuestBlocked(id, d)
+    if why and not why:find("^after ") and not why:find("^at level") then
+      out[#out + 1] = { text = (why:gsub("^%l", string.upper)), ok = false, kind = "req" }
+    end
+  end
   -- objectives: live from the quest log when you have it, else from the database
   if inLog and C_QuestLog.GetQuestObjectives then
     for _, o in ipairs(C_QuestLog.GetQuestObjectives(id) or {}) do

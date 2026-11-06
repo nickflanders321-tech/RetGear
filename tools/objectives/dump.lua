@@ -38,7 +38,8 @@ local function enc(v)
 end
 local f = io.open(out, "w")
 local Q = {}
-for id, q in pairs(quests) do Q[id] = { q[1], q[2], q[3], q[4], q[5], q[6], q[10], q[17], q[24], q[7], q[12], q[13], q[16] } end
+for id, q in pairs(quests) do Q[id] = { q[1], q[2], q[3], q[4], q[5], q[6], q[10], q[17], q[24], q[7], q[12], q[13], q[16],
+  q[18], q[19], q[20], q[22], q[25], q[27], q[30], q[32], q[33], q[34], q[36] } end
 local I = {}
 for id, it in pairs(items) do if it[2] or it[3] then I[id] = { it[1], it[2], it[3] } end end
 local N = {}

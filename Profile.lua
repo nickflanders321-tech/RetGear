@@ -54,6 +54,75 @@ function RG.QuestForMe(d)
   return true
 end
 
+-- Why the giver won't offer you this quest yet, or nil when it will (race and class are QuestForMe's; done and
+-- in-your-log are the caller's). The second value is true when it never will (a later step or the other branch
+-- is taken, you're past its level, it needs a profession you don't have).
+--   isDone(id), inLog(id): optional; the callers that already know pass their own
+local SKILL_NAME = { [129] = "First Aid", [164] = "Blacksmithing", [165] = "Leatherworking", [171] = "Alchemy", [182] = "Herbalism",
+  [185] = "Cooking", [186] = "Mining", [197] = "Tailoring", [202] = "Engineering", [333] = "Enchanting", [356] = "Fishing", [393] = "Skinning" }
+local function qname(id) local d = RG.QDATA and RG.QDATA[id]; return (d and d.n) or "an earlier quest" end
+local function repOf(faction)
+  if C_Reputation and C_Reputation.GetFactionDataByID then
+    local ok, f = pcall(C_Reputation.GetFactionDataByID, faction)
+    if ok and type(f) == "table" and f.currentStanding then return f.currentStanding end
+  end
+  if GetFactionInfoByID then
+    local ok, name, _, _, _, _, value = pcall(GetFactionInfoByID, faction)
+    if ok and name and type(value) == "number" then return value, name end
+  end
+end
+local function knows(spell)
+  if IsPlayerSpell then local ok, v = pcall(IsPlayerSpell, spell); if ok and v ~= nil then return v end end
+  if IsSpellKnown then local ok, v = pcall(IsSpellKnown, spell); if ok and v ~= nil then return v end end
+end
+-- profession names are English here: only judge them on an English client that lists its skills
+local function skillsReadable()
+  local loc = GetLocale and GetLocale() or "enUS"
+  if loc ~= "enUS" and loc ~= "enGB" then return false end
+  return RG.Professions and next(RG.Professions()) ~= nil
+end
+function RG.QuestBlocked(id, d, isDone, inLog)
+  d = d or (RG.QDATA and RG.QDATA[id])
+  if not d then return nil end
+  isDone = isDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or function() return false end
+  inLog = inLog or function(q) return C_QuestLog and C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(q) or false end
+  local function taken(q) return isDone(q) or inLog(q) end
+  local lvl = UnitLevel("player") or 1
+  -- never again
+  if d.x then for _, p in ipairs(d.x) do if taken(p) then return "you took the other branch", true end end end
+  if d.nx and taken(d.nx) then return "you're past this step", true end
+  if d.bc and taken(d.bc) then return "you already have the quest it leads to", true end
+  if d.uc and isDone(d.uc) then return "no longer offered", true end
+  if d.mx and lvl > d.mx then return "only up to level " .. d.mx, true end
+  if d.sk and skillsReadable() then
+    local name = SKILL_NAME[d.sk[1]]
+    local have = name and RG.Skill and RG.Skill(name)
+    if name and not have then return "needs " .. name, true end
+    if have and have < (d.sk[2] or 0) then return "needs " .. name .. " " .. d.sk[2] end
+  end
+  if d.sp then
+    local k = knows(math.abs(d.sp))
+    if k ~= nil and k ~= (d.sp > 0) then return d.sp > 0 and "needs a spell or specialization you don't have" or "not for your specialization", true end
+  end
+  -- not yet
+  if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then return "after " .. qname(p) end end end
+  if d.ps then
+    local any = false
+    for _, p in ipairs(d.ps) do if isDone(p) then any = true break end end
+    if not any then return "after " .. qname(d.ps[1]) end
+  end
+  if d.pa and not inLog(d.pa) then return "only while you have " .. qname(d.pa) end
+  if d.sw and not taken(d.sw) then return "after " .. qname(d.sw) end
+  if d.dq then for _, p in ipairs(d.dq) do if inLog(p) then return "after you finish " .. qname(p) end end end
+  if (d.r or 1) > lvl then return "at level " .. d.r end
+  if d.rp then local v = repOf(d.rp[1]); if v and v < d.rp[2] then return "needs more reputation" end end
+  if d.rx then local v = repOf(d.rx[1]); if v and v >= d.rx[2] then return "your reputation is too high", true end end
+  -- the giver didn't offer it when you were there (data can't know everything): until you level or hand something in there
+  local no = RG.db and RG.db.notOffered and RG.db.notOffered[id]
+  if no and no == lvl then return "not offered yet (you checked)" end
+  return nil
+end
+
 -- ---------------------------------------------------------------------------
 -- Class: stat weights, gear guide, talents, rotation, class quests
 -- ---------------------------------------------------------------------------
