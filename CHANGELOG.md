@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.13.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.13.0
 - Duels against players: you pick your hero before every duel. Challenging someone (target, party list or /wp duel Name), accepting a challenge, and "Find a match" each open a hero choice first, with your last duel hero selected and each hero's power shown. The accept box tells you which hero the challenger picked. Your hero against the computer is chosen separately, as before.
 - Card game fixes from a full review:
