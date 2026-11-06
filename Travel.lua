@@ -74,9 +74,11 @@ local BORDERS = {
   { "Stonetalon Mountains", "Ashenvale" }, { "Stonetalon Mountains", "Desolace" }, { "Desolace", "Feralas" }, { "Feralas", "Thousand Needles" },
   { "Thousand Needles", "Tanaris" }, { "Tanaris", "Un'Goro Crater" }, { "Un'Goro Crater", "Silithus" }, { "Ashenvale", "Felwood" },
   { "Ashenvale", "Azshara" }, { "Ashenvale", "Darkshore" }, { "Felwood", "Winterspring" }, { "Felwood", "Moonglade" }, { "Winterspring", "Moonglade" },
-  -- WoW Forever's new zones: Riverglades off the Redridge road to the Burning Steppes, Shen'dralas south
-  -- of Desolace through the Valley of Bones, Mount Hyjal through Darkwhisper Gorge in Winterspring
-  { "Riverglades", "Redridge Mountains" }, { "Riverglades", "Burning Steppes" }, { "Desolace", "Shen'dralas" }, { "Winterspring", "Mount Hyjal" },
+  -- WoW Forever's new zones: Riverglades off the Redridge road to the Burning Steppes (Blackrock Pass), from
+  -- the Badlands north of Twilight's Shroud and from the Swamp of Sorrows through Redridge Pass (Warcraft Wiki and
+  -- Mmonster), Shen'dralas south of Desolace through the Valley of Bones, Mount Hyjal through Darkwhisper Gorge
+  { "Riverglades", "Redridge Mountains" }, { "Riverglades", "Burning Steppes" }, { "Riverglades", "Badlands" }, { "Riverglades", "Swamp of Sorrows" },
+  { "Desolace", "Shen'dralas" }, { "Winterspring", "Mount Hyjal" },
   -- Alliance towns and zones
   { "Dun Morogh", "Ironforge", 2 }, { "Elwynn Forest", "Stormwind City", 2 }, { "Elwynn Forest", "Redridge Mountains" }, { "Elwynn Forest", "Duskwood" },
   { "Teldrassil", "Darnassus", 3 }, { "Wetlands", "Loch Modan" }, { "Stranglethorn Vale", "Blasted Lands", 20 },

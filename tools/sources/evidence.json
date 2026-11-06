@@ -11,7 +11,8 @@
     "leprestore": {"url": "https://leprestore.com/guides/world-of-warcraft-forever/wow-forever-riverglades-guide/", "date": "2026-10-17", "build": "beta (Shen'Dralas from their 1-60 guide, 2026-10-14)"},
     "skycoach": {"url": "https://skycoach.gg/blog/wow-forever/articles/all-new-zones-guide", "date": "2026-09-30", "build": "beta (new zones only)"},
     "mmonster": {"url": "https://mmonster.co/wow-forever/guides/leveling/new-zones", "date": "2026-10-21", "build": "beta (new zones only)"},
-    "overgear": {"url": "https://overgear.com/guides/how-to-get/wow-forever/how-to-get-to-riverglades/", "date": "2026-11-05", "build": "launch (Riverglades only)"}
+    "overgear": {"url": "https://overgear.com/guides/how-to-get/wow-forever/how-to-get-to-riverglades/", "date": "2026-11-05", "build": "launch (Riverglades only)"},
+    "warcraftwiki": {"url": "https://warcraft.wiki.gg/wiki/Riverglades", "date": "2026-11-06", "build": "launch (Riverglades only)"}
   },
   "zones": {
     "Stonetalon Mountains":  {"foreverera": [15, 27], "wowhandbook": [15, 25], "endgametools": [13, 32], "wowforeverbuilds": [25, 30], "decarebia": [15, 25], "mobalytics": [15, 27], "wow4ever": [15, 25]},
@@ -24,7 +25,7 @@
     "Dustwallow Marsh":      {"foreverera": [35, 45], "wowhandbook": [36, 43], "endgametools": [33, 50], "wowforeverbuilds": [40, 50], "decarebia": [30, 40], "mobalytics": [35, 45]},
     "Badlands":              {"foreverera": [35, 45], "wowhandbook": [36, 45], "endgametools": [33, 50], "wowforeverbuilds": [40, 50], "mobalytics": [35, 45]},
     "Swamp of Sorrows":      {"foreverera": [35, 45], "wowhandbook": [36, 43], "endgametools": [33, 50], "mobalytics": [35, 45]},
-    "Riverglades":           {"foreverera": [33, 44], "wowhandbook": [36, 44], "endgametools": [33, 54], "decarebia": [36, 44], "leprestore": [35, 45], "skycoach": [35, 45], "mmonster": [36, 44], "overgear": [36, 44]},
+    "Riverglades":           {"foreverera": [33, 44], "wowhandbook": [36, 44], "endgametools": [33, 54], "decarebia": [36, 44], "leprestore": [35, 45], "skycoach": [35, 45], "mmonster": [36, 44], "overgear": [36, 44], "warcraftwiki": [35, 45]},
     "Tanaris":               {"foreverera": [40, 50], "wowhandbook": [40, 50], "endgametools": [38, 54], "wowforeverbuilds": [40, 50], "decarebia": [40, 50], "mobalytics": [40, 50]},
     "Feralas":               {"foreverera": [40, 50], "wowhandbook": [41, 49], "endgametools": [38, 54], "wowforeverbuilds": [40, 50], "decarebia": [40, 50], "mobalytics": [40, 50]},
     "The Hinterlands":       {"foreverera": [40, 50], "wowhandbook": [41, 56], "endgametools": [38, 54], "wowforeverbuilds": [40, 50], "decarebia": [40, 50], "mobalytics": [40, 50]},

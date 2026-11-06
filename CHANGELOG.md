@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.12.0
+- Travel tips: Riverglades can now be reached on foot from the Badlands (north of Twilight's Shroud) and the Swamp of Sorrows (through Redridge Pass), not only from Redridge, the Burning Steppes and the Tanaris ship. Horde players coming from Kargath or Stonard get the short walk instead of a detour.
+- Riverglades route notes list every way into the zone, and the Horde note names Rog'mar's wind rider master, Grakna.
+
 ## v1.11.2
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

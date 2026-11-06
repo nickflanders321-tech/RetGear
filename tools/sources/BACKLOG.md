@@ -17,10 +17,13 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    QuestieDB's Forever data, and adds any other unlisted zone with 12+ quests: check the result and
    write travel notes once launch data is in.)
    Since v1.9.0 the travel tips route into Riverglades (Steamwheedle ship, walk-ins from Redridge and the
-   Burning Steppes, Rog'mar flights); add walk-ins from the Badlands and Swamp of Sorrows if more guides
-   confirm them (only Mmonster lists them, 2026-11-02).
+   Burning Steppes, Rog'mar flights); since v1.12.0 also from the Badlands (north of Twilight's Shroud) and the
+   Swamp of Sorrows (Redridge Pass), confirmed by Warcraft Wiki on top of Mmonster. Rog'mar's wind rider master
+   is Grakna (59.6, 45.2; NPC 255993 in QuestieDB's Forever data).
    2026-11-05 (launch day +1): QuestieDB's Forever data unchanged since November 2, so still no Horde quests;
    Overgear and LFCarry (launch-updated) name only Rog'mar (59.6, 45.1) and the Redridge / Blackrock Pass walk-in.
+   2026-11-06: QuestieDB's Forever data still unchanged (tree 010e05f); Warcraft Wiki lists Bolder'ok as a second
+   Horde settlement (unconfirmed elsewhere, so not in the notes yet). Still no Horde quest names anywhere.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -54,9 +57,14 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Searing Gorge (guides 43-53, ours 48-54) and Horde Azshara (guides 45-55, ours 50-58): Forever's own quest data backs our windows (Searing Gorge quests: a quarter below 48, median 50; Azshara median 57), so they stay (2026-10-19).
 - Shen'dralas: Leprestore 40-50 (2026-10-14), Skycoach 40-45 (2026-09-30, "40+, not confirmed"), Eternadex's route window 41-43 (2026-10-18), Mmonster no range yet (2026-10-21); ours is 38-43. Guides agree it starts around 40, so it may move up 2 levels; wait for launch quest data before moving it (2026-11-02).
 - Ruins of Lordaeron: Blizzard's November 2 launch notes say every dungeon quest needs level 15; QuestieDB's Forever data still has 16 for The New Plague, Crest of Lordaeron and Unending Torment (2026-11-05). The route note says 15, the route entry stays at 16; drop the entry to 15 (with MOVED_STEPS) once the quest data agrees.
+- Shen'dralas, 2026-11-06: eXputer (2026-10-28) reports guides split between 40-45 and 45-53. Ours stays 38-43
+  until launch quest data is in QuestieDB.
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.12.0: travel tips walk into Riverglades from the Badlands and the Swamp of Sorrows too (Warcraft Wiki +
+  Mmonster); route notes for both factions name every way in and Rog'mar's wind rider master Grakna (item 1, partial).
 
 - v1.10.0: the October 23-31 server hotfixes on the 2nd Spec tab (Righteous Fury at 10, Shadow Word: Death
   30% backlash) are confirmed by Blizzard's November 2 launch notes (open question closed); launch-build changes
