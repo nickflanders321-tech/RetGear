@@ -65,13 +65,72 @@ local function addonPrice(id)
     if ok and p then return p, "Auctionator" end
   end
   if TSM_API and TSM_API.GetCustomPriceValue then
-    local ok, p = pcall(TSM_API.GetCustomPriceValue, "dbminbuyout", "i:" .. id)
+    local ok, p = pcall(TSM_API.GetCustomPriceValue, "dbmarket", "i:" .. id)
     if ok and p then return p, "TSM" end
   end
 end
 
+-- ---------------------------------------------------------------------------
+-- Market value, the way TradeSkillMaster's AuctionDB describes its own (support.tradeskillmaster.com, "AuctionDB
+-- Market Value"; written fresh here, no code borrowed):
+--   1. a scan's value: auctions sorted by price; at most the cheapest 30% count, and past the cheapest 15% a jump of
+--      20% or more to the next one ends the list; then prices more than 1.5 standard deviations from the average are
+--      dropped and the rest averaged.
+--   2. each day's scans are averaged into one value for the day.
+--   3. the market value weighs the last 14 days, recent days much more (each day back counts 0.75 as much: a
+--      half-life of a little over two days).
+-- Ours on top: listings under 40% of the middle price are left out first.
+-- So one cheap listing or one greedy one doesn't move the price Waypath+ compares against; the cheapest listing
+-- right now is still shown next to it.
+-- ---------------------------------------------------------------------------
+local function scanValue(prices)            -- prices: unit prices, one per auction (or per item in a stack)
+  local n = #prices
+  if n == 0 then return nil end
+  table.sort(prices)
+  -- one addition of ours: a listing under 40% of the middle price is a mistake or a bait listing, not the market
+  -- (without it a single 10c listing among 1g ones would be the whole value, since the 20% jump cuts right after it)
+  local mid = prices[math.floor((n + 1) / 2)]
+  local first = 1
+  while first < n and prices[first] < mid * 0.4 do first = first + 1 end
+  if first > 1 then
+    local rest = {}
+    for i = first, n do rest[#rest + 1] = prices[i] end
+    prices, n = rest, #rest
+  end
+  local keep = { prices[1] }
+  local cap = math.max(1, math.floor(n * 0.30 + 0.5))
+  for i = 2, math.min(n, cap) do
+    if i > n * 0.15 and prices[i] >= prices[i - 1] * 1.2 then break end
+    keep[#keep + 1] = prices[i]
+  end
+  local sum = 0
+  for _, v in ipairs(keep) do sum = sum + v end
+  local avg = sum / #keep
+  if #keep < 3 then return avg end
+  local sq = 0
+  for _, v in ipairs(keep) do sq = sq + (v - avg) ^ 2 end
+  local sd = math.sqrt(sq / (#keep - 1))
+  local s2, c2 = 0, 0
+  for _, v in ipairs(keep) do if math.abs(v - avg) <= 1.5 * sd then s2 = s2 + v; c2 = c2 + 1 end end
+  return c2 > 0 and s2 / c2 or avg
+end
+RG.__scanValue = scanValue   -- (tests)
+local function dayIndex() return math.floor(time() / 86400) end
+local function marketOf(rec)
+  if not (rec and rec.d) then return nil end
+  local today, num, den = dayIndex(), 0, 0
+  for day, v in pairs(rec.d) do
+    local age = today - day
+    if age >= 0 and age <= 14 and v[2] > 0 then local w = 0.75 ^ age; num = num + w * (v[1] / v[2]); den = den + w end
+  end
+  return den > 0 and math.floor(num / den + 0.5) or nil
+end
+RG.MarketValue = function(id) return marketOf(RG.db and RG.db.prices and RG.db.prices[id]) end
+
 function RG.Price(id)
   local rec = RG.db.prices[id]
+  local mv = marketOf(rec)
+  if mv then return mv, "market", rec end
   local ap, src = addonPrice(id)
   if rec and (not ap or time() - rec.t < 6 * 3600) then return rec.price, "scan", rec end
   if ap then return ap, src end
@@ -82,6 +141,11 @@ function RG.PriceText(id)
   if not isTracked(id) and not RG.db.prices[id] then return nil end
   local p, src, rec = RG.Price(id)
   if not p then return GREY .. "not seen yet (open the AH to scan)|r" end
+  if src == "market" then
+    -- the steady value first, then what the cheapest one costs right now
+    local now = rec.none and "none listed now" or (rec.price and ("cheapest " .. money(rec.price) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "")) or nil)
+    return money(p) .. GREY .. "  market" .. (now and (" · " .. now) or "") .. " · " .. ageText(rec.t) .. "|r"
+  end
   if rec and rec.none then return GREY .. "none listed (" .. ageText(rec.t) .. ")" .. (rec.last and ("; last seen " .. money(rec.last)) or "") .. "|r" end
   local s = money(p)
   if src == "scan" then s = s .. GREY .. "  (" .. ageText(rec.t) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "") .. ")|r"
@@ -90,12 +154,26 @@ function RG.PriceText(id)
 end
 
 -- Remember a price and fire a price alert if one is set.
-local function record(id, price, count)
+local function record(id, price, count, value)
   local db = RG.db
   local prev = db.prices[id]
   -- "none listed right now" keeps the last price that was seen, so one empty search doesn't erase what we knew
   db.prices[id] = { price = price or (prev and (prev.price or prev.last)), t = time(), n = count, none = price == nil or nil,
-    last = price or (prev and (prev.price or prev.last)) or nil }
+    last = price or (prev and (prev.price or prev.last)) or nil, d = prev and prev.d or nil }
+  -- the day's value: a full scan gives the market value of every listing; a single search only knows the cheapest one,
+  -- which counts for the day only when nothing better is known yet
+  local v = value or price
+  if v then
+    local rec, today = db.prices[id], dayIndex()
+    rec.d = rec.d or {}
+    local e = rec.d[today]
+    if value then
+      if not e or not e[3] then e = { 0, 0, true } end   -- the first full scan of the day replaces cheapest-only values
+      e[1], e[2] = e[1] + value, e[2] + 1
+    elseif not e then e = { price, 1 } elseif not e[3] then e[1], e[2] = e[1] + price, e[2] + 1 end
+    rec.d[today] = e
+    for day in pairs(rec.d) do if today - day > 14 then rec.d[day] = nil end end
+  end
   if price and db.alerts and db.alerts[id] and price <= db.alerts[id] then
     local _, link = RG.ItemInfo(id)
     RG.Print(GREEN .. "Price alert:|r " .. (link or id) .. " is listed for " .. money(price) .. " (your target " .. money(db.alerts[id]) .. ").")
@@ -172,7 +250,7 @@ end
 
 -- Reading a full scan: lowest buyout per item, a chunk of auctions per frame.
 local function readFull(total, getInfo, isModern)
-  local best, count = {}, {}
+  local best, count, all = {}, {}, {}
   local i = isModern and 0 or 1
   local last = isModern and total - 1 or total
   mode = "full"
@@ -184,6 +262,9 @@ local function readFull(total, getInfo, isModern)
         local per = buyout / math.max(1, stack or 1)
         if not best[id] or per < best[id] then best[id] = per end
         count[id] = (count[id] or 0) + 1
+        -- every item counts once in the market value (a stack of 20 is 20 items), up to 400 per item to stay light
+        local L = all[id]; if not L then L = {}; all[id] = L end
+        for _ = 1, math.min(stack or 1, 400 - #L) do L[#L + 1] = per end
       end
     end
     i = stopAt + 1
@@ -191,7 +272,10 @@ local function readFull(total, getInfo, isModern)
       runner:SetScript("OnUpdate", nil)
       local n = 0
       for id in pairs(wanted()) do
-        if best[id] then record(id, math.floor(best[id]), count[id]); n = n + 1 else record(id, nil, 0) end
+        if best[id] then
+          local v = scanValue(all[id] or {})
+          record(id, math.floor(best[id]), count[id], v and math.floor(v + 0.5)); n = n + 1
+        else record(id, nil, 0) end
       end
       mode = nil
       RG.Print("Auction House prices updated: " .. n .. " items from a full scan (" .. total .. " auctions).")
