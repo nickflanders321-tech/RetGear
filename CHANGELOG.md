@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.17.0
 
 - **A more accurate arrow.** Kill and collect objectives now point at where the creatures actually gather instead of one average point: each objective keeps up to four hunting areas (the biggest first), and stray single spawns are left out.
 - Items that drop from several creatures now send you to the ones that drop them most often, not to a creature with a tiny drop chance.
