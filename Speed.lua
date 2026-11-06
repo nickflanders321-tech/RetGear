@@ -145,25 +145,89 @@ local function playerWorld()
 end
 RG.ToWorld, RG.PlayerWorld = toWorld, playerWorld
 -- Every place you could go right now: unfinished objectives and quests ready to turn in.
+-- The game's own quest areas (the shaded blob on the world map), when this client has them: tried for objectives
+-- nobody has data for yet. /wp poicheck says which of these the game answers.
+local function gamePOI(qid)
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  if C_QuestLog and C_QuestLog.GetNextWaypointForMap and map then
+    local ok, x, y = pcall(C_QuestLog.GetNextWaypointForMap, qid, map)
+    if ok and type(x) == "number" and type(y) == "number" and x > 0 then return map, x * 100, y * 100, "waypoint" end
+  end
+  if QuestPOIGetIconInfo then
+    local ok, _, x, y = pcall(QuestPOIGetIconInfo, qid)
+    if ok and type(x) == "number" and type(y) == "number" and x > 0 and map then return map, x * 100, y * 100, "poi" end
+  end
+  if C_QuestLog and C_QuestLog.GetQuestsOnMap and map then
+    local ok, list = pcall(C_QuestLog.GetQuestsOnMap, map)
+    if ok and type(list) == "table" then
+      for _, e in ipairs(list) do if e.questID == qid and type(e.x) == "number" and e.x > 0 then return map, e.x * 100, e.y * 100, "map" end end
+    end
+  end
+end
+RG.GamePOI = gamePOI
+
+-- Where an objective really gets done: every time one of your objective counters goes up (a kill counts, an item
+-- drops), Waypath+ notes where you stood. Those spots (yours, and other players' from /wp share reports in
+-- CommunityQuests.lua) join the database's hunting areas, so the arrow learns the places WoW Forever changed.
+local function objKey(text)
+  text = tostring(text or ""):gsub("%s*%(?%d+%s*/%s*%d+%)?%s*", " "):gsub(":%s*$", ""):gsub("%s+", " ")
+  return (text:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+RG.ObjKey = objKey
+local function learnedFor(qid, key)
+  local out = {}
+  local mine = RG.db and RG.db.objLearn and RG.db.objLearn[qid] and RG.db.objLearn[qid][key]
+  for _, p in ipairs(mine or {}) do out[#out + 1] = p end
+  local com = RG.COMMUNITY_O and RG.COMMUNITY_O[qid] and RG.COMMUNITY_O[qid][key]
+  for _, p in ipairs(com or {}) do out[#out + 1] = p end
+  return out
+end
 function RG.QuestSpots()
   local spots = {}
   if not (RG.QDATA and C_QuestLog and C_QuestLog.GetNumQuestLogEntries) then return spots end
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
     local info = C_QuestLog.GetInfo(i)
-    local qd = info and not info.isHeader and info.questID and RG.QDATA[info.questID]
-    if qd then
-      if C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID) then
-        if qd.e then spots[#spots + 1] = { turnin = true, quest = info.title, label = qd.e[4], wp = { qd.e[1], qd.e[2], qd.e[3], qd.e[4] ~= "" and qd.e[4] or info.title } } end
-      elseif qd.o then
-        local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}
-        for _, d in ipairs(qd.o) do
-          local game
-          for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then game = o end end
-          if not (game and game.finished) then
-            for _, p in ipairs(d[4]) do
-              local src = d[3][p[4]] or d[2]
-              spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired, okind = d[1],
-                wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
+    local qid = info and not info.isHeader and info.questID
+    local qd = qid and RG.QDATA[qid]
+    if qd and C_QuestLog.IsComplete and C_QuestLog.IsComplete(qid) then
+      if qd.e then spots[#spots + 1] = { turnin = true, quest = info.title, label = qd.e[4], wp = { qd.e[1], qd.e[2], qd.e[3], qd.e[4] ~= "" and qd.e[4] or info.title } } end
+    elseif qid then
+      local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(qid) or {}
+      local used = {}
+      for _, d in ipairs((qd and qd.o) or {}) do
+        local game
+        for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then game = o end end
+        if not (game and game.finished) then
+          for _, p in ipairs(d[4]) do
+            local src = d[3][p[4]] or d[2]
+            spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired, okind = d[1],
+              wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
+          end
+          -- and where players actually got it done
+          if game and game.text then
+            local key = objKey(game.text); used[key] = true
+            for _, p in ipairs(learnedFor(qid, key)) do
+              spots[#spots + 1] = { quest = info.title, label = d[2], src = d[2], have = game.numFulfilled, need = game.numRequired, okind = d[1], learned = true,
+                wp = { p[1], p[2], p[3], d[2] } }
+            end
+          end
+        end
+      end
+      -- objectives the database has no spots for (new WoW Forever quests): what players found, else the game's own area
+      for _, o in ipairs(objs) do
+        if o.text and not o.finished and o.type ~= "event" then
+          local key = objKey(o.text)
+          if not used[key] then
+            local kind = (o.type == "monster" and "k") or (o.type == "item" and "i") or (o.type == "object" and "o") or nil
+            local any = false
+            for _, p in ipairs(learnedFor(qid, key)) do
+              any = true
+              spots[#spots + 1] = { quest = info.title, label = key, src = key, have = o.numFulfilled, need = o.numRequired, okind = kind, learned = true,
+                wp = { p[1], p[2], p[3], key } }
+            end
+            if not any then
+              local m, x, y = gamePOI(qid)
+              if m then spots[#spots + 1] = { quest = info.title, label = key, src = key, have = o.numFulfilled, need = o.numRequired, okind = kind, poi = true, wp = { m, x, y, key } } end
             end
           end
         end
@@ -171,6 +235,58 @@ function RG.QuestSpots()
     end
   end
   return spots
+end
+do   -- the learning itself
+  local last, queued = {}, false
+  local function scan()
+    queued = false
+    if not (RG.db and C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetQuestObjectives) then return end
+    if RG.CardsOnly and RG.CardsOnly() then return end
+    local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+      local info = C_QuestLog.GetInfo(i)
+      local qid = info and not info.isHeader and info.questID
+      if qid then
+        for _, o in ipairs(C_QuestLog.GetQuestObjectives(qid) or {}) do
+          if o.text and type(o.numFulfilled) == "number" then
+            local key = objKey(o.text)
+            local k = qid .. "\0" .. key
+            local prev = last[k]
+            last[k] = o.numFulfilled
+            -- (not in a town or an inn: an item bought at the Auction House or handed over by a friend says nothing about where it drops)
+            if prev and o.numFulfilled > prev and pos and pos.x and pos.x > 0 and not (IsResting and IsResting()) and not (UnitOnTaxi and UnitOnTaxi("player")) then
+              local x, y = math.floor(pos.x * 1000 + 0.5) / 10, math.floor(pos.y * 1000 + 0.5) / 10
+              RG.db.objLearn = RG.db.objLearn or {}
+              local q = RG.db.objLearn[qid] or {}; RG.db.objLearn[qid] = q
+              local list = q[key] or {}; q[key] = list
+              local near = false
+              for _, p in ipairs(list) do if p[1] == map and (p[2] - x) ^ 2 + (p[3] - y) ^ 2 < 9 then near = true; p[4] = (p[4] or 1) + 1 break end end
+              if not near then table.insert(list, 1, { map, x, y, 1 }); while #list > 6 do table.remove(list) end end
+            end
+          end
+        end
+      end
+    end
+  end
+  local lf = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_LOG_UPDATE", "UNIT_QUEST_LOG_CHANGED", "PLAYER_LOGIN" }) do pcall(lf.RegisterEvent, lf, e) end
+  lf:SetScript("OnEvent", function(_, event, unit)
+    if event == "UNIT_QUEST_LOG_CHANGED" and unit ~= "player" then return end
+    local now = GetTime and GetTime() or 0
+    if queued and now - queued < 2 then return end
+    queued = now
+    C_Timer.After(0.3, scan)
+  end)
+  -- quests you handed in no longer need their spots
+  local tf = CreateFrame("Frame"); pcall(tf.RegisterEvent, tf, "QUEST_TURNED_IN")
+  tf:SetScript("OnEvent", function(_, _, qid)
+    -- (kept a while for /wp share; trimmed to the 40 most recent quests)
+    if not (RG.db and RG.db.objLearn) then return end
+    local ids = {}
+    for id in pairs(RG.db.objLearn) do ids[#ids + 1] = id end
+    if #ids > 40 then table.sort(ids); for j = 1, #ids - 40 do RG.db.objLearn[ids[j]] = nil end end
+  end)
 end
 -- Quests you can pick up: high enough level, not done, not in your log, prerequisites met.
 -- Rebuilt when you level, turn in or accept quests (it checks a couple of thousand quests).
@@ -713,6 +829,14 @@ local function buildArrow()
     end
     local dx, dy = tx - px, ty - py -- x = north, y = west
     local d = math.sqrt(dx * dx + dy * dy)
+    -- a hunting area (kill or loot objective): once you're in it, the arrow says so and waits instead of
+    -- steering you to one exact spot; the guide moves on to the next area when this one is done
+    local area = RG.ObjectiveArea and RG.ObjectiveArea(wp.uiMapID, wp.position.x * 100, wp.position.y * 100)
+    if area and d < area then
+      self.tex:Hide(); self.check:Show(); self.wang = nil
+      self.dist:SetText(GREEN .. "In the area|r"); self.hint:SetText(GREY .. (label or "") .. "|r")
+      return
+    elseif not arrivedAt then self.check:Hide(); self.tex:Show() end
     if d < 10 then
       arrivedAt = GetTime()
       if RG.OnArrive then pcall(RG.OnArrive, label) end
@@ -1241,6 +1365,27 @@ local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   cmd = cmd and cmd:lower()
+  if cmd == "poicheck" then
+    -- which of the game's quest-location answers this client gives (for the arrow's accuracy)
+    local lines = {}
+    local function has(t, k) return t and t[k] and "yes" or "no" end
+    lines[#lines + 1] = "C_QuestLog.GetNextWaypointForMap: " .. has(C_QuestLog, "GetNextWaypointForMap") .. "   GetNextWaypoint: " .. has(C_QuestLog, "GetNextWaypoint")
+    lines[#lines + 1] = "QuestPOIGetIconInfo: " .. (QuestPOIGetIconInfo and "yes" or "no") .. "   C_QuestLog.GetQuestsOnMap: " .. has(C_QuestLog, "GetQuestsOnMap") .. "   C_TaskQuest: " .. (C_TaskQuest and "yes" or "no")
+    local n = 0
+    for i = 1, (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries() or 0) do
+      local info = C_QuestLog.GetInfo(i)
+      if info and not info.isHeader and info.questID and n < 6 then
+        n = n + 1
+        local m, x, y, how = gamePOI(info.questID)
+        lines[#lines + 1] = info.title .. ": " .. (m and string.format("%s map %d at %.1f, %.1f", how, m, x, y) or "no area from the game")
+      end
+    end
+    local learned = 0
+    for _, q in pairs((RG.db and RG.db.objLearn) or {}) do for _, l in pairs(q) do learned = learned + #l end end
+    lines[#lines + 1] = "Spots learned from your own quests so far: " .. learned
+    RG.ShowErrors(table.concat(lines, "\n"), "Quest location check  ·  Ctrl+A, Ctrl+C to copy and paste it back")
+    return
+  end
   if cmd == "way" then
     local x, y = (rest or ""):match("([%d%.]+)[,%s]+([%d%.]+)")
     if x and y then RG.SetWaypoint(tonumber(x), tonumber(y)) else RG.Print("Usage: /wp way 45.2 60.8  (coordinates in your current zone)") end
@@ -1309,6 +1454,14 @@ function RG.ShareFinds()
         needS and string.format("%d,%.1f,%.1f,%s", g.m or 0, g.x or 0, g.y or 0, clean(g.g)) or "",
         needE and string.format("%d,%.1f,%.1f,%s", e.m or 0, e.x or 0, e.y or 0, clean(e.g)) or "" }, "|")
       n = n + 1
+    end
+  end
+  -- where you got objectives done (helps everyone's arrow): O|quest|objective|map,x,y,count;...
+  for qid, objs in pairs((RG.db and RG.db.objLearn) or {}) do
+    for key, list in pairs(objs) do
+      local pts = {}
+      for _, p in ipairs(list) do pts[#pts + 1] = string.format("%d,%.1f,%.1f,%d", p[1] or 0, p[2] or 0, p[3] or 0, p[4] or 1) end
+      if #pts > 0 and type(qid) == "number" then out[#out + 1] = table.concat({ "O", qid, clean(key), table.concat(pts, ";") }, "|"); n = n + 1 end
     end
   end
   if n == 0 then RG.Print("Nothing new to share yet: every quest you've seen is already in Waypath+'s data. Thanks for checking!") return end

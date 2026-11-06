@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **A more accurate arrow.** Kill and collect objectives now point at where the creatures actually gather instead of one average point: each objective keeps up to four hunting areas (the biggest first), and stray single spawns are left out.
+- Items that drop from several creatures now send you to the ones that drop them most often, not to a creature with a tiny drop chance.
+- **Waypath+ learns from your play.** When an objective counter goes up out in the world, it remembers that spot and uses it to guide you (and any of your characters) next time. Learned spots are included in /wp share so they can help everyone in a later update.
+- When you reach an objective's hunting area the arrow shows "In the area" with a check instead of spinning around the creatures.
+- Objectives Waypath+ has no data for fall back to the area the game itself shows, where the game provides one.
+- New /wp poicheck: shows which quest-area helpers this game build has, to help us improve the arrow.
+
 ## v1.16.0
 
 - Sharper icons: the sidebar, the header switches, Settings, the fold buttons and the tracker use new line icons drawn for Waypath+ (crisp at small sizes, brass when on) instead of shrunken game icons; reminders get a small bell instead of a big note icon. The line under your name is shorter so it no longer gets cut off.

@@ -15,7 +15,7 @@ if [ ! -s "$T/classic.sql" ]; then
   zcat "$T"/cdb/Full_DB/*.sql.gz > "$T/classic.sql"
 fi
 $LUA tools/objectives/dump.lua "$C" "$T/forever.json"
-python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" .
+python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql"
 python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" .
 $LUA tools/nodes/dump.lua "$C/foreverObjectDB.lua" "$T/veins.tsv"
 python3 tools/nodes/gen.py "$T/qdb" "$T/veins.tsv" NodeData.lua

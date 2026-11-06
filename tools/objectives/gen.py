@@ -2,8 +2,14 @@
 who gives it, where to finish it and where its objectives are (kill / loot / use), from
 QuestieDB's merged WoW Forever data (see tools/qdb). Race- and class-only quests carry
 ra = race letters and cl = class letters; the add-on filters them for your character.
-Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder]"""
+Objective spots: each mob's real spawns are grouped into a few hunting areas per zone (nearest area wins in game),
+and for "collect an item" objectives the mobs that drop it most often come first (drop chances from the cMaNGOS
+loot tables when --sql is given).
+Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql]"""
 import json, re, sys, os
+SQL = None
+if '--sql' in sys.argv:
+    i = sys.argv.index('--sql'); SQL = sys.argv[i + 1]; del sys.argv[i:i + 2]
 QDB = sys.argv[1].rstrip('/') + '/'
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -44,6 +50,84 @@ def rep_points(sp, prefer_zone, maxzones=3):
         out.append((ui[z], round(x, 1), round(y, 1)))
         if len(out) >= maxzones: break
     return out
+def cluster_points(sp, prefer_zone, maxzones=2, per_zone=4):
+    """Hunting areas: each zone's spawns grouped (k-means) into up to per_zone areas, biggest first; each area is
+    the real spawn nearest its middle. Returned biggest areas first across zones."""
+    out = []
+    zones = sorted(sp.items(), key=lambda kv: (0 if int(kv[0]) == prefer_zone else 1, -len(kv[1])))
+    nz = 0
+    for z, pts in zones:
+        z = int(z)
+        if z not in ui: continue
+        pts = sorted([(p[0], p[1]) for p in pts if p and p[0] is not None and p[0] >= 0])
+        if not pts: continue
+        k = max(1, min(per_zone, len(pts) // 5 or 1))
+        # deterministic start: spread the seeds along the sorted list
+        cent = [pts[int(i * (len(pts) - 1) / max(1, k - 1))] if k > 1 else (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)) for i in range(k)]
+        for _ in range(12):
+            groups = [[] for _ in cent]
+            for p in pts:
+                j = min(range(len(cent)), key=lambda j: (p[0] - cent[j][0]) ** 2 + (p[1] - cent[j][1]) ** 2)
+                groups[j].append(p)
+            cent = [(sum(q[0] for q in g) / len(g), sum(q[1] for q in g) / len(g)) if g else cent[j] for j, g in enumerate(groups)]
+        areas = []
+        for c, g in zip(cent, groups):
+            if not g: continue
+            if len(g) < 2 and len(pts) >= 6: continue   # a lone spawn far from the rest is not a hunting area
+            x, y = min(g, key=lambda p: (p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
+            areas.append((len(g), ui[z], round(x, 1), round(y, 1)))
+        if not areas:
+            c = (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
+            x, y = min(pts, key=lambda p: (p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
+            areas = [(len(pts), ui[z], round(x, 1), round(y, 1))]
+        areas.sort(key=lambda a: -a[0])
+        out += [a[1:] for a in areas]
+        nz += 1
+        if nz >= maxzones: break
+    return out
+# drop chances: creature entry -> loot id -> {item: chance %}
+DROP = {}
+if SQL:
+    print('reading drop chances...', file=sys.stderr)
+    sqltxt = open(SQL, encoding='utf-8', errors='replace').read()
+    def _cols(t):
+        m = re.search(r"CREATE TABLE `%s` \((.*?)\) ENGINE" % t, sqltxt, re.S)
+        return re.findall(r"^\s*`(\w+)`", m.group(1), re.M)
+    def _rows(t):
+        """every row of a table's INSERTs, honouring quoted strings (names hold commas and brackets)"""
+        for m in re.finditer(r"INSERT INTO `%s` VALUES " % t, sqltxt):
+            i, n = m.end(), len(sqltxt)
+            while i < n and sqltxt[i] == '(':
+                i += 1; row, cur, inq = [], [], False
+                while True:
+                    c = sqltxt[i]
+                    if inq:
+                        if c == '\\': cur.append(sqltxt[i + 1]); i += 2; continue
+                        if c == "'":
+                            if sqltxt[i + 1] == "'": cur.append("'"); i += 2; continue
+                            inq = False; i += 1; continue
+                        cur.append(c); i += 1; continue
+                    if c == "'": inq = True; i += 1; continue
+                    if c == ',': row.append(''.join(cur)); cur = []; i += 1; continue
+                    if c == ')': row.append(''.join(cur)); i += 1; break
+                    cur.append(c); i += 1
+                yield row
+                if sqltxt[i] == ',': i += 1
+                else: break
+    cc = _cols('creature_template'); ie, il = cc.index('Entry'), cc.index('LootId')
+    lootof = {}
+    for r in _rows('creature_template'):
+        try: lootof[int(r[ie])] = int(r[il])
+        except Exception: pass
+    lc = _cols('creature_loot_template'); le, li, lch = lc.index('entry'), lc.index('item'), lc.index('ChanceOrQuestChance')
+    byloot = {}
+    for r in _rows('creature_loot_template'):
+        try: byloot.setdefault(int(r[le]), {})[int(r[li])] = abs(float(r[lch]))
+        except Exception: pass
+    for e, l in lootof.items():
+        if l and l in byloot: DROP[e] = byloot[l]
+    del sqltxt
+    print('drop tables for %d creatures' % len(DROP), file=sys.stderr)
 def L(o):  # objective entry as a 1-based list
     if isinstance(o, dict): return [o.get(str(i)) for i in range(1, 5)]
     return list(o) + [None] * 4
@@ -77,9 +161,9 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             sname, sp = spawns_of(skind, sid)
             if not sname: continue
             if skind == 'npc' and sname not in mobs: mobs.append(sname)
-            for p in rep_points(sp, zone, 2): pts.append(p + (len(mobs) if skind == 'npc' else 0,))
+            for p in cluster_points(sp, zone, 2, 4 if si == 0 else 2): pts.append(p + (len(mobs) if skind == 'npc' else 0,))
         if pts or mobs:
-            objs.append((kind, label, mobs, pts[:6])); npts += len(pts[:6])
+            objs.append((kind, label, mobs, pts[:8])); npts += len(pts[:8])
     for o in map(L, at(objectives, 1) or []):          # kill
         n, _ = spawns_of('npc', o[0]); add('kill', (o[1] if len(o) > 1 and o[1] else n) or '?', [('npc', o[0])])
     for o in map(L, at(objectives, 2) or []):          # use / interact with an object
@@ -87,7 +171,14 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     for o in map(L, at(objectives, 3) or []):          # loot an item
         it = D['items'].get(str(o[0]))
         if not it: continue
-        srcs = [('npc', i) for i in (at(it, 2) or [])] + [('obj', i) for i in (at(it, 3) or [])]
+        npcs = list(at(it, 2) or [])
+        # the mobs that drop it most often first; the rarely-dropping ones only if nothing better is known
+        ch = {n: DROP.get(n, {}).get(int(o[0])) for n in npcs}
+        known = [c for c in ch.values() if c]
+        if known:
+            best = max(known)
+            npcs = sorted([n for n in npcs if ch[n] and ch[n] >= best * 0.35], key=lambda n: -ch[n]) + [n for n in npcs if not ch[n]]
+        srcs = [('npc', i) for i in npcs] + [('obj', i) for i in (at(it, 3) or [])]
         add('item', at(it, 1) or '?', srcs)
     for o in map(L, at(objectives, 5) or []):          # kill credit (several mobs count)
         ids = o[0] if isinstance(o[0], list) else []

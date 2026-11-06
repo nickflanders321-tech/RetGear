@@ -518,6 +518,15 @@ function RG.Objective(force)
   return cache.obj
 end
 function RG.MarkObjectiveDirty() cache.dirty = true end
+-- The arrow's target is a hunting area (a kill, loot or use objective): how close counts as "there", in yards.
+function RG.ObjectiveArea(map, x, y)
+  local o = cache.obj
+  if not (o and o.act == "doing" and o.wp and o.wp[1] == map) then return nil end
+  if math.abs((o.wp[2] or 0) - x) > 0.6 or math.abs((o.wp[3] or 0) - y) > 0.6 then return nil end
+  local it = o.stop and o.stop.items and o.stop.items[1]
+  if it and it.okind == "o" then return 15 end   -- an object to use: closer
+  return 45
+end
 function RG.GuidePlan() RG.Objective(); return cache.plan end
 function RG.GuideReset() cache = { dirty = true, t = -99 }; lastObjKey = nil; skipUntil = {}; skipQuest = {} end
 

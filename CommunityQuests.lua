@@ -4,3 +4,6 @@
 local _, RG = ...
 RG.COMMUNITY_Q = {
 }
+-- RG.COMMUNITY_O[quest][objective text] = { {map, x, y}, ... }: where players got each objective done
+RG.COMMUNITY_O = {
+}

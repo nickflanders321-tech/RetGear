@@ -42,11 +42,20 @@ def spot(field):
     if not (0 < m < 100000 and 0 <= x <= 100 and 0 <= y <= 100): return None
     return (m, round(x), round(y), x, y, (p[3] if len(p) > 3 else '').strip()[:60])
 
-Q = {}
+Q, O = {}, {}
 for t in texts:
     if 'WPQ1' not in t: continue
     for line in t[t.index('WPQ1'):].splitlines()[1:]:
         parts = line.strip().strip('`').split('|')
+        if len(parts) == 4 and parts[0] == 'O' and parts[1].isdigit():   # where an objective got done
+            qid, key = int(parts[1]), parts[2].strip()[:80]
+            for pt in parts[3].split(';'):
+                f = pt.split(',')
+                try: m, x, y = int(f[0]), float(f[1]), float(f[2])
+                except (ValueError, IndexError): continue
+                if 0 < m < 100000 and 0 < x < 100 and 0 < y < 100 and key:
+                    O.setdefault(qid, {}).setdefault(key, collections.Counter())[(m, round(x), round(y))] += 1
+            continue
         if len(parts) < 6 or not parts[0].isdigit(): continue
         qid = int(parts[0])
         if qid <= 0 or qid > 10000000: continue
@@ -85,6 +94,17 @@ for qid in sorted(Q):
     bits.append('k = %d' % k)
     lines.append('  [%d] = { %s },' % (qid, ', '.join(bits)))
     kept += 1
+lines.append('}')
+# where players got objectives done: the spots reported most (any spot two players agree on, or the best one)
+lines.append('-- RG.COMMUNITY_O[quest][objective text] = { {map, x, y}, ... }: where players got each objective done')
+lines.append('RG.COMMUNITY_O = {')
+ko = 0
+for qid in sorted(O):
+    objs = []
+    for key in sorted(O[qid]):
+        best = [k for k, c in O[qid][key].most_common(4) if c >= 2] or [O[qid][key].most_common(1)[0][0]]
+        objs.append('[%s] = { %s }' % (lstr(key), ', '.join('{ %d, %d, %d }' % k for k in best)))
+    if objs: lines.append('  [%d] = { %s },' % (qid, ', '.join(objs))); ko += 1
 lines.append('}')
 out = os.path.join(os.path.dirname(OBJ) or '.', 'CommunityQuests.lua')
 open(out, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
