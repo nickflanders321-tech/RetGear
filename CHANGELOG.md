@@ -1,8 +1,8 @@
+# Changelog
+
 ## Unreleased
 
 - Auction prices now use a market value instead of only the cheapest listing, built the way TradeSkillMaster documents its AuctionDB market value (our own code): a full scan looks at the cheapest 30% of listings, stops at a 20% price jump, drops prices far from the average, and the last 14 days are blended with recent days counting most. Listings under 40% of the middle price are ignored, so one bait listing can't drag the price down. Tooltips and profit numbers show "market" first, then the cheapest listing right now. With TSM installed its market value (dbmarket) is the fallback instead of its minimum buyout.
-
-# Changelog
 
 ## v1.13.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
