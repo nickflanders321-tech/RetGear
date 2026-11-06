@@ -208,6 +208,7 @@ function RG.PinNextNode()
   for i = #types, 1, -1 do if bestNames[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = bestNames[i]; break end end
   local dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2])
   if not RG.Opt("arrow") then RG.db.arrow = true end
+  RG.db.arrowPaused = nil
   RG.PinWaypoint({ map, best[1], best[2], (ore or "Node") .. " " .. bestKind.word }, true)
   RG.Notify(string.format("Next %s: %s, %d yd %s", bestKind.word, ore or "node", bestD, dir))
   if RG.RefreshTracker then RG.RefreshTracker() end

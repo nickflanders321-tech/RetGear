@@ -490,6 +490,7 @@ function RG.SyncObjective(obj)
   end
   if not obj.wp or (IsInInstance and IsInInstance()) then return end
   if not (opt("arrow") and (opt("autoArrow") or obj.kind == "goal")) then return end
+  if RG.ArrowPaused and RG.ArrowPaused() then return end
   if obj.kind == "goal" then
     if obj.pinned ~= obj.key and cache.pinnedGoal ~= obj.key then
       cache.pinnedGoal = obj.key

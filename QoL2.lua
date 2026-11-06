@@ -207,7 +207,7 @@ local function runNext()
   else
     local q = list[1]
     run.current = q.id
-    RG.PinWaypoint(q.wp, true)
+    if not (RG.ArrowPaused and RG.ArrowPaused()) then RG.PinWaypoint(q.wp, true) end
     notify("Turn in " .. GOLD .. q.title .. "|r" .. (#list > 1 and (GREY .. "  (" .. (#list - 1) .. " more after this)|r") or ""))
   end
   if RG.RefreshTracker then RG.RefreshTracker() end
@@ -222,6 +222,7 @@ function RG.TurnInRun()
   local list = readyQuests()
   if #list == 0 then notify("No ready quests with a known turn-in spot"); return end
   run = { started = GetTime() }
+  if RG.db then RG.db.arrowPaused = nil end   -- you asked for the turn-in run
   RG.Print(GOLD .. "Turn-in run:|r " .. #list .. " quest" .. (#list > 1 and "s" or "") .. " ready. The arrow takes you to each one, nearest first.")
   runNext()
 end

@@ -2893,7 +2893,7 @@ local function build()
     return b
   end
   local a1 = hdrToggle("arrow", "Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow", "Arrow", "Turn the waypoint arrow on or off.",
-    function() RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end end, function() return RG.Opt("arrow") end, minus)
+    function() RG.ToggleArrow() end, function() return RG.ArrowOnState() end, minus)
   local a2 = hdrToggle("tracker", "Interface\\AddOns\\Waypath\\Media\\Icons\\Tracker", "Tracker", "Show or hide the quest tracker.",
     function() RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end end, function() return RG.Opt("tracker") end, a1)
   local a3 = hdrToggle("sounds", "Interface\\AddOns\\Waypath\\Media\\Icons\\Sound", "Sounds", "Pop-up sounds on or off.",

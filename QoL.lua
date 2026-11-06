@@ -363,7 +363,7 @@ local function menuItems()
   if not co then
     add("Guide", function() if RG.ToggleUI then RG.ToggleUI() end end)
     add("Tracker", function() RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end end, RG.Opt("tracker"))
-    add("Arrow", function() RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end end, RG.Opt("arrow"))
+    add("Arrow", function() RG.ToggleArrow() end, RG.ArrowOnState())
   end
   add("Trading cards", function() if RG.ShowArcade then RG.ShowArcade() end end)
   add("Arena", function() if RG.ShowBattle then RG.ShowBattle() end end)
@@ -426,7 +426,7 @@ function RG.MinimapButton()
     mm:SetScript("OnClick", function(self, btn)
       if btn == "RightButton" then if mmMenu and mmMenu:IsShown() then mmMenu:Hide() else showMenu(self) end
       elseif RG.CardsOnly and RG.CardsOnly() then if RG.ShowArcade then RG.ShowArcade() end
-      elseif IsShiftKeyDown and IsShiftKeyDown() then RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+      elseif IsShiftKeyDown and IsShiftKeyDown() then RG.ToggleArrow()
       elseif IsControlKeyDown and IsControlKeyDown() then if RG.ShowTab then RG.ShowTab("settings") end
       elseif RG.ToggleUI then RG.ToggleUI() end
     end)
@@ -507,7 +507,7 @@ BINDING_NAME_WAYPATH_SORT = "Sort my bags"
 function Waypath_Bind(action)
   if action == "toggle" then if RG.ToggleUI then RG.ToggleUI() end
   elseif action == "next" then SlashCmdList.WAYPATH("next")
-  elseif action == "arrow" then RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end; if RG.RefreshTracker then RG.RefreshTracker() end; RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+  elseif action == "arrow" then RG.ToggleArrow()
   elseif action == "tracker" then RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end
   elseif action == "undo" then SlashCmdList.WAYPATH("undo")
   elseif action == "sort" then if RG.SortBags then RG.SortBags(BankFrame and BankFrame:IsShown()) end end

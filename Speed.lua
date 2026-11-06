@@ -687,9 +687,9 @@ local function buildArrow()
   arrow:SetScript("OnMouseDown", function(self) self.dragged = false end)
   arrow:SetScript("OnMouseUp", function(self, btn)
     if btn == "LeftButton" and not self.dragged and IsShiftKeyDown and IsShiftKeyDown() and RG.SmartNext then RG.SmartNext(); return end   -- Shift-click: on to the next stop
-    if btn == "RightButton" then RG.ClearWaypoint(); return end
+    if btn == "RightButton" then RG.ArrowOff(); return end
     local now = GetTime()
-    if now - lastUp < 0.35 then lastUp = 0; RG.ClearWaypoint(); RG.Notify("Arrow off") else lastUp = now end
+    if now - lastUp < 0.35 then lastUp = 0; RG.ArrowOff() else lastUp = now end
   end)
   arrow:EnableMouseWheel(true)
   arrow:SetScript("OnMouseWheel", function(self, delta)
@@ -899,7 +899,12 @@ local function spfActive()
 end
 local refreshArrow
 function RG.RefreshArrow() if refreshArrow then refreshArrow() end end
+local wasOn
 refreshArrow = function()
+  -- switching the arrow back on (header button, minimap menu, Settings) also ends a pause
+  local on = RG.Opt("arrow")
+  if on and wasOn == false and RG.db then RG.db.arrowPaused = nil end
+  wasOn = on
   if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
   local has = C_Map and C_Map.HasUserWaypoint and C_Map.HasUserWaypoint()
   if has and spfActive() then if arrow then arrow:Hide() end return end
@@ -953,6 +958,7 @@ function RG.PinWaypoint(wp, quiet)
   if api then pcall(api.Navigate, "Waypath+", wp[1], wp[2] / 100, wp[3] / 100, wp[4]) end
   -- you asked for it (a click, not the route moving on by itself): if the arrow was switched off, it comes back on
   if not quiet and RG.db and not RG.Opt("arrow") then RG.db.arrow = true end
+  if not quiet and RG.db then RG.db.arrowPaused = nil end
   if RG.RefreshArrow then RG.RefreshArrow() end
   if not quiet then RG.Notify("Pinned " .. wp[4] .. ": follow the arrow") end
 end
@@ -963,14 +969,40 @@ function RG.ClearWaypoint()
   if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
   if arrow then arrow:Hide() end
 end
+-- You switched the arrow off (right-click or double-click it, or double-click its target): it stays off - the route moving
+-- on doesn't bring it back - until you point it somewhere yourself (click a quest, step or quest giver, Shift-click for
+-- the next stop, /wp way, or the Arrow button).
+function RG.ArrowOff()
+  if RG.db then RG.db.arrowPaused = true end
+  RG.ClearWaypoint()
+  RG.Notify("Arrow off: it stays off until you click a quest or step to follow")
+  if RG.RefreshTracker then RG.RefreshTracker() end
+end
+function RG.ArrowPaused() return RG.db and RG.db.arrowPaused and true or false end
+-- the Arrow switch (header button, minimap menu, key): off, or back on - a paused arrow comes straight back to the route
+function RG.ToggleArrow()
+  if not RG.db then return end
+  if RG.Opt("arrow") and not RG.db.arrowPaused then
+    RG.db.arrow = false
+  else
+    RG.db.arrow, RG.db.arrowPaused = true, nil
+    lastAuto = nil
+    if RG.MarkObjectiveDirty then RG.MarkObjectiveDirty() end
+    if RG.SyncObjective then pcall(RG.SyncObjective, RG.Objective and RG.Objective(true)) end
+  end
+  if RG.RefreshArrow then RG.RefreshArrow() end
+  if RG.RefreshTracker then RG.RefreshTracker() end
+  RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
+end
+function RG.ArrowOnState() return RG.Opt("arrow") and not (RG.db and RG.db.arrowPaused) end
 -- Double-click a quest, step or quest giver: arrow on to it, or off if it's already the target.
 function RG.ArrowTo(wp)
   if not wp then return end
   local cur = currentPin()
   if cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) then
-    RG.ClearWaypoint()
-    RG.Notify("Arrow off")
+    RG.ArrowOff()
   else
+    RG.db.arrowPaused = nil
     if not RG.Opt("arrow") then RG.db.arrow = true end
     RG.PinWaypoint(wp, true)
     RG.Notify("Arrow on: " .. wp[4])
@@ -1049,6 +1081,7 @@ function RG.AutoPin(key, wp)
   if RG.CardsOnly and RG.CardsOnly() then return end
   if corpse.active then return end    -- the way back to your body comes first
   if not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
+  if RG.db and RG.db.arrowPaused then return end   -- you switched it off: the route moving on doesn't bring it back
   if IsInInstance and IsInInstance() then return end
   local cur = currentPin()
   if cur and not samePin(cur, lastPlaced) then return end -- you placed your own pin: leave it
@@ -1063,6 +1096,7 @@ function RG.SetWaypoint(x, y)
   if not mapID or (C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(mapID)) then RG.Print("Can't place a pin here.") return end
   C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(mapID, x / 100, y / 100))
   lastPlaced = nil -- a pin you chose: auto-follow leaves it alone
+  RG.db.arrowPaused = nil
   if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   refreshArrow()
   RG.Notify(string.format("Pin set at %.1f, %.1f: follow the arrow", x, y))

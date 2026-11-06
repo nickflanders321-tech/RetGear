@@ -524,6 +524,7 @@ end
 function RG.Follow(wp)
   if not wp then return end
   if not RG.Opt("arrow") then RG.db.arrow = true; if RG.RefreshArrow then RG.RefreshArrow() end end
+  RG.db.arrowPaused = nil
   RG.PinWaypoint(wp)
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
