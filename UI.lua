@@ -54,10 +54,10 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Sections in the sidebar, each with its pages as tabs along the top. (The Group page is gone.)
 local SECTIONS = {
-  { key = "journey", label = "Journey", icon = "Interface\\Icons\\INV_Misc_Map_01", tabs = { "route", "plan", "flights" } },
-  { key = "equip",   label = "Gear",    icon = "Interface\\Icons\\INV_Chest_Chain_05", tabs = { "guide", "gear", "spec", "heal" } },
-  { key = "economy", label = "Economy", icon = "Interface\\Icons\\INV_Misc_Coin_02", tabs = { "prof", "fish", "ah", "gold", "mail" } },
-  { key = "cards",   label = "Cards",   icon = "Interface\\Icons\\INV_Misc_Ticket_Tarot_Portal_01", tabs = { "cards" } },
+  { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "plan", "flights" } },
+  { key = "equip",   label = "Gear",    icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Gear", tabs = { "guide", "gear", "spec", "heal" } },
+  { key = "economy", label = "Economy", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Economy", tabs = { "prof", "fish", "ah", "gold", "mail" } },
+  { key = "cards",   label = "Cards",   icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Cards", tabs = { "cards" } },
 }
 local GROUPS, PARENT = {}, {}
 for _, sec in ipairs(SECTIONS) do GROUPS[sec.key] = sec.tabs; for _, t in ipairs(sec.tabs) do PARENT[t] = sec.key end end
@@ -1000,7 +1000,9 @@ local function renderRoute()
         local rr = rem[i]
         n = n + 1
         setItem(getRow(n), nil, nil, rr[1], "", "", "", (rr[3] or 3) <= 1 and "gold" or nil, nil, true)
-        getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+        local rw = getRow(n)
+        rw.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Bell"); rw.icon:SetTexCoord(0, 1, 0, 1); rw.icon:SetVertexColor(T.gold[1], T.gold[2], T.gold[3], 0.95)
+        rw.iconBorder:SetColorTexture(0, 0, 0, 0)
         getRow(n).onClick = rr[2]
         if rr[4] and RG.ArrowTo then local wp = rr[4]; getRow(n).onClick = function() if rr[2] then rr[2]() end; RG.ArrowTo(wp) end end
       end
@@ -2559,8 +2561,8 @@ local function updateHeader()
     bits[#bits + 1] = math.floor(pct * 100) .. "%"
     local avg
     if RG.Pace then local _, _, a = RG.Pace(); avg = a end
-    if avg and avg > 0 then bits[#bits + 1] = "~" .. math.max(1, math.floor(avg * (1 - pct) / 60 + 0.5)) .. "m to " .. (lvl + 1) end
-    if rested and rested > 0 then bits[#bits + 1] = "rested" end
+    if avg and avg > 0 then bits[#bits + 1] = "~" .. math.max(1, math.floor(avg * (1 - pct) / 60 + 0.5)) .. "m" end
+    if rested and rested > 0 then bits[#bits + 1] = "|cff6fa8f0rested|r" end
   else bits[#bits + 1] = "max level" end
   sd.sub:SetText(table.concat(bits, " · "))
   sd.ring:SetVertexColor(unpack(T.gold))
@@ -2570,12 +2572,15 @@ local function updateHeader()
   for _, b in ipairs(sd.nav) do
     local on = b.key == cur
     b.bg:SetShown(on); b.bar:SetShown(on)
-    b.text:SetTextColor(unpack(on and T.text or T.dim)); b.icon:SetDesaturated(not on); b.icon:SetAlpha(on and 1 or 0.75)
+    b.text:SetTextColor(unpack(on and T.text or T.dim))
+    if on then b.icon:SetVertexColor(T.gold[1], T.gold[2], T.gold[3], 1) else b.icon:SetVertexColor(T.dim[1], T.dim[2], T.dim[3], 0.9) end
     local n = badge[b.key] or 0
     local full = sideWidth() == SIDE_W
     b.badge:SetShown(n > 0 and full); b.badgeT:SetText(n > 9 and "9+" or n); b.dot:SetShown(n > 0 and not full)
   end
   sd.settings.text:SetTextColor(unpack(state.tab == "settings" and T.gold or T.dim))
+  local sc = state.tab == "settings" and T.gold or T.dim
+  sd.settings.ic:SetVertexColor(sc[1], sc[2], sc[3], 0.95)
   -- the satchel
   sd.hearth:SetText(GetBindLocation and GetBindLocation() or "?")
   sd.gold:SetText(RG.Money and RG.Money(GetMoney and GetMoney() or 0) or "")
@@ -2639,7 +2644,7 @@ function RG.RefreshUINow()
   end
   for _, b in ipairs(frame.hdr or {}) do
     local on = b.isOn()
-    b.ic:SetDesaturated(not on); b.ic:SetVertexColor(on and T.gold[1] or 0.6, on and T.gold[2] or 0.6, on and T.gold[3] or 0.6, 1)
+    b.ic:SetVertexColor(on and T.gold[1] or T.dim[1] * 0.8, on and T.gold[2] or T.dim[2] * 0.8, on and T.gold[3] or T.dim[3] * 0.8, 1)
   end
   frame.scan:SetShown(state.tab == "ah")
   -- stack rows with their own heights
@@ -2728,7 +2733,7 @@ RG.UIRelayout = function() relayout(); RG.RefreshUI() end
 local function iconButton(parent, tex, size, tip, onClick)
   local b = CreateFrame("Button", nil, parent)
   b:SetSize(size, size)
-  b.ic = b:CreateTexture(nil, "ARTWORK"); b.ic:SetSize(size - 10, size - 10); b.ic:SetPoint("CENTER"); b.ic:SetTexture(tex)
+  b.ic = b:CreateTexture(nil, "ARTWORK"); b.ic:SetSize(size - 12, size - 12); b.ic:SetPoint("CENTER"); b.ic:SetTexture(tex); b.ic:SetVertexColor(T.dim[1], T.dim[2], T.dim[3], 1)
   b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.06)
   b:SetScript("OnClick", onClick)
   if tip then
@@ -2748,9 +2753,9 @@ local function buildSidebar()
   -- name and the fold button
   sd.logoText = sd:CreateFontString(nil, "OVERLAY"); font(sd.logoText, FONT_TITLE, 19); sd.logoText:SetPoint("TOPLEFT", 16, -16)
   sd.logoText:SetText("Waypath" .. GOLD .. "+|r"); sd.logoText:SetTextColor(unpack(T.text))
-  sd.collapse = iconButton(sd, "Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up", 26, "Fold the sidebar", function() RG.db.sideCollapsed = true; relayout(); RG.RefreshUINow() end)
+  sd.collapse = iconButton(sd, "Interface\\AddOns\\Waypath\\Media\\Icons\\FoldLeft", 24, "Fold the sidebar", function() RG.db.sideCollapsed = true; relayout(); RG.RefreshUINow() end)
   sd.collapse:SetPoint("TOPRIGHT", -10, -12)
-  sd.expand = iconButton(sd, "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up", 26, "Open the sidebar", function() RG.db.sideCollapsed = nil; relayout(); RG.RefreshUINow() end)
+  sd.expand = iconButton(sd, "Interface\\AddOns\\Waypath\\Media\\Icons\\FoldRight", 24, "Open the sidebar", function() RG.db.sideCollapsed = nil; relayout(); RG.RefreshUINow() end)
   sd.expand:SetPoint("BOTTOM", 0, 44)
   -- the character card: name, level, XP bar, a line about your pace
   local card = CreateFrame("Frame", nil, sd, "BackdropTemplate"); sd.card = card
@@ -2775,7 +2780,7 @@ local function buildSidebar()
     b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints(); b.bg:SetColorTexture(T.panel[1], T.panel[2], T.panel[3], 1)
     b.bar = b:CreateTexture(nil, "ARTWORK"); b.bar:SetWidth(2); b.bar:SetPoint("TOPLEFT"); b.bar:SetPoint("BOTTOMLEFT"); b.bar:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 1)
     b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.05)
-    b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetSize(22, 22); b.icon:SetPoint("LEFT", 12, 0); b.icon:SetTexture(sec.icon); b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetSize(18, 18); b.icon:SetPoint("LEFT", 12, 0); b.icon:SetTexture(sec.icon)
     b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 14); b.text:SetPoint("LEFT", b.icon, "RIGHT", 12, 0); b.text:SetText(sec.label)
     b.badge = CreateFrame("Frame", nil, b); b.badge:SetSize(20, 20); b.badge:SetPoint("RIGHT", -10, 0)
     local bb = b.badge:CreateTexture(nil, "ARTWORK"); bb:SetAllPoints(); bb:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); bb:SetVertexColor(T.gold[1], T.gold[2], T.gold[3], 1)
@@ -2809,7 +2814,7 @@ local function buildSidebar()
   -- settings at the very bottom
   local st = CreateFrame("Button", nil, sd); sd.settings = st
   st:SetSize(SIDE_W - 20, 34); st:SetPoint("BOTTOMLEFT", 10, 10)
-  st.ic = st:CreateTexture(nil, "ARTWORK"); st.ic:SetSize(16, 16); st.ic:SetPoint("LEFT", 12, 0); st.ic:SetTexture("Interface\\Icons\\Trade_Engineering"); st.ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  st.ic = st:CreateTexture(nil, "ARTWORK"); st.ic:SetSize(16, 16); st.ic:SetPoint("LEFT", 13, 0); st.ic:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Settings"); st.ic:SetVertexColor(T.dim[1], T.dim[2], T.dim[3], 0.9)
   st.text = st:CreateFontString(nil, "OVERLAY"); font(st.text, FONT_BODY, 13); st.text:SetPoint("LEFT", st.ic, "RIGHT", 10, 0); st.text:SetText("Settings")
   local sh = st:CreateTexture(nil, "HIGHLIGHT"); sh:SetAllPoints(); sh:SetColorTexture(1, 1, 1, 0.05)
   st:SetScript("OnClick", function() state.tab = "settings"; scroll:SetVerticalScroll(0); saveTab(); RG.RefreshUINow() end)
@@ -2876,24 +2881,24 @@ local function build()
   local minus = sizeBtn("A-", -0.1, plus)
   frame.hdr = {}
   local function hdrToggle(key, iconPath, tipTitle, tipText, action, isOn, anchor)
-    local b = panelButton(frame, "", 26, 20)
-    b:SetPoint("RIGHT", anchor, "LEFT", -8, 0)
-    b.ic = b:CreateTexture(nil, "OVERLAY"); b.ic:SetSize(14, 14); b.ic:SetPoint("CENTER"); b.ic:SetTexture(iconPath)
+    local b = CreateFrame("Button", nil, frame)
+    b:SetSize(26, 24); b:SetPoint("RIGHT", anchor, "LEFT", -4, 0)
+    local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.06)
+    b.ic = b:CreateTexture(nil, "OVERLAY"); b.ic:SetSize(15, 15); b.ic:SetPoint("CENTER"); b.ic:SetTexture(iconPath)
     b.isOn = isOn
     b:SetScript("OnClick", function() action(); RG.RefreshUI() end)
-    local enter, leave = b:GetScript("OnEnter"), b:GetScript("OnLeave")
-    b:SetScript("OnEnter", function(self) enter(self); GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText(tipTitle); if tipText then GameTooltip:AddLine(tipText, 1, 1, 1, true) end; GameTooltip:Show() end)
-    b:SetScript("OnLeave", function(self) leave(self); GameTooltip:Hide() end)
+    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText(tipTitle); if tipText then GameTooltip:AddLine(tipText, 1, 1, 1, true) end; GameTooltip:Show() end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     frame.hdr[#frame.hdr + 1] = b
     return b
   end
-  local a1 = hdrToggle("arrow", "Interface\\Minimap\\MinimapArrow", "Arrow", "Turn the waypoint arrow on or off.",
+  local a1 = hdrToggle("arrow", "Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow", "Arrow", "Turn the waypoint arrow on or off.",
     function() RG.db.arrow = not RG.Opt("arrow"); if RG.RefreshArrow then RG.RefreshArrow() end end, function() return RG.Opt("arrow") end, minus)
-  local a2 = hdrToggle("tracker", "Interface\\Icons\\INV_Misc_Book_09", "Tracker", "Show or hide the quest tracker.",
+  local a2 = hdrToggle("tracker", "Interface\\AddOns\\Waypath\\Media\\Icons\\Tracker", "Tracker", "Show or hide the quest tracker.",
     function() RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end end, function() return RG.Opt("tracker") end, a1)
-  local a3 = hdrToggle("sounds", "Interface\\Common\\VoiceChat-Speaker", "Sounds", "Pop-up sounds on or off.",
+  local a3 = hdrToggle("sounds", "Interface\\AddOns\\Waypath\\Media\\Icons\\Sound", "Sounds", "Pop-up sounds on or off.",
     function() RG.db.sounds = not RG.Opt("sounds") end, function() return RG.Opt("sounds") end, a2)
-  hdrToggle("report", "Interface\\Icons\\INV_Misc_Note_01", "Report this step", "Copy what you are on (step, quests, position) to paste into a bug report.",
+  hdrToggle("report", "Interface\\AddOns\\Waypath\\Media\\Icons\\Report", "Report this step", "Copy what you are on (step, quests, position) to paste into a bug report.",
     function() if RG.ReportStep then RG.ReportStep() end end, function() return true end, a3)
   tabs = {}
 

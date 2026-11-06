@@ -409,6 +409,12 @@ local function makeMinion(parent)
   m.top = top
   m.flashTex = top:CreateTexture(nil, "OVERLAY", nil, 6); m.flashTex:SetTexture(U.MEDIA .. "Glow"); m.flashTex:SetBlendMode("ADD"); m.flashTex:SetSize(170, 170); m.flashTex:SetPoint("CENTER", m, "TOP", 0, -44); m.flashTex:SetVertexColor(1, 0.9, 0.55, 1); m.flashTex:Hide()
   m.tile = top:CreateTexture(nil, "ARTWORK", nil, 2); m.tile:SetSize(88, 88); m.tile:SetPoint("TOP", m, "TOP", 0, 0)
+  -- the square portrait is trimmed to the frame's outline (arch, or shield for Taunt)
+  pcall(function()
+    m.mask = m:CreateMaskTexture(); m.mask:SetAllPoints(m.tile)
+    m.mask:SetTexture(U.MEDIA .. "MinionFrameMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    m.icon:AddMaskTexture(m.mask); m.back:AddMaskTexture(m.mask)
+  end)
   m.ice = top:CreateTexture(nil, "ARTWORK", nil, 3); m.ice:SetTexture(U.MEDIA .. "Ice"); m.ice:SetSize(84, 84); m.ice:SetPoint("CENTER", m.tile, "CENTER"); m.ice:SetAlpha(0.7); m.ice:Hide()
   m.bubble = top:CreateTexture(nil, "ARTWORK", nil, 4); m.bubble:SetTexture(U.MEDIA .. "Bubble"); m.bubble:SetBlendMode("ADD"); m.bubble:SetSize(96, 96); m.bubble:SetPoint("CENTER", m.tile, "CENTER"); m.bubble:Hide()
   m.atkB = top:CreateTexture(nil, "OVERLAY", nil, 1); m.atkB:SetTexture(U.MEDIA .. "BadgeAtk"); m.atkB:SetSize(32, 32); m.atkB:SetPoint("CENTER", m.tile, "BOTTOMLEFT", 8, 6)
@@ -417,7 +423,7 @@ local function makeMinion(parent)
   m.hpT = U.fs(top, "title", 17, "OVERLAY", "OUTLINE"); m.hpT:SetPoint("CENTER", m.hpB, "CENTER", 0, 0)
   -- the name sits inside the tile, on a dark band across the top: nothing hangs below the tile to run into the hero or the turn banner
   m.nameBand = top:CreateTexture(nil, "ARTWORK", nil, 3); m.nameBand:SetColorTexture(0.02, 0.015, 0.05, 0.62)
-  m.nameBand:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 4, -4); m.nameBand:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -4, -4); m.nameBand:SetHeight(14)
+  m.nameBand:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -3); m.nameBand:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -3); m.nameBand:SetHeight(14)
   m.name = U.fs(top, "head", 10, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "TOP", 0, -6); m.name:SetWidth(MW - 10); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
   m.zz = U.fs(top, "title", 14, "OVERLAY", "OUTLINE"); m.zz:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -20); m.zz:SetTextColor(0.7, 0.8, 1); m.zz:SetText("Zz")
   m.fx = U.fs(top, "head", 9, "OVERLAY", "OUTLINE"); m.fx:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -20); m.fx:SetTextColor(1, 0.85, 0.5)
@@ -464,7 +470,8 @@ local function paintMinion(w, m, side)
   else U.hideScene(w.scn) end
   w.icon:SetSize(medal and 40 or 66, medal and 40 or 66); w.icon:SetShown(not shownModel and pk ~= "scene")
   local iron = m.kw.taunt
-  w.tile:SetTexture(U.MEDIA .. (iron and "TileIron" or "Tile"))
+  w.tile:SetTexture(U.MEDIA .. (iron and "MinionTaunt" or "MinionFrame"))
+  if rawget(w, "mask") then pcall(w.mask.SetTexture, w.mask, U.MEDIA .. (iron and "MinionTauntMask" or "MinionFrameMask"), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE") end
   local c = side == 1 and TILE_ME or TILE_FOE
   w.tile:SetVertexColor(c[1], c[2], c[3], m.kw.stealth and 0.7 or 1)
   w.icon:SetAlpha(m.kw.stealth and 0.45 or 1)
@@ -489,9 +496,14 @@ local function makeHero(parent, side)
   local h = CreateFrame("Button", nil, parent)
   h:SetSize(112, 112); h.side = side
   h.glow = h:CreateTexture(nil, "BACKGROUND"); h.glow:SetTexture(U.MEDIA .. "Glow"); h.glow:SetBlendMode("ADD"); h.glow:SetSize(190, 190); h.glow:SetPoint("CENTER"); h.glow:Hide()
-  h.back = h:CreateTexture(nil, "BACKGROUND", nil, 2); h.back:SetColorTexture(0.071, 0.063, 0.048, 1); h.back:SetSize(82, 82); h.back:SetPoint("CENTER")
-  h.icon = h:CreateTexture(nil, "ARTWORK", nil, 1); h.icon:SetSize(82, 82); h.icon:SetPoint("CENTER"); h.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  h.tile = h:CreateTexture(nil, "ARTWORK", nil, 2); h.tile:SetTexture(U.MEDIA .. "Tile"); h.tile:SetAllPoints(h); h.tile:SetVertexColor((side == 1 and TILE_ME or TILE_FOE)[1], (side == 1 and TILE_ME or TILE_FOE)[2], (side == 1 and TILE_ME or TILE_FOE)[3], 1)
+  h.back = h:CreateTexture(nil, "BACKGROUND", nil, 2); h.back:SetColorTexture(0.071, 0.063, 0.048, 1); h.back:SetSize(76, 76); h.back:SetPoint("CENTER")
+  h.icon = h:CreateTexture(nil, "ARTWORK", nil, 1); h.icon:SetSize(76, 76); h.icon:SetPoint("CENTER"); h.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  h.tile = h:CreateTexture(nil, "ARTWORK", nil, 2); h.tile:SetTexture(U.MEDIA .. "HeroFrame"); h.tile:SetAllPoints(h);
+  pcall(function()
+    h.mask = h:CreateMaskTexture(); h.mask:SetAllPoints(h)
+    h.mask:SetTexture(U.MEDIA .. "HeroFrameMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    h.icon:AddMaskTexture(h.mask); h.back:AddMaskTexture(h.mask)
+  end) h.tile:SetVertexColor((side == 1 and TILE_ME or TILE_FOE)[1], (side == 1 and TILE_ME or TILE_FOE)[2], (side == 1 and TILE_ME or TILE_FOE)[3], 1)
   h.ice = h:CreateTexture(nil, "ARTWORK", nil, 3); h.ice:SetTexture(U.MEDIA .. "Ice"); h.ice:SetAllPoints(h); h.ice:SetAlpha(0.7); h.ice:Hide()
   h.hpB = h:CreateTexture(nil, "OVERLAY", nil, 1); h.hpB:SetTexture(U.MEDIA .. "BadgeHp"); h.hpB:SetSize(42, 42); h.hpB:SetPoint("CENTER", h, "BOTTOMRIGHT", -6, 8)
   h.hpT = U.fs(h, "title", 22, "OVERLAY", "OUTLINE"); h.hpT:SetPoint("CENTER", h.hpB, "CENTER", 0, 0)
@@ -528,18 +540,8 @@ local function buildWindow()
   win:SetBackdropColor(0.165, 0.094, 0.043, 1); win:SetBackdropBorderColor(0.65, 0.48, 0.23, 1)
   win.night = win:CreateTexture(nil, "BACKGROUND", nil, 0); win.night:SetColorTexture(0.11, 0.07, 0.035, 1); win.night:SetPoint("TOPLEFT", 10, -10); win.night:SetPoint("BOTTOMRIGHT", -10, 10)
   win.tableF = CreateFrame("Frame", nil, win); win.tableF:SetAllPoints(win); win.tableF:SetFrameLevel(U.lv(win) + 3)
-  do
-    local t = win.tableF
-    local function tex(layer, sub, r, g, b, a) local x = t:CreateTexture(nil, layer, nil, sub); x:SetColorTexture(r, g, b, a or 1); return x end
-    local rim = tex("BACKGROUND", 0, 0.29, 0.18, 0.086); rim:SetPoint("TOPLEFT", 12, -12); rim:SetPoint("BOTTOMRIGHT", -12, 12)
-    local brass = tex("BACKGROUND", 1, 0.65, 0.48, 0.23); brass:SetPoint("TOPLEFT", 18, -18); brass:SetPoint("BOTTOMRIGHT", -18, 18)
-    local mine = tex("BACKGROUND", 2, 0.49, 0.37, 0.23); mine:SetPoint("TOPLEFT", 21, -21); mine:SetPoint("BOTTOMRIGHT", -21, 21)
-    local foe = tex("BACKGROUND", 3, 0.45, 0.335, 0.2); foe:SetPoint("TOPLEFT", 21, -21); foe:SetPoint("BOTTOMRIGHT", t, "TOPRIGHT", -21, -(H - 378))
-    local seam = tex("ARTWORK", 0, 0.65, 0.48, 0.23); seam:SetHeight(2); seam:SetPoint("LEFT", t, "BOTTOMLEFT", 40, 378); seam:SetPoint("RIGHT", t, "BOTTOMRIGHT", -200, 378)
-    local seamS = tex("ARTWORK", 0, 0.29, 0.18, 0.086, 0.8); seamS:SetHeight(1); seamS:SetPoint("TOPLEFT", seam, "BOTTOMLEFT"); seamS:SetPoint("TOPRIGHT", seam, "BOTTOMRIGHT")
-    -- the side lane for the deck, mana and the End Turn button: a darker wooden shelf
-    local shelf = tex("BACKGROUND", 4, 0.29, 0.18, 0.086, 0.55); shelf:SetPoint("TOPLEFT", t, "TOPRIGHT", -190, -21); shelf:SetPoint("BOTTOMRIGHT", -21, 21)
-  end
+  -- the painted table (tools/arcade/art_table.py): carved frame, leather field, minion rows, hero alcoves, the shelf
+  win.table = win.tableF:CreateTexture(nil, "BACKGROUND"); win.table:SetTexture(U.MEDIA .. "Tabletop"); win.table:SetPoint("TOPLEFT", 2, -2); win.table:SetPoint("BOTTOMRIGHT", -2, 2)
   win.tableF:Hide()
   -- the table: a painted backdrop in the colours of your hero's class, with the table drawn over it
   win.scnF = CreateFrame("Frame", nil, win); win.scnF:SetPoint("TOPLEFT", 2, -2); win.scnF:SetPoint("BOTTOMRIGHT", -2, 2); win.scnF:SetFrameLevel(U.lv(win) + 1)

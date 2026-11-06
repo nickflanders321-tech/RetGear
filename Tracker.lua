@@ -338,7 +338,7 @@ local function build()
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
 
   -- the compass: points where the arrow points
-  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(22, 22); crest:SetPoint("TOPLEFT", 10, -10); crest:SetTexture("Interface\\Minimap\\MinimapArrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 12, -12); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
   tr.crest = crest
   tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:SetPoint("TOPLEFT", crest, "TOPRIGHT", 8, 2); tr.title:SetText("Waypath+")
   if not tr.title:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(tr.title, 14) end
@@ -395,10 +395,10 @@ local function build()
   end
   tr.min = hdrBtn("-", -8, function() RG.db.trackerCollapsed = not RG.db.trackerCollapsed; RG.RefreshTracker() end, "Collapse or expand")
   local g = hdrBtn("", -30, function() if RG.ToggleUI then RG.ToggleUI() end end, "Open the full guide")
-  local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(14, 14); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\Icons\\INV_Misc_Book_09"); gi:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(14, 14); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Journey"); gi:SetVertexColor(0.66, 0.62, 0.54)
   -- arrow on/off switch
   local ab = CreateFrame("Button", nil, tr); ab:SetSize(20, 20); ab:SetPoint("TOPRIGHT", -52, -8)
-  ab.icon = ab:CreateTexture(nil, "OVERLAY"); ab.icon:SetSize(16, 16); ab.icon:SetPoint("CENTER"); ab.icon:SetTexture("Interface\\Minimap\\MinimapArrow")
+  ab.icon = ab:CreateTexture(nil, "OVERLAY"); ab.icon:SetSize(13, 13); ab.icon:SetPoint("CENTER"); ab.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow")
   ab:SetScript("OnClick", function(self)
     RG.db.arrow = not RG.Opt("arrow")
     if RG.RefreshArrow then RG.RefreshArrow() end
