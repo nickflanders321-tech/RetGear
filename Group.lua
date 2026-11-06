@@ -267,7 +267,7 @@ function RG.Reminders()
   elseif not grouped() then
     local n = 0
     for _, q in ipairs(RG.GroupQuestInfo()) do if q.tag and (q.tag:find("Group") or q.tag:find("Elite")) and not q.complete then n = n + 1 end end
-    if n > 0 then out[#out + 1] = { "|TInterface\\Icons\\INV_Misc_GroupNeedMore:14:14|t " .. GOLD .. n .. " group quest" .. (n > 1 and "s" or "") .. " in your log|r" .. GREY .. ": find a group (Group tab)|r", function() if RG.ShowTab then RG.ShowTab("group") end end, 6 } end
+    if n > 0 then out[#out + 1] = { "|TInterface\\Icons\\INV_Misc_GroupNeedMore:14:14|t " .. GOLD .. n .. " group quest" .. (n > 1 and "s" or "") .. " in your log|r" .. GREY .. ": find a group|r", function() if RG.ShowTab then RG.ShowTab("group") end end, 6 } end
   end
   return out
 end
@@ -319,7 +319,7 @@ local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd, rest = (msg or ""):match("^%s*(%S+)%s*(.*)$")
   cmd = cmd and cmd:lower()
-  if cmd == "group" then if RG.ShowTab then RG.ShowTab("group") end return end
+  if cmd == "group" then RG.Print("The Group page was retired. /wp lfg <dungeon> still posts a group search.") return end
   if cmd == "lfg" then
     local s = RG.GroupSuggestions()[1]
     if rest and rest ~= "" then RG.PostLFG(rest) elseif s then RG.PostLFG(s.name) else RG.Print("Usage: /wp lfg Scarlet Monastery") end

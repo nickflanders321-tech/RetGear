@@ -55,7 +55,7 @@ local FREE_PACKS = (time and time() or LAUNCH) < LAUNCH
 -- for a light player and about 90% for a heavy one. COLLECTOR_LUCK and the pack prices tune it.
 -- three kinds of pack, and every card in the game can come out of any of them
 local PACKS = {
-  normal = { name = "Pack", size = 5, price = 52, rares = 1, weight = 1, col = { 0.72, 0.84, 1 } },
+  normal = { name = "Pack", size = 5, price = 52, rares = 1, weight = 1, col = { 0.956, 0.853, 0.649 } },
   jumbo = { name = "Jumbo Pack", size = 8, price = 84, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
   super = { name = "Super Jumbo Pack", size = 12, price = 120, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
 }
@@ -477,6 +477,12 @@ function RG.ArcadeOpenPack(kind)
   return got, meta.free, notes, meta
 end
 
+-- packs waiting to be opened (earned, free or bought): the badge on Cards in the main window
+function RG.ArcadePacksWaiting()
+  local a = store(); if not a then return 0 end
+  pcall(dailyCheck)
+  return tokenCount(a, "normal") + tokenCount(a, "jumbo") + tokenCount(a, "super")
+end
 -- how many seals could "Break all" open right now
 function RG.ArcadeSealsReady()
   local a = store(); if not a then return 0 end
@@ -1001,13 +1007,15 @@ local function gbtn(parent, label, w, h, fn, big)
   b.label = fs(b, "head", big and 15 or 12.5); b.label:SetPoint("CENTER", 0, 0)
   b.enabled, b.active = true, false
   function b:Paint(hover)
-    local r, g, bl, a = 0.09, 0.07, 0.17, 0.95
-    if self.active then r, g, bl = 0.22, 0.16, 0.06 end
-    if hover and self.enabled then r, g, bl = r + 0.07, g + 0.05, bl + 0.1 end
+    -- Fireside: carved wood buttons with a brass rim; the one to press now is solid brass
+    local r, g, bl, a = 0.25, 0.155, 0.08, 0.97
+    if self.active then r, g, bl = 0.95, 0.78, 0.29 end
+    if hover and self.enabled then r, g, bl = math.min(1, r + 0.06), math.min(1, g + 0.045), math.min(1, bl + 0.025) end
     self:SetBackdropColor(r, g, bl, a)
-    if not self.enabled then self:SetBackdropBorderColor(0.3, 0.27, 0.22, 0.8); self.label:SetTextColor(0.45, 0.43, 0.5)
-    elseif self.active or hover then self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1); self.label:SetTextColor(1, 0.95, 0.75)
-    else self:SetBackdropBorderColor(0.6, 0.5, 0.28, 0.9); self.label:SetTextColor(0.9, 0.84, 0.62) end
+    if not self.enabled then self:SetBackdropBorderColor(0.35, 0.25, 0.14, 0.8); self.label:SetTextColor(0.55, 0.47, 0.36)
+    elseif self.active then self:SetBackdropBorderColor(0.35, 0.22, 0.04, 1); self.label:SetTextColor(0.23, 0.14, 0.02)
+    elseif hover then self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1); self.label:SetTextColor(1, 0.95, 0.78)
+    else self:SetBackdropBorderColor(0.65, 0.48, 0.23, 0.95); self.label:SetTextColor(0.95, 0.88, 0.7) end
   end
   function b:SetText(t) self.label:SetText(t) end
   function b:SetEnabled(on) self.enabled = on and true or false; self:Paint(false) end
@@ -1025,8 +1033,8 @@ local function gtab(parent, label, w, fn)
   b.label = fs(b, "head", 14); b.label:SetPoint("CENTER", 0, 1); b.label:SetText(label)
   b.line = b:CreateTexture(nil, "OVERLAY"); b.line:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 1); b.line:SetHeight(2)
   b.line:SetPoint("BOTTOMLEFT", 8, 0); b.line:SetPoint("BOTTOMRIGHT", -8, 0)
-  function b:SetActive(on) self.on = on and true or false; self.line:SetShown(self.on); if self.on then self.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]) else self.label:SetTextColor(0.84, 0.8, 0.96) end end
-  b:SetScript("OnEnter", function(self) if not self.on then self.label:SetTextColor(0.9, 0.85, 1) end end)
+  function b:SetActive(on) self.on = on and true or false; self.line:SetShown(self.on); if self.on then self.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]) else self.label:SetTextColor(0.971, 0.867, 0.659) end end
+  b:SetScript("OnEnter", function(self) if not self.on then self.label:SetTextColor(1, 0.917, 0.697) end end)
   b:SetScript("OnLeave", function(self) self:SetActive(self.on) end)
   b:SetScript("OnClick", function() if fn then fn() end end)
   b:SetActive(false)
@@ -1132,8 +1140,8 @@ local function makeCard(parent, w)
   f.nameB:SetJustifyH("CENTER"); f.nameB:SetJustifyV("TOP"); f.nameB:Hide()
   f.pow = fs(f.top, "title", 17 * u); f.pow:SetPoint("CENTER", f, "TOPLEFT", 208 * u, -327 * u); f.pow:SetTextColor(1, 0.92, 0.7)
   f.powLabel = fs(f.top, "head", 6.5 * u); f.powLabel:SetPoint("CENTER", f, "TOPLEFT", 207 * u, -314 * u); f.powLabel:SetTextColor(0.75, 0.7, 0.62); f.powLabel:SetText("POWER")
-  f.num = fs(f.top, "head", 8 * u); f.num:SetPoint("LEFT", f, "TOPLEFT", 18 * u, -342 * u); f.num:SetTextColor(0.62, 0.58, 0.78)
-  f.fin = fs(f.top, "head", 8 * u); f.fin:SetPoint("RIGHT", f, "TOPLEFT", 158 * u, -342 * u); f.fin:SetTextColor(0.62, 0.58, 0.78); f.fin:SetJustifyH("RIGHT")
+  f.num = fs(f.top, "head", 8 * u); f.num:SetPoint("LEFT", f, "TOPLEFT", 18 * u, -342 * u); f.num:SetTextColor(0.739, 0.66, 0.502)
+  f.fin = fs(f.top, "head", 8 * u); f.fin:SetPoint("RIGHT", f, "TOPLEFT", 158 * u, -342 * u); f.fin:SetTextColor(0.739, 0.66, 0.502); f.fin:SetJustifyH("RIGHT")
   f.count = fs(f.top, "title", 13 * u, "OVERLAY", "OUTLINE"); f.count:SetPoint("TOPRIGHT", f, "TOPLEFT", 235 * u, -49 * u); f.count:SetTextColor(1, 0.95, 0.7)
   f.pin = f.top:CreateTexture(nil, "OVERLAY"); f.pin:SetTexture("Interface\\Cooldown\\star4"); f.pin:SetBlendMode("ADD"); f.pin:SetSize(20 * u, 20 * u)
   f.pin:SetPoint("TOPLEFT", f, "TOPLEFT", 20 * u, -48 * u); f.pin:SetVertexColor(1, 0.85, 0.3); f.pin:Hide()
@@ -1267,7 +1275,7 @@ end
 
 -- small cards: the name goes on the parchment in a size you can read (two lines if it needs them),
 -- with the effect or tier line beneath it. The tiny name plate on top stays empty.
-local FINCOL = { { 0.72, 0.72, 0.8 }, { 0.5, 0.74, 1 }, { 0.86, 0.62, 1 }, { 1, 0.86, 0.42 } }   -- header label colour by finish
+local FINCOL = { { 0.836, 0.747, 0.567 }, { 0.5, 0.74, 1 }, { 0.86, 0.62, 1 }, { 1, 0.86, 0.42 } }   -- header label colour by finish
 local function layoutText(w, big, name, text)
   local u = w.u
   w.text:ClearAllPoints()
@@ -1337,11 +1345,11 @@ local function paint(w, card, finish, copies)
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
     if scene then w.art:Hide() end
     w.nameB:Hide(); w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
-    w.num:SetTextColor(0.5, 0.45, 0.6)
+    w.num:SetTextColor(0.579, 0.517, 0.393)
     return
   end
   w.body:Show(); w.frameTex:Show(); w.slot:Hide(); w.gem:Show(); w.glow:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
-  w.num:SetTextColor(0.62, 0.58, 0.78)
+  w.num:SetTextColor(0.739, 0.66, 0.502)
   local fx = FX[finish]
   w.fxset = fx
   local kc = KINDCOL[card.kind] or KINDCOL[1]
@@ -1518,8 +1526,10 @@ end
 local function darkPanel(f, w, h)
   f:SetSize(w, h)
   f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 2 })
-  f:SetBackdropColor(0.04, 0.03, 0.09, 0.98); f:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
-  local night = f:CreateTexture(nil, "BACKGROUND", nil, 1); night:SetTexture(MEDIA .. "Night"); night:SetPoint("TOPLEFT", 2, -2); night:SetPoint("BOTTOMRIGHT", -2, 2); night:SetAlpha(0.9)
+  -- Fireside: a carved wooden frame, brass trim, a dark walnut inlay
+  f:SetBackdropColor(0.165, 0.094, 0.043, 0.99); f:SetBackdropBorderColor(0.65, 0.48, 0.23, 1)
+  local inlay = f:CreateTexture(nil, "BACKGROUND", nil, 0); inlay:SetColorTexture(0.29, 0.18, 0.086, 1); inlay:SetPoint("TOPLEFT", 8, -8); inlay:SetPoint("BOTTOMRIGHT", -8, 8)
+  local night = f:CreateTexture(nil, "BACKGROUND", nil, 1); night:SetColorTexture(0.11, 0.07, 0.035, 1); night:SetPoint("TOPLEFT", 11, -11); night:SetPoint("BOTTOMRIGHT", -11, 11)
   local corners = {}
   for i = 1, 4 do
     local c = f:CreateTexture(nil, "OVERLAY"); c:SetTexture(MEDIA .. "Corner"); c:SetSize(46, 46)
@@ -1576,7 +1586,7 @@ local function makeCover(card)
   end)
   c:SetScript("OnMouseDown", function(self)
     if self.flipping == true then return end
-    local col = self.peekCol or { 0.6, 0.6, 0.65 }
+    local col = self.peekCol or { 0.691, 0.617, 0.469 }
     self.peek:SetColorTexture(col[1], col[2], col[3], 1)
     self.holding = true; self:SetScript("OnUpdate", peelTick)
   end)
@@ -1816,10 +1826,10 @@ function RG.ArcadeShowPull(sender, card, finish)
     toast:SetFrameStrata("DIALOG"); toast:SetPoint("TOP", UIParent, "TOP", 0, -170)
     darkPanel(toast, 340, 200)
     toast.card = makeCard(toast, 112); toast.card:SetPoint("LEFT", 22, 0); toast.card.noTip = true
-    toast.head = fs(toast, "head", 12); toast.head:SetPoint("TOPLEFT", toast.card, "TOPRIGHT", 14, -2); toast.head:SetWidth(170); toast.head:SetJustifyH("LEFT"); toast.head:SetTextColor(0.78, 0.74, 0.92)
+    toast.head = fs(toast, "head", 12); toast.head:SetPoint("TOPLEFT", toast.card, "TOPRIGHT", 14, -2); toast.head:SetWidth(170); toast.head:SetJustifyH("LEFT"); toast.head:SetTextColor(0.911, 0.813, 0.618)
     toast.name = fs(toast, "title", 14); toast.name:SetPoint("TOPLEFT", toast.head, "BOTTOMLEFT", 0, -8); toast.name:SetWidth(170); toast.name:SetJustifyH("LEFT")
     toast.kind = fs(toast, "body", 12); toast.kind:SetPoint("TOPLEFT", toast.name, "BOTTOMLEFT", 0, -8); toast.kind:SetWidth(170); toast.kind:SetJustifyH("LEFT"); toast.kind:SetTextColor(0.9, 0.86, 0.74)
-    toast.hint = fs(toast, "body", 11); toast.hint:SetPoint("BOTTOMRIGHT", -14, 10); toast.hint:SetTextColor(0.6, 0.58, 0.72); toast.hint:SetText("click to close")
+    toast.hint = fs(toast, "body", 11); toast.hint:SetPoint("BOTTOMRIGHT", -14, 10); toast.hint:SetTextColor(0.709, 0.633, 0.481); toast.hint:SetText("click to close")
     toast.age = 0
     toast:SetScript("OnClick", function(self) self:Hide() end)
     toast:SetScript("OnUpdate", function(self, dt)
@@ -1930,7 +1940,7 @@ local function showReveal(got, notes, meta)
     pq.rows = {}
     for i = 1, 4 do
       local r = {}
-      r.lab = fs(pq, "head", 10.5); r.lab:SetPoint("TOPLEFT", 22, -(12 + (i - 1) * 24)); r.lab:SetWidth(96); r.lab:SetJustifyH("LEFT"); r.lab:SetTextColor(0.66, 0.6, 0.8)
+      r.lab = fs(pq, "head", 10.5); r.lab:SetPoint("TOPLEFT", 22, -(12 + (i - 1) * 24)); r.lab:SetWidth(96); r.lab:SetJustifyH("LEFT"); r.lab:SetTextColor(0.769, 0.687, 0.522)
       r.val = fs(pq, "body", 13); r.val:SetPoint("TOPLEFT", 124, -(11 + (i - 1) * 24)); r.val:SetWidth(540); r.val:SetJustifyH("LEFT"); r.val:SetTextColor(0.93, 0.89, 0.78)
       if r.val.SetWordWrap then r.val:SetWordWrap(false) end
       r.line = pq:CreateTexture(nil, "ARTWORK"); r.line:SetColorTexture(1, 1, 1, 0.07); r.line:SetHeight(1); r.line:SetPoint("TOPLEFT", 16, -(8 + (i - 1) * 24 - 0)); r.line:SetPoint("TOPRIGHT", -12, -(8 + (i - 1) * 24))
@@ -1973,10 +1983,10 @@ local function showReveal(got, notes, meta)
     reveal.share:SetPoint("BOTTOM", -160, 22); reveal.share:Hide()
     -- the sound switch is a quiet text link in the corner
     local sn = CreateFrame("Button", nil, reveal); sn:SetSize(96, 20); sn:SetPoint("BOTTOMLEFT", 34, 27)
-    sn.label = fs(sn, "head", 11); sn.label:SetPoint("LEFT", 0, 0); sn.label:SetTextColor(0.6, 0.56, 0.7)
+    sn.label = fs(sn, "head", 11); sn.label:SetPoint("LEFT", 0, 0); sn.label:SetTextColor(0.694, 0.62, 0.471)
     function sn:SetText(t) self.label:SetText(t) end
     sn:SetScript("OnEnter", function(self) self.label:SetTextColor(1, 0.92, 0.7) end)
-    sn:SetScript("OnLeave", function(self) self.label:SetTextColor(0.6, 0.56, 0.7) end)
+    sn:SetScript("OnLeave", function(self) self.label:SetTextColor(0.694, 0.62, 0.471) end)
     sn:SetScript("OnClick", function(self)
       local a = store(); if not a then return end
       a.mute = not a.mute
@@ -2198,7 +2208,7 @@ local function showReveal(got, notes, meta)
     c.peel, c.lift, c.holding = 0, 0, false; c.fold:Hide(); c.peek:Hide(); c:SetHeight(w.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
     c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.cued = false
     c.rare = (g.finish >= 3 or g.card.tier == 6) and true or false
-    c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.6, 0.6, 0.65 })))
+    c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.691, 0.617, 0.469 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
     if g.finish >= 2 or g.card.tier >= 5 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
@@ -2279,10 +2289,10 @@ local function openDetail(c)
     detail.card = makeCard(detail, 230); detail.card:SetPoint("TOPLEFT", 30, -40); detail.card:SetFrameLevel(lv(detail) + 3); detail.card.noTip = true
     local X0 = 290
     detail.name = fs(detail, "title", 20); detail.name:SetPoint("TOPLEFT", X0, -36); detail.name:SetWidth(320); detail.name:SetJustifyH("LEFT"); detail.name:SetWordWrap(true)
-    detail.kind = fs(detail, "head", 12); detail.kind:SetPoint("TOPLEFT", detail.name, "BOTTOMLEFT", 0, -4); detail.kind:SetTextColor(0.7, 0.66, 0.85)
+    detail.kind = fs(detail, "head", 12); detail.kind:SetPoint("TOPLEFT", detail.name, "BOTTOMLEFT", 0, -4); detail.kind:SetTextColor(0.825, 0.737, 0.56)
     local rule = detail:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(320, 14); rule:SetPoint("TOPLEFT", detail.kind, "BOTTOMLEFT", 0, -6)
     detail.flavor = fs(detail, "body", 14); detail.flavor:SetPoint("TOPLEFT", rule, "BOTTOMLEFT", 0, -6); detail.flavor:SetWidth(320); detail.flavor:SetJustifyH("LEFT"); detail.flavor:SetTextColor(0.86, 0.82, 0.7); detail.flavor:SetSpacing(3)
-    detail.info = fs(detail, "body", 13); detail.info:SetPoint("TOPLEFT", detail.flavor, "BOTTOMLEFT", 0, -10); detail.info:SetWidth(320); detail.info:SetJustifyH("LEFT"); detail.info:SetTextColor(0.7, 0.68, 0.85); detail.info:SetSpacing(3)
+    detail.info = fs(detail, "body", 13); detail.info:SetPoint("TOPLEFT", detail.flavor, "BOTTOMLEFT", 0, -10); detail.info:SetWidth(320); detail.info:SetJustifyH("LEFT"); detail.info:SetTextColor(0.833, 0.743, 0.565); detail.info:SetSpacing(3)
     local close = gbtn(detail, "X", 26, 24, function() detail:Hide() end); close:SetPoint("TOPRIGHT", -14, -14)
     detail.prints = {}
     for k = 1, 4 do
@@ -2334,12 +2344,41 @@ local function cell_click(self, btn)
   else openDetail(c) end
 end
 
+-- Drag the bottom-right corner to make a card window bigger or smaller (it keeps its shape; the size is remembered
+-- in your card save under `key`). Double-click the corner for the standard size.
+local function scaleGrip(f, key, base)
+  local g = CreateFrame("Button", nil, f)
+  g:SetSize(18, 18); g:SetPoint("BOTTOMRIGHT", -6, 6); g:SetFrameLevel(lv(f) + 90)
+  g:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up"); g:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+  g:SetScript("OnMouseDown", function(self)
+    self.sx = GetCursorPosition(); self.s0 = f:GetScale(); self.w0 = f:GetWidth() * f:GetEffectiveScale()
+    self:SetScript("OnUpdate", function(gg)
+      local cx = GetCursorPosition()
+      local sc = math.max(0.45, math.min(1.6, gg.s0 * (gg.w0 + (cx - gg.sx)) / gg.w0))
+      f:SetScale(sc)
+    end)
+  end)
+  g:SetScript("OnMouseUp", function(self)
+    self:SetScript("OnUpdate", nil)
+    local a = store(); local b = (base and base()) or 1
+    if a then a[key] = math.floor(f:GetScale() / b * 100 + 0.5) / 100 end
+  end)
+  g:SetScript("OnDoubleClick", function() local a = store(); if a then a[key] = nil end; f:SetScale((base and base()) or 1) end)
+  g:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT"); GameTooltip:SetText("Drag to resize"); GameTooltip:AddLine("Make it small and keep playing beside the game. Double-click for the standard size.", 1, 1, 1, true); GameTooltip:Show() end)
+  g:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  return g
+end
+
 local function build()
   frame = CreateFrame("Frame", "WaypathArcade", UIParent, "BackdropTemplate")
   frame:SetPoint("CENTER"); frame:SetFrameStrata("DIALOG")
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving); frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
   frame.night = darkPanel(frame, WINW, WINH)
+  frame.grip = scaleGrip(frame, "uiScale", function()
+    local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
+    return (type(ph) == "number" and ph > 0 and ph < WINH + 30) and math.max(0.6, (ph - 30) / WINH) or 1
+  end)
   frame:SetClampedToScreen(true)
   tinsert(UISpecialFrames, "WaypathArcade")
   -- a slowly turning circle behind the cards, and drifting motes
@@ -2366,13 +2405,13 @@ local function build()
   -- title plate
   local plate = frame:CreateTexture(nil, "ARTWORK"); plate:SetTexture(MEDIA .. "Plate"); plate:SetSize(380, 48); plate:SetPoint("TOP", 0, -12)
   frame.title = fs(frame, "title", 22); frame.title:SetPoint("CENTER", plate, "CENTER", 0, 0); frame.title:SetText("WAYPATH CARDS"); frame.title:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
-  frame.tagline = fs(frame, "body", 14); frame.tagline:SetPoint("TOP", plate, "BOTTOM", 0, -4); frame.tagline:SetText("a collector's grimoire"); frame.tagline:SetTextColor(0.8, 0.76, 0.95)
+  frame.tagline = fs(frame, "body", 14); frame.tagline:SetPoint("TOP", plate, "BOTTOM", 0, -4); frame.tagline:SetText("a collector's grimoire"); frame.tagline:SetTextColor(0.937, 0.837, 0.636)
   frame.coinIcon = frame:CreateTexture(nil, "ARTWORK"); frame.coinIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01"); frame.coinIcon:SetSize(20, 20); frame.coinIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93); frame.coinIcon:SetPoint("TOPLEFT", 30, -22)
   frame.coins = fs(frame, "head", 16); frame.coins:SetPoint("LEFT", frame.coinIcon, "RIGHT", 6, 0)
   frame.free = fs(frame, "head", 12); frame.free:SetPoint("TOPLEFT", frame.coinIcon, "BOTTOMLEFT", 0, -3); frame.free:SetTextColor(0.5, 0.88, 0.6)
   local close = gbtn(frame, "X", 28, 24, function() frame:Hide() end); close:SetPoint("TOPRIGHT", -18, -18)
   local rule = frame:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(360, 14); rule:SetPoint("TOP", frame.tagline, "BOTTOM", 0, -4)
-  frame.sub = fs(frame, "body", 13); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -1); frame.sub:SetSpacing(1); frame.sub:SetTextColor(0.94, 0.91, 1); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
+  frame.sub = fs(frame, "body", 13); frame.sub:SetPoint("TOP", rule, "BOTTOM", 0, -1); frame.sub:SetSpacing(1); frame.sub:SetTextColor(1, 0.95, 0.722); frame.sub:SetJustifyH("CENTER"); frame.sub:SetWidth(WINW - 120)
 
   -- tabs
   frame.modes = {}
@@ -2402,7 +2441,7 @@ local function build()
   frame.searchBox:SetAutoFocus(false); frame.searchBox:SetMaxLetters(30)
   frame.searchBox:SetScript("OnTextChanged", function(self) local t = self:GetText() or ""; if t ~= view.search then view.search = t; view.page = 1; RG.ArcadeRefresh(true) end end)
   frame.searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  frame.searchHint = fs(frame.searchBox, "body", 14); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.72, 0.68, 0.85)
+  frame.searchHint = fs(frame.searchBox, "body", 14); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.84, 0.75, 0.57)
 
   -- the binder
   cells = {}
@@ -2436,13 +2475,13 @@ local function build()
   for i = 1, 14 do
     local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
     b:SetSize(WINW - 80, 26); b:SetPoint("TOPLEFT", 40, -200 - (i - 1) * 30)
-    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.07, 0.05, 0.14, 0.9); b:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8)
+    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.097, 0.087, 0.066, 0.9); b:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8)
     b.left = fs(b, "body", 14); b.left:SetPoint("LEFT", 10, 0); b.left:SetJustifyH("LEFT")
     b.right = fs(b, "head", 12); b.right:SetPoint("RIGHT", -10, 0); b.right:SetJustifyH("RIGHT"); b.right:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
     b.fillBg = b:CreateTexture(nil, "ARTWORK"); b.fillBg:SetColorTexture(1, 1, 1, 0.07); b.fillBg:SetHeight(3); b.fillBg:SetPoint("BOTTOMLEFT", 1, 1); b.fillBg:SetPoint("BOTTOMRIGHT", -1, 1)
     b.fill = b:CreateTexture(nil, "OVERLAY"); b.fill:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.9); b.fill:SetHeight(3); b.fill:SetPoint("BOTTOMLEFT", 1, 1); b.fill:SetWidth(1)
-    b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.13, 0.09, 0.22, 0.95); self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) end)
-    b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.07, 0.05, 0.14, 0.9); self:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8) end)
+    b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.164, 0.147, 0.111, 0.95); self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) end)
+    b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.097, 0.087, 0.066, 0.9); self:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8) end)
     b:SetScript("OnClick", function(self) if self.act then self.act() end end)
     frame.rows[i] = b
   end
@@ -2453,7 +2492,7 @@ local function build()
   frame.prev:SetPoint("BOTTOM", 230, 58)
   frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
   frame.next:SetPoint("BOTTOM", 330, 58)
-  frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(0.92, 0.88, 1)
+  frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(1, 0.933, 0.709)
   frame.buyNow = function(many)
     local got, free, notes, meta
     if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack(type(many) == "string" and many or nil) end
@@ -2468,7 +2507,7 @@ local function build()
     local b = gbtn(frame, PACKS[kind].name, 114, 40, function() frame.buyNow(kind) end, false)
     b:SetPoint("BOTTOM", PX[i], 16)
     b.label:ClearAllPoints(); b.label:SetPoint("TOP", 0, -7)
-    b.sub = fs(b, "body", 11); b.sub:SetPoint("BOTTOM", 0, 7); b.sub:SetTextColor(0.66, 0.6, 0.8)
+    b.sub = fs(b, "body", 11); b.sub:SetPoint("BOTTOM", 0, 7); b.sub:SetTextColor(0.769, 0.687, 0.522)
     frame.packBtns[kind] = b
   end
   frame.buy = frame.packBtns.normal
@@ -2521,18 +2560,18 @@ end
 -- page widgets for the Today, Trade, Ledger and Sets screens: stat tiles, section titles, bars, aligned rows
 local PG = { tiles = {}, heads = {}, bars = {}, kvs = {}, boxes = {} }
 local PGX, PGW = 40, WINW - 80
-local DIM = { 0.66, 0.6, 0.8 }
+local DIM = { 0.769, 0.687, 0.522 }
 local function pgReset() for _, list in pairs(PG) do for _, w in ipairs(list) do w:Hide() end end end
 local function pgPlace(w, x, y, wd, ht) w:ClearAllPoints(); w:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -y); w:SetSize(wd, ht); w:Show() end
 local function pgTile(i, x, y, wd, ht, value, label, sub, col)
   local t = PG.tiles[i]
   if not t then
     t = CreateFrame("Frame", nil, frame, "BackdropTemplate"); t:SetFrameLevel(lv(frame) + 2)
-    t:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); t:SetBackdropColor(0.06, 0.045, 0.13, 0.95); t:SetBackdropBorderColor(0.5, 0.41, 0.24, 0.75)
+    t:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); t:SetBackdropColor(0.088, 0.078, 0.06, 0.95); t:SetBackdropBorderColor(0.5, 0.41, 0.24, 0.75)
     t.accent = t:CreateTexture(nil, "ARTWORK"); t.accent:SetColorTexture(1, 1, 1, 1); t.accent:SetPoint("TOPLEFT", 1, -1); t.accent:SetPoint("TOPRIGHT", -1, -1); t.accent:SetHeight(2)
     t.lab = fs(t, "head", 10.5); t.lab:SetPoint("TOPLEFT", 14, -12); t.lab:SetTextColor(DIM[1], DIM[2], DIM[3])
     t.val = fs(t, "title", 26); t.val:SetPoint("TOPLEFT", 14, -26); t.val:SetJustifyH("LEFT")
-    t.sub = fs(t, "body", 12); t.sub:SetPoint("BOTTOMLEFT", 14, 9); t.sub:SetJustifyH("LEFT"); t.sub:SetTextColor(0.66, 0.64, 0.76)
+    t.sub = fs(t, "body", 12); t.sub:SetPoint("BOTTOMLEFT", 14, 9); t.sub:SetJustifyH("LEFT"); t.sub:SetTextColor(0.769, 0.687, 0.522)
     if t.sub.SetWordWrap then t.sub:SetWordWrap(false) end
     PG.tiles[i] = t
   end
@@ -2548,7 +2587,7 @@ local function pgHead(i, y, text, right)
   if not h then
     h = CreateFrame("Frame", nil, frame); h:SetFrameLevel(lv(frame) + 2)
     h.t = fs(h, "head", 12.5); h.t:SetPoint("TOPLEFT", 0, 0); h.t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
-    h.r = fs(h, "body", 12); h.r:SetPoint("TOPRIGHT", 0, -1); h.r:SetJustifyH("RIGHT"); h.r:SetTextColor(0.66, 0.64, 0.76)
+    h.r = fs(h, "body", 12); h.r:SetPoint("TOPRIGHT", 0, -1); h.r:SetJustifyH("RIGHT"); h.r:SetTextColor(0.769, 0.687, 0.522)
     h.line = h:CreateTexture(nil, "ARTWORK"); h.line:SetColorTexture(0.72, 0.58, 0.3, 0.4); h.line:SetHeight(1); h.line:SetPoint("BOTTOMLEFT", 0, 0); h.line:SetPoint("BOTTOMRIGHT", 0, 0)
     PG.heads[i] = h
   end
@@ -2575,7 +2614,7 @@ local function pgKV(i, x, y, wd, label, value)
   local r = PG.kvs[i]
   if not r then
     r = CreateFrame("Frame", nil, frame); r:SetFrameLevel(lv(frame) + 2)
-    r.l = fs(r, "body", 13); r.l:SetPoint("LEFT", 2, 0); r.l:SetTextColor(0.8, 0.77, 0.9)
+    r.l = fs(r, "body", 13); r.l:SetPoint("LEFT", 2, 0); r.l:SetTextColor(0.922, 0.823, 0.626)
     r.v = fs(r, "head", 13); r.v:SetPoint("RIGHT", -2, 0); r.v:SetJustifyH("RIGHT"); r.v:SetTextColor(1, 0.97, 0.88)
     r.line = r:CreateTexture(nil, "ARTWORK"); r.line:SetColorTexture(1, 1, 1, 0.08); r.line:SetHeight(1); r.line:SetPoint("BOTTOMLEFT", 0, 0); r.line:SetPoint("BOTTOMRIGHT", 0, 0)
     PG.kvs[i] = r
@@ -2587,10 +2626,10 @@ local function pgBox(i, y, ht, title, text, col)
   local b = PG.boxes[i]
   if not b then
     b = CreateFrame("Frame", nil, frame, "BackdropTemplate"); b:SetFrameLevel(lv(frame) + 2)
-    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.04, 0.03, 0.09, 0.94); b:SetBackdropBorderColor(0.5, 0.41, 0.24, 0.7)
+    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }); b:SetBackdropColor(0.06, 0.053, 0.041, 0.94); b:SetBackdropBorderColor(0.5, 0.41, 0.24, 0.7)
     b.bar = b:CreateTexture(nil, "ARTWORK"); b.bar:SetPoint("TOPLEFT", 1, -1); b.bar:SetPoint("BOTTOMLEFT", 1, 1); b.bar:SetWidth(4)
     b.title = fs(b, "head", 14); b.title:SetPoint("TOPLEFT", 20, -12); b.title:SetJustifyH("LEFT")
-    b.text = fs(b, "body", 13); b.text:SetJustifyH("LEFT"); b.text:SetJustifyV("TOP"); b.text:SetSpacing(4); b.text:SetTextColor(0.86, 0.83, 0.94)
+    b.text = fs(b, "body", 13); b.text:SetJustifyH("LEFT"); b.text:SetJustifyV("TOP"); b.text:SetSpacing(4); b.text:SetTextColor(0.982, 0.877, 0.666)
     PG.boxes[i] = b
   end
   pgPlace(b, PGX, y, PGW, ht)
@@ -2794,7 +2833,7 @@ function RG.ArcadePortrait(c)
   return "icon", iconFor(c)
 end
 
-RG.ArcadeUI = { modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+RG.ArcadeUI = { scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
 

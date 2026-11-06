@@ -528,9 +528,9 @@ function RG.SetAccent(name)
   local order = RG.ACCENT_ORDER
   if name then name = name:lower(); if name == "contrast" or name == "white" then name = "light" end end
   if not (name and RG.ACCENTS[name]) then
-    local cur = RG.db.accent or "mint"
+    local cur = RG.db.accent or "brass"
     for i, k in ipairs(order) do if k == cur then name = order[i % #order + 1] end end
-    name = name or "mint"
+    name = name or "brass"
   end
   RG.db.accent = name
   RG.ApplyAccent(name)

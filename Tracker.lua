@@ -1,9 +1,10 @@
--- Waypath+ on-screen tracker: your current route step, next tasks, dungeon
--- quests to collect, next gear upgrade and reminders, in a small panel.
+-- Waypath+ on-screen tracker: quests first. The top line names the quest and the objective the arrow points
+-- to; then your quests, pick-ups nearby and the route step. Gear, professions, dungeons and reminders live in the
+-- main window now.
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 0.31, 0.82, 0.77 }
+local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }   -- brass (follows the accent setting)
 local W = 300
 local tr, lines, collapsed
 -- marks the line the arrow is pointing at
@@ -227,7 +228,7 @@ function RG.ShowMenu(entries, title)
   if not menuFrame then
     menuFrame = CreateFrame("Frame", "WaypathMenu", UIParent, "BackdropTemplate")
     menuFrame:SetFrameStrata("FULLSCREEN_DIALOG"); menuFrame:SetClampedToScreen(true)
-    if RG.Round then RG.Round(menuFrame, 0.07, 0.07, 0.08, 0.97, 8) end
+    if RG.Round then RG.Round(menuFrame, 0.063, 0.11, 0.153, 0.98, 8) end
     menuFrame.btns = {}
     menuCatcher = CreateFrame("Button", nil, UIParent)
     menuCatcher:SetAllPoints(UIParent); menuCatcher:SetFrameStrata("FULLSCREEN"); menuCatcher:RegisterForClicks("AnyUp")
@@ -317,7 +318,7 @@ end
 local function build()
   tr = CreateFrame("Frame", "WaypathTracker", UIParent, "BackdropTemplate")
   tr:SetWidth(W); tr:SetClampedToScreen(true); tr:SetMovable(true); tr:EnableMouse(true); tr:SetFrameStrata("MEDIUM")
-  RG.Round(tr, 0.06, 0.06, 0.065, RG.db.trackerAlpha or 0.5, 12)   -- dense enough to read over snow and sand
+  RG.Round(tr, 0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85, 8)   -- deep ink, dense enough to read over snow and sand
   local pos = RG.db.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   tr:RegisterForDrag("LeftButton")
@@ -336,10 +337,42 @@ local function build()
   end)
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
 
-  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture(RG.LOGO); crest:SetTexCoord(0, 1, 0, 1)
-  tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:SetPoint("LEFT", crest, "RIGHT", 6, 0); tr.title:SetText("Waypath+"); tfont(tr.title, 16); tr.title:SetTextColor(0.93, 0.95, 0.97); tr.title:SetShadowColor(0, 0, 0, 0)
+  -- the compass: points where the arrow points
+  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(22, 22); crest:SetPoint("TOPLEFT", 10, -10); crest:SetTexture("Interface\\Minimap\\MinimapArrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  tr.crest = crest
+  tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:SetPoint("TOPLEFT", crest, "TOPRIGHT", 8, 2); tr.title:SetText("Waypath+")
+  if not tr.title:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(tr.title, 14) end
+  tr.title:SetTextColor(0.937, 0.902, 0.824); tr.title:SetShadowColor(0, 0, 0, 0.8); tr.title:SetShadowOffset(1, -1); tr.title:SetJustifyH("LEFT")
+  tr.goal = RG.NewText(tr, "GameFontHighlightSmall"); tr.goal:SetPoint("TOPLEFT", tr.title, "BOTTOMLEFT", 0, -2); tr.goal:SetJustifyH("LEFT"); tr.goal:SetTextColor(0.79, 0.75, 0.66)
+  tr.goal:SetWordWrap(false)
+  tr.dist = RG.NewText(tr, "GameFontHighlightSmall"); tr.dist:SetPoint("TOPRIGHT", -12, -30); tr.dist:SetJustifyH("RIGHT"); tr.dist:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  -- the top line is a button: click for the arrow, hover for the details
+  local head = CreateFrame("Button", nil, tr); head:SetPoint("TOPLEFT", 6, -6); head:SetPoint("TOPRIGHT", -84, -6); head:SetHeight(40); tr.head = head
+  head:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  head:SetScript("OnClick", function(_, btn)
+    local o = RG.Objective and RG.Objective()
+    if btn == "RightButton" and o and o.stop and o.count and o.count > 1 and RG.SkipStop then RG.SkipStop(o.stop); if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end; RG.RefreshTracker(); return end
+    if o and o.wp then RG.Follow(o.wp) end
+  end)
+  head:SetScript("OnEnter", function(self)
+    local o = RG.Objective and RG.Objective()
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    if o then
+      GameTooltip:SetText(o.text or "", 1, 1, 1, 1, true)
+      if o.why then GameTooltip:AddLine(o.why, 0.7, 0.7, 0.7, true) end
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddLine("Click: arrow to it  ·  Right-click: skip to the next stop", GOLDC[1], GOLDC[2], GOLDC[3], true)
+    else GameTooltip:SetText("Waypath+ tracker", GOLDC[1], GOLDC[2], GOLDC[3]) end
+    GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag the panel to move it", 0.8, 0.8, 0.8)
+    GameTooltip:AddLine("Ctrl / Shift / Alt + mouse wheel: size, width, see-through", 0.8, 0.8, 0.8)
+    GameTooltip:Show()
+  end)
+  head:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  head:RegisterForDrag("LeftButton")
+  head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") then tr:StartMoving() end end)
+  head:SetScript("OnDragStop", function() tr:StopMovingOrSizing(); local p, _, rp, x, y = tr:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
   -- hover the header for the tracker's controls
-  local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(120, 26)
+  local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(1, 1); hint:Hide()
   hint:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+ tracker", GOLDC[1], GOLDC[2], GOLDC[3])
     GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move", 1, 1, 1)
@@ -350,7 +383,7 @@ local function build()
     GameTooltip:Show()
   end)
   hint:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  tr.lvl = RG.NewText(tr, "GameFontHighlightSmall"); tr.lvl:SetPoint("LEFT", tr.title, "RIGHT", 8, 0); tr.lvl:SetTextColor(0.75, 0.75, 0.75)
+  tr.lvl = RG.NewText(tr, "GameFontHighlightSmall"); tr.lvl:Hide()
 
   local function hdrBtn(label, x, fn, tip)
     local b = CreateFrame("Button", nil, tr); b:SetSize(20, 20); b:SetPoint("TOPRIGHT", x, -8)
@@ -384,14 +417,15 @@ local function build()
   tr.arrowBtn = ab
 
   -- thin XP bar along the bottom, with the pace and time to level above it
-  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(4); xpBg:SetPoint("BOTTOMLEFT", 12, 8); xpBg:SetPoint("BOTTOMRIGHT", -12, 8)
+  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(2); xpBg:SetPoint("BOTTOMLEFT", 8, 6); xpBg:SetPoint("BOTTOMRIGHT", -8, 6)
   xpBg:SetTexture("Interface\\Buttons\\WHITE8X8"); xpBg:SetVertexColor(1, 1, 1, 0.08)
-  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(4); tr.xp:SetPoint("BOTTOMLEFT", 12, 8)
+  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(2); tr.xp:SetPoint("BOTTOMLEFT", 8, 6)
   tr.xp:SetTexture("Interface\\Buttons\\WHITE8X8"); tr.xp:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
-  tr.foot = RG.NewText(tr, "GameFontHighlightSmall"); tr.foot:SetPoint("BOTTOMLEFT", 12, 16); tr.foot:SetTextColor(0.62, 0.62, 0.62)
-  tr.pct = RG.NewText(tr, "GameFontHighlightSmall"); tr.pct:SetPoint("BOTTOMRIGHT", -12, 16); tr.pct:SetTextColor(0.62, 0.62, 0.62)
+  tr.foot = RG.NewText(tr, "GameFontHighlightSmall"); tr.foot:Hide()
+  tr.pct = RG.NewText(tr, "GameFontHighlightSmall"); tr.pct:Hide()
 
-  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -42); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
+  local sep = tr:CreateTexture(nil, "ARTWORK"); sep:SetHeight(1); sep:SetPoint("TOPLEFT", 0, -50); sep:SetPoint("TOPRIGHT", 0, -50); sep:SetColorTexture(0.122, 0.176, 0.224, 1); tr.sep = sep
+  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -60); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   lines = {}
 end
 
@@ -407,7 +441,7 @@ end
 local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
 -- The sections under Quests (new quests, route, class quests, dungeon, upgrade, professions, reminders) share one
 -- "More" row until you open it, so the side bar stays short: the first thing it shows is what to do now.
-local SECONDARY = { new = "New quests", route = "Route", pala = "Class quests", dungeon = "Dungeon", upgrade = "Upgrade", profs = "Professions", reminders = "Reminders" }
+local SECONDARY = { route = "Route", pala = "Class quests" }
 local hints, skipped, moreOpen = {}, 0, false
 local lastSkipped = false   -- the last section went into the "More" row: it drew nothing, so it leaves no gap either
 local function gap(y) if lastSkipped then return y end return y + 5 end
@@ -522,7 +556,7 @@ function RG.RefreshTracker()
   -- size and width (Ctrl / Shift + mouse wheel)
   W = RG.db.trackerWidth or 300
   tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
-  tr:SetBackdropColor(0.06, 0.06, 0.065, RG.db.trackerAlpha or 0.5)
+  tr:SetBackdropColor(0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85)
   -- pairs, not ipairs: a folded section leaves a gap in the list, and ipairs stops at the first gap (old rows stayed on screen)
   for _, b in pairs(lines) do b:Hide(); b:SetWidth(W - 24) end
   local lvl = UnitLevel("player")
@@ -532,23 +566,34 @@ function RG.RefreshTracker()
   local rested = GetXPExhaustion and GetXPExhaustion()
   if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
   tr.lvl:SetText("Level " .. lvl .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or ""))
-  -- the header names the zone you are working through
+  -- the top line: the quest and the objective the arrow points to, and how far it is
   do
-    local ze = not (RG.IsAlt and RG.IsAlt()) and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
-    tr.title:SetText(ze and ze.zone or "Waypath+"); tr.title:SetWidth(0)
-    if (tr.title:GetStringWidth() or 0) > W - 160 then tr.title:SetWidth(W - 160) end
-    if tr.title.SetWordWrap then tr.title:SetWordWrap(false) end
+    local okO, o = pcall(RG.Objective or function() end)
+    if not okO then o = nil end
+    local title, goal
+    if o and o.qtitle then title, goal = o.qtitle, o.qline
+    elseif o and o.text then title = plain(o.text)
+    else
+      local ze = not (RG.IsAlt and RG.IsAlt()) and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+      title, goal = ze and ze.zone or "Waypath+", "Level " .. lvl .. (rested and rested > 0 and "  ·  rested" or "")
+    end
+    tr.title:SetWidth(0); tr.title:SetText(title or ""); if tr.title.SetWordWrap then tr.title:SetWordWrap(false) end
+    if (tr.title:GetStringWidth() or 0) > W - 120 then tr.title:SetWidth(W - 120) end
+    tr.goal:SetWidth(W - 110); tr.goal:SetText(goal or "")
+    tr.dist:SetText(o and o.dist and RG.FormatYards and RG.FormatYards(o.dist) or "")
+    tr.crest:SetDesaturated(not (o and o.wp))
   end
-  tr.foot:SetText(rate and string.format("%.0f XP/h  ·  %s to level", rate, RG.FormatETA(eta) or "?") or "")
-  tr.pct:SetText(max and max > 0 and lvl < 60 and string.format("%d%%", xp / max * 100) or "")
-  tr.xp:SetWidth(math.max(1, (W - 24) * ((max and max > 0) and xp / max or 1)))
+  tr.xp:SetWidth(math.max(1, (W - 16) * ((max and max > 0) and xp / max or 1)))
   if tr.arrowBtn then
     local on = RG.Opt("arrow")
     tr.arrowBtn.icon:SetDesaturated(not on)
     if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
-  if RG.db.trackerCollapsed then
-    tr.body:Hide(); tr.min.t:SetText("+")
+  if RG.db.trackerCollapsed or (RG.trackerInCombat and RG.Opt("trackerCombatFold")) then
+    tr.body:Hide(); tr.min.t:SetText("+"); tr.sep:Hide()
+    if rawget(tr, "nextLine") then tr.nextLine:Hide() end
+    tr:SetHeight(54)
+    do return end
     -- compact: one calm line with the next thing to do
     local txt
     local okO, objc = pcall(RG.Objective or function() end)
@@ -579,7 +624,7 @@ function RG.RefreshTracker()
     return
   end
   if rawget(tr, "nextLine") then tr.nextLine:Hide() end
-  tr.body:Show(); tr.min.t:SetText("-")
+  tr.body:Show(); tr.min.t:SetText("-"); tr.sep:Show()
 
   local n, y = 0, 0
   hints, skipped, moreOpen = {}, 0, RG.db.trackerMore == true
@@ -629,7 +674,7 @@ function RG.RefreshTracker()
   end
   -- 0b. now: the one thing to do next (the same objective the arrow follows)
   do
-    local okN, nl = pcall(RG.NowLines or function() end)
+    local okN, nl = false, nil   -- (the top line says it now)
     if okN and nl and #nl > 0 then
       n = n + 1; y = section(n, y, "Now", nil, nl.right)
       for _, l in ipairs(nl) do n = n + 1; y = item(n, y, l.text, l.opts) end
@@ -945,7 +990,7 @@ function RG.RefreshTracker()
     end
   end
   -- 4. next dungeon: quests still to collect
-  local dr, dq = nextDungeon()
+  local dr, dq = nil, nil   -- dungeons: on the Route page in the main window
   if dr then
     local missing = {}
     for _, q in ipairs(dq.quests) do
@@ -982,7 +1027,7 @@ function RG.RefreshTracker()
     y = gap(y)
   end
   -- 5. next upgrade (one line)
-  local up = nextUpgrade()
+  local up = nil   -- upgrades: the Gear guide (and the Gear badge) in the main window
   if up then
     local name = RG.ItemInfo(up.g.id) or "item"
     local isFolded
@@ -997,7 +1042,7 @@ function RG.RefreshTracker()
     y = gap(y)
   end
   -- 5b. professions: the step you're on and what you're short of
-  if RG.Opt("trackerProfs") and RG.ProfNow then
+  if false and RG.Opt("trackerProfs") and RG.ProfNow then   -- professions: Economy in the main window
     local entries = {}
     for name, k in pairs(RG.Professions and RG.Professions() or {}) do
       local now = RG.PROFESSIONS and RG.PROFESSIONS[name] and RG.ProfNow(name, k.rank)
@@ -1034,7 +1079,7 @@ function RG.RefreshTracker()
     end
   end
   -- 6. reminders: the most important few
-  local rem = RG.Reminders and RG.Reminders() or {}
+  local rem = {}   -- reminders: in the main window and as pop-ups
   if #rem > 0 then
     for i, rr in ipairs(rem) do rr.i = i end
     table.sort(rem, function(a, b) local pa, pb = a[3] or 3, b[3] or 3; if pa ~= pb then return pa < pb end return a.i < b.i end)
@@ -1067,18 +1112,21 @@ function RG.RefreshTracker()
   tr.rowCount = n
   for i, b in pairs(lines) do if i > n then b:Hide() end end
   tr.body:SetHeight(math.max(10, y))
-  tr:SetHeight(42 + y + 40)
+  tr:SetHeight(60 + y + 14)
 end
 
 -- Fade the tracker during fights so it doesn't cover the action.
 table.insert(RG.OPTIONS, { key = "trackerLocked", label = "Lock the tracker in place", default = false })
 table.insert(RG.OPTIONS, { key = "trackerProfs", label = "Show your professions' next step and missing materials on the tracker", default = true })
-table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = true })
+table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = false })
+table.insert(RG.OPTIONS, { key = "trackerCombatFold", label = "Fold the tracker to one line during combat", default = true })
 local fade = CreateFrame("Frame")
 fade:RegisterEvent("PLAYER_REGEN_DISABLED"); fade:RegisterEvent("PLAYER_REGEN_ENABLED")
 fade:SetScript("OnEvent", function(_, event)
+  RG.trackerInCombat = event == "PLAYER_REGEN_DISABLED"
   if not tr then return end
   if event == "PLAYER_REGEN_DISABLED" and RG.Opt("trackerFade") then tr:SetAlpha(0.35) else tr:SetAlpha(1) end
+  if RG.Opt("trackerCombatFold") and not RG.db.trackerCollapsed then RG.RefreshTracker() end
 end)
 
 -- Refresh on the things that change the tracker, at most a few times a second.

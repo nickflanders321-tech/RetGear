@@ -11,24 +11,26 @@ do
 end
 
 -- Classic WoW text colors: quest-log gold, quest-complete green, error red, poor-quality grey
-local GOLD = "|cff4fd1c5"   -- the accent (Graphite look: teal)
+local GOLD = "|cffd8b56a"   -- the accent (Cartographer look: brass)
 local GREEN, RED, GREY = "|cff40c040", "|cffff3333", "|cffa0a0a0"
 -- Inter (SIL OFL) ships in Media/Fonts; fall back to the game's own fonts if it can't load.
-RG.FONTS = { regular = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-Regular.ttf", medium = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-Medium.ttf", semibold = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-SemiBold.ttf" }
+RG.FONTS = { regular = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-Regular.ttf", medium = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-Medium.ttf", semibold = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Inter-SemiBold.ttf",
+  -- Fraunces (SIL OFL): the serif for titles and numbers
+  display = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Fraunces-SemiBold.ttf", black = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Fraunces-Black.ttf" }
 function RG.Font(fs, weight, size, flags)
   local ok = fs:SetFont(RG.FONTS[weight] or RG.FONTS.regular, size, flags or "")
   if not ok then fs:SetFont("Fonts\\ARIALN.TTF", size, flags or "") end
 end
-RG.ACCENT = { 0.31, 0.82, 0.77 }
+RG.ACCENT = { 0.847, 0.71, 0.416 }
 -- Accent colours (Settings > Look, /wp theme). The accent table is changed in place, so everything that
 -- reads it at draw time follows; text already coloured with a fixed code changes on /reload.
-RG.ACCENT_ORDER = { "mint", "gold", "sky", "rose", "violet", "light" }
+RG.ACCENT_ORDER = { "brass", "mint", "gold", "sky", "rose", "violet", "light" }
 RG.ACCENTS = {
-  mint = { "Mint", 0.31, 0.82, 0.77 }, gold = { "Gold", 0.96, 0.76, 0.25 }, sky = { "Sky", 0.38, 0.65, 0.98 },
+  brass = { "Brass", 0.847, 0.71, 0.416 }, mint = { "Mint", 0.31, 0.82, 0.77 }, gold = { "Gold", 0.96, 0.76, 0.25 }, sky = { "Sky", 0.38, 0.65, 0.98 },
   rose = { "Rose", 0.96, 0.45, 0.62 }, violet = { "Violet", 0.70, 0.55, 0.98 }, light = { "High contrast", 1, 1, 1 },
 }
 function RG.ApplyAccent(name)
-  local a = RG.ACCENTS[name or "mint"] or RG.ACCENTS.mint
+  local a = RG.ACCENTS[name or "brass"] or RG.ACCENTS.brass
   RG.ACCENT[1], RG.ACCENT[2], RG.ACCENT[3] = a[2], a[3], a[4]
 end
 -- Localisation scaffolding: RG.L["English text"] returns the translation for the game's language,
@@ -40,12 +42,12 @@ function RG.AddLocale(code, strings)
 end
 -- Inter for every piece of text: the game's built-in font objects (gold, ornate) mapped to the window's look.
 local STYLE = {
-  GameFontNormal         = { "semibold", 13, 0.31, 0.82, 0.77 },
-  GameFontNormalLarge    = { "semibold", 17, 0.95, 0.95, 0.95 },
-  GameFontNormalSmall    = { "medium", 12, 0.31, 0.82, 0.77 },
-  GameFontHighlight      = { "regular", 13, 0.93, 0.93, 0.93 },
-  GameFontHighlightSmall = { "regular", 12, 0.8, 0.8, 0.8 },
-  GameFontDisableSmall   = { "regular", 11, 0.5, 0.5, 0.5 },
+  GameFontNormal         = { "semibold", 13, 0.847, 0.71, 0.416 },
+  GameFontNormalLarge    = { "display", 17, 0.937, 0.902, 0.824 },
+  GameFontNormalSmall    = { "medium", 12, 0.847, 0.71, 0.416 },
+  GameFontHighlight      = { "regular", 13, 0.937, 0.902, 0.824 },
+  GameFontHighlightSmall = { "regular", 12, 0.82, 0.78, 0.7 },
+  GameFontDisableSmall   = { "regular", 11, 0.6, 0.57, 0.5 },
 }
 function RG.StyleText(fs, tpl)
   local st = STYLE[tpl]

@@ -182,7 +182,7 @@ local function buildTasks()
       local k = sp.quest .. "\0" .. tostring(sp.label)
       local g = groups[k]
       if not g then
-        g = { quest = sp.quest, label = sp.label, pts = {}, have = sp.have, need = sp.need }
+        g = { quest = sp.quest, label = sp.label, pts = {}, have = sp.have, need = sp.need, okind = sp.okind }
         groups[k] = g; order[#order + 1] = g
       end
       local p = pt(sp.wp)
@@ -193,7 +193,7 @@ local function buildTasks()
   for _, g in ipairs(order) do
     local q = byTitle[g.quest]
     if #g.pts > 0 then
-      local t = { act = "doing", title = g.quest, id = q and q.id, label = g.label, pts = g.pts, level = q and q.level, group = q and q.group, have = g.have, need = g.need }
+      local t = { act = "doing", title = g.quest, id = q and q.id, label = g.label, pts = g.pts, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
       tasks[#tasks + 1] = t
       objOf[g.quest] = objOf[g.quest] or {}
       table.insert(objOf[g.quest], t)
@@ -421,6 +421,17 @@ local function buildObjective()
     obj.stopKey = taskKey(it)
     obj.text, obj.wp, obj.dist, obj.stop = stopText(s), s.wp, s.pd, s
     obj.why = stopWhy(s)
+    -- the tracker's top line: the quest, and the one thing to do for it ("Kill 15 Hillsbrad Farmers  9/15")
+    obj.qtitle = it.title
+    if it.act == "turnin" then obj.qline = "Hand in" .. ((it.label and it.label ~= "") and (" to " .. it.label) or "")
+    elseif it.act == "pickup" then obj.qline = "Pick up" .. ((it.label and it.label ~= "") and (" from " .. it.label) or "")
+    else
+      local verb = ({ k = "Kill", i = "Collect", o = "Use" })[it.okind or ""] or "Get"
+      local label = tostring(it.label or it.title)
+      local many = it.need and it.need > 1
+      if many and verb == "Kill" and not label:find("s$") then label = label .. "s" end
+      obj.qline = verb .. " " .. (many and (it.need .. " ") or "") .. label .. ((it.have and it.need and it.need > 0) and ("  " .. it.have .. "/" .. it.need) or "")
+    end
     obj.id = it.id
     obj.level, obj.group = it.level, it.group
     obj.reqs = it.id and RG.QuestRequirements(it.id) or {}

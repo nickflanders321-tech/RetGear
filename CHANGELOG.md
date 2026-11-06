@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **A new look for Waypath+.** The whole add-on moves to the Cartographer style: deep ink-blue panels, brass highlights, parchment-coloured text and a serif (Fraunces) for titles. Menus, pop-ups, the minimap menu and the item source window match.
+- **New main window.** A sidebar on the left replaces the row of tabs:
+  - your character card at the top: level, XP bar, how far to the next level;
+  - four sections, Journey, Gear, Economy and Cards, each with its pages as tabs along the top (Route, Quest plan, Flight paths · Gear guide, What I wear, 2nd spec, 2nd spec gear · Professions, Fishing & cooking, Sell & prices, Gold tips, Bank alt);
+  - badges for quests ready to hand in (Journey) and card packs to open (Cards);
+  - "In your satchel" at the bottom: hearthstone, gold and what your bags would sell for; Settings below it.
+  - The window can now be resized by dragging its corner and remembers its size and place. When it gets narrow the sidebar folds to icons (it can also be folded by hand).
+  - The Group page is gone.
+- **The tracker is about quests now.** The top line names the quest and the objective the arrow points to ("Battle of Hillsbrad · Kill 15 Hillsbrad Farmers 9/15") and how far it is; click it for the arrow, right-click to skip to the next stop. Below are your quests, quests to pick up nearby (shown by themselves) and the route step. Gear upgrades, dungeons, professions and reminders moved into the main window (reminders sit at the top of the Route page). During combat the tracker folds to its top line and opens again after (Settings: "Fold the tracker to one line during combat").
+- **Cards get a Fireside look.** The card windows and the Arena are a carved wooden frame with brass trim around a warm tabletop, with wooden buttons and a solid brass button for the move to make. Both the card window and the Arena can be resized by dragging the corner, small enough to keep playing beside the game, and remember their size.
+
 ## v1.14.0
 
 - Waypath+ no longer sends you to quests you can't pick up yet. It now checks everything the quest data knows decides whether a giver offers a quest, not just level and earlier quests: the profession and skill it needs, reputation, the next step of a chain you're already past, breadcrumbs to a quest you already have, quests only offered while another is in your log, maximum level, specializations. Route steps count quests you can never take (another branch, a later step, a profession you don't have) as done, so steps no longer stay stuck on them, and show why the others aren't ready ("needs Skinning", "after ...").

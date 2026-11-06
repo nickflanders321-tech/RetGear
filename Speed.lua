@@ -4,7 +4,7 @@
 -- leveling pace per level, and a bag-space reminder.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
-local GOLDC = { 0.31, 0.82, 0.77 }
+local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
 
 for _, o in ipairs({
   { key = "autoQuest",     label = "Auto accept and turn in quests (hold Shift to pause)", default = true },
@@ -162,7 +162,7 @@ function RG.QuestSpots()
           if not (game and game.finished) then
             for _, p in ipairs(d[4]) do
               local src = d[3][p[4]] or d[2]
-              spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired,
+              spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired, okind = d[1],
                 wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
             end
           end

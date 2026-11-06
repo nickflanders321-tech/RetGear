@@ -8,30 +8,35 @@ local GetItemInfo = function(...) return RG.ItemInfo(...) end   -- the game has 
 -- ---------------------------------------------------------------------------
 -- Theme
 -- ---------------------------------------------------------------------------
+-- Cartographer: deep ink panels, brass accent, parchment text
 local T = {
-  bg      = { 0.078, 0.078, 0.078, 0.97 },
-  panel   = { 0.118, 0.118, 0.118, 1 },
-  raised  = { 0.17, 0.17, 0.17, 1 },
-  edge    = { 0.17, 0.17, 0.17, 1 },
-  line    = { 0.17, 0.17, 0.17, 1 },
-  gold    = RG.ACCENT,                    -- the accent (teal in the Graphite look)
-  goldDim = { 0.2, 0.5, 0.47 },
+  bg      = { 0.063, 0.11, 0.153, 0.97 },
+  side    = { 0.047, 0.086, 0.125, 1 },  -- the sidebar
+  panel   = { 0.082, 0.133, 0.176, 1 },
+  raised  = { 0.106, 0.165, 0.212, 1 },
+  edge    = { 0.169, 0.227, 0.278, 1 },
+  line    = { 0.122, 0.176, 0.224, 1 },
+  gold    = RG.ACCENT,                    -- the accent (brass)
+  goldDim = { 0.55, 0.45, 0.26 },
   green   = { 0.37, 0.82, 0.54 },
   red     = { 0.95, 0.38, 0.38 },
   purple  = { 0.64, 0.21, 0.93 },         -- epic purple
   blue    = { 0.0, 0.44, 0.87 },          -- rare blue
-  text    = { 0.93, 0.93, 0.93 },
-  dim     = { 0.55, 0.55, 0.55 },
-  row     = { 0.118, 0.118, 0.118 },
-  rowEdge = { 0.17, 0.17, 0.17 },
+  text    = { 0.937, 0.902, 0.824 },
+  dim     = { 0.663, 0.624, 0.541 },
+  row     = { 0.082, 0.133, 0.176 },
+  rowEdge = { 0.169, 0.227, 0.278 },
+  small   = { 0.067, 0.118, 0.161, 1 },
 }
 local TOOLTIP_BG, TOOLTIP_EDGE = "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border"
 local STATUSBAR = "Interface\\TargetingFrame\\UI-StatusBar"
-local FONT_TITLE = RG.FONTS.semibold
+local FONT_TITLE = RG.FONTS.display or RG.FONTS.semibold
+local FONT_SEMI  = RG.FONTS.semibold
 local FONT_BODY  = RG.FONTS.medium
 local FONT_NUM   = RG.FONTS.regular
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local W, H = 780, 640
+local W, H = 1000, 680
+local CW = W - 56   -- the width of the list (follows the window as you resize it)
 -- Text size: 1.0 = original, saved per account. A- / A+ in the header change it.
 local function TS() return (RG.db and RG.db.textSize) or 1.2 end
 local function sz(n) return math.floor(n * TS() + 0.5) end
@@ -47,19 +52,22 @@ local state = { tab = "route", near = true, onlyUp = false, bySlot = false, src 
 RG.UIState = state
 local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
--- Tabs, merged: Professions holds Mining & smithing + Camp; Gold & AH holds
--- prices, gold tips and the bank alt. Sub-tabs pick the section.
-local GROUPS = { route = { "route", "plan", "flights" }, prof = { "prof", "fish" }, money = { "ah", "gold", "mail" }, spec2 = { "spec", "heal" } }
-local SUBLABEL = { route = "Leveling route", plan = "Quest plan", flights = "Flight paths", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt", spec = "Spec", heal = "Gear to collect" }
-local PARENT = {}
-for parent, subs in pairs(GROUPS) do for _, sub in ipairs(subs) do PARENT[sub] = parent end end
+-- Sections in the sidebar, each with its pages as tabs along the top. (The Group page is gone.)
+local SECTIONS = {
+  { key = "journey", label = "Journey", icon = "Interface\\Icons\\INV_Misc_Map_01", tabs = { "route", "plan", "flights" } },
+  { key = "equip",   label = "Gear",    icon = "Interface\\Icons\\INV_Chest_Chain_05", tabs = { "guide", "gear", "spec", "heal" } },
+  { key = "economy", label = "Economy", icon = "Interface\\Icons\\INV_Misc_Coin_02", tabs = { "prof", "fish", "ah", "gold", "mail" } },
+  { key = "cards",   label = "Cards",   icon = "Interface\\Icons\\INV_Misc_Ticket_Tarot_Portal_01", tabs = { "cards" } },
+}
+local GROUPS, PARENT = {}, {}
+for _, sec in ipairs(SECTIONS) do GROUPS[sec.key] = sec.tabs; for _, t in ipairs(sec.tabs) do PARENT[t] = sec.key end end
+-- old section names still work (/wp money, minimap menu entries...)
+local ALIAS = { money = "economy", spec2 = "equip", group = "journey" }
+local SUBLABEL = { route = "Route", plan = "Quest plan", flights = "Flight paths", guide = "Gear guide", gear = "What I wear", spec = "2nd spec",
+  heal = "2nd spec gear", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt",
+  cards = "Cards", settings = "Settings" }
 local function parentOf(tab) return PARENT[tab] or tab end
 state.lastSub = {}
-
-local function setTabLook(b, on)
-  b.under:SetShown(on)
-  if on then b.text:SetTextColor(unpack(T.text)) else b.text:SetTextColor(unpack(T.dim)) end
-end
 
 -- Rounded card (rows, tags, small buttons). The edge colour is no longer drawn; the fill is the look.
 local function backdrop(f, bg, edge, size, radius)
@@ -114,9 +122,9 @@ local function pillKind(s)
 end
 local PILL = {
   green = { bg = { 0.2, 0.55, 0.3, 0.45 }, edge = { 0.25, 0.75, 0.25, 0.75 } },
-  gold  = { bg = { 0.17, 0.5, 0.46, 0.5 }, edge = { 1, 0.82, 0, 0.75 } },
+  gold  = { bg = { 0.42, 0.33, 0.16, 0.55 }, edge = { 1, 0.82, 0, 0.75 } },
   red   = { bg = { 0.6, 0.2, 0.2, 0.5 }, edge = { 1, 0.2, 0.2, 0.75 } },
-  muted = { bg = { 0.2, 0.2, 0.2, 1 },   edge = { 0.5, 0.5, 0.5, 0.6 } },
+  muted = { bg = { 0.13, 0.19, 0.24, 1 }, edge = { 0.5, 0.5, 0.5, 0.6 } },
 }
 
 -- ---------------------------------------------------------------------------
@@ -125,7 +133,7 @@ local PILL = {
 local function getRow(i)
   if rows[i] then return rows[i] end
   local r = CreateFrame("Button", nil, content, "BackdropTemplate")
-  r:SetWidth(W - 56)
+  r:SetWidth(CW)
   r.hl = r:CreateTexture(nil, "HIGHLIGHT"); r.hl:SetPoint("TOPLEFT", 3, -3); r.hl:SetPoint("BOTTOMRIGHT", -3, 3)
   r.hl:SetColorTexture(1, 1, 1, 0.05)
 
@@ -153,7 +161,7 @@ local function getRow(i)
   r.headLine:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.3)
 
   -- progress bar pieces
-  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetHeight(10); r.barBg:SetPoint("BOTTOMLEFT", 12, 9); r.barBg:SetPoint("BOTTOMRIGHT", -12, 9); r.barBg:SetTexture(STATUSBAR); r.barBg:SetVertexColor(0.15, 0.15, 0.15, 0.9)
+  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetHeight(10); r.barBg:SetPoint("BOTTOMLEFT", 12, 9); r.barBg:SetPoint("BOTTOMRIGHT", -12, 9); r.barBg:SetTexture(STATUSBAR); r.barBg:SetVertexColor(0.12, 0.17, 0.22, 0.9)
   r.barFill = r:CreateTexture(nil, "OVERLAY"); r.barFill:SetHeight(10); r.barFill:SetPoint("LEFT", r.barBg, "LEFT", 0, 0); r.barFill:SetTexture(STATUSBAR)
   r.barMark = r:CreateTexture(nil, "OVERLAY"); r.barMark:SetSize(2, 14); r.barMark:SetColorTexture(1, 1, 1, 0.8)
   r.barLabel = r:CreateFontString(nil, "OVERLAY"); font(r.barLabel, FONT_BODY, 12); r.barLabel:SetPoint("TOPLEFT", 12, -7)
@@ -209,7 +217,7 @@ local function setHeader(r, text)
   if not label:find("|", 1, true) then label = label:upper() end
   r.head:SetText(label); r.head:SetTextColor(unpack(T.dim)); r.head:SetShadowColor(0, 0, 0, 0); r.head:ClearAllPoints(); r.head:SetPoint("BOTTOMLEFT", 4, 6); r.head:Show()
   -- a header too long for one line wraps instead of running off the edge
-  local maxW = (W - 56) - 8
+  local maxW = CW - 8
   r.head:SetWidth(0); r.head:SetHeight(0); r.head:SetWordWrap(false)
   if (r.head:GetStringWidth() or 0) > maxW then
     r.h = math.max(r.h, math.ceil(fitText(r.head, maxW) + 12))
@@ -222,8 +230,8 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   hideAll(r); r.itemID, r.link = id, link
   local hero = state.hero and not small
   r.kind, r.h = small and "sub" or "item", small and SUB_H() or (hero and sz(84) or ROW_H())
-  local fill = small and { 0.15, 0.15, 0.15, 1 } or T.panel
-  if hero then fill = { 0.1, 0.17, 0.165, 1 } elseif accent == "gold" then fill = { 0.095, 0.15, 0.145, 1 } elseif accent == "green" then fill = { 0.095, 0.15, 0.11, 1 } end
+  local fill = small and T.small or T.panel
+  if hero then fill = { 0.118, 0.165, 0.2, 1 } elseif accent == "gold" then fill = { 0.118, 0.153, 0.18, 1 } elseif accent == "green" then fill = { 0.078, 0.149, 0.149, 1 } end
   backdrop(r, fill, nil, small and 10 or 12)
   r.hl:Show()
   local size = small and sz(24) or (hero and sz(48) or sz(38))
@@ -258,9 +266,9 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   local rightW = math.max(kind and r.pill:GetWidth() or 0, r.meta:IsShown() and r.meta:GetStringWidth() or 0)
   local leftX = (small and 40 or 14) + size + 14
   -- long text wraps and the row grows to fit it (nothing is cut off with "...")
-  local th = fitText(r.title, math.max(120, (W - 56) - leftX - rightW - 26))
+  local th = fitText(r.title, math.max(120, CW - leftX - rightW - 26))
   local hasSub = sub and sub ~= ""
-  local shh = fitText(r.sub, math.max(120, (W - 56) - leftX - (r.meta:IsShown() and r.meta:GetStringWidth() or 0) - 26))
+  local shh = fitText(r.sub, math.max(120, CW - leftX - (r.meta:IsShown() and r.meta:GetStringWidth() or 0) - 26))
   if not hasSub then shh = 0 end
   local gap = hasSub and 2 or 0
   local content = th + gap + shh
@@ -270,7 +278,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r, "TOPLEFT", leftX, -top)
   r.sub:ClearAllPoints(); r.sub:SetPoint("TOPLEFT", r.title, "BOTTOMLEFT", 0, -gap)
   if accent then
-    local c = accent == "green" and T.green or ((accent == "purple" or accent == "blue") and T.dim or T.gold)   -- teal for what matters, grey for the rest
+    local c = accent == "green" and T.green or ((accent == "purple" or accent == "blue") and T.dim or T.gold)   -- brass for what matters, grey for the rest
     r.stripe:SetColorTexture(c[1], c[2], c[3], 0.9); r.stripe:Show()
   end
   r:Show()
@@ -285,7 +293,7 @@ local function setBar(r, label, value, max, color, valueText, mark)
   r.barLabel:SetText(label); r.barLabel:Show()
   r.barValue:SetText(valueText or ""); r.barValue:Show()
   r.barBg:Show()
-  local width = (W - 56) - 24
+  local width = CW - 24
   local pct = max > 0 and math.min(1, value / max) or 0
   r.barFill:SetWidth(math.max(1, width * pct)); r.barFill:SetVertexColor(color[1], color[2], color[3], 0.95); r.barFill:Show()
   if mark and max > 0 then
@@ -298,7 +306,7 @@ end
 local function setStep(r, num, text, done, onClick, auto)
   hideAll(r); r.itemID, r.link = nil, nil
   r.kind = "step"
-  backdrop(r, { 0.15, 0.15, 0.15, done and 0.55 or 1 }, nil, 10)
+  backdrop(r, { T.small[1], T.small[2], T.small[3], done and 0.55 or 1 }, nil, 10)
   r.hl:Show()
   local box = sz(16)
   r.iconBorder:SetSize(box, box); r.iconBorder:ClearAllPoints(); r.iconBorder:SetPoint("TOPLEFT", 34, -sz(9))
@@ -313,7 +321,7 @@ local function setStep(r, num, text, done, onClick, auto)
   font(r.title, FONT_NUM, sz(13))
   r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r.iconBorder, "TOPRIGHT", 10, 1)
   r.title:SetText((done and GREY or "|cffffffff") .. ((num ~= nil and num ~= "") and (num .. ".  ") or "") .. text .. "|r"); r.title:Show()
-  local th = fitText(r.title, (W - 56) - 34 - box - 10 - 18)
+  local th = fitText(r.title, CW - 34 - box - 10 - 18)
   r.h = math.max(sz(32), (th or sz(14)) + sz(16))
   r.onClick = onClick
   if auto then r.tip = "Done: " .. auto .. "\n|cffa0a0a0(detected from your game)|r"
@@ -981,6 +989,23 @@ local function renderRoute()
   local mining = RG.Skill("Mining") or 0
   local n = 0
   if (state.search or "") == "" then n = nowRow(n) end
+  -- reminders (bags, hearth, trainer, repairs...): they left the tracker and live here now
+  if (state.search or "") == "" and RG.Reminders then
+    local okR, rem = pcall(RG.Reminders)
+    if okR and type(rem) == "table" and #rem > 0 then
+      for i, rr in ipairs(rem) do rr.i = i end
+      table.sort(rem, function(a, b) local pa, pb = a[3] or 3, b[3] or 3; if pa ~= pb then return pa < pb end return a.i < b.i end)
+      n = n + 1; setHeader(getRow(n), "Reminders")
+      for i = 1, math.min(4, #rem) do
+        local rr = rem[i]
+        n = n + 1
+        setItem(getRow(n), nil, nil, rr[1], "", "", "", (rr[3] or 3) <= 1 and "gold" or nil, nil, true)
+        getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+        getRow(n).onClick = rr[2]
+        if rr[4] and RG.ArrowTo then local wp = rr[4]; getRow(n).onClick = function() if rr[2] then rr[2]() end; RG.ArrowTo(wp) end end
+      end
+    end
+  end
   local KIND = { zone = GREY .. "Questing|r", dungeon = "|cffA58BD8Dungeon|r", pala = GOLD .. "Paladin|r", travel = "|cff6FA8DCTravel|r" }
   local ICON = { zone = 134269, dungeon = 136058, pala = 135920, travel = "Interface\\Icons\\Ability_Mount_Wyvern_01" }
   RG.db.stepsDone = RG.db.stepsDone or {}
@@ -2493,21 +2518,70 @@ local FOOTERS = {
   heal  = "Pieces in your 2nd set are never sold  ·  the list updates twice a week  ·  /wp heal",
 }
 
-local function updateHeader()
-  local lvl = UnitLevel("player")
-  local p = RG.Professions()
-  local cls = RG.ActiveClass or {}
-  local bits = { "Level " .. lvl .. " " .. (UnitRace("player") or "") .. " " .. ((RG.ClassSupported and cls.spec) and (cls.spec .. " " .. (cls.name or "")) or (UnitClass("player") or "")) }
-  frame.subtitle:SetText(table.concat(bits, "  ·  "))
-  local xp, max = UnitXP and UnitXP("player") or 0, UnitXPMax and UnitXPMax("player") or 0
-  local rested = GetXPExhaustion and GetXPExhaustion() or nil
-  if rested and rested > 0 then frame.xp:SetStatusBarColor(0.25, 0.55, 0.95) else frame.xp:SetStatusBarColor(unpack(T.gold)) end
-  if max and max > 0 and lvl < (GetMaxPlayerLevel and GetMaxPlayerLevel() or 60) then
-    frame.xp:SetMinMaxValues(0, max); frame.xp:SetValue(xp)
-    frame.xpText:SetText(string.format("XP %d / %d  (%d%%)%s", xp, max, math.floor(xp / max * 100), rested and rested > 0 and "  ·  rested" or ""))
-  else
-    frame.xp:SetMinMaxValues(0, 1); frame.xp:SetValue(1); frame.xpText:SetText("Max level")
+-- ---------------------------------------------------------------------------
+-- The sidebar (the traveler's satchel): you, the four sections with their badges, your satchel
+-- ---------------------------------------------------------------------------
+local SIDE_W, SIDE_MIN = 212, 60
+local function sideWidth()
+  if not frame then return SIDE_W end
+  if (RG.db and RG.db.sideCollapsed) or (frame:GetWidth() or W) < 820 then return SIDE_MIN end
+  return SIDE_W
+end
+-- badges: quests ready to hand in (Journey) and card packs waiting to be opened (Cards)
+local function turnInsReady()
+  local n = 0
+  if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.IsComplete then
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+      local info = C_QuestLog.GetInfo(i)
+      if info and not info.isHeader and info.questID and C_QuestLog.IsComplete(info.questID) then n = n + 1 end
+    end
   end
+  return n
+end
+local function packsWaiting() return (RG.ArcadePacksWaiting and RG.ArcadePacksWaiting()) or 0 end
+RG.UITurnInsReady, RG.UIPacksWaiting = turnInsReady, packsWaiting
+
+local function updateHeader()
+  local sd = frame.side
+  if not sd then return end
+  local lvl = UnitLevel("player") or 1
+  local xp, max = UnitXP and UnitXP("player") or 0, UnitXPMax and UnitXPMax("player") or 0
+  local capLvl = GetMaxPlayerLevel and GetMaxPlayerLevel() or 60
+  local rested = GetXPExhaustion and GetXPExhaustion() or nil
+  local pct = (max and max > 0 and lvl < capLvl) and (xp / max) or 1
+  sd.name:SetText(UnitName("player") or "")
+  sd.level:SetText(lvl); sd.ringLevel:SetText(lvl)
+  sd.xp:SetMinMaxValues(0, 1); sd.xp:SetValue(pct)
+  if rested and rested > 0 then sd.xp:SetStatusBarColor(0.38, 0.62, 0.95) else sd.xp:SetStatusBarColor(unpack(T.gold)) end
+  local cls = RG.ActiveClass or {}
+  local bits = { (RG.ClassSupported and cls.name) or (UnitClass("player") or "") }
+  if lvl < capLvl and max and max > 0 then
+    bits[#bits + 1] = math.floor(pct * 100) .. "%"
+    local avg
+    if RG.Pace then local _, _, a = RG.Pace(); avg = a end
+    if avg and avg > 0 then bits[#bits + 1] = "~" .. math.max(1, math.floor(avg * (1 - pct) / 60 + 0.5)) .. "m to " .. (lvl + 1) end
+    if rested and rested > 0 then bits[#bits + 1] = "rested" end
+  else bits[#bits + 1] = "max level" end
+  sd.sub:SetText(table.concat(bits, " · "))
+  sd.ring:SetVertexColor(unpack(T.gold))
+  -- sections
+  local cur = parentOf(state.tab)
+  local badge = { journey = turnInsReady(), cards = packsWaiting() }
+  for _, b in ipairs(sd.nav) do
+    local on = b.key == cur
+    b.bg:SetShown(on); b.bar:SetShown(on)
+    b.text:SetTextColor(unpack(on and T.text or T.dim)); b.icon:SetDesaturated(not on); b.icon:SetAlpha(on and 1 or 0.75)
+    local n = badge[b.key] or 0
+    local full = sideWidth() == SIDE_W
+    b.badge:SetShown(n > 0 and full); b.badgeT:SetText(n > 9 and "9+" or n); b.dot:SetShown(n > 0 and not full)
+  end
+  sd.settings.text:SetTextColor(unpack(state.tab == "settings" and T.gold or T.dim))
+  -- the satchel
+  sd.hearth:SetText(GetBindLocation and GetBindLocation() or "?")
+  sd.gold:SetText(RG.Money and RG.Money(GetMoney and GetMoney() or 0) or "")
+  local ok, _, _, total = false
+  if RG.ProfitList then ok, _, _, total = pcall(RG.ProfitList) end
+  sd.sell:SetText((ok and type(total) == "number" and total > 0 and RG.Money) and RG.Money(total) or GREY .. "nothing yet|r")
 end
 
 -- Many events ask for a redraw at once (looting fires several); coalesce them
@@ -2522,6 +2596,7 @@ function RG.RefreshUINow()
   if not frame or not frame:IsShown() then return end
   for _, r in pairs(rows) do r:Hide() end
   updateHeader()
+  for _, r in pairs(rows) do r:SetWidth(CW) end
   local n
   local okRender, errRender = pcall(function()
   if state.tab == "guide" then n = renderGuide()
@@ -2575,30 +2650,30 @@ function RG.RefreshUINow()
     y = y + (r.h or ROW_H()) + GAP
   end
   content:SetHeight(math.max(1, y))
-  local parent = parentOf(state.tab)
-  for k, b in pairs(tabs) do setTabLook(b, k == parent) end
-  -- sub-tabs (right side of the section title) for merged tabs
+  -- this section's pages as tabs along the top
   for _, b in pairs(frame.subBtns) do b:Hide() end
-  local subs = GROUPS[parent]
-  local anchor
-  if subs then
-    state.lastSub[parent] = state.tab
-    for i = #subs, 1, -1 do
-      local b = frame.subBtns[subs[i]]
-      local on = subs[i] == state.tab
-      backdrop(b, on and { 0.12, 0.3, 0.28, 1 } or T.panel, nil, 8, 12)
-      font(b.text, FONT_BODY, 12); b.text:SetTextColor(unpack(on and T.gold or T.text))
-      b:ClearAllPoints()
-      if anchor then b:SetPoint("RIGHT", anchor, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -18, -116) end
-      b:Show(); anchor = b
+  local subs = GROUPS[parentOf(state.tab)]
+  local x = frame.contentLeft or 230
+  if subs and #subs > 1 then
+    state.lastSub[parentOf(state.tab)] = state.tab
+    for _, sub in ipairs(subs) do
+      local b = frame.subBtns[sub]
+      local on = sub == state.tab
+      font(b.text, on and FONT_SEMI or FONT_BODY, sz(12.5)); b.text:SetTextColor(unpack(on and T.text or T.dim))
+      b:SetWidth(b.text:GetStringWidth() + 4); b.line:SetShown(on)
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -8); b:Show()
+      x = x + b:GetWidth() + 22
     end
-  end
-  frame.scan:ClearAllPoints()
-  if anchor then frame.scan:SetPoint("RIGHT", anchor, "LEFT", -10, 0) else frame.scan:SetPoint("TOPRIGHT", -18, -116) end
-  -- the search box sits beside the sub-tabs, never on top of them
-  if frame.search then
-    frame.search:ClearAllPoints()
-    if anchor then frame.search:SetPoint("RIGHT", anchor, "LEFT", -12, 0) else frame.search:SetPoint("TOPRIGHT", -24, -118) end
+  elseif subs then state.lastSub[parentOf(state.tab)] = state.tab end
+  -- page tools sit on the title line, right side
+  local anchor
+  for _, f in ipairs({ frame.scan, frame.search, frame.near, frame.onlyUp }) do
+    if f and f:IsShown() then
+      f:ClearAllPoints()
+      local lw = (f == frame.near or f == frame.onlyUp) and (f.label:GetStringWidth() + 6) or 0
+      if anchor then f:SetPoint("RIGHT", anchor, "LEFT", -(14 + lw), 0) else f:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(24 + lw), -62) end
+      anchor = f
+    end
   end
 end
 
@@ -2610,48 +2685,175 @@ local function panelButton(parent, text, w, h)
   b.label = b:CreateFontString(nil, "OVERLAY"); font(b.label, FONT_BODY, 12); b.label:SetPoint("CENTER", 0, 0); b.label:SetTextColor(unpack(T.text))
   b.SetText = function(self, t) self.label:SetText(t) end
   b.GetText = function(self) return self.label:GetText() end
-  b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.23, 0.23, 0.23, 1); self.label:SetTextColor(unpack(T.gold)) end)
+  b:SetScript("OnEnter", function(self) self:SetBackdropColor(T.edge[1], T.edge[2], T.edge[3], 1); self.label:SetTextColor(unpack(T.gold)) end)
   b:SetScript("OnLeave", function(self) self:SetBackdropColor(T.raised[1], T.raised[2], T.raised[3], 1); self.label:SetTextColor(unpack(T.text)) end)
   b:SetText(text)
   return b
 end
 
+-- Lay the window out for its current size: sidebar (full or icons), tabs, title, list.
+local function relayout()
+  if not frame then return end
+  local sw = sideWidth()
+  local sd = frame.side
+  sd:SetWidth(sw)
+  local full = sw == SIDE_W
+  for _, k in ipairs({ "logoText", "card", "satchel", "collapse" }) do if sd[k] then sd[k]:SetShown(full) end end
+  sd.ringBox:SetShown(not full); sd.expand:SetShown(not full)
+  for _, b in ipairs(sd.nav) do
+    b:SetWidth(full and (SIDE_W - 20) or (SIDE_MIN - 12))
+    b.text:SetShown(full)
+    b.icon:ClearAllPoints(); if full then b.icon:SetPoint("LEFT", 12, 0) else b.icon:SetPoint("CENTER") end
+    b.dotAnchor = not full
+  end
+  sd.settings.text:SetShown(full)
+  sd.settings.ic:ClearAllPoints(); if full then sd.settings.ic:SetPoint("LEFT", 12, 0) else sd.settings.ic:SetPoint("CENTER") end
+  sd.settings:SetWidth(full and (SIDE_W - 20) or (SIDE_MIN - 12))
+  local L = sw + 22
+  frame.contentLeft = L
+  sectionTitle:ClearAllPoints(); sectionTitle:SetPoint("TOPLEFT", frame, "TOPLEFT", L, -54)
+  scroll:ClearAllPoints(); scroll:SetPoint("TOPLEFT", L, -108); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
+  frame.footLine:ClearAllPoints(); frame.footLine:SetPoint("BOTTOMLEFT", sw + 16, 30); frame.footLine:SetPoint("BOTTOMRIGHT", -16, 30)
+  footer:ClearAllPoints(); footer:SetPoint("BOTTOMLEFT", L + 4, 7)
+  local fw = frame:GetWidth() or W
+  -- a narrow window keeps the page tabs clear: the quick switches step aside (they're in Settings too)
+  for _, b in ipairs(frame.hdr or {}) do b:SetShown(fw >= 900) end
+  CW = math.max(300, fw - L - 38)
+  footer:SetWidth(CW)
+  content:SetWidth(CW)
+end
+RG.UIRelayout = function() relayout(); RG.RefreshUI() end
+
+-- Small brass-accented text button (header tools, satchel collapse...)
+local function iconButton(parent, tex, size, tip, onClick)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetSize(size, size)
+  b.ic = b:CreateTexture(nil, "ARTWORK"); b.ic:SetSize(size - 10, size - 10); b.ic:SetPoint("CENTER"); b.ic:SetTexture(tex)
+  b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.06)
+  b:SetScript("OnClick", onClick)
+  if tip then
+    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText(tip); GameTooltip:Show() end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  end
+  return b
+end
+
+local function buildSidebar()
+  local sd = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+  frame.side = sd
+  sd:SetPoint("TOPLEFT", 0, 0); sd:SetPoint("BOTTOMLEFT", 0, 0); sd:SetWidth(SIDE_W)
+  sd:SetFrameLevel((frame:GetFrameLevel() or 1) + 2)
+  RG.Round(sd, T.side[1], T.side[2], T.side[3], 1, 10)
+  local edge = sd:CreateTexture(nil, "ARTWORK"); edge:SetWidth(1); edge:SetPoint("TOPRIGHT"); edge:SetPoint("BOTTOMRIGHT"); edge:SetColorTexture(T.edge[1], T.edge[2], T.edge[3], 1)
+  -- name and the fold button
+  sd.logoText = sd:CreateFontString(nil, "OVERLAY"); font(sd.logoText, FONT_TITLE, 19); sd.logoText:SetPoint("TOPLEFT", 16, -16)
+  sd.logoText:SetText("Waypath" .. GOLD .. "+|r"); sd.logoText:SetTextColor(unpack(T.text))
+  sd.collapse = iconButton(sd, "Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up", 26, "Fold the sidebar", function() RG.db.sideCollapsed = true; relayout(); RG.RefreshUINow() end)
+  sd.collapse:SetPoint("TOPRIGHT", -10, -12)
+  sd.expand = iconButton(sd, "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up", 26, "Open the sidebar", function() RG.db.sideCollapsed = nil; relayout(); RG.RefreshUINow() end)
+  sd.expand:SetPoint("BOTTOM", 0, 44)
+  -- the character card: name, level, XP bar, a line about your pace
+  local card = CreateFrame("Frame", nil, sd, "BackdropTemplate"); sd.card = card
+  card:SetPoint("TOPLEFT", 12, -48); card:SetPoint("TOPRIGHT", -12, -48); card:SetHeight(70)
+  RG.Round(card, T.bg[1], T.bg[2], T.bg[3], 1, 8)
+  sd.name = card:CreateFontString(nil, "OVERLAY"); font(sd.name, FONT_SEMI, 13); sd.name:SetPoint("TOPLEFT", 12, -12); sd.name:SetTextColor(unpack(T.text))
+  sd.level = card:CreateFontString(nil, "OVERLAY"); font(sd.level, FONT_TITLE, 20); sd.level:SetPoint("TOPRIGHT", -12, -8); sd.level:SetTextColor(unpack(T.gold))
+  sd.xp = CreateFrame("StatusBar", nil, card); sd.xp:SetPoint("TOPLEFT", 12, -36); sd.xp:SetPoint("TOPRIGHT", -12, -36); sd.xp:SetHeight(4); sd.xp:SetStatusBarTexture(WHITE)
+  local xb = sd.xp:CreateTexture(nil, "BACKGROUND"); xb:SetAllPoints(); xb:SetColorTexture(T.edge[1], T.edge[2], T.edge[3], 1)
+  sd.sub = card:CreateFontString(nil, "OVERLAY"); font(sd.sub, FONT_NUM, 11); sd.sub:SetPoint("TOPLEFT", 12, -48); sd.sub:SetPoint("TOPRIGHT", -12, -48); sd.sub:SetJustifyH("LEFT"); sd.sub:SetWordWrap(false); sd.sub:SetTextColor(unpack(T.dim))
+  -- folded: a level ring instead of the card
+  local rb = CreateFrame("Frame", nil, sd); sd.ringBox = rb
+  rb:SetSize(44, 44); rb:SetPoint("TOP", 0, -14)
+  sd.ring = rb:CreateTexture(nil, "ARTWORK"); sd.ring:SetAllPoints(); sd.ring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring")
+  sd.ringLevel = rb:CreateFontString(nil, "OVERLAY"); font(sd.ringLevel, FONT_TITLE, 16); sd.ringLevel:SetPoint("CENTER", 0, 0); sd.ringLevel:SetTextColor(unpack(T.text))
+  -- the four sections
+  sd.nav = {}
+  for i, sec in ipairs(SECTIONS) do
+    local b = CreateFrame("Button", nil, sd)
+    b.key = sec.key
+    b:SetSize(SIDE_W - 20, 40); b:SetPoint("TOPLEFT", 10, -132 - (i - 1) * 44)
+    b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints(); b.bg:SetColorTexture(T.panel[1], T.panel[2], T.panel[3], 1)
+    b.bar = b:CreateTexture(nil, "ARTWORK"); b.bar:SetWidth(2); b.bar:SetPoint("TOPLEFT"); b.bar:SetPoint("BOTTOMLEFT"); b.bar:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 1)
+    b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.05)
+    b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetSize(22, 22); b.icon:SetPoint("LEFT", 12, 0); b.icon:SetTexture(sec.icon); b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 14); b.text:SetPoint("LEFT", b.icon, "RIGHT", 12, 0); b.text:SetText(sec.label)
+    b.badge = CreateFrame("Frame", nil, b); b.badge:SetSize(20, 20); b.badge:SetPoint("RIGHT", -10, 0)
+    local bb = b.badge:CreateTexture(nil, "ARTWORK"); bb:SetAllPoints(); bb:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); bb:SetVertexColor(T.gold[1], T.gold[2], T.gold[3], 1)
+    b.badgeT = b.badge:CreateFontString(nil, "OVERLAY"); font(b.badgeT, FONT_SEMI, 11); b.badgeT:SetPoint("CENTER", 0, 0); b.badgeT:SetTextColor(0.08, 0.06, 0.04)
+    b.dot = b:CreateTexture(nil, "OVERLAY"); b.dot:SetSize(8, 8); b.dot:SetPoint("TOPRIGHT", -6, -6); b.dot:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); b.dot:SetVertexColor(T.gold[1], T.gold[2], T.gold[3], 1)
+    b:SetScript("OnClick", function()
+      state.tab = state.lastSub[sec.key] or sec.tabs[1]
+      scroll:SetVerticalScroll(0); saveTab(); RG.RefreshUINow()
+    end)
+    b:SetScript("OnEnter", function(self)
+      if sideWidth() ~= SIDE_W then GameTooltip:SetOwner(self, "ANCHOR_RIGHT"); GameTooltip:SetText(sec.label)
+        if sec.key == "journey" and turnInsReady() > 0 then GameTooltip:AddLine(turnInsReady() .. " ready to hand in", 1, 1, 1) end
+        if sec.key == "cards" and packsWaiting() > 0 then GameTooltip:AddLine(packsWaiting() .. " packs to open", 1, 1, 1) end
+        GameTooltip:Show() end
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    sd.nav[i] = b
+  end
+  -- the satchel: hearth, gold, what your bags would sell for
+  local sat = CreateFrame("Frame", nil, sd); sd.satchel = sat
+  sat:SetPoint("BOTTOMLEFT", 16, 50); sat:SetPoint("BOTTOMRIGHT", -16, 50); sat:SetHeight(92)
+  local line = sat:CreateTexture(nil, "ARTWORK"); line:SetHeight(1); line:SetPoint("TOPLEFT", -4, 0); line:SetPoint("TOPRIGHT", 4, 0); line:SetColorTexture(T.line[1], T.line[2], T.line[3], 1)
+  local head = sat:CreateFontString(nil, "OVERLAY"); font(head, FONT_SEMI, 10); head:SetPoint("TOPLEFT", 0, -12); head:SetText("IN YOUR SATCHEL"); head:SetTextColor(unpack(T.dim))
+  local function satRow(i, label)
+    local l = sat:CreateFontString(nil, "OVERLAY"); font(l, FONT_NUM, 12); l:SetPoint("TOPLEFT", 0, -14 - i * 20); l:SetText(label); l:SetTextColor(unpack(T.dim))
+    local v = sat:CreateFontString(nil, "OVERLAY"); font(v, FONT_BODY, 12); v:SetPoint("TOPRIGHT", 0, -14 - i * 20); v:SetJustifyH("RIGHT"); v:SetTextColor(unpack(T.text))
+    v:SetPoint("LEFT", l, "RIGHT", 8, 0); v:SetWordWrap(false)
+    return v
+  end
+  sd.hearth = satRow(1, "Hearth"); sd.gold = satRow(2, "Gold"); sd.sell = satRow(3, "Sellable")
+  -- settings at the very bottom
+  local st = CreateFrame("Button", nil, sd); sd.settings = st
+  st:SetSize(SIDE_W - 20, 34); st:SetPoint("BOTTOMLEFT", 10, 10)
+  st.ic = st:CreateTexture(nil, "ARTWORK"); st.ic:SetSize(16, 16); st.ic:SetPoint("LEFT", 12, 0); st.ic:SetTexture("Interface\\Icons\\Trade_Engineering"); st.ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  st.text = st:CreateFontString(nil, "OVERLAY"); font(st.text, FONT_BODY, 13); st.text:SetPoint("LEFT", st.ic, "RIGHT", 10, 0); st.text:SetText("Settings")
+  local sh = st:CreateTexture(nil, "HIGHLIGHT"); sh:SetAllPoints(); sh:SetColorTexture(1, 1, 1, 0.05)
+  st:SetScript("OnClick", function() state.tab = "settings"; scroll:SetVerticalScroll(0); saveTab(); RG.RefreshUINow() end)
+end
+
 local function build()
   frame = CreateFrame("Frame", "WaypathFrame", UIParent, "BackdropTemplate")
-  frame:SetSize(W, H)
+  local size = RG.db and RG.db.windowSize
+  frame:SetSize(size and size[1] or W, size and size[2] or H)
   local pos = RG.db and RG.db.windowPos
   if pos then frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else frame:SetPoint("CENTER") end
-  if RG.db and RG.db.lastTab and TITLES[RG.db.lastTab] then state.tab = RG.db.lastTab end
+  if RG.db and RG.db.lastTab and TITLES[RG.db.lastTab] and RG.db.lastTab ~= "group" then state.tab = RG.db.lastTab end
   RG.DialogBackdrop(frame)
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving)
   frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.windowPos = { p, rp, x, y } end)
-  frame:SetScript("OnHide", saveTab)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "WaypathFrame")
   frame:SetScale((RG.db and RG.db.windowScale) or 1)
-  -- drag the bottom-right corner to make the whole window bigger or smaller
+  -- drag the bottom-right corner to resize the window (it remembers its size)
+  frame:SetResizable(true)
+  if frame.SetResizeBounds then frame:SetResizeBounds(640, 480, 1600, 1200) elseif frame.SetMinResize then frame:SetMinResize(640, 480); if frame.SetMaxResize then frame:SetMaxResize(1600, 1200) end end
   local grip = CreateFrame("Button", nil, frame)
   grip:SetSize(16, 16); grip:SetPoint("BOTTOMRIGHT", -4, 4); grip:SetFrameLevel((frame:GetFrameLevel() or 1) + 20)
   grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up"); grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-  grip:SetScript("OnMouseDown", function(self)
-    self.sx = GetCursorPosition(); self.s0 = frame:GetScale(); self.w0 = frame:GetWidth() * frame:GetEffectiveScale()
-    self:SetScript("OnUpdate", function(g)
-      local cx = GetCursorPosition()
-      local sc = math.max(0.7, math.min(1.5, g.s0 * (g.w0 + (cx - g.sx)) / g.w0))
-      frame:SetScale(sc); if RG.db then RG.db.windowScale = sc end
-    end)
+  grip:SetScript("OnMouseDown", function() frame:StartSizing("BOTTOMRIGHT") end)
+  grip:SetScript("OnMouseUp", function()
+    frame:StopMovingOrSizing()
+    if RG.db then RG.db.windowSize = { math.floor(frame:GetWidth() + 0.5), math.floor(frame:GetHeight() + 0.5) }; local p, _, rp, x, y = frame:GetPoint(); RG.db.windowPos = { p, rp, x, y } end
+    relayout(); RG.RefreshUINow()
   end)
-  grip:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
-  grip:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT"); GameTooltip:SetText("Drag to resize"); GameTooltip:AddLine("Double-click to reset", 1, 1, 1); GameTooltip:Show() end)
+  grip:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT"); GameTooltip:SetText("Drag to resize"); GameTooltip:AddLine("Double-click for the standard size", 1, 1, 1); GameTooltip:Show() end)
   grip:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  grip:SetScript("OnDoubleClick", function() frame:SetScale(1); if RG.db then RG.db.windowScale = nil end end)
+  grip:SetScript("OnDoubleClick", function() frame:SetSize(W, H); frame:SetScale(1); if RG.db then RG.db.windowSize = nil; RG.db.windowScale = nil end; relayout(); RG.RefreshUINow() end)
+  local lastW, lastH
+  frame:SetScript("OnSizeChanged", function(self, w, h)
+    if lastW and math.abs((w or 0) - lastW) < 2 and math.abs((h or 0) - lastH) < 2 then return end
+    lastW, lastH = w, h
+    if scroll then relayout(); RG.RefreshUI() end
+  end)
 
-  -- title bar: logo, name, text size, close
-  local logo = frame:CreateTexture(nil, "ARTWORK"); logo:SetSize(20, 20); logo:SetPoint("TOPLEFT", 16, -12); logo:SetTexture(RG.LOGO_LARGE)
-  local _, title = RG.DialogHeader(frame, "Waypath+", 0)
-  title:ClearAllPoints(); title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
+  buildSidebar()
 
+  -- top right: quick switches, text size, close
   local close = CreateFrame("Button", nil, frame)
   close:SetSize(26, 26); close:SetPoint("TOPRIGHT", -10, -9)
   close.x = close:CreateFontString(nil, "OVERLAY"); font(close.x, FONT_BODY, 20); close.x:SetPoint("CENTER", 0, 1); close.x:SetText("\195\151"); close.x:SetTextColor(unpack(T.dim))
@@ -2672,7 +2874,6 @@ local function build()
   end
   local plus = sizeBtn("A+", 0.1, close)
   local minus = sizeBtn("A-", -0.1, plus)
-  -- quick switches: report a step, sounds, tracker, arrow
   frame.hdr = {}
   local function hdrToggle(key, iconPath, tipTitle, tipText, action, isOn, anchor)
     local b = panelButton(frame, "", 26, 20)
@@ -2692,79 +2893,47 @@ local function build()
     function() RG.db.tracker = not RG.Opt("tracker"); if RG.RefreshTracker then RG.RefreshTracker() end end, function() return RG.Opt("tracker") end, a1)
   local a3 = hdrToggle("sounds", "Interface\\Common\\VoiceChat-Speaker", "Sounds", "Pop-up sounds on or off.",
     function() RG.db.sounds = not RG.Opt("sounds") end, function() return RG.Opt("sounds") end, a2)
-  local a4 = hdrToggle("report", "Interface\\Icons\\INV_Misc_Note_01", "Report this step", "Copy what you are on (step, quests, position) to paste into a bug report.",
+  hdrToggle("report", "Interface\\Icons\\INV_Misc_Note_01", "Report this step", "Copy what you are on (step, quests, position) to paste into a bug report.",
     function() if RG.ReportStep then RG.ReportStep() end end, function() return true end, a3)
-
-  -- tab strip: a rounded track with the open tab as a raised pill
   tabs = {}
-  local strip = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-  strip:SetPoint("TOPLEFT", 12, -42); strip:SetPoint("TOPRIGHT", -12, -42); strip:SetHeight(34)
-  strip:SetFrameLevel((frame:GetFrameLevel() or 1) + 1)
-  RG.Round(strip, 0.105, 0.105, 0.105, 1, 12)
-  local defs = { { "route", "Route" }, { "guide", "Gear guide" }, { "gear", "My gear" }, { "group", "Group" },
-    { "spec2", "2nd Spec" }, { "prof", "Professions" }, { "money", "Gold & AH" }, { "cards", "Cards" }, { "settings", "Settings" } }
-  local x = 16
-  for _, d in ipairs(defs) do
-    local b = CreateFrame("Button", nil, frame)
-    b:SetFrameLevel((frame:GetFrameLevel() or 1) + 4)
-    b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12.5); b.text:SetText(d[2]); b.text:SetPoint("CENTER", 0, 0)
-    local w = b.text:GetStringWidth() + 20
-    b.x = x
-    b:SetSize(w, 26); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -46); x = x + w + 2
-    local bg = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    bg:SetFrameLevel((frame:GetFrameLevel() or 1) + 3)
-    bg:SetAllPoints(b); RG.Round(bg, 0.19, 0.19, 0.19, 1, 9); bg:Hide()
-    b.under = bg
-    b:SetScript("OnEnter", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.text)) end end)
-    b:SetScript("OnLeave", function(self) if not self.under:IsShown() then self.text:SetTextColor(unpack(T.dim)) end end)
-    b:SetScript("OnClick", function()
-      local subs = GROUPS[d[1]]
-      state.tab = subs and (state.lastSub[d[1]] or subs[1]) or d[1]
-      scroll:SetVerticalScroll(0); RG.RefreshUINow()
-    end)
-    tabs[d[1]] = b
-  end
 
-  -- who you are, and a thin XP bar
-  frame.subtitle = frame:CreateFontString(nil, "OVERLAY"); font(frame.subtitle, FONT_TITLE, 15); frame.subtitle:SetPoint("TOPLEFT", 18, -86); frame.subtitle:SetJustifyH("LEFT"); frame.subtitle:SetTextColor(unpack(T.text))
-  frame.xp = CreateFrame("StatusBar", nil, frame)
-  frame.xp:SetPoint("TOPLEFT", 18, -108); frame.xp:SetPoint("TOPRIGHT", -18, -108); frame.xp:SetHeight(5)
-  frame.xp:SetStatusBarTexture(WHITE)
-  local xpBg = frame.xp:CreateTexture(nil, "BACKGROUND"); xpBg:SetAllPoints(); xpBg:SetColorTexture(0.17, 0.17, 0.17, 1)
-  frame.xpText = frame:CreateFontString(nil, "OVERLAY"); font(frame.xpText, FONT_NUM, 11); frame.xpText:SetPoint("TOPRIGHT", -18, -90); frame.xpText:SetTextColor(unpack(T.dim))
-
-  -- section title
-  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_TITLE, 15); sectionTitle:SetPoint("TOPLEFT", 18, -122); sectionTitle:SetTextColor(unpack(T.text))
-  sectionTitle:SetShadowColor(0, 0, 0, 1); sectionTitle:SetShadowOffset(1, -1)
-  frame.sectionSub = RG.NewText(frame, "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
-
-  -- sub-tabs for merged tabs (top right of the section)
+  -- the line under the page tabs
+  frame.tabLine = frame:CreateTexture(nil, "ARTWORK"); frame.tabLine:SetHeight(1)
+  frame.tabLine:SetPoint("TOPLEFT", frame.side, "TOPRIGHT", 0, -40); frame.tabLine:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, -40)
+  frame.tabLine:SetColorTexture(T.line[1], T.line[2], T.line[3], 1)
+  -- page tabs (this section's pages), drawn in RefreshUINow
   frame.subBtns = {}
-  for _, subs in pairs(GROUPS) do
-    for _, sub in ipairs(subs) do
-      local b = CreateFrame("Button", nil, frame, "BackdropTemplate")
-      b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12); b.text:SetPoint("CENTER"); b.text:SetText(SUBLABEL[sub])
-      b:SetSize(b.text:GetStringWidth() + 26, 24)
-      b:SetScript("OnClick", function() state.tab = sub; scroll:SetVerticalScroll(0); RG.RefreshUINow() end)
+  for _, sec in ipairs(SECTIONS) do
+    for _, sub in ipairs(sec.tabs) do
+      local b = CreateFrame("Button", nil, frame)
+      b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 12.5); b.text:SetPoint("CENTER", 0, 0); b.text:SetText(SUBLABEL[sub] or sub)
+      b:SetSize(b.text:GetStringWidth() + 4, 32)
+      b.line = b:CreateTexture(nil, "OVERLAY"); b.line:SetHeight(2); b.line:SetPoint("BOTTOMLEFT", 0, -1); b.line:SetPoint("BOTTOMRIGHT", 0, -1); b.line:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 1)
+      b:SetScript("OnEnter", function(self) if not self.line:IsShown() then self.text:SetTextColor(unpack(T.text)) end end)
+      b:SetScript("OnLeave", function(self) if not self.line:IsShown() then self.text:SetTextColor(unpack(T.dim)) end end)
+      b:SetScript("OnClick", function() state.tab = sub; scroll:SetVerticalScroll(0); saveTab(); RG.RefreshUINow() end)
       frame.subBtns[sub] = b
     end
   end
 
+  -- page title (serif) and its one-line description
+  sectionTitle = frame:CreateFontString(nil, "OVERLAY"); font(sectionTitle, FONT_TITLE, 22); sectionTitle:SetPoint("TOPLEFT", 234, -54); sectionTitle:SetTextColor(unpack(T.text))
+  frame.sectionSub = RG.NewText(frame, "GameFontHighlightSmall"); frame.sectionSub:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4); frame.sectionSub:SetTextColor(unpack(T.dim))
+
   frame.near = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-  frame.near:SetSize(24, 24); frame.near:SetPoint("TOPRIGHT", -112, -116)
+  frame.near:SetSize(24, 24)
   frame.near:SetChecked(state.near)
   frame.near.label = RG.NewText(frame.near, "GameFontNormalSmall")
-  frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level")
+  frame.near.label:SetPoint("LEFT", frame.near, "RIGHT", 2, 0); frame.near.label:SetText("Near my level"); frame.near.label:SetTextColor(unpack(T.text))
   frame.near:SetScript("OnClick", function(self) state.near = self:GetChecked(); RG.RefreshUI() end)
   frame.onlyUp = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-  frame.onlyUp:SetSize(24, 24); frame.onlyUp:SetPoint("TOPRIGHT", -232, -116)
+  frame.onlyUp:SetSize(24, 24)
   frame.onlyUp:SetChecked(state.onlyUp)
   frame.onlyUp.label = RG.NewText(frame.onlyUp, "GameFontNormalSmall")
-  frame.onlyUp.label:SetPoint("LEFT", frame.onlyUp, "RIGHT", 2, 0); frame.onlyUp.label:SetText("Upgrades only")
+  frame.onlyUp.label:SetPoint("LEFT", frame.onlyUp, "RIGHT", 2, 0); frame.onlyUp.label:SetText("Upgrades only"); frame.onlyUp.label:SetTextColor(unpack(T.text))
   frame.onlyUp:SetScript("OnClick", function(self) state.onlyUp = self:GetChecked() and true or false; RG.RefreshUI() end)
-  -- settings search
   frame.search = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
-  frame.search:SetSize(150, 20); frame.search:SetPoint("TOPRIGHT", -24, -118)
+  frame.search:SetSize(170, 20)
   frame.search:SetAutoFocus(false)
   frame.search.hint = RG.NewText(frame.search, "GameFontDisableSmall")
   frame.search.hint:SetPoint("LEFT", 4, 0); frame.search.hint:SetText("Search settings")
@@ -2781,16 +2950,15 @@ local function build()
   frame.scan:SetScript("OnClick", function() RG.ScanAH(true) end)
 
   scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-  scroll:SetPoint("TOPLEFT", 18, -166); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
-  pcall(function()   -- slim scroll bar: no arrow buttons, a thin grey thumb
+  scroll:SetPoint("TOPLEFT", 234, -108); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
+  pcall(function()   -- slim scroll bar: no arrow buttons, a thin thumb
     local sb = scroll.ScrollBar
     if not sb then return end
     for _, k in ipairs({ "ScrollUpButton", "ScrollDownButton" }) do if sb[k] then sb[k]:Hide(); sb[k]:SetAlpha(0); sb[k]:EnableMouse(false) end end
     local th = sb.GetThumbTexture and sb:GetThumbTexture()
-    if th then th:SetTexture(WHITE); th:SetVertexColor(0.35, 0.35, 0.35, 1); th:SetWidth(5) end
+    if th then th:SetTexture(WHITE); th:SetVertexColor(T.edge[1] * 1.6, T.edge[2] * 1.6, T.edge[3] * 1.6, 1); th:SetWidth(5) end
     if sb.SetWidth then sb:SetWidth(8) end
-    -- a faint track, and a thumb as long as the visible share of the list (the stock one is a fixed little stub)
-    local track = sb:CreateTexture(nil, "BACKGROUND"); track:SetAllPoints(sb); track:SetColorTexture(1, 1, 1, 0.05)
+    local track = sb:CreateTexture(nil, "BACKGROUND"); track:SetAllPoints(sb); track:SetColorTexture(1, 1, 1, 0.04)
     local function sizeThumb()
       if not th then return end
       local range, view = scroll:GetVerticalScrollRange() or 0, scroll:GetHeight() or 0
@@ -2799,22 +2967,24 @@ local function build()
     scroll:HookScript("OnScrollRangeChanged", sizeThumb)
     sizeThumb()
   end)
-  content = CreateFrame("Frame", nil, scroll); content:SetSize(W - 56, 10)
+  content = CreateFrame("Frame", nil, scroll); content:SetSize(CW, 10)
   scroll:SetScrollChild(content)
 
-  local footLine = frame:CreateTexture(nil, "ARTWORK"); footLine:SetHeight(1); footLine:SetPoint("BOTTOMLEFT", 16, 30); footLine:SetPoint("BOTTOMRIGHT", -16, 30); footLine:SetColorTexture(1, 1, 1, 0.05)
-  footer = RG.NewText(frame, "GameFontDisableSmall"); footer:SetPoint("BOTTOMLEFT", 22, 7)
+  frame.footLine = frame:CreateTexture(nil, "ARTWORK"); frame.footLine:SetHeight(1); frame.footLine:SetColorTexture(T.line[1], T.line[2], T.line[3], 1)
+  footer = RG.NewText(frame, "GameFontDisableSmall"); footer:SetTextColor(unpack(T.dim))
   -- long footers wrap onto a second line instead of running off the window
-  footer:SetWidth(W - 44); footer:SetHeight(22); footer:SetJustifyH("LEFT"); footer:SetJustifyV("MIDDLE"); footer:SetWordWrap(true)
+  footer:SetWidth(CW); footer:SetHeight(22); footer:SetJustifyH("LEFT"); footer:SetJustifyV("MIDDLE"); footer:SetWordWrap(true)
   if footer.SetMaxLines then footer:SetMaxLines(2) end
 
-  frame:SetScript("OnShow", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_OPEN or 839) end; RG.RefreshUI() end)
-  frame:SetScript("OnHide", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_CLOSE or 840) end end)
+  relayout()
+  frame:SetScript("OnShow", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_OPEN or 839) end; relayout(); RG.RefreshUI() end)
+  frame:SetScript("OnHide", function() saveTab(); if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_CLOSE or 840) end end)
   frame:Hide()
 end
 
 function RG.ShowTab(tab)
   if not frame then build() end
+  tab = ALIAS[tab] or tab
   if GROUPS[tab] then tab = state.lastSub[tab] or GROUPS[tab][1] end
   if tab == "camp" then tab = "prof"; RG.db.profOpen = RG.db.profOpen or {}; RG.db.profOpen.Cooking = true; state.profSel = "Cooking" end
   if not TITLES[tab] then tab = "route" end

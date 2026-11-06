@@ -3,7 +3,7 @@
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = { 0.31, 0.82, 0.77 }
+local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
 
 -- Settings with their defaults. The Settings tab shows these as checkboxes.
 RG.OPTIONS = {
@@ -54,13 +54,13 @@ local function backdrop(f, bg, edge, radius)
     f:SetBackdropColor(0, 0, 0, 0); f:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4] or 1)
     return
   end
-  RG.Round(f, bg[1] * 0.4 + 0.06, bg[2] * 0.4 + 0.06, bg[3] * 0.4 + 0.06, bg[4] or 1, radius or 8)   -- cool near-black whatever tint was asked for
+  RG.Round(f, bg[1] * 0.4 + 0.035, bg[2] * 0.4 + 0.065, bg[3] * 0.4 + 0.095, bg[4] or 1, radius or 8)   -- deep ink whatever tint was asked for
 end
 -- The window: a deep rounded panel.
-function RG.DialogBackdrop(f) RG.Round(f, 0.078, 0.078, 0.078, 0.97, 14) end
+function RG.DialogBackdrop(f) RG.Round(f, 0.063, 0.11, 0.153, 0.97, 10) end
 -- Window title, top left. (Returns nil for the old banner texture, then the text.)
 function RG.DialogHeader(f, text)
-  local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "semibold", 15); t:SetPoint("TOPLEFT", 18, -14); t:SetText(text); t:SetTextColor(0.93, 0.93, 0.93)
+  local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "display", 17); t:SetPoint("TOPLEFT", 18, -14); t:SetText(text); t:SetTextColor(0.937, 0.902, 0.824)
   return nil, t
 end
 RG.Backdrop = backdrop
@@ -378,7 +378,7 @@ local function showMenu(anchor)
   if not mmMenu then
     mmMenu = CreateFrame("Frame", "WaypathMinimapMenu", UIParent, "BackdropTemplate")
     mmMenu:SetFrameStrata("DIALOG"); mmMenu:SetClampedToScreen(true); mmMenu:EnableMouse(true)
-    RG.Round(mmMenu, 0.08, 0.08, 0.08, 0.97, 8)
+    RG.Round(mmMenu, 0.063, 0.11, 0.153, 0.98, 8)
     mmMenu.rows = {}
     mmMenu:SetScript("OnUpdate", function(self, dt)
       -- closes once the mouse has been away for a moment

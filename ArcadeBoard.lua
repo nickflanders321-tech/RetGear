@@ -293,7 +293,7 @@ end)
 local ROWS = 13
 local win, view = nil, { filter = "all", top = 1 }
 local CLASS_COL = { WARRIOR = { 0.78, 0.61, 0.43 }, PALADIN = { 0.96, 0.55, 0.73 }, HUNTER = { 0.67, 0.83, 0.45 }, ROGUE = { 1, 0.96, 0.41 },
-  PRIEST = { 1, 1, 1 }, SHAMAN = { 0, 0.44, 0.87 }, MAGE = { 0.41, 0.8, 0.94 }, WARLOCK = { 0.58, 0.51, 0.79 }, DRUID = { 1, 0.49, 0.04 } }
+  PRIEST = { 1, 1, 1 }, SHAMAN = { 0, 0.44, 0.87 }, MAGE = { 0.41, 0.8, 0.94 }, WARLOCK = { 0.702, 0.627, 0.476 }, DRUID = { 1, 0.49, 0.04 } }
 local function ago(secs)
   if secs < 120 then return "now" end
   if secs < 7200 then return math.floor(secs / 60) .. " min" end
@@ -340,7 +340,7 @@ local function build()
   win = { f = f, rows = {}, tabs = {} }
   local logo = f:CreateTexture(nil, "ARTWORK"); logo:SetTexture(RG.LOGO or ""); logo:SetSize(32, 32); logo:SetPoint("TOPLEFT", 16, -14)
   local t = U.fs(f, "title", 20); t:SetPoint("TOPLEFT", 56, -18); t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); t:SetText("WAYPATH+ LEADERBOARD")
-  local sub = U.fs(f, "body", 11); sub:SetPoint("TOPLEFT", 18, -56); sub:SetWidth(524); sub:SetJustifyH("LEFT"); sub:SetTextColor(0.75, 0.72, 0.9)
+  local sub = U.fs(f, "body", 11); sub:SetPoint("TOPLEFT", 18, -56); sub:SetWidth(524); sub:SetJustifyH("LEFT"); sub:SetTextColor(0.885, 0.79, 0.6)
   sub:SetText("Every Waypath+ player who has finished their placement games shares their rank automatically. You see the players your add-on has heard of, so the list grows as you meet people.")
   local function tab(key, label, x)
     local b = U.gbtn(f, label, 120, 26, function() view.filter, view.top = key, 1; refresh() end)
@@ -359,16 +359,16 @@ local function build()
   for i = 1, ROWS do
     local row = CreateFrame("Frame", nil, f)
     row:SetSize(524, 28); row:SetPoint("TOPLEFT", 18, -146 - (i - 1) * 30)
-    local bg = row:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(row); bg:SetColorTexture(0.1, 0.08, 0.2, i % 2 == 0 and 0.45 or 0.7)
+    local bg = row:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(row); bg:SetColorTexture(0.142, 0.127, 0.096, i % 2 == 0 and 0.45 or 0.7)
     local r = { frame = row }
     r.me = row:CreateTexture(nil, "BORDER"); r.me:SetAllPoints(row); r.me:SetColorTexture(0.85, 0.7, 0.3, 0.22); r.me:Hide()
     local function col(font, size, x, w, just) local s = U.fs(row, font, size); s:SetPoint("LEFT", x, 0); s:SetWidth(w); s:SetJustifyH(just or "LEFT"); s:SetWordWrap(false); return s end
     r.num = col("head", 12, 6, 30); r.num:SetTextColor(0.85, 0.8, 0.6)
     r.name = col("head", 13, 42, 134)
-    r.realm = col("body", 11, 178, 100); r.realm:SetTextColor(0.7, 0.66, 0.85)
+    r.realm = col("body", 11, 178, 100); r.realm:SetTextColor(0.825, 0.737, 0.56)
     r.tier = col("head", 12, 282, 112)
     r.rating = col("body", 12, 392, 56, "RIGHT"); r.rating:SetTextColor(0.95, 0.92, 0.8)
-    r.seen = col("body", 11, 456, 56, "RIGHT"); r.seen:SetTextColor(0.6, 0.57, 0.7)
+    r.seen = col("body", 11, 456, 56, "RIGHT"); r.seen:SetTextColor(0.698, 0.623, 0.474)
     row:Hide(); win.rows[i] = r
   end
   win.empty = U.fs(f, "body", 13); win.empty:SetPoint("TOP", 0, -260); win.empty:SetWidth(420); win.empty:SetTextColor(0.85, 0.8, 0.65)

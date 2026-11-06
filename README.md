@@ -129,5 +129,6 @@ Quest, zone, profession and spell names are matched in English, so Waypath+ is m
 Waypath+ is free software under the GNU General Public License v3 (see `LICENSE`).
 - Quest, objective and spawn data: [QuestieDB](https://github.com/Questie/QuestieDB) (GPL-3.0), WoW Forever data merged by the Questie team.
 - Item stats: [cMaNGOS classic-db](https://github.com/cmangos/classic-db) (GPL-3.0).
+- Fonts (SIL Open Font License, licences in `Media/Fonts`): Inter, Fraunces (Undercase Type), Cinzel, Marcellus.
 - Guides and research: Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com, wowtbc.gg and Warcraft Wiki.
 
