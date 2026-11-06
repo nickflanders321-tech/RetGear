@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Auction House prices: the price check now asks for up to 40 items in one request by item ID (WoW Forever's modern auction house), instead of one search by name per item, so a scan takes a few seconds instead of minutes and can't miss an item over its name. A busy server no longer turns a slow answer into "none listed" (it waits up to 15 seconds and asks again), "none listed" keeps the last price seen, and the full scan reads items the game hasn't loaded yet. /wp scan status shows what the scanner did, for bug reports.
+
 ## v1.12.0
 - Travel tips: Riverglades can now be reached on foot from the Badlands (north of Twilight's Shroud) and the Swamp of Sorrows (through Redridge Pass), not only from Redridge, the Burning Steppes and the Tanaris ship. Horde players coming from Kargath or Stonard get the short walk instead of a detour.
 - Riverglades route notes list every way into the zone, and the Horde note names Rog'mar's wind rider master, Grakna.

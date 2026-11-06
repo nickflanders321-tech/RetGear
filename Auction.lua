@@ -82,7 +82,7 @@ function RG.PriceText(id)
   if not isTracked(id) and not RG.db.prices[id] then return nil end
   local p, src, rec = RG.Price(id)
   if not p then return GREY .. "not seen yet (open the AH to scan)|r" end
-  if rec and rec.none then return GREY .. "none listed (" .. ageText(rec.t) .. ")|r" end
+  if rec and rec.none then return GREY .. "none listed (" .. ageText(rec.t) .. ")" .. (rec.last and ("; last seen " .. money(rec.last)) or "") .. "|r" end
   local s = money(p)
   if src == "scan" then s = s .. GREY .. "  (" .. ageText(rec.t) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "") .. ")|r"
   else s = s .. GREY .. "  (" .. src .. ")|r" end
@@ -93,7 +93,9 @@ end
 local function record(id, price, count)
   local db = RG.db
   local prev = db.prices[id]
-  db.prices[id] = { price = price, t = time(), n = count, none = price == nil or nil }
+  -- "none listed right now" keeps the last price that was seen, so one empty search doesn't erase what we knew
+  db.prices[id] = { price = price or (prev and (prev.price or prev.last)), t = time(), n = count, none = price == nil or nil,
+    last = price or (prev and (prev.price or prev.last)) or nil }
   if price and db.alerts and db.alerts[id] and price <= db.alerts[id] then
     local _, link = RG.ItemInfo(id)
     RG.Print(GREEN .. "Price alert:|r " .. (link or id) .. " is listed for " .. money(price) .. " (your target " .. money(db.alerts[id]) .. ").")
@@ -143,8 +145,9 @@ local function wanted()
 end
 local function watched(id) return id and (wanted()[id] or isTracked(id)) end
 
+local batch                  -- (the modern AH's current request, below)
 local function stop(msg)
-  queue, pending, mode = {}, nil, nil
+  queue, pending, mode, batch = {}, nil, nil, nil
   runner:SetScript("OnUpdate", nil)
   if msg then RG.Print(msg) end
   if RG.RefreshUI then RG.RefreshUI() end
@@ -197,40 +200,72 @@ local function readFull(total, getInfo, isModern)
   end)
 end
 
--- One search per stale item, sent as soon as the server is ready for it.
-local function sendNext()
-  local modern = C_AuctionHouse and C_AuctionHouse.SendBrowseQuery
-  if modern and C_AuctionHouse.IsThrottledMessageSystemReady and not C_AuctionHouse.IsThrottledMessageSystemReady() then return end
-  if not modern then
-    local canQuery = CanSendAuctionQuery and CanSendAuctionQuery()
-    if not canQuery then return end
+-- Which auction house is open decides which way of asking works. WoW Forever has the modern one (AuctionHouseFrame,
+-- C_AuctionHouse); the classic one (AuctionFrame, QueryAuctionItems) is still handled for other clients.
+local function modernAH()
+  if AuctionFrame and AuctionFrame:IsShown() and QueryAuctionItems then return false end
+  return C_AuctionHouse and C_AuctionHouse.SearchForItemKeys and C_AuctionHouse.MakeItemKey and true or false
+end
+local stats = { sent = 0, events = 0, found = 0, none = 0, timeouts = 0, full = 0, fullRead = 0 }
+RG.AHStats = stats
+
+-- Modern AH: up to BATCH items in one request, by item id (no name matching, so nothing is missed for a spelling or a
+-- similar name), answered as one Browse list. Items that aren't on the list once it's complete are "none listed".
+local BATCH = 40
+local batchAt, batchTries = 0, 0
+local announce = false   -- chat lines only when you asked for the scan
+local function sendBatch()
+  if C_AuctionHouse.IsThrottledMessageSystemReady and not C_AuctionHouse.IsThrottledMessageSystemReady() then return end
+  if #queue == 0 then stop(announce and "Auction House prices updated." or nil); return end
+  local ids, keys = {}, {}
+  while #queue > 0 and #ids < BATCH do
+    local id = table.remove(queue, 1)
+    ids[#ids + 1] = id; keys[#keys + 1] = C_AuctionHouse.MakeItemKey(id)
   end
+  batch, batchAt, batchTries = ids, GetTime(), 0
+  local sorts = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
+  ours = true; local ok = pcall(C_AuctionHouse.SearchForItemKeys, keys, sorts); ours = false
+  stats.sent = stats.sent + 1
+  if not ok then for i = #ids, 1, -1 do table.insert(queue, 1, ids[i]) end; batch = nil end
+end
+
+-- Classic AH: one search per item, by name.
+local function sendNext()
+  local canQuery = CanSendAuctionQuery and CanSendAuctionQuery()
+  if not canQuery then return end
   local id = table.remove(queue, 1)
   if not id then stop(announce and "Auction House prices updated." or nil); return end
   local name = RG.ItemInfo(id)
   if not name then RG.RequestItem(id); if #queue > 0 then queue[#queue + 1] = id end; return end
   pending, pendingAt = id, GetTime()
-  ours = true
-  if modern then
-    local sorts = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
-    pcall(C_AuctionHouse.SendBrowseQuery, { searchString = '"' .. name .. '"', sorts = sorts, filters = {}, itemClassFilters = {} })
-  else
-    pcall(QueryAuctionItems, name, nil, nil, 0, nil, nil, false, true)
-  end
-  ours = false
+  ours = true; pcall(QueryAuctionItems, name, nil, nil, 0, nil, nil, false, true); ours = false
+  stats.sent = stats.sent + 1
 end
-local announce = false   -- chat lines only when you asked for the scan
 local function runItems()
   queue = staleIDs()
   if #queue == 0 then if announce then RG.Print("Auction House prices are up to date.") end return end
   mode = "items"
   if announce then RG.Print("Checking " .. #queue .. " price" .. (#queue > 1 and "s" or "") .. ". Search for anything yourself and Waypath+ steps aside.") end
+  local modern = modernAH()
   runner:SetScript("OnUpdate", function()
-    if pending then
-      if GetTime() - pendingAt > 3 then record(pending, nil, 0); pending = nil end   -- nothing came back: none listed
-      return
+    if modern then
+      if batch then
+        -- a busy server can take a while: wait up to 15 seconds, ask once more, then leave those prices as they were
+        if GetTime() - batchAt > 15 then
+          stats.timeouts = stats.timeouts + 1
+          if batchTries == 0 then for i = #batch, 1, -1 do table.insert(queue, 1, batch[i]) end; batch = nil; batchTries = 1 else batch = nil end
+        end
+        return
+      end
+      sendBatch()
+    else
+      if pending then
+        -- no answer: try that item again later instead of calling it "none listed"
+        if GetTime() - pendingAt > 10 then stats.timeouts = stats.timeouts + 1; pending = nil end
+        return
+      end
+      sendNext()
     end
-    sendNext()
   end)
 end
 
@@ -247,16 +282,17 @@ function RG.ScanAH(manual)
   local now = time()
   local canFull = now - (RG.db.lastFullScan or 0) > FULL_COOLDOWN
   -- 1. full scan
-  if canFull and C_AuctionHouse and C_AuctionHouse.ReplicateItems then
+  if canFull and modernAH() and C_AuctionHouse.ReplicateItems then
+    stats.full = stats.full + 1
     RG.db.lastFullScan = now
     mode = "full"
-    if announce then RG.Print("Full price scan: one request for the whole Auction House...") end
+    if announce then RG.Print("Full price scan: one request for the whole Auction House (the game allows one every 15 minutes)...") end
     ours = true; pcall(C_AuctionHouse.ReplicateItems); ours = false
     -- if the server never answers, fall back to item searches
     C_Timer.After(20, function() if mode == "full" and not runner:GetScript("OnUpdate") then mode = nil; if ahOpen() then runItems() end end end)
     return
   end
-  if canFull and QueryAuctionItems and CanSendAuctionQuery and not C_AuctionHouse then
+  if canFull and not modernAH() and QueryAuctionItems and CanSendAuctionQuery then
     local canQuery, canAll = CanSendAuctionQuery()
     if canAll then
       RG.db.lastFullScan = now
@@ -281,9 +317,17 @@ local function readBrowse()
       if not found[id] or r.minPrice < found[id].p then found[id] = { p = r.minPrice, n = r.totalQuantity } end
     end
   end
-  for id, x in pairs(found) do record(id, x.p, x.n) end
-  if pending and found[pending] then pending = nil
-  elseif pending and C_AuctionHouse.HasFullBrowseResults and C_AuctionHouse.HasFullBrowseResults() then record(pending, nil, 0); pending = nil end
+  for id, x in pairs(found) do record(id, x.p, x.n); stats.found = stats.found + 1 end
+  stats.events = stats.events + 1
+  if batch and (not C_AuctionHouse.HasFullBrowseResults or C_AuctionHouse.HasFullBrowseResults()) then
+    -- our batch is answered in full: what isn't on the list has no auctions right now
+    local inList = {}
+    for _, r in ipairs(results) do local id = r.itemKey and r.itemKey.itemID; if id then inList[id] = true end end
+    for _, id in ipairs(batch) do if not inList[id] then record(id, nil, 0); stats.none = stats.none + 1 end end
+    batch = nil
+  elseif batch and C_AuctionHouse.RequestMoreBrowseResults then
+    pcall(C_AuctionHouse.RequestMoreBrowseResults)
+  end
 end
 local function readLegacy()
   if mode == "full" and not runner:GetScript("OnUpdate") then
@@ -312,8 +356,14 @@ end
 local function readReplicate()
   if not (C_AuctionHouse and C_AuctionHouse.GetNumReplicateItems) or runner:GetScript("OnUpdate") then return end
   local total = C_AuctionHouse.GetNumReplicateItems() or 0
+  stats.fullRead = total
   readFull(total, function(i)
     local _, _, stack, _, _, _, _, _, _, buyout, _, _, _, _, _, _, itemID = C_AuctionHouse.GetReplicateItemInfo(i)
+    if not itemID and C_AuctionHouse.GetReplicateItemLink then
+      -- an item the game hasn't loaded yet has no id in the info, but its link has it
+      local link = C_AuctionHouse.GetReplicateItemLink(i)
+      itemID = link and tonumber(link:match("item:(%d+)"))
+    end
     return itemID, stack, buyout
   end, true)
 end
@@ -354,7 +404,7 @@ f:SetScript("OnEvent", function(_, event)
   elseif event == "AUCTION_HOUSE_CLOSED" then
     -- a full scan that's already being read keeps going; searches stop
     if mode == "items" then stop() end
-    pending = nil
+    pending, batch = nil, nil
   elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" or event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then
     readBrowse()
   elseif event == "AUCTION_ITEM_LIST_UPDATE" then
@@ -378,6 +428,16 @@ SlashCmdList.WAYPATH = function(msg)
     else
       RG.Print("Usage: /wp alert [shift-click item] 25   (alert when it's 25 gold or less)")
     end
+    return
+  elseif cmd and cmd:lower() == "scan" and rest:lower():match("^status") then
+    -- what the price scanner did this session, for a bug report
+    local st = RG.AHStats or {}
+    local n, none, fresh = 0, 0, 0
+    for _, r in pairs(RG.db.prices or {}) do n = n + 1; if r.none then none = none + 1 end; if time() - (r.t or 0) < 7200 then fresh = fresh + 1 end end
+    RG.Print(string.format("AH scan: %s auction house open; this session %d requests, %d answers, %d prices found, %d none listed, %d timeouts; full scans %d (last read %d auctions, next allowed in %d min). Saved prices: %d (%d from the last 2 hours, %d none listed).",
+      (AuctionHouseFrame and AuctionHouseFrame:IsShown()) and "modern" or ((AuctionFrame and AuctionFrame:IsShown()) and "classic" or "no"),
+      st.sent or 0, st.events or 0, st.found or 0, st.none or 0, st.timeouts or 0, st.full or 0, st.fullRead or 0,
+      math.max(0, math.ceil(((RG.db.lastFullScan or 0) + 15 * 60 - time()) / 60)), n, fresh, none))
     return
   elseif cmd and cmd:lower() == "autoscan" then
     RG.db.autoScan = not RG.Opt("autoScan")
