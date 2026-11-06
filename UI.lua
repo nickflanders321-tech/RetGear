@@ -331,6 +331,7 @@ local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-ha
 local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Drop" }
 local function guideKeep(g, lvl)
   if g.tip or not g.id then return true end
+  if not RG.GearShown(g) then return false end
   if state.src and g.how ~= state.src then return false end
   if not state.onlyUp then return true end
   local own = RG.OwnState(g.id)
@@ -401,6 +402,9 @@ local function fillGuideItem(r, g, lvl)
       elseif g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs then
         local sk = RG.Skill("Blacksmithing")
         right = GREY .. "Smithing " .. g.bs .. (sk and (" · you " .. sk) or "") .. "|r"
+      elseif g.prof and RG.CraftState(g) == "skill" then
+        local _, prof, need, have = RG.CraftState(g)
+        right = GREY .. prof .. " " .. need .. (have and (" · you " .. have) or "") .. "|r"
       elseif g.lvl > lvl then right = GREY .. "Level " .. (g.approx and "~" or "") .. g.lvl .. "|r"
       elseif d then
         if d > 0.5 then right = GREEN .. "Upgrade " .. string.format("+%.0f", d) .. "|r"; accent = "gold"
@@ -408,6 +412,7 @@ local function fillGuideItem(r, g, lvl)
       else right = GREY .. "Loading|r" end
       local right2 = g.ah and RG.PriceText(g.id) or (GREY .. g.how .. "|r")
       if g.bs and (RG.Skill("Blacksmithing") or 0) >= g.bs and not own then right2 = GREEN .. "You can make this|r" end
+      if g.prof and RG.CraftState(g) == "make" and not own then right2 = GREEN .. "You can make this|r" end
       local qsrc = g.how == "Quest" and g.src and g.src:gsub("%s*%(.-%)$", "")
       local qIn = qsrc and RG.InLog and RG.InLog(qsrc)
       if qIn and not own then right2 = GOLD .. "Quest in your log|r" end
@@ -431,7 +436,7 @@ local function renderGuide()
   do
     local best = {}
     for _, g in ipairs(RG.GUIDE) do
-      if g.id and not g.tip and g.lvl <= lvl and (not state.src or g.how == state.src) and not RG.OwnState(g.id) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) then
+      if g.id and not g.tip and g.lvl <= lvl and (not state.src or g.how == state.src) and not RG.OwnState(g.id) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) and RG.GearGettable(g) then
         local _, link = GetItemInfo(g.id)
         local d = link and RG.GuideDelta(g)
         if d and d > 0.5 then best[#best + 1] = { g = g, d = d + ((g.how == "Quest" and g.src and RG.InLog and RG.InLog((g.src:gsub("%s*%(.-%)$", "")))) and 3 or 0) } end
@@ -886,16 +891,18 @@ local function renderProf()
     end
     if not any then n = n + 1; setStep(getRow(n), "", "Open the Auction House once to compare ore and bar prices here.", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
   end
-  if sel == "Blacksmithing" and known["Blacksmithing"] then
-    local bs = known["Blacksmithing"]
-    head("Blacksmithing upgrades for you")
+  if known[sel] and (sel == "Blacksmithing" or sel == "Leatherworking" or sel == "Tailoring" or sel == "Engineering") then
+    local bs = known[sel]
+    local headed = false
     for _, g in ipairs(RG.GUIDE) do
-      if g.bs then
+      local needs = (g.prof == sel and g.sk) or (sel == "Blacksmithing" and not g.prof and g.bs)
+      if needs and g.id then
+        if not headed then head(sel .. " upgrades for you"); headed = true end
         local name, link, quality = itemName(g.id)
-        local can = bs and bs.rank >= g.bs
+        local can = bs and bs.rank >= needs
         local d = link and RG.GuideDelta(g)
         local own = RG.OwnState(g.id)
-        local right = own == "equipped" and (GREEN .. "Equipped|r") or (can and (GREEN .. "You can make this|r") or (GREY .. "Needs " .. g.bs .. "|r"))
+        local right = own == "equipped" and (GREEN .. "Equipped|r") or (can and (GREEN .. "You can make this|r") or (GREY .. "Needs " .. needs .. "|r"))
         local right2 = (g.lvl > lvl and (GREY .. "Wear at " .. g.lvl .. "|r")) or (d and d > 0.5 and (GREEN .. "Upgrade +" .. string.format("%.0f", d) .. "|r")) or ""
         line(g.id, name .. GREY .. "   " .. g.slot .. "  ·  lvl " .. g.lvl .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or ""), right, right2, nil, can and not own and "green" or nil, quality)
       end

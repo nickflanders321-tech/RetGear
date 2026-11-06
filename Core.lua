@@ -706,6 +706,24 @@ function RG.KnowsFP(part)
   return false
 end
 function RG.Skill(name) local p = RG.Professions()[name]; return p and p.rank or nil end
+-- Crafted gear in the gear guide (generated entries carry prof and sk, hand-written ones bs):
+--   "make"  you can make it now
+--   "buy"   Bind on Equip, and you can't make it (yet): buy one on the Auction House
+--   "skill" Bind on Pickup, you have the profession but not the skill yet
+--   "no"    Bind on Pickup and you don't have the profession: not for you
+function RG.CraftState(g)
+  local prof = g.prof or (g.bs and "Blacksmithing")
+  if not prof then return nil end
+  local need, have = g.sk or g.bs or 0, RG.Skill(prof)
+  if have and have >= need then return "make", prof, need, have end
+  if g.boe or not g.prof then return "buy", prof, need, have end
+  if have then return "skill", prof, need, have end
+  return "no", prof, need, have
+end
+-- in your gear guide at all (Bind on Pickup crafts only for their own profession)
+function RG.GearShown(g) return RG.CraftState(g) ~= "no" end
+-- something you can go and get now (for "best upgrades now", the tracker and the level-up count)
+function RG.GearGettable(g) local st = RG.CraftState(g); return st == nil or st == "make" or st == "buy" end
 
 -- ---------------------------------------------------------------------------
 -- Events

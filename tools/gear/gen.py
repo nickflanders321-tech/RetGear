@@ -6,7 +6,9 @@ and wield (both read from Classes/<Class>.lua, so the add-on and this list agree
 Stats come from the cMaNGOS classic database (item_template + spell_template),
 sources from QuestieDB's merged WoW Forever data (quest rewards, dungeon boss drops,
 vendors), so only items that exist in Forever and that a Horde character of that class
-can get are listed.
+can get are listed. Crafted gear (Blacksmithing, Leatherworking, Tailoring, Engineering) joins
+when it clearly beats everything else by then: its recipe must come from a trainer, a vendor of
+your faction, a quest or a dungeon boss (prof = profession, sk = skill, boe = Bind on Equip).
 
 It also builds Classes/SpecGear.lua: for every spec on the 2nd Spec tab (Classes/Specs.lua)
 that isn't the class's leveling spec, the gear to start collecting from level 30, scored with
@@ -81,13 +83,21 @@ for r in rows(sql, "item_template"):
     d = dict(zip(icol, r))
     items[int(d["entry"])] = d
 scol = columns(sql, "spell_template")
-want = ["Id"] + ["EffectApplyAuraName%d" % k for k in (1, 2, 3)] + ["EffectBasePoints%d" % k for k in (1, 2, 3)] + ["EffectMiscValue%d" % k for k in (1, 2, 3)] + ["Effect%d" % k for k in (1, 2, 3)]
+want = ["Id", "SpellName", "EffectItemType1", "EffectTriggerSpell1"] + ["EffectApplyAuraName%d" % k for k in (1, 2, 3)] + ["EffectBasePoints%d" % k for k in (1, 2, 3)] + ["EffectMiscValue%d" % k for k in (1, 2, 3)] + ["Effect%d" % k for k in (1, 2, 3)]
 idx = [scol.index(w) for w in want]
 spells = {}
 for r in rows(sql, "spell_template"):
     spells[int(r[idx[0]])] = {w: r[j] for w, j in zip(want, idx)}
+# profession trainers: which crafts they teach and at what skill
+TRAINER = {}
+for t in ("npc_trainer", "npc_trainer_template"):
+    tcol = columns(sql, t)
+    for r in rows(sql, t):
+        d = dict(zip(tcol, r))
+        sk, val = int(d["reqskill"] or 0), int(d["reqskillvalue"] or 0)
+        if sk: TRAINER.setdefault(int(d["spell"]), (sk, val))
 del sql
-print("items %d, spells %d" % (len(items), len(spells)), file=sys.stderr)
+print("items %d, spells %d, trainer crafts %d" % (len(items), len(spells), len(TRAINER)), file=sys.stderr)
 
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -336,10 +346,78 @@ def sources(iid, ally=False):
     return out
 
 # ---------------------------------------------------------------------------
+# Crafted gear: what the gear professions make, the skill it takes and where the recipe comes from
+# (a trainer, a vendor of your faction, a quest, or a dungeon boss; recipes that are only a rare
+# world drop are left out, since nobody can plan on them)
+# ---------------------------------------------------------------------------
+PROF = {164: "Blacksmithing", 165: "Leatherworking", 197: "Tailoring", 202: "Engineering"}
+FR = fv.get("recipes") or {}
+def craft_of(spell_id, depth=0):
+    """The item a spell makes, following 'learn' spells to the craft they teach."""
+    sp = spells.get(spell_id)
+    if not sp or depth > 2: return None
+    if int(sp["Effect1"]) == 24 and int(sp["EffectItemType1"] or 0): return int(sp["EffectItemType1"])
+    if int(sp["Effect1"]) == 36 and int(sp["EffectTriggerSpell1"] or 0): return craft_of(int(sp["EffectTriggerSpell1"]), depth + 1)
+    return None
+CRAFT = defaultdict(list)   # item made -> [ {prof, sk, spec, rec, recA(lliance-ok), recH} ]
+for sid, (sk, val) in TRAINER.items():
+    it = craft_of(sid)
+    if it and sk in PROF: CRAFT[it].append({"prof": PROF[sk], "sk": val, "spec": None, "rec": "Trainer", "H": True, "A": True})
+def recipe_source(rid, ally):
+    f = FR.get(str(rid))
+    if not f: return None
+    other = HORDE_ZONES if ally else ALLIANCE_ZONES
+    for vid in L(f.get("vendors")):
+        n = FN.get(str(vid))
+        # (not reputation quartermasters: those plans take raid materials or exalted standing)
+        if n and ("A" if ally else "H") in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in other \
+           and not re.search(r"Quartermaster|Supply Officer|Brotherhood|Argent Dawn|Cenarion|Zandalar|Timbermaw|Brood", n.get("sub") or ""):
+            z = zone_name(n.get("zone"))
+            return "Vendor: " + n["name"] + (" (" + z + ")" if z else "")
+    for qid in L(f.get("questRewards")):
+        q = horde_quest(qid, ally)
+        if q: return "Quest: " + q["name"]
+    drops = L(f.get("npcDrops"))
+    if 0 < len(drops) <= 3:
+        for nid in drops:
+            n = FN.get(str(nid))
+            d = n and DUNGEON.get(n.get("zone"))
+            if d and d not in RAIDS and (n.get("rank") or 0) >= 1: return "Dungeon: " + n["name"] + " (" + d + ")"
+    return None
+for rid, d in items.items():
+    if int(d["class"]) != 9: continue
+    sk = int(d["RequiredSkill"] or 0)
+    if sk not in PROF: continue
+    made = None
+    for k in range(1, 6):
+        sid = int(d["spellid_%d" % k] or 0)
+        if sid and sid != 483: made = made or craft_of(sid)
+    if not made: continue
+    spec = int(d.get("requiredspell") or 0)
+    spec_name = spells[spec]["SpellName"] if spec in spells else None
+    CRAFT[made].append({"prof": PROF[sk], "sk": int(d["RequiredSkillRank"] or 0), "spec": spec_name, "rid": rid})
+def craft_source(iid, ally=False):
+    """The easiest way to learn to make this item, or None."""
+    best = None
+    for c in CRAFT.get(iid, []):
+        if c.get("rid"):
+            rec = recipe_source(c["rid"], ally)
+            if not rec: continue
+        else: rec = c["rec"]
+        cand = dict(c, rec=rec)
+        if not best or (cand["rec"] == "Trainer") > (best["rec"] == "Trainer") or cand["sk"] < best["sk"]: best = cand
+    if not best: return None
+    d = items[iid]
+    boe = int(d["bonding"]) != 1
+    return {"how": "Crafted", "lvl": 0, "src": best["prof"] + (" (" + best["spec"] + ")" if best["spec"] else ""),
+            "zone": ("Bind on Equip" if boe else "Bind on Pickup") + " · " + best["rec"],
+            "prof": best["prof"], "sk": best["sk"], "boe": boe}
+
+# ---------------------------------------------------------------------------
 # Pick the upgrades, class by class
 # ---------------------------------------------------------------------------
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
-ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3}
+ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3, "Crafted": 4}
 src_cache = {}
 def pick(C, lvl_from=5, ally=False):
     """The upgrade path for every slot plus the best quest reward and dungeon drop per
@@ -353,6 +431,11 @@ def pick(C, lvl_from=5, ally=False):
         key = (iid, CLASS_BIT, ally)
         if key not in src_cache: src_cache[key] = sources(iid, ally)
         src = [dict(x) for x in src_cache[key]]
+        ck = ("craft", iid, ally)
+        if ck not in src_cache: src_cache[ck] = craft_source(iid, ally) if str(iid) in FI else None
+        craft = src_cache[ck]
+        if craft and src: src.append(dict(craft))       # also craftable: shown as another source
+        if not src and craft: src = [dict(craft)]
         if not src: continue
         req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
         if req > 60: continue
@@ -366,11 +449,13 @@ def pick(C, lvl_from=5, ally=False):
         if lvl < max(5, lvl_from - 2): continue
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
-                            "also": [x for x in src[1:3]]})
+                            "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"),
+                            "also": [x for x in src[1:3] if x["how"] != "Crafted"]})
     picked = []
     start = (lvl_from // 5) * 5
-    for slot, lst in cands.items():
-        lst.sort(key=lambda c: (c["lvl"], -c["score"]))
+    for slot, all_c in cands.items():
+        all_c.sort(key=lambda c: (c["lvl"], -c["score"]))
+        lst = [c for c in all_c if c["how"] != "Crafted"]
         by_id = {}
         # 1) the upgrade path: anything better than everything available at its level or below
         best = 0
@@ -386,6 +471,14 @@ def pick(C, lvl_from=5, ally=False):
                     top = max(w, key=lambda c: c["score"])
                     prior = max([c["score"] for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
                     if top["score"] > prior * 1.05: by_id[top["id"]] = top
+        # 3) crafted gear, only when it clearly beats everything else you can get by then (15% or more)
+        #    and the last crafted piece picked for the slot (10%), so it doesn't crowd out your route's rewards
+        best_craft = 0
+        for c in all_c:
+            if c["how"] != "Crafted": continue
+            other = max([x["score"] for x in lst if x["lvl"] <= c["lvl"]] or [0])
+            if c["score"] > other * 1.15 and c["score"] > best_craft * 1.10:
+                by_id[c["id"]] = c; best_craft = c["score"]
         picked += [c for c in by_id.values() if c["lvl"] >= lvl_from - 2]
     picked.sort(key=lambda c: (c["lvl"], c["slot"]))
     return picked
@@ -394,6 +487,9 @@ def entry(c):
     extra = ""
     if c.get("q"): extra += ", q = %d" % c["q"]
     if c.get("bl"): extra += ", bl = %d" % c["bl"]
+    if c.get("prof"):
+        extra += ", prof = %s, sk = %d" % (lua_str(c["prof"]), c["sk"] or 0)
+        if c.get("boe"): extra += ", boe = true, ah = true"
     # other places it comes from (a second quest, a dungeon boss, a vendor)
     also = []
     for x in c.get("also") or []:

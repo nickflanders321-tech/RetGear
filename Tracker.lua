@@ -201,7 +201,7 @@ end
 local function nextUpgrade()
   local lvl, best = UnitLevel("player")
   for _, g in ipairs(RG.GUIDE) do
-    if g.id and g.lvl <= lvl + 2 and g.lvl >= lvl - 8 and not RG.OwnState(g.id) then
+    if g.id and g.lvl <= lvl + 2 and g.lvl >= lvl - 8 and not RG.OwnState(g.id) and RG.GearGettable(g) then
       local d = RG.GuideDelta(g)
       if d and d > 0.5 and (not best or d > best.d) then best = { g = g, d = d } end
     end

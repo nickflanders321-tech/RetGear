@@ -182,7 +182,7 @@ function RG.SpecGuide(s)
   for _, g in ipairs(((RG.SPEC_HAND[s.class] or {})[s.key]) or {}) do out[#out + 1] = g; have[g.id] = true end
   local gen = (s.main and RG.IsMainSpec(s)) and ((RG.CLASS_GEAR or {})[s.class] or {}) or (((RG.SPEC_GEAR or {})[s.class] or {})[s.key] or {})
   for _, g in ipairs(gen) do
-    if not have[g.id] and g.lvl >= SPEC_FROM then
+    if not have[g.id] and g.lvl >= SPEC_FROM and RG.GearShown(g) then
       local e = {}
       for k, v in pairs(g) do e[k] = v end
       if e.slot == "2H" then e.slot = "Two-Hand" end

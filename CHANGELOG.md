@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Crafted gear is now in every class's gear guide: Blacksmithing, Leatherworking, Tailoring and Engineering pieces that clearly beat the quest and dungeon gear you can get by then (15% or more), when the recipe comes from a trainer, a vendor, a quest or a dungeon boss. Bind on Equip pieces show their Auction House price; if you have the profession and the skill they say "You can make this". Bind on Pickup ones show only to characters with that profession. The Professions tab lists the upgrades you can make for Leatherworking, Tailoring and Engineering too, not just Blacksmithing, and clicking a crafted piece shows the skill it takes and where the recipe comes from.
 - Auction prices now use a market value instead of only the cheapest listing, built the way TradeSkillMaster documents its AuctionDB market value (our own code): a full scan looks at the cheapest 30% of listings, stops at a 20% price jump, drops prices far from the average, and the last 14 days are blended with recent days counting most. Listings under 40% of the middle price are ignored, so one bait listing can't drag the price down. Tooltips and profit numbers show "market" first, then the cheapest listing right now. With TSM installed its market value (dbmarket) is the fallback instead of its minimum buyout.
 
 ## v1.13.1

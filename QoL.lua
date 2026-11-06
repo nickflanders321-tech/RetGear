@@ -158,7 +158,7 @@ local function levelBanner(lvl)
   local lines = {}
   if lvl % 2 == 0 then lines[#lines + 1] = "Visit your class trainer for new spells." end
   local ups = 0
-  for _, g in ipairs(RG.GUIDE) do if g.id and g.lvl == lvl then local d = RG.GuideDelta(g); if d and d > 0.5 then ups = ups + 1 end end end
+  for _, g in ipairs(RG.GUIDE) do if g.id and g.lvl == lvl and RG.GearGettable(g) then local d = RG.GuideDelta(g); if d and d > 0.5 then ups = ups + 1 end end end
   if ups > 0 then lines[#lines + 1] = GREEN .. plural(ups) .. "|r now in reach. Check the Gear guide." end
   for _, r in ipairs(RG.ROUTE or {}) do if r.from == lvl and r.kind ~= "pala" then lines[#lines + 1] = "Next: " .. GOLD .. r.zone .. "|r" break end end
   RG.Toast("Level " .. lvl .. "!", table.concat(lines, "\n"), RG.LOGO, "Open guide", function() if RG.ToggleUI then RG.ToggleUI() end end, 10)

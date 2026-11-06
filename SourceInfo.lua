@@ -150,7 +150,16 @@ local function describe(src, lvl)
     out.title = "Crafted"
     out.icon = 136241
     line("Made with", WHITE .. (src.src or "?") .. "|r")
-    if src.bs then local sk = RG.Skill and RG.Skill("Blacksmithing"); line("Your skill", ((sk or 0) >= src.bs and GREEN or GOLD) .. (sk and (sk .. " / " .. src.bs) or ("needs " .. src.bs)) .. "|r") end
+    if src.prof then
+      local st, prof, need, have = RG.CraftState(src)
+      line("Your skill", ((have or 0) >= need and GREEN or GOLD) .. (have and (have .. " / " .. need) or (prof .. " " .. need .. " needed")) .. "|r")
+      local how, recipe = (src.zone or ""):match("^(.-) · (.+)$")
+      if recipe then line("Recipe", GREY .. (recipe == "Trainer" and ("from a " .. prof .. " trainer") or recipe:gsub("^(%a+): ", "%1 · ")) .. "|r") end
+      if src.boe then
+        line(how or "Bind on Equip", st == "make" and (GREEN .. "you can make it|r") or (GREY .. "anyone can sell it: look on the Auction House|r"))
+        if src.id and RG.PriceText then local pt = RG.PriceText(src.id); if pt then line("Auction House", pt) end end
+      else line(how or "Bind on Pickup", GREY .. "only a " .. prof:lower() .. " can make and wear it|r") end
+    elseif src.bs then local sk = RG.Skill and RG.Skill("Blacksmithing"); line("Your skill", ((sk or 0) >= src.bs and GREEN or GOLD) .. (sk and (sk .. " / " .. src.bs) or ("needs " .. src.bs)) .. "|r") end
   else
     out.title = (how == "BoE" and "World drop (Bind on Equip)") or how or "Source"
     out.icon = 133784
