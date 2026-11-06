@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.18.0
 
 - **The arrow stays off when you switch it off.** Right-clicking or double-clicking the arrow (or double-clicking the quest it points to) now turns it off until you point it somewhere yourself: click a quest, step or quest giver, Shift-click for the next stop, use /wp way, or press the Arrow button. Before, it came back on its own as soon as the route moved to the next objective. While it's paused, the Arrow button shows as off, and pressing it brings the arrow straight back to your route.
 
