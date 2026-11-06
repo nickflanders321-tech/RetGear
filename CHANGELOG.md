@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.15.0
 
 - **A new look for Waypath+.** The whole add-on moves to the Cartographer style: deep ink-blue panels, brass highlights, parchment-coloured text and a serif (Fraunces) for titles. Menus, pop-ups, the minimap menu and the item source window match.
 - **New main window.** A sidebar on the left replaces the row of tabs:
