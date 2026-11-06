@@ -164,6 +164,7 @@ local function newDuel(env)
     if act.t == "play" then send(table.concat({ "P", seq, sd, act.i, tgt }, "|"))
     elseif act.t == "att" then send(table.concat({ "T", seq, sd, tostring(act.a), tostring(act.d) }, "|"))
     elseif act.t == "hp" then send(table.concat({ "W", seq, sd, tgt }, "|"))
+    elseif act.t == "pick" then send(table.concat({ "K", seq, sd, act.i }, "|"))
     elseif act.t == "end" then send(table.concat({ "E", seq, sd }, "|")); D.lastRecv = env.now() end
   end
 
@@ -244,13 +245,14 @@ local function newDuel(env)
       for i = 1, #(a or "") do if a:sub(i, i) == "1" then set[i] = true end end
       D.mull[3 - mySide] = set
       D.checkMull()
-    elseif (op == "P" or op == "T" or op == "W" or op == "E") and D.state == "play" then
+    elseif (op == "P" or op == "T" or op == "W" or op == "E" or op == "K") and D.state == "play" then
       local n, sd = tonumber(a), tonumber(b)
       if n ~= rseq + 1 then desync("a move was lost") return end
       local act
       if op == "P" then act = { t = "play", i = tonumber(c), tgt = ref(d) }
       elseif op == "T" then act = { t = "att", a = ref(c), d = ref(d) }
       elseif op == "W" then act = { t = "hp", tgt = ref(c) }
+      elseif op == "K" then act = { t = "pick", i = tonumber(c) }
       else act = { t = "end" } end
       local ok, seedNow = env.move(act)
       if not ok then desync("that move was not legal here") return end
@@ -332,7 +334,7 @@ local function realEnv()
   function env.deck()
     local list, class, me, swapped, auto = RG.ArenaPvPDeck()
     if list and auto then env.print("You had no finished Arena deck, so one was built for this duel.") end
-    if list and swapped and swapped > 0 then env.print(swapped .. " Raider card(s) in your deck were swapped for other cards for this duel (Raiders only exist on your own collection).") end
+    if list and swapped and swapped > 0 then env.print(swapped .. " card(s) in your deck were swapped for other cards for this duel (Raider cards only exist on your own collection, and class cards only go with their own hero).") end
     return list, class, me
   end
   function env.handSize(side) local g = RG.ArenaPvPState(); return g and #g.p[side].hand or 0 end

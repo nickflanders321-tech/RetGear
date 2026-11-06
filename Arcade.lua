@@ -123,6 +123,17 @@ local function store()
     for name, r in pairs(a.raiders) do addRaider(name, r[1], r[2], r[3]) end
   end
   a.cards = a.cards or {}
+  -- an Arena card update: changed cards sell back for their full crafting value for two weeks
+  local P = RG.ARCADE_PATCH
+  if P and a.refundPatch ~= P.id then
+    a.refundPatch, a.refundUntil = P.id, time() + 14 * 86400
+    local n = 0
+    for k in pairs(P.changed or {}) do local slot = a.cards[k]; if type(slot) == "table" then for f = 1, 4 do n = n + (slot[f] or 0) end end end
+    if n > 0 and RG.Print then
+      RG.Print("Arena card update: " .. (P.note or "some cards changed") .. ". " .. n .. " of your cards changed. Until " .. date("%b %d", a.refundUntil)
+        .. ", open a changed card and press Refund to sell a copy back for its full crafting value (extras sold with Sell extras also get the full value).")
+    end
+  end
   return a
 end
 local function owned(a, id) local c = a.cards[CARDS[id].key or CARDS[id].name]; return c and ((c[1] or 0) + (c[2] or 0) + (c[3] or 0) + (c[4] or 0)) or 0 end
@@ -615,14 +626,32 @@ function RG.ArcadeCraft(c, f)
   return true, "Crafted " .. c.name .. " (" .. FINISH[f][1] .. ") for " .. cost .. " coins."
 end
 
+-- after an Arena card update, a changed card sells back for its full crafting value for two weeks
+function RG.ArcadeRefundOpen(a, key)
+  local P = RG.ARCADE_PATCH
+  return P and P.changed and P.changed[key] and a and a.refundPatch == P.id and (a.refundUntil or 0) > time() and true or false
+end
+function RG.ArcadeRefund(c, f)
+  local a = store(); if not (a and c) then return false, "Nothing to refund." end
+  local key = c.key or c.name
+  if not RG.ArcadeRefundOpen(a, key) then return false, "This card can't be refunded." end
+  local slot = a.cards[key]
+  if not (slot and (slot[f] or 0) > 0) then return false, "You have no copy of that print." end
+  local v = RG.ArcadeCraftCost(c, f) or 0
+  slot[f] = slot[f] - 1
+  a.coins = (a.coins or 0) + v
+  return true, "Refunded " .. c.name .. " (" .. FINISH[f][1] .. ") for " .. v .. " coins."
+end
+
 -- keep one of each print, sell the rest
 function RG.ArcadeSellExtras()
   local a = store(); if not a then return 0, 0 end
   local coins, cnt = 0, 0
-  for _, slot in pairs(a.cards) do
+  for key, slot in pairs(a.cards) do
+    local full = RG.ArcadeRefundOpen(a, key) and byKey[key]
     for f = 1, 4 do
       local n = slot[f] or 0
-      if n > 1 then coins = coins + (n - 1) * FINISH[f][4]; cnt = cnt + n - 1; slot[f] = 1 end
+      if n > 1 then coins = coins + (n - 1) * (full and (RG.ArcadeCraftCost(full, f) or FINISH[f][4]) or FINISH[f][4]); cnt = cnt + n - 1; slot[f] = 1 end
     end
   end
   a.coins = (a.coins or 0) + coins
@@ -2256,8 +2285,10 @@ local function refreshDetail()
     local d = B.defs[k] or (B.derive and B.derive(c))
     if d then
       local body = d.type == "minion" and (d.atk .. "/" .. d.hp .. " minion") or (d.type == "weapon" and (d.atk .. "/" .. d.dur .. " weapon") or "spell")
+      if d.hclass then body = (d.hclass:sub(1, 1) .. d.hclass:sub(2):lower()) .. " " .. body end
       local txt = B.describe and B.describe(d) or ""
       arena = "\nArena: |cffffffff" .. d.cost .. " mana " .. body .. "|r" .. (txt ~= "" and ("  ·  " .. txt) or "")
+      if RG.ArcadeRefundOpen(a, k) then arena = arena .. "\n|cff7be08aChanged in the latest Arena card update: Refund pays full crafting value until " .. date("%b %d", a.refundUntil) .. "|r" end
     end
   end
   detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r" .. arena .. "\nDuel power: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
@@ -2269,8 +2300,11 @@ local function refreshDetail()
     b:SetEnabled(true); b:SetActive(k == f)
   end
   local cost = RG.ArcadeCraftCost(c, f)
-  detail.craft:SetText(cost and ("Craft " .. FNAME[f] .. "  ·  " .. cost .. " coins") or "Cannot be crafted")
+  local refund = RG.ArcadeRefundOpen(a, c.key or c.name) and (slot[f] or 0) > 0
+  detail.craft:SetWidth(refund and 160 or 324)
+  detail.craft:SetText(cost and (refund and ("Craft  ·  " .. cost) or ("Craft " .. FNAME[f] .. "  ·  " .. cost .. " coins")) or "Cannot be crafted")
   detail.craft:SetEnabled(cost ~= nil and (a.coins or 0) >= cost)
+  if refund then detail.refund:SetText("Refund  ·  " .. (cost or 0) .. " coins"); detail.refund:Show() else detail.refund:Hide() end
   detail.pin:SetEnabled(owned(a, c.id) > 0); detail.duel:SetEnabled(owned(a, c.id) > 0)
   detail.pin:SetText(isPinned(a, c) and "Remove from showcase" or "Add to showcase")
   detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
@@ -2323,6 +2357,12 @@ local function openDetail(c)
       refreshDetail(); if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
     end, true)
     detail.craft:SetPoint("BOTTOMLEFT", X0, 152)
+    -- after a card update: sell a changed card back for its full crafting value
+    detail.refund = gbtn(detail, "Refund", 160, 28, function()
+      local ok, msg = RG.ArcadeRefund(detail.data, detail.finish); say(msg)
+      refreshDetail(); if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+    end)
+    detail.refund:SetPoint("BOTTOMLEFT", X0 + 164, 152); detail.refund:Hide()
   end
   detail.data, detail.finish = c, bestFinish(a, c.id) or 1
   detail:Show(); refreshDetail()

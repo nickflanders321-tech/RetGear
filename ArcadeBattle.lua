@@ -95,9 +95,13 @@ local function finishOf(key, side)
   if side == 2 and c then local n = #key % 10; return n == 0 and 3 or (n <= 2 and 2 or 1) end
   return 1
 end
+local CLASS_NAME = { WARRIOR = "Warrior", PALADIN = "Paladin", HUNTER = "Hunter", ROGUE = "Rogue", PRIEST = "Priest", SHAMAN = "Shaman", MAGE = "Mage", WARLOCK = "Warlock", DRUID = "Druid" }
 local function typeLine(d)
-  if d.type == "minion" then return d.tribe and cap(d.tribe) or "Minion" end
-  return d.type == "weapon" and "Weapon" or "Spell"
+  local t
+  if d.type == "minion" then t = d.tribe and (B.TRIBE_NAME[d.tribe] or cap(d.tribe)) or "Minion"
+  else t = d.type == "weapon" and "Weapon" or "Spell" end
+  if d.hclass then t = CLASS_NAME[d.hclass] .. " " .. t end
+  return t
 end
 
 local function badge(top, tex, size, layer)
@@ -135,7 +139,7 @@ local function cardStats(w, d, live)
 end
 -- paint a card widget (cached by key so models and art are not reloaded every refresh)
 -- rules keywords stand out in the card text
-local KEYWORDS = { "Divine Shield", "Battlecry", "Deathrattle", "Windfury", "Lifesteal", "Stealth", "Poisonous", "Taunt", "Charge", "Rush", "Freeze", "Silence" }
+local KEYWORDS = { "Divine Shield", "Battlecry", "Deathrattle", "Windfury", "Lifesteal", "Stealth", "Poisonous", "Taunt", "Charge", "Rush", "Freeze", "Silence", "Spell Damage", "Combo", "Overload", "Discover" }
 local function hilite(t)
   for _, k in ipairs(KEYWORDS) do t = t:gsub(k, "|cff8a3a08" .. k .. "|r") end
   return t
@@ -209,7 +213,10 @@ local function fillDeck(a, dk)
   local have, keys = avail(a)
   local seed = {}
   for k, v in pairs(dk.cards) do for _ = 1, v do seed[#seed + 1] = k end end
-  local deck = B.randomDeck(keys, 6, math.random, seed, function(k) return have[k] end)
+  local cls = a.heroClass or (UnitClass and select(2, UnitClass("player"))) or "WARRIOR"
+  local keep = {}
+  for _, k in ipairs(seed) do if B.classOK(B.defs[k], cls) then keep[#keep + 1] = k end end
+  local deck = B.randomDeck(keys, 6, math.random, keep, function(k) return have[k] end, cls)
   dk.cards = {}
   for _, k in ipairs(deck) do dk.cards[k] = (dk.cards[k] or 0) + 1 end
 end
@@ -823,6 +830,7 @@ local function consume()
         end
         n = 0
       end
+    elseif e.t == "discover" and e.side ~= ME then logLine("|cffe39a9a" .. (S.pvp and (S.foeName or "The foe") or "Foe") .. " discovers a card|r")
     elseif e.t == "fatigue" then say((e.side == ME and "You are" or "The foe is") .. " out of cards: " .. e.n .. " damage!", 3)
     elseif e.t == "burn" then if e.side == ME then say("Your hand is full. " .. (B.defs[e.key] and B.defs[e.key].name or "A card") .. " burns.", 3) end
     elseif e.t == "turn" then
@@ -951,7 +959,8 @@ end
 -- what is still unused this turn: attackers that could swing, cards that could be played, the hero power
 local function unused()
   local n, plays, power = 0, 0, false
-  for _, m in ipairs(game.p[ME].board) do if B.canAttack(game, ME, m) then n = n + 1 end end
+  -- (a Rush minion with nothing to hit doesn't count)
+  for _, m in ipairs(game.p[ME].board) do if B.canAttack(game, ME, m) and #B.attackTargets(game, ME, m) > 0 then n = n + 1 end end
   if B.canAttack(game, ME, game.p[ME]) then n = n + 1 end
   for i = 1, #game.p[ME].hand do if B.canPlay(game, ME, i) then plays = plays + 1 end end
   if B.canHeroPower(game, ME) then power = true end
@@ -988,6 +997,11 @@ local function endTurn()
   if not game.over and game.cur == 2 then S.busy = true end
   afterAction()
   if not game.over and game.cur == 2 then startAI() end
+end
+
+function RG.ArenaDiscoverPick(i)
+  if not (game and game.pend and game.pend.side == ME and game.cur == ME) then return end
+  if B.choose(game, ME, i) then sendMove({ t = "pick", i = i }); sfx("draw"); afterAction() end
 end
 
 afterAction = function()
@@ -1112,6 +1126,19 @@ local function makeBoard()
   win.mullTitle = U.fs(win.mullPanel, "head", 15, "OVERLAY"); pt(win.mullTitle, 600, 503); win.mullTitle:SetTextColor(0.96, 0.84, 0.5)
   win.mullTitle:SetText("Click any cards you want to swap, then keep the rest."); win.mullTitle:Hide()
   win.mullBtn = U.gbtn(bd, "Keep these cards", 200, 38, function() RG.BattleMulligan() end, true); pt(win.mullBtn, 600, 283); win.mullBtn:Hide(); win.mullBtn:SetFrameLevel(U.lv(bd) + 120)
+  -- Discover: choose one of three cards
+  win.discPanel = CreateFrame("Frame", nil, bd, "BackdropTemplate")
+  win.discPanel:SetSize(820, 400); pt(win.discPanel, 600, 380); win.discPanel:SetFrameLevel(U.lv(bd) + 140); win.discPanel:EnableMouse(true)
+  win.discPanel:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); win.discPanel:SetBackdropColor(0.052, 0.047, 0.035, 0.95); win.discPanel:SetBackdropBorderColor(0.72, 0.58, 0.3, 1)
+  win.discTitle = U.fs(win.discPanel, "head", 16, "OVERLAY"); win.discTitle:SetPoint("TOP", 0, -14); win.discTitle:SetTextColor(0.96, 0.84, 0.5); win.discTitle:SetText("Discover: choose a card to add to your hand")
+  win.discCards = {}
+  for i = 1, 3 do
+    local w = U.makeCard(win.discPanel, 230); w.noTip = true; w.hover = false; w:SetFrameLevel(U.lv(win.discPanel) + 4)
+    w:SetPoint("CENTER", win.discPanel, "CENTER", (i - 2) * 262, -14)
+    w.onCard = function() if RG.ArenaDiscoverPick then RG.ArenaDiscoverPick(i) end end
+    win.discCards[i] = w
+  end
+  win.discPanel:Hide()
   -- the end screen
   win.over = CreateFrame("Frame", nil, win, "BackdropTemplate"); U.darkPanel(win.over, 480, 370); win.over:SetPoint("CENTER", 0, 20); win.over:SetFrameLevel(U.lv(win) + 80); win.over:EnableMouse(true); win.over:Hide()
   local o = win.over
@@ -1260,9 +1287,11 @@ refresh = function()
       if lit and rawget(c, "wasLit") == false and ui.manaSeen then c.pop = 0.45 end     -- a crystal that fills up pops
       c.wasLit = lit
       c:Show(); c:SetTexture(U.MEDIA .. (lit and "Crystal" or "CrystalDim")); c:SetAlpha(i <= P.maxMana and 1 or 0.4)
+      local locked = (P.ol or 0) > 0 and game.cur == P.side and i > P.maxMana - P.ol and i <= P.maxMana
+      if c.SetVertexColor then if locked then c:SetVertexColor(1, 0.4, 0.35) else c:SetVertexColor(1, 1, 1) end end
     end
     ui.manaSeen = true
-    ui.mana[s]:SetText(P.mana .. " / " .. P.maxMana)
+    ui.mana[s]:SetText(P.mana .. " / " .. P.maxMana .. (((P.olNext or 0) > 0) and ("  |cffff7766(" .. P.olNext .. " locked next turn)|r") or (((P.ol or 0) > 0 and game.cur == P.side) and ("  |cffff7766(" .. P.ol .. " locked)|r") or "")))
     local low = #P.deck <= 3
     ui.deckT[s]:SetText("|cffc9b48aDeck|r " .. (low and "|cffff6a5a" or "|cffffffff") .. #P.deck .. (low and " !" or "") .. "|r     |cffc9b48aHand|r |cffffffff" .. #P.hand .. "|r")
   end
@@ -1304,6 +1333,14 @@ refresh = function()
   Sh(win.endBtn, S.mode ~= "mull")
   Sh(win.mullPanel, S.mode == "mull"); Sh(win.mullTitle, S.mode == "mull")
   local idle = mine and S.mode == "play" and #B.actions(game, ME) == 0
+  if win.discPanel then
+    local pd = game.pend
+    local on = pd and pd.side == ME and S.mode == "play" and not game.over
+    if on then
+      for i = 1, 3 do local w, k = win.discCards[i], pd.opts[i]; if k then paintCard(w, k, 1); w:Show() else w:Hide() end end
+      win.discPanel:Show()
+    else win.discPanel:Hide() end
+  end
   win.endBtn:SetActive(idle and true or false)
   if win.emoteBtn then
     local on = S.pvp and not game.over and true or false
@@ -1365,10 +1402,15 @@ local function startMatch()
   cleanDeck(a, dk)
   if deckSize(dk) ~= B.DECK then say("Your deck needs exactly " .. B.DECK .. " cards.", 3) return end
   for _, k in ipairs(expand(dk)) do if not B.defs[k] then return end end
-  local cap = ({ 3, 4, 5 })[S.level]
-  local aiDeck = B.randomDeck(aiPool(), cap, math.random)
   local cls = a.heroClass or select(2, UnitClass("player")) or "WARRIOR"
+  do   -- class cards of another hero can't come along
+    local off, which = 0, nil
+    for k, v in pairs(dk.cards) do local d = B.defs[k]; if not B.classOK(d, cls) then off = off + v; which = d.hclass end end
+    if off > 0 then say(off .. " card" .. (off == 1 and " is" or "s are") .. " for " .. (CLASS_NAME[which] or "another class") .. " only. Pick that hero or take them out of the deck.", 5) return end
+  end
+  local cap = ({ 3, 4, 5 })[S.level]
   local aiCls = B.CLASSES[math.random(#B.CLASSES)]
+  local aiDeck = B.randomDeck(aiPool(), cap, math.random, nil, nil, aiCls)
   ME, S.pvp, S.foeName, S.endReason, S.foeRating = 1, false, nil, nil, nil
   beginGame(B.new({ decks = { expand(dk), aiDeck }, classes = { cls, aiCls }, names = { (UnitName and UnitName("player")) or "You", B.OPPONENTS[aiCls] }, seed = math.random(1, 2000000000) }))
 end
@@ -1656,6 +1698,7 @@ local function computeList()
     if D.cost then if D.cost == 7 then ok = d.cost >= 7 else ok = d.cost == D.cost end end
     if ok and D.typ and d.type ~= D.typ then ok = false end
     if ok and s ~= "" and not d.name:lower():find(s, 1, true) then ok = false end
+    if ok and not B.classOK(d, myClass(a)) then ok = false end   -- your hero's class cards and neutral ones
     if ok then out[#out + 1] = k end
   end
   table.sort(out, function(x, y) local a1, b1 = B.defs[x], B.defs[y]; if a1.cost ~= b1.cost then return a1.cost < b1.cost end return a1.name < b1.name end)
@@ -1694,13 +1737,14 @@ deckRefresh = function()
       r.name:SetText(d.name)
       local tc = (U.TIER[d.tier or 1] or U.TIER[1])[3]
       r.name:SetTextColor(tc[1], tc[2], tc[3])
+      if not B.classOK(d, myClass(a)) then r.name:SetText("|cffff5544" .. d.name .. " (" .. (CLASS_NAME[d.hclass] or "") .. ")|r") end
       r.n:SetText(dk.cards[k] > 1 and ("x" .. dk.cards[k]) or "")
     else r:Hide(); r.key = nil end
   end
   local n = deckSize(dk)
   D.count:SetText(n .. " / " .. B.DECK)
   D.count:SetTextColor(n == B.DECK and 0.6 or 1, n == B.DECK and 1 or 0.8, n == B.DECK and 0.6 or 0.5)
-  D.name:SetText("Deck " .. (a.deckSel or 1))
+  D.name:SetText("Deck " .. (a.deckSel or 1) .. "  |cffc9b48a(" .. (CLASS_NAME[myClass(a)] or "") .. ")|r")
   -- filter buttons
   for c, b in pairs(D.costB) do b:SetActive(c == (D.cost or "all")) end
   for t, b in pairs(D.typB) do b:SetActive(t == (D.typ or "all")) end
@@ -1944,14 +1988,16 @@ function RG.ArenaPvPDeck()
   for _, k in ipairs(list) do
     if not B.defs[k] then return nil, "A card in your deck is not ready yet." end
   end
-  -- Raider cards only exist on your own collection, so the other player could not load them: swap them out for this duel
+  -- Raider cards only exist on your own collection, so the other player could not load them, and another hero's class
+  -- cards can't come along: swap them out for this duel
+  local cls = a.pvpClass or myClass(a)
   local keep, swapped = {}, 0
-  for _, k in ipairs(list) do if k:sub(1, 1) == "@" then swapped = swapped + 1 else keep[#keep + 1] = k end end
+  for _, k in ipairs(list) do if k:sub(1, 1) == "@" or not B.classOK(B.defs[k], cls) then swapped = swapped + 1 else keep[#keep + 1] = k end end
   if swapped > 0 then
     local have, keys = avail(a)
     local pool, limit = {}, {}
     for _, k in ipairs(keys) do if k:sub(1, 1) ~= "@" then pool[#pool + 1] = k end end
-    local deck = B.randomDeck(pool, 6, math.random, keep, function(k) return math.min(have[k] or 0, B.maxCopies(B.defs[k])) end)
+    local deck = B.randomDeck(pool, 6, math.random, keep, function(k) return math.min(have[k] or 0, B.maxCopies(B.defs[k])) end, cls)
     list = deck
     if #list ~= B.DECK then return nil, "Could not build a duel deck without your Raider cards." end
   end

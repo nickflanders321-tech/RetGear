@@ -2,7 +2,7 @@
 local M = {}
 function M.load(dir)
   local RG = {}
-  for _, f in ipairs({ "ArcadeCards.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
+  for _, f in ipairs({ "ArcadeCards.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
   local B = RG.Battle
   local patch = os.getenv("BAL_PATCH")
   if patch then dofile(patch)(B, RG) end

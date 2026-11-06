@@ -10,13 +10,15 @@ local floor, max, min, ceil = math.floor, math.max, math.min, math.ceil
 
 B.MAXMANA, B.MAXHAND, B.MAXBOARD, B.DECK, B.HP = 10, 10, 7, 30, 30
 B.KW = { taunt = "Taunt", charge = "Charge", rush = "Rush", shield = "Divine Shield", stealth = "Stealth", windfury = "Windfury", lifesteal = "Lifesteal", poison = "Poisonous" }
+B.TRIBE_NAME = { beast = "Beast", undead = "Undead", demon = "Demon", dragonkin = "Dragon", elemental = "Elemental", humanoid = "Humanoid", mechanical = "Mech", giant = "Giant", creature = "Creature" }
+B.TRIBE_PLURAL = { beast = "Beasts", undead = "Undead", demon = "Demons", dragonkin = "Dragons", elemental = "Elementals", humanoid = "Humanoids", mechanical = "Mechs", giant = "Giants", creature = "Creatures" }
 B.KWORDER = { "taunt", "charge", "rush", "shield", "stealth", "windfury", "lifesteal", "poison" }
 B.defs = {}
 -- going second: how the two seats are evened out (tuned by simulation, see tools/balance)
 B.TUNE = { firstSkipDraw = false, secondExtra = 0, secondArmor = 5,
   minionBase = 0,    -- a vanilla minion has 2 * cost + minionBase stats
   kwExtra = { shield = 2, rush = 1, lifesteal = 1, taunt = 0, bc_heal = 1, dr_summon = 1, windfury = 1 },  -- extra stat price per keyword or effect
-  archCost = { kill = 2, mend = -1, buff = -1, draw = 0, armor = -1 } }    -- mana nudge per spell archetype
+  archCost = { kill = 2, mend = -2, buff = 0, draw = 0, armor = -1, frenzy = 0, rally = -1, shadow = -1 } }    -- mana nudge per spell archetype
 
 local function hash(s) local h = 5381; for i = 1, #s do h = (h * 33 + s:byte(i)) % 2147483629 end return h end
 local function seeded(s) s = s % 2147483646 + 1; return function(n) s = (s * 48271) % 2147483647; return s % n + 1 end end
@@ -50,10 +52,11 @@ local TOKENS = {   -- what summoning cards bring along
   recruit = { name = "Militia", atk = 1, hp = 1, icon = "Ability_Warrior_Charge" },
   hand = { name = "Silver Hand Recruit", atk = 1, hp = 1, icon = "Spell_Holy_PrayerOfHealing" },
 }
+local TOKEN_TRIBE = { beast = "beast", undead = "undead", demon = "demon", dragonkin = "dragonkin", elemental = "elemental", mechanical = "mechanical", creature = "beast" }
 local function tok(kind, n, a, h, extra)
   local t = copy(TOKENS[kind] or TOKENS.humanoid); t.atk = a or t.atk; t.hp = h or t.hp
   if extra then t.kw = copy(extra) end
-  t.token = true
+  t.token = true; t.tribe = t.tribe or TOKEN_TRIBE[kind]
   return t
 end
 B.TOKENS = TOKENS
@@ -62,10 +65,39 @@ B.TOKENS = TOKENS
 -- Describing a card in words
 -- ---------------------------------------------------------------------------
 local function stat(a, h) if (h or 0) == 0 then return "+" .. a .. " Attack" end return "+" .. a .. "/+" .. h end
+local opsText
+local function condText(c)
+  if c.k == "hold" then return "If you're holding a " .. (B.TRIBE_NAME[c.tribe] or c.tribe) end
+  if c.k == "ctrl" then return "If you control a" .. ((c.tribe == "undead" or c.tribe == "elemental") and "n " or " ") .. (B.TRIBE_NAME[c.tribe] or c.tribe) end
+  if c.k == "last" then return "If you played a" .. ((c.tribe == "undead" or c.tribe == "elemental") and "n " or " ") .. (B.TRIBE_NAME[c.tribe] or c.tribe) .. " last turn" end
+  if c.k == "weapon" then return "If you have a weapon" end
+  if c.k == "armor" then return "If you have Armor" end
+  if c.k == "hurt" then return "If your hero is damaged" end
+  if c.k == "spell" then return "If you cast a spell this turn" end
+  return "If"
+end
+local POOLNAME = { spell = "spell", minion = "minion", class = "card from your class", weapon = "weapon" }
 local function opText(o, first)
   local op, at = o.op, o.at
-  if op == "dmg" then
-    local who = ({ emin = " to all enemy minions", min = " to all minions", eface = " to the enemy hero", rand = " to a random enemy", randmin = " to a random enemy minion", fface = " to your hero", all = " to everything" })[at] or ""
+  if o.text then return o.text end
+  if op == "hero" then return "Give your hero +" .. o.a .. " Attack this turn"
+  elseif op == "if" then
+    local t = opsText(o.ops)
+    local s = condText(o.cond) .. ", " .. t:sub(1, 1):lower() .. t:sub(2)
+    if o.els then s = s .. ". Otherwise, " .. opsText(o.els):gsub("^%u", string.lower) end
+    return s
+  elseif op == "split" then return "Deal " .. o.n .. " damage randomly split among all enemies"
+  elseif op == "discover" then return "Discover a " .. (POOLNAME[o.pool] or ((B.TRIBE_NAME[o.pool] or o.pool)))
+  elseif op == "give" then local d = B.defs[o.key]; return "Add " .. (o.n and o.n > 1 and (o.n .. " ") or "a ") .. (d and d.name or o.key) .. (o.n and o.n > 1 and "s" or "") .. " to your hand"
+  elseif op == "ramp" then return "Gain " .. (o.n == 1 and "an empty Mana Crystal" or (o.n .. " empty Mana Crystals"))
+  elseif op == "wbuff" then return "Give your weapon +" .. o.a .. (o.d and o.d > 0 and ("/+" .. o.d) or " Attack")
+  elseif op == "armordmg" then return "Deal damage equal to your Armor"
+  elseif op == "bounce" then return "Return a minion to its owner's hand"
+  elseif op == "transform" then return "Transform a minion into a " .. o.tok.atk .. "/" .. o.tok.hp .. " " .. o.tok.name
+  elseif op == "tutor" then return "Draw a " .. (B.TRIBE_NAME[o.pool] or o.pool) .. " from your deck"
+  elseif op == "gainsp" then return "Gain Spell Damage +" .. o.n
+  elseif op == "dmg" then
+    local who = ({ emin = " to all enemy minions", min = " to all minions", eface = " to the enemy hero", rand = " to a random enemy", randmin = " to a random enemy minion", fface = " to your hero", all = " to all characters", eall = " to all enemies", it = " to it" })[at] or ""
     return "Deal " .. o.n .. " damage" .. who
   elseif op == "heal" then
     local who = ({ fface = " to your hero", fall = " to all friendly characters" })[at] or ""
@@ -73,7 +105,11 @@ local function opText(o, first)
   elseif op == "buff" then
     local s = (o.h == 0 and not o.temp) and stat(o.a, 0) or (o.h == 0 and ("+" .. o.a .. " Attack") or ("+" .. o.a .. "/+" .. o.h))
     local tail = o.temp and " this turn" or ""
-    if at == "t" then return "Give a friendly minion " .. s .. tail elseif at == "fmin" then return "Give your minions " .. s .. tail else return "Gain " .. s .. tail end
+    if at == "t" then return "Give a friendly minion " .. s .. tail elseif at == "fmin" then return "Give your minions " .. s .. tail
+    elseif at == "fother" then return "Give your other minions " .. s .. tail
+    elseif at == "ftribe" then return "Give your other " .. (B.TRIBE_PLURAL[o.tribe] or o.tribe) .. " " .. s .. tail
+    elseif at == "it" then return "give it " .. s .. tail
+    else return "Gain " .. s .. tail end
   elseif op == "kw" then
     local k = B.KW[o.k]
     if at == "t" then return "Give a friendly minion " .. k elseif at == "fmin" then return "Give your minions " .. k else return "Gain " .. k end
@@ -81,12 +117,13 @@ local function opText(o, first)
   elseif op == "armor" then return "Gain " .. o.n .. " Armor"
   elseif op == "summon" then
     local t = o.tok or (o.pick and o.pick[1])
-    if o.pick then return "Summon a random Totem" end
+    if o.pick then return "Summon a random " .. (o.what or "Totem") end
     local kws = ""
     if t.kw then local l = {}; for _, k in ipairs(B.KWORDER) do if t.kw[k] then l[#l + 1] = B.KW[k] end end; if #l > 0 then kws = " with " .. table.concat(l, ", ") end end
     if o.n == 1 then return "Summon a " .. t.atk .. "/" .. t.hp .. " " .. t.name .. kws end
-    return "Summon " .. o.n .. " " .. t.atk .. "/" .. t.hp .. " " .. t.name .. "s" .. kws
-  elseif op == "destroy" then return at == "all" and "Destroy all minions" or "Destroy a minion"
+    local pl = t.name:find("olf$") and (t.name:sub(1, -2) .. "ves") or (t.name:find("Sheep$") and t.name) or (t.name .. "s")
+    return "Summon " .. o.n .. " " .. t.atk .. "/" .. t.hp .. " " .. pl .. kws
+  elseif op == "destroy" then return at == "all" and "Destroy all minions" or ("Destroy " .. (o.what or "a minion"))
   elseif op == "freeze" then
     if at == "emin" then return "Freeze all enemy minions" end
     return first and "Freeze a character" or "Freeze it"
@@ -96,13 +133,14 @@ local function opText(o, first)
   end
   return ""
 end
-local function opsText(ops)
+opsText = function(ops)
   local parts = {}
   local i = 1
   ops = ops or {}
   while i <= #ops do
     local o, n = ops[i], ops[i + 1]
-    if o.op == "kw" and n and n.op == "kw" and n.at == o.at then
+    if o.hide then i = i + 1
+    elseif o.op == "kw" and n and n.op == "kw" and n.at == o.at then
       parts[#parts + 1] = opText(o, i == 1) .. " and " .. B.KW[n.k]; i = i + 2
     else parts[#parts + 1] = opText(o, i == 1); i = i + 1 end
   end
@@ -116,15 +154,29 @@ function B.describe(d)
     local l = {}
     for _, k in ipairs(B.KWORDER) do if d.kw and d.kw[k] then l[#l + 1] = B.KW[k] end end
     if #l > 0 then parts[#parts + 1] = table.concat(l, ", ") end
+    if d.sp then parts[#parts + 1] = "Spell Damage +" .. d.sp end
     if d.bc then parts[#parts + 1] = "Battlecry: " .. opsText(d.bc) end
+    if d.combo then parts[#parts + 1] = "Combo: " .. opsText(d.combo) end
     if d.dr then parts[#parts + 1] = "Deathrattle: " .. opsText(d.dr) end
     if d.eot then
       local t = opsText(d.eot)
       parts[#parts + 1] = "At the end of your turn, " .. t:sub(1, 1):lower() .. t:sub(2)
     end
+    if d.trig then
+      local t = d.trig
+      local when = t.ev == "summon" and ("Whenever you summon a" .. ((t.tribe == "undead" or t.tribe == "elemental") and "n " or " ") .. (B.TRIBE_NAME[t.tribe] or "minion") .. ", ")
+        or t.ev == "death" and "Whenever another friendly minion dies, "
+        or t.ev == "spell" and "Whenever you cast a spell, "
+        or t.ev == "heal" and "Whenever a character is healed, "
+        or t.ev == "armor" and "Whenever you gain Armor, " or ""
+      local x = opsText(t.ops)
+      parts[#parts + 1] = when .. x:sub(1, 1):lower() .. x:sub(2)
+    end
   else
     parts[#parts + 1] = opsText(d.ops)
+    if d.combo then parts[#parts + 1] = "Combo: " .. opsText(d.combo) end
   end
+  if d.ol and d.ol > 0 then parts[#parts + 1] = "Overload: (" .. d.ol .. ")" end
   local s = table.concat(parts, ". ")
   if s ~= "" then s = s .. "." end
   return s
@@ -182,25 +234,25 @@ ARCH.bolt = function(c) return { dmg(c <= 3 and c + 1 or c + 2) }, "any" end
 ARCH.smite = function(c) return { dmg(c + 2) }, "emin" end
 ARCH.burn = function(c) return { dmg(c + 2, "eface") } end
 ARCH.heal = function(c) return { heal(c * 2 + 2) }, "friend" end
-ARCH.mend = function(c) return { heal(c + 1, "fall") } end
+ARCH.mend = function(c) if c >= 3 then return { heal(c + 1, "fall"), draw(1) } end return { heal(c + 2, "fall") } end
 ARCH.buff = function(c) local a = floor(c * 0.8 + 1); return { buff(a, c < 3 and a - 1 or a) }, "fmin" end
-ARCH.rally = function(c) local n = max(1, floor(c / 3)); return { buff(n, c < 3 and 0 or n, "fmin") } end
-ARCH.draw = function(c) return { draw(floor((c + 1) / 2)) } end
+ARCH.rally = function(c) local n = c >= 6 and 2 or 1; if c >= 4 and c < 6 then return { buff(1, 1, "fmin"), draw(1) } end return { buff(n, n, "fmin") } end
+ARCH.draw = function(c) if c >= 2 and c % 2 == 0 then return { draw(c / 2), armor(2) } end return { draw(floor((c + 1) / 2)) } end
 ARCH.aoe = function(c) return { dmg(ceil(c / 2), "emin") } end
-ARCH.quake = function(c) return { dmg(max(1, ceil(c / 2) - (c >= 5 and 0 or 0)), "min") }, nil, max(c, 2) end
+ARCH.quake = function(c) return { dmg(floor(max(c, 2) / 2) + 1, "min") }, nil, max(c, 2) end
 ARCH.armor = function(c) if c >= 3 then return { armor(c + 2), draw(1) } end return { armor(c * 2) } end
 ARCH.summon = function(c) local n = min(3, floor(c / 2) + 1); local s = max(1, floor((2 * c + 1) / n / 2)); return { summon(n, tok("recruit", n, s, s)) } end
 ARCH.kill = function(c) return { { op = "destroy", at = "t" } }, "emin", max(c, 4) end
-ARCH.silence = function(c) return { { op = "silence", at = "t" }, draw(1) }, "min", 2 end
+ARCH.silence = function(c) return { { op = "silence", at = "t" }, draw(1) }, "min", 1 end
 ARCH.freeze = function(c) return { dmg(c + 1), freeze("t") }, "enemy" end
 ARCH.blizzard = function(c) return { dmg(max(1, ceil(c / 3)), "emin"), freeze("emin") }, nil, max(c, 3) end
 ARCH.charge = function(c) return { buff(2, 0), kwop("charge") }, "fmin", min(c, 2) end
 ARCH.bastion = function(c) return { kwop("taunt"), kwop("shield") }, "fmin", max(2, min(c, 4)) end
 ARCH.shadow = function(c) return { buff(1, 0), kwop("stealth") }, "fmin", min(max(c, 1), 3) end
-ARCH.frenzy = function(c) return { buff(floor(c / 2) + 1, 0, "fmin", true) }, nil, max(c, 2) end
+ARCH.frenzy = function(c) c = max(c, 1); return { buff(c + 1, 1) }, "fmin", c end
 ARCH.nova = function(c) local n = max(1, ceil(c / 2.5)); return { dmg(n, "emin"), heal(n, "fall") }, nil, max(c, 4) end
 ARCH.coin = function() return { { op = "mana", n = 2 } }, nil, 0 end
-ARCH.wipe = function() return { { op = "destroy", at = "all" } }, nil, 8 end
+ARCH.wipe = function() return { { op = "destroy", at = "all" } }, nil, 7 end
 ARCH.tap = function() return { dmg(2, "fface"), draw(2) }, nil, 1 end
 local POOLS = {
   { "bolt", "smite", "heal", "buff", "draw", "aoe", "silence", "charge", "shadow", "armor", "summon", "freeze", "tap", "burn", "frenzy" },
@@ -241,6 +293,26 @@ F("eot_heal", 2, 10, function(d) d.eot = { heal(1, "fall") }; return 2 end)
 F("eot_dmg", 3, 10, function(d) d.eot = { dmg(1, "rand") }; return 3 end)
 F("eot_buff", 4, 10, function(d) d.eot = { buff(1, 1, "self") }; return 3 end)
 F("eot_armor", 2, 10, function(d) d.eot = { armor(1) }; return 2 end)
+-- synergies (given to minions that would otherwise have no text): tribes that reward building around them
+F("syn_tribebuff", 2, 10, function(d) local n = d.cost >= 6 and 2 or 1; d.bc = { { op = "buff", a = n, h = n, at = "ftribe", tribe = d.tribe } }; return 2 * n end)
+F("syn_onsummon", 2, 8, function(d) d.trig = { ev = "summon", tribe = d.tribe, ops = { buff(1, d.tribe == "undead" and 1 or 0, "it") } }; return d.tribe == "undead" and 3 or 2 end)
+F("syn_grow", 2, 8, function(d) d.trig = { ev = "death", ops = { buff(1, 1, "self") } }; return 2 end)
+F("syn_holddragon", 2, 10, function(d) local n = 1 + floor(d.cost / 2); d.bc = { { op = "if", cond = { k = "hold", tribe = "dragonkin" }, ops = { dmg(n) } } }; d.tgt = "any"; return n end)
+F("syn_lastelem", 2, 10, function(d) local n = 1 + floor(d.cost / 3); d.bc = { { op = "if", cond = { k = "last", tribe = "elemental" }, ops = { dmg(n, "rand"), draw(1) } } }; return 1 + n end)
+F("syn_spellpower", 1, 7, function(d) d.sp = d.cost >= 5 and 2 or 1; return d.sp + 1 end)
+F("syn_onspell", 1, 5, function(d) d.trig = { ev = "spell", ops = { buff(1, d.cost >= 3 and 1 or 0, "self") } }; return d.cost >= 3 and 3 or 2 end)
+F("syn_discover", 3, 10, function(d) d.bc = { { op = "discover", pool = d.tribe == "demon" and "demon" or (d.tribe == "dragonkin" and "dragonkin" or "spell") } }; return 3 end)
+F("syn_tutor", 2, 8, function(d) d.bc = { { op = "tutor", pool = d.tribe } }; return 2 end)
+local SYNERGY = {
+  beast = { { "syn_tribebuff", 10 }, { "syn_onsummon", 8 }, { "syn_tutor", 4 } },
+  undead = { { "syn_grow", 10 }, { "syn_onsummon", 6 }, { "syn_tribebuff", 6 } },
+  dragonkin = { { "syn_holddragon", 12 }, { "syn_spellpower", 6 }, { "syn_discover", 4 } },
+  elemental = { { "syn_lastelem", 10 }, { "syn_spellpower", 6 }, { "syn_onspell", 6 } },
+  demon = { { "syn_tribebuff", 8 }, { "syn_discover", 6 }, { "syn_grow", 4 } },
+  humanoid = { { "syn_spellpower", 8 }, { "syn_onspell", 8 }, { "syn_discover", 6 } },
+  giant = { { "syn_grow", 6 } },
+  creature = { { "syn_grow", 6 } },
+}
 
 local TRIBE = {   -- feature, weight
   beast = { { "charge", 18 }, { "rush", 22 }, { "windfury", 8 }, { "bc_buff", 8 }, { "dr_summon", 6 }, { "poison", 5 } },
@@ -312,6 +384,253 @@ local function genWeapon(c, r, cost)
   return { type = "weapon", cost = cost, atk = atk, dur = dur, ops = { { op = "weapon", a = atk, d = dur } } }
 end
 
+-- ---------------------------------------------------------------------------
+-- Class cards. Tier-set pieces (Dreadnaught for Warriors, Frostfire for Mages...) are class cards: only that hero can
+-- put them in a deck, and each class has its own way to win: Warrior armor and weapons, Paladin Divine Shield and
+-- Recruits, Hunter Beasts and damage to the enemy hero, Rogue Combo and cheap spells, Priest healing that pays off,
+-- Shaman Overload and Elementals, Mage Freeze and Spell Damage, Warlock paying Health for power and Demons, Druid
+-- extra mana and big Taunts. Every hero also gets three basic class cards that need no collecting.
+-- ---------------------------------------------------------------------------
+local function T(name, a, h, icon, tribe, kw) return { name = name, atk = a, hp = h, icon = icon, tribe = tribe, kw = kw, token = true } end
+local function IF(cond, ops, els) return { op = "if", cond = cond, ops = ops, els = els } end
+local function txt(o, t) o.text = t; return o end
+local function hide(o) o.hide = true; return o end
+local function weaponOp(a, d) return { op = "weapon", a = a, d = d } end
+local TOTEMS = B.HERO and nil
+-- { "s", cost, ops, tgt, extra } | { "m", cost, atk, hp, tribe, kw, extra } | { "w", cost, atk, dur, extra }
+-- extra: bc, dr, eot, trig, sp, combo, ol, tgt
+local SQUIRE = T("Squire", 2, 2, "INV_Helmet_06", nil, { shield = true })
+local CLASS_DESIGNS = {
+  WARRIOR = {
+    { "s", 1, { dmg(1, "min") } },                                                   -- Whirlwind
+    { "s", 1, { { op = "armordmg", at = "t" } }, "emin" },                            -- Shield Slam
+    { "s", 3, { armor(5), draw(1) } },                                              -- Shield Block
+    { "s", 4, { dmg(2, "min"), armor(4) } },
+    { "s", 1, { IF({ k = "weapon" }, { { op = "wbuff", a = 1, d = 1 } }, { weaponOp(1, 3) }) } },
+    { "s", 2, { dmg(2), draw(1) }, "min" },                                          -- Slam
+    { "w", 3, 3, 2, { bc = { armor(3) } } },
+    { "w", 5, 5, 2 },
+    { "m", 2, 2, 3, nil, nil, { bc = { armor(3) } } },
+    { "m", 3, 2, 4, nil, nil, { trig = { ev = "death", ops = { buff(1, 0, "self") } } } },
+    { "m", 4, 4, 3, nil, { charge = true } },
+    { "m", 6, 5, 5, nil, nil, { bc = { armor(5) } } },
+    { "m", 3, 3, 3, nil, { rush = true }, { bc = { IF({ k = "weapon" }, { txt(buff(1, 1, "self"), "gain +1/+1 and Taunt"), hide(kwop("taunt", "self")) }) } } },
+    { "m", 7, 4, 8, nil, { charge = true } },
+    { "w", 6, 5, 3, { bc = { armor(5) } }, weapon = true },
+  },
+  PALADIN = {
+    { "s", 1, { buff(3, 0) }, "fmin" },
+    { "s", 1, { kwop("shield") }, "fmin" },
+    { "s", 3, { summon(3, tok("hand")) } },
+    { "s", 5, { kwop("shield", "fmin") } },
+    { "s", 4, { dmg(3), draw(1) }, "any" },
+    { "s", 6, { { op = "split", n = 8 } } },
+    { "s", 3, { buff(1, 1, "fmin") } },
+    { "w", 4, 4, 2, { bc = { heal(4, "fface") } } },
+    { "w", 5, 4, 2, { bc = { kwop("shield", "fmin") } } },
+    { "m", 2, 1, 1, nil, { shield = true }, { bc = { summon(1, tok("hand")) } } },
+    { "m", 3, 2, 3, nil, nil, { bc = { buff(1, 0, "fother") } } },
+    { "m", 5, 3, 5, nil, nil, { trig = { ev = "summon", ops = { kwop("shield", "it") } } } },
+    { "m", 7, 6, 6, nil, { shield = true, taunt = true } },
+    { "m", 2, 2, 2, nil, nil, { bc = { heal(3, "fface"), IF({ k = "hurt" }, { txt(kwop("shield", "self"), "gain Divine Shield") }) } } },
+    { "m", 6, 4, 4, nil, nil, { bc = { summon(2, SQUIRE) } } },
+    { "s", 1, { txt(buff(1, 1), "Give a friendly minion +1/+1"), draw(1) }, "fmin" },
+    { "s", 8, { heal(8), draw(3) }, "friend" },
+  },
+  HUNTER = {
+    { "s", 3, { IF({ k = "ctrl", tribe = "beast" }, { dmg(5) }, { dmg(3) }) }, "any" },
+    { "s", 3, { { op = "summon", n = 1, what = "Animal Companion", pick = {
+      T("Huffer", 4, 2, "Ability_Hunter_Pet_Hyena", "beast", { charge = true }), T("Leokk", 2, 4, "Ability_Hunter_Pet_Cat", "beast", { taunt = true }),
+      T("Misha", 4, 4, "Ability_Hunter_Pet_Bear", "beast", { taunt = true }) } } } },
+    { "s", 1, { summon(2, T("Hound", 1, 1, "Ability_Hunter_Pet_Wolf", "beast", { rush = true })) } },
+    { "s", 4, { dmg(4), dmg(2, "eface") }, "emin" },
+    { "s", 4, { txt({ op = "destroy", at = "randmin" }, "Destroy a random enemy minion") } },
+    { "w", 3, 3, 2, { bc = { dmg(1, "eface") } } },
+    { "m", 1, 1, 1, "beast", nil, { trig = { ev = "summon", tribe = "beast", ops = { buff(1, 0, "it") } } } },
+    { "m", 2, 2, 3, "beast", nil, { trig = { ev = "death", ops = { buff(1, 1, "self") } } } },
+    { "m", 3, 2, 3, "beast", nil, { bc = { { op = "buff", a = 1, h = 1, at = "ftribe", tribe = "beast" } } } },
+    { "m", 6, 6, 5, "beast", nil, { dr = { summon(2, T("Hyena", 2, 2, "Ability_Hunter_Pet_Hyena", "beast")) } } },
+    { "m", 4, 4, 4, nil, nil, { bc = { IF({ k = "ctrl", tribe = "beast" }, { dmg(3) }) }, tgt = "any" } },
+    { "m", 3, 2, 2, "beast", nil, { trig = { ev = "summon", tribe = "beast", ops = { draw(1) } } } },
+    { "s", 3, { dmg(2, "eall") } },
+    { "m", 5, 4, 5, "beast", { windfury = true } },
+    { "s", 2, { txt(dmg(3, "eface"), "Deal 3 damage to the enemy hero"), IF({ k = "ctrl", tribe = "beast" }, { draw(1) }) } },
+  },
+  ROGUE = {
+    { "s", 1, { dmg(3, "eface") }, nil, { combo = { dmg(3, "eface"), draw(1) } } },
+    { "s", 2, { dmg(2) }, "any", { combo = { dmg(4) } } },
+    { "s", 2, { { op = "bounce", at = "t", text = "Return an enemy minion to its owner's hand" } }, "emin" },
+    { "s", 2, { dmg(1, "emin"), draw(1) } },
+    { "s", 1, { buff(2, 0) }, "fmin", { combo = { buff(4, 0) } } },
+    { "s", 0, { { op = "bounce", at = "t", text = "Return a friendly minion to your hand" }, draw(1) }, "fmin" },
+    { "w", 3, 2, 2, { bc = { dmg(1) }, combo = { dmg(2) }, tgt = "any" } },
+    { "w", 4, 3, 4 },
+    { "m", 2, 2, 2, nil, nil, { combo = { summon(1, T("Bandit", 2, 1, "Ability_Rogue_Sprint")) } } },
+    { "m", 3, 3, 4, nil, nil, { combo = { dmg(2) }, tgt = "any" } },
+    { "m", 2, 2, 2, nil, { stealth = true }, { combo = { buff(2, 2, "self") } } },
+    { "m", 3, 3, 3, nil, nil, { bc = { { op = "wbuff", a = 2, d = 0 } } } },
+    { "s", 5, { { op = "bounce", at = "min", text = "Return all minions to their owner's hand" } } },
+    { "m", 1, 1, 3, nil, nil, { combo = { draw(1) } } },
+  },
+  PRIEST = {
+    { "s", 1, { buff(0, 2), draw(1) }, "fmin" },
+    { "s", 2, { txt({ op = "destroy", at = "t" }, "Destroy an enemy minion with 3 or less Attack") }, "esmall" },
+    { "s", 3, { txt({ op = "destroy", at = "t" }, "Destroy an enemy minion with 5 or more Attack") }, "ebig" },
+    { "s", 1, { dmg(2) }, "min" },
+    { "s", 4, { dmg(2, "emin"), heal(2, "fall") } },
+    { "s", 2, { { op = "discover", pool = "spell" } } },
+    { "s", 4, { { op = "silence", at = "emin", text = "Silence all enemy minions" }, draw(1) } },
+    { "s", 0, { { op = "heal", n = 4, at = "min", text = "Restore 4 Health to all minions" } } },
+    { "m", 2, 1, 3, nil, nil, { trig = { ev = "heal", ops = { draw(1) } } } },
+    { "m", 1, 1, 2, nil, nil, { trig = { ev = "heal", ops = { buff(2, 0, "self") } } } },
+    { "m", 3, 3, 3, nil, nil, { bc = { heal(4) }, tgt = "friend" } },
+    { "m", 4, 3, 5, nil, nil, { sp = 1 } },
+    { "m", 5, 4, 5, nil, { taunt = true }, { dr = { heal(6, "fface") } } },
+    { "m", 6, 6, 5, nil, nil, { bc = { buff(0, 3) }, tgt = "fmin" } },
+    { "s", 8, { heal(8, "fface"), dmg(3, "emin") } },
+  },
+  SHAMAN = {
+    { "s", 1, { dmg(3) }, "any", { ol = 1 } },
+    { "s", 1, { buff(3, 0, "t", true) }, "fmin" },
+    { "s", 3, { summon(2, T("Spirit Wolf", 2, 3, "Spell_Nature_SpiritWolf", "beast", { taunt = true })) }, nil, { ol = 2 } },
+    { "s", 3, { dmg(2, "emin") }, nil, { ol = 2 } },
+    { "s", 4, { { op = "transform", at = "t", tok = T("Frog", 0, 1, "Spell_Shaman_Hex", "beast", { taunt = true }) } }, "emin" },
+    { "s", 1, { { op = "silence", at = "t" }, dmg(1) }, "min" },
+    { "s", 3, { dmg(3, "min") }, nil, { ol = 3 } },
+    { "w", 2, 2, 3, { ol = 1 } },
+    { "w", 5, 4, 3, { ol = 1 } },
+    { "m", 1, 3, 1, "elemental", { windfury = true }, { ol = 2 } },
+    { "m", 2, 2, 2, "elemental", nil, { sp = 1 } },
+    { "m", 3, 0, 3, nil, nil, { eot = { draw(1) } } },
+    { "m", 6, 6, 5, "elemental", nil, { bc = { dmg(3) }, tgt = "any" } },
+    { "m", 3, 2, 4, "elemental", nil, { trig = { ev = "spell", ops = { buff(1, 1, "self") } } } },
+    { "m", 6, 7, 8, "elemental", { taunt = true }, { ol = 3 } },
+    { "m", 2, 2, 3, "elemental", nil, { bc = { IF({ k = "last", tribe = "elemental" }, { draw(1) }) } } },
+  },
+  MAGE = {
+    { "s", 2, { dmg(3), freeze("t") }, "enemy" },
+    { "s", 2, { dmg(1, "emin") } },
+    { "s", 3, { freeze("emin") } },
+    { "s", 4, { { op = "transform", at = "t", tok = T("Sheep", 1, 1, "Spell_Nature_Polymorph", "beast") } }, "min" },
+    { "s", 10, { dmg(10) }, "any" },
+    { "s", 7, { dmg(4, "emin") } },
+    { "s", 6, { dmg(2, "emin"), freeze("emin") } },
+    { "s", 1, { { op = "discover", pool = "spell" } } },
+    { "m", 1, 1, 3, nil, nil, { trig = { ev = "spell", ops = { buff(1, 0, "self") } } } },
+    { "m", 4, 3, 3, nil, nil, { sp = 1, bc = { { op = "discover", pool = "spell" } } } },
+    { "m", 4, 3, 6, "elemental", nil, { bc = { freeze("t") }, tgt = "enemy" } },
+    { "m", 7, 5, 7, nil, nil, { trig = { ev = "spell", ops = { { op = "give", key = "b:Fireball" } } } } },
+    { "s", 3, { dmg(2), { op = "split", n = 2 } }, "any" },
+    { "m", 2, 3, 2, nil, nil, { sp = 1 } },
+  },
+  WARLOCK = {
+    { "s", 1, { dmg(1), draw(1) }, "min" },
+    { "s", 1, { buff(3, 3), dmg(3, "fface") }, "fmin" },
+    { "s", 1, { dmg(4), dmg(2, "fface") }, "any" },
+    { "s", 4, { dmg(3, "all") } },
+    { "s", 3, { dmg(2), heal(2, "fface") }, "any" },
+    { "s", 6, { { op = "destroy", at = "t" }, heal(3, "fface") }, "emin" },
+    { "s", 3, { { op = "tutor", pool = "demon" }, { op = "tutor", pool = "demon", hide = true } } },
+    { "s", 4, { dmg(2), { op = "discover", pool = "demon" } }, "any" },
+    { "m", 1, 3, 2, "demon", nil, { bc = { dmg(3, "fface") } } },
+    { "m", 3, 2, 4, "demon", nil, { trig = { ev = "summon", tribe = "demon", ops = { buff(1, 1, "it") } } } },
+    { "m", 6, 5, 7, "demon", { charge = true }, { bc = { dmg(5, "fface") } } },
+    { "m", 5, 4, 6, "demon", { taunt = true }, { bc = { { op = "buff", a = 1, h = 1, at = "ftribe", tribe = "demon" } } } },
+    { "m", 6, 6, 7, "demon", nil, { bc = { dmg(1, "all") } } },
+    { "m", 2, 2, 3, "demon", { lifesteal = true } },
+  },
+  DRUID = {
+    { "s", 2, { { op = "ramp", n = 1 } } },
+    { "s", 3, { dmg(3), dmg(1, "emin") }, "emin" },
+    { "s", 1, { { op = "hero", a = 2 }, armor(2) } },
+    { "s", 2, { txt(buff(2, 2), "Give a friendly minion +2/+2 and Taunt"), hide(kwop("taunt")) }, "fmin" },
+    { "s", 3, { buff(2, 0, "fmin", true), { op = "hero", a = 2 } } },
+    { "s", 5, { dmg(2, "emin"), armor(3) } },
+    { "s", 6, { { op = "ramp", n = 2 }, draw(1) } },
+    { "m", 2, 2, 3, "beast", nil, { bc = { armor(2) } } },
+    { "m", 4, 3, 3, nil, nil, { bc = { dmg(2) }, tgt = "any" } },
+    { "m", 5, 4, 7, "beast", { taunt = true } },
+    { "m", 6, 5, 5, nil, nil, { bc = { draw(2) } } },
+    { "m", 8, 8, 8, nil, { taunt = true } },
+    { "m", 9, 5, 8, nil, nil, { bc = { buff(2, 2, "fother") } } },
+    { "s", 0, { { op = "mana", n = 1 } } },
+  },
+}
+-- basic class cards: every hero has these from the start
+local BASIC_CLASS = {
+  { "WARRIOR", "Heroic Strike", "Ability_Rogue_Ambush", { "s", 2, { { op = "hero", a = 4 } } } },
+  { "WARRIOR", "Execute", "INV_Sword_48", { "s", 2, { txt({ op = "destroy", at = "t" }, "Destroy a damaged enemy minion") }, "edmg" } },
+  { "WARRIOR", "Arathi Weaponsmith", "INV_Hammer_04", { "m", 4, 3, 3, nil, nil, { bc = { weaponOp(2, 2) } } } },
+  { "PALADIN", "Hammer of Justice", "Spell_Holy_SealOfMight", { "s", 2, { dmg(2), freeze("t") }, "enemy" } },
+  { "PALADIN", "Silver Hand Knight", "INV_Helmet_06", { "m", 5, 4, 4, nil, nil, { bc = { summon(1, SQUIRE) } } } },
+  { "PALADIN", "Blessing of Light", "Spell_Holy_PrayerOfHealing02", { "s", 1, { txt(buff(1, 1), "Give a friendly minion +1/+1 and Divine Shield"), hide(kwop("shield")) }, "fmin" } },
+  { "HUNTER", "Arcane Shot", "Ability_ImpalingBolt", { "s", 1, { dmg(2) }, "any" } },
+  { "HUNTER", "Tracking", "Ability_Tracking", { "s", 1, { { op = "tutor", pool = "beast" } } } },
+  { "HUNTER", "Kennel Master", "Ability_Hunter_BeastCall", { "m", 3, 2, 3, nil, nil, { bc = { summon(1, T("Wolf", 2, 1, "Ability_Hunter_Pet_Wolf", "beast", { rush = true })) } } } },
+  { "ROGUE", "Backstab", "Ability_BackStab", { "s", 0, { dmg(2) }, "eundmg" } },
+  { "ROGUE", "Deadly Poison", "Ability_Rogue_DualWeild", { "s", 1, { IF({ k = "weapon" }, { { op = "wbuff", a = 2, d = 0 } }, { weaponOp(1, 2) }) } } },
+  { "ROGUE", "Shiv", "INV_ThrowingKnife_04", { "s", 2, { dmg(1), draw(1) }, "any" } },
+  { "PRIEST", "Mind Blast", "Spell_Shadow_UnholyFrenzy", { "s", 2, { dmg(5, "eface") } } },
+  { "PRIEST", "Renew", "Spell_Holy_Renew", { "s", 2, { heal(3, "fall"), draw(1) } } },
+  { "PRIEST", "Temple Acolyte", "Spell_Holy_HolyBolt", { "m", 2, 2, 3, nil, nil, { bc = { heal(3) }, tgt = "friend" } } },
+  { "SHAMAN", "Windfury", "Spell_Nature_Cyclone", { "s", 2, { kwop("windfury") }, "fmin" } },
+  { "SHAMAN", "Healing Wave", "Spell_Nature_MagicImmunity", { "s", 3, { heal(6), draw(1) }, "friend" } },
+  { "SHAMAN", "Totem Carver", "Spell_Nature_StoneClawTotem", { "m", 2, 2, 2, nil, nil, { bc = { "TOTEM" } } } },
+  { "MAGE", "Arcane Missiles", "Spell_Arcane_StarFire", { "s", 1, { { op = "split", n = 3 } } } },
+  { "MAGE", "Mirror Image", "Spell_Magic_LesserInvisibilty", { "s", 1, { summon(2, tok("image")) } } },
+  { "MAGE", "Arcane Apprentice", "INV_Staff_13", { "m", 2, 2, 3, nil, nil, { sp = 1 } } },
+  { "WARLOCK", "Shadow Bolt", "Spell_Shadow_ShadowBolt", { "s", 3, { dmg(4) }, "min" } },
+  { "WARLOCK", "Voidwalker", "Spell_Shadow_SummonVoidWalker", { "m", 1, 1, 3, "demon", { taunt = true } } },
+  { "WARLOCK", "Felhunter", "Spell_Shadow_SummonFelHunter", { "m", 3, 3, 3, "demon", nil, { bc = { { op = "silence", at = "t" } }, tgt = "min" } } },
+  { "DRUID", "Moonfire", "Spell_Nature_StarFall", { "s", 0, { dmg(1) }, "any" } },
+  { "DRUID", "Healing Touch", "Spell_Nature_HealingTouch", { "s", 3, { heal(8), armor(2) }, "friend" } },
+  { "DRUID", "Ironfur Grizzly", "Ability_Druid_Maul", { "m", 3, 3, 3, "beast", { taunt = true } } },
+}
+local function fromDesign(x)
+  local d
+  if x[1] == "s" then
+    local e = x[5] or {}
+    d = { type = "spell", cost = x[2], ops = x[3], tgt = x[4], combo = e.combo, ol = e.ol }
+  elseif x[1] == "w" then
+    local e = x[5] or {}
+    d = { type = "weapon", cost = x[2], atk = x[3], dur = x[4], ops = { weaponOp(x[3], x[4]) }, bc = e.bc, combo = e.combo, ol = e.ol, tgt = e.tgt }
+  else
+    local e = x[7] or {}
+    d = { type = "minion", cost = x[2], atk = x[3], hp = x[4], tribe = x[5], kw = copy(x[6] or {}), bc = e.bc, dr = e.dr, eot = e.eot, trig = e.trig, sp = e.sp, combo = e.combo, ol = e.ol, tgt = e.tgt }
+    if d.bc and d.bc[1] == "TOTEM" then d.bc = { { op = "summon", n = 1, pick = B.HERO.SHAMAN.ops[1].pick } } end
+  end
+  return d
+end
+B.CLASS_DESIGNS, B.fromDesign = CLASS_DESIGNS, fromDesign
+-- which design each class item gets: items sorted by name take the designs in order (a weapon-named item takes a weapon design)
+local classPlan
+local function planFor(name, cls)
+  if not classPlan then
+    classPlan = {}
+    local byClass = {}
+    for n, c in pairs(RG.ARCADE_CLASS or {}) do byClass[c] = byClass[c] or {}; table.insert(byClass[c], n) end
+    for c, list in pairs(byClass) do
+      table.sort(list)
+      local designs = CLASS_DESIGNS[c] or {}
+      local used = {}
+      -- weapon-named items first pick a weapon design (the legendary weapon gets the one marked for it)
+      for _, n in ipairs(list) do
+        if isWeapon(n) then
+          for i = #designs, 1, -1 do local x = designs[i]; if not used[i] and x[1] == "w" then used[i] = true; classPlan[n] = i; break end end
+        end
+      end
+      local i = 1
+      for _, n in ipairs(list) do
+        if not classPlan[n] then
+          while used[i] do i = i + 1 end
+          if designs[i] then used[i] = true; classPlan[n] = i end
+        end
+      end
+    end
+  end
+  return classPlan[name]
+end
+
 -- build the playable form of a collection card: { kind, name, tier, text, key }
 function B.derive(c)
   local key = c.key or c.name
@@ -323,10 +642,26 @@ function B.derive(c)
     if not TRIBE[tribe] then tribe = "creature" end
     local cost = tier >= 5 and (5 + r(5)) or tier >= 3 and (2 + r(4)) or r(4)
     d = genMinion(c, r, cost, tribe, nil, tier >= 5)
+    -- a minion with no text: most of them get a synergy instead (something to build a deck around)
+    if not (next(d.kw) or d.bc or d.dr or d.eot) and SYNERGY[tribe] then
+      local r2 = seeded(hash(key .. "#syn"))
+      if r2(100) <= 60 then
+        local tot, ok = 0, {}
+        for _, e in ipairs(SYNERGY[tribe]) do local f = FEATURES[e[1]]; if cost >= f.min and cost <= f.max then ok[#ok + 1] = e; tot = tot + e[2] end end
+        if tot > 0 then
+          local roll = r2(tot)
+          for _, e in ipairs(ok) do roll = roll - e[2]; if roll <= 0 then d = genMinion(c, r2, cost, tribe, { e[1] }, tier >= 5); break end end
+        end
+      end
+    end
   elseif kind == 4 then
     local cost = 6 + r(5); if cost > 10 then cost = 10 end
     d = genMinion(c, r, cost, "humanoid", CLASSFEAT[c.class or ""] or { "taunt" }, true)
     d.class = c.class
+  elseif kind == 1 and RG.ARCADE_CLASS and RG.ARCADE_CLASS[c.name] and planFor(c.name, RG.ARCADE_CLASS[c.name]) then
+    local cls = RG.ARCADE_CLASS[c.name]
+    d = fromDesign(CLASS_DESIGNS[cls][planFor(c.name, cls)])
+    d.hclass = cls
   elseif kind == 1 then
     if isWeapon(c.name) then
       local cost = tier >= 5 and (5 + r(4)) or (1 + r(5))
@@ -410,10 +745,10 @@ B.registerBasics()
 B.CLASSES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
 B.HERO = {
   WARRIOR = { title = "Warrior", power = "Armor Up!", cost = 2, ops = { armor(3) }, text = "Gain 3 Armor." },
-  PALADIN = { title = "Paladin", power = "Reinforce", cost = 3, ops = { summon(1, tok("hand")) }, text = "Summon a 1/1 Silver Hand Recruit." },
+  PALADIN = { title = "Paladin", power = "Reinforce", cost = 3, ops = { summon(1, tok("hand")), armor(1) }, text = "Summon a 1/1 Silver Hand Recruit. Gain 1 Armor." },
   HUNTER = { title = "Hunter", power = "Steady Shot", cost = 2, ops = { dmg(2, "eface"), armor(1) }, text = "Deal 2 damage to the enemy hero. Gain 1 Armor." },
-  ROGUE = { title = "Rogue", power = "Dagger Mastery", cost = 2, ops = { { op = "weapon", a = 1, d = 3 } }, text = "Equip a 1/3 Dagger." },
-  PRIEST = { title = "Priest", power = "Lesser Heal", cost = 2, ops = { heal(3), armor(1) }, tgt = "any", text = "Restore 3 Health. Gain 1 Armor." },
+  ROGUE = { title = "Rogue", power = "Dagger Mastery", cost = 2, ops = { { op = "weapon", a = 2, d = 2 } }, text = "Equip a 2/2 Dagger." },
+  PRIEST = { title = "Priest", power = "Lesser Heal", cost = 2, ops = { heal(2), armor(1) }, tgt = "any", text = "Restore 2 Health. Gain 1 Armor." },
   SHAMAN = { title = "Shaman", power = "Totemic Call", cost = 3, ops = { { op = "summon", n = 1, pick = {
     { name = "Searing Totem", atk = 1, hp = 1, icon = "Spell_Fire_SearingTotem", token = true },
     { name = "Stoneclaw Totem", atk = 0, hp = 2, icon = "Spell_Nature_StoneClawTotem", kw = { taunt = true }, token = true },
@@ -423,6 +758,13 @@ B.HERO = {
   WARLOCK = { title = "Warlock", power = "Life Tap", cost = 2, ops = { dmg(1, "fface"), draw(1) }, text = "Draw a card and take 1 damage." },
   DRUID = { title = "Druid", power = "Shapeshift", cost = 2, ops = { { op = "hero", a = 1 }, armor(1) }, text = "+1 Attack this turn. +1 Armor." },
 }
+-- the basic class cards (after the heroes: the Totem Carver borrows the Shaman's totems)
+for _, b in ipairs(BASIC_CLASS) do
+  local d = fromDesign(b[4])
+  d.name, d.key, d.tier, d.kind, d.basic, d.icon, d.hclass = b[2], "b:" .. b[2], 1, 0, true, b[3], b[1]
+  d.text = B.describe(d)
+  B.defs[d.key] = d; B.BASIC[#B.BASIC + 1] = d.key
+end
 B.OPPONENTS = {
   WARRIOR = "Grakthar the Unyielding", PALADIN = "Aldric Dawnward", HUNTER = "Sylvara Swiftbow", ROGUE = "Vex Nightblade", PRIEST = "Mother Elowen",
   SHAMAN = "Hargul Stormtongue", MAGE = "Archmage Ilyra", WARLOCK = "Malvek the Pale", DRUID = "Thalor Greenmane",
@@ -449,7 +791,7 @@ function B.new(o)
     for i, k in ipairs(o.decks[s]) do deck[i] = k end
     local P = { side = s, isHero = true, name = o.names and o.names[s] or ("Player " .. s), class = o.classes and o.classes[s] or "WARRIOR",
                 hp = B.HP, maxhp = B.HP, armor = 0, mana = 0, maxMana = 0, deck = deck, hand = {}, board = {}, weapon = false, att = 0, tempAtk = 0,
-                hpUsed = false, fatigue = 0, frozen = false, spent = 0, atk = 0 }
+                hpUsed = false, fatigue = 0, frozen = false, spent = 0, atk = 0, nplayed = 0, ol = 0, olNext = 0, tribesNow = {}, tribesLast = {}, spells = 0 }
     shuffle(G, deck)
     G.p[s] = P
   end
@@ -506,8 +848,12 @@ end
 function B.beginTurn(G)
   local s = G.cur
   local P = G.p[s]
-  P.maxMana = min(B.MAXMANA, P.maxMana + 1); P.mana = P.maxMana; P.spent = 0
+  P.maxMana = min(B.MAXMANA, P.maxMana + 1)
+  P.ol, P.olNext = P.olNext or 0, 0                   -- Overload: last turn's locks this turn's crystals
+  P.mana = max(0, P.maxMana - P.ol); P.spent = 0
   P.att, P.tempAtk, P.hpUsed = 0, 0, false
+  P.nplayed, P.spells = 0, 0
+  P.tribesLast, P.tribesNow = P.tribesNow or {}, {}
   for _, m in ipairs(P.board) do m.sick = false; m.att = 0; m.rushOnly = nil end
   ev(G, { t = "turn", side = s, n = G.turn })
   if not (B.TUNE.firstSkipDraw and G.turn == 1 and s == G.first) then draw1(G, s) end
@@ -516,6 +862,7 @@ end
 
 function B.endTurn(G, s)
   if G.over or G.phase ~= "play" or G.cur ~= s then return false end
+  if G.pend then B.choose(G, s, 1) end   -- (a Discover left open: the first card is taken)
   local P = G.p[s]
   for _, m in ipairs({ unpack(P.board) }) do
     if m.eot and not m.silenced and m.hp > 0 then B.apply(G, s, m.eot, nil, m) end
@@ -553,24 +900,41 @@ function B.damage(G, t, n, src, combat)
   if src and src.kw and src.kw.lifesteal and src.side then B.heal(G, G.p[src.side], dealt) end
   return dealt
 end
+local fire
 function B.heal(G, t, n)
   if not t or n <= 0 then return end
   local before = t.hp
   t.hp = min(t.maxhp, t.hp + n)
-  if t.hp > before then ev(G, { t = "heal", tgt = B.ref(t), n = t.hp - before }) end
+  if t.hp > before then ev(G, { t = "heal", tgt = B.ref(t), n = t.hp - before }); fire(G, 1, "heal"); fire(G, 2, "heal") end
 end
 
 local function mkMinion(G, s, d)
   G.uid = G.uid + 1
   return { uid = G.uid, seq = G.uid, side = s, key = d.key, name = d.name, icon = d.icon, token = d.token, atk = d.atk, hp = d.hp, maxhp = d.hp,
-           kw = copy(d.kw or {}), sick = true, att = 0, frozen = false, cost = d.cost, tribe = d.tribe, dr = d.dr, eot = d.eot, kind = d.kind, tier = d.tier }
+           kw = copy(d.kw or {}), sick = true, att = 0, frozen = false, cost = d.cost, tribe = d.tribe, dr = d.dr, eot = d.eot, kind = d.kind, tier = d.tier,
+           sp = d.sp, trig = d.trig }
 end
+-- triggered abilities: "whenever you summon a Beast", "whenever another friendly minion dies", "whenever you cast a spell"...
+fire = function(G, s, evn, subject, depth)
+  if (depth or 0) > 3 then return end
+  local P = G.p[s]; if not P then return end
+  for _, m in ipairs({ unpack(P.board) }) do
+    local t = m.trig
+    if t and t.ev == evn and not m.silenced and m.hp > 0 and m ~= subject and (not t.tribe or (subject and subject.tribe == t.tribe)) then
+      B.apply(G, s, t.ops, subject, m)
+    end
+  end
+end
+B.fire = fire
+local function spellDamage(P) local n = P.spBonus or 0; for _, m in ipairs(P.board) do if m.sp and not m.silenced and m.hp > 0 then n = n + m.sp end end return n end
+B.spellDamage = spellDamage
 function B.summonMinion(G, s, d, pos)
   local P = G.p[s]
   if #P.board >= B.MAXBOARD then return nil end
   local m = mkMinion(G, s, d)
   if pos and pos >= 1 and pos <= #P.board then table.insert(P.board, pos, m) else P.board[#P.board + 1] = m end
   ev(G, { t = "summon", tgt = m.uid, side = s })
+  fire(G, s, "summon", m)
   return m
 end
 
@@ -586,7 +950,13 @@ function B.targets(G, s, spec)
   elseif spec == "emin" then foes()
   elseif spec == "fmin" then mine()
   elseif spec == "min" then mine(); foes()
-  elseif spec == "friend" then add(me); mine() end
+  elseif spec == "friend" then add(me); mine()
+  elseif spec == "ebig" then for _, m in ipairs(foe.board) do if not m.kw.stealth and m.hp > 0 and m.atk >= 5 then add(m) end end
+  elseif spec == "esmall" then for _, m in ipairs(foe.board) do if not m.kw.stealth and m.hp > 0 and m.atk <= 3 then add(m) end end
+  elseif spec == "edmg" then for _, m in ipairs(foe.board) do if not m.kw.stealth and m.hp > 0 and m.hp < m.maxhp then add(m) end end
+  elseif spec == "fbeast" then for _, m in ipairs(me.board) do if m.hp > 0 and m.tribe == "beast" then add(m) end end
+  elseif spec == "eundmg" then for _, m in ipairs(foe.board) do if not m.kw.stealth and m.hp > 0 and m.hp >= m.maxhp then add(m) end end
+  end
   return out
 end
 
@@ -602,6 +972,8 @@ local function scope(G, s, at, src)
   elseif at == "fall" then out[1] = me; mins(me)
   elseif at == "all" then out[1] = me; out[2] = foe; mins(me); mins(foe)
   elseif at == "self" then if src then out[1] = src end
+  elseif at == "fother" then for _, m in ipairs(me.board) do if m.hp > 0 and m ~= src then out[#out + 1] = m end end
+  elseif at == "eall" then out[1] = foe; mins(foe)
   elseif at == "rand" or at == "randmin" then
     local c = {}
     if at == "rand" then c[#c + 1] = foe end
@@ -611,13 +983,121 @@ local function scope(G, s, at, src)
   return out
 end
 
-function B.apply(G, s, ops, target, src)
+local function holding(P, tribe, skip)
+  for i, k in ipairs(P.hand) do local d = B.defs[k]; if i ~= skip and d and d.tribe == tribe then return true end end
+end
+local function condOK(G, s, c, src)
+  local P = G.p[s]
+  if c.k == "hold" then return holding(P, c.tribe) end
+  if c.k == "ctrl" then for _, m in ipairs(P.board) do if m ~= src and m.hp > 0 and m.tribe == c.tribe then return true end end return false end
+  if c.k == "last" then return P.tribesLast and P.tribesLast[c.tribe] or false end
+  if c.k == "weapon" then return P.weapon and true or false end
+  if c.k == "armor" then return (P.armor or 0) > 0 end
+  if c.k == "hurt" then return P.hp < P.maxhp end
+  if c.k == "spell" then return (P.spells or 0) > 0 end
+  return false
+end
+B.condOK = condOK
+-- Discover: three different cards to choose from (the same three on both sides of a duel: the engine's own dice)
+local poolKeys
+function B.poolKeys()
+  if poolKeys then return poolKeys end
+  poolKeys = {}
+  for i, c in ipairs(RG.ARCADE_DATA or {}) do
+    local k = c[2]
+    local d = B.defs[k] or B.derive({ id = i, kind = c[1], name = c[2], tier = c[3], ref = c[4], text = c[5] })
+    if d and not d.special then poolKeys[#poolKeys + 1] = k end
+  end
+  for _, k in ipairs(B.BASIC) do poolKeys[#poolKeys + 1] = k end
+  return poolKeys
+end
+local function discover(G, s, pool, src)
+  local P = G.p[s]
+  local cand = {}
+  for _, k in ipairs(B.poolKeys()) do
+    local d = B.defs[k]
+    if d and (not d.hclass or d.hclass == P.class) and (not src or k ~= src.key) then
+      local ok
+      if pool == "spell" or pool == "minion" or pool == "weapon" then ok = d.type == pool
+      elseif pool == "class" then ok = d.hclass == P.class
+      else ok = d.tribe == pool end
+      if ok then cand[#cand + 1] = k end
+    end
+  end
+  local opts = {}
+  for _ = 1, 3 do
+    if #cand == 0 then break end
+    local i = rnd(G, #cand)
+    opts[#opts + 1] = table.remove(cand, i)
+  end
+  if #opts == 0 then return end
+  if G.cur ~= s or G.pend then   -- (not your turn, e.g. a Deathrattle: no time to choose, the first card is yours)
+    if #P.hand < B.MAXHAND then P.hand[#P.hand + 1] = opts[1]; ev(G, { t = "draw", side = s, key = opts[1] }) end
+    return
+  end
+  G.pend = { side = s, opts = opts }
+  ev(G, { t = "discover", side = s })
+end
+function B.choose(G, s, i)
+  local pd = G.pend
+  if not pd or pd.side ~= s then return false end
+  local k = pd.opts[tonumber(i) or 1] or pd.opts[1]
+  G.pend = nil
+  local P = G.p[s]
+  if #P.hand >= B.MAXHAND then ev(G, { t = "burn", side = s, key = k }) else P.hand[#P.hand + 1] = k; ev(G, { t = "draw", side = s, key = k }) end
+  return true
+end
+
+function B.apply(G, s, ops, target, src, spell)
   local me = G.p[s]
+  local bonus = spell and spellDamage(me) or 0
   for _, o in ipairs(ops or {}) do
     local op = o.op
     local list
-    if o.at == "t" then list = target and { target } or {} else list = scope(G, s, o.at, src) end
-    if op == "dmg" then for _, t in ipairs(list) do B.damage(G, t, o.n, nil) end
+    if o.at == "t" or o.at == "it" then list = target and { target } or {}
+    elseif o.at == "ftribe" then list = {}; for _, m in ipairs(me.board) do if m ~= src and m.hp > 0 and m.tribe == o.tribe then list[#list + 1] = m end end
+    else list = scope(G, s, o.at, src) end
+    if op == "dmg" then for _, t in ipairs(list) do B.damage(G, t, o.n + bonus, nil) end
+    elseif op == "if" then
+      if condOK(G, s, o.cond, src) then B.apply(G, s, o.ops, target, src, spell) elseif o.els then B.apply(G, s, o.els, target, src, spell) end
+    elseif op == "split" then
+      for _ = 1, o.n + bonus do
+        local l = scope(G, s, "rand", src)
+        for _, t in ipairs(l) do if t.isHero or t.hp > 0 then B.damage(G, t, 1, nil) end end
+      end
+    elseif op == "discover" then discover(G, s, o.pool, src)
+    elseif op == "give" then for _ = 1, o.n or 1 do if #me.hand < B.MAXHAND then me.hand[#me.hand + 1] = o.key; ev(G, { t = "draw", side = s, key = o.key }) end end
+    elseif op == "ramp" then me.maxMana = min(B.MAXMANA, me.maxMana + o.n); ev(G, { t = "armor", tgt = B.ref(me), n = 0 })
+    elseif op == "wbuff" then if me.weapon then me.weapon.atk = me.weapon.atk + o.a; me.weapon.dur = me.weapon.dur + (o.d or 0); ev(G, { t = "weapon", side = s }) end
+    elseif op == "armordmg" then for _, t in ipairs(list) do B.damage(G, t, me.armor or 0, nil) end
+    elseif op == "gainsp" then me.spBonus = (me.spBonus or 0) + o.n
+    elseif op == "tutor" then
+      for i = #me.deck, 1, -1 do
+        local d = B.defs[me.deck[i]]
+        if d and (d.tribe == o.pool or d.type == o.pool) then
+          local k = table.remove(me.deck, i)
+          if #me.hand < B.MAXHAND then me.hand[#me.hand + 1] = k; ev(G, { t = "draw", side = s, key = k }) end
+          break
+        end
+      end
+    elseif op == "bounce" then
+      for _, t in ipairs(list) do
+        if not t.isHero then
+          local O = G.p[t.side]
+          for i, x in ipairs(O.board) do if x == t then table.remove(O.board, i); break end end
+          ev(G, { t = "die", tgt = t.uid, side = t.side, key = t.key, name = t.name, bounce = true })
+          if not t.token and B.defs[t.key] and #O.hand < B.MAXHAND then O.hand[#O.hand + 1] = t.key end
+        end
+      end
+    elseif op == "transform" then
+      for _, t in ipairs(list) do
+        if not t.isHero then
+          local k = o.tok
+          t.name, t.icon, t.token, t.atk, t.hp, t.maxhp, t.kw = k.name, k.icon, true, k.atk, k.hp, k.hp, copy(k.kw or {})
+          t.dr, t.eot, t.trig, t.sp, t.tribe, t.tempA, t.frozen, t.key = nil, nil, nil, nil, k.tribe, 0, false, nil
+          ev(G, { t = "silence", tgt = t.uid })
+        end
+      end
     elseif op == "heal" then for _, t in ipairs(list) do B.heal(G, t, o.n) end
     elseif op == "buff" then
       for _, t in ipairs(list) do
@@ -629,7 +1109,7 @@ function B.apply(G, s, ops, target, src)
       end
     elseif op == "kw" then for _, t in ipairs(list) do if not t.isHero then t.kw[o.k] = true; if o.k == "charge" then t.sick = false end; ev(G, { t = "buff", tgt = t.uid }) end end
     elseif op == "draw" then for _ = 1, o.n do draw1(G, s) end
-    elseif op == "armor" then me.armor = me.armor + o.n; ev(G, { t = "armor", tgt = B.ref(me), n = o.n })
+    elseif op == "armor" then me.armor = me.armor + o.n; ev(G, { t = "armor", tgt = B.ref(me), n = o.n }); fire(G, s, "armor")
     elseif op == "summon" then
       for _ = 1, o.n do
         local d = o.pick and o.pick[rnd(G, #o.pick)] or o.tok
@@ -641,7 +1121,7 @@ function B.apply(G, s, ops, target, src)
     elseif op == "freeze" then for _, t in ipairs(list) do t.frozen = true; ev(G, { t = "freeze", tgt = B.ref(t) }) end
     elseif op == "silence" then
       for _, t in ipairs(list) do
-        if not t.isHero then t.kw = {}; t.dr = nil; t.eot = nil; t.silenced = true; t.frozen = false; ev(G, { t = "silence", tgt = t.uid }) end
+        if not t.isHero then t.kw = {}; t.dr = nil; t.eot = nil; t.trig = nil; t.sp = nil; t.silenced = true; t.frozen = false; ev(G, { t = "silence", tgt = t.uid }) end
       end
     elseif op == "mana" then me.mana = min(B.MAXMANA, me.mana + o.n)
     elseif op == "weapon" then me.weapon = { atk = o.a, dur = o.d, name = o.name or "Weapon" }; ev(G, { t = "weapon", side = s })
@@ -663,6 +1143,7 @@ function B.resolve(G)
     end
     for _, m in ipairs(dead) do
       if m.dr and not m.silenced then B.apply(G, m.side, m.dr, nil, m) end
+      fire(G, m.side, "death", m)
     end
   end
   if not G.over then
@@ -680,6 +1161,7 @@ local function contains(list, x) for _, v in ipairs(list) do if v == x then retu
 
 function B.canPlay(G, s, hi)
   if G.over or G.phase ~= "play" or G.cur ~= s then return false, "It is not your turn." end
+  if G.pend then return false, "Choose a card first." end
   local P = G.p[s]
   local key = P.hand[hi]; local d = key and B.defs[key]
   if not d then return false, "No such card." end
@@ -711,16 +1193,24 @@ function B.play(G, s, hi, tref, pos)
   table.remove(P.hand, hi)
   ev(G, { t = "play", side = s, key = key })
   if not G.sim then P.played = P.played or {}; P.played[key] = true end
+  local combo = d.combo and (P.nplayed or 0) > 0
+  P.nplayed = (P.nplayed or 0) + 1
+  if d.ol then P.olNext = (P.olNext or 0) + d.ol end
+  if d.tribe then P.tribesNow = P.tribesNow or {}; P.tribesNow[d.tribe] = true end
   if d.type == "minion" then
     local m = B.summonMinion(G, s, d, pos)
     if m then
-      if d.bc then B.apply(G, s, d.bc, tg, m) end
+      if combo then B.apply(G, s, d.combo, tg, m)
+      elseif d.bc then B.apply(G, s, d.bc, tg, m) end
     end
   elseif d.type == "spell" then
-    B.apply(G, s, d.ops, tg, nil)
+    B.apply(G, s, combo and d.combo or d.ops, tg, nil, true)
+    P.spells = (P.spells or 0) + 1
+    fire(G, s, "spell")
   else
     P.weapon = { atk = d.atk, dur = d.dur, name = d.name, key = key }
     ev(G, { t = "weapon", side = s })
+    if combo then B.apply(G, s, d.combo, tg, nil) elseif d.bc then B.apply(G, s, d.bc, tg, nil) end
   end
   B.resolve(G)
   return true
@@ -729,6 +1219,7 @@ end
 -- ----- attacking -----
 function B.canAttack(G, s, a)
   if G.over or G.phase ~= "play" or G.cur ~= s then return false, "It is not your turn." end
+  if G.pend then return false, "Choose a card first." end
   if a.side ~= s then return false end
   if a.isHero then
     if a.frozen then return false, "Your hero is frozen." end
@@ -778,7 +1269,7 @@ function B.attack(G, s, aref, dref)
 end
 
 function B.canHeroPower(G, s)
-  if G.over or G.phase ~= "play" or G.cur ~= s then return false end
+  if G.over or G.phase ~= "play" or G.cur ~= s or G.pend then return false end
   local P = G.p[s]; local h = B.HERO[P.class]
   if P.hpUsed then return false, "You already used your hero power." end
   if P.mana < h.cost then return false, "Not enough mana." end
@@ -813,6 +1304,7 @@ function B.clone(G)
     Q.deck, Q.hand, Q.board = copy(P.deck), copy(P.hand), {}
     for i, m in ipairs(P.board) do Q.board[i] = cloneMinion(m) end
     if P.weapon then Q.weapon = copy(P.weapon) end
+    Q.tribesNow, Q.tribesLast = copy(P.tribesNow or {}), copy(P.tribesLast or {})
     C.p[s] = Q
   end
   return C
@@ -829,6 +1321,8 @@ local function minionValue(m)
   if m.kw.stealth then v = v + 0.6 end
   if m.dr then v = v + 1.2 end
   if m.eot then v = v + 1.6 end
+  if m.sp then v = v + 1.3 * m.sp end
+  if m.trig then v = v + 1.6 end
   if m.frozen then v = v - m.atk * 0.7 end
   return v
 end
@@ -846,11 +1340,17 @@ function B.eval(G, s)
   if foe.weapon then v = v - foe.weapon.atk * foe.weapon.dur * 0.9 end
   v = v + 0.25 * me.spent
   if me.frozen then v = v - 1 end
+  v = v - 1.1 * (me.olNext or 0) + 1.4 * (me.maxMana or 0)
+  if G.pend and G.pend.side == s then v = v + 1.6 end
   return v
 end
 
 function B.actions(G, s)
   local acts, P = {}, G.p[s]
+  if G.pend then
+    if G.pend.side == s then for i = 1, #G.pend.opts do acts[#acts + 1] = { t = "pick", i = i } end end
+    return acts
+  end
   local seen = {}
   for i, key in ipairs(P.hand) do
     local d = B.defs[key]
@@ -878,12 +1378,29 @@ end
 function B.exec(G, s, act)
   if act.t == "play" then return B.play(G, s, act.i, act.tgt)
   elseif act.t == "att" then return B.attack(G, s, act.a, act.d)
-  elseif act.t == "hp" then return B.heroPower(G, s, act.tgt) end
+  elseif act.t == "hp" then return B.heroPower(G, s, act.tgt)
+  elseif act.t == "pick" then return B.choose(G, s, act.i) end
   return false
 end
 
 -- level 1 = apprentice (sloppy), 2 = adept, 3 = archmage
+-- which Discover card the computer takes: something it can play soon, the stronger the better
+function B.pickScore(G, s, k)
+  local d = B.defs[k]; if not d then return 0 end
+  local P = G.p[s]
+  local v = (d.tier or 1) * 0.6 + d.cost * 0.4
+  if d.cost <= P.maxMana + 1 then v = v + 6 end
+  if d.type == "minion" and #P.board < 3 then v = v + 1.5 end
+  if d.hclass then v = v + 1 end
+  return v
+end
 function B.aiPick(G, s, level)
+  if G.pend then
+    if G.pend.side ~= s then return nil end
+    local best, bv = 1, -1e9
+    for i, k in ipairs(G.pend.opts) do local v = B.pickScore(G, s, k) + (level == 1 and math.random() * 4 or 0); if v > bv then best, bv = i, v end end
+    return { t = "pick", i = best }
+  end
   local base = B.eval(G, s)
   local best, bestV = nil, base + 0.05
   local noise = level == 1 and 5 or level == 2 and 1.5 or 0
@@ -899,7 +1416,14 @@ function B.aiPick(G, s, level)
           if B.exec(D, s, a2) then v = max(v, B.eval(D, s)) end
         end
         if v < base + 0.9 then v = -1e9 end
-      else v = B.eval(C, s) end
+      else
+        v = B.eval(C, s)
+        -- a Combo card is worth saving for after another card
+        local d = key and B.defs[key]
+        if d and d.combo and (G.p[s].nplayed or 0) == 0 then
+          for i2, k2 in ipairs(G.p[s].hand) do if i2 ~= act.i and k2 ~= key and B.canPlay(G, s, i2) then v = v - 1.5; break end end
+        end
+      end
       if noise > 0 then v = v + (math.random() - 0.5) * noise * 2 end
       if v > bestV then best, bestV = act, v end
     end
@@ -935,21 +1459,24 @@ function B.rulesHash(RGt)
   for i, c in ipairs((RGt and RGt.ARCADE_DATA) or {}) do
     local cc = { id = i, kind = c[1], name = c[2], tier = c[3], ref = c[4], text = c[5] }
     local d = B.defs[c[2]] or B.derive(cc)
-    if d then add(c[2]); add(ser({ d.type, d.cost, d.atk, d.hp, d.dur, d.kw, d.ops, d.bc, d.dr, d.eot, d.tgt })) end
+    if d then add(c[2]); add(ser({ d.type, d.cost, d.atk, d.hp, d.dur, d.kw, d.ops, d.bc, d.dr, d.eot, d.tgt, d.sp, d.combo, d.ol, d.trig, d.hclass })) end
   end
+  for _, k in ipairs(B.BASIC) do local d = B.defs[k]; add(k); add(ser({ d.type, d.cost, d.atk, d.hp, d.dur, d.kw, d.ops, d.bc, d.dr, d.eot, d.tgt, d.sp, d.combo, d.ol, d.trig, d.hclass })) end
   add(ser(B.HERO)); add(ser(B.TUNE)); add(table.concat({ B.MAXMANA, B.MAXHAND, B.MAXBOARD, B.DECK, B.HP }, ","))
   rulesFP = string.format("%08x", h)
   return rulesFP
 end
 
 function B.maxCopies(d) return (d.tier or 1) >= 5 and 1 or 2 end
+-- class cards only go in that hero's decks
+function B.classOK(d, cls) return not (d and d.hclass) or d.hclass == cls end
 
--- pool: list of keys; maxTier limits rarity; rnd: function(n)->1..n
-function B.randomDeck(pool, maxTier, rnd, seedList, limit)
+-- pool: list of keys; maxTier limits rarity; rnd: function(n)->1..n; cls: the hero (class cards of other heroes are left out)
+function B.randomDeck(pool, maxTier, rnd, seedList, limit, cls)
   local byCost = {}
   for _, k in ipairs(pool) do
     local d = B.defs[k]
-    if d and (d.tier or 1) <= maxTier and not d.special then
+    if d and (d.tier or 1) <= maxTier and not d.special and B.classOK(d, cls) then
       local c = min(10, d.cost)
       byCost[c] = byCost[c] or {}
       table.insert(byCost[c], k)
@@ -958,6 +1485,7 @@ function B.randomDeck(pool, maxTier, rnd, seedList, limit)
   local deck, count = {}, {}
   local function tryAdd(k)
     local d = B.defs[k]
+    if not d or not B.classOK(d, cls) then return false end
     if (count[k] or 0) >= min(B.maxCopies(d), limit and limit(k) or 9) then return false end
     count[k] = (count[k] or 0) + 1; deck[#deck + 1] = k
     return true

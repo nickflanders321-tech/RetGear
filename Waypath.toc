@@ -90,7 +90,9 @@ ArcadeCards.lua
 ArcadeArt.lua
 ArcadePlaces.lua
 ArcadeGear.lua
+ArcadeClasses.lua
 ArcadeBalance.lua
+ArcadeChanges.lua
 Battle.lua
 Arcade.lua
 ArcadeRewards.lua

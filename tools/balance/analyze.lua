@@ -20,6 +20,9 @@ for k, t in pairs(st) do
     add(string.format("%s cost:%02d", d.type, d.cost), k, t)
     add("tier:" .. (d.tier or 1), k, t)
     if d.type == "minion" then
+      if d.hclass then add("class:" .. d.hclass, k, t) end
+      if d.trig then add("trig:" .. d.trig.ev, k, t) end
+      if d.sp then add("kw:spellpower", k, t) end
       add("tribe:" .. (d.tribe or "?"), k, t)
       for kw in pairs(d.kw or {}) do add("kw:" .. kw, k, t) end
       if d.bc then add("bc:" .. d.bc[1].op, k, t) end
@@ -27,6 +30,8 @@ for k, t in pairs(st) do
       if d.eot then add("eot:" .. d.eot[1].op, k, t) end
       if not (d.bc or d.dr or d.eot or next(d.kw or {})) then add("minion:vanilla", k, t) end
     elseif d.type == "spell" then
+      if d.arch then add("arch:" .. d.arch, k, t) end
+      if d.hclass then add("class:" .. d.hclass, k, t) end
       add("spell:" .. d.ops[1].op .. ((d.ops[1].at and d.ops[1].at ~= "t") and ("@" .. d.ops[1].at) or ""), k, t)
     end
   end

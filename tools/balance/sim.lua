@@ -5,7 +5,7 @@ local games, seed, out, level = tonumber(arg[1] or 2000), tonumber(arg[2] or 1),
 math.randomseed(seed)
 local dir = arg[0]:match("^(.*)/tools/balance/") or "."
 local RG = {}
-for _, f in ipairs({ "ArcadeCards.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
+for _, f in ipairs({ "ArcadeCards.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
 local B = RG.Battle
 if arg[5] then dofile(arg[5])(B, RG) end   -- optional experiment patch
 local keys = {}
@@ -18,8 +18,8 @@ local function S(k) local t = st[k]; if not t then t = { dn = 0, dw = 0, pn = 0,
 local heroN, heroW = {}, {}
 local firstW, firstN, turns, draws = 0, 0, 0, 0
 for g = 1, games do
-  local d = { B.randomDeck(keys, 6, math.random), B.randomDeck(keys, 6, math.random) }
   local cl = { B.CLASSES[math.random(#B.CLASSES)], B.CLASSES[math.random(#B.CLASSES)] }
+  local d = { B.randomDeck(keys, 6, math.random, nil, nil, cl[1]), B.randomDeck(keys, 6, math.random, nil, nil, cl[2]) }
   local G = B.new({ decks = d, classes = cl, seed = math.random(1, 2000000000) })
   B.mulligan(G, 1, {}); B.mulligan(G, 2, {})
   local guard = 0
