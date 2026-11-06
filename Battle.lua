@@ -487,8 +487,7 @@ function B.mulligan(G, s, set)
   for i = #P.hand, 1, -1 do
     if set and set[i] and P.hand[i] ~= "coin" then
       local fresh = table.remove(P.deck)
-      back[#back + 1] = P.hand[i]
-      if fresh then P.hand[i] = fresh end
+      if fresh then back[#back + 1] = P.hand[i]; P.hand[i] = fresh end   -- (an empty deck: the card simply stays)
     end
   end
   for _, k in ipairs(back) do P.deck[#P.deck + 1] = k end
@@ -521,10 +520,11 @@ function B.endTurn(G, s)
   for _, m in ipairs({ unpack(P.board) }) do
     if m.eot and not m.silenced and m.hp > 0 then B.apply(G, s, m.eot, nil, m) end
   end
-  for _, m in ipairs(P.board) do
-    if m.tempA and m.tempA ~= 0 then m.atk = m.atk - m.tempA; m.tempA = 0 end
-    if m.frozen then m.frozen = false end
-  end
+  for _, m in ipairs(P.board) do if m.frozen then m.frozen = false end end
+  -- "this turn" attack goes away at the end of the turn, whoever's minion it was given to
+  for side = 1, 2 do for _, m in ipairs(G.p[side].board) do
+    if m.tempA and m.tempA ~= 0 then m.atk = math.max(0, m.atk - m.tempA); m.tempA = 0 end
+  end end
   P.frozen = false; P.tempAtk = 0
   B.resolve(G)
   if G.over then return true end
@@ -912,6 +912,36 @@ end
 -- Decks
 -- ---------------------------------------------------------------------------
 local CURVE = { [0] = 0, 3, 5, 5, 4, 4, 3, 2, 2, 1, 1 }   -- how many cards of each cost
+-- A fingerprint of the rules: every card's cost, stats, keywords and effects, the heroes and the tuning. Two players can only
+-- duel when theirs match (the version number alone isn't enough: data updates change it without touching the rules,
+-- and a balance change can't be told apart from a data update by the number).
+local rulesFP
+local function ser(v, depth)
+  depth = depth or 0
+  if depth > 6 then return "" end
+  local t = type(v)
+  if t ~= "table" then return tostring(v) end
+  local ks = {}
+  for k in pairs(v) do if k ~= "icon" and k ~= "text" and k ~= "name" then ks[#ks + 1] = k end end
+  table.sort(ks, function(a, b) return tostring(a) < tostring(b) end)
+  local out = {}
+  for _, k in ipairs(ks) do out[#out + 1] = tostring(k) .. "=" .. ser(v[k], depth + 1) end
+  return "{" .. table.concat(out, ",") .. "}"
+end
+function B.rulesHash(RGt)
+  if rulesFP then return rulesFP end
+  local h = 5381
+  local function add(str) for i = 1, #str do h = (h * 33 + str:byte(i)) % 2147483629 end end
+  for i, c in ipairs((RGt and RGt.ARCADE_DATA) or {}) do
+    local cc = { id = i, kind = c[1], name = c[2], tier = c[3], ref = c[4], text = c[5] }
+    local d = B.defs[c[2]] or B.derive(cc)
+    if d then add(c[2]); add(ser({ d.type, d.cost, d.atk, d.hp, d.dur, d.kw, d.ops, d.bc, d.dr, d.eot, d.tgt })) end
+  end
+  add(ser(B.HERO)); add(ser(B.TUNE)); add(table.concat({ B.MAXMANA, B.MAXHAND, B.MAXBOARD, B.DECK, B.HP }, ","))
+  rulesFP = string.format("%08x", h)
+  return rulesFP
+end
+
 function B.maxCopies(d) return (d.tier or 1) >= 5 and 1 or 2 end
 
 -- pool: list of keys; maxTier limits rarity; rnd: function(n)->1..n

@@ -97,7 +97,7 @@ local function newDuel(env)
     D.deck, D.class, D.name = deck, class, me
     D.lastRecv = env.now()
     D.deadline = env.now() + INVITE_SECS
-    send(table.concat({ "C", PROTO, env.cardCount, env.version, class, me, packDeck(deck), env.rating() }, "|"))
+    send(table.concat({ "C", PROTO, env.cardCount, env.version, class, me, packDeck(deck), env.rating(), (env.rules and env.rules()) or "" }, "|"))
     env.print("Challenge sent to " .. name .. ". Waiting up to " .. INVITE_SECS .. " seconds for an answer. They need Waypath+ too.")
     return true
   end
@@ -117,7 +117,7 @@ local function newDuel(env)
     D.state = "wait"
     D.lastRecv = env.now(); D.deadline = env.now() + INVITE_SECS
     env.print("Accepted. Waiting for " .. (D.peer or "the host") .. " to start the duel...")
-    send(table.concat({ "A", class, me, packDeck(deck), env.rating() }, "|"))
+    send(table.concat({ "A", class, me, packDeck(deck), env.rating(), (env.rules and env.rules()) or "" }, "|"))
     if env.closeInvite then env.closeInvite() end
     return true
   end
@@ -194,14 +194,14 @@ local function newDuel(env)
   -- ----- receiving -----
   function D.onMessage(msg, sender)
     if type(msg) ~= "string" then return end
-    local op, a, b, c, d, e, f, g = strsplit("|", msg)
+    local op, a, b, c, d, e, f, g, h = strsplit("|", msg)
     if op == "C" then
       if D.state then
         env.send("X|busy", sender)
         return
       end
-      if tonumber(a) ~= PROTO or tonumber(b) ~= env.cardCount then
-        env.send("X|Different Waypath+ versions (" .. tostring(env.version) .. " here, " .. tostring(c) .. " there). Both of you need the same version.", sender)
+      if tonumber(a) ~= PROTO or tonumber(b) ~= env.cardCount or (h and h ~= "" and env.rules and h ~= env.rules()) then
+        env.send("X|Different card rules (Waypath+ " .. tostring(env.version) .. " here, " .. tostring(c) .. " there). Both of you need to update to the latest version.", sender)
         return
       end
       local deck = unpackDeck(f)
@@ -226,6 +226,7 @@ local function newDuel(env)
     if op == "X" then
       fail((D.peer or "Your opponent") .. " did not accept: " .. (a or "declined") .. ".")
     elseif op == "A" and D.state == "out" then
+      if e and e ~= "" and env.rules and e ~= env.rules() then fail("Your card rules differ from " .. D.peer .. "'s: both of you need to update to the latest Waypath+.") return end
       local deck = unpackDeck(c)
       if not deck then fail("Could not read " .. D.peer .. "'s deck.") return end
       local o = { me = 1, decks = { D.deck, deck }, classes = { D.class, a }, names = { D.name, b or D.peer },
@@ -320,6 +321,7 @@ local function realEnv()
   local function BATTLE() return RG.Battle end
   env.cardCount = #(RG.ARCADE_DATA or {})
   env.version = RG.VERSION or "dev"
+  env.rules = function() return RG.Battle.rulesHash and RG.Battle.rulesHash(RG) or nil end   -- worked out on the first duel, not at login
   function env.now() return GetTime and GetTime() or 0 end
   function env.print(m) if RG.Print then RG.Print(m) end end
   function env.say(m, hold) end

@@ -854,7 +854,7 @@ end
 local function overFx(won, a)
   local o = win.over
   if won then o.glow:SetVertexColor(1, 0.8, 0.3, 0.6) else o.glow:SetVertexColor(0.55, 0.35, 0.95, 0.5) end
-  local st = a and a.bStreak or 0
+  local st = a and (S.pvp and a.pvpStreak or a.bStreak) or 0
   o.streak:SetText(won and st > 1 and ("Win streak: " .. st) or "")
   o.rank:SetText(rankLine(S.lastRank))
   o.t = 0
@@ -868,7 +868,8 @@ local function finish()
   local lines, prize = {}, 0
   if S.pvp then
     if a then
-      if won then a.pvpWins = (a.pvpWins or 0) + 1; a.bStreak = (a.bStreak or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1; a.bStreak = 0 end
+      -- (a duel against a player has its own streak: it never adds to or breaks the streak bonus against the computer)
+      if won then a.pvpWins = (a.pvpWins or 0) + 1; a.pvpStreak = (a.pvpStreak or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1; a.pvpStreak = 0 end
     end
     S.lastRank = rankResult(a, won)
     local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
@@ -895,6 +896,7 @@ local function finish()
     else
       prize = 1; a.bLoss = (a.bLoss or 0) + 1; a.bStreak = 0
     end
+    if won then prize = math.floor(prize * (U.EARN_RATE or 1) + 0.5) end   -- wins pay the same +20% as everything else you earn
     a.coins = (a.coins or 0) + prize; a.stats.duel = (a.stats.duel or 0) + prize
   end
   S.lastRank = rankResult(a, won)
@@ -1585,14 +1587,14 @@ local function buildMenu()
 
   -- rules drawer
   local rbx = CreateFrame("Frame", nil, p, "BackdropTemplate")
-  U.darkPanel(rbx, 760, 330); rbx:SetPoint("CENTER", p, "CENTER", 0, 20); rbx:SetFrameLevel(U.lv(p) + 30); rbx:Hide(); menu.rulesBox = rbx
+  U.darkPanel(rbx, 760, 400); rbx:SetPoint("CENTER", p, "CENTER", 0, 20); rbx:SetFrameLevel(U.lv(p) + 30); rbx:Hide(); menu.rulesBox = rbx
   local rt = U.fs(rbx, "title", 20); rt:SetPoint("TOP", 0, -18); rt:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); rt:SetText("HOW TO PLAY")
   local rules = U.fs(rbx, "body", 13); rules:SetPoint("TOPLEFT", 28, -56); rules:SetWidth(704); rules:SetJustifyH("LEFT"); rules:SetJustifyV("TOP"); rules:SetTextColor(0.88, 0.84, 0.76); if rules.SetSpacing then rules:SetSpacing(4) end
-  rules:SetText("Each hero has 30 health. You gain one more mana crystal every turn, up to ten, and draw a card.\n\n"
+  rules:SetText("Each hero has 30 health. You gain one more mana crystal every turn, up to ten, and draw a card. Whoever goes second starts with 5 armor and The Coin (one extra mana once). Your hand holds 10 cards (a card drawn into a full hand is lost), your board 7 minions, and drawing from an empty deck costs more health each time.\n\n"
     .. "Click a card in your hand to play it. Click a minion that glows green, then something to attack. New minions must wait a turn, unless they have Charge (anything) or Rush (minions only).\n\n"
-    .. "Taunt must be attacked first. Divine Shield blocks one hit. Battlecries happen when a card is played, deathrattles when it dies, and some minions act at the end of your turn.\n\n"
+    .. "Taunt must be attacked first. Divine Shield blocks one hit. Stealth can't be targeted until it attacks. Windfury attacks twice, Lifesteal heals your hero by the damage dealt, Poisonous destroys any minion it damages. Frozen characters miss their next attack, and Silence removes a minion's text. Battlecries happen when a card is played, deathrattles when it dies, and some minions act at the end of your turn.\n\n"
     .. "Items become spells and weapons, NPCs and Raiders become minions, and Places become area spells.\n\n"
-    .. "A deck is 30 cards, two copies of each (one of each legendary). Cards you have not found yet are not available, but a few basic cards always are.")
+    .. "A deck is 30 cards, at most two copies of each (one of each Legendary or Artifact). Cards you have not found yet are not available, but a few basic cards always are.")
   local rx = U.gbtn(rbx, "Close", 100, 28, function() rbx:Hide() end); rx:SetPoint("BOTTOM", 0, 18)
 
   -- card backs

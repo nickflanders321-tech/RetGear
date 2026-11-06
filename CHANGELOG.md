@@ -1,6 +1,15 @@
 # Changelog
 
 ## Unreleased
+- Card game fixes from a full review:
+  - Arena and quick-duel wins now get the +20% coin boost like everything else you earn (they were left out).
+  - A duel against a player no longer adds to, or breaks, your win streak against the computer (it has its own streak now), and the end screen shows the right streak for each.
+  - Two players can only start a duel when their card rules match, not just their card count: a mismatch is caught before the game starts ("both of you need to update") instead of stopping halfway with "out of step".
+  - A card's window shows what it does in the Arena (mana, attack/health or weapon, and its text), next to its quick-duel power; "Power" is now called "Duel power" everywhere, since the Arena doesn't use it.
+  - How to play now covers everything the game does: the 5 armor and The Coin for whoever goes second, the 10-card hand and 7-minion board, empty-deck damage, Stealth, Windfury, Lifesteal, Poisonous, Freeze and Silence, and that Artifacts are one copy per deck like Legendaries.
+  - Bonus packs and coins (milestones, the launch gift) show up in the open card window straight away; before, it needed reopening.
+  - The Today tab shows launch week's two free packs a day, and calls the Duel button's streak "Quick duel win streak" so it isn't mixed up with the Arena's.
+  - Rules engine: 30,000 simulated games found no illegal states; two edge cases tidied (a mulligan with an empty deck, and "this turn" attack buffs wearing off).
 - Auction House prices: the price check now asks for up to 40 items in one request by item ID (WoW Forever's modern auction house), instead of one search by name per item, so a scan takes a few seconds instead of minutes and can't miss an item over its name. A busy server no longer turns a slow answer into "none listed" (it waits up to 15 seconds and asks again), "none listed" keeps the last price seen, and the full scan reads items the game hasn't loaded yet. /wp scan status shows what the scanner did, for bug reports.
 
 ## v1.12.0

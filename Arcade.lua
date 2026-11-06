@@ -540,7 +540,7 @@ function RG.ArcadeGrant(label, coins, packs)
   end
   local msg = "|cffffd36bWaypath Cards:|r " .. label .. "  (" .. table.concat(bits, ", ") .. ")"
   if RG.Notify then RG.Notify(msg) elseif RG.Print then RG.Print(msg) end
-  if frame and frame.IsShown and frame:IsShown() and RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end   -- (redraws only when the window is open)
   return msg
 end
 
@@ -651,7 +651,7 @@ function RG.ArcadeDuel()
   local win = score(mine, mf, foe) >= score(foe, ff, mine)
   local prize, goal = 0, nil
   if win then
-    prize = 4 + math.min(a.streak or 0, 4)   -- +1 for each win in a row, up to +4
+    prize = math.floor((4 + math.min(a.streak or 0, 4)) * EARN_RATE + 0.5)   -- +1 for each win in a row, up to +4 (then the +20%)
     a.coins = a.coins + prize; a.wins = (a.wins or 0) + 1; a.streak = (a.streak or 0) + 1
     a.stats = a.stats or {}; a.stats.duel = (a.stats.duel or 0) + prize
     goal = goalProgress(a, "duel2", 1)
@@ -1156,7 +1156,7 @@ local function makeCard(parent, w)
       GameTooltip:AddLine(c.name, t[1], t[2], t[3])
       GameTooltip:AddLine(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1] .. "  ·  " .. FINISH[self.finish][1], 1, 1, 1)
       GameTooltip:AddLine(c.text, 0.75, 0.75, 0.75, true)
-      GameTooltip:AddLine("Power " .. power(c, self.finish), 0.7, 0.9, 0.7)
+      GameTooltip:AddLine("Duel power " .. power(c, self.finish) .. "  (quick card duels; the Arena uses the card's own mana, attack and health)", 0.7, 0.9, 0.7, true)
       if self.copies and self.copies > 1 then GameTooltip:AddLine("You own " .. self.copies, 0.7, 0.7, 0.7) end
     end
     GameTooltip:Show()
@@ -2238,7 +2238,19 @@ local function refreshDetail()
   detail.name:SetText(c.name); detail.name:SetTextColor(t[1], t[2], t[3])
   detail.kind:SetText(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1])
   detail.flavor:SetText(c.text or "")
-  detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r\nPower: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
+  -- what the card does in the Arena (the same rules both duel players use), next to its quick-duel power
+  local arena = ""
+  local B = RG.Battle
+  if B and B.defs then
+    local k = c.key or c.name
+    local d = B.defs[k] or (B.derive and B.derive(c))
+    if d then
+      local body = d.type == "minion" and (d.atk .. "/" .. d.hp .. " minion") or (d.type == "weapon" and (d.atk .. "/" .. d.dur .. " weapon") or "spell")
+      local txt = B.describe and B.describe(d) or ""
+      arena = "\nArena: |cffffffff" .. d.cost .. " mana " .. body .. "|r" .. (txt ~= "" and ("  ·  " .. txt) or "")
+    end
+  end
+  detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r" .. arena .. "\nDuel power: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
     .. "\nOwned: |cffffffff" .. owned(a, c.id) .. "|r" .. (have == 0 and ("\n|cffe0b36bYou do not have this print yet|r") or ""))
   for k = 1, 4 do
     local n = slot[k] or 0
@@ -2659,14 +2671,15 @@ function RG.ArcadeRefresh(keepMsg)
     local g = todaysGoals(a)
     local tw = (PGW - 2 * 16) / 3
     local streak = ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0)
-    pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", "one new every day, 3 saved at most", { 0.5, 0.88, 0.6 })
+    local lw = time and time() >= LAUNCH and time() < LAUNCH + 7 * 86400
+    pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", lw and "launch week: two a day, 5 saved at most" or "one new every day, 3 saved at most", { 0.5, 0.88, 0.6 })
     pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "a jumbo with two rares and a holo", { 0.85, 0.6, 1 })
     pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day gives a reward pack", GOLDC)
     pgHead(1, 298, "Limits and guarantees")
     pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
     local dc = (a.day == today()) and (a.dayCoins or 0) or 0
     pgBar(2, 368, "Coins from quests, kills and skill-ups today   (no daily limit)", tostring(dc), math.min(1, dc / 100), GOLDC)
-    pgBar(3, 410, "Duel win streak   (each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
+    pgBar(3, 410, "Quick duel win streak   (the Duel button: each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
     pgHead(2, 464, "Today's goals", "new goals every day")
     local n = 0
     for _, id in ipairs(g.pick) do
@@ -2783,7 +2796,7 @@ end
 
 RG.ArcadeUI = { modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
-  owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE }
+  owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
 
 RG.ArcadePackPrice = PACK_PRICE
 RG.ArcadePacks = PACKS
