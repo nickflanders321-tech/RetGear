@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.20.0
 
 - **Repeatable hand-ins are never turned in automatically.** Quests you can hand in again and again (Blood Shards for Spirit of the Wind and the other Blood Shard buffs, faction and Argent Dawn turn-ins, and the like) used to be handed in over and over while the window was open, spending your items. Auto turn-in now only handles quests in your quest log that aren't repeatable; for the others you get a short note to hand them in yourself.
 - **Fixed the "Waypath has been blocked from an action only available to the Blizzard UI" pop-up** (usually right after logging in), and the "Auras cannot be accessed when secret" errors from the game's objective tracker. When Waypath+ placed its map pin it also asked the game to "super-track" it, and the game rebuilt its own objective tracker on the spot from inside the add-on, which it isn't allowed to do. Waypath+ no longer super-tracks pins; its own arrow never needed it.
