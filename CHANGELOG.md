@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.19.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.19.0
 
 - Up to date with Blizzard's November 5 and 6 hotfixes:
