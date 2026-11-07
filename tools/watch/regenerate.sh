@@ -20,8 +20,14 @@ python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" .
 $LUA tools/nodes/dump.lua "$C/foreverObjectDB.lua" "$T/veins.tsv"
 python3 tools/nodes/gen.py "$T/qdb" "$T/veins.tsv" NodeData.lua
 $LUA tools/gear/dump.lua "$C" "$T/forever_gear.json"
+# WoW Forever's own item stats (LibItemDB, MIT: the data/itemdb branch, kept fresh by .github/workflows/fetch-itemdb.yml)
+if [ ! -d "$T/itemdb/Forever" ]; then
+  rm -rf "$T/itemdb"
+  git clone -q --depth 1 -b data/itemdb "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/itemdb" || true
+fi
+IDB=""; [ -d "$T/itemdb/Forever" ] && IDB="--itemdb $T/itemdb"
 $LUA tools/gear/specs_dump.lua . "$T/specs.json"
-python3 tools/gear/gen.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" . --specs "$T/specs.json"
+python3 tools/gear/gen.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" . --specs "$T/specs.json" $IDB
 $LUA tools/waypoints/dump.lua "$C/foreverNpcDB.lua" "$T/npcs.tsv"
 python3 tools/waypoints/gen.py "$T/qdb" "$T/npcs.tsv" .
 cp "$T/veins.tsv" "$T/objects.tsv"

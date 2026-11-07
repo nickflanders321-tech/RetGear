@@ -38,10 +38,13 @@ local R = {}
 for id, it in pairs(items) do
   if it[12] == 9 then R[id] = { name = it[1], npcDrops = it[2], objectDrops = it[3], questRewards = it[6], vendors = it[14] } end
 end
+local objects = load("foreverObjectDB.lua", "objectData")
+local O = {}
+for id, o in pairs(objects) do O[id] = { name = o[1], zone = o[5] } end
 local N = {}
 for id, n in pairs(npcs) do N[id] = { name = n[1], minLevel = n[4], maxLevel = n[5], rank = n[6], zone = n[9], faction = n[13], sub = n[14] } end
 local Q = {}
 for id, q in pairs(quests) do Q[id] = { name = q[1], start = q[2], reqLevel = q[4], level = q[5], races = q[6], classes = q[7], zone = q[17] } end
 local f = io.open(out, "w")
-f:write('{"items":', enc(I), ',"npcs":', enc(N), ',"quests":', enc(Q), ',"recipes":', enc(R), '}')
+f:write('{"items":', enc(I), ',"npcs":', enc(N), ',"quests":', enc(Q), ',"recipes":', enc(R), ',"objects":', enc(O), '}')
 f:close()

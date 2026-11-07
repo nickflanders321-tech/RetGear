@@ -653,7 +653,7 @@ end
 function RG.DungeonDrops(routeZone, max)
   local out = {}
   for _, g in ipairs(RG.GUIDE or {}) do
-    if g.id and g.how == "Dungeon" and g.zone and g.zone ~= "" and not RG.OwnState(g.id) then
+    if g.id and (g.how == "Dungeon" or g.how == "Chest") and g.zone and g.zone ~= "" and not RG.OwnState(g.id) then
       local here = routeZone:find(g.zone, 1, true) or g.zone:find(routeZone, 1, true)
         or (g.zone:find("Blackrock Spire", 1, true) and routeZone:find("BRS", 1, true))
       if here then
@@ -723,7 +723,15 @@ function RG.CraftState(g)
   return "no", prof, need, have
 end
 -- in your gear guide at all (Bind on Pickup crafts only for their own profession)
-function RG.GearShown(g) return RG.CraftState(g) ~= "no" end
+function RG.GearShown(g)
+  if RG.CraftState(g) == "no" then return false end
+  -- a quest reward from a quest your race or class can't take (another race's starting quests, say)
+  if g.how == "Quest" and g.q and RG.QDATA and RG.QuestForMe then
+    local d = RG.QDATA[g.q]
+    if d and not RG.QuestForMe(d) then return false end
+  end
+  return true
+end
 -- something you can go and get now (for "best upgrades now", the tracker and the level-up count)
 function RG.GearGettable(g) local st = RG.CraftState(g); return st == nil or st == "make" or st == "buy" end
 

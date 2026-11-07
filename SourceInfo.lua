@@ -132,6 +132,23 @@ local function describe(src, lvl)
     if ew then line("Entrance", GREY .. at(ew) .. "|r"); out.wp = ew; out.wpText = "Show the " .. dun .. " entrance on my map" end
     if dq and dq.prep and dq.prep < (dq.go or 0) then line("Get ready", GREY .. "pick up its quests from level " .. dq.prep .. "|r") end
     if dq and dq.note then line("Tip", GREY .. dq.note .. "|r") end
+  elseif how == "Chest" then
+    local dun = dungeonOf(src.zone) or src.zone
+    out.title = "In a dungeon chest"
+    out.icon = 132596
+    line("Chest", WHITE .. (src.src or "?") .. "|r")
+    line("Dungeon", "|cffA58BD8" .. (src.zone or "?") .. "|r")
+    local dq = RG.DUNGEON_QUESTS and RG.DUNGEON_QUESTS[dun]
+    if dq and dq.go then line("Run it from", (myLvl >= dq.go and GREEN or GOLD) .. "level " .. dq.go .. "|r") end
+    local ew = RG.WAYPOINTS and RG.WAYPOINTS.dungeons and RG.WAYPOINTS.dungeons[dun]
+    if ew then line("Entrance", GREY .. at(ew) .. "|r"); out.wp = ew; out.wpText = "Show the " .. dun .. " entrance on my map" end
+  elseif how == "Reputation" then
+    out.title = "Reputation reward"
+    out.icon = 236681
+    local who, rank, where = (src.zone or ""):match("^(.-) · (.-) · (.*)$")
+    line("Sold by", WHITE .. (src.src or "?") .. "|r" .. (who and who ~= "" and (GREY .. "  ·  " .. who .. "|r") or ""))
+    if rank then line("Needs", GOLD .. rank .. "|r") end
+    if where and where ~= "" then line("Where", GREY .. where .. "|r") end
   elseif how == "Rare mob" then
     out.title = "Rare or elite mob"
     out.icon = 133639

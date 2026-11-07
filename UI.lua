@@ -336,7 +336,7 @@ end
 local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
 local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand" }
 -- "Upgrades only": hide pieces you already beat; keep tips, things you cannot use yet, and ones still loading
-local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Drop" }
+local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Chest", "Reputation", "Drop" }
 local function guideKeep(g, lvl)
   if g.tip or not g.id then return true end
   if not RG.GearShown(g) then return false end
@@ -583,7 +583,7 @@ local function renderGear()
   -- which dungeons are worth running for you
   local dung = {}
   for _, u in ipairs(ups) do
-    if u.g.how == "Dungeon" and u.g.zone ~= "" then
+    if (u.g.how == "Dungeon" or u.g.how == "Chest") and u.g.zone ~= "" then
       local e = dung[u.g.zone] or { zone = u.g.zone, total = 0, items = {}, lvl = 99 }
       dung[u.g.zone] = e
       e.total = e.total + u.d; e.lvl = math.min(e.lvl, u.g.lvl)
@@ -1577,7 +1577,7 @@ end
 -- ---------------------------------------------------------------------------
 -- 2nd Spec > Gear: your 2nd set slot by slot, then what to hunt for by level
 -- ---------------------------------------------------------------------------
-local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784, Dungeon = 136058, Vendor = 133784, ["Rare mob"] = 133639 }
+local HOW_ICON = { Drop = 133639, Quest = 136797, Crafted = 136241, BoE = 133784, Dungeon = 136058, Vendor = 133784, ["Rare mob"] = 133639, Chest = 132596, Reputation = 236681 }
 local function renderHeal()
   local n = 0
   local s = RG.SecondSpec and RG.SecondSpec()

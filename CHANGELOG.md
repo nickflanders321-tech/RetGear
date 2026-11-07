@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Gear upgrades now use WoW Forever's own item data.** Item stats now come from a scan of the WoW Forever game client (LibItemDB by Pimptasty, MIT) wherever it has them, instead of only from the original Classic database. That matters in two ways: WoW Forever changed the stats of 1,355 green-or-better Classic items, so those now score as they really are, and 3,558 WoW Forever items the old data didn't have at all can now be suggested (the Zephras Isle, Riverglades and other new quest rewards, scaling quest rewards, new vendors). The guides list about 430 more upgrades across all classes and specs, with fewer empty slots.
+- **More places to get gear:** chests inside dungeons (like the Chest of The Seven in Blackrock Depths), vendors the quest data didn't list (from the cMaNGOS vendor tables), and quartermasters of reputations (with the standing you need). Battleground reputations and PvP ranks stay out.
+- Quest rewards from quests your race or class can't take (another race's starting quests) no longer show in your gear guide.
+
 ## v1.20.0
 
 - **Repeatable hand-ins are never turned in automatically.** Quests you can hand in again and again (Blood Shards for Spirit of the Wind and the other Blood Shard buffs, faction and Argent Dawn turn-ins, and the like) used to be handed in over and over while the window was open, spending your items. Auto turn-in now only handles quests in your quest log that aren't repeatable; for the others you get a short note to hand them in yourself.

@@ -3,7 +3,8 @@
 levels 5-60, scored with that class's own stat weights and limited to what it can wear
 and wield (both read from Classes/<Class>.lua, so the add-on and this list agree).
 
-Stats come from the cMaNGOS classic database (item_template + spell_template),
+Stats come from LibItemDB's scan of the WoW Forever game client when it has the item (--itemdb: WoW Forever's
+own items, and Classic items Forever changed), otherwise from the cMaNGOS classic database (item_template + spell_template),
 sources from QuestieDB's merged WoW Forever data (quest rewards, dungeon boss drops,
 vendors), so only items that exist in Forever and that a Horde character of that class
 can get are listed. Crafted gear (Blacksmithing, Leatherworking, Tailoring, Engineering) joins
@@ -20,13 +21,17 @@ Usage:
   zcat /tmp/cdb/Full_DB/*.sql.gz > /tmp/classic.sql
   lua5.1 dump.lua /tmp/qdb/src/corrections/Forever/combined /tmp/forever_gear.json
   lua5.1 specs_dump.lua <Waypath+ folder> /tmp/specs.json
-  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json]
+  git clone --depth 1 -b data/itemdb https://github.com/nickflanders321-tech/RetGear.git /tmp/itemdb   (LibItemDB, MIT)
+  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json] [--itemdb /tmp/itemdb]
 """
 import json, re, sys
 from collections import defaultdict
 
 args = sys.argv[1:]
 SPECS_JSON = None
+ITEMDB = None
+if "--itemdb" in args:
+    i = args.index("--itemdb"); ITEMDB = args[i + 1]; del args[i:i + 2]
 if "--specs" in args:
     i = args.index("--specs"); SPECS_JSON = args[i + 1]; del args[i:i + 2]
 sql_path, json_path, qdb_dir, addon_dir = args[0:4]
@@ -96,8 +101,53 @@ for t in ("npc_trainer", "npc_trainer_template"):
         d = dict(zip(tcol, r))
         sk, val = int(d["reqskill"] or 0), int(d["reqskillvalue"] or 0)
         if sk: TRAINER.setdefault(int(d["spell"]), (sk, val))
+# who sells what (cMaNGOS): adds vendors QuestieDB doesn't list, like reputation quartermasters
+VEND = defaultdict(set)
+for t in ("npc_vendor", "npc_vendor_template"):
+    try: vcol = columns(sql, t)
+    except AttributeError: continue
+    for r in rows(sql, t):
+        dv = dict(zip(vcol, r))
+        VEND[int(dv["item"])].add(int(dv["entry"]))
+VTEMPLATE = defaultdict(set)   # creatures that use a vendor template
+ccol = columns(sql, "creature_template")
+if "VendorTemplateId" in ccol:
+    for r in rows(sql, "creature_template"):
+        dc = dict(zip(ccol, r))
+        if int(dc.get("VendorTemplateId") or 0): VTEMPLATE[int(dc["VendorTemplateId"])].add(int(dc["Entry"]))
+for it, ents in list(VEND.items()):
+    for e in list(ents):
+        if e in VTEMPLATE: ents |= VTEMPLATE[e]
 del sql
-print("items %d, spells %d, trainer crafts %d" % (len(items), len(spells), len(TRAINER)), file=sys.stderr)
+print("items %d, spells %d, trainer crafts %d, vendor items %d" % (len(items), len(spells), len(TRAINER), len(VEND)), file=sys.stderr)
+
+# ---------------------------------------------------------------------------
+# WoW Forever's own item data (LibItemDB, from the game client): its stats win, and WoW Forever's own items
+# (new zones, scaling quest rewards) join with the fields eligible() and pick() read
+# ---------------------------------------------------------------------------
+IDB = {}
+if ITEMDB:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import itemdb
+    IDB = itemdb.load(ITEMDB)
+    added = changed = 0
+    FACTION_RACES = {"A": 1 | 4 | 8 | 64, "H": 2 | 16 | 32 | 128}
+    for iid, it in IDB.items():
+        if iid in items:
+            d = items[iid]
+            d["_idb"] = it
+            if it["q"]: d["Quality"] = str(it["q"])
+            if it["req"]: d["RequiredLevel"] = str(it["req"])
+            changed += 1
+            continue
+        if it["inv"] == 0: continue
+        items[iid] = {"entry": str(iid), "name": it["name"], "class": str(it["cls"]), "subclass": str(it["sub"]),
+                      "InventoryType": str(it["inv"]), "Quality": str(it["q"]), "RequiredLevel": str(it["req"]),
+                      "ItemLevel": str(it["ilvl"]), "AllowableClass": str(it["classes"] or -1),
+                      "AllowableRace": str(FACTION_RACES.get(it["faction"], -1)), "RandomProperty": "0", "requiredhonorrank": "0",
+                      "RequiredReputationFaction": "0", "RequiredReputationRank": "0", "bonding": "0", "_idb": it}
+        added += 1
+    print("LibItemDB (WoW Forever client data): %d items, stats used for %d Classic items, %d WoW Forever items added" % (len(IDB), changed, added), file=sys.stderr)
 
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -107,6 +157,7 @@ def _sorted_pairs(kv):
     return dict(sorted(kv, key=k))
 fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
 FI, FN, FQ = fv["items"], fv["npcs"], fv["quests"]
+FO = fv.get("objects") or {}
 
 def L(v):
     """Questie lists can arrive as dicts with string keys."""
@@ -140,9 +191,18 @@ ALLIANCE_ZONES = {"Dun Morogh", "Elwynn Forest", "Teldrassil", "Darkshore", "Wes
 # Horde home zones and Horde-only dungeons: nothing from there for the Alliance
 HORDE_ZONES = {"Durotar", "Mulgore", "Tirisfal Glades", "Silverpine Forest", "Orgrimmar", "Thunder Bluff", "Undercity"}
 HORDE_FAR_A = {"Ragefire Chasm", "Ruins of Lordaeron", "Krol'dok Stronghold"}
+# WoW Forever's new zones (their quests are filed under the zone's sub-areas) and sub-areas of the old ones
+_UI = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(qdb_dir + "/support/Forever/Zones/areaIdToUiMapId.lua").read())}
+NEW_ZONE_BY_MAP = {2548: "Riverglades", 2482: "Mount Hyjal", 2652: "Shen'dralas"}
+NEW_AREA = {16593: "Zephras Isle", 616: "Mount Hyjal", 16651: "Shen'dralas"}
+try:
+    PARENT = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(qdb_dir + "/support/Forever/Zones/subZoneToParentZone.lua").read())}
+except OSError: PARENT = {}
 def zone_name(z):
     if z is None: return None
-    return DUNGEON.get(z) or AREA.get(z)
+    n = DUNGEON.get(z) or AREA.get(z) or NEW_AREA.get(z) or NEW_ZONE_BY_MAP.get(_UI.get(z))
+    if not n and z in PARENT: n = DUNGEON.get(PARENT[z]) or AREA.get(PARENT[z]) or NEW_AREA.get(PARENT[z]) or NEW_ZONE_BY_MAP.get(_UI.get(PARENT[z]))
+    return n
 
 # ---------------------------------------------------------------------------
 # Classes: weights, weapon model and proficiencies come from Classes/<Class>.lua
@@ -166,6 +226,7 @@ def read_class(path):
 STAT = {3: "AGI", 4: "STR", 5: "INT", 6: "SPI", 7: "STA"}
 SCHOOL = {2: "SP_HOLY", 4: "SP_FIRE", 8: "SP_NATURE", 16: "SP_FROST", 32: "SP_SHADOW", 64: "SP_ARCANE"}
 def stats_of(d):
+    if d.get("_idb"): return defaultdict(float, d["_idb"]["stats"])
     s = defaultdict(float)
     for k in range(1, 11):
         t, v = int(d["stat_type%d" % k]), int(d["stat_value%d" % k])
@@ -198,6 +259,10 @@ def stats_of(d):
     return s
 
 def weapon(d):
+    if d.get("_idb"):
+        it = d["_idb"]
+        if it["dps"] > 0: return it["dps"], it["speed"] or (int(d.get("delay") or 0) / 1000.0)
+        if "delay" not in d: return 0, 0
     delay = int(d["delay"]) / 1000.0
     if delay <= 0: return 0, 0
     dmg = sum((float(d["dmg_min%d" % k]) + float(d["dmg_max%d" % k])) / 2 for k in range(1, 6))
@@ -265,7 +330,6 @@ def eligible(d, C):
     if ac not in (-1, 0) and not (ac & C["bit"]): return None
     if ar not in (-1, 0) and not (ar & 178): return None
     if int(d["Quality"]) < 2 or int(d["RandomProperty"]) != 0 or int(d["requiredhonorrank"]) != 0: return None
-    if int(d["RequiredReputationFaction"]) != 0: return None
     return slot
 
 RAID_ZONES = {2717, 2677, 2159, 1977, 3429, 3428, 3456, 19}  # MC, BWL, Onyxia, ZG, AQ, Naxx
@@ -326,6 +390,15 @@ def sources(iid, ally=False):
             out.append({"how": "Quest", "lvl": q.get("level") or q.get("reqLevel") or 0, "req": q.get("reqLevel") or 0,
                         "src": q["name"] + (" (" + giver + ")" if giver else ""), "zone": zname or "", "quest": q["name"], "q": int(qid)})
     drops = L(f.get("npcDrops"))
+    # a chest inside a dungeon that holds it (only a few chests: not the random loot of every strongbox in the world)
+    objs = L(f.get("objectDrops"))
+    if 0 < len(objs) <= 3:
+        for oid in objs:
+            o = FO.get(str(oid))
+            d = o and DUNGEON.get(o.get("zone"))
+            if not d or d in RAIDS or d in far: continue
+            out.append({"how": "Chest", "lvl": 0, "src": o["name"], "zone": d})
+            break
     if 0 < len(drops) <= 4:
         for nid in drops:
             n = FN.get(str(nid))
@@ -338,12 +411,22 @@ def sources(iid, ally=False):
                 out.append({"how": "Dungeon", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": d, "bl": n.get("maxLevel") or 0})
             elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in other:
                 out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
-    for vid in L(f.get("vendors")):
+    d = items.get(int(iid)) or {}
+    rep_rank = int(d.get("RequiredReputationRank") or 0) if int(d.get("RequiredReputationFaction") or 0) else 0
+    for vid in sorted(set(int(v) for v in L(f.get("vendors"))) | VEND.get(int(iid), set())):
         n = FN.get(str(vid))
         sub = (n.get("sub") or "") if n else ""
-        if n and ("A" if ally else "H") in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in other and not re.search(r"Supply Officer|Quartermaster|Legionnaire|Battlemaster", sub):
+        if not (n and ("A" if ally else "H") in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in other): continue
+        # PvP: ranks and battleground reputations are not leveling gear
+        if re.search(r"Legionnaire|Battlemaster|Supply Officer|Frostwolf|Warsong|Defilers|League of Arathor|Stormpike|Silverwing", sub): continue
+        if rep_rank or re.search(r"Quartermaster", sub):
+            # a reputation reward: bought once you're friendly enough with them
+            if not rep_rank: continue
+            out.append({"how": "Reputation", "lvl": 0, "src": n["name"], "zone": (sub or "Quartermaster") + " · " + REP_RANK.get(rep_rank, "Friendly") + " · " + (zone_name(n.get("zone")) or "")})
+        else:
             out.append({"how": "Vendor", "lvl": 0, "src": n["name"], "zone": zone_name(n.get("zone")) or ""})
     return out
+REP_RANK = {3: "Neutral", 4: "Friendly", 5: "Honored", 6: "Revered", 7: "Exalted"}
 
 # ---------------------------------------------------------------------------
 # Crafted gear: what the gear professions make, the skill it takes and where the recipe comes from
@@ -417,7 +500,7 @@ def craft_source(iid, ally=False):
 # Pick the upgrades, class by class
 # ---------------------------------------------------------------------------
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
-ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Rare mob": 3, "Crafted": 4}
+ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Chest": 3, "Rare mob": 4, "Reputation": 5, "Crafted": 6}
 src_cache = {}
 def pick(C, lvl_from=5, ally=False):
     """The upgrade path for every slot plus the best quest reward and dungeon drop per
