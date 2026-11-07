@@ -33,12 +33,15 @@ jobs:
           du -sh x
       - name: Commit to data/itemdb
         run: |
+          set -x
+          mkdir -p /tmp/out && cd /tmp/out
+          git init -q -b data/itemdb
+          cp -r /tmp/idb/x/ItemDB/Data/Forever ./Forever
+          cp /tmp/idb/x/ItemDB/LICENSE /tmp/idb/x/ItemDB/README.md /tmp/idb/x/ItemDB/CHANGELOG.md . || true
+          cp /tmp/idb/x/ItemDB/Where.lua /tmp/idb/x/ItemDB/LibItemDB-1.0.lua . || true
+          du -sh Forever; ls -la Forever | head -40
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan data/itemdb
-          git rm -rq --cached . && rm -rf ./* .github
-          cp -r /tmp/idb/x/* .
-          find . -path ./.git -prune -o -type f -size +95M -print -delete
           git add -A
-          git commit -qm "LibItemDB file ${{ github.event.inputs.file_id }} (MIT, Pimptasty)"
-          git push -f origin data/itemdb
+          git commit -qm "LibItemDB file ${{ github.event.inputs.file_id }}: WoW Forever data (MIT, Pimptasty)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data/itemdb
