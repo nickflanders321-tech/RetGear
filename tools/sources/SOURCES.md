@@ -13,6 +13,7 @@ Write down any disagreement under "Open questions" in BACKLOG.md instead of gues
 |---|---|---|
 | [QuestieDB](https://github.com/Questie/QuestieDB) merged WoW Forever export (`tools/qdb`) | Objectives.lua (quests, objectives, givers), Routes/Generated.lua (starting zones, dungeon quests), Waypoints.lua, NodeData.lua (ore and herb spawns), Professions/Generated.lua (spots, trainers), item and NPC checks in `tools/audit/crosscheck.py` | 2026-11-05 |
 | [cMaNGOS classic-db](https://github.com/cmangos/classic-db) | Item stats for gear scores (Classes/*Gear.lua, Classes/SpecGear.lua), recipes, loot and vendors (Professions/Generated.lua) | 2026-11-05 |
+| [Gethe/wow-ui-source `forever` branch](https://github.com/Gethe/wow-ui-source/tree/forever) (new 2026-11-07) | The Forever client's own Blizzard UI code and generated API docs, one commit per build: `git diff <old> <new>` shows exactly which functions, events and frames a build changed (Compat.lua, step 1 of UPDATE.md). 1.60.1.70840 (November 6): only character select, subscription pop-up and shard-transfer toast code, no API changes | 2026-11-07 |
 
 ## Leveling and quest routes (Routes/Horde.lua, Races/*.lua, Travel.lua)
 

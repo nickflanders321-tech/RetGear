@@ -33,7 +33,11 @@ Read README.md, tools/*/README.md, tools/sources/SOURCES.md and tools/sources/BA
 
 ## 1. Compatibility with the newest game build (always first when the build changed)
 
-- Find what changed: Blizzard's patch notes and WoW Forever forum posts for that build,
+- Find what changed: first diff the client's UI source between the old and new build
+  (github.com/Gethe/wow-ui-source, `forever` branch, one commit per build, e.g.
+  `git clone --filter=blob:none -b forever ...` then `git diff --stat <old> <new>` and grep
+  Waypath+ for every changed function, event and frame; Blizzard_APIDocumentationGenerated
+  lists API changes). Then Blizzard's patch notes and WoW Forever forum posts for that build,
   addon-author notes (for example github.com/Thunderz96/forever-addon-kit, which keeps an
   API baseline), and the game's FrameXML/API docs if available. Look for renamed or removed
   functions, events and frames, new "secret value" restrictions, and actions add-ons may no
