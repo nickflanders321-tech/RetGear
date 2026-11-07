@@ -939,6 +939,9 @@ local function currentPin()
 end
 -- The game's map code reacts to a new pin by running protected calls; if that is triggered from our
 -- (insecure) code in combat it gets blocked. So pins and clears wait until combat ends.
+-- We never "super-track" the pin: the game answers that at once by rebuilding its objective tracker, and doing that
+-- from add-on code taints the tracker (the "Waypath has been blocked from an action only available to the Blizzard
+-- UI" pop-up at login, and "Auras cannot be accessed when secret" errors). Our own arrow doesn't need it.
 local deferredPin, deferredClear
 local combatWatch = CreateFrame("Frame")
 combatWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -952,7 +955,6 @@ function RG.PinWaypoint(wp, quiet)
   if inCombat() then deferredPin = { wp, quiet }; deferredClear = nil; if not quiet then RG.Notify("Pin for " .. wp[4] .. " is set as soon as combat ends") end return end
   local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(wp[1], wp[2] / 100, wp[3] / 100))
   if not ok then if not quiet then RG.Print("Can't pin " .. wp[4] .. " from here.") end return end
-  if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
   local api = spfApi()
   if api then pcall(api.Navigate, "Waypath+", wp[1], wp[2] / 100, wp[3] / 100, wp[4]) end
@@ -1097,7 +1099,6 @@ function RG.SetWaypoint(x, y)
   C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(mapID, x / 100, y / 100))
   lastPlaced = nil -- a pin you chose: auto-follow leaves it alone
   RG.db.arrowPaused = nil
-  if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   refreshArrow()
   RG.Notify(string.format("Pin set at %.1f, %.1f: follow the arrow", x, y))
 end
