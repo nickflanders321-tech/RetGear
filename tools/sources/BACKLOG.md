@@ -55,6 +55,15 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Forever guides publish them.
 8. **Dungeon drops are Classic-era** for several dungeons until Forever loot tables are
    confirmed (wowtbc.gg loot tables).
+9. **WoW Forever's new crafting recipes are not in the gear guide** (2026-11-07). About 900 new
+   recipe items (ids above 250000: "Pattern: Shining Circlet", "Pattern: Pristine Gown", the SAF-T and
+   EZ-Thro schematics...), about 630 of them make green-or-better gear and about 380 have a known
+   source in QuestieDB. tools/gear/gen.py only links recipes to what they make through cMaNGOS
+   spell data, which doesn't have them, and LibItemDB's Recipe.lua has no product or skill. Matching
+   by name ("Pattern: X" makes "X") would work for most, but the skill each one needs is unknown.
+   **Don't add them until a source gives the real data** (the recipe's spell, the item it makes and the
+   required skill), for example a Wowhead or ForeverChanges recipe page, a wago.tools SkillLineAbility /
+   Spell DB2 export for the Forever build, or a LibItemDB release that adds it. Then feed CRAFT in gen.py.
 
 ## Open questions
 
