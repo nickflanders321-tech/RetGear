@@ -1,0 +1,44 @@
+name: Fetch LibItemDB
+
+# One-off / on demand: download LibItemDB (MIT, by Pimptasty, CurseForge project 1558208) and
+# commit its WoW Forever item data to the data/itemdb branch, so tools/gear can read client-scanned
+# stats for WoW Forever's own items (the cMaNGOS database only has the original Classic ones).
+on:
+  workflow_dispatch:
+    inputs:
+      file_id:
+        description: CurseForge file id
+        default: '9273792'
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download
+        run: |
+          set -x
+          F=${{ github.event.inputs.file_id }}
+          mkdir -p /tmp/idb && cd /tmp/idb
+          curl -sSL -A "Mozilla/5.0" -o lib.zip "https://www.curseforge.com/api/v1/mods/1558208/files/$F/download" || true
+          if ! unzip -tq lib.zip >/dev/null 2>&1; then
+            N=$(curl -sSL -A "Mozilla/5.0" "https://www.curseforge.com/api/v1/mods/1558208/files/$F" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['fileName'])")
+            curl -sSL -A "Mozilla/5.0" -o lib.zip "https://edge.forgecdn.net/files/${F:0:4}/${F:4}/$N"
+          fi
+          unzip -q lib.zip -d x
+          find x -maxdepth 3 | head -100
+          du -sh x
+      - name: Commit to data/itemdb
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan data/itemdb
+          git rm -rq --cached . && rm -rf ./* .github
+          cp -r /tmp/idb/x/* .
+          find . -path ./.git -prune -o -type f -size +95M -print -delete
+          git add -A
+          git commit -qm "LibItemDB file ${{ github.event.inputs.file_id }} (MIT, Pimptasty)"
+          git push -f origin data/itemdb
