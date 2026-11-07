@@ -29,10 +29,44 @@ local function afterCombat(key, fn) if combat() then pendingAfterCombat[key] = f
 local paused = false -- set when the game refuses (full quest log, full bags)
 local function auto() return RG.Opt("autoQuest") and not paused and not (IsShiftKeyDown and IsShiftKeyDown()) end
 
+-- Repeatable hand-ins (Blood Shards for Spirit of the Wind, Argent Dawn and faction turn-ins, Darkmoon decks...)
+-- aren't in your quest log and can be handed in over and over: doing that by itself spends your items, so those
+-- are always left to you. Only quests in your log are turned in automatically.
+local function inLogByID(id)
+  if not (id and id > 0) then return nil end
+  if C_QuestLog and C_QuestLog.GetLogIndexForQuestID then return C_QuestLog.GetLogIndexForQuestID(id) ~= nil end
+  if GetQuestLogIndexByID then return (GetQuestLogIndexByID(id) or 0) > 0 end
+  return nil
+end
+local function inLogByTitle(title)
+  if not title then return nil end
+  if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo then
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do local q = C_QuestLog.GetInfo(i); if q and not q.isHeader and q.title == title then return true end end
+    return false
+  end
+  return nil
+end
+local told = {}
+local function manualHandIn(title)
+  if title and not told[title] then told[title] = true; RG.Notify((title or "This quest") .. " can be handed in again and again: hand it in yourself") end
+end
+-- the quest window that's open now (accept / progress / reward): one you can repeat, or not in your log?
+local function repeatHandIn()
+  local id = GetQuestID and GetQuestID()
+  if not (id and id > 0) then return false end
+  if C_QuestLog and C_QuestLog.IsRepeatableQuest and C_QuestLog.IsRepeatableQuest(id) then return true end
+  if IsQuestRepeatable and IsQuestRepeatable(id) then return true end
+  return inLogByID(id) == false
+end
+RG.RepeatHandIn = repeatHandIn
+
 local function onGossip()
   if not auto() or not C_GossipInfo then return end
   for _, q in ipairs(C_GossipInfo.GetActiveQuests and C_GossipInfo.GetActiveQuests() or {}) do
-    if q.isComplete then C_GossipInfo.SelectActiveQuest(q.questID); return end
+    if q.isComplete then
+      if q.repeatable or (q.frequency and q.frequency > 0) or inLogByID(q.questID) == false then manualHandIn(q.title)
+      else C_GossipInfo.SelectActiveQuest(q.questID); return end
+    end
   end
   for _, q in ipairs(C_GossipInfo.GetAvailableQuests and C_GossipInfo.GetAvailableQuests() or {}) do
     if not q.isTrivial and not q.repeatable then C_GossipInfo.SelectAvailableQuest(q.questID); return end
@@ -41,8 +75,13 @@ end
 local function onGreeting()
   if not auto() then return end
   for i = 1, (GetNumActiveQuests and GetNumActiveQuests() or 0) do
-    local _, complete = GetActiveTitle(i)
-    if complete then SelectActiveQuest(i); return end
+    local title, complete = GetActiveTitle(i)
+    if complete then
+      local id = GetActiveQuestID and GetActiveQuestID(i)
+      local logged = id and inLogByID(id)
+      if logged == nil then logged = inLogByTitle(title) end
+      if logged == false then manualHandIn(title) else SelectActiveQuest(i); return end
+    end
   end
   for i = 1, (GetNumAvailableQuests and GetNumAvailableQuests() or 0) do
     local trivial, _, repeatable
@@ -52,16 +91,19 @@ local function onGreeting()
 end
 local function onDetail()
   if not auto() then return end
+  do local id = GetQuestID and GetQuestID(); if id and id > 0 and C_QuestLog and C_QuestLog.IsRepeatableQuest and C_QuestLog.IsRepeatableQuest(id) then return end end
   if QuestGetAutoAccept and QuestGetAutoAccept() then if AcknowledgeAutoAcceptQuest then AcknowledgeAutoAcceptQuest() end return end
   AcceptQuest()
 end
 local function onProgress()
   if not auto() then return end
+  if repeatHandIn() then manualHandIn(GetTitleText and GetTitleText()) return end
   if GetQuestMoneyToGet and GetQuestMoneyToGet() > 0 then return end -- costs gold: you decide
   if IsQuestCompletable and IsQuestCompletable() then CompleteQuest() end
 end
 local function onComplete(retry)
   if not auto() then return end
+  if repeatHandIn() then manualHandIn(GetTitleText and GetTitleText()) return end
   local n = GetNumQuestChoices and GetNumQuestChoices() or 0
   if n <= 1 then GetQuestReward(n == 1 and 1 or nil); return end
   if not RG.Opt("autoReward") or not RG.ScoreRewards then return end
