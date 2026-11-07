@@ -7,7 +7,7 @@ local R = { name = "Skyborne", faction = "Horde", capital = "Thunder Bluff", sta
 -- Kalimdor dungeons first: Ragefire Chasm is in Orgrimmar, Wailing Caverns in The Barrens
 R.prefer = { ["Ragefire Chasm"] = 5.1, ["Wailing Caverns"] = 5.2 }
 R.route = {
-  { o = 3, from = 1,  to = 12, kind = "zone", zone = "Zephras Isle", hub = "Shen'dar Village / Valanaar", notes = "Skyborne start. Zephras Isle runs to level 12: follow the main story from the starting grove to Shen'dar Village and Valanaar. Miners: it has its own Mining trainers and Copper." },
+  { o = 3, from = 1,  to = 12, kind = "zone", zone = "Zephras Isle", hub = "Shen'dar Village / Valanaar", notes = "Skyborne start. Zephras Isle runs to level 12: follow the main story from the starting grove to Shen'dar Village and Valanaar. Miners: it has its own Mining trainers and Copper. Druids: Lotheluum Starbreeze trains you on the island (since the November 5 hotfix)." },
   { o = 4, from = 12, to = 14, kind = "zone", zone = "Mulgore", hub = "Thunder Bluff", fp = "Thunder Bluff", notes = "The Earthen Ring sends you to Alaana Stormwalker in Mulgore, below Thunder Bluff. Set up in Thunder Bluff, then head east into The Barrens." },
   { o = 5, from = 13, to = 20, kind = "zone", zone = "The Barrens", hub = "The Crossroads", fp = "Crossroads", notes = "The Crossroads is your base until 20." },
 }

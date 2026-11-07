@@ -50,7 +50,7 @@ A.route = {
   { o = 28, from = 41, to = 50, kind = "zone", zone = "Tanaris", hub = "Gadgetzan", fp = "Gadgetzan", notes = "Zul'Farrak is here. Miners: Mithril and Truesilver." },
   { o = 28.5, from = 44, to = 54, kind = "dungeon", zone = "Zul'Farrak", hub = "Tanaris", notes = "In the south of Tanaris." },
   { o = 29, from = 45, to = 50, kind = "zone", zone = "Searing Gorge", hub = "Thorium Point", fp = "Thorium Point", notes = "Miners: Mithril, Truesilver and early Thorium." },
-  { o = 30, from = 46, to = 55, kind = "dungeon", zone = "Maraudon", hub = "Desolace", notes = "In Desolace. Long dungeon: do the wings in two runs." },
+  { o = 30, from = 46, to = 55, kind = "dungeon", zone = "Maraudon", hub = "Desolace", notes = "In Desolace. Long dungeon: do the wings in two runs. When Princess Theradras dies, Zaetar's Spirit appears and offers Seed of Life (hand it in to Keeper Remulos in Moonglade)." },
   { o = 31, from = 50, to = 55, kind = "zone", zone = "Un'Goro Crater", hub = "Marshal's Refuge", fp = "Marshal's Refuge", notes = "Miners: Thorium everywhere." },
   { o = 32, from = 50, to = 56, kind = "zone", zone = "Felwood", hub = "Talonbranch Glade", fp = "Talonbranch Glade", notes = "North of Ashenvale, reached through Moonglade or Winterspring." },
   { o = 33, from = 50, to = 58, kind = "zone", zone = "Burning Steppes", hub = "Morgan's Vigil", fp = "Morgan's Vigil", notes = "Miners: Thorium. Blackrock Mountain is right here." },

@@ -24,6 +24,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Overgear and LFCarry (launch-updated) name only Rog'mar (59.6, 45.1) and the Redridge / Blackrock Pass walk-in.
    2026-11-06: QuestieDB's Forever data still unchanged (tree 010e05f); Warcraft Wiki lists Bolder'ok as a second
    Horde settlement (unconfirmed elsewhere, so not in the notes yet). Still no Horde quest names anywhere.
+   2026-11-07: QuestieDB's Forever data still unchanged (tree f59c42a); Timesaver's new Riverglades guide confirms
+   Bolder'ok (ogres, north), so the Horde route note names it since v1.19.0. Blizzard's November 6 hotfix fixes
+   Riverglades quest items and Krek the Noxious, but still no Horde quest names published.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -38,6 +41,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    The Ravaged Fishing Pole (+15, Fishing 50, level 20; foreverchanges.pro) is in the list since
    v1.6.0 but where it drops isn't published. Same for the new lures and the Wide-Brimmed Fishing
    Hat. Fill in the "how" texts in Fish.lua RG.FISH_GEAR when a source names them.
+   2026-11-07: Warcraft Wiki (patch 1.60.1, Fishing 50, level 20), ForeverChanges and QuestieDB's Forever item data
+   (no drop, vendor or quest) still give no source for the Ravaged Fishing Pole (285094) or the Wide-Brimmed
+   Fishing Hat (259846, level 48).
 5. **Route steps without a map pin:** 46 of 82 hand-written steps have one (v1.4.0). Most
    of the rest are steps inside a dungeon, where a pin wouldn't help; still open: Old Fire Eye
    (Paladin Wolf's Bane finale, not in the Forever NPC data) and Olric Frostvale.
@@ -56,12 +62,16 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Blizzard's October 8 beta notes raise the Desolace Valley of Bones Gelkis and Magram quests to level 35 (was 30); QuestieDB's Forever data still says 30 (2026-10-19). The Desolace route note mentions it; follow the quest data until it changes.
 - Searing Gorge (guides 43-53, ours 48-54) and Horde Azshara (guides 45-55, ours 50-58): Forever's own quest data backs our windows (Searing Gorge quests: a quarter below 48, median 50; Azshara median 57), so they stay (2026-10-19).
 - Shen'dralas: Leprestore 40-50 (2026-10-14), Skycoach 40-45 (2026-09-30, "40+, not confirmed"), Eternadex's route window 41-43 (2026-10-18), Mmonster no range yet (2026-10-21); ours is 38-43. Guides agree it starts around 40, so it may move up 2 levels; wait for launch quest data before moving it (2026-11-02).
-- Ruins of Lordaeron: Blizzard's November 2 launch notes say every dungeon quest needs level 15; QuestieDB's Forever data still has 16 for The New Plague, Crest of Lordaeron and Unending Torment (2026-11-05). The route note says 15, the route entry stays at 16; drop the entry to 15 (with MOVED_STEPS) once the quest data agrees.
+- Ruins of Lordaeron: Blizzard's November 2 launch notes say every dungeon quest needs level 15; QuestieDB's Forever data still has 16 for The New Plague, Crest of Lordaeron and Unending Torment (2026-11-05). The route note says 15, the route entry stays at 16; drop the entry to 15 (with MOVED_STEPS) once the quest data agrees. 2026-11-07: Blizzard's November 6 hotfix had to lower Unending Torment (Horde) from 16 to 15 on the live realms, so the launch notes' "15" wasn't live for every quest; QuestieDB still says 16 for all three. The Paladin step says 15 for Unending Torment; the entry stays at 16.
 - Shen'dralas, 2026-11-06: eXputer (2026-10-28) reports guides split between 40-45 and 45-53. Ours stays 38-43
   until launch quest data is in QuestieDB.
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.19.0: Blizzard's November 5-6 hotfixes applied: Tanning Rack at Leatherworking 125 (was 140), Zaetar's Spirit and
+  Seed of Life after Princess Theradras (Maraudon, both factions), Unending Torment at 15, Lotheluum Starbreeze as
+  the Zephras Isle Druid trainer; Bolder'ok named in the Horde Riverglades note (item 1, partial).
 
 - v1.12.0: travel tips walk into Riverglades from the Badlands and the Swamp of Sorrows too (Warcraft Wiki +
   Mmonster); route notes for both factions name every way in and Rog'mar's wind rider master Grakna (item 1, partial).

@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.19.0
+
+- Up to date with Blizzard's November 5 and 6 hotfixes:
+  - Leatherworking: the Tanning Rack (camping) now needs skill 125 instead of 140.
+  - Maraudon: after Princess Theradras, Zaetar's Spirit appears again and offers Seed of Life (hand it in to Keeper Remulos in Moonglade). The dungeon notes now say so.
+  - Ruins of Lordaeron: Paladins can take Unending Torment from the Abomination's Head at level 15.
+  - Skyborne Druids can train on Zephras Isle with Lotheluum Starbreeze.
+- Riverglades: the Horde notes now name Bolder'ok, the allied ogre settlement in the north, next to Rog'mar.
+
 ## v1.18.0
 
 - **The arrow stays off when you switch it off.** Right-clicking or double-clicking the arrow (or double-clicking the quest it points to) now turns it off until you point it somewhere yourself: click a quest, step or quest giver, Shift-click for the next stop, use /wp way, or press the Arrow button. Before, it came back on its own as soon as the route moved to the next objective. While it's paused, the Arrow button shows as off, and pressing it brings the arrow straight back to your route.
