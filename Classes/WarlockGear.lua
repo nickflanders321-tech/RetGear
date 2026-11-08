@@ -83,7 +83,7 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 1155, slot = "2H", lvl = 24, how = "Dungeon", src = "Twilight Lord Kelris", zone = "Blackfathom Deeps", score = 38, bl = 27, gen = true },  -- Rod of the Sleepwalker
   { id = 6901, slot = "Back", lvl = 24, how = "Dungeon", src = "Old Serra'kis", zone = "Blackfathom Deeps", score = 7, bl = 26, gen = true },  -- Glowing Thresher Cape
   { id = 6324, slot = "Chest", lvl = 24, how = "Dungeon", src = "Archmage Arugal", zone = "Shadowfang Keep", score = 12, bl = 26, gen = true },  -- Robes of Arugal
-  { id = 7048, slot = "Head", lvl = 24, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 15, prof = "Tailoring", sk = 145, boe = true, ah = true, gen = true },  -- Azure Silk Hood
+  { id = 284401, slot = "Head", lvl = 24, how = "Rare mob", src = "Sorrow Wing", zone = "Stonetalon Mountains", score = 15, bl = 27, gen = true },  -- Sorrow's Shroud
   { id = 7001, slot = "Ranged", lvl = 24, how = "Quest", src = "Blackfathom Villainy (Argent Guard Thaelrid)", zone = "Blackfathom Deeps", score = 146, q = 6561, gen = true },  -- Gravestone Scepter
   { id = 6392, slot = "Waist", lvl = 24, how = "Dungeon", src = "Archmage Arugal", zone = "Shadowfang Keep", score = 13, bl = 26, gen = true },  -- Belt of Arugal
   { id = 274149, slot = "Back", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 10, bl = 28, gen = true },  -- Thornweaver Drape
@@ -96,7 +96,6 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 6, bl = 32, gen = true },  -- Stygian Bone Amulet
   { id = 274068, slot = "Neck", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 7, bl = 32, gen = true },  -- Thermaplugg Medal of Honor
   { id = 9447, slot = "Ring", lvl = 29, how = "Dungeon", src = "Electrocutioner 6000", zone = "Gnomeregan", score = 7, bl = 32, gen = true },  -- Electrocutioner Lagnut
-  { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 15, bl = 33, gen = true },  -- Embalmed Shroud
   { id = 7709, slot = "Legs", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 18, bl = 33, gen = true },  -- Blighted Leggings
   { id = 7731, slot = "Neck", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 7, bl = 33, gen = true },  -- Ghostshard Talisman
   { id = 7708, slot = "Ranged", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 166, bl = 33, gen = true },  -- Necrotic Wand
@@ -261,12 +260,14 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 6226, slot = "Chest", lvl = 18, how = "Dungeon", src = "Razorclaw the Butcher", zone = "Shadowfang Keep", score = 9, bl = 22, gen = true },  -- Bloody Apron
   { id = 5970, slot = "Hands", lvl = 18, how = "Dungeon", src = "Lord Serpentis", zone = "Wailing Caverns", score = 7, bl = 21, gen = true },  -- Serpent Gloves
   { id = 8071, slot = "Ranged", lvl = 18, how = "Quest", src = "Deviate Eradication (Ebru)", zone = "Wailing Caverns", score = 121, q = 1487, gen = true },  -- Sizzle Stick
+  { id = 281926, slot = "Wrist", lvl = 18, how = "Rare mob", src = "Seeker Aqualon", zone = "Redridge Mountains", score = 5, bl = 21, gen = true },  -- Bound Bracers
   { id = 2042, slot = "2H", lvl = 19, how = "Quest", src = "The Defias Brotherhood (Gryan Stoutmantle)", zone = "The Deadmines", score = 21, q = 166, gen = true },  -- Staff of Westfall
   { id = 5202, slot = "Chest", lvl = 19, how = "Dungeon", src = "Edwin VanCleef", zone = "The Deadmines", score = 10, bl = 21, gen = true },  -- Corsair's Overshirt
   { id = 14374, slot = "Feet", lvl = 19, how = "Dungeon", src = "Verdan the Everliving", zone = "Wailing Caverns", score = 4, bl = 21, gen = true },  -- Sanguine Sandals
   { id = 279870, slot = "Neck", lvl = 19, how = "Quest", src = "Remember That I Love You (Orphan Matron Nightingale)", zone = "Riverglades", score = 5, q = 95161, gen = true },  -- Tarnished Locket
   { id = 1449, slot = "Ring", lvl = 19, how = "Quest", src = "WANTED: Chok'sul", zone = "Loch Modan", score = 6, q = 256, gen = true },  -- Minor Channeling Ring
   { id = 15109, slot = "2H", lvl = 20, how = "Quest", src = "The Orb of Soran'ruk (Doan Karhan)", zone = "", score = 42, q = 1740, gen = true },  -- Staff of Soran'ruk
+  { id = 277213, slot = "Chest", lvl = 20, how = "Rare mob", src = "Dro'zem the Blasphemous", zone = "Redridge Mountains", score = 15, bl = 23, gen = true },  -- Dro'zem's Tunic
   { id = 4320, slot = "Feet", lvl = 20, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 11, prof = "Tailoring", sk = 125, boe = true, ah = true, gen = true },  -- Spidersilk Boots
   { id = 23173, slot = "Legs", lvl = 20, how = "Dungeon", src = "Sever", zone = "Shadowfang Keep", score = 16, bl = 25, gen = true },  -- Abomination Skin Leggings
   { id = 277203, slot = "Neck", lvl = 20, how = "Quest", src = "Friend of the Library (Owen Thadd)", zone = "", score = 6, q = 78150, gen = true },  -- Scholarly Pendant
@@ -284,7 +285,7 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 6901, slot = "Back", lvl = 24, how = "Dungeon", src = "Old Serra'kis", zone = "Blackfathom Deeps", score = 7, bl = 26, gen = true },  -- Glowing Thresher Cape
   { id = 6324, slot = "Chest", lvl = 24, how = "Dungeon", src = "Archmage Arugal", zone = "Shadowfang Keep", score = 12, bl = 26, gen = true },  -- Robes of Arugal
   { id = 4319, slot = "Hands", lvl = 24, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Vendor: Wenna Silkbeard (Wetlands)", score = 12, prof = "Tailoring", sk = 145, boe = true, ah = true, gen = true },  -- Azure Silk Gloves
-  { id = 7048, slot = "Head", lvl = 24, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 15, prof = "Tailoring", sk = 145, boe = true, ah = true, gen = true },  -- Azure Silk Hood
+  { id = 284401, slot = "Head", lvl = 24, how = "Rare mob", src = "Sorrow Wing", zone = "Stonetalon Mountains", score = 15, bl = 27, gen = true },  -- Sorrow's Shroud
   { id = 7001, slot = "Ranged", lvl = 24, how = "Quest", src = "Blackfathom Villainy (Argent Guard Thaelrid)", zone = "Blackfathom Deeps", score = 146, q = 1200, gen = true },  -- Gravestone Scepter
   { id = 6392, slot = "Waist", lvl = 24, how = "Dungeon", src = "Archmage Arugal", zone = "Shadowfang Keep", score = 13, bl = 26, gen = true },  -- Belt of Arugal
   { id = 273808, slot = "Wrist", lvl = 24, how = "Dungeon", src = "Kam Deepfury", zone = "The Stockade", score = 3, bl = 27, gen = true },  -- Bridgebreaker Bindings
@@ -294,15 +295,12 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 6685, slot = "Shoulder", lvl = 25, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 10, bl = 30, gen = true },  -- Death Speaker Mantle
   { id = 274152, slot = "Trinket", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 3, bl = 28, gen = true },  -- Roogug's Severed Head
   { id = 274158, slot = "2H", lvl = 26, how = "Dungeon", src = "Aggem Thorncurse", zone = "Razorfen Kraul", score = 46, bl = 30, gen = true },  -- Death Prophet Spine
-  { id = 6682, slot = "Chest", lvl = 26, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 14, bl = 30, gen = true },  -- Death Speaker Robes
   { id = 9609, slot = "Hands", lvl = 26, how = "Quest", src = "Gyrodrillmatic Excavationators (Shoni the Shilent)", zone = "Gnomeregan", score = 12, q = 2928, gen = true },  -- Shilly Mitts
   { id = 273827, slot = "Main Hand", lvl = 26, how = "Dungeon", src = "Bazil Thredd", zone = "The Stockade", score = 34, bl = 29, gen = true },  -- Debt Collector
   { id = 281312, slot = "2H", lvl = 27, how = "Quest", src = "Stopping the Cycle (Howin Kindfeather)", zone = "Wetlands", score = 47, q = 98297, gen = true },  -- Fallen Dragon's Scepter
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 10, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 6, bl = 32, gen = true },  -- Stygian Bone Amulet
-  { id = 6407, slot = "Wrist", lvl = 28, how = "Dungeon", src = "Grubbis", zone = "Gnomeregan", score = 4, bl = 32, gen = true },  -- Nightsky Wristbands
   { id = 274068, slot = "Neck", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 7, bl = 32, gen = true },  -- Thermaplugg Medal of Honor
-  { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 15, bl = 33, gen = true },  -- Embalmed Shroud
   { id = 7709, slot = "Legs", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 18, bl = 33, gen = true },  -- Blighted Leggings
   { id = 7731, slot = "Neck", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 7, bl = 33, gen = true },  -- Ghostshard Talisman
   { id = 7708, slot = "Ranged", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 166, bl = 33, gen = true },  -- Necrotic Wand

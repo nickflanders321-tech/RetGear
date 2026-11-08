@@ -27,6 +27,7 @@ RG.CLASS_GEAR.PALADIN = {
   { id = 263405, slot = "Waist", lvl = 10, how = "Quest", src = "Confront Lorthuna (Valennia Stormfist)", zone = "Zephras Isle", score = 6, q = 92646, gen = true },  -- Belt of Blades
   { id = 3586, slot = "2H", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 183, q = 99, gen = true },  -- Logsplitter
   { id = 5320, slot = "Feet", lvl = 11, how = "Quest", src = "Stolen Booty (Gazlowe)", zone = "The Barrens", score = 5, q = 888, gen = true },  -- Padded Lamellar Boots
+  { id = 283259, slot = "Hands", lvl = 11, how = "Rare mob", src = "Old Vicejaw", zone = "Silverpine Forest", score = 7, bl = 14, gen = true },  -- Bearhide Vicegrips
   { id = 14563, slot = "Back", lvl = 12, how = "Rare mob", src = "Razormane Berserker", zone = "The Barrens", score = 2, bl = 19, gen = true },  -- Prospector's Cloak
   { id = 4243, slot = "Chest", lvl = 12, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 4, prof = "Leatherworking", sk = 85, boe = true, ah = true, gen = true },  -- Fine Leather Tunic
   { id = 15424, slot = "2H", lvl = 13, how = "Quest", src = "Hidden Enemies (Neeru Fireblade)", zone = "Orgrimmar", score = 249, q = 5730, gen = true },  -- Axe of Orgrimmar
@@ -65,6 +66,7 @@ RG.CLASS_GEAR.PALADIN = {
   { id = 270020, slot = "Legs", lvl = 19, how = "Quest", src = "Assault on Fenris Isle (High Executor Hadrec)", zone = "Silverpine Forest", score = 14, q = 442, gen = true },  -- Gnollhide Pants
   { id = 6460, slot = "Waist", lvl = 19, how = "Dungeon", src = "Lord Cobrahn", zone = "Wailing Caverns", score = 18, bl = 20, gen = true },  -- Cobrahn's Grasp
   { id = 7348, slot = "Hands", lvl = 20, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 22, prof = "Leatherworking", sk = 125, boe = true, ah = true, gen = true },  -- Fletcher's Gloves
+  { id = 285331, slot = "Neck", lvl = 20, how = "Rare mob", src = "Humar the Pridelord", zone = "The Barrens", score = 12, bl = 23, gen = true },  -- Mark of the Pack Leader
   { id = 277204, slot = "Neck", lvl = 20, how = "Quest", src = "Friend of the Library (Owen Thadd)", zone = "", score = 5, q = 78150, gen = true },  -- Erudite's Amulet
   { id = 12998, slot = "Shoulder", lvl = 20, how = "Rare mob", src = "Brontus", zone = "The Barrens", score = 3, bl = 27, gen = true },  -- Magician's Mantle
   { id = 2868, slot = "Wrist", lvl = 20, how = "Crafted", src = "Blacksmithing", zone = "Bind on Equip · Trainer", score = 11, prof = "Blacksmithing", sk = 120, boe = true, ah = true, gen = true },  -- Patterned Bronze Bracers
@@ -82,6 +84,7 @@ RG.CLASS_GEAR.PALADIN = {
   { id = 6906, slot = "Hands", lvl = 23, how = "Dungeon", src = "Gelihast", zone = "Blackfathom Deeps", score = 18, bl = 26, gen = true },  -- Algae Fists
   { id = 3748, slot = "Shoulder", lvl = 23, how = "Dungeon", src = "Wolf Master Nandos", zone = "Shadowfang Keep", score = 4, bl = 25, gen = true },  -- Feline Mantle
   { id = 2870, slot = "Chest", lvl = 24, how = "Crafted", src = "Blacksmithing", zone = "Bind on Equip · Trainer", score = 32, prof = "Blacksmithing", sk = 145, boe = true, ah = true, gen = true },  -- Shining Silver Breastplate
+  { id = 284401, slot = "Head", lvl = 24, how = "Rare mob", src = "Sorrow Wing", zone = "Stonetalon Mountains", score = 3, bl = 27, gen = true },  -- Sorrow's Shroud
   { id = 7048, slot = "Head", lvl = 24, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 4, prof = "Tailoring", sk = 145, boe = true, ah = true, gen = true },  -- Azure Silk Hood
   { id = 15459, slot = "Wrist", lvl = 24, how = "Quest", src = "Grimtotem Spying (Cliffwatcher Longhorn)", zone = "Thousand Needles", score = 12, q = 5064, gen = true },  -- Grimtoll Wristguards
   { id = 252515, slot = "Head", lvl = 25, how = "Dungeon", src = "Twilight Lord Kelris", zone = "Blackfathom Deeps", score = 4, bl = 27, also = { { how = "Dungeon", src = "Grubbis", zone = "Gnomeregan", bl = 32 } }, gen = true },  -- Wisdom's Leather Helm
@@ -94,7 +97,6 @@ RG.CLASS_GEAR.PALADIN = {
   { id = 6686, slot = "Head", lvl = 28, how = "Dungeon", src = "Overlord Ramtusk", zone = "Razorfen Kraul", score = 29, bl = 32, gen = true },  -- Tusken Helm
   { id = 6687, slot = "2H", lvl = 29, how = "Dungeon", src = "Overlord Ramtusk", zone = "Razorfen Kraul", score = 471, bl = 32, gen = true },  -- Corpsemaker
   { id = 6690, slot = "Legs", lvl = 29, how = "Dungeon", src = "Agathelos the Raging", zone = "Razorfen Kraul", score = 28, bl = 33, gen = true },  -- Ferine Leggings
-  { id = 274068, slot = "Neck", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 11, bl = 32, gen = true },  -- Thermaplugg Medal of Honor
   { id = 285190, slot = "Ring", lvl = 29, how = "Rare mob", src = "Heartrazor", zone = "Thousand Needles", score = 21, bl = 32, gen = true },  -- Wyvern Heart Band
   { id = 18585, slot = "Ring", lvl = 30, how = "Quest", src = "Service to the Horde (Zor Lonetree)", zone = "Dustwallow Marsh", score = 20, q = 7541, gen = true },  -- Band of Allegiance
   { id = 7686, slot = "Ring", lvl = 30, how = "Dungeon", src = "Ironspine", zone = "Scarlet Monastery", score = 18, bl = 33, gen = true },  -- Ironspine's Eye
@@ -245,6 +247,7 @@ RG.CLASS_GEAR_A.PALADIN = {
   { id = 6460, slot = "Waist", lvl = 19, how = "Dungeon", src = "Lord Cobrahn", zone = "Wailing Caverns", score = 18, bl = 20, gen = true },  -- Cobrahn's Grasp
   { id = 6998, slot = "Feet", lvl = 20, how = "Quest", src = "Twilight Falls (Argent Guard Manados)", zone = "Blackfathom Deeps", score = 8, q = 1199, gen = true },  -- Nimbus Boots
   { id = 7348, slot = "Hands", lvl = 20, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 22, prof = "Leatherworking", sk = 125, boe = true, ah = true, gen = true },  -- Fletcher's Gloves
+  { id = 285331, slot = "Neck", lvl = 20, how = "Rare mob", src = "Humar the Pridelord", zone = "The Barrens", score = 12, bl = 23, gen = true },  -- Mark of the Pack Leader
   { id = 277204, slot = "Neck", lvl = 20, how = "Quest", src = "Friend of the Library (Owen Thadd)", zone = "", score = 5, q = 78150, gen = true },  -- Erudite's Amulet
   { id = 12998, slot = "Shoulder", lvl = 20, how = "Rare mob", src = "Brontus", zone = "The Barrens", score = 3, bl = 27, gen = true },  -- Magician's Mantle
   { id = 2868, slot = "Wrist", lvl = 20, how = "Crafted", src = "Blacksmithing", zone = "Bind on Equip · Trainer", score = 11, prof = "Blacksmithing", sk = 120, boe = true, ah = true, gen = true },  -- Patterned Bronze Bracers
@@ -261,6 +264,7 @@ RG.CLASS_GEAR_A.PALADIN = {
   { id = 6906, slot = "Hands", lvl = 23, how = "Dungeon", src = "Gelihast", zone = "Blackfathom Deeps", score = 18, bl = 26, gen = true },  -- Algae Fists
   { id = 3566, slot = "Chest", lvl = 24, how = "Quest", src = "Ormer's Revenge (Ormer Ironbraid)", zone = "Wetlands", score = 16, q = 296, gen = true },  -- Raptorbane Armor
   { id = 2870, slot = "Chest", lvl = 24, how = "Crafted", src = "Blacksmithing", zone = "Bind on Equip · Trainer", score = 32, prof = "Blacksmithing", sk = 145, boe = true, ah = true, gen = true },  -- Shining Silver Breastplate
+  { id = 284401, slot = "Head", lvl = 24, how = "Rare mob", src = "Sorrow Wing", zone = "Stonetalon Mountains", score = 3, bl = 27, gen = true },  -- Sorrow's Shroud
   { id = 7048, slot = "Head", lvl = 24, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 4, prof = "Tailoring", sk = 145, boe = true, ah = true, gen = true },  -- Azure Silk Hood
   { id = 273807, slot = "Waist", lvl = 24, how = "Dungeon", src = "Kam Deepfury", zone = "The Stockade", score = 20, bl = 27, gen = true },  -- Demolition Girdle
   { id = 270032, slot = "Wrist", lvl = 24, how = "Quest", src = "Blackfathom Villainy (Argent Guard Thaelrid)", zone = "Blackfathom Deeps", score = 11, q = 1200, gen = true },  -- Cultist's Armguards
@@ -276,7 +280,6 @@ RG.CLASS_GEAR_A.PALADIN = {
   { id = 6687, slot = "2H", lvl = 29, how = "Dungeon", src = "Overlord Ramtusk", zone = "Razorfen Kraul", score = 471, bl = 32, gen = true },  -- Corpsemaker
   { id = 9445, slot = "Hands", lvl = 29, how = "Dungeon", src = "Grubbis", zone = "Gnomeregan", score = 19, bl = 32, gen = true },  -- Grubbis Paws
   { id = 6690, slot = "Legs", lvl = 29, how = "Dungeon", src = "Agathelos the Raging", zone = "Razorfen Kraul", score = 28, bl = 33, gen = true },  -- Ferine Leggings
-  { id = 274068, slot = "Neck", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 11, bl = 32, gen = true },  -- Thermaplugg Medal of Honor
   { id = 285190, slot = "Ring", lvl = 29, how = "Rare mob", src = "Heartrazor", zone = "Thousand Needles", score = 21, bl = 32, gen = true },  -- Wyvern Heart Band
   { id = 277205, slot = "Back", lvl = 30, how = "Quest", src = "Return to Delgren", zone = "", score = 14, q = 78093, gen = true },  -- Cloak of the Divine Storm
   { id = 3754, slot = "Hands", lvl = 30, how = "Quest", src = "Costly Menace (Darren Malvew)", zone = "Hillsbrad Foothills", score = 21, q = 564, gen = true },  -- Shepherd's Gloves

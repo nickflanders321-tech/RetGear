@@ -15,11 +15,13 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 286744, slot = "Back", lvl = 8, how = "Quest", src = "Rear Guard Patrol (Deathguard Linnea)", zone = "Tirisfal Glades", score = 2, q = 99156, gen = true },  -- Thrice-Stitched Flesh
   { id = 263306, slot = "Hands", lvl = 8, how = "Quest", src = "Mercy Falls on Deaf Ears (Vayn Moongaze)", zone = "Zephras Isle", score = 2, q = 93165, gen = true },  -- Nightclaw Gloves
   { id = 263330, slot = "Legs", lvl = 8, how = "Quest", src = "Unfortunate News (Dead Cultist)", zone = "Zephras Isle", score = 6, q = 92644, gen = true },  -- Tracker's Pants
+  { id = 284320, slot = "Wrist", lvl = 8, how = "Rare mob", src = "Death Flayer", zone = "Durotar", score = 2, bl = 11, gen = true },  -- Flayed Scorpid Bands
   { id = 5346, slot = "Ranged", lvl = 9, how = "Quest", src = "Centaur Bracers (Regthar Deathgate)", zone = "The Barrens", score = 77, q = 855, gen = true },  -- Orcish Battle Bow
   { id = 273875, slot = "Feet", lvl = 10, how = "Quest", src = "Confront Lorthuna (Valennia Stormfist)", zone = "Zephras Isle", score = 1, q = 92646, gen = true },  -- Empyrean Treads
   { id = 286533, slot = "Hands", lvl = 10, how = "Rare mob", src = "Dishu", zone = "The Barrens", score = 6, bl = 13, gen = true },  -- Cheetah Hide Grips
   { id = 4909, slot = "Legs", lvl = 10, how = "Quest", src = "Rites of the Earthmother (Cairne Bloodhoof)", zone = "Mulgore", score = 8, q = 776, gen = true },  -- Kodo Hunter's Leggings
   { id = 263405, slot = "Waist", lvl = 10, how = "Quest", src = "Confront Lorthuna (Valennia Stormfist)", zone = "Zephras Isle", score = 4, q = 92646, gen = true },  -- Belt of Blades
+  { id = 283361, slot = "Feet", lvl = 11, how = "Rare mob", src = "Gorefang", zone = "Silverpine Forest", score = 6, bl = 13, gen = true },  -- Gorefang's Runners
   { id = 281315, slot = "Hands", lvl = 11, how = "Quest", src = "Arugal's Folly (Dalar Dawnweaver)", zone = "Silverpine Forest", score = 1, q = 98298, gen = true },  -- Foulfur Gloves
   { id = 11303, slot = "Ranged", lvl = 11, how = "Vendor", src = "Kuna Thunderhorn", zone = "Thunder Bluff", score = 88, also = { { how = "Vendor", src = "Abigail Sawyer", zone = "Undercity" }, { how = "Vendor", src = "Lhara", zone = "Mulgore" } }, gen = true },  -- Fine Shortbow
   { id = 4243, slot = "Chest", lvl = 12, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 9, prof = "Leatherworking", sk = 85, boe = true, ah = true, gen = true },  -- Fine Leather Tunic

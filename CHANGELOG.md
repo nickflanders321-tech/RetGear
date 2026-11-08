@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## v1.21.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
 - Fixed an "attempt to compare a secret string value" error in Arena (Raider cards) when hovering over a player whose name the game keeps hidden from add-ons.
 - If the game ever blocks something Waypath+ tried (the "blocked from an action only available to the Blizzard UI" pop-up), chat now says exactly which action, once, so it can be reported and fixed. This is caught from the moment the add-on starts loading, including actions blocked before your saved settings load (those were lost before).
