@@ -953,6 +953,9 @@ refreshArrow = function()
   if on and wasOn == false and RG.db then RG.db.arrowPaused = nil end
   wasOn = on
   if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
+  -- switched off by you: stays hidden whatever puts a pin on the map, until you point it somewhere yourself
+  -- (the way back to your body after dying is the one exception)
+  if RG.db and RG.db.arrowPaused and not (RG.CorpseRun and RG.CorpseRun()) then if arrow then arrow:Hide() end return end
   local has = C_Map and C_Map.HasUserWaypoint and C_Map.HasUserWaypoint()
   if has and spfActive() then if arrow then arrow:Hide() end return end
   if has then buildArrow(); arrow:Show() elseif arrow then arrow:Hide() end
@@ -998,6 +1001,7 @@ combatWatch:SetScript("OnEvent", function()
 end)
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
 function RG.PinWaypoint(wp, quiet)
+  if quiet and RG.db and RG.db.arrowPaused and not (RG.CorpseRun and RG.CorpseRun()) then return end
   if not (wp and C_Map and C_Map.SetUserWaypoint and UiMapPoint) then RG.Print("This client doesn't support map pins.") return end
   if inCombat() then deferredPin = { wp, quiet }; deferredClear = nil; if not quiet then RG.Notify("Pin for " .. wp[4] .. " is set as soon as combat ends") end return end
   local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(wp[1], wp[2] / 100, wp[3] / 100))
@@ -1079,6 +1083,7 @@ end
 -- Dead: the arrow leads you back to your body. Following the way you walked before (learned paths) and Shortest
 -- Path Forever (when installed) both work off this pin like any other, so the way back is the fastest known one.
 local corpse = { active = false, wasOff = false, told = false }
+function RG.CorpseRun() return corpse.active end
 local function corpsePoint()
   if not (C_Map and C_Map.GetBestMapForUnit) then return end
   local m = C_Map.GetBestMapForUnit("player")
@@ -1228,6 +1233,10 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
       if not paused then paused = true; RG.Print("Auto quests paused: " .. (msg:gsub("[%.%s]+$", "")) .. ". They'll resume when you have room.") end
     end
   elseif event == "USER_WAYPOINT_UPDATED" or event == "SUPER_TRACKING_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+    if event == "USER_WAYPOINT_UPDATED" and RG.db and RG.db.arrowPaused then
+      local cur = currentPin()
+      if cur and not samePin(cur, lastPlaced) then RG.db.arrowPaused = nil end
+    end
     refreshArrow()
   elseif event == "PLAYER_LEVEL_UP" or event == "QUEST_TURNED_IN" then
     RG.MarkQuestsDirty(); queueBar()
@@ -1249,6 +1258,7 @@ do
   local lastQ
   local function followSuper()
     if not on() then return end
+    if RG.db and RG.db.arrowPaused then return end   -- the game picks quests on its own too: that doesn't undo "off"
     local S = C_SuperTrack
     if not S then return end
     if S.IsSuperTrackingUserWaypoint and S.IsSuperTrackingUserWaypoint() then return end   -- our own pin
