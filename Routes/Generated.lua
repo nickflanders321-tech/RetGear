@@ -1531,7 +1531,7 @@ RG.GEN_DUNGEONS_A = {
     { id = 1740, n = "The Orb of Soran'ruk", g = "Doan Karhan", at = "The Barrens", w = { 1413, 49.3, 57.2, "Doan Karhan" }, l = 25, r = 20, cl = "L" },
   },
   ["Blackfathom Deeps"] = {
-    { id = 971, n = "Knowledge in the Deeps", g = "Gerrig Bonegrip", at = "Ironforge", w = { 1455, 50.8, 5.6, "Gerrig Bonegrip" }, l = 23, r = 10 },
+    { id = 971, n = "Knowledge in the Deeps", g = "Gerrig Bonegrip", at = "Ironforge", w = { 1455, 50.8, 5.6, "Gerrig Bonegrip" }, l = 23, r = 18 },
     { id = 1198, n = "In Search of Thaelrid", g = "Dawnwatcher Shaedlass", at = "Darnassus", w = { 1457, 55.4, 25.0, "Dawnwatcher Shaedlass" }, l = 24, r = 18 },
     { id = 1275, n = "Researching the Corruption", g = "Gershala Nightwhisper", at = "Darkshore", w = { 1439, 38.3, 43.0, "Gershala Nightwhisper" }, l = 24, r = 18 },
     { id = 1199, n = "Twilight Falls", g = "Argent Guard Manados", at = "Darnassus", w = { 1457, 55.2, 24.0, "Argent Guard Manados" }, l = 25, r = 20 },

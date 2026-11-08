@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.25.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.25.0
 
 - **Auction prices are remembered.** Once Waypath+ has seen a price, it keeps it:
