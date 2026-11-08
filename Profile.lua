@@ -81,45 +81,49 @@ local function skillsReadable()
   if loc ~= "enUS" and loc ~= "enGB" then return false end
   return RG.Professions and next(RG.Professions()) ~= nil
 end
-function RG.QuestBlocked(id, d, isDone, inLog)
+-- quick: only whether it is blocked (true), without building the reason (the nearby-quests search asks this of hundreds of quests)
+local function why(quick, a, b) if quick then return true end return b ~= nil and (a .. b) or a end
+local function takenBy(q, isDone, inLog) return isDone(q) or inLog(q) end
+local function alwaysNo() return false end
+local function onQuest(q) return C_QuestLog and C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(q) or false end
+function RG.QuestBlocked(id, d, isDone, inLog, quick)
   d = d or (RG.QDATA and RG.QDATA[id])
   if not d then return nil end
-  isDone = isDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or function() return false end
-  inLog = inLog or function(q) return C_QuestLog and C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(q) or false end
-  local function taken(q) return isDone(q) or inLog(q) end
+  isDone = isDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or alwaysNo
+  inLog = inLog or onQuest
   local lvl = UnitLevel("player") or 1
   -- never again
-  if d.x then for _, p in ipairs(d.x) do if taken(p) then return "you took the other branch", true end end end
-  if d.nx and taken(d.nx) then return "you're past this step", true end
-  if d.bc and taken(d.bc) then return "you already have the quest it leads to", true end
-  if d.uc and isDone(d.uc) then return "no longer offered", true end
-  if d.mx and lvl > d.mx then return "only up to level " .. d.mx, true end
+  if d.x then for _, p in ipairs(d.x) do if takenBy(p, isDone, inLog) then return why(quick, "you took the other branch"), true end end end
+  if d.nx and takenBy(d.nx, isDone, inLog) then return why(quick, "you're past this step"), true end
+  if d.bc and takenBy(d.bc, isDone, inLog) then return why(quick, "you already have the quest it leads to"), true end
+  if d.uc and isDone(d.uc) then return why(quick, "no longer offered"), true end
+  if d.mx and lvl > d.mx then return why(quick, "only up to level ", d.mx), true end
   if d.sk and skillsReadable() then
     local name = SKILL_NAME[d.sk[1]]
     local have = name and RG.Skill and RG.Skill(name)
-    if name and not have then return "needs " .. name, true end
-    if have and have < (d.sk[2] or 0) then return "needs " .. name .. " " .. d.sk[2] end
+    if name and not have then return why(quick, "needs ", name), true end
+    if have and have < (d.sk[2] or 0) then return why(quick, "needs ", name .. " " .. d.sk[2]) end
   end
   if d.sp then
     local k = knows(math.abs(d.sp))
     if k ~= nil and k ~= (d.sp > 0) then return d.sp > 0 and "needs a spell or specialization you don't have" or "not for your specialization", true end
   end
   -- not yet
-  if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then return "after " .. qname(p) end end end
+  if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then return why(quick, "after ", qname(p)) end end end
   if d.ps then
     local any = false
     for _, p in ipairs(d.ps) do if isDone(p) then any = true break end end
-    if not any then return "after " .. qname(d.ps[1]) end
+    if not any then return why(quick, "after ", qname(d.ps[1])) end
   end
-  if d.pa and not inLog(d.pa) then return "only while you have " .. qname(d.pa) end
-  if d.sw and not taken(d.sw) then return "after " .. qname(d.sw) end
-  if d.dq then for _, p in ipairs(d.dq) do if inLog(p) then return "after you finish " .. qname(p) end end end
-  if (d.r or 1) > lvl then return "at level " .. d.r end
-  if d.rp then local v = repOf(d.rp[1]); if v and v < d.rp[2] then return "needs more reputation" end end
-  if d.rx then local v = repOf(d.rx[1]); if v and v >= d.rx[2] then return "your reputation is too high", true end end
+  if d.pa and not inLog(d.pa) then return why(quick, "only while you have ", qname(d.pa)) end
+  if d.sw and not takenBy(d.sw, isDone, inLog) then return why(quick, "after ", qname(d.sw)) end
+  if d.dq then for _, p in ipairs(d.dq) do if inLog(p) then return why(quick, "after you finish ", qname(p)) end end end
+  if (d.r or 1) > lvl then return why(quick, "at level ", d.r) end
+  if d.rp then local v = repOf(d.rp[1]); if v and v < d.rp[2] then return why(quick, "needs more reputation") end end
+  if d.rx then local v = repOf(d.rx[1]); if v and v >= d.rx[2] then return why(quick, "your reputation is too high"), true end end
   -- the giver didn't offer it when you were there (data can't know everything): until you level or hand something in there
   local no = RG.db and RG.db.notOffered and RG.db.notOffered[id]
-  if no and no == lvl then return "not offered yet (you checked)" end
+  if no and no == lvl then return why(quick, "not offered yet (you checked)") end
   return nil
 end
 

@@ -116,7 +116,16 @@ local ACT_ORDER = { turnin = 1, pickup = 2, doing = 3, later = 4 }
 local QTAG = { e = { "|cffff9f43Elite|r", "Elite or group quest: bring friends, or skip it and keep going." },
   s = { "|cff9fd4ffEscort|r", "Escort: if the NPC isn't there, someone else is escorting it. Wait a moment for it to come back." },
   t = { "|cffffd36bTimed|r", "Timed quest: the clock starts when you accept it, so be ready before you do." } }
+local noteMemo = { [true] = {}, [false] = {} }   -- the notes never change: worked out once per quest
+local questNote
 function RG.QuestNote(id, skipElite)
+  if not id then return nil end
+  local m = noteMemo[skipElite and true or false]
+  local v = m[id]
+  if v == nil then v = questNote(id, skipElite) or false; m[id] = v end
+  return v or nil
+end
+questNote = function(id, skipElite)
   local q = id and RG.QNOTE and RG.QNOTE[id]
   if not q then return nil end
   local tags, longs = {}, {}

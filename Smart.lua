@@ -81,7 +81,15 @@ local function workOf(r, logIds)
 end
 
 -- Ranked options for right now: { { r = entry, score, why }, ... } best first.
+local rankCache, rankT
 function RG.SmartRank()
+  -- (asked twice per tracker refresh: within one frame the answer is the same; callers only read it)
+  local now = GetTime and GetTime()
+  if rankCache and now and rankT == now then return rankCache end
+  rankCache, rankT = RG.SmartRankNow(), now
+  return rankCache
+end
+function RG.SmartRankNow()
   local lvl = UnitLevel and UnitLevel("player") or 1
   local p, here = profile(), hereZone()
   local group = RG.db and RG.db.playStyle == "group"

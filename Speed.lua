@@ -351,6 +351,7 @@ local availCache, availDirty = nil, true
 function RG.MarkQuestsDirty() availDirty = true end
 local function done(id) return C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(id) end
 local byLevel, byLevelOf   -- quest ids by quest level, built on first use
+local entryOf = {}         -- id -> the list entry for that quest (reused)
 local function availableQuests()
   if not availDirty and availCache then return availCache end
   availDirty = false
@@ -364,14 +365,19 @@ local function availableQuests()
   local lvl = UnitLevel("player")
   -- only the quests in your level window are looked at (about a tenth of the table), through an index by quest level
   if not byLevel or byLevelOf ~= RG.QDATA then
-    byLevel, byLevelOf = {}, RG.QDATA
+    byLevel, byLevelOf, entryOf = {}, RG.QDATA, {}
     for id, d in pairs(RG.QDATA) do
       if d.s and d.n then local l = d.l or 1; byLevel[l] = byLevel[l] or {}; byLevel[l][#byLevel[l] + 1] = id end
     end
   end
   for L = lvl - 5, lvl + 3 do for _, id in ipairs(byLevel[L] or {}) do local d = RG.QDATA[id]
     if d and d.s and d.n and lvl >= (d.r or 1) and not inLog[id] and not done(id) and RG.QuestForMe(d) then
-      if not RG.QuestBlocked(id, d, done, logged) then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
+      if not RG.QuestBlocked(id, d, done, logged, true) then
+        -- the entry for a quest never changes, so it is made once and reused (rebuilding the list made ~40 KB of garbage)
+        local e = entryOf[id]
+        if not e then e = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } }; entryOf[id] = e end
+        list[#list + 1] = e
+      end
     end
   end end
   -- quests the game has shown you that our data does not know (new WoW Forever content): remembered from when you talked to the giver
@@ -461,7 +467,7 @@ function RG.ClassQuests(max)
   return out
 end
 local markBase = RG.MarkQuestsDirty
-function RG.MarkQuestsDirty() classDirty = true; markBase() end
+function RG.MarkQuestsDirty() classDirty = true; if RG.ForgetMyQuests then RG.ForgetMyQuests() end; markBase() end
 function RG.IgnoreQuest(id) if id and RG.db then RG.db.ignoredQuests = RG.db.ignoredQuests or {}; RG.db.ignoredQuests[id] = true; RG.MarkQuestsDirty(); RG.Print("Won't suggest that quest again. " .. "/wp unhide brings them all back.") end end
 -- Nearest few quest givers with something for you, on your continent.
 function RG.NearbyNewQuests(max, valued)
@@ -573,7 +579,24 @@ local function liveTurnIn(qid, title)
 end
 RG.QuestTurnInPoint = liveTurnIn
 
+-- Asked several times per tracker refresh: within one frame (same GetTime) the answer can't change, so it's built once.
+-- Callers only read the list. Quest log events clear it straight away.
+local myqCache, myqT
+do
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "QUEST_TURNED_IN", "UNIT_QUEST_LOG_CHANGED" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function() myqCache = nil end)
+end
+local buildMyQuests
 function RG.MyQuests()
+  local now = GetTime and GetTime()
+  if myqCache and now and myqT == now then return myqCache end
+  local out = buildMyQuests()
+  myqCache, myqT = out, now
+  return out
+end
+function RG.ForgetMyQuests() myqCache = nil end
+buildMyQuests = function()
   local out = {}
   if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return out end
   local c, px, py = playerWorld()
