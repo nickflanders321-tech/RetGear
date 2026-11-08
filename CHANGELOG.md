@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Safer with names and states the game hides from add-ons ("secret" values): reading a player you hover over, your target or party members, an NPC you talk to, and your own AFK, ghost and flight state can no longer cause "attempt to compare a secret value" errors.
+- The Arena menu no longer errors if its rank panel loads before the ranking data.
+- Corrected the Blackrock Depths tip: Hand of Justice comes from Emperor Dagran Thaurissan, not Gorosh.
+
 ## v1.24.0
 
 - **The arrow really stays off now.** After you switch it off, nothing brings it back by itself anymore: not the game choosing a quest to follow on its own (when you accept or progress a quest), not a pin that was waiting for a fight to end, not a goal or the route moving on, and not a pin left on the map by something else. It comes back only when you point it somewhere yourself (click a quest, step or quest giver, Ctrl-click a map icon, place a pin on the map, or press the Arrow button). The way back to your body after dying still shows.

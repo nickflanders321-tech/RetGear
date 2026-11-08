@@ -254,7 +254,7 @@ H.steps = {
   ["Blackrock Depths|52"] = {
     "Pick up the quests in Kargath and Flame Crest first (listed below).",
     "Blackrock Mountain sits between Searing Gorge and Burning Steppes.",
-    "Paladins: Look out for Hand of Justice and the Savage Gladiator Chain from Gorosh.",
+    "Paladins: Look out for the Savage Gladiator Chain from Gorosh the Dervish, and Hand of Justice from Emperor Dagran Thaurissan.",
   },
   ["Stratholme, Scholomance, Dire Maul, LBRS/UBRS|56"] = {
     "Pick up the quests listed below; several open the doors and keys for these dungeons.",
