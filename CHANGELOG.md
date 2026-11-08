@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.25.0
 
 - **Auction prices are remembered.** Once Waypath+ has seen a price, it keeps it:
   - A full scan no longer marks items as "none listed" when the game sent part of the list without item names yet (it only says "none listed" when it really saw every auction).
