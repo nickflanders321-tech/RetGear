@@ -178,7 +178,10 @@ for _, e in ipairs({ "CHAT_MSG_SKILL", "CHAT_MSG_COMBAT_XP_GAIN" }) do pcall(ev.
 for _, e in ipairs({ "SAY", "YELL", "PARTY", "PARTY_LEADER", "RAID", "RAID_LEADER", "GUILD", "WHISPER", "CHANNEL" }) do pcall(ev.RegisterEvent, ev, "CHAT_MSG_" .. e) end
 
 local function meet(name, class, race, sex)
-  local a = store(); if not a or not name or name == "" then return end
+  -- (names the game hides from add-ons, "secret" values, can't be compared or kept)
+  if RG.IsSecret and (RG.IsSecret(name) or RG.IsSecret(class) or RG.IsSecret(race) or RG.IsSecret(sex)) then return end
+  if type(name) ~= "string" then return end
+  local a = store(); if not a or name == "" then return end
   name = name:match("^([^-]+)") or name
   if a.raiders[name] then return end
   local n = 0; for _ in pairs(a.raiders) do n = n + 1 end

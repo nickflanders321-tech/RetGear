@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fixed an "attempt to compare a secret string value" error in Arena (Raider cards) when hovering over a player whose name the game keeps hidden from add-ons.
+- If the game ever blocks something Waypath+ tried (the "blocked from an action only available to the Blizzard UI" pop-up), chat now says exactly which action, once, so it can be reported and fixed.
+
 ## v1.21.0
 
 - **Gear upgrades now use WoW Forever's own item data.** Item stats now come from a scan of the WoW Forever game client (LibItemDB by Pimptasty, MIT) wherever it has them, instead of only from the original Classic database. That matters in two ways: WoW Forever changed the stats of 1,355 green-or-better Classic items, so those now score as they really are, and 3,558 WoW Forever items the old data didn't have at all can now be suggested (the Zephras Isle, Riverglades and other new quest rewards, scaling quest rewards, new vendors). The guides list about 430 more upgrades across all classes and specs, with fewer empty slots.

@@ -48,6 +48,11 @@ do
     if type(addon) ~= "string" or not addon:find("Waypath", 1, true) then return end
     local build = GetBuildInfo and select(2, GetBuildInfo()) or "?"
     pcall(recordError, "The game blocked Waypath+ from calling " .. tostring(func) .. (event == "ADDON_ACTION_BLOCKED" and " during combat" or "") .. " (game build " .. tostring(build) .. ")")
+    -- say it in chat too, right when it happens, so it can be reported without digging in /wp errors
+    if event == "ADDON_ACTION_FORBIDDEN" and not bf.said then
+      bf.said = true
+      if RG.Print then RG.Print("|cffff7766The game blocked Waypath+ from calling " .. tostring(func) .. ".|r Please send this line to the author (it's also in /wp errors).") end
+    end
   end)
 end
 
