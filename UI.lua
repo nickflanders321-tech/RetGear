@@ -374,7 +374,7 @@ local function guideRows()
       for _, g in ipairs(items) do rank[g] = guideRank(g) end
       table.sort(items, function(a, b) if rank[a] ~= rank[b] then return rank[a] > rank[b] end return a.lvl < b.lvl end)
       if #items > 0 then
-        list[#list + 1] = { header = (GUIDE_SLOT_LABEL[slot] or slot) .. GREY .. "   levels " .. math.max(1, lo) .. "-" .. hi .. "|r" }
+        list[#list + 1] = { header = (GUIDE_SLOT_LABEL[slot] or slot) }   -- (the level window is the same for every slot)
         for i = 1, math.min(4, #items) do list[#list + 1] = { g = items[i] } end
       end
     end
@@ -452,10 +452,19 @@ local function renderGuide()
     end
     table.sort(best, function(a, b) return a.d > b.d end)
     if #best > 0 then
-      local top = { { header = "Best upgrades you can get now" } }
-      for i = 1, math.min(4, #best) do top[#top + 1] = { g = best[i].g } end
-      top[#top + 1] = { header = state.near and "Coming up near your level" or "The whole guide" }
-      for _, e in ipairs(list) do top[#top + 1] = e end
+      local top = { { header = "Best upgrades you can get now", top = true } }
+      local inTop = {}
+      for i = 1, math.min(4, #best) do top[#top + 1] = { g = best[i].g }; inTop[best[i].g] = true end
+      top[#top + 1] = { header = state.near and "Coming up near your level" or "The whole guide", top = true }
+      -- (a piece already in the list above isn't listed twice)
+      for _, e in ipairs(list) do if not (e.g and inTop[e.g]) then top[#top + 1] = e end end
+      -- and a slot left with nothing under its header loses the header too
+      local clean = {}
+      for i, e in ipairs(top) do
+        local nx = top[i + 1]
+        if not (e.header and not e.top and (not nx or nx.header)) then clean[#clean + 1] = e end
+      end
+      top = clean
       list = top
     end
   end
@@ -481,35 +490,18 @@ local function renderGuide()
       else list[#list + 1] = { note = items[1] and "Nothing better at your level yet" or "No guide piece for this slot at your level" } end
     end
   end
-  table.insert(list, 1, { ctl = "src" }); table.insert(list, 1, { ctl = "view" })
+  -- one compact control line (the 2nd spec's own gear list is on its tab, next to this one)
+  table.insert(list, 1, { ctl = "view" })
   local off = 0
-  local s2 = RG.SecondSpecActive and RG.SecondSpecActive()
-  if s2 or lvl >= 20 then
-    off = 1
-    local r = getRow(1)
-    if s2 then
-      local soon = 0
-      for _, g in ipairs(RG.SpecGuide(s2)) do if g.lvl <= lvl + 5 and not RG.OwnState(g.id) then soon = soon + 1 end end
-      setItem(r, nil, nil, "|cffffffff2nd spec: " .. s2.name .. "|r", (soon > 0 and (soon .. " " .. s2.name .. " piece" .. (soon > 1 and "s" or "") .. " to start collecting near your level") or ("Your " .. s2.name .. " set and what to hunt for")) .. GREY .. "  ·  this list is for your leveling spec|r", GOLD .. "Show|r", "", "gold", nil, true)
-      r.icon:SetTexture(s2.icon)
-      r.onClick = function() state.tab = "heal"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
-    else
-      setItem(r, nil, nil, GREY .. "No 2nd spec yet|r", GREY .. "Pick one on the 2nd Spec tab and its gear to collect shows up there.|r", GOLD .. "Choose|r", "", nil, nil, true)
-      r.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-      r.onClick = function() state.tab = "spec"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
-    end
-  end
   for i, e in ipairs(list) do
     local r = getRow(i + off)
     if e.header then setHeader(r, e.header)
     elseif e.ctl == "view" then
-      setItem(r, nil, nil, GOLD .. "View:|r  " .. (state.bySlot and "slot by slot" or "by level") .. GREY .. "   (click to switch)|r", GREY .. (state.bySlot and "Each slot with what you wear and the best piece to swap in." or "Upgrades grouped by level, with the best ones on top.") .. "|r", "", "", nil, nil, true)
+      setItem(r, nil, nil, GREY .. "View|r  " .. (state.bySlot and "slot by slot" or "by level") .. GREY .. "     ·     Source|r  " .. (state.src or "any"), "", "", "", nil, nil, true)
       r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+      r.tip = "Click: switch between by level and slot by slot.\nRight-click: show only gear from one source (Dungeon, Quest, Vendor, Crafted, Rare mob, Chest, Reputation, Drop)."
       r.onClick = function() state.bySlot = not state.bySlot; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
-    elseif e.ctl == "src" then
-      setItem(r, nil, nil, GOLD .. "Source:|r  " .. (state.src or "any") .. GREY .. "   (click to change)|r", GREY .. "Show only gear that comes from one place: Dungeon, Quest, Vendor, Crafted, Rare mob or Drop.|r", "", "", nil, nil, true)
-      r.icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01")
-      r.onClick = function()
+      r.onRightClick = function()
         local cur = 1
         for i, v in ipairs(SRC_CYCLE) do if (v or nil) == state.src then cur = i end end
         state.src = SRC_CYCLE[cur % #SRC_CYCLE + 1] or nil
@@ -687,7 +679,7 @@ local function renderProf()
   end
   -- a place you can double-click to send the arrow there
   local function place(pl, icon)
-    local r = line(nil, "|cffffffff" .. pl.title .. "|r", pl.sub or "", pl.wp and (GOLD .. "Double-click|r") or "", pl.wp and (GREY .. "arrow|r") or "", icon or "Interface\\Icons\\INV_Misc_Map_01", pl.wp and "gold" or nil)
+    local r = line(nil, "|cffffffff" .. pl.title .. "|r", pl.sub or "", "", "", icon or "Interface\\Icons\\INV_Misc_Map_01", pl.wp and "gold" or nil)
     if pl.wp then
       r.onDoubleClick = RG.ArrowFn(pl.wp)
       r.tip = "Click to put " .. pl.wp[4] .. " on your map and point the arrow at it."
@@ -757,7 +749,7 @@ local function renderProf()
       for _, e in ipairs(now.mats or {}) do if not e.via then short = short + e.short end end
       what = "Now: " .. now.craft .. " x" .. (now.left or 0) .. (short > 0 and (GREY .. "  ·  " .. short .. " materials to get|r") or (GREEN .. "  ·  you have everything|r"))
     elseif now and now.st then what = "Now: " .. (now.st.gather or now.st.skin or (now.st.fish and ("fish in " .. now.st.fish)) or "") .. GREY .. "  ·  until " .. now.st.to .. "|r" end
-    if what then line(nil, what, "", "", "", P.icon, nil, nil, true) end
+    if what and k then line(nil, what, "", "", "", P.icon, nil, nil, true) end   -- (not learned: the bar already says so)
     return
   end
   local T2 = P.train or {}
@@ -765,7 +757,7 @@ local function renderProf()
   if not k then
     local start = T2.start and T2.start[RG.RACE_LETTER]
     local pin = RG.TrainerPin(start or T2.apprentice)
-    local r = line(nil, GOLD .. "Learn " .. sel .. "|r" .. GREY .. "  ·  no level needed|r", start and ("Closest trainer: " .. start) or (T2.apprentice or ""), pin and (GOLD .. "Double-click|r") or (GOLD .. "Train|r"), pin and (GREY .. "arrow|r") or "", P.icon, "gold")
+    local r = line(nil, GOLD .. "Learn " .. sel .. "|r" .. GREY .. "  ·  no level needed|r", start and ("Closest trainer: " .. start) or (T2.apprentice or ""), GOLD .. "Train|r", "", P.icon, "gold")
     if pin then r.onDoubleClick = RG.ArrowFn(pin); r.tip = "Click to put " .. pin[4] .. " on your map." end
   else
     for ri = 2, #RANKS do
@@ -775,7 +767,7 @@ local function renderProf()
         local ready = rank >= needSkill and lvl >= needLvl
         local pin = RG.TrainerPin(T2[key])
         local r = line(nil, (ready and GOLD or "|cffffffff") .. "Train " .. label .. "|r" .. GREY .. "  ·  skill " .. needSkill .. ", level " .. needLvl .. "|r", T2[key],
-          ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), pin and (GREY .. "click: arrow|r") or "", P.icon, ready and "gold" or nil)
+          ready and (GOLD .. "Train now|r") or (GREY .. (rank < needSkill and ("at skill " .. needSkill) or ("at level " .. needLvl)) .. "|r"), "", P.icon, ready and "gold" or nil)
         if pin then r.onDoubleClick = RG.ArrowFn(pin); r.tip = "Click to put " .. pin[4] .. " on your map." end
         break
       end
@@ -841,7 +833,7 @@ local function renderProf()
     -- where to go
     local places = RG.ProfPlaces(sel, now)
     if #places > 0 then
-      head("Where to go  ·  click a place and follow the arrow")
+      head("Where to go")
       for _, pl in ipairs(places) do place(pl) end
     end
     -- what comes next
@@ -863,7 +855,7 @@ local function renderProf()
     end
   end
   -- the whole route
-  head(sel .. " 1-300  ·  " .. (P.source or "WoW Forever guide") .. ((state.profFullOf or {})[sel] and "" or "  ·  click below for every step"))
+  head(sel .. " 1-300"); rows[n].tip = "Source: " .. (P.source or "WoW Forever guide")
   if (state.profFullOf or {})[sel] then
     for _, st in ipairs(RG.ProfPlan(P)) do
       local here = now and now.st == st
@@ -885,7 +877,7 @@ local function renderProf()
   if P.supplies then line(nil, GREY .. "Supplies|r", P.supplies, "", "", P.icon, nil, nil, true) end
 
   -- Mining and Blacksmithing extras
-  if sel == "Mining" and known["Mining"] then
+  if sel == "Mining" and known["Mining"] and RG.HasPrices and RG.HasPrices() then   -- (before any AH visit there's nothing to compare)
     head("Smelt or sell")
     local any = false
     for _, sm in ipairs(RG.SMELT) do
@@ -919,11 +911,21 @@ local function renderProf()
   -- material prices for this profession
   local ids = P.mats or {}
   if #ids > 0 and k then
-    head("Material prices  ·  lowest buyout")
+    -- only what has a price or is in your bags; the rest is one line (it would only say "no price yet")
+    local rest = 0
+    local headed = false
     for _, id in ipairs(ids) do
-      local nm2, _, quality = itemName(id)
       local cnt = RG.MatCount and RG.MatCount(id) or 0
-      line(id, nm2, cnt > 0 and ("You have " .. cnt) or (GREY .. "None in your bags or bank|r"), "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, nil, quality, true)
+      if (RG.Price and RG.Price(id)) or cnt > 0 then
+        if not headed then head("Material prices"); headed = true end
+        local nm2, _, quality = itemName(id)
+        line(id, nm2, cnt > 0 and ("You have " .. cnt) or "", "", RG.PriceText(id) or "", nil, nil, quality, true)
+      else rest = rest + 1 end
+    end
+    if rest > 0 and not (RG.HasPrices and RG.HasPrices()) then
+      if not headed then head("Material prices") end
+      n = n + 1; setStep(getRow(n), "", GREY .. "Open the Auction House once to see what " .. sel .. "'s " .. rest .. " materials cost.|r", false, nil)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
     end
   end
   campBlock(sel)
@@ -932,14 +934,14 @@ local function renderProf()
   local shownMain, shownSide
   for _, name in ipairs(mine) do
     local side = RG.PROFESSIONS[name].kind == "secondary"
-    if side and not shownSide then shownSide = true; head("Side professions  ·  Cooking, Fishing and First Aid use no profession slot") end
+    if side and not shownSide then shownSide = true; head("Side professions  ·  no slot needed") end
     if not side and not shownMain and mains > 0 then shownMain = true; head("Main professions") end
     body(name)
   end
   if browsing then head("Reading: " .. browsing); body(browsing) end
 
   -- every other profession's route
-  head("Other professions  ·  click one to read its route")
+  head("Other professions")
   for _, name in ipairs(PROF_ORDER) do
     local isMine = false
     for _, m in ipairs(mine) do if m == name then isMine = true end end
@@ -1065,10 +1067,12 @@ local function renderRoute()
     local row = getRow(n)
     local col = e.done and GREY or (now and GOLD or "|cffffffff")
     local gather = not e.done and RG.GatherHere and RG.GatherHere(r.zone)
-    local sub = (r.notes ~= "" and r.notes or r.hub)
+    local sub = (r.notes ~= "" and r.notes or "")   -- (the hub is already in the title)
     if gather then sub = sub .. GREY .. "  ·  " .. gather .. "|r" end
     local range = r.from == r.to and ("Level " .. r.from) or ("Levels " .. r.from .. "-" .. r.to)
-    local status = e.done and (GREEN .. "Done|r") or (now and (GREEN .. "You are here|r") or (GREY .. range .. "|r"))
+    -- "You are here" only where you are; the entry the tracker follows says "Now", the others at your level just their range
+    local hereZone = GetRealZoneText and GetRealZoneText() == r.zone
+    local status = e.done and (GREEN .. "Done|r") or (now and ((hereZone and (GREEN .. "You are here|r")) or (e.focus and (GOLD .. "Now|r")) or (GREY .. range .. "|r")) or (GREY .. range .. "|r"))
     if r.fp and not e.done then
       local k = RG.KnowsFP(r.fp)
       if k == false and lvl >= r.from - 1 then status = GOLD .. "Grab the " .. r.fp .. " flight path|r"
@@ -1089,7 +1093,7 @@ local function renderRoute()
     local titleText = r.kind == "travel" and ("|cff6FA8DC" .. "Travel" .. "|r" .. GREY .. "   level " .. r.from .. "|r") or (col .. r.zone .. "|r" .. GREY .. (r.kind == "pala" and "" or ("   " .. r.hub)) .. "|r")
     local open = e.steps and not e.done and ((state.open[e.key] == nil and openDefault) or state.open[e.key] == true)
     local left = e.steps and (#e.steps - e.doneN) or 0
-    local meta = (KIND[r.kind] or "") .. (e.steps and (GREY .. "   ·   " .. (e.done and ("all " .. #e.steps .. " done") or (left .. " to do")) .. (open and "  ·  hide" or "") .. "|r") or "")
+    local meta = (KIND[r.kind] or "") .. (e.steps and (GREY .. "   ·   " .. (e.done and ("all " .. #e.steps .. " done") or (left .. " to do")) .. "|r") or "")
     if e.pending and not e.done then
       meta = (KIND[r.kind] or "") .. GOLD .. "   ·   steps coming|r"
       if now then sub = sub .. GREY .. "  ·  Until the steps arrive, take the quests you find here: the tracker follows them.|r" end
@@ -1097,12 +1101,13 @@ local function renderRoute()
     local accent = e.done and nil or (now and "gold" or (r.kind == "pala" and "gold" or (r.kind == "dungeon" and "purple" or (r.kind == "travel" and "blue" or nil))))
     setItem(row, nil, nil, titleText, e.done and "" or sub, status, meta, accent, nil, e.done)
     if e.steps and not e.done then row.onClick = function() state.open[e.key] = not open; RG.RefreshUI() end end
+    if e.steps and not e.done then row.tip = open and "Click to fold the steps." or "Click to open the steps." end
     local ew = RG.WAYPOINTS and (RG.WAYPOINTS.dungeons[r.zone] or (RG.StepWaypoint and RG.StepWaypoint(r, 1)))
-    if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = (e.steps and not e.done and "Click to open the steps. " or "") .. "Right-click: show " .. ew[4] .. " on the map." end
+    if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = (row.tip and (row.tip .. "\n") or "") .. "Right-click: show " .. ew[4] .. " on the map." end
     row.icon:SetTexture(ICON[r.kind] or 134269)
     if e.done then return end
     -- how to get there from where you are
-    if (now or open) and r.kind ~= "pala" and r.kind ~= "travel" and RG.TravelPlan and RG.Opt("travelTips") then
+    if open and r.kind ~= "pala" and r.kind ~= "travel" and RG.TravelPlan and RG.Opt("travelTips") then
       local legs, to = RG.TravelPlan(r.zone)
       if legs and #legs > 0 then
         local parts = {}
@@ -1122,18 +1127,15 @@ local function renderRoute()
       for i = 1, #e.steps do if not (e.auto[i] or RG.db.stepsDone[e.key .. "#" .. i] or e.past) then total = total + 1 end end
       local page = state.pager[e.key]
       if page then page = math.max(1, math.min(page, math.max(total, 1))); state.pager[e.key] = page end
-      if total > 1 then
+      local pk = e.key
+      if total > 1 and page then
         n = n + 1
-        local pk = e.key
-        if page then
+        do
           setItem(getRow(n), nil, nil, GOLD .. "Step " .. page .. " of " .. total .. "|r", "Click for the next step, right-click for the previous one.", GOLD .. "Next|r", GREY .. "Show all|r", nil, nil, true)
           rows[n].onClick = function() state.pager[pk] = page % total + 1; RG.RefreshUI() end
           rows[n].onRightClick = function() state.pager[pk] = (page - 2) % total + 1; RG.RefreshUI() end
           rows[n].onDoubleClick = function() state.pager[pk] = nil; RG.RefreshUI() end
           rows[n].tip = "Click: next step. Right-click: previous step. Double-click: show every step again."
-        else
-          setItem(getRow(n), nil, nil, GREY .. "One step at a time|r", total .. " steps left here. Click to page through them.", "", "", nil, nil, true)
-          rows[n].onClick = function() state.pager[pk] = 1; RG.RefreshUI() end
         end
         rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
       end
@@ -1167,11 +1169,15 @@ local function renderRoute()
           -- quests this step names that are in your log: click to open them
           if not isDone and ql then
             local VERB = { turnin = GREEN .. "Hand in|r ", pickup = "|cffffd100Pick up|r ", doing = "|cffffffffDo|r ", later = GREY .. "Later:|r " }
-            for _, l in ipairs(ql) do
+            -- quests that open later in a chain share one grey line (hover it for why each is waiting)
+            local laters, laterTip = {}, {}
+            for _, l in ipairs(ql) do if l.act == "later" then laters[#laters + 1] = l.name; laterTip[#laterTip + 1] = l.name .. ": opens " .. tostring(l.npc) end end
+            for _, l in ipairs(ql) do if l.act ~= "later" then
               n = n + 1
               local qr = getRow(n)
               local sub
               if l.act == "turnin" then sub = GREEN .. "Done: take it to " .. (l.npc or "the quest giver") .. "|r"
+              elseif l.act == "pickup" and l.npc and l.npc == place then sub = ""   -- (the step above already names the giver)
               elseif l.act == "pickup" then sub = GREY .. (l.npc and ("Get it from " .. l.npc) or "Starts from an item or object") .. "|r"
               elseif l.act == "doing" then sub = GREY .. "In your quest log" .. (l.prog and (": " .. l.prog) or "") .. "|r"
               else sub = GREY .. "Opens " .. l.npc .. "|r" end
@@ -1182,6 +1188,13 @@ local function renderRoute()
               qr.onRightClick = lw and function() RG.PinWaypoint(lw) end or nil
               qr.onDoubleClick = lw and RG.ArrowFn(lw) or nil
               qr.tip = (l.act == "doing" and "Click to open it in your quest log." or (lw and ("Click: show " .. lw[4] .. " on the map\nDouble-click: arrow on / off") or "")) 
+            end end
+            if #laters > 0 then
+              local seenL, uniq = {}, {}
+              for _, nm in ipairs(laters) do if not seenL[nm] then seenL[nm] = true; uniq[#uniq + 1] = nm end end
+              n = n + 1
+              setStep(getRow(n), "", GREY .. "Later here: " .. table.concat(uniq, ", ") .. "|r", false, nil)
+              rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = table.concat(laterTip, "\n")
             end
           elseif not isDone then
             for _, q in ipairs(RG.QuestsInText and RG.QuestsInText(text) or {}) do
@@ -1195,6 +1208,12 @@ local function renderRoute()
             end
           end
         end
+      end
+      -- paging: one unfinished step at a time
+      if total > 1 and not page then
+        n = n + 1
+        setStep(getRow(n), "", GREY .. "Show one step at a time|r", false, function() state.pager[pk] = 1; RG.RefreshUI() end)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = "Pages through the " .. total .. " steps left here, one at a time."
       end
       if e.doneN > 0 then
         n = n + 1
@@ -1299,8 +1318,20 @@ local function renderRoute()
   local upNext = false
   for _, e in ipairs(entries) do if e.upNext then upNext = true end end
   if section((upNext and "Up next" or "Now") .. "  ·  level " .. lvl, "secNow", nil, true) then
+    -- the entry the tracker follows comes first, open; the others at your level stay folded below it
+    local cur = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+    local focus
+    for _, e in ipairs(entries) do if e.where == "now" and cur and e.r == cur then focus = e end end
+    if not focus then for _, e in ipairs(entries) do if e.where == "now" and not e.pending and e.r.kind ~= "travel" then focus = e; break end end end
     local any = false
-    for _, e in ipairs(entries) do if e.where == "now" then state.hero = true; card(e, true); state.hero = nil; any = true end end
+    if focus then focus.focus = true; state.hero = true; card(focus, true); state.hero = nil; any = true end
+    local others = 0
+    for _, e in ipairs(entries) do if e.where == "now" and e ~= focus then others = others + 1 end end
+    if focus and others > 0 then
+      n = n + 1; setStep(getRow(n), "", GREY .. "Also at your level  ·  click one to open its steps|r", false, nil)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    end
+    for _, e in ipairs(entries) do if e.where == "now" and e ~= focus then card(e, false); any = true end end
     if not any then
       n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Everything for your level is done.|r", "Your next zones are under Coming up.", "", "", "green", nil, true)
     end
@@ -1369,17 +1400,30 @@ local function renderAH()
   local last = RG.db.lastFullScan
   local mins = last and math.floor((time() - last) / 60)
   n = n + 1
+  local has = RG.HasPrices and RG.HasPrices()
   setItem(getRow(n), nil, nil, st and (GOLD .. "Checking prices: " .. st .. "|r") or "|cffffffffPrices|r",
-    st and "Search for anything yourself and Waypath+ steps aside right away." or ((mins and ("Last full scan " .. (mins < 60 and (mins .. " min") or (math.floor(mins / 60) .. " h")) .. " ago.  ") or "") .. "Opening the AH checks only out-of-date prices, or does one full scan when the server allows it (every 15 min)."),
+    st and "Search for anything yourself and Waypath+ steps aside right away."
+      or (not has and "Open the Auction House once and the prices fill in here."
+      or ((mins and ("Last full scan " .. (mins < 60 and (mins .. " min") or (math.floor(mins / 60) .. " h")) .. " ago") or "Prices from your visits") .. GREY .. "  ·  opening the AH updates them|r")),
     st and (GREY .. "click to stop|r") or "", "", st and "gold" or nil, nil, true)
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
   if st then rows[n].onClick = function() if RG.StopAHScan then RG.StopAHScan() end end end
   local gear, mats = {}, {}
   for _, id in ipairs(ids) do if RG.GuideByID[id] or RG.db.tracked[id] then gear[#gear + 1] = id else mats[#mats + 1] = id end end
-  local function block(title, list)
+  local function block(title, list, key)
     if #list == 0 then return end
-    n = n + 1; setHeader(getRow(n), title)
-    for _, id in ipairs(list) do
+    -- items with a price first; the ones never seen on the AH fold into one line (click to list them)
+    local priced, unseen = {}, {}
+    for _, id in ipairs(list) do if RG.Price(id) then priced[#priced + 1] = id else unseen[#unseen + 1] = id end end
+    local showAll = state[key]
+    local shown = showAll and list or priced
+    n = n + 1; setHeader(getRow(n), title .. "  ·  " .. #list)
+    if #unseen > 0 then
+      n = n + 1
+      setStep(getRow(n), "", GREY .. (showAll and "Hide the ones without a price" or ("+ " .. #unseen .. " not seen on the AH yet  ·  click to list them")) .. "|r", false, function() state[key] = not showAll; RG.RefreshUI() end)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    end
+    for _, id in ipairs(shown) do
       n = n + 1
       local r = getRow(n)
       local name, link, quality = itemName(id)
@@ -1387,7 +1431,7 @@ local function renderAH()
       local alert = RG.db.alerts and RG.db.alerts[id]
       local sub = g and (g.src .. GREY .. "  ·  level " .. g.lvl .. "|r") or (GREY .. "Tracked by you|r")
       if alert then sub = sub .. GREY .. "  ·  alert at |r" .. RG.Money(alert) end
-      setItem(r, id, link, name, sub, alert and (GOLD .. "Alert set|r") or "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, quality)
+      setItem(r, id, link, name, sub, alert and (GOLD .. "Alert set|r") or "", RG.PriceText(id) or "", nil, quality)
     end
   end
   -- Things in your bags worth more on the AH than at a vendor
@@ -1412,8 +1456,8 @@ local function renderAH()
       end
     end
   end
-  block("Gear you can buy", gear)
-  block("Ore and bars", mats)
+  block("Gear you can buy", gear, "ahAllGear")
+  block("Materials", mats, "ahAllMats")
   if n == 0 then n = 1; setHeader(getRow(1), "Nothing tracked yet · /wp track [item link]") end
   return n
 end
@@ -1438,7 +1482,7 @@ local function renderGold()
       setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", #items .. " item" .. (#items > 1 and "s" or "") .. " sell for more on the AH than at a vendor. Click to see them.", GREEN .. "+" .. RG.Money(total) .. "|r", "", "gold")
       rows[n].onClick = function() state.tab = "ah"; RG.RefreshUI() end
     else
-      setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", "Nothing to take to the AH yet. Open the Auction House now and then so Waypath+ knows the prices.", "", "", "gold")
+      setItem(getRow(n), nil, nil, GOLD .. "Your bags right now|r", (RG.HasPrices and RG.HasPrices()) and "Nothing in your bags sells for more on the AH than at a vendor." or "Open the Auction House once and the prices of what you carry (and of the items below) fill in.", "", "", "gold")
     end
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_10")
   end
@@ -1454,23 +1498,27 @@ local function renderGold()
     for _, t in ipairs(byCat[cat]) do
       n = n + 1
       local missing = t.prof and not prof[t.prof]
-      local right = missing and (GREY .. "needs " .. t.prof .. "|r") or (GREY .. "levels " .. t.from .. "-" .. t.to .. "|r")
+      local right = missing and (GREY .. "needs " .. t.prof .. "|r") or ((t.from <= 1 and t.to >= 60) and "" or (GREY .. "levels " .. t.from .. "-" .. t.to .. "|r"))
       setItem(getRow(n), nil, nil, (missing and GREY or "|cffffffff") .. t.title .. "|r", t.text, right, "", nil)
       rows[n].icon:SetTexture(GOLD_ICON[cat] or (RG.PROFESSIONS[cat] and RG.PROFESSIONS[cat].icon) or "Interface\\Icons\\INV_Misc_Coin_02")
       if t.ids and not missing then
+        -- the tip's items, only once the AH has a price for them (otherwise they'd only repeat "no price yet")
         for _, id in ipairs(t.ids) do
-          n = n + 1
-          local name, link, quality = itemName(id)
-          local p = RG.ProfitInfo and RG.ProfitInfo(id)
-          local vend = p and p.vendor and p.vendor > 0 and (GREY .. "vendor |r" .. RG.Money(p.vendor)) or ""
-          setItem(getRow(n), id, link, name, vend, "", RG.PriceText(id) or (GREY .. "not seen yet|r"), nil, quality, true)
+          if RG.Price(id) then
+            n = n + 1
+            local name, link, quality = itemName(id)
+            local p = RG.ProfitInfo and RG.ProfitInfo(id)
+            local vend = p and p.vendor and p.vendor > 0 and (GREY .. "vendor |r" .. RG.Money(p.vendor)) or ""
+            setItem(getRow(n), id, link, name, vend, "", RG.PriceText(id) or "", nil, quality, true)
+          end
         end
       end
     end
   end
   n = n + 1
   setStep(getRow(n), "", "Show tips for every level, not just mine", state.goldAll, function() state.goldAll = not state.goldAll; RG.RefreshUI() end)
-  n = n + 1; setHeader(getRow(n), "Tips updated " .. G.updated .. "  ·  " .. G.note)
+  n = n + 1; setStep(getRow(n), "", GREY .. "Tips updated " .. G.updated .. "|r", false, nil)
+  rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = G.note
   return n
 end
 
@@ -1553,9 +1601,7 @@ local function renderSpec()
     specIcon(rows[n], cur)
     rows[n].onClick = function() state.tab = "heal"; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
   end
-  n = n + 1
-  setItem(getRow(n), nil, nil, GOLD .. "Stats:|r " .. cur.stats, "", "", "", nil, nil, true)
-  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+  -- (the stats are on the spec's row above)
   n = n + 1; setHeader(getRow(n), "Playing " .. cur.name)
   for _, t in ipairs(cur.tips or {}) do
     n = n + 1
@@ -1599,10 +1645,18 @@ local function renderHeal()
   n = n + 1; setHeader(getRow(n), string.format("Your %s set  ·  %d of %d slots  ·  %s score %.0f", s.name, filled, #slots, s.name, total))
   local used = {}
   local hasTwoHand = set["Main Hand"] and set["Main Hand"][1] and RG.EquipLoc(set["Main Hand"][1].link) == "INVTYPE_2HWEAPON"
+  -- empty slots fold into one line (the hunting list below fills them); click it to see each slot's next piece
+  local empty = {}
+  for _, slot in ipairs(slots) do
+    used[slot] = (used[slot] or 0) + 1
+    if not (set[slot] and set[slot][used[slot]]) and not (slot == "Off Hand" and hasTwoHand) then empty[#empty + 1] = slot end
+  end
+  used = {}
+  local showEmpty = state.healSlots
   for _, slot in ipairs(slots) do
     used[slot] = (used[slot] or 0) + 1
     local p = set[slot] and set[slot][used[slot]]
-    if not (slot == "Off Hand" and hasTwoHand) then
+    if not (slot == "Off Hand" and hasTwoHand) and (p or showEmpty) then
       -- next thing on the list for this slot that you can use soon and don't own
       local nextG
       for _, g in ipairs(guide) do
@@ -1626,6 +1680,14 @@ local function renderHeal()
       end
       if nextG then r.onClick = function() RG.ShowItemSource(nextG, { note = GOLD .. "Next for your " .. s.name .. " " .. slot .. "|r" }) end end
     end
+  end
+  if #empty > 0 then
+    n = n + 1
+    local names, seen = {}, {}
+    for _, sl in ipairs(empty) do if not seen[sl] then seen[sl] = true; names[#names + 1] = sl end end
+    setStep(getRow(n), "", GREY .. (showEmpty and "Hide the empty slots" or ("+ " .. #empty .. " empty: " .. table.concat(names, ", ") .. "  ·  click for what to look for")) .. "|r", false,
+      function() state.healSlots = not showEmpty; RG.RefreshUI() end)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
   -- the hunting list, in 5-level steps, each named after where most of it comes from
   local bs = RG.Skill and RG.Skill("Blacksmithing") or 0
@@ -1741,11 +1803,14 @@ local function renderMail()
     if price then total = total + price * e.toBuy elseif e.toBuy > 0 then unknown = unknown + 1 end
     local status = e.toBuy == 0 and (GREEN .. "In the alt's bags|r") or (GOLD .. "Buy " .. e.toBuy .. "|r")
     if not alt then status = GOLD .. "Need " .. e.need .. "|r" end
-    setItem(r, e.id, link, name, e.quest .. GREY .. "  ·  quest level " .. e.lvl .. "|r", status, RG.PriceText(e.id) or (GREY .. "not priced yet|r"), nil, quality, true)
+    setItem(r, e.id, link, name, e.quest .. GREY .. "  ·  quest level " .. e.lvl .. "|r", status, RG.PriceText(e.id) or "", nil, quality, true)
     r.onClick = function() RG.SearchAH(e.id) end
   end
   if #list > 0 then
-    n = n + 1; setHeader(getRow(n), "About " .. RG.Money(total) .. " to buy everything" .. (unknown > 0 and (" (" .. unknown .. " not priced yet: open the AH)") or ""))
+    n = n + 1
+    local tl = total > 0 and ("About " .. RG.Money(total) .. " to buy everything" .. (unknown > 0 and (GREY .. "  ·  " .. unknown .. " without a price yet|r") or ""))
+      or (GREY .. "Open the Auction House once to see what it all costs.|r")
+    setStep(getRow(n), "", tl, false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
   -- every quest
   n = n + 1; setHeader(getRow(n), "Quests you can skip the farming for")
@@ -1841,7 +1906,7 @@ local function renderFlights()
   local function row(e)
     n = n + 1
     local r = getRow(n)
-    local status = e.known == true and (GREEN .. "Learned|r") or (e.known == false and (GOLD .. "Not learned|r") or (GREY .. "Open a flight master once|r"))
+    local status = e.known == true and (GREEN .. "Learned|r") or (e.known == false and (GOLD .. "Not learned|r") or "")
     local right2 = e.dist and (e.dist >= 1000 and string.format("%.1f km", e.dist / 1000) or string.format("%d yd", e.dist)) or ""
     setItem(r, nil, nil, "|cffffffff" .. e.node .. "|r", e.zone .. GREY .. "  ·  " .. (e.npc or "") .. "  ·  " .. string.format("%.0f, %.0f", e.x, e.y) .. "|r", status, right2, e.known == false and "gold" or nil)
     r.icon:SetTexture("Interface\\Icons\\Ability_Mount_Gryphon_01")
@@ -1852,8 +1917,14 @@ local function renderFlights()
     r.tip = "Click to be guided to " .. e.node .. " (map pin and arrow). Right-click to pin only."
   end
   if hits == 0 then n = n + 1; setHeader(getRow(n), sq ~= "" and ("No flight path matches \"" .. state.search .. "\"") or "No flight path data") return n end
+  local unknown = false
+  for _, e in ipairs(todo) do if e.known == nil then unknown = true end end
   if #todo > 0 then
     n = n + 1; setHeader(getRow(n), (sq == "" and "Flight paths to learn" or "Not learned") .. "  ·  " .. #todo)
+    if unknown then
+      n = n + 1; setStep(getRow(n), "", GREY .. "Talk to any flight master once and Waypath+ learns which of these you already have.|r", false, nil)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    end
     for _, e in ipairs(todo) do row(e) end
   end
   if #learned > 0 then
@@ -2097,9 +2168,22 @@ local function renderFish()
       setItem(getRow(n), c.id, link, name .. (have > 0 and (GREY .. "  x" .. have .. " in bags|r") or ""), sub, pill, "", c.ret and "gold" or nil, quality, true)
     end
   end
-  -- gear
+  -- a grey "+ more / hide" line under a list
+  local function moreLine(open, count, what, key)
+    n = n + 1
+    setStep(getRow(n), "", GREY .. (open and "Show fewer" or ("+ " .. count .. " " .. what)) .. "|r", false, function() state[key] = not open; RG.RefreshUI() end)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  end
+  -- gear: what you have and what you can use now; the rest folds away
   n = n + 1; setHeader(getRow(n), "Poles, lures and fishing gear")
+  local useful, other = {}, {}
   for _, g in ipairs(RG.FISH_GEAR) do
+    local have = GetItemCount and GetItemCount(g.id, true) or 0
+    if have > 0 or (not g.skill or g.skill <= math.max(fsk, 1) + 25) and not tostring(g.how):find("Extravaganza") then useful[#useful + 1] = g else other[#other + 1] = g end
+  end
+  local gearList = useful
+  if state.fishGearAll then gearList = {}; for _, g in ipairs(useful) do gearList[#gearList + 1] = g end; for _, g in ipairs(other) do gearList[#gearList + 1] = g end end
+  for _, g in ipairs(gearList) do
     n = n + 1
     local name, link, quality = itemName(g.id)
     local have = GetItemCount and GetItemCount(g.id, true) or 0
@@ -2109,11 +2193,18 @@ local function renderFish()
     else pill = "" end
     setItem(getRow(n), g.id, link, name .. GREY .. "   +" .. g.bonus .. (g.mins and (" for " .. g.mins .. " min") or "") .. "|r", g.how, pill, "", have > 0 and "green" or nil, quality, true)
   end
-  -- extravaganza
-  n = n + 1; setHeader(getRow(n), "Stranglethorn Fishing Extravaganza (Booty Bay)")
-  for _, line in ipairs(RG.FISH_DERBY) do
-    n = n + 1; setStep(getRow(n), "", line, false, nil)
-    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  if #other > 0 then moreLine(state.fishGearAll, #other, "more for higher skill and the Extravaganza", "fishGearAll") end
+  -- extravaganza: folded until you open it
+  n = n + 1; setHeader(getRow(n), "Stranglethorn Fishing Extravaganza")
+  rows[n].onClick = function() state.fishDerby = not state.fishDerby; RG.RefreshUI() end
+  rows[n].tip = "Sundays in Booty Bay. Click to " .. (state.fishDerby and "fold" or "read how it works") .. "."
+  if state.fishDerby then
+    for _, line in ipairs(RG.FISH_DERBY) do
+      n = n + 1; setStep(getRow(n), "", line, false, nil)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    end
+  else
+    moreLine(false, #RG.FISH_DERBY, "notes: when it runs, prizes, rare fish", "fishDerby")
   end
   -- everything fishing can bring up
   local FL = RG.FISH_LOOT
@@ -2172,7 +2263,7 @@ local function renderFish()
       if pool and pool.spots[1] then local wp = pool.spots[1]; rows[n].onClick = function() RG.PinWaypoint(wp) end end
     end
     n = n + 1; setHeader(getRow(n), "Everything fishing can bring up")
-    note(GREY .. "Chances are per catch, from the game's fishing loot tables (WoW Forever's own numbers aren't published). Hover a row for every zone; click a pool to pin it on your map.|r")
+    rows[n].tip = "Chances are per catch, from the game's fishing loot tables (WoW Forever's own numbers aren't published). Hover a row for every zone; click a pool to pin it on your map."
     -- this zone
     local here = FL.zones[zoneName or ""]
     if here then
@@ -2181,8 +2272,6 @@ local function renderFish()
         local e = idx.byId[c[1]]
         if e then lootRow(e, c[2]) end
       end
-    else
-      note(GREY .. "Stand in a zone with water to see what it gives. The groups below cover every zone.|r")
     end
     -- groups, closed until you open them
     local CATS = { { "fish", "Fish and cooking ingredients" }, { "container", "Chests, crates, trunks, clams and bottles" },
@@ -2192,7 +2281,7 @@ local function renderFish()
       if lst and #lst > 0 then
         local open = state.fishOpen[cat[1]]
         n = n + 1
-        setStep(getRow(n), "", GOLD .. (open and "- " or "+ ") .. cat[2] .. "|r" .. GREY .. "  (" .. #lst .. ")  ·  click to " .. (open and "hide" or "show") .. "|r", false,
+        setStep(getRow(n), "", GOLD .. (open and "- " or "+ ") .. cat[2] .. "|r" .. GREY .. "  " .. #lst .. "|r", false,
           function() state.fishOpen[cat[1]] = not open; RG.RefreshUI() end)
         rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
         if open then for _, e in ipairs(lst) do lootRow(e) end end
@@ -2201,7 +2290,7 @@ local function renderFish()
     -- pools
     local open = state.fishOpen.pools
     n = n + 1
-    setStep(getRow(n), "", GOLD .. (open and "- " or "+ ") .. "Pools, schools, wreckage and fishing spots|r" .. GREY .. "  (" .. #FL.pools .. ")  ·  click to " .. (open and "hide" or "show") .. "|r", false,
+    setStep(getRow(n), "", GOLD .. (open and "- " or "+ ") .. "Pools, schools, wreckage and fishing spots|r" .. GREY .. "  " .. #FL.pools .. "|r", false,
       function() state.fishOpen.pools = not open; RG.RefreshUI() end)
     rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
     if open then
@@ -2229,7 +2318,7 @@ local function renderFish()
   for _, f in ipairs(RG.FISH_SELL) do
     n = n + 1
     local name, link, quality = itemName(f.id)
-    setItem(getRow(n), f.id, link, name, f.note, "", RG.PriceText(f.id) or (GREY .. "not priced yet|r"), nil, quality, true)
+    setItem(getRow(n), f.id, link, name, f.note, "", RG.PriceText(f.id) or "", nil, quality, true)
   end
   -- lifetime
   local d = RG.db.fish

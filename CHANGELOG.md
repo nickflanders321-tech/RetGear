@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Cleaner tabs.** A tidy-up across the window, with less to scroll and fewer repeated hints:
+  - **Route:** only the zone the tracker follows opens under "Now"; the other zones at your level stay folded below it (click one to open). "You are here" only shows where you actually are. Quests that open later in a chain share one grey line per step instead of a row each, and the "one step at a time" switch moved to a small line under the steps. About a quarter of the rows it had before.
+  - **Prices:** items the Auction House hasn't shown yet no longer say "not seen yet (open the AH to scan)" on every row. Each tab says it once, and the Auction House tab folds unpriced items into one line you can open.
+  - **Professions:** no more "Double-click / arrow" on every place (the tooltip says how), shorter section titles, no "Not learned yet" twice for side professions, and material prices only list what has a price or is in your bags.
+  - **Fishing:** poles and lures show what you have and can use now (the rest folds away), and the Extravaganza notes and loot-table explanation fold into a line and a tooltip.
+  - **Gear guide:** View and Source share one compact line (click: view, right-click: source), a piece under "Best upgrades" isn't listed again below, and slot headers lose the repeated level range.
+  - **2nd spec:** empty slots in your set fold into one line; the stats aren't repeated under the spec.
+  - **Flight paths, Gold tips, Bank alt:** the "Open a flight master once" pill on every path, the "levels 1-60" pill on every tip and the long footer are gone.
 - **Better problem reports.** `/wp report` and `/wp errors` now also list the other add-ons that matter (Questie, TomTom and a few big ones, with versions), what Waypath+ is leaving to Questie, the arrow's state, anything the game blocked this session, and the last three errors with where they happened, all in one box to copy.
 - **A gentle nudge to share.** Once you've found ten or more quest spots or quests the add-on doesn't know, one line in chat (at most once a week) suggests `/wp share`. It can be turned off in Settings.
 - **Arena: class balance from real duels.** Duels against other players now keep a tally of wins and losses by your class against theirs (per card update, no names), and `/wp share` includes it, so balance changes can follow real games, not only the computer's.

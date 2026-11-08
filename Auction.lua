@@ -137,10 +137,12 @@ function RG.Price(id)
   if rec then return rec.price, "scan", rec end
 end
 
+-- Whether the Auction House has been looked at at all on this realm (lists show one "open the AH" line until then).
+function RG.HasPrices() return RG.db and RG.db.prices and next(RG.db.prices) ~= nil or false end
 function RG.PriceText(id)
   if not isTracked(id) and not RG.db.prices[id] then return nil end
   local p, src, rec = RG.Price(id)
-  if not p then return GREY .. "not seen yet (open the AH to scan)|r" end
+  if not p then return nil end   -- (no price yet: lists show nothing rather than the same reminder on every row)
   if src == "market" then
     -- the steady value first, then what the cheapest one costs right now
     local now = rec.none and "none listed now" or (rec.price and ("cheapest " .. money(rec.price) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "")) or nil)
