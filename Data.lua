@@ -3,6 +3,23 @@
 -- picks the ones for the character you're playing.
 local _, RG = ...
 
+-- The first thing Waypath+ does: listen for the game blocking one of its actions (the "blocked from an action only
+-- available to the Blizzard UI" pop-up), from the very start, so even something blocked while the add-on loads is
+-- caught. QoL2.lua writes these to /wp errors and says them in chat.
+RG.BLOCKED = {}
+do
+  local f = CreateFrame and CreateFrame("Frame")
+  if f then
+    for _, e in ipairs({ "ADDON_ACTION_FORBIDDEN", "ADDON_ACTION_BLOCKED", "MACRO_ACTION_FORBIDDEN", "MACRO_ACTION_BLOCKED" }) do pcall(f.RegisterEvent, f, e) end
+    f:SetScript("OnEvent", function(_, event, addon, func)
+      if type(addon) ~= "string" or not addon:find("Waypath", 1, true) then return end
+      local trace = debugstack and debugstack(2, 20, 0) or ""
+      table.insert(RG.BLOCKED, { event = event, func = tostring(func), trace = trace, t = time and time() or 0 })
+      if RG.OnBlocked then pcall(RG.OnBlocked, RG.BLOCKED[#RG.BLOCKED]) end
+    end)
+  end
+end
+
 RG.STAT_LABELS = {
   STR = "Strength", AGI = "Agility", AP = "Attack Power", CRIT = "Crit %", HIT = "Hit %",
   STA = "Stamina", INT = "Intellect", SPI = "Spirit", SP = "Spell Power",

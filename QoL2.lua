@@ -18,7 +18,7 @@ local function inCombat() return InCombatLockdown and InCombatLockdown() end
 -- ===========================================================================
 local MAX_ERRORS = 25
 local told = false
-local function recordError(msg)
+local function recordError(msg, givenStack)
   if not WaypathDB then return end
   WaypathDB.errors = WaypathDB.errors or {}
   local list = WaypathDB.errors
@@ -26,7 +26,7 @@ local function recordError(msg)
   for _, e in ipairs(list) do
     if e.msg == msg then e.count = (e.count or 1) + 1; e.t = time and time() or 0; return end
   end
-  local stack = debugstack and debugstack(3, 12, 0) or ""
+  local stack = givenStack or (debugstack and debugstack(3, 12, 0)) or ""
   table.insert(list, 1, { msg = msg, stack = stack, count = 1, t = time and time() or 0, v = RG.VERSION })
   while #list > MAX_ERRORS do table.remove(list) end
   if not told then
@@ -42,18 +42,26 @@ RG.RecordError = recordError
 -- available to the Blizzard UI" pop-up), note exactly what it was, with the game
 -- build, so a bug report names it. Blizzard changes which actions add-ons may take.
 do
-  local bf = CreateFrame("Frame")
-  for _, e in ipairs({ "ADDON_ACTION_FORBIDDEN", "ADDON_ACTION_BLOCKED" }) do pcall(bf.RegisterEvent, bf, e) end
-  bf:SetScript("OnEvent", function(_, event, addon, func)
-    if type(addon) ~= "string" or not addon:find("Waypath", 1, true) then return end
+  local said = false
+  local pending = {}
+  local onBlocked
+  -- (saved data isn't loaded yet while the add-on loads: keep those for login)
+  local lf = CreateFrame("Frame"); lf:RegisterEvent("PLAYER_LOGIN")
+  lf:SetScript("OnEvent", function() local p = pending; pending = {}; for _, b in ipairs(p) do onBlocked(b) end end)
+  onBlocked = function(b)
+    if not WaypathDB then pending[#pending + 1] = b; return end
     local build = GetBuildInfo and select(2, GetBuildInfo()) or "?"
-    pcall(recordError, "The game blocked Waypath+ from calling " .. tostring(func) .. (event == "ADDON_ACTION_BLOCKED" and " during combat" or "") .. " (game build " .. tostring(build) .. ")")
-    -- say it in chat too, right when it happens, so it can be reported without digging in /wp errors
-    if event == "ADDON_ACTION_FORBIDDEN" and not bf.said then
-      bf.said = true
-      if RG.Print then RG.Print("|cffff7766The game blocked Waypath+ from calling " .. tostring(func) .. ".|r Please send this line to the author (it's also in /wp errors).") end
+    local msg = "The game blocked Waypath+ from calling " .. b.func .. (b.event:find("BLOCKED") and " during combat" or "") .. " (" .. b.event .. ", game build " .. tostring(build) .. ")"
+    pcall(recordError, msg, b.trace)
+    -- say it in chat too, so it can be reported without digging in /wp errors
+    if not said and b.event:find("FORBIDDEN") then
+      said = true
+      local function say() RG.Print("|cffff7766The game blocked Waypath+ from calling " .. b.func .. ".|r Please send this line to the author (it's also in /wp errors).") end
+      if C_Timer then C_Timer.After(3, say) else say() end
     end
-  end)
+  end
+  RG.OnBlocked = onBlocked
+  for _, b in ipairs(RG.BLOCKED or {}) do onBlocked(b) end   -- (anything blocked before this file loaded)
 end
 
 if seterrorhandler and geterrorhandler then
