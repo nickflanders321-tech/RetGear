@@ -81,11 +81,47 @@ if seterrorhandler and geterrorhandler then
 end
 
 local errFrame
+-- What else is running, in a few lines for a report: Questie and TomTom versions, what Waypath+ leaves to Questie,
+-- the arrow's state, and anything the game blocked this session.
+function RG.ReportEnv()
+  local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+  local loaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+  local function ver(a)
+    local okL, on = pcall(loaded or function() end, a)
+    if not (okL and on) then return nil end
+    local ok, v = pcall(meta or function() end, a, "Version")
+    return (ok and v) and tostring(v) or "loaded"
+  end
+  local L = {}
+  local others = {}
+  for _, a in ipairs({ "Questie", "TomTom", "Auctionator", "Leatrix_Plus", "ElvUI", "Bartender4", "DBM-Core", "Details" }) do
+    local v = ver(a); if v then others[#others + 1] = a .. " " .. v end
+  end
+  L[#L + 1] = "Other add-ons: " .. (#others > 0 and table.concat(others, ", ") or "none of the usual ones")
+  if RG.QuestieProfile and RG.QuestieProfile() then
+    local q = {}
+    for _, w in ipairs({ "accept", "turnin", "tracker", "nameplates", "map", "available" }) do if RG.QuestieDoes(w) then q[#q + 1] = w end end
+    L[#L + 1] = "Questie does: " .. (#q > 0 and table.concat(q, ", ") or "none of ours") .. (RG.QuestieDataWorks and (RG.QuestieDataWorks() and "  ·  database answers" or "  ·  database not reachable") or "")
+  end
+  L[#L + 1] = "Arrow: " .. ((RG.Opt and RG.Opt("arrow")) and "on" or "off") .. ((RG.ArrowPaused and RG.ArrowPaused()) and " (paused)" or "")
+    .. "  ·  " .. string.format("%.1f MB", (collectgarbage("count") or 0) / 1024) .. " Lua memory"
+  local b = RG.BLOCKED or {}
+  if #b > 0 then
+    L[#L + 1] = "Blocked by the game this session: " .. #b .. "  (last: " .. tostring(b[#b].func) .. ", " .. tostring(b[#b].event) .. ")"
+    local tr = tostring(b[#b].trace or ""):match("[^\n]*Waypath[^\n]*")
+    if tr then L[#L + 1] = "  " .. tr end
+  end
+  return L
+end
+
 function RG.ShowErrors(override, heading)
   local list = (WaypathDB and WaypathDB.errors) or {}
   local lines = { "Waypath+ " .. tostring(RG.VERSION or "?") .. "  ·  " .. #list .. " error(s) caught",
     "Paste this when reporting a problem: " .. (RG.DetectLine and RG.DetectLine() or "?") .. "  ·  " .. tostring(RG.PLAYER_FACTION)
-      .. "  ·  " .. (GetBuildInfo and select(1, GetBuildInfo()) or "?") .. "  ·  " .. string.format("%.1f MB", (collectgarbage("count") or 0) / 1024) .. " Lua memory", "" }
+      .. "  ·  " .. (GetBuildInfo and select(1, GetBuildInfo()) or "?") }
+  local okE, env = pcall(RG.ReportEnv)
+  for _, l in ipairs(okE and env or {}) do lines[#lines + 1] = l end
+  lines[#lines + 1] = "" 
   for i, e in ipairs(list) do
     lines[#lines + 1] = string.format("#%d  x%d  %s%s", i, e.count or 1, e.v and (tostring(e.v):gsub("^v?", "v") .. "  ") or "", e.t and date and date("%Y-%m-%d %H:%M", e.t) or "")
     lines[#lines + 1] = e.msg or "?"
@@ -508,8 +544,18 @@ function RG.ReportStep()
   end
   if RG.LogSummary and RG.db and RG.db.ptlog and #RG.db.ptlog > 0 then L[#L + 1] = ""; L[#L + 1] = RG.LogSummary() end
   L[#L + 1] = ""
+  local okE, env = pcall(RG.ReportEnv)
+  for _, l in ipairs(okE and env or {}) do L[#L + 1] = l end
   local errs = WaypathDB and WaypathDB.errors
-  if errs and errs[1] then L[#L + 1] = "Last error (" .. #errs .. " recorded): " .. tostring(errs[1].msg):sub(1, 200) end
+  if errs and errs[1] then
+    L[#L + 1] = "Errors recorded: " .. #errs
+    for i = 1, math.min(3, #errs) do
+      local e = errs[i]
+      L[#L + 1] = string.format("  x%d %s%s", e.count or 1, e.v and (tostring(e.v) .. " ") or "", tostring(e.msg):sub(1, 200))
+      local at = tostring(e.stack or ""):match("[^\n]*Waypath[^\n]*")
+      if at then L[#L + 1] = "    " .. at:sub(1, 160) end
+    end
+  end
   if RG.CardsOnly and RG.CardsOnly() then L[#L + 1] = "Cards only mode is on." end
   L[#L + 1] = "What looked wrong? (write here, then paste this whole box into a new issue: github.com/nickflanders321-tech/RetGear/issues/new/choose)"
   RG.ShowErrors(table.concat(L, "\n"), "Waypath+ step report  ·  Ctrl+A, Ctrl+C to copy")

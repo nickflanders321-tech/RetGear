@@ -1552,7 +1552,7 @@ _G.WaypathAPI = {
 -- to paste into a GitHub issue. Each one becomes part of everyone's guide in the next data update (tools/community).
 -- Nothing is ever sent anywhere by the add-on itself: you copy it and paste it, or don't.
 -- ===========================================================================
-function RG.ShareFinds()
+local function shareLines()
   local out, n = { "WPQ1 " .. tostring(RG.VERSION) .. " " .. tostring(UnitFactionGroup and UnitFactionGroup("player") or "?") }, 0
   local function clean(v) return (tostring(v or ""):gsub("[|\r\n]", " ")) end
   local ids = {}
@@ -1583,10 +1583,52 @@ function RG.ShareFinds()
       if #pts > 0 and type(qid) == "number" then out[#out + 1] = table.concat({ "O", qid, clean(key), table.concat(pts, ";") }, "|"); n = n + 1 end
     end
   end
+  -- Arena duels against other players, class against class (no names): A|card update|your class|their class|won|lost
+  local ar = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.pvpByClass
+  local vers = {}
+  for ver in pairs(ar or {}) do vers[#vers + 1] = ver end
+  table.sort(vers)
+  for _, ver in ipairs(vers) do
+    local keys = {}
+    for k in pairs(ar[ver]) do keys[#keys + 1] = k end
+    table.sort(keys)
+    for _, k in ipairs(keys) do
+      local me, foe = k:match("^(%u+)>(%u+)$")
+      local e = ar[ver][k]
+      if me and type(e) == "table" then out[#out + 1] = table.concat({ "A", ver, me, foe, e[1] or 0, e[2] or 0 }, "|"); n = n + 1 end
+    end
+  end
+  return out, n
+end
+RG.ShareLines = shareLines
+function RG.ShareFinds()
+  local out, n = shareLines()
+  if RG.db then RG.db.shareSeen = n end
   if n == 0 then RG.Print("Nothing new to share yet: every quest you've seen is already in Waypath+'s data. Thanks for checking!") return end
   out[#out + 1] = ""
   out[#out + 1] = "Paste this whole box into a new issue: github.com/nickflanders321-tech/RetGear/issues/new?template=quests.yml"
-  RG.ShowErrors(table.concat(out, "\n"), "Quests you found that Waypath+ doesn't know yet (" .. n .. ")  ·  Ctrl+A, Ctrl+C to copy")
+  RG.ShowErrors(table.concat(out, "\n"), "What you found that Waypath+ doesn't know yet (" .. n .. ")  ·  Ctrl+A, Ctrl+C to copy")
+end
+-- Now and then (at most once a week, and only with a good number of new finds), one line in chat suggests /wp share.
+table.insert(RG.OPTIONS, { key = "sharePrompt", label = "Remind me now and then when I have finds to /wp share", default = true })
+do
+  local f = CreateFrame("Frame")
+  f:RegisterEvent("PLAYER_ENTERING_WORLD")
+  f:SetScript("OnEvent", function(self)
+    self:UnregisterAllEvents()
+    C_Timer.After(90, function()
+      if not (RG.db and RG.Opt and RG.Opt("sharePrompt")) then return end
+      if RG.CardsOnly and RG.CardsOnly() then return end
+      local now = time and time() or 0
+      if now - (RG.db.sharePromptT or 0) < 7 * 86400 then return end
+      local ok, _, n = pcall(shareLines)
+      if not ok or type(n) ~= "number" then return end
+      local fresh = n - (RG.db.shareSeen or 0)
+      if fresh < 10 then return end
+      RG.db.sharePromptT = now
+      RG.Print("You've found " .. fresh .. " quest spots and quests other players' arrows don't know yet. |cffffd100/wp share|r makes a box to paste into a GitHub issue; it helps everyone. (Turn this reminder off in Settings.)")
+    end)
+  end)
 end
 
 -- Players' finds (CommunityQuests.lua, from /wp share reports): quests WoW Forever's published data doesn't have yet

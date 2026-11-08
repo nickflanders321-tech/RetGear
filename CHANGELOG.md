@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Better problem reports.** `/wp report` and `/wp errors` now also list the other add-ons that matter (Questie, TomTom and a few big ones, with versions), what Waypath+ is leaving to Questie, the arrow's state, anything the game blocked this session, and the last three errors with where they happened, all in one box to copy.
+- **A gentle nudge to share.** Once you've found ten or more quest spots or quests the add-on doesn't know, one line in chat (at most once a week) suggests `/wp share`. It can be turned off in Settings.
+- **Arena: class balance from real duels.** Duels against other players now keep a tally of wins and losses by your class against theirs (per card update, no names), and `/wp share` includes it, so balance changes can follow real games, not only the computer's.
 - **The arrow knows more objectives beside Questie.** For quests Waypath+'s own data has no spots for (new WoW Forever quests), the arrow and map now use Questie's spawns for the mob to kill, the object to use or whatever drops the item, before falling back to the game's quest area.
 - **Lighter beside Questie.** With Questie's database loaded, the objective spots of quests not in your log are let go of shortly after login (about 0.7 MB); if you take one of those quests later, the spots come from Questie.
 - **Quest tags and tips.** Quests on the tracker and the route now carry a small tag when they're Elite, an Escort or Timed, and their tooltip says what to watch out for ("the sacks are objects you click", "the bauble vanishes 5 minutes after you loot it"). Notes come from Polestar's forever-db (CC BY 4.0).

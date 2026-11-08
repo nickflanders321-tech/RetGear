@@ -898,6 +898,16 @@ local function finish()
     if a then
       -- (a duel against a player has its own streak: it never adds to or breaks the streak bonus against the computer)
       if won then a.pvpWins = (a.pvpWins or 0) + 1; a.pvpStreak = (a.pvpStreak or 0) + 1 elseif game.winner ~= 0 then a.pvpLoss = (a.pvpLoss or 0) + 1; a.pvpStreak = 0 end
+      -- wins and losses by class against class, per card update: /wp share passes them on (no names) to help balance
+      local me, foe = game.p[ME] and game.p[ME].class, game.p[3 - ME] and game.p[3 - ME].class
+      if game.winner ~= 0 and type(me) == "string" and type(foe) == "string" then
+        local ver = tostring(RG.VERSION or "?"):match("^(%d+%.%d+)") or "?"
+        a.pvpByClass = a.pvpByClass or {}
+        local t = a.pvpByClass[ver] or {}; a.pvpByClass[ver] = t
+        local k = me .. ">" .. foe
+        local e = t[k] or { 0, 0 }; t[k] = e
+        if won then e[1] = e[1] + 1 else e[2] = e[2] + 1 end
+      end
     end
     S.lastRank = rankResult(a, won)
     local t = won and "VICTORY" or (game.winner == 0 and "A DRAW" or "DEFEAT")
