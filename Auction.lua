@@ -9,8 +9,9 @@ local GREEN, GREY, GOLD = RG.COLORS.GREEN, RG.COLORS.GREY, RG.COLORS.GOLD
 local function money(c)
   if not c then return "?" end
   if GetCoinTextureString then return GetCoinTextureString(c) end
-  local g, s = math.floor(c / 10000), math.floor((c % 10000) / 100)
-  return (g > 0 and (g .. "g ") or "") .. s .. "s"
+  local g, s, cp = math.floor(c / 10000), math.floor((c % 10000) / 100), math.floor(c % 100)
+  if g == 0 and s == 0 then return cp .. "c" end
+  return (g > 0 and (g .. "g ") or "") .. s .. "s" .. ((g == 0 and cp > 0) and (" " .. cp .. "c") or "")
 end
 RG.Money = money
 
@@ -132,7 +133,8 @@ function RG.Price(id)
   local mv = marketOf(rec)
   if mv then return mv, "market", rec end
   local ap, src = addonPrice(id)
-  if rec and (not ap or time() - rec.t < 6 * 3600) then return rec.price, "scan", rec end
+  -- your own scan wins for a day after it was seen; after that another price add-on's (often fresher) value is used
+  if rec and rec.price and (not ap or time() - (rec.seen or rec.t) < 24 * 3600) then return rec.price, "scan", rec end
   if ap then return ap, src end
   if rec then return rec.price, "scan", rec end
 end
@@ -148,20 +150,31 @@ function RG.PriceText(id)
     local now = rec.none and "none listed now" or (rec.price and ("cheapest " .. money(rec.price) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "")) or nil)
     return money(p) .. GREY .. "  market" .. (now and (" · " .. now) or "") .. " · " .. ageText(rec.t) .. "|r"
   end
-  if rec and rec.none then return GREY .. "none listed (" .. ageText(rec.t) .. ")" .. (rec.last and ("; last seen " .. money(rec.last)) or "") .. "|r" end
+  -- none listed right now: the last price seen is still the price (that's what it sells for when someone lists it)
+  if rec and rec.none and src == "scan" then return money(p) .. GREY .. "  last seen " .. ageText(rec.seen or rec.t) .. " · none listed now|r" end
   local s = money(p)
-  if src == "scan" then s = s .. GREY .. "  (" .. ageText(rec.t) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "") .. ")|r"
+  if src == "scan" then s = s .. GREY .. "  (" .. ageText(rec.seen or rec.t) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "") .. ")|r"
   else s = s .. GREY .. "  (" .. src .. ")|r" end
   return s
 end
 
+-- Any other item seen on the AH: its lowest price, when, and how many (no daily history, so it stays small).
+-- Kept for good, so a tooltip or list can show the last price you saw for anything.
+local function remember(id, price, count)
+  local db = RG.db
+  local prev = db.prices[id]
+  if prev and prev.d then return end   -- (a watched item: its full record is kept by record())
+  db.prices[id] = { price = price, t = time(), seen = time(), n = count, last = price }
+end
 -- Remember a price and fire a price alert if one is set.
 local function record(id, price, count, value)
   local db = RG.db
   local prev = db.prices[id]
   -- "none listed right now" keeps the last price that was seen, so one empty search doesn't erase what we knew
+  -- (seen: when a price was last actually on the AH; t: when it was last checked)
   db.prices[id] = { price = price or (prev and (prev.price or prev.last)), t = time(), n = count, none = price == nil or nil,
-    last = price or (prev and (prev.price or prev.last)) or nil, d = prev and prev.d or nil }
+    last = price or (prev and (prev.price or prev.last)) or nil, d = prev and prev.d or nil,
+    seen = price and time() or (prev and (prev.seen or (prev.price and prev.t))) or nil }
   -- the day's value: a full scan gives the market value of every listing; a single search only knows the cheapest one,
   -- which counts for the day only when nothing better is known yet
   local v = value or price
@@ -270,6 +283,7 @@ end
 -- Reading a full scan: lowest buyout per item, a chunk of auctions per frame.
 local function readFull(total, getInfo, isModern)
   local best, count, all = {}, {}, {}
+  local unknown = 0   -- auctions whose item the game hadn't loaded (no id): their items can't be called "none listed"
   local i = isModern and 0 or 1
   local last = isModern and total - 1 or total
   mode = "full"
@@ -278,28 +292,36 @@ local function readFull(total, getInfo, isModern)
     local stopAt = math.min(last, i + CHUNK - 1)
     for k = i, stopAt do
       local id, stack, buyout = getInfo(k)
-      if id and buyout and buyout > 0 and watched(id) then
+      if not id then unknown = unknown + 1 end
+      if id and buyout and buyout > 0 then
         local per = buyout / math.max(1, stack or 1)
         if not best[id] or per < best[id] then best[id] = per end
         count[id] = (count[id] or 0) + 1
-        -- every item counts once in the market value (a stack of 20 is 20 items), up to 400 per item to stay light
-        local L = all[id]; if not L then L = {}; all[id] = L end
-        for _ = 1, math.min(stack or 1, 400 - #L) do L[#L + 1] = per end
+        -- watched items: every item counts once in the market value (a stack of 20 is 20 items), up to 400 per item
+        if watched(id) then
+          local L = all[id]; if not L then L = {}; all[id] = L end
+          for _ = 1, math.min(stack or 1, 400 - #L) do L[#L + 1] = per end
+        end
       end
     end
     i = stopAt + 1
     prog.fullI = math.min(prog.fullTotal, i - (isModern and 0 or 1))
     if i > last then
       runner:SetScript("OnUpdate", nil)
-      local n = 0
-      for id in pairs(wanted()) do
+      local n, w = 0, wanted()
+      -- "none listed" only when the scan saw (nearly) every auction; otherwise a missing item keeps its last price
+      local complete = total > 0 and unknown <= total * 0.02
+      for id in pairs(w) do
         if best[id] then
           local v = scanValue(all[id] or {})
           record(id, math.floor(best[id]), count[id], v and math.floor(v + 0.5)); n = n + 1
-        else record(id, nil, 0) end
+        elseif complete then record(id, nil, 0) end
       end
+      -- and every other item on the AH, so its last price is there next time
+      local others = 0
+      for id, p in pairs(best) do if not w[id] and not isTracked(id) then remember(id, math.floor(p), count[id]); others = others + 1 end end
       mode = nil; prog.fullTotal = 0
-      finished("Auction House scan finished: " .. n .. " price" .. (n == 1 and "" or "s") .. " updated from a full scan (" .. total .. " auctions).")
+      finished("Auction House scan finished: " .. n .. " price" .. (n == 1 and "" or "s") .. " updated from a full scan (" .. total .. " auctions)" .. (others > 0 and (", and the last price of " .. others .. " other items remembered") or "") .. ".")
       if RG.RefreshUI then RG.RefreshUI() end
     end
   end)
@@ -425,11 +447,13 @@ local function readBrowse()
   local found = {}
   for _, r in ipairs(results) do
     local id = r.itemKey and r.itemKey.itemID
-    if id and watched(id) and r.minPrice and r.minPrice > 0 then
+    if id and r.minPrice and r.minPrice > 0 then
       if not found[id] or r.minPrice < found[id].p then found[id] = { p = r.minPrice, n = r.totalQuantity } end
     end
   end
-  for id, x in pairs(found) do record(id, x.p, x.n); stats.found = stats.found + 1 end
+  for id, x in pairs(found) do
+    if watched(id) then record(id, x.p, x.n); stats.found = stats.found + 1 else remember(id, x.p, x.n) end
+  end
   stats.events = stats.events + 1
   if batch and (not C_AuctionHouse.HasFullBrowseResults or C_AuctionHouse.HasFullBrowseResults()) then
     -- our batch is answered in full: what isn't on the list has no auctions right now
@@ -453,13 +477,13 @@ local function readLegacy()
   local best, count = {}, {}
   for i = 1, (GetNumAuctionItems("list") or 0) do
     local _, _, stack, _, _, _, _, _, _, buyout, _, _, _, _, _, _, itemID = GetAuctionItemInfo("list", i)
-    if itemID and buyout and buyout > 0 and watched(itemID) then
+    if itemID and buyout and buyout > 0 then
       local per = buyout / math.max(1, stack or 1)
       if not best[itemID] or per < best[itemID] then best[itemID] = per end
       count[itemID] = (count[itemID] or 0) + 1
     end
   end
-  for id, p in pairs(best) do record(id, math.floor(p), count[id]) end
+  for id, p in pairs(best) do if watched(id) then record(id, math.floor(p), count[id]) else remember(id, math.floor(p), count[id]) end end
   if pending then
     if not best[pending] then record(pending, nil, 0) end
     pending = nil

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Auction prices are remembered.** Once Waypath+ has seen a price, it keeps it:
+  - A full scan no longer marks items as "none listed" when the game sent part of the list without item names yet (it only says "none listed" when it really saw every auction).
+  - When an item isn't on the AH right now, its last price still shows ("1g 20s, last seen 2d ago · none listed now") instead of only "none listed".
+  - Every item you see on the Auction House, in a full scan or your own searches, now has its last price saved, not just the gear and materials Waypath+ watches, so item tooltips can show it later.
+  - With Auctionator or TSM installed, your own scan's price is used for a day before switching to theirs (it was 6 hours).
 - **Cleaner tabs.** A tidy-up across the window, with less to scroll and fewer repeated hints:
   - **Route:** only the zone the tracker follows opens under "Now"; the other zones at your level stay folded below it (click one to open). "You are here" only shows where you actually are. Quests that open later in a chain share one grey line per step instead of a row each, and the "one step at a time" switch moved to a small line under the steps. About a quarter of the rows it had before.
   - **Prices:** items the Auction House hasn't shown yet no longer say "not seen yet (open the AH to scan)" on every row. Each tab says it once, and the Auction House tab folds unpriced items into one line you can open.
