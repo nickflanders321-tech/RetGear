@@ -276,7 +276,10 @@ end
 -- Events
 -- ---------------------------------------------------------------------------
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_XP_UPDATE", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "GROUP_ROSTER_UPDATE", "UNIT_AURA", "UNIT_HEALTH", "COMBAT_LOG_EVENT_UNFILTERED", "CHAT_MSG_LOOT", "PLAYER_DEAD" }) do pcall(f.RegisterEvent, f, e) end
+for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_XP_UPDATE", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "GROUP_ROSTER_UPDATE", "UNIT_AURA", "UNIT_HEALTH", "CHAT_MSG_COMBAT_XP_GAIN", "CHAT_MSG_LOOT", "PLAYER_DEAD" }) do pcall(f.RegisterEvent, f, e) end
+-- (no combat log: add-ons may no longer listen to it, the game blocks that. Kills are counted from the
+-- "... dies, you gain experience" lines, party deaths from their health.)
+local deadNow = {}
 local myGUID
 f:SetScript("OnEvent", function(_, event, a1, ...)
   if RG.IsAlt and RG.IsAlt() then return end
@@ -299,7 +302,18 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
   elseif event == "UNIT_AURA" then
     if a1 and a1:find("^party%d") then checkDispel(a1); if not inCombat() and RG.QueueTracker then RG.QueueTracker() end end
   elseif event == "UNIT_HEALTH" then
-    if a1 and a1:find("^party%d") then pcall(checkHealth, a1) end
+    if a1 and a1:find("^party%d") then
+      pcall(checkHealth, a1)
+      if run and UnitIsDeadOrGhost then
+        local ok, dead = pcall(UnitIsDeadOrGhost, a1)
+        if ok and not (RG.IsSecret and RG.IsSecret(dead)) then
+          if dead and not deadNow[a1] then run.deaths = run.deaths + 1 end
+          deadNow[a1] = dead and true or nil
+        end
+      end
+    end
+  elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then
+    if run and type(a1) == "string" and not (RG.IsSecret and RG.IsSecret(a1)) and a1:find(" dies", 1, true) then run.kills = run.kills + 1 end
   elseif event == "CHAT_MSG_LOOT" then
     if run and a1 then
       local link = a1:match("|c%x+|Hitem:.-|h.-|h|r")
@@ -308,10 +322,6 @@ f:SetScript("OnEvent", function(_, event, a1, ...)
     end
   elseif event == "PLAYER_DEAD" then
     if run then run.myDeaths = run.myDeaths + 1 end
-  elseif event == "COMBAT_LOG_EVENT_UNFILTERED" and run then
-    local ok, _, sub, _, _, _, _, _, _, _, dstFlags = pcall(CombatLogGetCurrentEventInfo)
-    if ok and sub == "PARTY_KILL" then run.kills = run.kills + 1
-    elseif ok and sub == "UNIT_DIED" and type(dstFlags) == "number" and band(dstFlags, 0x400) ~= 0 and band(dstFlags, 0x7) ~= 0 then run.deaths = run.deaths + 1 end
   end
 end)
 

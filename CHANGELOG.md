@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed the "Waypath has been blocked from an action only available to the Blizzard UI" pop-up at login.** Two parts of Waypath+ asked the game for the combat log (the Arena's dungeon rewards, to see bosses die, and the dungeon-run summary, to count kills and deaths). WoW Forever's client no longer lets add-ons listen to the combat log, so it blocked that request every time Waypath+ loaded. Boss kills now come from the game's encounter events, kills from the "dies, you gain experience" lines, and party deaths from their health.
+
 ## v1.22.0
 
 - **Camping: the Trapper's Workbench blueprint has a source.** Skinners can get the Blueprint: Trapper's Workbench (Skinning 300 camp object) from Houndmaster Loksey in the Scarlet Monastery Library, according to WoW Forever's own game data. The guides still list it as unknown. The Camping tab now names him.

@@ -46,10 +46,10 @@ local function newMM(env)
     return true
   end
 
-  function M.stop(quiet, byYou)
+  function M.stop(quiet)
     if not M.searching then return end
     M.searching = false
-    env.leave(byYou)
+    env.leave()
     if not quiet then say("Stopped searching.") end
   end
 
@@ -170,10 +170,9 @@ function env.join()
   if JoinChannelByName then pcall(JoinChannelByName, CHANNEL); joined = true end
   hideFromChat()
 end
--- Joining and leaving chat channels is only allowed from a click or key press: the channel is left when you stop
--- searching yourself; when a search ends on its own (found someone, gave up) it stays joined, hidden from your chat.
-function env.leave(byYou)
-  if byYou and joined and LeaveChannelByName then pcall(LeaveChannelByName, CHANNEL); joined = false end
+function env.leave()
+  if joined and LeaveChannelByName then pcall(LeaveChannelByName, CHANNEL) end
+  joined = false
 end
 function env.broadcast(msg)
   local id = channelId()
@@ -187,7 +186,7 @@ local M = newMM(env)
 RG.Match = M
 function RG.MatchExpects(sender) return M.expects(sender) end
 function RG.MatchToggle()
-  if M.searching then M.stop(nil, true) return false end
+  if M.searching then M.stop() return false end
   return M.start()
 end
 

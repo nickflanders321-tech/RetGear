@@ -240,19 +240,21 @@ local function defaultChannelsReady()
   local ok, first = pcall(GetChannelList)
   return ok and first ~= nil
 end
--- Joining a chat channel is something the game only lets a click or key press do: an add-on joining one on its own
--- (on a timer, after login) gets "Waypath has been blocked from an action only available to the Blizzard UI".
--- So the shared channel is only visited when you open the Board yourself, right in that click.
 local function startSession()
   local b = board()
   if sessionEnd > GetTime() then return end
-  if InCombatLockdown and InCombatLockdown() then return end
-  if IsInInstance then local inst, kind = IsInInstance(); if inst and kind ~= "none" then return end end
-  if not defaultChannelsReady() then return end
+  -- a few seconds' spread so every Waypath+ player on the realm doesn't join in the same second
+  -- (the 70-second visits still overlap)
   sessionEnd = GetTime() + 85
-  joinCh()
-  env.after(6, function() b.announce("CHANNEL") end)
-  env.after(36, function() b.announce("CHANNEL") end)
+  env.after(math.random(0, 15), function()
+    if InCombatLockdown and InCombatLockdown() then sessionEnd = 0 return end
+    if IsInInstance then local inst, kind = IsInInstance(); if inst and kind ~= "none" then sessionEnd = 0 return end end
+    if not defaultChannelsReady() then sessionEnd = 0 return end
+    joinCh()
+    env.after(6, function() b.announce("CHANNEL") end)
+    env.after(36, function() b.announce("CHANNEL") end)
+    env.after(70, function() leaveCh() end)
+  end)
 end
 local lastSlot = -1
 local f = CreateFrame("Frame")
@@ -268,11 +270,11 @@ f:SetScript("OnEvent", function(_, ev, prefix, text, channel, sender)
   elseif ev == "PLAYER_ENTERING_WORLD" then
     if prefix then enteredAt = GetTime() end   -- first argument: isInitialLogin
     board().prune()
-    env.after(15, shareNear)
+    env.after(15, function() shareNear(); startSession() end)
   elseif ev == "GROUP_ROSTER_UPDATE" then
     env.after(6, shareNear)
   elseif ev == "PLAYER_LEAVING_WORLD" then
-    sessionEnd = 0
+    leaveCh(); sessionEnd = 0
   end
 end)
 local acc = 0
@@ -282,7 +284,7 @@ f:SetScript("OnUpdate", function(_, dt)
   acc = 0
   local slot = math.floor(time() / 900)
   if lastSlot < 0 then lastSlot = slot end
-  if slot ~= lastSlot then lastSlot = slot; shareNear() end
+  if slot ~= lastSlot then lastSlot = slot; shareNear(); startSession() end
 end)
 
 -- ---------------------------------------------------------------------------
@@ -384,7 +386,7 @@ local function build()
   local cl = U.gbtn(f, "Close", 90, 28, function() f:Hide() end); cl:SetPoint("BOTTOMRIGHT", -18, 16)
   f:EnableMouseWheel(true)
   f:SetScript("OnMouseWheel", function(_, d) view.top = view.top - (d or 0) * 3; refresh() end)
-  f:SetScript("OnShow", function() board().prune(); refresh(); startSession() end)
+  f:SetScript("OnShow", function() board().prune(); refresh() end)
   local acc2 = 0
   f:SetScript("OnUpdate", function(_, dt) acc2 = acc2 + (dt or 0); if acc2 >= 5 then acc2 = 0; refresh() end end)
   f:Hide()

@@ -181,12 +181,15 @@ local function gearChanged(slot)
 end
 
 local ev = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_LEVEL_UP", "QUEST_TURNED_IN", "PLAYER_EQUIPMENT_CHANGED", "COMBAT_LOG_EVENT_UNFILTERED" }) do pcall(ev.RegisterEvent, ev, e) end
-ev:SetScript("OnEvent", function(_, event, arg1, arg2)
-  if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-    if not CombatLogGetCurrentEventInfo then return end
-    local _, sub, _, _, _, _, _, _, destName = CombatLogGetCurrentEventInfo()
-    if sub == "UNIT_DIED" or sub == "PARTY_KILL" then onDeath(destName) end
+-- (Boss kills come from the game's encounter events. Add-ons may no longer listen to the combat log: just asking
+-- for it is what the game answered with "Waypath has been blocked from an action only available to the Blizzard UI".)
+for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_LEVEL_UP", "QUEST_TURNED_IN", "PLAYER_EQUIPMENT_CHANGED" }) do pcall(ev.RegisterEvent, ev, e) end
+for _, e in ipairs({ "ENCOUNTER_END", "BOSS_KILL" }) do pcall(ev.RegisterEvent, ev, e) end
+ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4, arg5)
+  if event == "ENCOUNTER_END" then
+    if arg5 == 1 or arg5 == true then onDeath(arg2) end   -- encounterID, encounterName, difficulty, size, success
+  elseif event == "BOSS_KILL" then
+    onDeath(arg2)                                            -- encounterID, encounterName
   elseif event == "PLAYER_LEVEL_UP" then
     milestones(tonumber(arg1) or level())
   elseif event == "QUEST_TURNED_IN" then
