@@ -27,6 +27,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    2026-11-07: QuestieDB's Forever data still unchanged (tree f59c42a); Timesaver's new Riverglades guide confirms
    Bolder'ok (ogres, north), so the Horde route note names it since v1.19.0. Blizzard's November 6 hotfix fixes
    Riverglades quest items and Krek the Noxious, but still no Horde quest names published.
+   2026-11-08: QuestieDB's Forever data unchanged since the November 8 01:25 UTC update (tree 394e044): still no
+   Riverglades or Mount Hyjal quests (coverage.py: no steps), Shen'dralas still only 4 Horde quests. wowforeverleveling.com
+   (updated November 7) names the same two Horde hubs and no quests.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -65,6 +68,11 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    required skill), for example a Wowhead or ForeverChanges recipe page, a wago.tools SkillLineAbility /
    Spell DB2 export for the Forever build, or a LibItemDB release that adds it. Then feed CRAFT in gen.py.
 
+10. **Camp blueprints without a source** (Camp.lua "Blueprint source not found yet"): the Expert Campfire and every
+   skill-300 object except the Trapper's Workbench. QuestieDB's Forever item data has the blueprint items for the
+   Anarchist's Workbench (273117) and Plague Doctor's Laboratory (273118) but no drop yet; Mmonster and
+   wow-professions.com (2026-11-08) list them all as unknown. Fill in as soon as QuestieDB or a guide names a drop.
+
 ## Open questions
 
 - Guides disagree on Thousand Needles (Forever Era 25-35, Decarebia 20-30, Endgame Tools 23-40) and Arathi Highlands (all say 30-40, but Forever's own quest data starts at 33). Our windows: Horde TN 26-35, Arathi 33-40 (2026-10-16).
@@ -77,6 +85,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.22.0: Trapper's Workbench blueprint source from QuestieDB's Forever data (Houndmaster Loksey, Scarlet
+  Monastery Library), in the Camping tab (item 10, partial; the guides still list it
+  as unknown).
 
 - v1.19.0: Blizzard's November 5-6 hotfixes applied: Tanning Rack at Leatherworking 125 (was 140), Zaetar's Spirit and
   Seed of Life after Princess Theradras (Maraudon, both factions), Unending Torment at 15, Lotheluum Starbreeze as

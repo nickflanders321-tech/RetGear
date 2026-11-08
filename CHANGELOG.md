@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.22.0
+
+- **Camping: the Trapper's Workbench blueprint has a source.** Skinners can get the Blueprint: Trapper's Workbench (Skinning 300 camp object) from Houndmaster Loksey in the Scarlet Monastery Library, according to WoW Forever's own game data. The guides still list it as unknown. The Camping tab now names him.
+
 ## v1.21.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
