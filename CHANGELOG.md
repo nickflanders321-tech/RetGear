@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Quest tags and tips.** Quests on the tracker and the route now carry a small tag when they're Elite, an Escort or Timed, and their tooltip says what to watch out for ("the sacks are objects you click", "the bauble vanishes 5 minutes after you loot it"). Notes come from Polestar's forever-db (CC BY 4.0).
+- **A lighter tracker.** Lines that didn't change are no longer redrawn, the "new quests nearby" search only looks at quests near your level, and finished quests drop their objective spots from memory.
 - Safer with names and states the game hides from add-ons ("secret" values): reading a player you hover over, your target or party members, an NPC you talk to, and your own AFK, ghost and flight state can no longer cause "attempt to compare a secret value" errors.
 - The Arena menu no longer errors if its rank panel loads before the ranking data.
 - Corrected the Blackrock Depths tip: Hand of Justice comes from Emperor Dagran Thaurissan, not Gorosh.

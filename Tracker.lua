@@ -111,6 +111,29 @@ function RG.CurrentRouteEntry() local ok, r = pcall(currentEntry); return ok and
 -- step's place and level range. nil for hand-written steps.
 --   { id, name, act = "turnin"|"pickup"|"doing"|"later", npc, wp, prog }
 local ACT_ORDER = { turnin = 1, pickup = 2, doing = 3, later = 4 }
+-- A quest's kind and note (QuestNotes.lua, from Polestar's forever-db, CC BY 4.0): a short coloured tag for the line and
+-- a sentence for its tooltip. nil when there is nothing to say.
+local QTAG = { e = { "|cffff9f43Elite|r", "Elite or group quest: bring friends, or skip it and keep going." },
+  s = { "|cff9fd4ffEscort|r", "Escort: if the NPC isn't there, someone else is escorting it. Wait a moment for it to come back." },
+  t = { "|cffffd36bTimed|r", "Timed quest: the clock starts when you accept it, so be ready before you do." } }
+function RG.QuestNote(id, skipElite)
+  local q = id and RG.QNOTE and RG.QNOTE[id]
+  if not q then return nil end
+  local tags, longs = {}, {}
+  for c in (q.g or ""):gmatch(".") do
+    local t = QTAG[c]
+    if t and not (skipElite and c == "e") then tags[#tags + 1] = t[1]; longs[#longs + 1] = t[2] end
+  end
+  if #tags == 0 and not q.n then return nil end
+  return { tag = #tags > 0 and table.concat(tags, " ") or nil, long = #longs > 0 and table.concat(longs, "\n") or nil, n = q.n }
+end
+local function noteTip(qn)
+  if not qn then return "" end
+  local about = {}
+  if qn.long then about[#about + 1] = "|cffff9f43" .. qn.long .. "|r" end
+  if qn.n then about[#about + 1] = qn.n end
+  return #about > 0 and ("\n\n" .. table.concat(about, "\n")) or ""
+end
 function RG.StepQuestLines(entry, i, myQuests)
   local key = entry and (entry.zone .. "|" .. entry.from)
   local ids = key and RG.STEP_QUESTS and RG.STEP_QUESTS[key] and RG.STEP_QUESTS[key][i]
@@ -546,6 +569,7 @@ end
 local function questTip(q)
   local t = RG.LevelTag(q.level) .. "|cffffffff" .. q.title .. "|r"
   if q.zone then t = t .. "\n" .. GREY .. q.zone .. "|r" end
+  t = t .. noteTip(RG.QuestNote(q.id, q.group))
   if q.complete then t = t .. "\n" .. GREEN .. "Complete: ready to turn in|r"
   else
     for _, o in ipairs(q.objs or {}) do
@@ -758,7 +782,8 @@ function RG.RefreshTracker()
                 else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
                 local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
                 n = n + 1
-                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or ""),
+                local qn = RG.QuestNote(q.id, q.group)
+                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
                   { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
                     onClick = function()
@@ -900,8 +925,11 @@ function RG.RefreshTracker()
           else tip = "Not open yet: it becomes available " .. l.npc .. "." end
           if l.wp then tip = tip .. "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map" end
           if l.act == "doing" then tip = tip .. (l.wp and "\n" or "\n\n") .. GOLD .. "Click:|r open the quest" end
+          -- what kind of quest it is, and the one thing people get wrong about it (QuestNotes.lua)
+          local qn = RG.QuestNote(l.id)
+          tip = tip .. noteTip(qn)
           n = n + 1
-          y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r",
+          y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
             { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
               onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
               onRightClick = l.wp and function() RG.Follow(l.wp) end or nil })

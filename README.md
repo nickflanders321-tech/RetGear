@@ -128,6 +128,7 @@ Quest, zone, profession and spell names are matched in English, so Waypath+ is m
 ## License and credits
 Waypath+ is free software under the GNU General Public License v3 (see `LICENSE`).
 - Quest, objective and spawn data: [QuestieDB](https://github.com/Questie/QuestieDB) (GPL-3.0), WoW Forever data merged by the Questie team.
+- Quest tags and notes (elite, escort, timed, and "the sacks are objects you click"): [Polestar forever-db](https://github.com/fitzforge/polestar/tree/main/forever-db), its mechanic and step layer (CC BY 4.0).
 - Item stats: [LibItemDB](https://www.curseforge.com/wow/addons/libitemdb) by Pimptasty (MIT, WoW Forever item data scanned from the game client: WoW Forever's own items and its changes to Classic ones) and [cMaNGOS classic-db](https://github.com/cmangos/classic-db) (GPL-3.0; also vendors and crafting recipes).
 - Fonts (SIL Open Font License, licences in `Media/Fonts`): Inter, Fraunces (Undercase Type), Cinzel, Marcellus.
 - Guides and research: Icy Veins, Wowhead, Warcraft Tavern, Mobalytics, wow-professions.com, wowtbc.gg and Warcraft Wiki.

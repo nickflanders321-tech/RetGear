@@ -40,6 +40,11 @@ python3 tools/arcade/gen.py "$T/classic.sql" "$T/qdb" .
 python3 tools/arcade/gear.py "$T/classic.sql" .
 # players' /wp share reports (GitHub issues labelled "quests"): quests the published data doesn't have yet
 python3 tools/community/import.py "${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}" Objectives.lua || true
+# quest tags and notes from Polestar's forever-db (CC BY 4.0 layer); a failed download keeps the last QuestNotes.lua
+rm -rf "$T/ps"
+if git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fitzforge/polestar "$T/ps" && git -C "$T/ps" sparse-checkout set forever-db; then
+  python3 tools/questnotes/gen.py "$T/ps/forever-db" . || true
+fi
 # both checks must pass
 $LUA tools/audit/audit.lua > "$T/audit.txt" || { cat "$T/audit.txt"; exit 1; }
 python3 tools/audit/crosscheck.py . "$T/forever.json" "$T/forever_gear.json" "$LUA"
