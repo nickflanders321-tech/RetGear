@@ -1101,7 +1101,7 @@ local function corpsePoint()
   if type(x) == "number" and type(y) == "number" and (x > 0 or y > 0) then return m, x * 100, y * 100 end
 end
 local function corpseSync()
-  local ghost = UnitIsGhost and UnitIsGhost("player")
+  local ghost = RG.SafeCall(UnitIsGhost, "player")
   if ghost then
     if inCombat() then return end
     local m, x, y = corpsePoint()
@@ -1160,7 +1160,7 @@ end
 -- ===========================================================================
 local function paceTick()
   if RG.IsAlt and RG.IsAlt() then return end
-  if UnitIsAFK and UnitIsAFK("player") then return end
+  if RG.SafeCall(UnitIsAFK, "player") then return end
   RG.db.levelTime = RG.db.levelTime or {}
   local lvl = UnitLevel("player")
   RG.db.levelTime[lvl] = (RG.db.levelTime[lvl] or 0) + 30
@@ -1356,7 +1356,7 @@ do
     local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
     if not pos then return end
     RG.db.givers = RG.db.givers or {}
-    local npc = (UnitName and (UnitName("npc") or UnitName("target"))) or nil
+    local npc = RG.SafeCall(UnitName, "npc") or RG.SafeCall(UnitName, "target")
     local old = RG.db.givers[id]
     RG.db.givers[id] = { n = title, l = (level and level > 0 and level) or (old and old.l), m = map, x = pos.x * 100, y = pos.y * 100, g = npc,
       f = UnitFactionGroup and UnitFactionGroup("player") or nil }
@@ -1375,7 +1375,7 @@ do
     local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
     if not pos then return end
     RG.db.enders = RG.db.enders or {}
-    local npc = (UnitName and (UnitName("npc") or UnitName("target"))) or nil
+    local npc = RG.SafeCall(UnitName, "npc") or RG.SafeCall(UnitName, "target")
     RG.db.enders[id] = { n = GetTitleText and GetTitleText() or nil, m = map, x = pos.x * 100, y = pos.y * 100, g = npc, f = UnitFactionGroup and UnitFactionGroup("player") or nil }
   end
   -- What a giver did NOT offer. Our data can miss a requirement (a hidden earlier quest, reputation, a changed level
@@ -1394,8 +1394,8 @@ do
   end
   local function noteOffers(ids, titles)
     if not (RG.db and RG.QDATA and UnitName) then return end
-    local npc = UnitName("npc")
-    if not npc or (UnitIsPlayer and UnitIsPlayer("npc")) then return end
+    local npc = RG.SafeCall(UnitName, "npc")
+    if not npc or RG.SafeCall(UnitIsPlayer, "npc") then return end
     local list = giverQuests(npc)
     if not list then return end
     local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")

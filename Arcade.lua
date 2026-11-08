@@ -211,18 +211,19 @@ ev:SetScript("OnEvent", function(_, event, text, author, _, _, _, _, _, _, _, _,
     return
   end
   if event == "UPDATE_MOUSEOVER_UNIT" then
-    if UnitExists and UnitExists("mouseover") and UnitIsPlayer and UnitIsPlayer("mouseover") and not (UnitIsUnit and UnitIsUnit("mouseover", "player")) then
-      local _, class = UnitClass("mouseover"); local _, race = UnitRace("mouseover")
-      meet(UnitName("mouseover"), class, race, UnitSex and UnitSex("mouseover"))
+    -- (any of these can come back "secret" on this client: SafeCall turns those into nil)
+    if RG.SafeCall(UnitExists, "mouseover") and RG.SafeCall(UnitIsPlayer, "mouseover") and not RG.SafeCall(UnitIsUnit, "mouseover", "player") then
+      local class = select(2, pcall(function() return select(2, UnitClass("mouseover")) end)); local race = select(2, pcall(function() return select(2, UnitRace("mouseover")) end))
+      meet(RG.SafeCall(UnitName, "mouseover"), RG.Safe(class), RG.Safe(race), RG.SafeCall(UnitSex, "mouseover"))
     end
     return
   end
   if event == "GROUP_ROSTER_UPDATE" then
     for i = 1, 4 do
       local u = "party" .. i
-      if UnitExists and UnitExists(u) and UnitIsPlayer and UnitIsPlayer(u) then
-        local _, class = UnitClass(u); local _, race = UnitRace(u)
-        meet(UnitName(u), class, race, UnitSex and UnitSex(u))
+      if RG.SafeCall(UnitExists, u) and RG.SafeCall(UnitIsPlayer, u) then
+        local class = select(2, pcall(function() return select(2, UnitClass(u)) end)); local race = select(2, pcall(function() return select(2, UnitRace(u)) end))
+        meet(RG.SafeCall(UnitName, u), RG.Safe(class), RG.Safe(race), RG.SafeCall(UnitSex, u))
       end
     end
     return

@@ -1,0 +1,31 @@
+name: QA
+
+# On demand: rebuild every generated data file from the latest sources (QuestieDB, cMaNGOS,
+# LibItemDB) in a throwaway checkout, run the audit and the cross-check against the real data,
+# and say whether the shipped data is up to date. Nothing is committed or released.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: sudo apt-get install -y -qq lua5.1 >/dev/null
+      - name: Every Lua file compiles
+        run: |
+          bad=0
+          for f in $(git ls-files '*.lua'); do luac5.1 -p "$f" 2>/dev/null || luac -p "$f" 2>/dev/null || { lua5.1 -e "assert(loadfile('$f'))" || bad=1; }; done
+          exit $bad
+      - name: Rebuild the data, audit and cross-check
+        run: |
+          sh tools/watch/regenerate.sh > "$RUNNER_TEMP/regen.log" 2>&1 || { tail -80 "$RUNNER_TEMP/regen.log"; exit 1; }
+          tail -25 "$RUNNER_TEMP/regen.log"
+      - name: Is the shipped data up to date?
+        run: |
+          git diff --stat | tail -30
+          if git diff --quiet; then echo "Shipped data matches a fresh rebuild."; else echo "A fresh rebuild differs from what's shipped (see above)."; fi

@@ -52,7 +52,7 @@ local function addXP()
   lastXP, lastMax = xp, max
 end
 local function timeTick()
-  if UnitIsAFK and UnitIsAFK("player") then return end
+  if RG.SafeCall(UnitIsAFK, "player") then return end
   if (UnitLevel("player") or 60) >= 60 then return end
   local m = db().xpMode
   local lvl = UnitLevel("player")

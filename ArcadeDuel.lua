@@ -416,10 +416,10 @@ function RG.DuelChallenge(name, auto, onSent)
   return true
 end
 function RG.DuelTarget()
-  if not (UnitExists and UnitExists("target") and UnitIsPlayer and UnitIsPlayer("target")) then
+  if not (RG.SafeCall(UnitExists, "target") and RG.SafeCall(UnitIsPlayer, "target")) then
     return false, "Target the player you want to duel, or type /wp duel PlayerName."
   end
-  local n = UnitName("target")
+  local n = RG.SafeCall(UnitName, "target")
   if not n or n == UnitName("player") then return false, "Pick another player to duel." end
   return RG.DuelChallenge(n), nil, n
 end
@@ -517,8 +517,9 @@ function RG.DuelRoster()
   local raid = IsInRaid and IsInRaid()
   for i = 1, raid and n or (n - 1) do
     local unit = raid and ("raid" .. i) or ("party" .. i)
-    if UnitExists(unit) and not (UnitIsUnit and UnitIsUnit(unit, "player")) then
-      local name, realm = UnitName(unit)
+    if RG.SafeCall(UnitExists, unit) and not RG.SafeCall(UnitIsUnit, unit, "player") then
+      local okN, name, realm = pcall(UnitName, unit)
+      name, realm = okN and RG.Safe(name) or nil, okN and RG.Safe(realm) or nil
       if name and name ~= "" and name ~= "Unknown" then
         local _, class = UnitClass(unit)
         out[#out + 1] = { name = name, full = (realm and realm ~= "") and (name .. "-" .. realm) or name, class = class,

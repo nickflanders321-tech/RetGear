@@ -1487,8 +1487,8 @@ local function refreshMenu()
   if menu.pvp then menu.pvp:SetEnabled(n == B.DECK) end
   menu.play:SetText(n == B.DECK and "Enter the Arena" or "Finish your deck first")
   menu.lvlInfo:SetText("|cffa89bc9Win|r |cfff5d273" .. REWARD[S.level] .. " coins|r  |cffa89bc9" .. LEVEL_BLURB[S.level] .. "|r")
-  do
-    local R = RG.Rank
+  local R = RG.Rank
+  if R then
     local inf = R.info(R.rating(a))
     local c = inf.color
     menu.rankName:SetText(inf.label); menu.rankName:SetTextColor(c[1], c[2], c[3])

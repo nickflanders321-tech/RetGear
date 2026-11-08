@@ -121,7 +121,7 @@ function RG.TrailImport(text)
 end
 local function sample()
   if not (RG.db and RG.db.trail ~= false) then return end
-  if (IsFlying and IsFlying()) or (UnitOnTaxi and UnitOnTaxi("player")) or (IsInInstance and IsInInstance()) or (UnitIsDeadOrGhost and UnitIsDeadOrGhost("player")) then prev = nil return end
+  if (IsFlying and IsFlying()) or RG.SafeCall(UnitOnTaxi, "player") or (IsInInstance and IsInInstance()) or RG.SafeCall(UnitIsDeadOrGhost, "player") then prev = nil return end
   local speed = GetUnitSpeed and GetUnitSpeed("player") or 0
   if RG.IsSecret and RG.IsSecret(speed) then return end
   if speed < 2 then return end
