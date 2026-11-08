@@ -23,9 +23,15 @@ RG.OPTIONS = {
   { key = "trackerInter", label = "Modern font in the tracker (turn off if its text looks blank)", default = true },
   { key = "sounds",       label = "Play sounds for pop-ups",                default = true },
 }
+-- Options whose default steps back when Questie already does the same thing (your own choice always wins)
+RG.BESIDE_QUESTIE = { newQuests = "available", nameplateAlert = "nameplates", mapPins = "map" }
 function RG.Opt(key)
   local v = RG.db and RG.db[key]
-  if v == nil then for _, o in ipairs(RG.OPTIONS) do if o.key == key then return o.default end end end
+  if v == nil then
+    local q = RG.BESIDE_QUESTIE[key]
+    if q and RG.QuestieDoes and RG.QuestieDoes(q) then return false end
+    for _, o in ipairs(RG.OPTIONS) do if o.key == key then return o.default end end
+  end
   return v ~= false
 end
 local function sound(id) if RG.Opt("sounds") and PlaySound and id then pcall(PlaySound, id) end end

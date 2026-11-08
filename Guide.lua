@@ -231,7 +231,7 @@ local function buildTasks()
     end
   end
   -- worthwhile quests just around you, even when the route has not reached them yet
-  if RG.Opt and RG.Opt("newQuests") and RG.NearbyNewQuests then
+  if RG.OptBesideQuestie and RG.OptBesideQuestie("newQuests", "available") and RG.NearbyNewQuests then
     local have = {}
     for _, t in ipairs(tasks) do have[t.title] = true end
     local added = 0

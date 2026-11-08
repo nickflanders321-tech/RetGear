@@ -60,21 +60,26 @@ local function repeatHandIn()
 end
 RG.RepeatHandIn = repeatHandIn
 
+-- Questie's own auto accept / auto turn-in: when it's on, Questie does that step and we stay out of its way (two add-ons
+-- clicking the same window at once can pick the wrong quest). Questie leaves quests with a choice of rewards to you;
+-- picking the best one is still ours.
+local function qAccept() return RG.QuestieDoes and RG.QuestieDoes("accept") end
+local function qTurnin() return RG.QuestieDoes and RG.QuestieDoes("turnin") end
 local function onGossip()
   if not auto() or not C_GossipInfo then return end
-  for _, q in ipairs(C_GossipInfo.GetActiveQuests and C_GossipInfo.GetActiveQuests() or {}) do
+  for _, q in ipairs((not qTurnin()) and C_GossipInfo.GetActiveQuests and C_GossipInfo.GetActiveQuests() or {}) do
     if q.isComplete then
       if q.repeatable or (q.frequency and q.frequency > 0) or inLogByID(q.questID) == false then manualHandIn(q.title)
       else C_GossipInfo.SelectActiveQuest(q.questID); return end
     end
   end
-  for _, q in ipairs(C_GossipInfo.GetAvailableQuests and C_GossipInfo.GetAvailableQuests() or {}) do
+  for _, q in ipairs((not qAccept()) and C_GossipInfo.GetAvailableQuests and C_GossipInfo.GetAvailableQuests() or {}) do
     if not q.isTrivial and not q.repeatable then C_GossipInfo.SelectAvailableQuest(q.questID); return end
   end
 end
 local function onGreeting()
   if not auto() then return end
-  for i = 1, (GetNumActiveQuests and GetNumActiveQuests() or 0) do
+  for i = 1, ((not qTurnin()) and GetNumActiveQuests and GetNumActiveQuests() or 0) do
     local title, complete = GetActiveTitle(i)
     if complete then
       local id = GetActiveQuestID and GetActiveQuestID(i)
@@ -83,20 +88,20 @@ local function onGreeting()
       if logged == false then manualHandIn(title) else SelectActiveQuest(i); return end
     end
   end
-  for i = 1, (GetNumAvailableQuests and GetNumAvailableQuests() or 0) do
+  for i = 1, ((not qAccept()) and GetNumAvailableQuests and GetNumAvailableQuests() or 0) do
     local trivial, _, repeatable
     if GetAvailableQuestInfo then trivial, _, repeatable = GetAvailableQuestInfo(i) end
     if not trivial and not repeatable then SelectAvailableQuest(i); return end
   end
 end
 local function onDetail()
-  if not auto() then return end
+  if not auto() or qAccept() then return end
   do local id = GetQuestID and GetQuestID(); if id and id > 0 and C_QuestLog and C_QuestLog.IsRepeatableQuest and C_QuestLog.IsRepeatableQuest(id) then return end end
   if QuestGetAutoAccept and QuestGetAutoAccept() then if AcknowledgeAutoAcceptQuest then AcknowledgeAutoAcceptQuest() end return end
   AcceptQuest()
 end
 local function onProgress()
-  if not auto() then return end
+  if not auto() or qTurnin() then return end
   if repeatHandIn() then manualHandIn(GetTitleText and GetTitleText()) return end
   if GetQuestMoneyToGet and GetQuestMoneyToGet() > 0 then return end -- costs gold: you decide
   if IsQuestCompletable and IsQuestCompletable() then CompleteQuest() end
@@ -105,7 +110,7 @@ local function onComplete(retry)
   if not auto() then return end
   if repeatHandIn() then manualHandIn(GetTitleText and GetTitleText()) return end
   local n = GetNumQuestChoices and GetNumQuestChoices() or 0
-  if n <= 1 then GetQuestReward(n == 1 and 1 or nil); return end
+  if n <= 1 then if not qTurnin() then GetQuestReward(n == 1 and 1 or nil) end return end
   if not RG.Opt("autoReward") or not RG.ScoreRewards then return end
   local r = RG.ScoreRewards()
   if r.unknown and not retry then C_Timer.After(0.6, function() onComplete(true) end); return end
@@ -442,7 +447,7 @@ function RG.MarkQuestsDirty() classDirty = true; markBase() end
 function RG.IgnoreQuest(id) if id and RG.db then RG.db.ignoredQuests = RG.db.ignoredQuests or {}; RG.db.ignoredQuests[id] = true; RG.MarkQuestsDirty(); RG.Print("Won't suggest that quest again. " .. "/wp unhide brings them all back.") end end
 -- Nearest few quest givers with something for you, on your continent.
 function RG.NearbyNewQuests(max, valued)
-  if not RG.Opt("newQuests") then return {} end
+  if not RG.OptBesideQuestie("newQuests", "available") then return {} end
   local c, px, py = playerWorld()
   if not c then return {} end
   local out = {}
@@ -645,7 +650,7 @@ RG.RefreshSpeedBar = refreshBar
 
 local lastAlert = {}
 local function nameplate(unit)
-  if not RG.Opt("nameplateAlert") or (RG.IsAlt and RG.IsAlt()) then return end
+  if not RG.OptBesideQuestie("nameplateAlert", "nameplates") or (RG.IsAlt and RG.IsAlt()) then return end
   local name = RG.SafeName(unit)
   local t = name and targetSet[name]
   if not t or RG.SafeUnit(UnitIsDead, unit) then return end
@@ -1269,11 +1274,20 @@ do
       if type(map) ~= "number" or type(x) ~= "number" or type(y) ~= "number" then return end
       local label = type(opts) == "table" and (opts.title or opts.name) or nil
       if RG.Follow then RG.Follow({ map, x * 100, y * 100, label or "Waypoint" }) end
-      local uid = { map, x, y, label }
+      -- shaped like TomTom's own: Questie keeps it, and Ctrl-clicking the same icon again turns it off
+      local uid = { map, x, y, title = label, from = type(opts) == "table" and opts.from or nil }
       uids[#uids + 1] = uid
+      if #uids > 20 then table.remove(uids, 1) end
       return uid
     end
-    function T:RemoveWaypoint() if RG.ClearWaypoint then RG.ClearWaypoint() end end
+    -- only clear the arrow if it is still on that waypoint (an old one Questie forgets shouldn't turn off your route)
+    function T:RemoveWaypoint(uid)
+      if type(self) ~= "table" or self ~= T then uid = self end
+      if type(uid) == "table" and type(uid[1]) == "number" and RG.ArrowTarget then
+        if not RG.ArrowTarget({ uid[1], (uid[2] or 0) * 100, (uid[3] or 0) * 100 }) then return end
+      end
+      if RG.ClearWaypoint then RG.ClearWaypoint() end
+    end
     function T:ClearAllWaypoints() if RG.ClearWaypoint then RG.ClearWaypoint() end end
     function T:SetCrazyArrow() end
     function T:SetClosestWaypoint() end

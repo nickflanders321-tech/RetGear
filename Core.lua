@@ -723,6 +723,32 @@ function RG.CraftState(g)
   return "no", prof, need, have
 end
 -- in your gear guide at all (Bind on Pickup crafts only for their own profession)
+-- Questie, which nearly everyone runs beside Waypath+: what it already shows or does, so we don't do it twice.
+-- (We only read its settings; we never change them.)
+function RG.QuestieProfile()
+  local Q = rawget(_G, "Questie")
+  if type(Q) ~= "table" then return nil end
+  local ok, p = pcall(function() return Q.db and Q.db.profile end)
+  return ok and type(p) == "table" and p or nil
+end
+function RG.QuestieDoes(what)
+  local p = RG.QuestieProfile()
+  if not p then return false end
+  if what == "accept" then return type(p.autoAccept) == "table" and p.autoAccept.enabled == true end
+  if what == "turnin" then return p.autocomplete == true end
+  if what == "tracker" then return p.trackerEnabled ~= false end
+  if what == "nameplates" then return p.nameplateEnabled ~= false end
+  if what == "map" then return p.enableMapIcons ~= false end
+  if what == "available" then return p.enableAvailable ~= false end
+  return false
+end
+-- An option whose default steps back when Questie already covers it: your own choice in Settings always wins.
+function RG.OptBesideQuestie(key, what)
+  if RG.db and RG.db[key] ~= nil then return RG.db[key] ~= false end
+  if RG.QuestieDoes(what) then return false end
+  return RG.Opt(key)
+end
+
 function RG.GearShown(g)
   if RG.CraftState(g) == "no" then return false end
   -- a quest reward from a quest your race or class can't take (another race's starting quests, say)

@@ -435,6 +435,8 @@ local DEFAULT_FOLD = { profs = true, reminders = true }
 local function folded(key)
   if not key then return nil end
   local v = RG.db.trackerFold and RG.db.trackerFold[key]
+  -- beside Questie's own quest tracker the quest list starts folded (one click opens it), so the two don't repeat each other
+  if v == nil and key == "quests" and RG.QuestieDoes and RG.QuestieDoes("tracker") then return true end
   if v == nil then return DEFAULT_FOLD[key] end
   return v
 end

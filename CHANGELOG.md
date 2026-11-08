@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Works hand in hand with Questie.** Nearly everyone runs both, so Waypath+ now notices Questie and steps back wherever Questie already does the job (it only reads Questie's settings, never changes them):
+  - **Auto accept and turn-in:** when Questie's own auto accept or auto turn-in is on, Questie does that step and Waypath+ stays out of the way, so two add-ons don't click the same quest window at once. Questie leaves quests with a choice of rewards to you, and Waypath+ still picks the best one.
+  - **Tracker:** next to Questie's tracker, the quest list on Waypath+'s tracker starts folded (one click opens it), so the same quests aren't listed twice. The route, dungeon, upgrade and the rest stay as they are.
+  - **Map, new quests and quest mobs:** Waypath+'s own map dots, "new quests nearby" and "quest mob nearby" messages start off when Questie already shows those. Ctrl-clicking a Questie map icon still sends Waypath+'s arrow there, and Ctrl-clicking the same icon again now turns it off, as with TomTom. An old Questie waypoint no longer clears the route you're following.
+  - Each of these can be turned back on in Settings, and your choice wins. You get a one-time note in chat saying what changed.
+
 ## v1.23.0
 
 - **Fixed the "Waypath has been blocked from an action only available to the Blizzard UI" pop-up at login.** Two parts of Waypath+ asked the game for the combat log (the Arena's dungeon rewards, to see bosses die, and the dungeon-run summary, to count kills and deaths). WoW Forever's client no longer lets add-ons listen to the combat log, so it blocked that request every time Waypath+ loaded. Boss kills now come from the game's encounter events, kills from the "dies, you gain experience" lines, and party deaths from their health.

@@ -85,3 +85,25 @@ function RG.GPSCheck()
   end
   P("Trail: " .. (RG.TrailSize and RG.TrailSize() or 0) .. " learned points.")
 end
+
+-- ---------------------------------------------------------------------------
+-- Beside Questie: once per character, say what Waypath+ leaves to it (nothing of Questie's is changed)
+-- ---------------------------------------------------------------------------
+do
+  local f = CreateFrame("Frame"); f:RegisterEvent("PLAYER_LOGIN")
+  f:SetScript("OnEvent", function()
+    if not C_Timer then return end
+    C_Timer.After(12, function()
+      if not (RG.QuestieProfile and RG.QuestieProfile()) or not RG.db or RG.db.questieNoted then return end
+      RG.db.questieNoted = true
+      local parts = {}
+      if RG.QuestieDoes("accept") or RG.QuestieDoes("turnin") then parts[#parts + 1] = "Questie's auto accept / turn-in does those (Waypath+ still picks your best quest reward)" end
+      if RG.QuestieDoes("tracker") then parts[#parts + 1] = "the quest list on Waypath+'s tracker starts folded next to Questie's tracker" end
+      if RG.QuestieDoes("map") then parts[#parts + 1] = "Waypath+'s map dots are off (Ctrl-click a Questie icon to send the arrow there)" end
+      if RG.QuestieDoes("available") then parts[#parts + 1] = "Questie shows the new quests nearby" end
+      if RG.QuestieDoes("nameplates") then parts[#parts + 1] = "Questie marks quest mobs, so no nearby-mob messages" end
+      if #parts == 0 then return end
+      RG.Print("Running beside Questie: " .. table.concat(parts, "; ") .. ". Any of these can be turned back on in Settings.")
+    end)
+  end)
+end

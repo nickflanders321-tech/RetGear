@@ -3,7 +3,11 @@
 -- minimap already follow). Nothing here moves or hides the game's own frames: we only add small buttons and listen to clicks.
 local _, RG = ...
 
-local function on() return not (RG.db and RG.db.mapPins == false) end
+-- (beside Questie, whose map icons already show these and send the arrow there on a Ctrl-click, ours stay off unless you turn them on)
+local function on()
+  if RG.db and RG.db.mapPins ~= nil then return RG.db.mapPins ~= false end
+  return not (RG.QuestieDoes and RG.QuestieDoes("map"))
+end
 
 -- ---------------------------------------------------------------------------
 -- A point to send the arrow to for a quest, given its id
