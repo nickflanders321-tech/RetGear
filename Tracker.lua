@@ -456,9 +456,11 @@ local function section(n, y, label, key, right)
     hints[#hints + 1] = { name = name, note = plain, urgent = right ~= nil and right:find(GREEN, 1, true) ~= nil }
     skipped = skipped + 1
     lastSkipped = true
+    if lines[n] then lines[n]:Hide() end
     return y, true
   end
   local b = line(n)
+  b._sig = nil
   b.onClick, b.onRightClick, b.tip, b.onDoubleClick, b.menu, b.wpClick = nil, nil, nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
   local isFolded = folded(key)
@@ -487,6 +489,14 @@ local function item(n, y, text, opts)
   b.onDoubleClick = nil
   b.wpClick = (opts.wp and not opts.noArrow) and opts.wp or nil
   local indent = opts.indent or (opts.box ~= nil and 16 or 8)
+  -- the same line as last refresh (most lines, most of the time): keep its text and layout, only place it. Setting text
+  -- and measuring it is the costly part of a tracker refresh, and this skips it.
+  local sig = tostring(text) .. "\1" .. tostring(opts.right) .. "\1" .. indent .. "\1" .. W .. "\1" .. fontSize(13) .. "\1" ..
+    (opts.single and "s" or "") .. tostring(opts.box) .. (RG.trInterBad and "a" or "") .. (RG.Opt("trackerInter") and "i" or "")
+  if b._sig == sig and b._h then
+    b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:Show()
+    return y + b._h + 4
+  end
   tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
   b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(13))
@@ -519,6 +529,7 @@ local function item(n, y, text, opts)
   local rowH = fontSize(13) + 3
   local h = opts.single and math.max(16, rowH) or (multi and math.max(16, (b.text:GetStringHeight() or 14) + 2) or math.max(16, rows * rowH))
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(h); b:Show()
+  b._sig, b._h = sig, h
   return y + h + 4
 end
 
@@ -561,7 +572,9 @@ function RG.RefreshTracker()
   tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
   tr:SetBackdropColor(0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85)
   -- pairs, not ipairs: a folded section leaves a gap in the list, and ipairs stops at the first gap (old rows stayed on screen)
-  for _, b in pairs(lines) do b:Hide(); b:SetWidth(W - 24) end
+  -- rows are not hidden first: every row up to the last one is placed again below, and the rest are hidden at the end
+  -- (hiding and showing each row on every refresh made the game lay the whole tracker out twice)
+  if tr._w ~= W then tr._w = W; for _, b in pairs(lines) do b:SetWidth(W - 24); b._sig = nil end end
   local lvl = UnitLevel("player")
   local xp, max = UnitXP("player"), UnitXPMax("player")
   local rate, eta
@@ -1134,6 +1147,7 @@ end)
 
 -- Refresh on the things that change the tracker, at most a few times a second.
 local pending
+-- (Progress counts keep updating during a fight: the tracker only re-lays-out lines that changed, so that stays cheap.)
 local function queue() if RG.CardsOnly and RG.CardsOnly() then return end; if pending then return end; pending = true; C_Timer.After(0.4, function() pending = nil; RG.RefreshTracker() end) end
 RG.QueueTracker = queue
 local ev = CreateFrame("Frame")

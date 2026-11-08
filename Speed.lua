@@ -340,6 +340,7 @@ end
 local availCache, availDirty = nil, true
 function RG.MarkQuestsDirty() availDirty = true end
 local function done(id) return C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(id) end
+local byLevel, byLevelOf   -- quest ids by quest level, built on first use
 local function availableQuests()
   if not availDirty and availCache then return availCache end
   availDirty = false
@@ -351,11 +352,18 @@ local function availableQuests()
     if info and info.questID then inLog[info.questID] = true end
   end
   local lvl = UnitLevel("player")
-  for id, d in pairs(RG.QDATA) do
-    if d.s and d.n and lvl >= (d.r or 1) and (d.l or 1) >= lvl - 5 and (d.l or 1) <= lvl + 3 and not inLog[id] and not done(id) and RG.QuestForMe(d) then
-      if not RG.QuestBlocked(id, d, done, logged) then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
+  -- only the quests in your level window are looked at (about a tenth of the table), through an index by quest level
+  if not byLevel or byLevelOf ~= RG.QDATA then
+    byLevel, byLevelOf = {}, RG.QDATA
+    for id, d in pairs(RG.QDATA) do
+      if d.s and d.n then local l = d.l or 1; byLevel[l] = byLevel[l] or {}; byLevel[l][#byLevel[l] + 1] = id end
     end
   end
+  for L = lvl - 5, lvl + 3 do for _, id in ipairs(byLevel[L] or {}) do local d = RG.QDATA[id]
+    if d and d.s and d.n and lvl >= (d.r or 1) and not inLog[id] and not done(id) and RG.QuestForMe(d) then
+      if not RG.QuestBlocked(id, d, done, logged) then list[#list + 1] = { id = id, name = d.n, lvl = d.l, giver = d.s[4], wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } } end
+    end
+  end end
   -- quests the game has shown you that our data does not know (new WoW Forever content): remembered from when you talked to the giver
   local faction = UnitFactionGroup and UnitFactionGroup("player")
   for id, g in pairs((RG.db and RG.db.givers) or {}) do
@@ -1590,4 +1598,26 @@ do
     end
   end
   RG.COMMUNITY_Q = nil
+end
+
+-- ===========================================================================
+-- Memory: a quest you have already done never needs its objective spots again (the mob and object positions are most of
+-- the quest table). Shortly after login they are dropped for every quest this character has finished; the name, levels
+-- and prerequisites stay, so chains and the Route tab still read the same. Frees up to about a megabyte on a high level.
+-- ===========================================================================
+do
+  local cf = CreateFrame("Frame")
+  cf:RegisterEvent("PLAYER_ENTERING_WORLD")
+  cf:SetScript("OnEvent", function(self)
+    self:UnregisterAllEvents()
+    C_Timer.After(15, function()
+      if not (RG.QDATA and C_QuestLog and C_QuestLog.GetAllCompletedQuestIDs) then return end
+      local ok, ids = pcall(C_QuestLog.GetAllCompletedQuestIDs)
+      if not ok or type(ids) ~= "table" then return end
+      for _, id in ipairs(ids) do
+        local d = RG.QDATA[id]
+        if d and d.o and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then d.o = nil end
+      end
+    end)
+  end)
 end
