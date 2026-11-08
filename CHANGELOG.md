@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **The arrow knows more objectives beside Questie.** For quests Waypath+'s own data has no spots for (new WoW Forever quests), the arrow and map now use Questie's spawns for the mob to kill, the object to use or whatever drops the item, before falling back to the game's quest area.
+- **Lighter beside Questie.** With Questie's database loaded, the objective spots of quests not in your log are let go of shortly after login (about 0.7 MB); if you take one of those quests later, the spots come from Questie.
 - **Quest tags and tips.** Quests on the tracker and the route now carry a small tag when they're Elite, an Escort or Timed, and their tooltip says what to watch out for ("the sacks are objects you click", "the bauble vanishes 5 minutes after you loot it"). Notes come from Polestar's forever-db (CC BY 4.0).
 - **A lighter tracker.** Lines that didn't change are no longer redrawn, the "new quests nearby" search only looks at quests near your level, and finished quests drop their objective spots from memory.
 - Safer with names and states the game hides from add-ons ("secret" values): reading a player you hover over, your target or party members, an NPC you talk to, and your own AFK, ghost and flight state can no longer cause "attempt to compare a secret value" errors.

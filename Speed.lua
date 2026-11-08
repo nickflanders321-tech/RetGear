@@ -245,8 +245,10 @@ function RG.QuestSpots()
         local game
         for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then game = o end end
         if not (game and game.finished) then
-          for _, p in ipairs(d[4]) do
-            local src = d[3][p[4]] or d[2]
+          -- spots let go of beside Questie (memory, below): Questie's own spawns for this objective
+          local list = d[4] or (RG.QuestieObjectiveSpots and RG.QuestieObjectiveSpots(qid, d[2])) or {}
+          for _, p in ipairs(list) do
+            local src = (type(p[4]) == "number" and d[3][p[4]]) or (type(p[4]) == "string" and p[4]) or d[2]
             spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired, okind = d[1],
               wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
           end
@@ -271,6 +273,14 @@ function RG.QuestSpots()
               any = true
               spots[#spots + 1] = { quest = info.title, label = key, src = key, have = o.numFulfilled, need = o.numRequired, okind = kind, learned = true,
                 wp = { p[1], p[2], p[3], key } }
+            end
+            -- Questie knows where (spawns of the mob, object or whatever drops the item)
+            if not any and RG.QuestieObjectiveSpots then
+              for _, p in ipairs(RG.QuestieObjectiveSpots(qid, key) or {}) do
+                any = true
+                spots[#spots + 1] = { quest = info.title, label = key, src = p[4] or key, have = o.numFulfilled, need = o.numRequired, okind = kind, questie = true,
+                  wp = { p[1], p[2], p[3], key } }
+              end
             end
             if not any then
               local m, x, y = gamePOI(qid)
@@ -1617,6 +1627,15 @@ do
       for _, id in ipairs(ids) do
         local d = RG.QDATA[id]
         if d and d.o and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then d.o = nil end
+      end
+      -- beside Questie, its database already holds every spawn: the quests not in your log let go of their spots too
+      -- (the objective names and mobs stay); if you take one later, the arrow reads the spots from Questie
+      if RG.QuestieDataWorks and RG.QuestieDataWorks() then
+        for id, d in pairs(RG.QDATA) do
+          if d.o and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then
+            for _, o in ipairs(d.o) do o[4] = nil end
+          end
+        end
       end
     end)
   end)
