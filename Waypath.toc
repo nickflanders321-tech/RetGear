@@ -122,6 +122,7 @@ Bags.lua
 SourceInfo.lua
 ProfGuide.lua
 ProfNudge.lua
+ProfPlus.lua
 UI.lua
 Compat.lua
 GateOff.lua

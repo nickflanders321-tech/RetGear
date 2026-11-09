@@ -782,40 +782,71 @@ local function renderProf()
       head("Now: " .. now.craft .. "  ·  skill " .. st.from .. "-" .. st.to)
       local others = {}
       for _, o in ipairs(now.options or {}) do if o ~= now.craft then others[#others + 1] = o end end
-      line(nil, "|cffffffffMake " .. (now.left or 0) .. " more " .. now.craft .. "|r", (st.mats or "") .. (#others > 0 and (GREY .. "  ·  or: " .. table.concat(others, ", ") .. "|r") or ""),
+      local col = RG.ColourText and RG.ColourText(now.colour)
+      local extra = (now.leftWithMisses or 0) - (now.left or 0)
+      local sub = col or (GREY .. "Open your " .. sel .. " window once and Waypath+ reads the recipe's colour.|r")
+      if extra > 0 then sub = sub .. GREY .. "  ·  materials include " .. extra .. " extra for misses|r" end
+      if #others > 0 then sub = sub .. GREY .. "\nor: " .. table.concat(others, ", ") .. "|r" end
+      local mr = line(nil, "|cffffffffMake " .. (now.left or 0) .. " more " .. now.craft .. "|r", sub,
         GOLD .. (now.left or 0) .. " left|r", GREY .. "to skill " .. st.to .. "|r", P.icon, "gold")
-      if now.mats then
-        local allReady = true
-        for _, e in ipairs(now.mats) do
-          if not e.via then
-            local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
-            local kind = info and KIND_WORD[info[2]] or ""
-            local name, _, quality = RG.ItemInfo(e.id)
-            local title = (e.short > 0 and "|cffffffff" or GREEN) .. (name or e.name) .. "|r" .. GREY .. "   " .. kind .. "|r"
-            local sub = "Need " .. e.need .. "  ·  you have " .. e.have .. GREY .. " (bags and bank)|r"
-            local price = RG.Price and RG.Price(e.id)
-            local r = line(e.id, title, sub, e.short > 0 and ("|cffff6060" .. e.short .. " more|r") or (GREEN .. "Ready|r"),
-              (e.short > 0 and price) and (GREY .. "AH ~" .. RG.Money(price * e.short) .. "|r") or "", nil, e.short > 0 and nil or "green", quality, true)
-            if e.short > 0 then
-              allReady = false
-              local pl = RG.MatPlaces(e.id, 1)[1]
-              if pl and pl.wp then
-                r.onDoubleClick = RG.ArrowFn(pl.wp)
-                r.tip = pl.title .. ": " .. pl.wp[4] .. "\nDouble-click to point the arrow there."
-              end
+      mr.tip = (st.mats and (st.mats .. "\n\n") or "") .. "Crafts left are the guide's count for the rest of this step (it already includes some misses)."
+      if now.skippedGrey then
+        line(nil, GREY .. tostring(now.skippedGrey.craft) .. " has gone grey for you|r", GREY .. "No more points from it, so Waypath+ moved on to this step.|r", "", "", P.icon, nil, nil, true)
+      end
+      if #others > 0 then
+        -- cheapest or fastest: which of the step's recipes to make
+        local mode = RG.ProfPathMode and RG.ProfPathMode() or "cheap"
+        n = n + 1
+        setStep(getRow(n), "", GREY .. "Picking: |r" .. (mode == "cheap" and "the cheapest" or "the fewest materials to get") .. GREY .. "  ·  click for " .. (mode == "cheap" and "the fewest materials to get" or "the cheapest") .. "|r", false,
+          function() if RG.ToggleProfPath then RG.ToggleProfPath() end end)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide()
+        rows[n].tip = "Cheapest: the recipe whose missing materials cost the least (vendor prices, then your last Auction House prices).\nFewest materials: the one you're closest to making from your bags (less to farm or buy)."
+      end
+      -- shopping list: this step, the next one too, or the rest of the route
+      state.profShop = state.profShop or {}
+      local scope = state.profShop[sel] or "step"
+      local shop = RG.ProfShopping and RG.ProfShopping(sel, scope)
+      if shop then
+        local SC = { step = "this step", next = "this step and the next", all = "the rest of the route" }
+        local NEXT = { step = "next", next = "all", all = "step" }
+        local missing = 0
+        for _, e in ipairs(shop.list) do if e.short > 0 then missing = missing + 1 end end
+        local cost = shop.total > 0 and (" ~" .. RG.Money(shop.total)) or ""
+        head("Shopping list  ·  " .. SC[scope])
+        rows[n].onClick = function() state.profShop[sel] = NEXT[scope]; RG.RefreshUI() end
+        rows[n].tip = "Click: " .. SC[NEXT[scope]] .. "."
+        n = n + 1
+        local summary = missing == 0 and (GREEN .. "You have everything for " .. SC[scope] .. "|r")
+          or ("|cffffffff" .. missing .. " to get|r" .. (shop.total > 0 and (GREY .. "  ·  about |r" .. RG.Money(shop.total) .. GREY .. " to buy|r") or "")
+            .. (shop.unknown > 0 and (GREY .. "  ·  " .. shop.unknown .. " without a price|r") or "")
+            .. (shop.owned > 0 and (GREY .. "  ·  you already have " .. RG.Money(shop.owned) .. " of it|r") or ""))
+        setStep(getRow(n), "", summary .. GREY .. "   (click the header: " .. SC[NEXT[scope]] .. ")|r", false, function() state.profShop[sel] = NEXT[scope]; RG.RefreshUI() end)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+        local ahOpen = (AuctionHouseFrame and AuctionHouseFrame:IsShown()) or (AuctionFrame and AuctionFrame:IsShown())
+        for _, e in ipairs(shop.list) do
+          local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
+          local kind = info and KIND_WORD[info[2]] or ""
+          local name, _, quality = RG.ItemInfo(e.id)
+          local title = (e.short > 0 and "|cffffffff" or GREEN) .. (name or e.name) .. "|r" .. GREY .. "   " .. kind .. "|r"
+          local sub = "Need " .. e.need .. "  ·  you have " .. e.have
+          local price = ""
+          if e.short > 0 and e.unit then
+            price = GREY .. ((e.src == "vendor" and "vendor ") or (e.src == "make" and "to make ") or "AH ") .. "~|r" .. RG.Money(math.floor(e.unit * e.short + 0.5))
+          end
+          local r = line(e.id, title, sub, e.short > 0 and ("|cffff6060" .. e.short .. " more|r") or (GREEN .. "Ready|r"), price, nil, e.short > 0 and nil or "green", quality, true)
+          if e.short > 0 then
+            local pl = RG.MatPlaces(e.id, 1)[1]
+            local tips = {}
+            if pl and pl.wp then r.onDoubleClick = RG.ArrowFn(pl.wp); tips[#tips + 1] = pl.title .. ": " .. pl.wp[4] .. "\nDouble-click: point the arrow there." end
+            if e.src ~= "vendor" then
+              r.onClick = function() if RG.AHSearchItem then RG.AHSearchItem(e.id) end end
+              tips[#tips + 1] = (ahOpen and "Click: search the Auction House for it." or "At the Auction House, click to search for it.")
+            else
+              tips[#tips + 1] = "Sold by profession supply vendors: at one, the \"Buy profession materials\" button buys what's missing (only when you click it)."
             end
+            r.tip = table.concat(tips, "\n")
           end
         end
-        -- crafted reagents you're short of: what they take
-        for _, e in ipairs(now.mats) do
-          if e.via then
-            local name, _, quality = RG.ItemInfo(e.id)
-            line(e.id, GREY .. "for " .. e.via .. ":|r " .. (e.short > 0 and "|cffffffff" or GREEN) .. (name or e.name) .. "|r", "Need " .. e.need .. "  ·  you have " .. e.have,
-              e.short > 0 and ("|cffff6060" .. e.short .. " more|r") or (GREEN .. "Ready|r"), "", nil, nil, quality, true)
-            if e.short > 0 then allReady = false end
-          end
-        end
-        if allReady then line(nil, GREEN .. "You have everything for this step|r", "Open your " .. sel .. " window and craft away. Waypath+ tells you when the step is done.", "", "", P.icon, "green", nil, true) end
       else
         line(nil, GREY .. "Materials: " .. (st.mats or "see the guide") .. "|r", "Open your " .. sel .. " window once and Waypath+ reads the exact recipe from it.", "", "", P.icon, nil, nil, true)
       end
@@ -862,7 +893,12 @@ local function renderProf()
       local passed = rank >= st.to and not st.train
       local title
       if st.train then title = GOLD .. "Train: " .. st.train .. "|r"
-      elseif st.craft then title = st.craft .. GREY .. "   x" .. (st.n or "?") .. "|r"
+      elseif st.craft then
+        title = st.craft .. GREY .. "   x" .. (st.n or "?") .. "|r"
+        if not passed and RG.ProfPickOption and RG.HasPrices and RG.HasPrices() then
+          local _, _, c = RG.ProfPickOption(st, st.n or 0, sel)
+          if c and c > 0 then title = title .. GREY .. "  ~|r" .. RG.Money(c) end
+        end
       elseif st.gather then title = st.gather .. (st.also and (GREY .. " and " .. st.also .. "|r") or "")
       elseif st.skin then title = st.skin
       elseif st.fish then title = "Fish in " .. st.fish end

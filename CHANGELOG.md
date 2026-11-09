@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Profession leveling, upgraded** (ideas from LazyProf, CheapSkill, Forever Profession Master and RestedXP Professions):
+  - **What it costs.** Each step, the shopping list and the full route show what the materials will cost: vendor materials (thread, dye, flux, vials, spices) at their real vendor price, the rest at your last Auction House price, and bars or bolts at what it costs to make them when that's cheaper.
+  - **Cheapest or fewest materials.** When a step has more than one recipe, Waypath+ now picks the cheapest one by default; one click switches to the one you're closest to making from your bags.
+  - **The recipe's real colour.** Open your profession window and the step shows the recipe's colour (orange, yellow, green). Yellow and green add a few extra materials for misses. When the recipe goes grey, Waypath+ says so and moves straight to the next step.
+  - **Shopping list.** For this step, this step and the next, or the rest of the route (click the header): what you need, what you have, what's left to get and what it costs. It only breaks bars, bolts and elixirs down into their materials when you can make them yourself. At the Auction House, click a material to search for it.
+  - **Buy button at vendors.** At a vendor that sells materials your next steps need, a "Buy profession materials" button appears next to the window, with the cost. Nothing is bought until you click it, it buys only what's missing, and it never spends more gold than you have. It can be turned off in Settings.
+  - **Reminders** (once each, can be turned off): a new ore or herb you can gather ("Mining 65: you can mine Tin now"), train before you hit the cap, and a gathering skill falling well behind your level.
 - **Grey quests are optional on the route.** A quest so far below you that it gives almost no XP no longer holds a step open or shows as "Pick up" on the Route and tracker: once only grey quests are left, the step ticks off ("Done (what's left is grey)"). A grey quest you already have still shows until you hand it in or drop it.
 - **Smarter zone choice.** When picking which zone to work on, Waypath+ now only counts the steps you can actually do now: one of their quests is in your log or can be picked up (not grey, and not waiting on an earlier quest, your level, a profession or reputation). Zones full of quests you can't take yet no longer look like they have lots to do. The reason in the tooltip says "N steps you can do now".
 

@@ -27,11 +27,23 @@ end
 -- Read the open profession window (classic trade skill API, the enchanting craft
 -- API, or the modern C_TradeSkillUI) and remember the reagents of every recipe
 -- on the leveling routes.
+-- Each recipe's colour as the game shows it right now (orange/yellow/green/grey), with the skill it was read at:
+-- RG.db.recipeCol[name] = { c = "optimal"|"medium"|"easy"|"trivial", at = skill, p = profession }
+local COLOUR = { optimal = true, medium = true, easy = true, trivial = true }
+local DIFF = { [0] = "optimal", [1] = "medium", [2] = "easy", [3] = "trivial" }
+local function noteColour(name, kind, prof, rank)
+  if not (name and COLOUR[kind]) then return end
+  RG.db.recipeCol = RG.db.recipeCol or {}
+  RG.db.recipeCol[name] = { c = kind, at = rank, p = prof }
+end
 local function readWindow()
   if not RG.db then return end
   if GetNumTradeSkills and GetTradeSkillInfo and GetTradeSkillNumReagents then
+    local prof, rank
+    if GetTradeSkillLine then local ok, a, b = pcall(GetTradeSkillLine); if ok then prof, rank = a, b end end
     for i = 1, (GetNumTradeSkills() or 0) do
       local name, kind = GetTradeSkillInfo(i)
+      if name and kind ~= "header" then noteColour(name, kind, prof, rank) end
       if name and kind ~= "header" and wanted(name) then
         local r = {}
         for j = 1, (GetTradeSkillNumReagents(i) or 0) do
@@ -46,8 +58,11 @@ local function readWindow()
     end
   end
   if GetNumCrafts and GetCraftInfo and GetCraftNumReagents then
+    local prof, rank
+    if GetCraftDisplaySkillLine then local ok, a, b = pcall(GetCraftDisplaySkillLine); if ok then prof, rank = a, b end end
     for i = 1, (GetNumCrafts() or 0) do
       local name, _, kind = GetCraftInfo(i)
+      if name and kind ~= "header" then noteColour(name, kind, prof, rank) end
       if name and kind ~= "header" and wanted(name) then
         local r = {}
         for j = 1, (GetCraftNumReagents(i) or 0) do
@@ -64,6 +79,12 @@ local function readWindow()
     local ok, ids = pcall(T.GetAllRecipeIDs)
     for _, rid in ipairs(ok and ids or {}) do
       local info = T.GetRecipeInfo(rid)
+      if info and info.name and info.learned ~= false then
+        local d = info.relativeDifficulty or info.difficulty
+        local prof, rank
+        if T.GetTradeSkillLine then local okL, _, nm, r = pcall(T.GetTradeSkillLine); if okL then prof, rank = nm, r end end
+        noteColour(info.name, type(d) == "number" and DIFF[d] or d, prof, rank)
+      end
       if info and info.name and wanted(info.name) then
         local okS, sch = pcall(T.GetRecipeSchematic, rid, false)
         if okS and sch and sch.reagentSlotSchematics then
@@ -87,6 +108,29 @@ local function count(id)
   return (f and f(id, true)) or 0   -- bags and bank
 end
 RG.MatCount = count
+-- Can you make this reagent yourself? Only then does a list break it down into what it takes (a tailor buys an
+-- Elixir of Wisdom, an alchemist makes it). Yes when it's on the route of a profession you have, or your window shows it.
+local planRecipes
+function RG.CanMake(recipe)
+  if not recipe then return false end
+  local col = RG.db and RG.db.recipeCol and RG.db.recipeCol[recipe]
+  local mine = RG.Professions and RG.Professions() or {}
+  if col and (not col.p or mine[col.p]) then return true end
+  if not planRecipes then
+    planRecipes = {}
+    for name, P in pairs(RG.PROFESSIONS or {}) do
+      local set = {}
+      for _, st in ipairs(P.plan or {}) do
+        for part in ((st.craft or "") .. ","):gmatch("%s*(.-)%s*,") do
+          for o in (part .. " or "):gmatch("(.-) or ") do o = o:gsub("^%s+", ""):gsub("%s+$", ""); if o ~= "" then set[o] = true end end
+        end
+      end
+      planRecipes[name] = set
+    end
+  end
+  for name in pairs(mine) do if planRecipes[name] and planRecipes[name][recipe] then return true end end
+  return false
+end
 local function matName(id)
   local n = RG.ItemInfo(id)
   if n then return n end
@@ -136,7 +180,7 @@ function RG.MatsFor(recipeName, crafts)
     local e = out[i]
     local sub = RG.Recipe(e.name)
     local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
-    if sub and sub.r and #sub.r > 0 and (not info or info[2] == "crafted") then
+    if sub and sub.r and #sub.r > 0 and (not info or info[2] == "crafted") and RG.CanMake(e.name) then
       local short = e.need - count(e.id)
       if short > 0 then
         local subRuns = math.ceil(short / math.max(1, sub.y or 1))
@@ -162,6 +206,40 @@ function RG.ProfPlan(P)
   return {}
 end
 
+-- Which of a step's recipes to make for `crafts` crafts: the cheapest (prices known) or the one needing the fewest
+-- materials still to get (RG.ProfPathMode() "fast", or no prices yet). Fish count as harder to get if you don't fish,
+-- and a recipe your window shows grey is skipped while another isn't. Returns recipe, its materials, its cost.
+function RG.ProfPickOption(st, crafts, prof)
+  local opts = options(st)
+  if #opts == 0 then return nil end
+  local fisher = RG.Skill("Fishing") ~= nil
+  local cheap = (not RG.ProfPathMode or RG.ProfPathMode() == "cheap") and RG.MatsCost and RG.HasPrices and RG.HasPrices()
+  local best, bestScore, bestMats, bestCost
+  for _, o in ipairs(opts) do
+    local m = RG.MatsFor(o, crafts)
+    if m then
+      local short, fishy = 0, false
+      for _, e in ipairs(m) do
+        if not e.via then short = short + e.short end
+        local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
+        if info and info[2] == "fish" and e.short > 0 then fishy = true end
+      end
+      local cost, unknown = 0, 0
+      if RG.MatsCost then cost, unknown = RG.MatsCost(m) end
+      local score
+      if cheap then
+        -- copper, with an unpriced material counted like a fairly expensive one (so a fully priced option wins a tie)
+        score = cost + unknown * 5000 + ((fishy and not fisher) and 2000 or 0)
+      else
+        score = short + ((fishy and not fisher) and 0.5 or 0)
+      end
+      if RG.RecipeColour and RG.RecipeColour(o, prof) == "trivial" then score = score + 1e9 end
+      if not best or score < bestScore then best, bestScore, bestMats, bestCost = o, score, m, cost end
+    end
+  end
+  return best or opts[1], bestMats, bestCost
+end
+
 -- The step you're on (or the next one), for any profession.
 function RG.ProfNow(name, skillOverride)
   local P = RG.PROFESSIONS and RG.PROFESSIONS[name]
@@ -169,32 +247,28 @@ function RG.ProfNow(name, skillOverride)
   local skill = skillOverride or RG.Skill(name) or 0
   local plan = RG.ProfPlan(P)
   local now, idx
+  local skipped
   for i, st in ipairs(plan) do
-    if not st.train and skill < st.to then now, idx = st, i; break end
+    if not st.train and skill < st.to then
+      -- every recipe of this step has gone grey in your window: no more points from it, so on to the next step
+      local opts = options(st)
+      local allGrey = #opts > 0 and RG.RecipeColour
+      for _, o in ipairs(opts) do if not RG.RecipeColour or RG.RecipeColour(o, name) ~= "trivial" then allGrey = false end end
+      if allGrey then skipped = skipped or st
+      else now, idx = st, i; break end
+    end
   end
   if not now then return { done = true, skill = skill, P = P } end
-  local res = { st = now, index = idx, skill = skill, P = P }
-  -- crafting: pick the option you're closest to making from your bags; on a tie,
-  -- skip options that need fish if you don't fish
+  local res = { st = now, index = idx, skill = skill, P = P, skippedGrey = skipped }
   local opts = options(now)
   if #opts > 0 then
     res.left = RG.StepCraftsLeft(now, skill)
-    local fisher = RG.Skill("Fishing") ~= nil
-    local best, bestScore
-    for _, o in ipairs(opts) do
-      local m = RG.MatsFor(o, res.left)
-      if m then
-        local short, fishy = 0, false
-        for _, e in ipairs(m) do
-          if not e.via then short = short + e.short end
-          local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
-          if info and info[2] == "fish" and e.short > 0 then fishy = true end
-        end
-        local score = short + ((fishy and not fisher) and 0.5 or 0)
-        if not best or score < bestScore then best, bestScore, res.mats = o, score, m end
-      end
-    end
-    res.craft = best or opts[1]
+    res.craft = RG.ProfPickOption(now, res.left, name)
+    res.colour = RG.RecipeColour and RG.RecipeColour(res.craft, name)
+    -- a few extra for the crafts that won't give a point (yellow and green)
+    res.leftWithMisses = RG.CraftsWithMisses and RG.CraftsWithMisses(res.left, res.colour) or res.left
+    res.mats = RG.MatsFor(res.craft, res.leftWithMisses)
+    if RG.MatsCost and res.mats then res.cost, res.costUnknown, res.costOwned = RG.MatsCost(res.mats) end
     res.options = opts
   end
   -- the next craft step after this one
@@ -396,7 +470,24 @@ local f = CreateFrame("Frame")
 for _, e in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "PLAYER_LOGIN" }) do pcall(f.RegisterEvent, f, e) end
 f:SetScript("OnEvent", function(_, event)
   if not RG.db then return end
-  if event:find("^TRADE") or event:find("^CRAFT") then RG.Debounce("profRead", 0.5, readWindow); return end
+  if event:find("^TRADE") or event:find("^CRAFT") then
+    RG.Debounce("profRead", 0.5, function()
+      readWindow()
+      -- the recipe you were making has just gone grey: say so once, with what's next
+      for n in pairs(RG.Professions()) do
+        local P = RG.PROFESSIONS and RG.PROFESSIONS[n]
+        local now = P and RG.ProfNow(n)
+        local g = now and now.skippedGrey
+        local key = g and (n .. "|" .. tostring(g.craft) .. "|" .. g.to)
+        if key and RG.db and not (RG.db.greySaid or {})[key] then
+          RG.db.greySaid = RG.db.greySaid or {}; RG.db.greySaid[key] = true
+          local nxt = now.craft or (now.st and (now.st.gather or now.st.skin)) or (now.done and "nothing: you're done")
+          RG.Print(n .. ": " .. tostring(g.craft):gsub(" or .*", "") .. " has gone grey (no more points). Next: " .. tostring(nxt) .. (now.left and now.left > 0 and (" x" .. now.left) or "") .. ".")
+        end
+      end
+    end)
+    return
+  end
   if event == "PLAYER_LOGIN" then
     for n, p in pairs(RG.Professions()) do lastSkill[n] = p.rank end
     return
@@ -407,6 +498,7 @@ f:SetScript("OnEvent", function(_, event)
       local before = lastSkill[n]
       lastSkill[n] = p.rank
       local P = RG.PROFESSIONS and RG.PROFESSIONS[n]
+      if before and p.rank > before and RG.ProfReminders then pcall(RG.ProfReminders, n, before, p.rank) end
       if before and p.rank > before and P and not (RG.IsAlt and RG.IsAlt()) then
         for _, st in ipairs(RG.ProfPlan(P)) do
           if not st.train and before < st.to and p.rank >= st.to then

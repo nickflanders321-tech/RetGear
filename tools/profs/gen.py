@@ -5,7 +5,7 @@ and to send you somewhere (double-click a place and the arrow takes you there).
   RG.RECIPES[craft name]  = { s = spell, i = item made, y = how many per craft, r = { {itemID, count}, ... } }
                             for every craft in Professions/*.lua plans, plus the recipes for crafted
                             reagents (bars, bolts, elixirs, ...)
-  RG.MAT_INFO[itemID]     = { name, kind, made-by recipe? }   kind: vendor, herb, ore, stone, gem, cloth,
+  RG.MAT_INFO[itemID]     = { name, kind, p = vendor price per item (copper), b = sold in bundles of }   kind: vendor, herb, ore, stone, gem, cloth,
                             leather, meat, fish, elemental, enchant, crafted, drop
   RG.MAT_SPOTS[itemID]    = { {uiMapID, x, y, label, lvl, score}, ... }   mobs that drop it (Horde-safe,
                             not in dungeons, not elite), best first
@@ -450,7 +450,15 @@ for nm in sorted(RECIPES):
     r = RECIPES[nm]
     L.append("  [%s] = { s = %d, i = %d, y = %d, r = { %s }%s }," % (lua_str(nm), r["s"], r["i"], r["y"], ", ".join("{ %d, %d }" % x for x in r["r"]), ", guide = true" if r.get("guide") else ""))
 L.append("}"); L.append("RG.MAT_INFO = {")
-for iid in sorted(MAT_INFO): L.append("  [%d] = { %s, %s }," % (iid, lua_str(MAT_INFO[iid][0]), lua_str(MAT_INFO[iid][1])))
+def buy_fields(iid):
+    # vendor materials: what one costs at a vendor (p, copper) and how many come in one purchase (b)
+    it = items.get(iid)
+    if MAT_INFO[iid][1] != "vendor" or not it: return ""
+    try: price, cnt = int(it.get("BuyPrice") or 0), max(1, int(it.get("BuyCount") or 1))
+    except ValueError: return ""
+    if price <= 0: return ""
+    return ", p = %s, b = %d" % (round(price / cnt, 2) if price % cnt else price // cnt, cnt)
+for iid in sorted(MAT_INFO): L.append("  [%d] = { %s, %s%s }," % (iid, lua_str(MAT_INFO[iid][0]), lua_str(MAT_INFO[iid][1]), buy_fields(iid)))
 L.append("}"); L.append("RG.MAT_SPOTS = {")
 for iid in sorted(MAT_SPOTS): L.append("  [%d] = { %s }," % (iid, ", ".join(wp(o[1], o[2], o[3], ", %d" % o[4]) for o in MAT_SPOTS[iid])))
 L.append("}"); L.append("RG.MAT_VENDORS = {")
