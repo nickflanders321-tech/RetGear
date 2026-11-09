@@ -178,7 +178,7 @@ H.steps = {
     "Blazeroar, an elite dragon, is the last boss; no Horde quest for the prison is known yet.",
   },
   ["Blackmaw Hold|55"] = {
-    "Fly to Valormok and ride north-east to Darkwhisper Gorge.",
+    "Fly to Valormok, then head north-east to Darkwhisper Gorge.",
     "The entrance is the furbolg tunnel under a carved bear-head lintel (about 38.7, 33.4), with a meeting stone beside it; follow the tunnel uphill to the portal at the top.",
     "Known bosses include Withermaw, Elder Shaman Bloodmane, Bonesnout the Unbroken and Varrox Bleakhoof; their quest items' quests haven't been found yet.",
   },
