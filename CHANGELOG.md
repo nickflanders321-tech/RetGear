@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.27.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.27.0
 
 - **Three more dungeon entrances.** Alcaz Prison, Blackmaw Hold and The Shaper's Terrace now say where their doors are, with an arrow and map pin to each (two guides agree on every spot):

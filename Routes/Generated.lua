@@ -764,7 +764,7 @@ RG.GEN_STEPS = {
     },
     ["Mulgore|12"] = {
       { t = "At Bloodhoof Village (levels 11-12): Drive Them Out, Supervisor Fizsprocket, Ceasing Operations, The High Chieftain. From Baine Bloodhoof, Morin Cloudstalker.", q = { 99080, 765, 98427, 99082 }, w = { 1412, 45.9, 64.2, "Bloodhoof Village" } },
-      { t = "At Thunder Bluff (levels 11-14): Stalk With The Earthmother, Rites of the Earthmother. From Boarton Shadetotem, Cairne Bloodhoof.", q = { 76160, 776, 76240 }, w = { 1456, 60.3, 51.7, "Thunder Bluff" } },
+      { t = "At Thunder Bluff (level 14): Rites of the Earthmother. From Cairne Bloodhoof.", q = { 776 }, w = { 1456, 60.3, 51.7, "Thunder Bluff" } },
     },
     ["The Barrens|13"] = {
       { t = "At the Crossroads (levels 12-15): Plainstrider Menace, Disrupt the Attacks, Raptor Thieves, The Forgotten Pools, Centaur Bracers, Supplies for the Crossroads, Fungal Spores, Harpy Raiders. From Sergra Darkthorn, Thork, Gazrog and others.", q = { 844, 871, 869, 870, 855, 5041, 848, 867 }, w = { 1413, 52.0, 29.9, "the Crossroads" } },
@@ -801,7 +801,7 @@ RG.GEN_STEPS = {
       { t = "At Bloodhoof Village (level 10): The Venture Co., Wildmane Totem, Wildmane Cleansing, Thunderhorn's Report. From Morin Cloudstalker, Mull Thunderhorn.", q = { 764, 759, 760, 98435 }, w = { 1412, 45.9, 64.2, "Bloodhoof Village" } },
       { t = "Perith Stormhoof (level 8): The Longwalkers.", q = { 98430 }, w = { 1412, 33.1, 66.0, "Perith Stormhoof" } },
       { t = "At Bloodhoof Village (levels 10-12): The Hunter's Way, Supervisor Fizsprocket, Ceasing Operations. From Skorn Whitecloud, Morin Cloudstalker.", q = { 861, 765, 98427 }, w = { 1412, 45.9, 64.2, "Bloodhoof Village" } },
-      { t = "At Thunder Bluff (levels 10-11): Stalk With The Earthmother. From Boarton Shadetotem.", q = { 76156, 76160, 76240 }, w = { 1456, 39.4, 65.8, "Thunder Bluff" } },
+      { t = "At Thunder Bluff (levels 10-11): Stalk With The Earthmother. From Boarton Shadetotem.", q = { 76156, 76160 }, w = { 1456, 39.4, 65.8, "Thunder Bluff" } },
       { t = "Malah Longwind (level 9): Grim Tidings.", q = { 99081 }, w = { 1412, 57.6, 63.2, "Malah Longwind" } },
       { t = "At Bloodhoof Village (levels 9-11): Our Ancient Enemy, Drive Them Out, The High Chieftain. From Brave Wildrunner, Baine Bloodhoof.", q = { 99101, 99080, 99082 }, w = { 1412, 45.9, 64.2, "Bloodhoof Village" } },
       { t = "Seer Wiserunner (level 10): Rite of Wisdom.", q = { 773 }, w = { 1412, 34.3, 43.3, "Seer Wiserunner" } },
@@ -1258,6 +1258,7 @@ RG.GEN_DUNGEONS = {
     { id = 6563, n = "The Essence of Aku'Mai", g = "Je'neu Sancrea", at = "Ashenvale", w = { 1440, 11.6, 34.3, "Je'neu Sancrea" }, l = 22, r = 17 },
     { id = 6564, n = "Allegiance to the Old Gods", g = "", at = "starts from an item", w = nil, l = 22, r = 17 },
     { id = 1740, n = "The Orb of Soran'ruk", g = "Doan Karhan", at = "The Barrens", w = { 1413, 49.3, 57.2, "Doan Karhan" }, l = 25, r = 20, cl = "L" },
+    { id = 95042, n = "Seeking the Kor Gem", g = "Ulric Frostveil", at = "Ashenvale", w = { 1440, 11.8, 34.5, "Ulric Frostveil" }, l = 25, r = 20, cl = "P" },
     { id = 6565, n = "Allegiance to the Old Gods", g = "Je'neu Sancrea", at = "Ashenvale", w = { 1440, 11.6, 34.3, "Je'neu Sancrea" }, l = 26, r = 17 },
     { id = 6561, n = "Blackfathom Villainy", g = "", at = "starts from an item", w = nil, l = 27, r = 18 },
     { id = 6921, n = "Amongst the Ruins", g = "Je'neu Sancrea", at = "Ashenvale", w = { 1440, 11.6, 34.3, "Je'neu Sancrea" }, l = 27, r = 21 },
