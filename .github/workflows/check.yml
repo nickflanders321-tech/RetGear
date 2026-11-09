@@ -9,9 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: leafo/gh-actions-lua@v10
-        with:
-          luaVersion: "5.1"
+      # Lua 5.1 from Ubuntu's packages (building it from lua.org timed out and failed the check on 2026-11-08)
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get install -y -qq lua5.1 >/dev/null
+          sudo ln -sf "$(command -v lua5.1)" /usr/local/bin/lua
       - name: Syntax check every Lua file
         run: |
           for f in *.lua Classes/*.lua Races/*.lua Routes/*.lua Professions/*.lua; do

@@ -20,14 +20,19 @@ Write down any disagreement under "Open questions" in BACKLOG.md instead of gues
 
 | Source | Feeds | Last checked |
 |---|---|---|
-| [Warcraft Tavern: WoW Forever](https://www.warcrafttavern.com/forever/) | Zone order, new zones and dungeons, patch notes | 2026-11-02 |
+| [Warcraft Tavern: WoW Forever](https://www.warcrafttavern.com/forever/) | Zone order, new zones and dungeons (Drowned City and Krol'dok entrance guides), patch notes | 2026-11-09 |
 | [Wowhead](https://www.wowhead.com/) WoW Forever guides and database | Quest names, IDs, rewards, level ranges | 2026-11-02 |
 | [Icy Veins](https://www.icy-veins.com/) WoW Forever leveling guides | Zone order, class leveling tips | 2026-11-02 |
 | [wowforeverguides.com](https://wowforeverguides.com/) | Horde leveling route | 2026-11-02 |
 | [theforeverera.com](https://theforeverera.com/) | Zone level ranges, new content | 2026-11-02 |
 | [classicwowforever.com](https://classicwowforever.com/) | New zones, starting zones | 2026-11-02 |
 | [zockify.com/forever](https://zockify.com/forever/) | Leveling, dungeons | 2026-11-02 |
-| Official Blizzard WoW Forever posts and patch notes | Anything they change (final say after game data) | 2026-11-06 |
+| Official Blizzard WoW Forever posts and patch notes | Anything they change (final say after game data) | 2026-11-09 |
+| [Mmonster: The Drowned City](https://mmonster.co/wow-forever/guides/dungeons/the-drowned-city) and [Krol'dok Stronghold](https://mmonster.co/wow-forever/guides/dungeons/kroldok-stronghold) | Dungeon entrances, quest names and givers (updated 2026-11-07) | 2026-11-09 |
+| [ForeverChanges patch notes](https://foreverchanges.pro/patch-notes) | Hotfixes and client changes per build (nothing new November 8-9) | 2026-11-09 |
+| [MMOHuts: dungeon kill XP hotfix](https://mmohuts.com/news/wow-forever-hotfix-boosts-dungeon-kill-xp-by-50) | November 8 hotfix: +50% XP from dungeon kills | 2026-11-09 |
+| [MMONerds: Riverglades](https://mmonerds.com/wow-forever-riverglades-zone-explained/) | Riverglades hubs and inns (no Horde quest names) | 2026-11-09 |
+| [outputlag: dungeons and raids list](https://outputlag.com/guides/wow-forever-dungeons-and-raids-list/) | New dungeon levels and locations (no entrances for Alcaz, Blackmaw, Shaper's Terrace) | 2026-11-09 |
 | [Blizzard forum: Forever Beta Development Notes](https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-15/2360696/5) | Official per-build change list (quest fixes, level requirements, class changes for the 2nd Spec tab notes) | 2026-11-02 |
 | [The Forever Era patch notes](https://theforeverera.com/en/patch-notes/) | Every beta build in order (November 3-4: UI fixes only, nothing for routes) | 2026-11-05 |
 | [ForeverChanges patch notes](https://foreverchanges.pro/patch-notes) (new 2026-10-26) | Per-build changes including unannounced hotfixes (beta builds up to 1.60.1.70755 on November 3, November 3 Hunter hotfix; no live-server entries yet on November 5; November 6: a November 4 Warrior hotfix (Defiance, Defensive Stance as in the launch notes) and Chain Lightning still 2.5 sec on live realms, nothing for routes; November 7 client changes for build 1.60.1.70862: quest-item Use lines, Hyjal flask tooltips, five new dungeons in the client, the Adventurer's Tent rested tent, which is China-only, so nothing for routes), item tooltips (foreverchanges.pro/item/<id>) | 2026-11-08 |

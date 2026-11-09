@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.26.0
+- **New dungeon entrances.** The Drowned City and Krol'dok Stronghold now say where their doors are, with an arrow and map pin to each:
+  - The Drowned City is underwater off Stranglethorn Vale: swim west from Grom'gol (north from Booty Bay for the Alliance) past The Vile Reef and dive into the Sunken Hollow cave (about 21.4, 27.9).
+  - Krol'dok Stronghold's entrance is reported to be a cave west of the fortress's big gates in northern Riverglades (about 37.5, 37.5).
+- Horde: The Drowned City gets a step list (where to go, Mazu'kon's quest in Mulgore, the quests picked up inside, the known bosses) and its two quests in the dungeon list; Krol'dok gets steps too, with the Eye of Mugg turn-in at Krom'rosh in Rog'mar.
+- Rog'mar, the Horde base in Riverglades, now gets a map pin.
+
 ## v1.25.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

@@ -40,7 +40,7 @@ PLACES = {
   "Thorium Point": "Grisha", "Marshal's Refuge": "Gryfe", "Bloodvenom Post": "Brakkar", "Flame Crest": "Vahgruk",
   "Everlook": "Yugrek", "Light's Hope": "Georgia", "Thunder Bluff": "Tal", "Tidefury Cove": "Nat Pagle",
   "Fenris Isle": "Thule Ravenclaw", "Deathknell chapel": "Shadow Priest Sarvis",
-  "Bandarion Keep": "Danitha Morr",
+  "Bandarion Keep": "Danitha Morr", "Rog'mar": "Grakna",
 }
 ROLES = [("flight path", 8), ("flight master", 8), ("innkeeper", 128), ("make it your home", 128), ("hearthstone", 128)]
 def anchor_point(name, zones):
@@ -130,6 +130,11 @@ dsrc = dsrc[:dsrc.index('if Expansions.Current')]
 dungeons = {}
 for name, z, x, y in re.findall(r'\{"([^"]+)",[^\n]*?\{\{(\d+),\s*([\d.]+),\s*([\d.]+)\}', dsrc):
     if int(z) in ui and name not in dungeons: dungeons[name] = (ui[int(z)], float(x), float(y), name + " entrance")
+# New Forever dungeons QuestieDB has no entrance for yet (area id, x, y; checked 2026-11-09):
+#   The Drowned City: underwater cave Sunken Hollow, west of The Vile Reef (Warcraft Tavern and Mmonster, 21.4, 27.9)
+#   Krol'dok Stronghold: cave west of the fortress gates (Warcraft Tavern and Mmonster, 37.5, 37.5)
+for name, z, x, y in (("The Drowned City", 33, 21.4, 27.9), ("Krol'dok Stronghold", 16591, 37.5, 37.5)):
+    if z in ui and name not in dungeons: dungeons[name] = (ui[z], x, y, name + " entrance")
 # route names that differ from the game's dungeon names
 for alias, real in (("Excavation Site", "Excavation Site: Wetlands"),):
     if real in dungeons and alias not in dungeons: dungeons[alias] = dungeons[real]

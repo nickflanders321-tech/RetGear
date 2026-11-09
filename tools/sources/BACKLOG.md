@@ -30,6 +30,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    2026-11-08: QuestieDB's Forever data unchanged since the November 8 01:25 UTC update (tree 394e044): still no
    Riverglades or Mount Hyjal quests (coverage.py: no steps), Shen'dralas still only 4 Horde quests. wowforeverleveling.com
    (updated November 7) names the same two Horde hubs and no quests.
+   2026-11-09: QuestieDB's Forever data unchanged (tree a32e1fd, its November 8 update): still no Riverglades or Mount
+   Hyjal steps, Shen'dralas 4 Horde quests. Krol'dok Stronghold's entrance (cave west of the fortress gates, 37.5, 37.5)
+   and its Horde turn-in Krom'rosh (Rog'mar, in QuestieDB's NPC data) are in the route since v1.26.0; Rog'mar now gets a pin.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -73,6 +76,14 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Anarchist's Workbench (273117) and Plague Doctor's Laboratory (273118) but no drop yet; Mmonster and
    wow-professions.com (2026-11-08) list them all as unknown. Fill in as soon as QuestieDB or a guide names a drop.
 
+11. **Entrances of the other new dungeons:** Alcaz Prison, Blackmaw Hold and The Shaper's Terrace still say "Entrance
+   details aren't confirmed yet" and have no entrance pin (QuestieDB's dungeons.lua has none of the five new dungeons;
+   The Drowned City and Krol'dok come from tools/waypoints/gen.py since v1.26.0). Add them there and in the route notes
+   once two guides give coordinates. Krol'dok's entrance traces back to one guide so far (2026-11-09).
+12. **Dungeon quests not in QuestieDB yet:** Ancient Gurubashi Idol (Mazu'kon, Mulgore), A Token of Vengeance, Tome of
+   Twilight and Eye of Mugg (Krom'rosh) are in Mmonster's guides but not in the Forever quest data, so they're only named
+   in the step text. Add them to H.dungeons (and their Alliance versions) once the data has them (2026-11-09).
+
 ## Open questions
 
 - Guides disagree on Thousand Needles (Forever Era 25-35, Decarebia 20-30, Endgame Tools 23-40) and Arathi Highlands (all say 30-40, but Forever's own quest data starts at 33). Our windows: Horde TN 26-35, Arathi 33-40 (2026-10-16).
@@ -85,6 +96,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.26.0: The Drowned City and Krol'dok Stronghold entrances (route notes for both factions, Horde steps,
+  entrance pins via tools/waypoints/gen.py), the two Drowned City quests QuestieDB has as Horde dungeon quests, and a
+  Rog'mar pin (item 1, partial).
 
 - v1.22.0: Trapper's Workbench blueprint source from QuestieDB's Forever data (Houndmaster Loksey, Scarlet
   Monastery Library), in the Camping tab (item 10, partial; the guides still list it

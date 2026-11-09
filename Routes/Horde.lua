@@ -8,8 +8,8 @@ local H = { faction = "Horde", gen = true }   -- gen: zone quest steps come from
 
 H.route = {
   { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon in the ruins above Undercity (take the Orgrimmar zeppelin to Tirisfal if you started in Kalimdor). Several quests, with good weapon rewards." },
-  { o = 21.5, from = 35, to = 40, kind = "dungeon", zone = "The Drowned City", hub = "Stranglethorn Vale", notes = "New Forever dungeon (35-40), off the coast of Stranglethorn Vale. Entrance details aren't confirmed yet." },
-  { o = 23.5, from = 40, to = 45, kind = "dungeon", zone = "Krol'dok Stronghold", hub = "Riverglades", notes = "New Forever dungeon (40-45; first shown as 40-55, Blizzard corrected it): an outdoor ogre stronghold in the north of Riverglades. Entrance details aren't confirmed yet." },
+  { o = 21.5, from = 35, to = 40, kind = "dungeon", zone = "The Drowned City", hub = "Stranglethorn Vale", notes = "New Forever dungeon (35-40), off the coast of Stranglethorn Vale. The entrance is underwater: fly to Grom'gol, swim west past The Vile Reef and dive into the Sunken Hollow cave (about 21.4, 27.9), where Brinescale naga swim around the portal." },
+  { o = 23.5, from = 40, to = 45, kind = "dungeon", zone = "Krol'dok Stronghold", hub = "Riverglades", notes = "New Forever dungeon (40-45; first shown as 40-55, Blizzard corrected it): an outdoor ogre stronghold in the north of Riverglades. The entrance is reported to be a cave west of the fortress's big gates (about 37.5, 37.5), north-west of Rog'mar." },
   { o = 30.5, from = 48, to = 53, kind = "dungeon", zone = "Alcaz Prison", hub = "Alcaz Island", notes = "New Forever dungeon (48-53) in the prison on Alcaz Island, off Dustwallow Marsh. Entrance details aren't confirmed yet." },
   { o = 38.8, from = 55, to = 60, kind = "dungeon", zone = "Blackmaw Hold", hub = "Azshara", notes = "New Forever dungeon (55-60) behind the mysterious gate in Azshara. Entrance details aren't confirmed yet." },
   { o = 38.9, from = 58, to = 60, kind = "dungeon", zone = "The Shaper's Terrace", hub = "Un'Goro Crater", notes = "New Forever dungeon (58-60) in the hills of Un'Goro Crater. Entrance details aren't confirmed yet." },
@@ -60,7 +60,10 @@ H.route = {
 -- over. go = when to start going; prep = when to start picking up quests.
 -- Quest givers are from the original game; Forever may move some of them.
 H.dungeons = {
-  ["The Drowned City"] = { go = 35, prep = 33, quests = {} },
+  ["The Drowned City"] = { go = 35, prep = 33, quests = {
+    { "The Drowned City", "Inside The Drowned City", "Inside the dungeon" },
+    { "The Only Good Brinescale...", "Inside The Drowned City", "Inside the dungeon" },
+  } },
   ["Krol'dok Stronghold"] = { go = 40, prep = 38, quests = {} },
   ["Alcaz Prison"] = { go = 48, prep = 46, quests = {} },
   ["Blackmaw Hold"] = { go = 55, prep = 53, quests = {} },
@@ -160,6 +163,15 @@ H.travel = {
 -- Step-by-step to-do lists for each route entry, keyed by "zone|from".
 -- Shown under the route step when you open it; tick each one off as you go.
 H.steps = {
+  ["The Drowned City|35"] = {
+    "Fly to Grom'gol, swim west past The Vile Reef and dive into the underwater Sunken Hollow cave (about 21.4, 27.9): the entrance is inside, with Brinescale naga around it.",
+    "Mazu'kon of the Earthen Ring, in the north of Mulgore, is reported to give Ancient Gurubashi Idol for this dungeon: take it first if he offers it.",
+    "The Drowned City and The Only Good Brinescale... are picked up inside. Known bosses: Zul'Alai, Var'Taka, Zin'aka and Captain Dreadrise.",
+  },
+  ["Krol'dok Stronghold|40"] = {
+    "The entrance is reported to be a cave west of the fortress's big gates in the north of Riverglades (about 37.5, 37.5), north-west of Rog'mar.",
+    "A Token of Vengeance and Tome of Twilight (Nar'gurk drops the tome) are picked up inside; the Eye of Mugg goes back to Krom'rosh in Rog'mar.",
+  },
   ["Ruins of Lordaeron|16"] = {
     "Pick up the four quests first (listed below): Deathguard Kristof in the tents between Brill and Undercity, Morbin Lightbane and Theodore Griffs in Undercity, Tabitha Heartweaver at The Sepulcher.",
     "The entrance is in the surface ruins above Undercity: go through the front gate, and the portal is up a short flight of stairs before the keep.",
