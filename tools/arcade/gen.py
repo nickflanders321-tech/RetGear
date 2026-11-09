@@ -82,6 +82,15 @@ subs = re.findall(r"--\s*([^>\n]+?)\s*->\s*([^\n]+?)\s*$", zs, re.M)
 random.seed(7)
 random.shuffle(subs)
 n = 0
+# The subzone cards are frozen in places.tsv (name, tier, text): every one has a painting in ArcadePlaces.lua
+# (made by art_places.py), and new QuestieDB zone rows reshuffled the pick on 2026-11-08, leaving 140 cards without
+# art. Only if the list is missing are they picked afresh.
+fixed = os.path.join(os.path.dirname(__file__), 'places.tsv')
+if os.path.exists(fixed):
+    for row in open(fixed, encoding='utf-8').read().splitlines():
+        s, tier, text = row.split('\t')
+        if s.lower() not in seen: add(3, s, int(tier), 0, text); n += 1
+    subs = []
 for s, parent in subs:
     s, parent = clean(s), clean(parent)
     if s.lower() in GENERIC or len(s) < 4 or not ok(s) or n >= 330: continue

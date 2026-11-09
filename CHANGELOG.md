@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.26.1
+- Arcade: the place cards are back to the set with paintings. The v1.25.1 data update swapped 140 of them for new places that had no art yet; your collection keeps every card you own.
+
 ## v1.26.0
 - **New dungeon entrances.** The Drowned City and Krol'dok Stronghold now say where their doors are, with an arrow and map pin to each:
   - The Drowned City is underwater off Stranglethorn Vale: swim west from Grom'gol (north from Booty Bay for the Alliance) past The Vile Reef and dive into the Sunken Hollow cave (about 21.4, 27.9).
