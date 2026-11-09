@@ -76,13 +76,18 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Anarchist's Workbench (273117) and Plague Doctor's Laboratory (273118) but no drop yet; Mmonster and
    wow-professions.com (2026-11-08) list them all as unknown. Fill in as soon as QuestieDB or a guide names a drop.
 
-11. **Entrances of the other new dungeons:** Alcaz Prison, Blackmaw Hold and The Shaper's Terrace still say "Entrance
-   details aren't confirmed yet" and have no entrance pin (QuestieDB's dungeons.lua has none of the five new dungeons;
-   The Drowned City and Krol'dok come from tools/waypoints/gen.py since v1.26.0). Add them there and in the route notes
-   once two guides give coordinates. Krol'dok's entrance traces back to one guide so far (2026-11-09).
-12. **Dungeon quests not in QuestieDB yet:** Ancient Gurubashi Idol (Mazu'kon, Mulgore), A Token of Vengeance, Tome of
+11. **Dungeon quests not in QuestieDB yet:** Ancient Gurubashi Idol (Mazu'kon, Mulgore), A Token of Vengeance, Tome of
    Twilight and Eye of Mugg (Krom'rosh) are in Mmonster's guides but not in the Forever quest data, so they're only named
    in the step text. Add them to H.dungeons (and their Alliance versions) once the data has them (2026-11-09).
+   Same for Alcaz Prison (Mmonster: The Dragon's Journal, Alliance, from Blazeroar's drop), Blackmaw Hold (quest items
+   Claws of the Great Bear, Blackmaw Ritual Totem, Tusks of the Unbroken, Head of Varrox Bleakhoof) and The Shaper's
+   Terrace (Freya's Sigil, Stone Heart of the Watcher): their quests and givers haven't been found yet (2026-11-09).
+12. **Blackmaw Hold's portal:** the pin is the tunnel mouth (38.7, 33.4 Azshara, both guides); the portal itself is at the
+   top of the tunnel (Mmonster 34.9, 23.8 on the Azshara map, Warcraft Tavern 66.6, 84.4 on the Winterspring map). Check in
+   game which map the game shows there before adding a second pin.
+13. **November 10 class tuning:** Blizzard's announced changes (pet and Voidwalker durability, Affliction DoTs vs Wrack,
+   Enhancement Strength over Intellect) are on the 2nd Spec tab as planned changes. Once the hotfix notes are out, reword
+   them as done and check whether Enhancement's leveling weights (Classes/Shaman.lua: INT 0.4, SP 0.25) need a change.
 
 ## Open questions
 
@@ -96,6 +101,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.27.0: Alcaz Prison, Blackmaw Hold and The Shaper's Terrace entrances (Warcraft Tavern and Mmonster agree): route notes for
+  both factions, Horde steps, entrance pins via tools/waypoints/gen.py (item 11 done); the five new dungeons now get travel
+  directions (Travel.lua DESTINATION; The Drowned City had none).
 
 - v1.26.0: The Drowned City and Krol'dok Stronghold entrances (route notes for both factions, Horde steps,
   entrance pins via tools/waypoints/gen.py), the two Drowned City quests QuestieDB has as Horde dungeon quests, and a

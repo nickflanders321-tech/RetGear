@@ -102,7 +102,7 @@ S("HUNTER", {
   { key = "bm", name = "Beast Mastery", role = "Ranged DPS", kind = "ranged", tab = 1, main = true, icon = "Interface\\Icons\\Ability_Hunter_BeastTaming",
     stats = "Agility, then Strength, then Intellect",
     tips = { "Recast Summon Hawk when its 6 sec cooldown is up to keep two hawks out.", "Rapid Fire on hard fights; it pulls a lot of threat." },
-    forever = { "Summon Hawk is a new talent." },
+    forever = { "Summon Hawk is a new talent.", "Blizzard's November 10 tuning (announced November 6) makes pets sturdier as tanks, closer to Classic Era." },
     source = "https://mobalytics.gg/wow-forever/classes/beast-mastery-hunter-guide" },
   { key = "mm", name = "Marksmanship", role = "Ranged DPS", kind = "ranged", tab = 2, icon = "Interface\\Icons\\Ability_Marksmanship",
     weights = { AGI = 2.0, RAP = 1.0, AP = 0.2, CRIT = 22, HIT = 20, STA = 0.2, INT = 0.6, SPI = 0.1, WEAPON_DPS = 0.5, RANGED_DPS = 16 },
@@ -187,9 +187,9 @@ S("SHAMAN", {
     forever = { "Totemic Call (30 sec cooldown) replaced Totemic Projection; Call of the Ancestors drops all four totems at once.", "Lava Burst was removed in the launch build, and top-rank Lightning Bolt hits much harder (Blizzard's November 2 notes).", "Shamans can't use wands." },
     source = "https://mobalytics.gg/wow-forever/classes/elemental-shaman-guide" },
   { key = "enh", name = "Enhancement", role = "Melee DPS", kind = "melee", tab = 2, main = true, icon = "Interface\\Icons\\Spell_Nature_LightningShield",
-    stats = "Strength, Intellect (Mental Dexterity turns it into Attack Power) and Agility, then Stamina and Spirit",
+    stats = "Strength first (Blizzard's November 10 tuning), then Agility and Intellect (Mental Dexterity turns it into Attack Power), then Stamina and Spirit",
     tips = { "Rockbiter with a two-hander, Flametongue with a one-hander and shield.", "Lightning Bolt to pull, then Stormstrike and a shock." },
-    forever = { "Maelstrom Weapon is buffed for Enhancement.", "Stormstrike hits for 150% weapon damage on a 6 sec cooldown since the launch build (Blizzard's November 2 notes)." },
+    forever = { "Maelstrom Weapon is buffed for Enhancement.", "Stormstrike hits for 150% weapon damage on a 6 sec cooldown since the launch build (Blizzard's November 2 notes).", "Blizzard's November 10 tuning (announced November 6) makes Strength Enhancement's best stat again: Intellect and spell power gear currently outperform it, so collect Strength and Attack Power gear rather than caster pieces." },
     source = "https://mobalytics.gg/wow-forever/classes/enhancement-shaman-guide" },
   { key = "resto", name = "Restoration", role = "Healer", kind = "heal", tab = 3, icon = "Interface\\Icons\\Spell_Nature_MagicImmunity",
     weights = healer({ INT = 0.7, MP5 = 2.4, SPI = 0.15, CRIT = 9, STA = 0.2 }), model = "caster", shield = true, hitCap = 0, weapons = { 4, 10, 13, 15 },
@@ -232,7 +232,7 @@ S("WARLOCK", {
   { key = "aff", name = "Affliction", role = "Ranged DPS", kind = "caster", tab = 1, main = true, icon = "Interface\\Icons\\Spell_Shadow_DeathCoil",
     stats = "Spell Power, Hit, Crit, then Intellect, Spirit and Stamina",
     tips = { "Bane of Agony, Corruption and Immolate up; don't reapply before they run out." },
-    forever = { "Malediction, Pandemic and Nightfall boost your damage over time; DoTs and Drains can crit." },
+    forever = { "Malediction, Pandemic and Nightfall boost your damage over time; DoTs and Drains can crit.", "Blizzard's November 10 tuning (announced November 6): channeling Wrack alone currently beats keeping Corruption, Siphon Life and Bane of Agony up; the DoTs are being made worth casting again without changing Affliction's total damage. Voidwalkers get sturdier." },
     source = "https://mobalytics.gg/wow-forever/classes/affliction-warlock-guide" },
   { key = "demo", name = "Demonology", role = "Ranged DPS", kind = "caster", tab = 2, icon = "Interface\\Icons\\Spell_Shadow_Metamorphosis",
     weights = { SP = 1.0, SP_SHADOW = 1.0, SP_FIRE = 0.3, STA = 0.7, INT = 0.5, SPI = 0.6, CRIT = 4, HIT = 8, MP5 = 1.0, RANGED_DPS = 4 },
@@ -295,4 +295,4 @@ for class, list in pairs(RG.SPECS) do
   RG.SPEC_BY[class] = {}
   for _, s in ipairs(list) do s.class = class; RG.SPEC_BY[class][s.key] = s end
 end
-RG.SPECS_UPDATED = "2026-11-05"
+RG.SPECS_UPDATED = "2026-11-09"

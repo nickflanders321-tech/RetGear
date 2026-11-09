@@ -10,9 +10,9 @@ H.route = {
   { o = 6, from = 16, to = 22, kind = "dungeon", zone = "Ruins of Lordaeron", hub = "Undercity", notes = "New Forsaken dungeon in the ruins above Undercity (take the Orgrimmar zeppelin to Tirisfal if you started in Kalimdor). Several quests, with good weapon rewards." },
   { o = 21.5, from = 35, to = 40, kind = "dungeon", zone = "The Drowned City", hub = "Stranglethorn Vale", notes = "New Forever dungeon (35-40), off the coast of Stranglethorn Vale. The entrance is underwater: fly to Grom'gol, swim west past The Vile Reef and dive into the Sunken Hollow cave (about 21.4, 27.9), where Brinescale naga swim around the portal." },
   { o = 23.5, from = 40, to = 45, kind = "dungeon", zone = "Krol'dok Stronghold", hub = "Riverglades", notes = "New Forever dungeon (40-45; first shown as 40-55, Blizzard corrected it): an outdoor ogre stronghold in the north of Riverglades. The entrance is reported to be a cave west of the fortress's big gates (about 37.5, 37.5), north-west of Rog'mar." },
-  { o = 30.5, from = 48, to = 53, kind = "dungeon", zone = "Alcaz Prison", hub = "Alcaz Island", notes = "New Forever dungeon (48-53) in the prison on Alcaz Island, off Dustwallow Marsh. Entrance details aren't confirmed yet." },
-  { o = 38.8, from = 55, to = 60, kind = "dungeon", zone = "Blackmaw Hold", hub = "Azshara", notes = "New Forever dungeon (55-60) behind the mysterious gate in Azshara. Entrance details aren't confirmed yet." },
-  { o = 38.9, from = 58, to = 60, kind = "dungeon", zone = "The Shaper's Terrace", hub = "Un'Goro Crater", notes = "New Forever dungeon (58-60) in the hills of Un'Goro Crater. Entrance details aren't confirmed yet." },
+  { o = 30.5, from = 48, to = 53, kind = "dungeon", zone = "Alcaz Prison", hub = "Dustwallow Marsh", notes = "New Forever dungeon (48-53) in the prison on Alcaz Island, off the north-east coast of Dustwallow Marsh. No boat or flight reaches the island: fly to Brackenwall Village, ride east to the coast, swim to the pier on the island's west shore and walk north to the prison (about 75.0, 14.7); the portal is down the stairs in its cellar." },
+  { o = 38.8, from = 55, to = 60, kind = "dungeon", zone = "Blackmaw Hold", hub = "Azshara", notes = "New Forever dungeon (55-60) under Darkwhisper Gorge in northern Azshara. Fly to Valormok and ride north-east to the furbolg tunnel under a carved bear-head lintel (about 38.7, 33.4, meeting stone beside it); the portal is at the top of the tunnel, so keep your mount." },
+  { o = 38.9, from = 58, to = 60, kind = "dungeon", zone = "The Shaper's Terrace", hub = "Un'Goro Crater", notes = "New Forever dungeon (58-60) on the northern rim of Un'Goro Crater, right above Marshal's Refuge: take the stone stairs east of the camp up to the titan doorway (about 48.1, 6.1)." },
   { o = 7, from = 13, to = 18, kind = "dungeon", zone = "Ragefire Chasm", hub = "Orgrimmar", notes = "Inside Orgrimmar, in the Cleft of Shadow. Undead: take the zeppelin from outside Undercity." },
   { o = 8, from = 17, to = 24, kind = "dungeon", zone = "Wailing Caverns", hub = "The Barrens", notes = "Grab the dungeon quests at the Crossroads first." },
   { o = 9, from = 18, to = 26, kind = "zone",    zone = "The Barrens", hub = "The Crossroads / Camp Taurajo", fp = "Crossroads", notes = "Lots of quests, with good weapon rewards at Camp Taurajo." },
@@ -171,6 +171,20 @@ H.steps = {
   ["Krol'dok Stronghold|40"] = {
     "The entrance is reported to be a cave west of the fortress's big gates in the north of Riverglades (about 37.5, 37.5), north-west of Rog'mar.",
     "A Token of Vengeance and Tome of Twilight (Nar'gurk drops the tome) are picked up inside; the Eye of Mugg goes back to Krom'rosh in Rog'mar.",
+  },
+  ["Alcaz Prison|48"] = {
+    "Fly to Brackenwall Village, ride east through the north of Dustwallow Marsh to the coast and swim across to the pier on Alcaz Island's west shore.",
+    "The entrance is in the prison building at the north end of the island path (about 75.0, 14.7): the portal is down the stone and wooden stairs in its cellar.",
+    "Blazeroar, an elite dragon, is the last boss; no Horde quest for the prison is known yet.",
+  },
+  ["Blackmaw Hold|55"] = {
+    "Fly to Valormok, then head north-east to Darkwhisper Gorge.",
+    "The entrance is the furbolg tunnel under a carved bear-head lintel (about 38.7, 33.4), with a meeting stone beside it; follow the tunnel uphill to the portal at the top.",
+    "Known bosses include Withermaw, Elder Shaman Bloodmane, Bonesnout the Unbroken and Varrox Bleakhoof; their quest items' quests haven't been found yet.",
+  },
+  ["The Shaper's Terrace|58"] = {
+    "Fly to Marshal's Refuge (or fly to Gadgetzan and ride through the crater to the north).",
+    "The entrance is up the stone staircase east of the camp: a titan doorway between root-covered columns (about 48.1, 6.1), with a meeting stone inside.",
   },
   ["Ruins of Lordaeron|16"] = {
     "Pick up the four quests first (listed below): Deathguard Kristof in the tents between Brill and Undercity, Morbin Lightbane and Theodore Griffs in Undercity, Tabitha Heartweaver at The Sepulcher.",

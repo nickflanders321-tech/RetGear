@@ -28,4 +28,6 @@ jobs:
       - name: Is the shipped data up to date?
         run: |
           git diff --stat | tail -30
+          # the small generated files in full, so a rebuild can be checked (or applied) by hand
+          git diff -U0 -- Waypoints.lua Routes/Generated.lua | head -300
           if git diff --quiet; then echo "Shipped data matches a fresh rebuild."; else echo "A fresh rebuild differs from what's shipped (see above)."; fi

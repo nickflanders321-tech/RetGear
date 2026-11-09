@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased
+## v1.27.0
 
+- **Three more dungeon entrances.** Alcaz Prison, Blackmaw Hold and The Shaper's Terrace now say where their doors are, with an arrow and map pin to each (two guides agree on every spot):
+  - Alcaz Prison: no boat or flight reaches Alcaz Island. Fly to Brackenwall Village (Theramore for the Alliance), ride to the north-east coast of Dustwallow Marsh, swim to the island's west pier and walk north to the prison (about 75.0, 14.7); the portal is down the stairs in its cellar.
+  - Blackmaw Hold: fly to Valormok and head north-east to Darkwhisper Gorge; the furbolg tunnel under a carved bear-head lintel (about 38.7, 33.4) climbs to the portal, so keep your mount.
+  - The Shaper's Terrace: take the stone stairs east of Marshal's Refuge up to the titan doorway (about 48.1, 6.1).
+- Horde: step lists for all three, and travel directions to every new dungeon (The Drowned City, Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold, The Shaper's Terrace) from wherever you are.
+- 2nd Spec tab: Blizzard's planned November 10 tuning: Strength becomes Enhancement's best stat again (collect Strength and Attack Power gear, not caster pieces), Affliction's damage over time spells are made worth casting next to Wrack, and Hunter pets and Voidwalkers get sturdier.
 - **Profession leveling, upgraded** (ideas from LazyProf, CheapSkill, Forever Profession Master and RestedXP Professions):
   - **What it costs.** Each step, the shopping list and the full route show what the materials will cost: vendor materials (thread, dye, flux, vials, spices) at their real vendor price, the rest at your last Auction House price, and bars or bolts at what it costs to make them when that's cheaper.
   - **Cheapest or fewest materials.** When a step has more than one recipe, Waypath+ now picks the cheapest one by default; one click switches to the one you're closest to making from your bags.

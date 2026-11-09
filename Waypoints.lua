@@ -5,7 +5,9 @@
 local _, RG = ...
 RG.WAYPOINTS = {
   steps = {
+    ["Alcaz Prison|48"] = { [1] = { 1445, 35.6, 31.9, "Brackenwall Village" }, [2] = { 1445, 75.0, 14.7, "Alcaz Prison entrance" } },
     ["Blackfathom Deeps|24"] = { [1] = { 1440, 12.2, 33.8, "Zoram'gar Outpost" }, [2] = { 1440, 14.5, 14.2, "Blackfathom Deeps entrance" } },
+    ["Blackmaw Hold|55"] = { [2] = { 1447, 38.7, 33.4, "Blackmaw Hold entrance" } },
     ["Blackrock Depths|52"] = { [1] = { 1418, 4.0, 44.8, "Kargath" }, [2] = { 1427, 34.8, 85.3, "Blackrock Depths entrance" } },
     ["City of Dalaran|28"] = { [1] = { 1424, 60.1, 18.6, "Tarren Mill" }, [2] = { 1416, 8.5, 59.2, "City of Dalaran entrance" } },
     ["Excavation Site|26"] = { [1] = { 1417, 73.0, 32.7, "Hammerfall" }, [3] = { 1437, 47.8, 56.2, "Excavation Site: Wetlands entrance" }, [5] = { 1456, 71.1, 34.2, "Bashana Runetotem" } },
@@ -23,6 +25,7 @@ RG.WAYPOINTS = {
     ["Scarlet Monastery|33"] = { [1] = { 1458, 56.0, 37.5, "Undercity" }, [2] = { 1420, 82.6, 33.8, "Scarlet Monastery entrance" } },
     ["Shadowfang Keep|22"] = { [1] = { 1421, 45.6, 42.6, "The Sepulcher" }, [2] = { 1421, 44.8, 67.8, "Shadowfang Keep entrance" } },
     ["The Drowned City|35"] = { [1] = { 1434, 21.4, 27.9, "The Drowned City entrance" } },
+    ["The Shaper's Terrace|58"] = { [1] = { 1449, 45.2, 5.8, "Marshal's Refuge" }, [2] = { 1449, 48.1, 6.1, "The Shaper's Terrace entrance" } },
     ["The Temple of Atal'Hakkar|50"] = { [1] = { 1435, 46.1, 54.8, "Stonard" }, [2] = { 1446, 51.6, 25.4, "Gadgetzan" }, [3] = { 1435, 69.9, 53.5, "The Temple of Atal'Hakkar entrance" } },
     ["Uldaman|41"] = { [1] = { 1418, 4.0, 44.8, "Kargath" }, [2] = { 1418, 44.6, 12.1, "Uldaman entrance" } },
     ["Wailing Caverns|17"] = { [1] = { 1413, 51.5, 30.3, "Crossroads" }, [2] = { 1413, 46.0, 36.5, "Wailing Caverns entrance" } },
@@ -82,8 +85,10 @@ RG.WAYPOINTS = {
     ["Yuka Screwspigot"] = { 1428, 66.1, 21.9, "Yuka Screwspigot" },
   },
   dungeons = {
+    ["Alcaz Prison"] = { 1445, 75.0, 14.7, "Alcaz Prison entrance" },
     ["Bizmo's Brawlpub"] = { 1453, 69.5, 31.2, "Bizmo's Brawlpub entrance" },
     ["Blackfathom Deeps"] = { 1440, 14.5, 14.2, "Blackfathom Deeps entrance" },
+    ["Blackmaw Hold"] = { 1447, 38.7, 33.4, "Blackmaw Hold entrance" },
     ["Blackrock Caverns"] = { 1427, 34.9, 83.9, "Blackrock Caverns entrance" },
     ["Blackrock Depths"] = { 1427, 34.8, 85.3, "Blackrock Depths entrance" },
     ["Blackrock Spire"] = { 1427, 34.8, 85.3, "Blackrock Spire entrance" },
@@ -132,6 +137,7 @@ RG.WAYPOINTS = {
     ["The Deadmines"] = { 1436, 42.5, 71.7, "The Deadmines entrance" },
     ["The Drowned City"] = { 1434, 21.4, 27.9, "The Drowned City entrance" },
     ["The Hall of Thanes"] = { 1455, 27.6, 47.8, "The Hall of Thanes entrance" },
+    ["The Shaper's Terrace"] = { 1449, 48.1, 6.1, "The Shaper's Terrace entrance" },
     ["The Stockade"] = { 1453, 52.4, 70.0, "The Stockade entrance" },
     ["The Tainted Scar"] = { 1419, 45.3, 55.0, "The Tainted Scar entrance" },
     ["The Temple of Atal'Hakkar"] = { 1435, 69.9, 53.5, "The Temple of Atal'Hakkar entrance" },
