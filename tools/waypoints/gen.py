@@ -133,7 +133,11 @@ for name, z, x, y in re.findall(r'\{"([^"]+)",[^\n]*?\{\{(\d+),\s*([\d.]+),\s*([
 # New Forever dungeons QuestieDB has no entrance for yet (area id, x, y; checked 2026-11-09):
 #   The Drowned City: underwater cave Sunken Hollow, west of The Vile Reef (Warcraft Tavern and Mmonster, 21.4, 27.9)
 #   Krol'dok Stronghold: cave west of the fortress gates (Warcraft Tavern and Mmonster, 37.5, 37.5)
-for name, z, x, y in (("The Drowned City", 33, 21.4, 27.9), ("Krol'dok Stronghold", 16591, 37.5, 37.5)):
+#   Alcaz Prison: prison building on Alcaz Island, Dustwallow Marsh (Warcraft Tavern 75, 15; Mmonster 75.0, 14.7; checked 2026-11-09)
+#   Blackmaw Hold: furbolg tunnel in Azshara (Warcraft Tavern and Mmonster, 38.7, 33.4; the portal is deeper inside)
+#   The Shaper's Terrace: titan doorway above Marshal's Refuge, Un'Goro Crater (Warcraft Tavern and Mmonster, 48.1, 6.1)
+for name, z, x, y in (("The Drowned City", 33, 21.4, 27.9), ("Krol'dok Stronghold", 16591, 37.5, 37.5),
+                      ("Alcaz Prison", 15, 75.0, 14.7), ("Blackmaw Hold", 16, 38.7, 33.4), ("The Shaper's Terrace", 490, 48.1, 6.1)):
     if z in ui and name not in dungeons: dungeons[name] = (ui[z], x, y, name + " entrance")
 # route names that differ from the game's dungeon names
 for alias, real in (("Excavation Site", "Excavation Site: Wetlands"),):

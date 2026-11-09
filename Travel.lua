@@ -115,7 +115,8 @@ local DESTINATION = {
   ["The Deadmines"] = "Westfall", ["The Stockade"] = "Stormwind City", ["Stormwind Stockade"] = "Stormwind City", ["Sunken Temple"] = "Swamp of Sorrows", ["Dire Maul"] = "Feralas",
   ["Western & Eastern Plaguelands"] = "Western Plaguelands", ["Stratholme, Scholomance, Dire Maul, LBRS/UBRS"] = "Burning Steppes",
   ["Excavation Site"] = "Wetlands", ["City of Dalaran"] = "Hillsbrad Foothills", ["The Temple of Atal'Hakkar"] = "Swamp of Sorrows",
-  ["Krol'dok Stronghold"] = "Riverglades", ["Valley of Trials"] = "Durotar", ["Camp Narache"] = "Mulgore",
+  ["Krol'dok Stronghold"] = "Riverglades", ["The Drowned City"] = "Stranglethorn Vale", ["Alcaz Prison"] = "Dustwallow Marsh",
+  ["Blackmaw Hold"] = "Azshara", ["The Shaper's Terrace"] = "Un'Goro Crater", ["Valley of Trials"] = "Durotar", ["Camp Narache"] = "Mulgore",
 }
 function RG.TravelZone(name)
   ensure()
