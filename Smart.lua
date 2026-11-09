@@ -67,14 +67,27 @@ local function hereZone()
   return z
 end
 
--- open steps of an entry, and how many of its quests are already in your log
+-- Open steps of an entry that you can actually work on now, and how many of its quests are already in your log.
+-- A step only counts when one of its quests is in your log or can be picked up right now: not grey, not waiting on
+-- an earlier quest, a level, a profession or reputation. (Hand-written steps without a quest list always count.)
 local function workOf(r, logIds)
-  local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
+  local key = r.zone .. "|" .. r.from
+  local steps = RG.STEPS[key] or {}
+  local sq = (RG.STEP_QUESTS or {})[key] or {}
+  local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted or function() return false end
   local open, inLog = 0, 0
   for i = 1, #steps do
     if not RG.StepIsDone(r, i) then
-      open = open + 1
-      for _, id in ipairs(((RG.STEP_QUESTS or {})[r.zone .. "|" .. r.from] or {})[i] or {}) do if logIds[id] then inLog = inLog + 1 end end
+      local ids = sq[i]
+      local doable = not ids or #ids == 0
+      for _, id in ipairs(ids or {}) do
+        if logIds[id] then inLog = inLog + 1; doable = true
+        elseif not doable and not isDone(id) then
+          local d = RG.QDATA and RG.QDATA[id]
+          if d and not d.rep and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) and not (RG.QuestBlocked and RG.QuestBlocked(id, d, isDone, function(q) return logIds[q] or false end, true)) then doable = true end
+        end
+      end
+      if doable then open = open + 1 end
     end
   end
   return open, #steps, inLog
@@ -112,7 +125,7 @@ function RG.SmartRankNow()
         local why = {}
         if inLog > 0 then why[#why + 1] = inLog .. " quest" .. (inLog > 1 and "s" or "") .. " already in your log" end
         if d == 0 then why[#why + 1] = "you're here" elseif d <= 1 then why[#why + 1] = "next door" elseif d >= 6 then why[#why + 1] = "a long way from here" else why[#why + 1] = d .. " zones away" end
-        why[#why + 1] = open .. " of " .. total .. " steps left"
+        why[#why + 1] = open .. " step" .. (open == 1 and "" or "s") .. " you can do now"
         out[#out + 1] = { r = r, score = score, why = table.concat(why, ", "), hops = d }
       end
     end

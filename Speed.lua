@@ -537,6 +537,11 @@ function RG.QuestColor(level)
   if level > grey then return "|cff40c040" end
   return "|cff808080"
 end
+-- A quest so far below you it gives almost no XP: optional on the route (it never holds a step open).
+function RG.QuestIsGrey(level)
+  if not level or level <= 0 then return false end
+  return RG.QuestColor(level) == "|cff808080"
+end
 -- "[30]" in the quest's color.
 function RG.LevelTag(level)
   if not level or level <= 0 then return "" end

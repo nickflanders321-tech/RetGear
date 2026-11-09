@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Grey quests are optional on the route.** A quest so far below you that it gives almost no XP no longer holds a step open or shows as "Pick up" on the Route and tracker: once only grey quests are left, the step ticks off ("Done (what's left is grey)"). A grey quest you already have still shows until you hand it in or drop it.
+- **Smarter zone choice.** When picking which zone to work on, Waypath+ now only counts the steps you can actually do now: one of their quests is in your log or can be picked up (not grey, and not waiting on an earlier quest, your level, a profession or reputation). Zones full of quests you can't take yet no longer look like they have lots to do. The reason in the tooltip says "N steps you can do now".
+
 ## v1.26.1
 - Arcade: the place cards are back to the set with paintings. The v1.25.1 data update swapped 140 of them for new places that had no art yet; your collection keeps every card you own.
 

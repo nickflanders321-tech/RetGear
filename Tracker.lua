@@ -158,6 +158,8 @@ function RG.StepQuestLines(entry, i, myQuests)
       local done = isDone(id)
       local q = byId[id]
       local why, never
+      -- grey and not in your log: optional, so it's left out (a grey one you already have still shows)
+      if not done and not q and RG.QuestIsGrey and RG.QuestIsGrey(d.l) then done = true end
       if not done and not q then why, never = RG.QuestBlocked(id, d, isDone) end
       if never then done = true end   -- the other branch, a later step, or not for you: nothing to do here
       total = total + 1

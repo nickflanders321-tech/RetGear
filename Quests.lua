@@ -139,18 +139,21 @@ function RG.StepAuto(entry, text)
   if sq and text then
     for i, t in ipairs(RG.STEPS[key] or {}) do
       if t == text and sq[i] then
-        local left = 0
+        local left, skipped = 0, 0
         local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
         for _, id in ipairs(sq[i]) do
           -- repeatable quests are never marked done by the game: they don't hold a step open
           local rq = RG.QDATA and RG.QDATA[id]
           local ok = (rq and rq.rep) or (isDone and isDone(id)) or RG.HideProfQuest(id)
+          -- nor do grey quests (too far below you to be worth the time): optional
+          -- (one you already took still counts until you hand it in or drop it)
+          if not ok and rq and RG.QuestIsGrey and RG.QuestIsGrey(rq.l) and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then ok = true; skipped = skipped + 1 end
           -- one of a pair of either/or quests counts for both
           local d = not ok and RG.QDATA and RG.QDATA[id]
           if d and d.x and isDone then for _, x in ipairs(d.x) do if isDone(x) then ok = true break end end end
           if not ok then left = left + 1 end
         end
-        if left == 0 then return true, "All its quests are turned in" end
+        if left == 0 then return true, skipped > 0 and "Done (what's left is grey: too low to be worth it)" or "All its quests are turned in" end
         return false
       end
     end
