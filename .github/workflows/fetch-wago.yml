@@ -1,0 +1,66 @@
+name: Fetch wago DB2
+
+# On demand / weekly: download the WoW Forever client's own crafting tables from wago.tools (DB2 exports of the
+# game client) and commit them to the data/wago branch. tools/gear/gen.py reads them to link WoW Forever's new
+# recipes to the gear they make and the skill they need (the cMaNGOS database only has the original Classic ones).
+on:
+  schedule:
+    - cron: '53 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      build:
+        description: Client build (empty = the newest 1.60 build wago has)
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find the build
+        run: |
+          set -e
+          curl -sSL -A "Mozilla/5.0" https://wago.tools/api/builds -o /tmp/builds.json
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open('/tmp/builds.json'))
+          want = os.environ.get('WANT', '').strip()
+          for prod, bl in sorted(d.items()):
+              vs = [b.get('version') for b in (bl or [])][:3]
+              print(prod, vs)
+          cand = []
+          for prod, bl in d.items():
+              for b in bl or []:
+                  v = b.get('version') or ''
+                  if (want and v == want) or (not want and v.startswith('1.60.')):
+                      cand.append((tuple(int(x) for x in v.split('.')), v, prod))
+          cand.sort()
+          if not cand: raise SystemExit('no 1.60 build on wago')
+          _, v, prod = cand[-1]
+          print('picked', prod, v)
+          open(os.environ['GITHUB_ENV'], 'a').write('BUILD=%s\nPRODUCT=%s\n' % (v, prod))
+          PY
+        env:
+          WANT: ${{ github.event.inputs.build }}
+      - name: Download tables
+        run: |
+          set -e
+          mkdir -p /tmp/out && cd /tmp/out
+          for t in SkillLineAbility SkillLine SpellEffect SpellName ItemEffect ItemSparse SpellReagents; do
+            curl -sSL -A "Mozilla/5.0" -o "$t.csv" "https://wago.tools/db2/$t/csv?build=$BUILD"
+            echo "$t: $(wc -l < $t.csv) rows; $(head -c 300 $t.csv | head -1)"
+          done
+          printf 'build=%s\nproduct=%s\n' "$BUILD" "$PRODUCT" > BUILD.txt
+          gzip -9 *.csv
+          du -sh .
+      - name: Commit to data/wago
+        run: |
+          cd /tmp/out
+          git init -q -b data/wago
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "wago.tools DB2 export, build $BUILD ($PRODUCT)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data/wago
