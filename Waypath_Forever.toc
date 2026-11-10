@@ -123,6 +123,7 @@ SourceInfo.lua
 ProfGuide.lua
 ProfNudge.lua
 ProfPlus.lua
+WeaponSkill.lua
 UI.lua
 Compat.lua
 GateOff.lua

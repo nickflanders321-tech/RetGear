@@ -521,6 +521,24 @@ for nm in sorted(RECIPES):
         RECIPE_SRC[nm] = {"item": iid, "rank": int(it.get("RequiredSkillRank") or 0), "price": int(it.get("BuyPrice") or 0) if v else 0,
                           "lim": any(o[5] for o in v), "v": v, "d": d, "q": q}
         break
+# Weapon masters: who teaches each weapon skill, and where (both factions; the add-on picks yours)
+WEAPON_SKILL = {196: "Axes", 197: "Two-Handed Axes", 198: "Maces", 199: "Two-Handed Maces", 200: "Polearms", 201: "Swords",
+    202: "Two-Handed Swords", 227: "Staves", 264: "Bows", 266: "Guns", 5011: "Crossbows", 1180: "Daggers", 2567: "Thrown", 15590: "Fist Weapons"}
+teaches = defaultdict(set)
+for row in trainer_rows:
+    sk = WEAPON_SKILL.get(taught(int(row["spell"])))
+    if sk and "entry" in row: teaches[int(row["entry"])].add(sk)
+WEAPON_MASTERS = defaultdict(list)
+for tid in sorted(teaches):
+    sp = npc_spawns.get(tid)
+    if not sp or tid not in npc_name: continue
+    fac = "AH" if sp[1] in ("AH", "") else sp[1]
+    for z, pts in sp[0].items():
+        if z not in ui or z in DUNGEON_AREAS: continue
+        spot = (ui[z], pts[0], "%s (%s)" % (npc_name[tid], AREA.get(z, "?")), fac)
+        for sk in teaches[tid]: WEAPON_MASTERS[sk].append(spot)
+        break
+print("weapon masters: %d trainers, %d skills" % (len(teaches), len(WEAPON_MASTERS)), file=sys.stderr)
 print("recipe sources: %d of %d recipes are learned from an item" % (len(RECIPE_SRC), sum(1 for r in RECIPES.values() if r["s"] and r["s"] not in trainer_taught and recipe_items.get(r["s"]))), file=sys.stderr)
 
 # ---------------------------------------------------------------------------
@@ -574,6 +592,9 @@ for nm in sorted(RECIPE_SRC):
     if x["d"]: parts.append("d = { %s }" % ", ".join(wp(o[1], o[2], o[3], ", %s" % r1(o[4])) for o in x["d"]))
     if x["q"]: parts.append("q = { %s }" % ", ".join(str(qq) for qq in x["q"]))
     L.append("  [%s] = { %s }," % (lua_str(nm), ", ".join(parts)))
+L.append("}"); L.append("RG.WEAPON_MASTERS = {")
+for sk in sorted(WEAPON_MASTERS):
+    L.append("  [%s] = { %s }," % (lua_str(sk), ", ".join(wp(o[0], o[1], o[2], ", %s" % lua_str(o[3])) for o in WEAPON_MASTERS[sk])))
 L.append("}"); L.append("RG.ZONE_MAPS = {")
 for a in sorted(AREA, key=lambda a: AREA[a]):
     if a in ui and a not in DUNGEON_AREAS: L.append("  [%s] = %d," % (lua_str(AREA[a]), ui[a]))

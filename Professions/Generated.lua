@@ -968,6 +968,22 @@ RG.RECIPE_SRC = {
   ["Wicked Leather Gauntlets"] = { item = 15725, rank = 260, price = 12000, lim = true, v = { { 1422, 43.1, 84.3, "Leonard Porter <Leatherworking Supplies> (Western Plaguelands)", "A" }, { 1420, 83.3, 69.7, "Werg Thickblade <Leatherworking Supplies> (Tirisfal Glades)", "H" } } },
   ["Wicked Leather Headband"] = { item = 15744, rank = 280, d = { { 1448, 42.7, 15.9, "Jadefire Trickster (Felwood, level 52-53)", 1.9 } } },
 }
+RG.WEAPON_MASTERS = {
+  ["Axes"] = { { 1454, 81.5, 19.6, "Hanashi (Orgrimmar)", "H" }, { 1455, 61.2, 89.5, "Buliwyf Stonehand (Ironforge)", "A" }, { 1454, 81.7, 19.6, "Sayoc (Orgrimmar)", "H" } },
+  ["Bows"] = { { 1454, 81.5, 19.6, "Hanashi (Orgrimmar)", "H" }, { 1457, 57.6, 46.7, "Ilyenia Moonfire (Darnassus)", "A" }, { 1454, 81.7, 19.6, "Sayoc (Orgrimmar)", "H" } },
+  ["Crossbows"] = { { 1453, 63.9, 69.1, "Woo Ping (Stormwind City)", "A" }, { 1458, 57.3, 32.8, "Archibald (Undercity)", "H" }, { 1455, 62.2, 89.6, "Bixi Wobblebonk (Ironforge)", "A" } },
+  ["Daggers"] = { { 1457, 57.6, 46.7, "Ilyenia Moonfire (Darnassus)", "A" }, { 1453, 63.9, 69.1, "Woo Ping (Stormwind City)", "A" }, { 1454, 81.7, 19.6, "Sayoc (Orgrimmar)", "H" }, { 1458, 57.3, 32.8, "Archibald (Undercity)", "H" }, { 1455, 62.2, 89.6, "Bixi Wobblebonk (Ironforge)", "A" } },
+  ["Fist Weapons"] = { { 1455, 61.2, 89.5, "Buliwyf Stonehand (Ironforge)", "A" }, { 1457, 57.6, 46.7, "Ilyenia Moonfire (Darnassus)", "A" }, { 1454, 81.7, 19.6, "Sayoc (Orgrimmar)", "H" } },
+  ["Guns"] = { { 1455, 61.2, 89.5, "Buliwyf Stonehand (Ironforge)", "A" }, { 1456, 40.9, 62.7, "Ansekhwa (Thunder Bluff)", "H" } },
+  ["Maces"] = { { 1455, 61.2, 89.5, "Buliwyf Stonehand (Ironforge)", "A" }, { 1456, 40.9, 62.7, "Ansekhwa (Thunder Bluff)", "H" } },
+  ["Polearms"] = { { 1453, 63.9, 69.1, "Woo Ping (Stormwind City)", "A" }, { 1458, 57.3, 32.8, "Archibald (Undercity)", "H" } },
+  ["Staves"] = { { 1454, 81.5, 19.6, "Hanashi (Orgrimmar)", "H" }, { 1457, 57.6, 46.7, "Ilyenia Moonfire (Darnassus)", "A" }, { 1453, 63.9, 69.1, "Woo Ping (Stormwind City)", "A" }, { 1456, 40.9, 62.7, "Ansekhwa (Thunder Bluff)", "H" } },
+  ["Swords"] = { { 1453, 63.9, 69.1, "Woo Ping (Stormwind City)", "A" }, { 1458, 57.3, 32.8, "Archibald (Undercity)", "H" } },
+  ["Thrown"] = { { 1454, 81.5, 19.6, "Hanashi (Orgrimmar)", "H" }, { 1457, 57.6, 46.7, "Ilyenia Moonfire (Darnassus)", "A" }, { 1454, 81.7, 19.6, "Sayoc (Orgrimmar)", "H" }, { 1455, 62.2, 89.6, "Bixi Wobblebonk (Ironforge)", "A" } },
+  ["Two-Handed Axes"] = { { 1454, 81.5, 19.6, "Hanashi (Orgrimmar)", "H" }, { 1455, 61.2, 89.5, "Buliwyf Stonehand (Ironforge)", "A" }, { 1454, 81.7, 19.6, "Sayoc (Orgrimmar)", "H" } },
+  ["Two-Handed Maces"] = { { 1455, 61.2, 89.5, "Buliwyf Stonehand (Ironforge)", "A" }, { 1456, 40.9, 62.7, "Ansekhwa (Thunder Bluff)", "H" } },
+  ["Two-Handed Swords"] = { { 1453, 63.9, 69.1, "Woo Ping (Stormwind City)", "A" }, { 1458, 57.3, 32.8, "Archibald (Undercity)", "H" } },
+}
 RG.ZONE_MAPS = {
   ["Alcaz Island"] = 1445,
   ["Alterac Mountains"] = 1416,
