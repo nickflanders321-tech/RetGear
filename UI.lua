@@ -1200,6 +1200,9 @@ local function renderRoute()
       elseif lvl >= e.dq.go and lvl <= r.to then status = GREEN .. "Go now|r" end
       sub = "Head over at level " .. e.dq.go .. GREY .. "  ·  " .. (e.dq.note or r.notes) .. "|r"
     end
+    if r.kind == "dungeon" and not e.done and (now or e.where == "next") and RG.DUNGEON_XP_TIP then
+      sub = sub .. GREY .. "  ·  " .. RG.DUNGEON_XP_TIP .. "|r"
+    end
     local titleText = r.kind == "travel" and ("|cff6FA8DC" .. "Travel" .. "|r" .. GREY .. "   level " .. r.from .. "|r") or (col .. r.zone .. "|r" .. GREY .. (r.kind == "pala" and "" or ("   " .. r.hub)) .. "|r")
     local open = e.steps and not e.done and ((state.open[e.key] == nil and openDefault) or state.open[e.key] == true)
     local left = e.steps and (#e.steps - e.doneN) or 0

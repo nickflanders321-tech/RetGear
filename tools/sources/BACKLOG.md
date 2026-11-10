@@ -33,6 +33,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    2026-11-09: QuestieDB's Forever data unchanged (tree a32e1fd, its November 8 update): still no Riverglades or Mount
    Hyjal steps, Shen'dralas 4 Horde quests. Krol'dok Stronghold's entrance (cave west of the fortress gates, 37.5, 37.5)
    and its Horde turn-in Krom'rosh (Rog'mar, in QuestieDB's NPC data) are in the route since v1.26.0; Rog'mar now gets a pin.
+   2026-11-10: QuestieDB's Forever data unchanged (tree f9a90a1): still no Riverglades or Mount Hyjal steps, Shen'dralas 4
+   Horde quests. Bind on Forever (client files of 1.60.1.70862) confirms Rog'mar (flight node 3203, subzone level 38) and
+   lists a retired "zzOLD Bolder'ok" flight node: Bolder'ok stays in the note as the ogres' settlement, but has no flight path.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -101,6 +104,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.29.0: Blizzard's November 8 hotfix (dungeon kill XP +50%) on the route's dungeon cards for both factions, with the
+  guides' advice that follows from it (quests first; a second run pays off with a quick group).
 
 - v1.27.0: Alcaz Prison, Blackmaw Hold and The Shaper's Terrace entrances (Warcraft Tavern and Mmonster agree): route notes for
   both factions, Horde steps, entrance pins via tools/waypoints/gen.py (item 11 done); the five new dungeons now get travel

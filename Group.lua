@@ -76,6 +76,10 @@ end
 -- ---------------------------------------------------------------------------
 -- 2. Dungeon run reports
 -- ---------------------------------------------------------------------------
+-- Shown on the route's dungeon cards (UI.lua). Blizzard's November 8, 2026 hotfix (Kaivax, "Dungeon Enemy XP
+-- Increased"): kill experience in dungeons +50%, "so it feels better to go back in for more runs". Dungeon quests
+-- still give the reduced quest XP from October 1 (Timesaver, November 8), so the quests stay the biggest part of a run.
+RG.DUNGEON_XP_TIP = "Since November 8 dungeon kills give 50% more XP: take every quest for a run first, and a second run is worth it with a quick group."
 local run
 local function startRun()
   local name, instType

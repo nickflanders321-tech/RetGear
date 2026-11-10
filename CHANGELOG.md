@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.29.0
+
+- **Dungeon XP is up.** Blizzard's November 8 hotfix gives 50% more experience for dungeon kills. The route's dungeon cards (Horde and Alliance) now say so while a dungeon is current or coming up: take every quest for the dungeon before you go in (quest XP wasn't raised), and a second run is now worth it with a quick group.
+- Riverglades and Mount Hyjal still have no quest data published; their steps appear by themselves as soon as it is.
+
 ## v1.28.0
 
 - **Professions: more from other add-ons** (Ackis Recipe List, Skillet, Ultimate Profession Master):
