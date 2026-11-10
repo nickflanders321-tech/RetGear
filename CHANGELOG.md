@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+
+- **Professions shopping list: go back.** The list now has "< Back" and "Show more >" lines to move between this step, this step and the next, and the rest of the route in both directions (right-clicking the header also goes back). Before, clicking only moved forward and wrapped around.
 ## v1.27.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

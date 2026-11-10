@@ -808,20 +808,34 @@ local function renderProf()
       local shop = RG.ProfShopping and RG.ProfShopping(sel, scope)
       if shop then
         local SC = { step = "this step", next = "this step and the next", all = "the rest of the route" }
-        local NEXT = { step = "next", next = "all", all = "step" }
+        local NEXT = { step = "next", next = "all" }
+        local PREV = { next = "step", all = "next" }
+        local function go(to) if to then state.profShop[sel] = to; RG.RefreshUI() end end
         local missing = 0
         for _, e in ipairs(shop.list) do if e.short > 0 then missing = missing + 1 end end
         local cost = shop.total > 0 and (" ~" .. RG.Money(shop.total)) or ""
         head("Shopping list  ·  " .. SC[scope])
-        rows[n].onClick = function() state.profShop[sel] = NEXT[scope]; RG.RefreshUI() end
-        rows[n].tip = "Click: " .. SC[NEXT[scope]] .. "."
+        rows[n].onClick = function() go(NEXT[scope]) end
+        rows[n].onRightClick = function() go(PREV[scope]) end
+        rows[n].tip = (NEXT[scope] and ("Click: " .. SC[NEXT[scope]] .. ".") or "") .. (PREV[scope] and ((NEXT[scope] and "\n" or "") .. "Right-click: back to " .. SC[PREV[scope]] .. ".") or "")
         n = n + 1
         local summary = missing == 0 and (GREEN .. "You have everything for " .. SC[scope] .. "|r")
           or ("|cffffffff" .. missing .. " to get|r" .. (shop.total > 0 and (GREY .. "  ·  about |r" .. RG.Money(shop.total) .. GREY .. " to buy|r") or "")
             .. (shop.unknown > 0 and (GREY .. "  ·  " .. shop.unknown .. " without a price|r") or "")
             .. (shop.owned > 0 and (GREY .. "  ·  you already have " .. RG.Money(shop.owned) .. " of it|r") or ""))
-        setStep(getRow(n), "", summary .. GREY .. "   (click the header: " .. SC[NEXT[scope]] .. ")|r", false, function() state.profShop[sel] = NEXT[scope]; RG.RefreshUI() end)
+        setStep(getRow(n), "", summary, false, nil)
         rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+        -- move between the three views both ways: back to a shorter list, or on to a longer one
+        if PREV[scope] then
+          n = n + 1
+          setStep(getRow(n), "", GOLD .. "< Back|r" .. GREY .. "  to " .. SC[PREV[scope]] .. "|r", false, function() go(PREV[scope]) end)
+          rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+        end
+        if NEXT[scope] then
+          n = n + 1
+          setStep(getRow(n), "", GOLD .. "Show more >|r" .. GREY .. "  " .. SC[NEXT[scope]] .. "|r", false, function() go(NEXT[scope]) end)
+          rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+        end
         local ahOpen = (AuctionHouseFrame and AuctionHouseFrame:IsShown()) or (AuctionFrame and AuctionFrame:IsShown())
         for _, e in ipairs(shop.list) do
           local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
