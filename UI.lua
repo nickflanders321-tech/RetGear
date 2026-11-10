@@ -785,7 +785,9 @@ local function renderProf()
       local col = RG.ColourText and RG.ColourText(now.colour)
       local extra = (now.leftWithMisses or 0) - (now.left or 0)
       local sub = col or (GREY .. "Open your " .. sel .. " window once and Waypath+ reads the recipe's colour.|r")
-      if extra > 0 then sub = sub .. GREY .. "  ·  materials include " .. extra .. " extra for misses|r" end
+      if now.expected then
+        sub = sub .. GREY .. "  ·  about " .. now.expected .. " crafts by the game's odds (learned from your crafting)" .. ((now.greyAt and now.greyAt < st.to) and (", grey at " .. now.greyAt) or "") .. "|r"
+      elseif extra > 0 then sub = sub .. GREY .. "  ·  materials include " .. extra .. " extra for misses|r" end
       if #others > 0 then sub = sub .. GREY .. "\nor: " .. table.concat(others, ", ") .. "|r" end
       -- how many you can make right now (bags), after making the bars/bolts, and with vendor materials too
       if now.canNow then

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Profession crafts-left from the game's own odds.** Each time your profession window shows a recipe's colour, Waypath+ narrows down the skill where it turns yellow, green and grey. Once it knows both the yellow and the grey points of a recipe (two readings a point apart are enough), the current step uses the game's skill-up chance for that recipe: "about 24 crafts by the game's odds", and when it goes grey before the step ends. Until then the guide's count plus a few extra for misses is used, as before.
 - **Smarter step order.** Within a zone, the next step is no longer always the guide's next one: among the next few, a step where you can hand a quest in, whose quests are already in your log, or that's right where you're standing comes first, so there's less walking back and forth. It looks only a few steps ahead and doesn't switch back and forth as you move. The Route tab marks the step with "Next:", and the tracker and arrow follow it. Turn it off in Settings to keep the guide's order.
 - **Game clients in other languages.** Several features compared names in English and quietly did nothing on a German, French, Spanish or other client. Now:
   - Professions are recognised by the game's skill numbers (or their translated spell names), so the Professions tab, reminders and gathering checks work in any language.

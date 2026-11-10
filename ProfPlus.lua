@@ -289,6 +289,46 @@ local COLOUR_TEXT = {
   trivial = "|cff808080Grey|r: no more points",
 }
 function RG.ColourText(c) return c and COLOUR_TEXT[c] or nil end
+-- Learning where a recipe changes colour, from what your window shows as your skill goes up. For each colour the
+-- skill where it starts lies in [lo, hi]; seeing a colour at skill s says yellow starts at or below s if it's yellow
+-- or worse, and above s if it's still orange (and so on). Two readings a point apart pin it down exactly.
+-- RG.db.recipeTh[name] = { medium = {lo, hi}, easy = {lo, hi}, trivial = {lo, hi} }
+local ORDER = { optimal = 0, medium = 1, easy = 2, trivial = 3 }
+local STAGES = { "medium", "easy", "trivial" }
+function RG.LearnColour(name, kind, rank)
+  if not (name and rank and ORDER[kind] and RG.db) then return end
+  RG.db.recipeTh = RG.db.recipeTh or {}
+  local t = RG.db.recipeTh[name] or {}
+  RG.db.recipeTh[name] = t
+  local c = ORDER[kind]
+  for k, st in ipairs(STAGES) do
+    local b = t[st] or { 0, 999 }
+    if c >= k then b[2] = math.min(b[2], rank)        -- already this colour (or past it): it starts at or below rank
+    else b[1] = math.max(b[1], rank + 1) end           -- not yet: it starts above rank
+    if b[1] > b[2] then b = { rank, rank } end         -- (a contradiction, e.g. a bonus to skill: start over around this reading)
+    t[st] = b
+  end
+end
+-- The skill where it turns yellow / grey, if known to within 2 points (else nil)
+function RG.RecipeThreshold(name, stage)
+  local t = RG.db and RG.db.recipeTh and RG.db.recipeTh[name]
+  local b = t and t[stage]
+  if b and b[2] < 999 and b[2] - b[1] <= 2 then return math.floor((b[1] + b[2]) / 2 + 0.5) end
+  return nil
+end
+-- Crafts expected to go from skill `from` to `to` with this recipe (the game's skill-up chance: every craft while
+-- orange, then (grey - skill) / (grey - yellow)), or nil when the yellow and grey points aren't known yet.
+-- Also returns the skill where it goes grey (no more points past that).
+function RG.ExpectedCrafts(name, from, to)
+  local y, g = RG.RecipeThreshold(name, "medium"), RG.RecipeThreshold(name, "trivial")
+  if not (y and g and g > y and from and to) then return nil end
+  local n = 0
+  for s = from, math.min(to, g) - 1 do
+    if s < y then n = n + 1 else n = n + (g - y) / math.max(1, g - s) end
+  end
+  return math.ceil(n), g
+end
+
 -- Extra crafts for misses: yellow +15%, green +40% (at least one more), nothing for orange or unknown.
 function RG.CraftsWithMisses(left, colour)
   if not left or left <= 0 then return left end

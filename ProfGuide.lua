@@ -64,6 +64,7 @@ local function noteColour(name, kind, prof, rank)
   if not (name and COLOUR[kind]) then return end
   RG.db.recipeCol = RG.db.recipeCol or {}
   RG.db.recipeCol[name] = { c = kind, at = rank, p = prof }
+  if RG.LearnColour then pcall(RG.LearnColour, name, kind, rank) end
 end
 local function readWindow()
   if not RG.db then return end
@@ -338,8 +339,16 @@ function RG.ProfNow(name, skillOverride)
     res.left = RG.StepCraftsLeft(now, skill)
     res.craft = RG.ProfPickOption(now, res.left, name)
     res.colour = RG.RecipeColour and RG.RecipeColour(res.craft, name)
-    -- a few extra for the crafts that won't give a point (yellow and green)
+    -- a few extra for the crafts that won't give a point (yellow and green) ...
     res.leftWithMisses = RG.CraftsWithMisses and RG.CraftsWithMisses(res.left, res.colour) or res.left
+    -- ... or, once Waypath+ has seen where this recipe turns yellow and grey, the game's own skill-up chance
+    if RG.ExpectedCrafts then
+      local exp, grey = RG.ExpectedCrafts(res.craft, skill, now.to)
+      if exp then
+        res.expected, res.greyAt = exp, grey
+        res.leftWithMisses = math.max(exp, 0)
+      end
+    end
     res.mats = RG.MatsFor(res.craft, res.leftWithMisses)
     if RG.MatsCost and res.mats then res.cost, res.costUnknown, res.costOwned, res.costGathered = RG.MatsCost(res.mats) end
     res.options = opts
