@@ -633,13 +633,13 @@ end
 
 -- The Mythics (tier 7): hand-made, one copy per deck, any hero. Designs as for class cards, with their own text.
 local MYTHIC = {
-  ["The Wanderer"] = { { "m", 7, 6, 6, "humanoid", nil, { bc = { { op = "discover", pool = "legendary" }, { op = "discount", n = 3 } } } },
+  ["The Wanderer"] = { { "m", 7, 5, 5, "humanoid", nil, { bc = { { op = "discover", pool = "legendary" }, { op = "discount", n = 3 } } } },
     "Battlecry: Discover a Legendary card. The next card you play this turn costs (3) less." },
   ["The First Waypoint"] = { { "s", 2, { draw(2), { op = "discount", n = 2 } } },
     "Draw 2 cards. The next card you play this turn costs (2) less." },
   ["The Last Campfire"] = { { "m", 4, 0, 8, nil, { taunt = true }, { eot = { heal(2, "fface"), heal(2, "fother") } } },
     "Taunt. At the end of your turn, restore 2 Health to your hero and your other minions." },
-  ["Sixty"] = { { "s", 10, { buff(3, 3, "fmin"), { op = "drawto", n = 6 } } },
+  ["Sixty"] = { { "s", 9, { buff(3, 3, "fmin"), { op = "drawto", n = 6 } } },
     "Give your minions +3/+3. Draw cards until you have 6 in hand." },
   ["The Hourglass of Forever"] = { { "s", 8, { { op = "extraturn" } } },
     "Take another turn after this one. Once per game." },

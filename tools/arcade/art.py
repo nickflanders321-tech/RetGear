@@ -183,11 +183,9 @@ def d20(draw, cx, cy, r, line, fill=None, width=3):
 # card geometry (supersampled coordinates)
 # ----------------------------------------------------------------------------------------------
 def X(v): return int(v * S)
-NAME = (X(13), X(10), X(243), X(40))
-ART = (X(16), X(44), X(240), X(200))
-TYPE = (X(13), X(204), X(243), X(225))
-TEXT = (X(16), X(229), X(240), X(327))
-POW = (X(168), X(306), X(246), X(346))
+EDGE = X(5)                                   # the card's outer edge (its look says how the print was made)
+ART = (X(12), X(20), X(244), X(202))          # the art window
+PLATE = (X(14), X(208), X(242), X(238))       # the name plate (its own texture, tinted by the card's rarity)
 
 
 def card_shape(w=TW, h=TH):
@@ -195,93 +193,110 @@ def card_shape(w=TW, h=TH):
 
 
 def make_frame():
+    """The art window's border: a pale line with rounded inner corners and a soft shadow inside. Tinted in game."""
     w, h = TW, TH
     out = canvas(w, h)
-    shape = card_shape()
-    # outer border band
-    inner = mask_rrect(w, h, (X(6), X(6), CW - 1 - X(6), CH - 1 - X(6)), X(8))
-    band = sub(shape, inner)
-    out.alpha_composite(metal(w, h, band))
-    # dark keyline inside the band
-    keyl = sub(inner, inner.filter(ImageFilter.MinFilter(S * 2 + 1)))
-    out.paste(Image.new("RGBA", (w, h), (8, 6, 14, 230)), (0, 0), keyl)
-    # art window: bevelled frame around the transparent hole
-    ao = (ART[0] - X(4), ART[1] - X(4), ART[2] + X(4), ART[3] + X(4))
-    awin = mask_rrect(w, h, ao, X(3))
-    ahole = mask_rrect(w, h, ART, X(2))
-    out.alpha_composite(metal(w, h, sub(awin, ahole), contrast=0.8))
-    # inner shadow inside the hole so the art sits in the frame
-    sh = np.asarray(ahole, dtype=np.float32) / 255.0
-    blur = np.asarray(ahole.filter(ImageFilter.GaussianBlur(X(7))), dtype=np.float32) / 255.0
-    shade = np.clip(sh - blur, 0, 1) * 1.6
-    layer = np.zeros((h, w, 4), np.uint8); layer[..., 3] = np.clip(shade * 170, 0, 255).astype(np.uint8)
+    o = (ART[0] - X(2), ART[1] - X(2), ART[2] + X(2), ART[3] + X(2))
+    sq = mask_rrect(w, h, o, X(1))
+    hole = mask_rrect(w, h, (ART[0] + X(1), ART[1] + X(1), ART[2] - X(1), ART[3] - X(1)), X(6))
+    line = sub(mask_rrect(w, h, o, X(8)), hole)
+    # the corner wedges outside the rounded line are the body's own dark
+    out.paste(Image.new("RGBA", (w, h), (17, 21, 31, 255)), (0, 0), sub(sq, hole))
+    out.paste(Image.new("RGBA", (w, h), (226, 232, 244, 255)), (0, 0), line)
+    sh = np.asarray(hole, dtype=np.float32) / 255.0
+    blur = np.asarray(hole.filter(ImageFilter.GaussianBlur(X(6))), dtype=np.float32) / 255.0
+    layer = np.zeros((h, w, 4), np.uint8); layer[..., 3] = np.clip((sh - blur) * 1.5 * 150, 0, 255).astype(np.uint8)
     out.alpha_composite(Image.fromarray(layer, "RGBA"))
-    # name banner
-    nb = (NAME[0] - X(3), NAME[1] - X(3), NAME[2] + X(3), NAME[3] + X(3))
-    npoly = chamfer(*nb, X(7))
-    out.alpha_composite(metal(w, h, mask_poly(w, h, npoly)))
-    out.alpha_composite(inset_dark(w, h, chamfer(NAME[0] + X(5), NAME[1] + X(3), NAME[2] - X(5), NAME[3] - X(3), X(5)), 238))
-    # type banner
-    tb = (TYPE[0] - X(3), TYPE[1] - X(2), TYPE[2] + X(3), TYPE[3] + X(2))
-    out.alpha_composite(metal(w, h, mask_poly(w, h, chamfer(*tb, X(6)))))
-    out.alpha_composite(inset_dark(w, h, chamfer(TYPE[0] + X(4), TYPE[1] + X(1), TYPE[2] - X(4), TYPE[3] - X(1), X(4)), 238))
-    # gem socket on the right of the type banner
-    gx, gy = TYPE[2] - X(14), (TYPE[1] + TYPE[3]) // 2
-    sock = Image.new("L", (w, h), 0); dd = ImageDraw.Draw(sock); dd.ellipse([gx - X(11), gy - X(11), gx + X(11), gy + X(11)], fill=255)
-    hole = Image.new("L", (w, h), 0); ImageDraw.Draw(hole).ellipse([gx - X(8), gy - X(8), gx + X(8), gy + X(8)], fill=255)
-    out.alpha_composite(metal(w, h, sub(sock, hole)))
-    out.alpha_composite(Image.fromarray(np.dstack([np.full((h, w, 3), 10, np.uint8), (np.asarray(hole) * 0.9).astype(np.uint8)]), "RGBA"))
-    # text box frame (hole stays transparent: the parchment shows through)
-    to = (TEXT[0] - X(4), TEXT[1] - X(4), TEXT[2] + X(4), TEXT[3] + X(4))
-    tw = mask_rrect(w, h, to, X(3)); th = mask_rrect(w, h, TEXT, X(2))
-    out.alpha_composite(metal(w, h, sub(tw, th), contrast=0.7))
-    # footer rule and corner studs
-    for (cx, cy) in ((X(11), X(11)), (CW - X(12), X(11)), (X(11), CH - X(12)), (CW - X(12), CH - X(12))):
-        m = Image.new("L", (w, h), 0); ImageDraw.Draw(m).ellipse([cx - X(4), cy - X(4), cx + X(4), cy + X(4)], fill=255)
-        out.alpha_composite(metal(w, h, m))
-    # power plate (a shield-ish hexagon over the text box corner)
-    pp = [(POW[0] + X(10), POW[1]), (POW[2] - X(2), POW[1]), (POW[2] - X(2), POW[3] - X(8)), (POW[2] - X(12), POW[3]), (POW[0] + X(10), POW[3]), (POW[0], POW[1] + X(14))]
-    out.alpha_composite(metal(w, h, mask_poly(w, h, pp)))
-    pi = [(POW[0] + X(14), POW[1] + X(4)), (POW[2] - X(6), POW[1] + X(4)), (POW[2] - X(6), POW[3] - X(11)), (POW[2] - X(14), POW[3] - X(4)), (POW[0] + X(14), POW[3] - X(4)), (POW[0] + X(5), POW[1] + X(15))]
-    out.alpha_composite(inset_dark(w, h, pi, 242))
-    # clip to the card shape
-    final = canvas(w, h); final.paste(out, (0, 0), shape)
-    return final
+    return out
+
+
+EDGE_STOPS = {
+    1: [(52, 57, 70), (30, 33, 42), (60, 66, 80), (26, 28, 36), (48, 53, 66)],                       # Common: plain dark
+    2: [(242, 246, 251), (143, 163, 189), (230, 237, 246), (111, 129, 152), (223, 231, 241)],        # Rare: brushed metal
+    3: [(255, 224, 138), (255, 158, 203), (181, 140, 255), (111, 214, 255), (138, 255, 201), (255, 224, 138)],  # Holo: rainbow
+    4: [(255, 243, 176), (217, 164, 65), (255, 247, 214), (184, 134, 43), (255, 233, 168)],          # Full art: gold
+}
+
+
+def make_edge(kind):
+    """The card's outer edge, one per finish."""
+    w, h = TW, TH
+    shape = card_shape()
+    inner = mask_rrect(w, h, (EDGE, EDGE, CW - 1 - EDGE, CH - 1 - EDGE), X(9))
+    band = sub(shape, inner)
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    t = np.clip((xx / CW + yy / CH) / 2, 0, 1)
+    stops = np.array(EDGE_STOPS[kind], np.float32)
+    pos = t * (len(stops) - 1); i = np.clip(pos.astype(int), 0, len(stops) - 2); f = (pos - i)[..., None]
+    col = stops[i] * (1 - f) + stops[i + 1] * f
+    if kind == 2:   # brushing
+        col += (noise(w, h, 1, 11)[..., None] - 0.5) * 26 + (np.sin((xx - yy) * 0.9)[..., None]) * 5
+    img = Image.fromarray(np.dstack([np.clip(col, 0, 255), np.full((h, w), 255.0)]).astype(np.uint8), "RGBA")
+    out = canvas(w, h); out.paste(img, (0, 0), band)
+    # a light line on the outside, a dark keyline on the inside
+    hi = sub(shape, shape.filter(ImageFilter.MinFilter(3)))
+    out.paste(Image.new("RGBA", (w, h), (255, 255, 255, 70 if kind > 1 else 26)), (0, 0), hi)
+    keyl = sub(inner.filter(ImageFilter.MaxFilter(S + 1)), inner)
+    out.paste(Image.new("RGBA", (w, h), (6, 7, 12, 235)), (0, 0), keyl)
+    return out
 
 
 def make_body():
+    """The card itself: dark slate, a faint glow behind the art window, an inky base in the window."""
     w, h = TW, TH
     shape = card_shape()
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    # night-violet leather
     t = yy / CH
-    base = np.stack([14 + 18 * t, 11 + 12 * t, 30 + 26 * t], -1)
-    n = noise(w, h, 3, 2) * 10 - 5
-    base += n[..., None]
-    # a faint arcane glow behind the art window
-    ag = radial(w, h, (ART[0] + ART[2]) / 2, (ART[1] + ART[3]) / 2, X(150), 1.6)
-    base += ag[..., None] * np.array([34, 22, 60], np.float32)
-    img = np.dstack([np.clip(base, 0, 255), np.full((h, w), 255.0)]).astype(np.uint8)
-    im = Image.fromarray(img, "RGBA")
-    # parchment text box
-    pm = mask_rrect(w, h, TEXT, X(2))
-    pa = np.stack([226 - 0 * yy, 210 - 0 * yy, 168 - 0 * yy], -1).astype(np.float32)
-    fib = noise(w, h, 2, 5) * 22 + noise(w, h, 9, 6) * 26
-    pa -= fib[..., None] * np.array([1.0, 1.1, 1.5], np.float32)
-    edge = 1 - np.asarray(pm.filter(ImageFilter.GaussianBlur(X(10))), dtype=np.float32) / 255.0
-    cx = (TEXT[0] + TEXT[2]) / 2; cy = (TEXT[1] + TEXT[3]) / 2
-    vign = np.clip(radial(w, h, cx, cy, X(150), 1.2), 0, 1)
-    pa *= (0.72 + 0.28 * vign[..., None])
-    pa -= edge[..., None] * np.array([40, 52, 70], np.float32) * 0.4
-    pimg = Image.fromarray(np.dstack([np.clip(pa, 0, 255), np.full((h, w), 255.0)]).astype(np.uint8), "RGBA")
-    im.paste(pimg, (0, 0), pm)
-    # the art window gets a deep inky base (the art and glow sit above it)
+    base = np.stack([25 - 10 * t, 31 - 12 * t, 45 - 17 * t], -1)
+    base += (noise(w, h, 3, 2) * 6 - 3)[..., None]
+    ag = radial(w, h, CW / 2, X(250), X(170), 1.5)
+    base += ag[..., None] * np.array([10, 12, 20], np.float32)
+    im = Image.fromarray(np.dstack([np.clip(base, 0, 255), np.full((h, w), 255.0)]).astype(np.uint8), "RGBA")
     am = mask_rrect(w, h, ART, X(2))
-    ink = np.stack([8 + 10 * radial(w, h, (ART[0] + ART[2]) / 2, (ART[1] + ART[3]) / 2, X(130), 1.2)] * 3, -1)
-    ink = np.stack([ink[..., 0] * 1.0, ink[..., 1] * 0.9, ink[..., 2] * 1.8], -1) + 6
-    iimg = Image.fromarray(np.dstack([np.clip(ink, 0, 255), np.full((h, w), 255.0)]).astype(np.uint8), "RGBA")
-    im.paste(iimg, (0, 0), am)
+    ink = radial(w, h, (ART[0] + ART[2]) / 2, (ART[1] + ART[3]) / 2, X(140), 1.2)
+    ink = np.stack([8 + ink * 12, 9 + ink * 12, 16 + ink * 22], -1)
+    im.paste(Image.fromarray(np.dstack([np.clip(ink, 0, 255), np.full((h, w), 255.0)]).astype(np.uint8), "RGBA"), (0, 0), am)
     out = canvas(w, h); out.paste(im, (0, 0), shape)
+    return out
+
+
+def make_nameplate(w=256, h=32):
+    """The engraved name plate: light at the top, deeper below. White-to-grey, so the game tints it by rarity."""
+    W, H = w * S, h * S
+    m = mask_rrect(W, H, (X(1), X(1), W - 1 - X(1), H - 1 - X(3)), X(6))
+    yy = np.mgrid[0:H, 0:W][0].astype(np.float32) / (H - X(3))
+    g = np.interp(yy, [0, 0.28, 0.62, 1.0], [255, 236, 184, 128])
+    img = Image.fromarray(np.dstack([g, g, g, np.full((H, W), 255.0)]).astype(np.uint8), "RGBA")
+    out = canvas(W, H)
+    # a soft shadow under the plate
+    shd = shift(m, 0, X(2)).filter(ImageFilter.GaussianBlur(X(1.5)))
+    out.paste(Image.new("RGBA", (W, H), (0, 0, 0, 150)), (0, 0), shd)
+    out.paste(img, (0, 0), m)
+    edge = sub(m, m.filter(ImageFilter.MinFilter(3)))
+    out.paste(Image.new("RGBA", (W, H), (255, 255, 255, 235)), (0, 0), edge)
+    # engraving: a fine dark line just inside, with a light line under it
+    ins = mask_rrect(W, H, (X(4), X(4), W - 1 - X(4), H - 1 - X(6)), X(4))
+    il = sub(ins, ins.filter(ImageFilter.MinFilter(3)))
+    out.paste(Image.new("RGBA", (W, H), (255, 255, 255, 90)), (0, 0), shift(il, 0, 1))
+    out.paste(Image.new("RGBA", (W, H), (20, 20, 26, 80)), (0, 0), il)
+    return out
+
+
+def make_fade(w=32, h=128):
+    """Full art cards: the picture fades into the card's dark under the name plate."""
+    a = np.interp(np.arange(h) / (h - 1.0), [0, 0.45, 1.0], [0, 225, 255])
+    img = np.zeros((h, w, 4), np.uint8); img[..., :3] = (15, 19, 28); img[..., 3] = a[:, None]
+    return Image.fromarray(img, "RGBA")
+
+
+def make_pill(w=128, h=32):
+    """The small label that says how the print was made."""
+    W, H = w * S, h * S
+    m = mask_rrect(W, H, (X(1), X(3), W - 1 - X(1), H - 1 - X(3)), (H - X(6)) // 2)
+    out = canvas(W, H)
+    out.paste(Image.new("RGBA", (W, H), (255, 255, 255, 255)), (0, 0), m)
+    inner = m.filter(ImageFilter.MinFilter(2 * S + 1))
+    out.paste(Image.new("RGBA", (W, H), (38, 42, 54, 255)), (0, 0), inner)
     return out
 
 
@@ -505,6 +520,10 @@ def make_slot():
 def main():
     save("Frame", make_frame(), 256, 512)
     save("Body", make_body(), 256, 512)
+    for k in (1, 2, 3, 4): save("Edge%d" % k, make_edge(k), 256, 512)
+    save("NamePlate", make_nameplate(), 256, 32)
+    save("Fade", make_fade(), 32, 128)
+    save("Pill", make_pill(), 128, 32)
     save("Back", make_back(), 256, 512)
     save("Slot", make_slot(), 256, 512)
     save("Rune", make_rune(), 256, 256)

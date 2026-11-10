@@ -137,13 +137,23 @@ local function cardStats(w, d, live)
     w.hpT:SetTextColor(1, hurt and 0.45 or 1, hurt and 0.45 or ((live and live.maxhp > (d.hp or 0)) and 0.5 or 1))
   end
 end
+-- every card shows its Arena numbers, in the collection too (Arcade.lua's paint calls this; no def: none shown)
+function RG.ArcadeCardStats(w, d)
+  if not d then
+    if rawget(w, "decorated") then Sh(w.costB, false); Sh(w.costT, false); Sh(w.atkB, false); Sh(w.atkT, false); Sh(w.hpB, false); Sh(w.hpT, false) end
+    return
+  end
+  U = U or RG.ArcadeUI
+  decorate(w); cardStats(w, d)
+end
 -- paint a card widget (cached by key so models and art are not reloaded every refresh)
 -- rules keywords stand out in the card text
 local KEYWORDS = { "Divine Shield", "Battlecry", "Deathrattle", "Windfury", "Lifesteal", "Stealth", "Poisonous", "Taunt", "Charge", "Rush", "Freeze", "Silence", "Spell Damage", "Combo", "Overload", "Discover" }
 local function hilite(t)
-  for _, k in ipairs(KEYWORDS) do t = t:gsub(k, "|cff8a3a08" .. k .. "|r") end
+  for _, k in ipairs(KEYWORDS) do t = t:gsub(k, "|cffffe9a8" .. k .. "|r") end
   return t
 end
+RG.ArcadeHilite = hilite
 local function paintCard(w, key, owner, live)
   local c = cardObj(key)
   if not c then w:Hide() return end
@@ -153,20 +163,18 @@ local function paintCard(w, key, owner, live)
     w.pkey, w.powner = key, owner
     U.paint(w, c, finishOf(key, owner), nil)
     decorate(w)
-    w.pow:SetText(""); w.powLabel:Hide(); w.fin:SetText(""); w.num:SetText(""); w.count:SetText("")
+    w.fin:SetText(""); w.pill:Hide(); w.num:SetText(""); w.count:SetText("")
     if c.mythic then cardStats(w, d, live); return end   -- (a Mythic is its own painted card: nothing to lay out)
     w.type:SetText(typeLine(d))
-    w.name:ClearAllPoints(); w.name:SetPoint("TOPLEFT", w, "TOPLEFT", 40 * w.u, -13 * w.u); w.name:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 238 * w.u, -37 * w.u)
     if w.cw >= 190 then
       U.layoutText(w, true)
-      U.fitText(w.name, d.name, 196 * w.u, 15 * w.u, 8, "head")
-      w.text:SetText(hilite(d.text or "") .. (d.lore and d.lore ~= "" and ("\n\n|cff6b4a2e" .. d.lore .. "|r") or ""))
+      U.fitText(w.name, d.name, 212 * w.u, 16 * w.u, 8, "title")
+      w.text:SetText(hilite(d.text or "") .. (d.lore and d.lore ~= "" and ("\n|cff9a9fad" .. d.lore .. "|r") or ""))
     else   -- hand and board cards: the name on the parchment in a readable size, the effect line under it
       w.name:SetText("")
       local t = (d.text or ""):gsub("%s+", " ")
       if #t > 56 then t = t:sub(1, 54):gsub("%s*%S*$", "") .. "..." end
       U.layoutText(w, false, d.name, hilite(t))
-      w.text:SetTextColor(0.13, 0.08, 0.03)
     end
   end
   cardStats(w, d, live)

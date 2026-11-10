@@ -1008,7 +1008,10 @@ local GOLDC = { 0.96, 0.82, 0.45 }
 local GOLDHEX = "|cfff5d273"
 local INK = { 0.17, 0.11, 0.08 }       -- text on parchment
 local KINDCOL = { { 1, 0.6, 0.25 }, { 0.35, 0.9, 0.55 }, { 0.35, 0.65, 1 }, { 0.75, 0.45, 1 } }
-local U = { name = { 13, 10, 243, 40 }, art = { 16, 44, 240, 200 }, type = { 13, 204, 243, 225 }, text = { 16, 229, 240, 327 } }
+-- card layout in card units (256 x 358): the art window (and where the art goes on a Full art print: to the card's
+-- edge), the name plate on inspect-size cards and on small ones (taller: a long name takes two lines)
+local U = { art = { 12, 20, 244, 202 }, full = { 4, 4, 252, 214 }, plate = { 14, 208, 242, 238 }, plateS = { 10, 205, 246, 249 } }
+function U.mix(c, k) return { c[1] + (1 - c[1]) * k, c[2] + (1 - c[2]) * k, c[3] + (1 - c[3]) * k } end
 
 local function lv(f) local l = f.GetFrameLevel and f:GetFrameLevel(); return type(l) == "number" and l or 1 end
 -- names and chat text can hold letters our card fonts do not have (Cyrillic, Chinese, Korean...): those use the game's own font
@@ -1183,23 +1186,29 @@ local function makeCard(parent, w)
   f.foil:SetPoint("LEFT", f.fx, "LEFT", -w, 0)
   -- frame, text, gem
   f.top = CreateFrame("Frame", nil, f); f.top:SetAllPoints(f); f.top:SetFrameLevel(base + 4)
-  f.frameTex = f.top:CreateTexture(nil, "ARTWORK"); f.frameTex:SetTexture(MEDIA .. "Frame"); f.frameTex:SetTexCoord(0, 1, 0, CARD_V); f.frameTex:SetAllPoints(f)
-  f.gem = f.top:CreateTexture(nil, "OVERLAY"); f.gem:SetTexture(MEDIA .. "Gem"); f.gem:SetSize(17 * u, 17 * u)
-  f.gem:SetPoint("CENTER", f, "TOPLEFT", 229 * u, -214.5 * u)
-  f.name = fs(f.top, "head", 15 * u); f.name:SetPoint("TOPLEFT", f, "TOPLEFT", 21 * u, -13 * u); f.name:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 235 * u, -37 * u)
-  f.name:SetJustifyH("CENTER"); f.name:SetJustifyV("MIDDLE"); f.name:SetWordWrap(false); f.name:SetTextColor(0.98, 0.94, 0.82)
-  f.type = fs(f.top, "head", 10 * u); f.type:SetPoint("TOPLEFT", f, "TOPLEFT", 20 * u, -206 * u); f.type:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 210 * u, -223 * u)
+  -- every card shares one frame: the art window's border, the outer edge (its look is the print's finish), the engraved
+  -- name plate (tinted by the card's own rarity), then the type line, the rules and the card's number
+  f.frameTex = f.top:CreateTexture(nil, "ARTWORK", nil, 0); f.frameTex:SetTexture(MEDIA .. "Frame"); f.frameTex:SetTexCoord(0, 1, 0, CARD_V); f.frameTex:SetAllPoints(f)
+  f.edge = f.top:CreateTexture(nil, "ARTWORK", nil, 1); f.edge:SetTexture(MEDIA .. "Edge1"); f.edge:SetTexCoord(0, 1, 0, CARD_V); f.edge:SetAllPoints(f)
+  f.plate = f.top:CreateTexture(nil, "ARTWORK", nil, 2); f.plate:SetTexture(MEDIA .. "NamePlate")
+  f.pill = f.top:CreateTexture(nil, "ARTWORK", nil, 2); f.pill:SetTexture(MEDIA .. "Pill"); box(f.pill, { 184, 6, 246, 22 }); f.pill:Hide()
+  -- Full art prints: the picture runs to the card's edge and fades into the card under the name plate
+  f.fade = f.fx:CreateTexture(nil, "ARTWORK"); f.fade:SetTexture(MEDIA .. "Fade"); box(f.fade, { 4, 146, 252, 214 }); f.fade:Hide()
+  f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 20, 209, 236, 237 })
+  f.name:SetJustifyH("CENTER"); f.name:SetJustifyV("MIDDLE"); f.name:SetWordWrap(false); f.name:SetTextColor(0.07, 0.06, 0.1)
+  f.type = fs(f.top, "head", 9 * u); box(f.type, { 14, 242, 242, 257 })
   f.type:SetJustifyH("CENTER"); f.type:SetJustifyV("MIDDLE"); f.type:SetWordWrap(false); f.type:SetTextColor(0.85, 0.8, 0.7)
-  f.text = fs(f.top, "body", 12 * u); f.text:SetShadowColor(0, 0, 0, 0)
-  f.text:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * u, -236 * u); f.text:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 232 * u, -322 * u)
-  f.text:SetJustifyH("LEFT"); f.text:SetJustifyV("TOP"); f.text:SetTextColor(INK[1], INK[2], INK[3])
-  f.nameB = fs(f.top, "head", 10.5); f.nameB:SetShadowColor(0, 0, 0, 0); f.nameB:SetTextColor(INK[1], INK[2], INK[3])
-  f.nameB:SetJustifyH("CENTER"); f.nameB:SetJustifyV("TOP"); f.nameB:Hide()
-  f.pow = fs(f.top, "title", 17 * u); f.pow:SetPoint("CENTER", f, "TOPLEFT", 208 * u, -327 * u); f.pow:SetTextColor(1, 0.92, 0.7)
-  f.powLabel = fs(f.top, "head", 6.5 * u); f.powLabel:SetPoint("CENTER", f, "TOPLEFT", 207 * u, -314 * u); f.powLabel:SetTextColor(0.75, 0.7, 0.62); f.powLabel:SetText("POWER")
-  f.num = fs(f.top, "head", 8 * u); f.num:SetPoint("LEFT", f, "TOPLEFT", 18 * u, -342 * u); f.num:SetTextColor(0.739, 0.66, 0.502)
-  f.fin = fs(f.top, "head", 8 * u); f.fin:SetPoint("RIGHT", f, "TOPLEFT", 158 * u, -342 * u); f.fin:SetTextColor(0.739, 0.66, 0.502); f.fin:SetJustifyH("RIGHT")
-  f.count = fs(f.top, "title", 13 * u, "OVERLAY", "OUTLINE"); f.count:SetPoint("TOPRIGHT", f, "TOPLEFT", 235 * u, -49 * u); f.count:SetTextColor(1, 0.95, 0.7)
+  f.text = fs(f.top, "body", 12 * u)
+  f.text:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * u, -260 * u); f.text:SetPoint("BOTTOMRIGHT", f, "TOPLEFT", 232 * u, -322 * u)
+  f.text:SetJustifyH("CENTER"); f.text:SetJustifyV("TOP"); f.text:SetTextColor(0.96, 0.94, 0.89)
+  f.nameB = fs(f.top, "head", 10.5); f.nameB:SetShadowColor(0, 0, 0, 0); f.nameB:SetTextColor(0.07, 0.06, 0.1)
+  f.nameB:SetJustifyH("CENTER"); f.nameB:SetJustifyV("MIDDLE"); f.nameB:Hide()
+  -- (the quick-duel power is in the tooltip now: the card shows what it costs and its attack and health, as in the Arena)
+  f.pow = fs(f.top, "title", 17 * u); f.pow:SetPoint("CENTER", f, "TOPLEFT", 128 * u, -327 * u); f.pow:Hide()
+  f.powLabel = fs(f.top, "head", 6.5 * u); f.powLabel:SetPoint("CENTER", f, "TOPLEFT", 128 * u, -314 * u); f.powLabel:Hide()
+  f.num = fs(f.top, "head", 8 * u); f.num:SetPoint("CENTER", f, "TOPLEFT", 128 * u, -343 * u); f.num:SetTextColor(0.66, 0.68, 0.74)
+  f.fin = fs(f.top, "title", 7 * u); f.fin:SetPoint("CENTER", f.pill, "CENTER", 0, 0); f.fin:SetTextColor(0.9, 0.93, 0.97)
+  f.count = fs(f.top, "title", 13 * u, "OVERLAY", "OUTLINE"); f.count:SetPoint("TOPRIGHT", f, "TOPLEFT", 238 * u, -28 * u); f.count:SetTextColor(1, 0.95, 0.7)
   f.pin = f.top:CreateTexture(nil, "OVERLAY"); f.pin:SetTexture("Interface\\Cooldown\\star4"); f.pin:SetBlendMode("ADD"); f.pin:SetSize(20 * u, 20 * u)
   f.pin:SetPoint("TOPLEFT", f, "TOPLEFT", 20 * u, -48 * u); f.pin:SetVertexColor(1, 0.85, 0.3); f.pin:Hide()
   f.sparks = {}
@@ -1297,7 +1306,7 @@ local function placeArt(w, c, full)
   local col, row = e[2] % 8, math.floor(e[2] / 8)
   w.art:SetTexture(MEDIA .. "Places" .. e[1])
   w.art:SetTexCoord(col * 120 / 1024, (col + 1) * 120 / 1024, row * 84 / 1024, (row + 1) * 84 / 1024)
-  local pw = (full and 200 or 186) * u; local ph = pw * 84 / 120
+  local pw = (full and 248 or 186) * u; local ph = pw * 84 / 120   -- (Full art: the painting runs to the card's edge)
   w.art:ClearAllPoints(); w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(pw, ph)
   w.iconBack:ClearAllPoints(); w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize(pw + 7 * u, ph + 7 * u)
   w.iconEdge:ClearAllPoints(); w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize(pw + 3 * u, ph + 3 * u)
@@ -1337,37 +1346,48 @@ end
 local FINCOL = { { 0.836, 0.747, 0.567 }, { 0.5, 0.74, 1 }, { 0.86, 0.62, 1 }, { 1, 0.86, 0.42 } }   -- header label colour by finish
 local function layoutText(w, big, name, text)
   local u = w.u
-  w.text:ClearAllPoints()
+  local pb = big and U.plate or U.plateS
+  w.plate:ClearAllPoints()
+  w.plate:SetPoint("TOPLEFT", w, "TOPLEFT", pb[1] * u, -pb[2] * u); w.plate:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", pb[3] * u, -(pb[4] + 3) * u)   -- (+3: the plate's shadow)
+  w.text:ClearAllPoints(); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("TOP")
   if big then
-    w.nameB:Hide()
-    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -236 * u); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 232 * u, -322 * u)
+    w.nameB:Hide(); w.type:Show()
+    w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 14 * u, -242 * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 242 * u, -257 * u)
+    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -260 * u); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 232 * u, -322 * u)
     if w.text.SetMaxLines then w.text:SetMaxLines(0) end
     return
   end
-  local bw, bh = 200 * u, 82 * u
-  local sz = w.cw >= 110 and 11 or 10
+  -- small cards: the name fills the plate in a size you can read (two lines if it needs them)
+  w.name:SetText("")
+  local bw = (pb[3] - pb[1] - 10) * u
+  local sz = w.cw >= 110 and 10 or 9
   w.nameB:ClearAllPoints()
-  w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -239 * u); w.nameB:SetWidth(208 * u)
+  w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", (pb[1] + 5) * u, -(pb[2] + 1) * u); w.nameB:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", (pb[3] - 5) * u, -(pb[4] - 1) * u)
   w.nameB:SetWordWrap(false); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
-  local lines = 1
-  w.nameB:SetWidth(700)   -- (measure it unclipped: a clipped string reports its clipped width)
-  local wd = w.nameB:GetStringWidth()
-  w.nameB:SetWidth(208 * u)
+  local wd = w.nameB.GetUnboundedStringWidth and w.nameB:GetUnboundedStringWidth() or w.nameB:GetStringWidth()
   if type(wd) == "number" and wd > bw then
-    lines = 2
-    while sz > 9 and wd > bw * 1.85 do sz = sz - 0.5; setfont(w.nameB, "head", sz); w.nameB:SetText(name or ""); wd = w.nameB:GetStringWidth() end
-    w.nameB:SetWordWrap(true)
-    if w.nameB.SetMaxLines then w.nameB:SetMaxLines(2) end
+    -- first a little smaller on one line, then two lines
+    while sz > 8 and wd > bw do sz = sz - 0.5; setfont(w.nameB, "head", sz); w.nameB:SetText(name or ""); wd = w.nameB.GetUnboundedStringWidth and w.nameB:GetUnboundedStringWidth() or w.nameB:GetStringWidth() end
+    if type(wd) == "number" and wd > bw then
+      sz = math.min(sz, math.max(7, ((pb[4] - pb[2] - 4) * u) / 2 - 1))
+      setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
+      w.nameB:SetWordWrap(true)
+      if w.nameB.SetMaxLines then w.nameB:SetMaxLines(2) end
+    end
   elseif w.nameB.SetMaxLines then w.nameB:SetMaxLines(1) end
-  local nh = lines * (sz + 2)
-  w.nameB:SetHeight(nh); w.nameB:Show()
+  w.nameB:Show()
+  local showType = w.cw >= 120
+  w.type:SetShown(showType)
+  if showType then
+    w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 14 * u, -252 * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 242 * u, -264 * u)
+  end
+  local top = showType and 266 or 254
   local tsz = 9
-  local room = bh - nh - 2
-  local tl = math.floor(room / (tsz + 2))
-  setfont(w.text, "body", tsz); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("TOP")
+  local tl = math.floor(((314 - top) * u) / (tsz + 2))
+  setfont(w.text, "body", tsz)
   if text and text ~= "" and tl >= 1 then
-    -- the rules text stays left of the power badge (which sits in the bottom right corner) and above the ribbon
-    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 24 * u, -(239 * u + nh + 2)); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 186 * u, -316 * u)
+    -- the rules sit between the name plate and the attack and health gems
+    w.text:SetPoint("TOPLEFT", w, "TOPLEFT", 14 * u, -top * u); w.text:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 242 * u, -316 * u)
     if w.text.SetMaxLines then w.text:SetMaxLines(tl) end
     w.text:SetText(text)
   else w.text:SetText("") end
@@ -1400,8 +1420,9 @@ function RG.ArcadePaintMythic(w, card, copies, a)
     w.engr = fs(w.top, "head", 7 * u); w.engr:SetJustifyH("CENTER"); w.engr:SetTextColor(1, 0.91, 0.66)
     w.engr:SetPoint("TOPLEFT", w, "TOPLEFT", 16 * u, -335 * u); w.engr:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 240 * u, -350 * u)
   end
-  w.body:Hide(); w.frameTex:Hide(); w.slot:Hide(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
-  w.art:Hide(); w.spot:Hide(); w.emb:Hide(); w.rays:Hide(); w.nameB:Hide(); w.text:Hide(); w.pow:Hide(); w.powLabel:Hide()
+  w.body:Hide(); w.frameTex:Hide(); w.slot:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  w.art:Hide(); w.spot:Hide(); w.emb:Hide(); w.rays:Hide(); w.nameB:Hide(); w.text:Hide()
+  w.edge:Hide(); w.plate:Hide(); w.pill:Hide(); w.fade:Hide()
   if rawget(w, "scn") then hideScene(w.scn) end
   w.name:SetText(""); w.type:SetText(""); w.num:SetText(""); w.fin:SetText("")
   w.pclip:Show(); w.mframe:Show()
@@ -1439,7 +1460,23 @@ local function paint(w, card, finish, copies)
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
   -- (a widget that showed a Mythic before goes back to the ordinary pieces)
-  if rawget(w, "mart") then w.pclip:Hide(); w.mframe:Hide(); w.mtext:Hide(); w.engr:Hide(); w.pow:Show(); w.text:Show() end
+  if rawget(w, "mart") then w.pclip:Hide(); w.mframe:Hide(); w.mtext:Hide(); w.engr:Hide(); w.text:Show() end
+  -- the art window: a Full art print's picture runs to the card's edge
+  local full = finish == 4 and card and not card.mythic
+  do
+    local ab, cu = full and U.full or U.art, w.u
+    w.artClip:ClearAllPoints()
+    w.artClip:SetPoint("TOPLEFT", w, "TOPLEFT", ab[1] * cu, -ab[2] * cu); w.artClip:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", ab[3] * cu, -ab[4] * cu)
+    w.aw, w.ah = (ab[3] - ab[1]) * cu, (ab[4] - ab[2]) * cu
+    if rawget(w, "scn") then w.scn.aw, w.scn.ah = w.aw, w.ah end
+    w.fade:SetShown(full and true or false)
+  end
+  -- what the card costs and its attack and health in the Arena (the gems are ArcadeBattle.lua's)
+  local def = card and (card.def or (RG.Battle and RG.Battle.defs and RG.Battle.defs[card.key or card.name]))
+  if card and not def and finish and RG.Battle and RG.Battle.derive and card.kind ~= 4 then
+    local ok, d = pcall(RG.Battle.derive, card); def = ok and d or nil
+  end
+  if RG.ArcadeCardStats then RG.ArcadeCardStats(w, finish and def or nil) end
   if not card then w:Hide() return end
   w:Show()
   local u = w.u
@@ -1460,16 +1497,17 @@ local function paint(w, card, finish, copies)
   elseif rawget(w, "scn") then hideScene(w.scn) end
   if not finish then
     -- an empty slot in the binder: a silhouette and the collector number
-    w.body:Hide(); w.frameTex:Hide(); w.slot:Show(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide(); w.emb:Hide()
+    w.body:Hide(); w.frameTex:Hide(); w.edge:Hide(); w.plate:Hide(); w.pill:Hide(); w.slot:Show(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide(); w.emb:Hide()
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
     if scene then w.art:Hide() end
-    w.nameB:Hide(); w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.pow:SetText(""); w.powLabel:Hide(); w.count:SetText(""); w.fin:SetText("")
-    w.num:SetTextColor(0.579, 0.517, 0.393)
+    w.nameB:Hide(); w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.count:SetText(""); w.fin:SetText("")
+    w.num:SetTextColor(0.5, 0.5, 0.56)
     return
   end
   if card.mythic then RG.ArcadePaintMythic(w, card, copies, a); return end
-  w.body:Show(); w.frameTex:Show(); w.slot:Hide(); w.gem:Show(); w.glow:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
-  w.num:SetTextColor(0.739, 0.66, 0.502)
+  w.body:Show(); w.frameTex:SetShown(not full); w.slot:Hide(); w.glow:Show()
+  w.edge:SetTexture(MEDIA .. "Edge" .. finish); w.edge:Show(); w.plate:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
+  w.num:SetTextColor(0.66, 0.68, 0.74)
   local fx = FX[finish]
   w.fxset = fx
   local kc = KINDCOL[card.kind] or KINDCOL[1]
@@ -1484,12 +1522,11 @@ local function paint(w, card, finish, copies)
     w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.artClip, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
     w.emb:SetVertexColor(t[1], t[2], t[3], 0.34); w.emb:Show()
   else w.emb:Hide(); if card.kind == 4 or scene then w.spot:Hide() end end
-  tintTex(w.frameTex, t, finish == 1 and 0.82 or 1)
-  tintTex(w.gem, t, 1)
+  tintTex(w.frameTex, U.mix(t, 0.55), 1)
+  tintTex(w.plate, U.mix(t, 0.4), 1)
   tintTex(w.rune, t, fx.rune)
   tintTex(w.aura, t, 1)
   w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
-  local full = finish == 4
   -- no two cards share a picture: when the game cannot give a model (or a painting), the card gets its own drawn scenery
   local function ownScene()
     if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
@@ -1532,29 +1569,32 @@ local function paint(w, card, finish, copies)
   if fx.foil > 0 then w.foil:Show() end
   if fx.aura > 0 then w.aura:Show(); w.aura:SetAlpha(fx.aura) end
   if fx.sparks then for _, sp in ipairs(w.sparks) do sp:Show(); tintTex(sp, { 1, 0.95, 0.8 }, 0.8) end end
-  -- text
-  local compact = w.cw < 190
-  if compact then
-    -- small cards carry the name on the parchment; the header strip says how the print was made, in its colour
-    local fc = FINCOL[finish] or FINCOL[1]
-    setfont(w.name, "head", math.max(7, 9.5 * u)); w.name:SetText(FINISH[finish][1]:upper()); w.name:SetTextColor(fc[1], fc[2], fc[3])
-  else fitText(w.name, card.name, 214 * u, 15 * u, 8.5, "head"); w.name:SetTextColor(0.98, 0.94, 0.82) end
-  setfont(w.type, "head", math.max(8, 10 * u))
-  w.type:SetText(w.cw < 120 and TIER[card.tier][1] or (KIND[card.kind] .. "  ·  " .. TIER[card.tier][1]))
+  -- text: the name on the plate, the type line in the rarity's colour, what the card does in the Arena, then its story
+  local big = w.cw >= 190
+  local tc = U.mix(t, 0.55)
+  setfont(w.type, "head", math.max(7.5, 9 * u)); w.type:SetTextColor(tc[1], tc[2], tc[3])
+  w.type:SetText(KIND[card.kind] .. "  ·  " .. TIER[card.tier][1])
   setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
   setfont(w.num, "head", math.max(6.5, 8 * u))
-  local big = w.cw >= 190
+  local hl = RG.ArcadeHilite
+  local rules = def and def.text or ""
+  if hl and rules ~= "" then rules = hl(rules) end
+  local story = card.def and card.lore or (not card.def and card.text) or ""
   w.text:SetShown(true)
-  layoutText(w, big, card.name, w.cw < 120 and "" or (card.text or ""))   -- (the grid shows the name and power; the rest is on the inspect card)
   if big then
-    setfont(w.text, "body", 12.5 * u)
-    w.text:SetText((card.text or "") .. "\n\n|cff6b4a2e" .. FINISH[finish][1] .. " print|r")
-    w.text:SetJustifyH("LEFT"); w.text:SetJustifyV("TOP")
+    layoutText(w, true)
+    fitText(w.name, card.name, 212 * u, 16 * u, 8.5, "title")
+    setfont(w.text, "body", 11.5 * u)
+    w.text:SetText(rules .. (rules ~= "" and story ~= "" and "\n" or "") .. (story ~= "" and ("|cff9a9fad" .. story .. "|r") or ""))
+  else
+    local short = rules:gsub("%s+", " ")
+    layoutText(w, false, card.name, w.cw < 120 and "" or short)   -- (the grid shows the name and the numbers; the rest is on the inspect card)
   end
-  w.pow:SetText(power(card, finish)); setfont(w.pow, "title", math.max(8.5, 17 * u))
-  w.powLabel:SetShown(w.cw >= 120)
-  setfont(w.powLabel, "head", math.max(5.5, 6.5 * u))
-  w.fin:SetText(w.cw >= 120 and FINISH[finish][1]:upper() or "")
+  -- how the print was made: on the label in the corner (the edge says it too)
+  local label = w.cw >= 150
+  w.pill:SetShown(label)
+  setfont(w.fin, "title", math.max(6, 7 * u))
+  w.fin:SetText(label and FINISH[finish][1]:upper() or "")
   w.num:SetShown(w.cw >= 100)
   w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
   if a and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then w.pin:Show() end end end

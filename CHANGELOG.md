@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Arena: six Mythic cards.** A new rarity above everything else, with its own painted art, a slowly turning prismatic edge, a light sweep and sparkles: The Wanderer, The First Waypoint, The Last Campfire, Sixty, The Hourglass of Forever and The 1 Ring (the game's own item, shown with its icon). About 1 pack in 400 has a Mythic as its last card (a jumbo pack counts for more); The 1 Ring is about 1 in 5,000, one per account, and is engraved with the name of whoever opened it and the date. Mythics can't be crafted or traded. All six are playable:
+  - The Wanderer (7 mana, 5/5): Battlecry: Discover a Legendary card. The next card you play this turn costs (3) less.
+  - The First Waypoint (2 mana spell): draw 2 cards; the next card you play this turn costs (2) less.
+  - The Last Campfire (4 mana, 0/8 Taunt): at the end of your turn, restore 2 health to your hero and your other minions.
+  - Sixty (9 mana spell): give your minions +3/+3 and draw until you hold 6 cards.
+  - The Hourglass of Forever (8 mana spell): take an extra turn (once per game).
+  - The 1 Ring (1 mana spell): your minions get +1/+1, your hero is healed for 1, draw 1 card.
+  They were tuned in simulated duels (2,000 games each, one copy in a random deck): each lifts a deck's win rate by 0 to 3 points, the extra turn included. Both players in a duel need this version.
+- **Arena: one new frame for every card.** All cards now share the look of the new chase cards: a dark card with an engraved name plate tinted by the card's own rarity (grey, green, blue, purple, orange), the type line in that colour, and the same mana, attack and health gems everywhere, in the collection too (it used to show only "Power"; the quick-duel power is in the tooltip). The rules text and the card's story sit under the name. How the print was made is now the card's edge: Common a plain dark edge, Rare brushed metal with a soft glow, Holo a rainbow edge with a light sweep, Full art a gold edge with the picture running to the card's edge, a sweep and slow rays. Only Mythics have the turning edge.
 - **Arena: the computer plays Rogue better.** It now looks one card further when it holds a Combo card, so it plays a cheap card first to set up the Combo instead of passing or wasting it. In simulated ladders the computer's Rogue went from about 37% to about 44% wins (the cards didn't change, so nothing to refund).
 - **The tour starts by itself after setup** (once; `/wp tour` shows it again), and it has two new pages: Professions (the shopping list, recipe sources, the vendor button) and Your progress (`/wp levels`, weapon skill tips, `/wp share`).
 - **Settings search finds more.** Every word you type must appear, in any order ("ah scan", "tracker combat"); when nothing has all of them, settings with any of them are shown. The settings that ended up under "Other" are now in their groups.
