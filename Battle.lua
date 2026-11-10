@@ -1423,6 +1423,22 @@ function B.aiPick(G, s, level)
         if d and d.combo and (G.p[s].nplayed or 0) == 0 then
           for i2, k2 in ipairs(G.p[s].hand) do if i2 ~= act.i and k2 ~= key and B.canPlay(G, s, i2) then v = v - 1.5; break end end
         end
+        -- ... and playing another card first is worth what the Combo card then does: look one card further when the
+        -- hand holds a Combo card (a cheap card that sets up a big Combo looks poor on its own)
+        if key and level >= 2 and not (d and d.combo) then
+          local hasCombo = false
+          for _, k2 in ipairs(C.p[s].hand) do local d2 = B.defs[k2]; if d2 and d2.combo then hasCombo = true; break end end
+          if hasCombo then
+            for _, a2 in ipairs(B.actions(C, s)) do
+              local k2 = a2.t == "play" and C.p[s].hand[a2.i]
+              local d2 = k2 and B.defs[k2]
+              if d2 and d2.combo then
+                local D = B.clone(C)
+                if B.exec(D, s, a2) then v = max(v, B.eval(D, s) - 0.3) end
+              end
+            end
+          end
+        end
       end
       if noise > 0 then v = v + (math.random() - 0.5) * noise * 2 end
       if v > bestV then best, bestV = act, v end

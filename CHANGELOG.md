@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Arena: the computer plays Rogue better.** It now looks one card further when it holds a Combo card, so it plays a cheap card first to set up the Combo instead of passing or wasting it. In simulated ladders the computer's Rogue went from about 37% to about 44% wins (the cards didn't change, so nothing to refund).
 - **The tour starts by itself after setup** (once; `/wp tour` shows it again), and it has two new pages: Professions (the shopping list, recipe sources, the vendor button) and Your progress (`/wp levels`, weapon skill tips, `/wp share`).
 - **Settings search finds more.** Every word you type must appear, in any order ("ah scan", "tracker combat"); when nothing has all of them, settings with any of them are shown. The settings that ended up under "Other" are now in their groups.
 - **Leveling report.** Waypath+ now keeps a record of every level: time played (AFK doesn't count), how much of the XP came from quests vs kills and exploring, quests done, gold gained or spent, and deaths. At each level-up one line sums it up and compares it with your recent average ("Level 20 took 30 min (33% faster than your average of 45 min): 43% of the XP from quests..."). `/wp levels` shows your last 20 levels. The level-up line can be turned off in Settings.
