@@ -592,7 +592,7 @@ local myqCache, myqT
 do
   local f = CreateFrame("Frame")
   for _, e in ipairs({ "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "QUEST_TURNED_IN", "UNIT_QUEST_LOG_CHANGED" }) do pcall(f.RegisterEvent, f, e) end
-  f:SetScript("OnEvent", function() myqCache = nil end)
+  f:SetScript("OnEvent", function() myqCache = nil; if RG.ForgetNextStep then RG.ForgetNextStep() end end)
 end
 local buildMyQuests
 function RG.MyQuests()

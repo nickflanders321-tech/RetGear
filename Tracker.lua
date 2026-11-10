@@ -30,12 +30,14 @@ end
 local LOOKAHEAD = 4
 local stepMemo, stepMemoT = {}, nil
 local stepHold = {}   -- key -> index chosen last time
+function RG.ForgetNextStep() stepMemoT = nil end
 function RG.NextStep(r)
   if not (r and RG.STEPS) then return nil end
   local key = r.zone .. "|" .. r.from
   local steps = RG.STEPS[key] or {}
+  -- (worked out at most once a second, or straight away after a quest log change)
   local now = GetTime and GetTime() or 0
-  if stepMemoT ~= now then stepMemo, stepMemoT = {}, now end
+  if not stepMemoT or now - stepMemoT >= 1 or now < stepMemoT then stepMemo, stepMemoT = {}, now end
   if stepMemo[key] ~= nil then return stepMemo[key] or nil end
   local open = {}
   for i = 1, #steps do
