@@ -5,7 +5,7 @@ local games, seed, out, level = tonumber(arg[1] or 2000), tonumber(arg[2] or 1),
 math.randomseed(seed)
 local dir = arg[0]:match("^(.*)/tools/balance/") or "."
 local RG = {}
-for _, f in ipairs({ "ArcadeCards.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
+for _, f in ipairs({ "ArcadeCards.lua", "ArcadeMythic.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
 local B = RG.Battle
 if arg[5] then dofile(arg[5])(B, RG) end   -- optional experiment patch
 local keys = {}

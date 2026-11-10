@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 550" preserveAspectRatio="none">
+        <defs>
+          <radialGradient id="bg" cx="0.5" cy="0.36" r="0.75"><stop offset="0" stop-color="#6b4a16"/><stop offset="0.4" stop-color="#2a1d0b"/><stop offset="1" stop-color="#060504"/></radialGradient>
+          <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff3b0" stop-opacity="0.8"/><stop offset="0.5" stop-color="#e0a030" stop-opacity="0.3"/><stop offset="1" stop-color="#e0a030" stop-opacity="0"/></radialGradient>
+          <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0b8"/><stop offset="0.45" stop-color="#d9a441"/><stop offset="1" stop-color="#6e4a12"/></linearGradient>
+          <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe6"/><stop offset="1" stop-color="#f0b63c"/></linearGradient>
+          <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.06"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.22"/></linearGradient>
+        </defs>
+        <rect width="390" height="550" fill="url(#bg)"/>
+        <g fill="#fff8dc"><circle cx="38" cy="50" r="1.6"/><circle cx="92" cy="112" r="1.1"/><circle cx="344" cy="58" r="1.8"/><circle cx="356" cy="150" r="1.2"/><circle cx="44" cy="232" r="1.3"/><circle cx="330" cy="268" r="1.1"/><circle cx="130" cy="36" r="1"/><circle cx="262" cy="30" r="1.2"/></g>
+        <circle cx="195" cy="192" r="176" fill="url(#glow)"/>
+        <path d="M195 192 C130 110 30 120 30 192 C30 264 130 274 195 192 C260 110 360 120 360 192 C360 264 260 274 195 192 Z" fill="none" stroke="#fff3b0" stroke-width="2.5" stroke-dasharray="6 14" opacity="0.85"/>
+        <rect x="128" y="56" width="134" height="18" rx="6" fill="url(#bronze)" stroke="#fff7d6" stroke-width="1.5"/>
+        <rect x="128" y="310" width="134" height="18" rx="6" fill="url(#bronze)" stroke="#fff7d6" stroke-width="1.5"/>
+        <rect x="136" y="74" width="7" height="236" rx="3" fill="url(#bronze)"/>
+        <rect x="247" y="74" width="7" height="236" rx="3" fill="url(#bronze)"/>
+        <path d="M150 76 L240 76 C240 132 204 164 198 190 L192 190 C186 164 150 132 150 76 Z" fill="url(#glass)" stroke="#fff7d6" stroke-width="2"/>
+        <path d="M150 308 L240 308 C240 252 204 220 198 194 L192 194 C186 220 150 252 150 308 Z" fill="url(#glass)" stroke="#fff7d6" stroke-width="2"/>
+        <path d="M158 104 L232 104 C226 138 204 160 198 186 L192 186 C186 160 164 138 158 104 Z" fill="url(#sand)"/>
+        <line x1="195" y1="188" x2="195" y2="292" stroke="#fffbe6" stroke-width="3" stroke-dasharray="5 7"/>
+        <path d="M154 306 C160 276 182 262 195 258 C208 262 230 276 236 306 Z" fill="url(#sand)"/>
+        <circle cx="195" cy="192" r="8" fill="#fffbe6"/>
+        <g fill="#fff3b0"><polygon points="195,22 200,34 195,46 190,34"/><polygon points="195,338 200,350 195,362 190,350"/></g>
+      </svg>

@@ -76,7 +76,7 @@ local function condText(c)
   if c.k == "spell" then return "If you cast a spell this turn" end
   return "If"
 end
-local POOLNAME = { spell = "spell", minion = "minion", class = "card from your class", weapon = "weapon" }
+local POOLNAME = { spell = "spell", minion = "minion", class = "card from your class", weapon = "weapon", legendary = "Legendary card" }
 local function opText(o, first)
   local op, at = o.op, o.at
   if o.text then return o.text end
@@ -631,13 +631,32 @@ local function planFor(name, cls)
   return classPlan[name]
 end
 
+-- The Mythics (tier 7): hand-made, one copy per deck, any hero. Designs as for class cards, with their own text.
+local MYTHIC = {
+  ["The Wanderer"] = { { "m", 7, 6, 6, "humanoid", nil, { bc = { { op = "discover", pool = "legendary" }, { op = "discount", n = 3 } } } },
+    "Battlecry: Discover a Legendary card. The next card you play this turn costs (3) less." },
+  ["The First Waypoint"] = { { "s", 2, { draw(2), { op = "discount", n = 2 } } },
+    "Draw 2 cards. The next card you play this turn costs (2) less." },
+  ["The Last Campfire"] = { { "m", 4, 0, 8, nil, { taunt = true }, { eot = { heal(2, "fface"), heal(2, "fother") } } },
+    "Taunt. At the end of your turn, restore 2 Health to your hero and your other minions." },
+  ["Sixty"] = { { "s", 10, { buff(3, 3, "fmin"), { op = "drawto", n = 6 } } },
+    "Give your minions +3/+3. Draw cards until you have 6 in hand." },
+  ["The Hourglass of Forever"] = { { "s", 8, { { op = "extraturn" } } },
+    "Take another turn after this one. Once per game." },
+  ["The 1 Ring"] = { { "s", 1, { buff(1, 1, "fmin"), heal(1, "fface"), draw(1) } },
+    "Give your minions +1/+1. Restore 1 Health to your hero. Draw 1 card." },
+}
+B.MYTHIC = MYTHIC
 -- build the playable form of a collection card: { kind, name, tier, text, key }
 function B.derive(c)
   local key = c.key or c.name
   local r = seeded(hash(key .. "#" .. (c.kind or 0)))
   local d
   local kind, tier = c.kind, c.tier or 1
-  if kind == 2 then
+  if tier == 7 and MYTHIC[c.name] then
+    d = fromDesign(MYTHIC[c.name][1])
+    d.mythic = true
+  elseif kind == 2 then
     local tribe = (c.text or ""):match("(%a+)$") or "creature"
     if not TRIBE[tribe] then tribe = "creature" end
     local cost = tier >= 5 and (5 + r(5)) or tier >= 3 and (2 + r(4)) or r(4)
@@ -694,7 +713,7 @@ function B.derive(c)
       d.ops = { { op = "weapon", a = d.atk, d = d.dur } }
     end
   end
-  d.text = B.describe(d)
+  d.text = (d.mythic and MYTHIC[c.name][2]) or B.describe(d)
   B.defs[key] = d
   return d
 end
@@ -873,8 +892,15 @@ function B.endTurn(G, s)
     if m.tempA and m.tempA ~= 0 then m.atk = math.max(0, m.atk - m.tempA); m.tempA = 0 end
   end end
   P.frozen = false; P.tempAtk = 0
+  P.discount = nil
   B.resolve(G)
   if G.over then return true end
+  if P.extraTurn then
+    -- The Hourglass of Forever: the same player goes again
+    P.extraTurn = nil
+    B.beginTurn(G)
+    return true
+  end
   G.cur = 3 - s
   if G.cur == G.first then G.turn = G.turn + 1 end
   B.beginTurn(G)
@@ -1020,7 +1046,9 @@ local function discover(G, s, pool, src)
       local ok
       if pool == "spell" or pool == "minion" or pool == "weapon" then ok = d.type == pool
       elseif pool == "class" then ok = d.hclass == P.class
+      elseif pool == "legendary" then ok = d.tier == 5
       else ok = d.tribe == pool end
+      if d.tier == 7 then ok = false end   -- (a Mythic is never offered: you have to open one)
       if ok then cand[#cand + 1] = k end
     end
   end
@@ -1066,6 +1094,9 @@ function B.apply(G, s, ops, target, src, spell)
         for _, t in ipairs(l) do if t.isHero or t.hp > 0 then B.damage(G, t, 1, nil) end end
       end
     elseif op == "discover" then discover(G, s, o.pool, src)
+    elseif op == "discount" then me.discount = (me.discount or 0) + o.n   -- the next card you play this turn costs less
+    elseif op == "drawto" then local guard = 0; while #me.hand < o.n and #me.deck > 0 and guard < 12 do guard = guard + 1; draw1(G, s) end
+    elseif op == "extraturn" then if not me.usedExtra then me.usedExtra = true; me.extraTurn = true; ev(G, { t = "armor", tgt = B.ref(me), n = 0 }) end
     elseif op == "give" then for _ = 1, o.n or 1 do if #me.hand < B.MAXHAND then me.hand[#me.hand + 1] = o.key; ev(G, { t = "draw", side = s, key = o.key }) end end
     elseif op == "ramp" then me.maxMana = min(B.MAXMANA, me.maxMana + o.n); ev(G, { t = "armor", tgt = B.ref(me), n = 0 })
     elseif op == "wbuff" then if me.weapon then me.weapon.atk = me.weapon.atk + o.a; me.weapon.dur = me.weapon.dur + (o.d or 0); ev(G, { t = "weapon", side = s }) end
@@ -1159,13 +1190,19 @@ end
 -- ----- playing -----
 local function contains(list, x) for _, v in ipairs(list) do if v == x then return true end end end
 
+-- what a card in your hand costs right now (a discount applies to the next card you play this turn)
+function B.costOf(G, s, key)
+  local d = B.defs[key]
+  if not d then return 0 end
+  return max(0, d.cost - (G.p[s].discount or 0))
+end
 function B.canPlay(G, s, hi)
   if G.over or G.phase ~= "play" or G.cur ~= s then return false, "It is not your turn." end
   if G.pend then return false, "Choose a card first." end
   local P = G.p[s]
   local key = P.hand[hi]; local d = key and B.defs[key]
   if not d then return false, "No such card." end
-  if d.cost > P.mana then return false, "Not enough mana." end
+  if B.costOf(G, s, key) > P.mana then return false, "Not enough mana." end
   if d.type == "minion" and #P.board >= B.MAXBOARD then return false, "Your board is full." end
   if d.type == "spell" and d.tgt and #B.targets(G, s, d.tgt) == 0 then return false, "There is no valid target." end
   return true
@@ -1189,7 +1226,9 @@ function B.play(G, s, hi, tref, pos)
     tg = B.char(G, tref)
     if not tg or not contains(B.targets(G, s, d.tgt), tg) then return false, "Choose a valid target." end
   end
-  P.mana = P.mana - d.cost; P.spent = P.spent + d.cost
+  local paid = B.costOf(G, s, key)
+  P.mana = P.mana - paid; P.spent = P.spent + paid
+  P.discount = nil
   table.remove(P.hand, hi)
   ev(G, { t = "play", side = s, key = key })
   if not G.sim then P.played = P.played or {}; P.played[key] = true end
@@ -1342,6 +1381,9 @@ function B.eval(G, s)
   if me.frozen then v = v - 1 end
   v = v - 1.1 * (me.olNext or 0) + 1.4 * (me.maxMana or 0)
   if G.pend and G.pend.side == s then v = v + 1.6 end
+  if me.extraTurn then v = v + 9 end
+  if foe.extraTurn then v = v - 9 end
+  v = v + 0.6 * (me.discount or 0)
   return v
 end
 

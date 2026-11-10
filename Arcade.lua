@@ -10,6 +10,9 @@ local TIER = {  -- how rare the subject itself is: draw weight, name colour
   { "Mundane", 44, { 0.78, 0.78, 0.8 } }, { "Uncommon", 26, { 0.3, 0.85, 0.3 } }, { "Renowned", 14, { 0.3, 0.55, 1 } },
   { "Epic", 12, { 0.7, 0.35, 0.95 } }, { "Legendary", 4, { 1, 0.6, 0.1 } },
   { "Artifact", 3, { 1, 0.2, 0.35 } },   -- the Raiders
+  -- the six chase cards (ArcadeMythic.lua): never rolled with the others, see openOne. rate: the chance that a pack's
+  -- last card is a Mythic (a jumbo counts as more than one pack); ring: ... that it is The 1 Ring (once per account)
+  { "Mythic", 0, { 1, 0.9, 0.55 }, rate = 1 / 400, ring = 1 / 5000 },
 }
 local FINISH = {  -- finish names, draw weights, power bonus, sell price
   { "Common", 70, 0, 1 }, { "Rare", 22, 6, 3 }, { "Holo", 6, 16, 10 }, { "Full art", 2, 30, 30 },
@@ -81,7 +84,11 @@ local COLLECTOR_LUCK = 0.10   -- each card has this chance to be one you do not 
 local MASTER_GOAL = 0.75
 
 local CARDS = {}
-for i, d in ipairs(RG.ARCADE_DATA or {}) do CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5] } end
+for i, d in ipairs(RG.ARCADE_DATA or {}) do
+  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5] }
+  local my = d[3] == 7 and RG.ARCADE_MYTHIC and RG.ARCADE_MYTHIC[d[2]]
+  if my then CARDS[i].mythic = my; if my.icon then CARDS[i].icon = "Interface\\Icons\\" .. my.icon end end
+end
 RG.ARCADE_CARDS = CARDS
 -- Raiders: super rare cards of characters you have met (you, your group, anyone who chats near you),
 -- shown as their race in the best raid armour of their class. Saved with the collection, so the set
@@ -258,15 +265,15 @@ local function rollCard(a)
   if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
   if a and math.random() < COLLECTOR_LUCK then
     local missing = {}
-    for _, c in ipairs(CARDS) do if c.kind ~= 4 and owned(a, c.id) == 0 then missing[#missing + 1] = c end end
+    for _, c in ipairs(CARDS) do if c.kind ~= 4 and c.tier ~= 7 and owned(a, c.id) == 0 then missing[#missing + 1] = c end end
     if #missing > 0 then return missing[math.random(#missing)] end
   end
   local x = math.random() * tierWeight
   local tier = 1
   for t = 1, #TIER do
-    if byTier[t] then x = x - TIER[t][2]; if x <= 0 then tier = t; break end end
+    if byTier[t] and TIER[t][2] > 0 then x = x - TIER[t][2]; if x <= 0 then tier = t; break end end
   end
-  local pool = byTier[tier] or CARDS
+  local pool = byTier[tier] or byTier[1]
   return pool[math.random(#pool)]
 end
 local function rollFinish(atLeast)
@@ -281,7 +288,8 @@ end
 -- Sets, daily goals, free pack
 -- ---------------------------------------------------------------------------
 local function setOf(c)
-  if c.kind == 3 then
+  if c.tier == 7 then return "Mythic"
+  elseif c.kind == 3 then
     local z = c.text:match("^Found in (.+)$")
     return z and ("Places in " .. z) or "All zones"
   elseif c.kind == 2 then
@@ -435,9 +443,22 @@ local function openOne(a, kind)
   a.packs = (a.packs or 0) + 1
   local got, shiny, newCount = {}, false, 0
   local size = def.size
+  -- a Mythic takes the last card's place: The 1 Ring (once per account, engraved with who opened it), or one of the others
+  local mythic
+  if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
+  local mroll, mw = math.random(), (def.weight or 1)
+  if not a.ring and byKey["The 1 Ring"] and mroll < TIER[7].ring * mw then
+    mythic = byKey["The 1 Ring"]
+    a.ring = { by = (UnitName and UnitName("player")) or "?", date = today() }
+  elseif mroll < TIER[7].rate * mw and byTier[7] then
+    local pool = {}
+    for _, c in ipairs(byTier[7]) do if not (c.mythic and c.mythic.one) then pool[#pool + 1] = c end end
+    if #pool > 0 then mythic = pool[math.random(#pool)] end
+  end
   for i = 1, size do
     local c = rollCard(a)
-    local least = c.tier == 6 and 3 or 1
+    if i == size and mythic then c = mythic end
+    local least = c.tier == 6 and 3 or (c.tier == 7 and 4 or 1)
     if i > size - def.rares then least = math.max(least, 2) end   -- the last cards: rare or better (one in a pack, two in a jumbo, three in a super jumbo)
     if i == size then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- the last card: holo after a long dry spell or from a reward pack
     local f = rollFinish(least)
@@ -447,6 +468,7 @@ local function openOne(a, kind)
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
     got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
+    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or (TIER[7].rate / 5)) + 0.5); meta.mythic = c.name end
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
     local r = a.rarest
@@ -570,7 +592,7 @@ function RG.ArcadeGiftCards()
   local a = store(); if not a or #CARDS == 0 then return nil end
   local fresh, any = {}, {}
   for _, c in ipairs(CARDS) do
-    if c.kind ~= 4 then
+    if c.kind ~= 4 and c.tier ~= 7 then
       for f = 1, #FINISH do
         if (c.tier == 6 and 5.5 or c.tier) * 18 + FINISH[f][3] + (c.id % 7) >= 105 then
           local e = { c, f }
@@ -663,7 +685,7 @@ function RG.ArcadeSellExtras()
   return cnt, coins, g
 end
 
-local function power(c, f) return (c.tier == 6 and 5.5 or c.tier) * 18 + FINISH[f or 1][3] + (c.id % 7) end
+local function power(c, f) return (c.tier == 6 and 5.5 or (c.tier == 7 and 6.5 or c.tier)) * 18 + FINISH[f or 1][3] + (c.id % 7) end
 local function best(a)
   local b, bf, bp
   for _, c in ipairs(CARDS) do
@@ -737,7 +759,7 @@ RG.ArcadeTrade = trade
 local function countOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) or 0 end
 local function extraOf(a, c, f) return countOf(a, c, f) >= 2 end
 local function ownsOf(a, c, f) return countOf(a, c, f) >= 1 end
-local function tradable(c) return c and c.kind ~= 4 end
+local function tradable(c) return c and c.kind ~= 4 and c.tier ~= 7 end   -- (Raiders and Mythics stay with whoever opened them)
 local function sendAddon(msg, channel, target)
   if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, target) end
 end
@@ -1102,6 +1124,7 @@ local function cardAnim(w, t)
   if fx.aura > 0 then w.aura:SetAlpha(fx.aura * (0.7 + 0.3 * math.sin(t * 1.6 + w.phase * 6))) end
   if fx.spin and w.rune.SetRotation then w.rune:SetRotation((t * 0.12 + w.phase * 6) % 6.2832) end
   if fx.rays and w.rays.SetRotation then w.rays:SetRotation((-t * 0.06 + w.phase * 6) % 6.2832) end
+  if fx.prism and rawget(w, "prism") and w.prism.SetRotation then w.prism:SetRotation((t * 0.7 + w.phase * 6) % 6.2832) end
   if fx.sparks then
     for i, sp in ipairs(w.sparks) do
       local a = 0.5 + 0.5 * math.sin(t * (2.2 + i * 0.7) + w.phase * 9 + i * 2)
@@ -1120,6 +1143,7 @@ local FX = {   -- by finish: aura, foil, rune brightness, spin, rays, sparks
   [4] = { aura = 0.62, foil = 0.75, rune = 0.62, spin = true, sparks = true, rays = 0.6 },
 }
 for i = 1, 4 do FX[i].finish = i end
+FX[5] = { aura = 0.85, foil = 0.85, rune = 0, sparks = true, prism = true, finish = 4 }   -- a Mythic
 
 local function makeCard(parent, w)
   local h = math.floor(w * 358 / 256 + 0.5)
@@ -1197,6 +1221,8 @@ local function makeCard(parent, w)
       GameTooltip:AddLine(c.name, t[1], t[2], t[3])
       GameTooltip:AddLine(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1] .. "  ·  " .. FINISH[self.finish][1], 1, 1, 1)
       GameTooltip:AddLine(c.text, 0.75, 0.75, 0.75, true)
+      if c.mythic and RG.Battle and RG.Battle.MYTHIC and RG.Battle.MYTHIC[c.name] then GameTooltip:AddLine(RG.Battle.MYTHIC[c.name][2], 1, 0.91, 0.66, true) end
+      if c.mythic then GameTooltip:AddLine(c.mythic.one and "The rarest card: about 1 pack in 5,000, one per account. It can't be crafted, traded or sold." or "A Mythic: about 1 pack in 400. It can't be crafted or traded.", 0.8, 0.8, 0.8, true) end
       GameTooltip:AddLine("Duel power " .. power(c, self.finish) .. "  (quick card duels; the Arena uses the card's own mana, attack and health)", 0.7, 0.9, 0.7, true)
       if self.copies and self.copies > 1 then GameTooltip:AddLine("You own " .. self.copies, 0.7, 0.7, 0.7) end
     end
@@ -1347,6 +1373,64 @@ local function layoutText(w, big, name, text)
   else w.text:SetText("") end
 end
 
+-- A Mythic: its own painted card (name plate, type line and badge are part of the picture) inside a slowly turning
+-- prismatic edge, with the rules text on top. The 1 Ring shows the item's own icon and who opened it.
+function RG.ArcadePaintMythic(w, card, copies, a)
+  local u, my = w.u, card.mythic
+  if not rawget(w, "mart") then
+    local base = lv(w)
+    w.pclip = CreateFrame("Frame", nil, w); w.pclip:SetAllPoints(w); w.pclip:SetFrameLevel(base + 1)
+    if w.pclip.SetClipsChildren then w.pclip:SetClipsChildren(true) end
+    w.prism = w.pclip:CreateTexture(nil, "BACKGROUND"); w.prism:SetPoint("CENTER", w, "CENTER", 0, 0); w.prism:SetSize(w.ch * 1.3, w.ch * 1.3)
+    -- the card's rounded shape (where the client has masks; otherwise the edge has square corners)
+    if w.pclip.CreateMaskTexture then
+      pcall(function()
+        local mk = w.pclip:CreateMaskTexture()
+        mk:SetPoint("TOPLEFT", w, "TOPLEFT", 0, 0); mk:SetSize(w.cw, w.ch / CARD_V)
+        mk:SetTexture(MEDIA .. "CardMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        w.prism:AddMaskTexture(mk)
+      end)
+    end
+    w.mframe = CreateFrame("Frame", nil, w); w.mframe:SetAllPoints(w); w.mframe:SetFrameLevel(base + 2)
+    w.mart = w.mframe:CreateTexture(nil, "BACKGROUND"); w.mart:SetTexCoord(0, 1, 0, CARD_V)
+    w.mart:SetPoint("TOPLEFT", w, "TOPLEFT", 3 * u, -3 * u); w.mart:SetPoint("BOTTOMRIGHT", w, "BOTTOMRIGHT", -3 * u, 3 * u)
+    w.micon = w.mframe:CreateTexture(nil, "ARTWORK"); w.micon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    w.micon:SetPoint("CENTER", w, "TOPLEFT", 128 * u, -118 * u); w.micon:SetSize(66 * u, 66 * u); w.micon:Hide()
+    w.mtext = fs(w.top, "body", 10.5 * u); w.mtext:SetJustifyH("CENTER"); w.mtext:SetJustifyV("MIDDLE"); w.mtext:SetTextColor(0.96, 0.94, 0.89)
+    w.engr = fs(w.top, "head", 7 * u); w.engr:SetJustifyH("CENTER"); w.engr:SetTextColor(1, 0.91, 0.66)
+    w.engr:SetPoint("TOPLEFT", w, "TOPLEFT", 16 * u, -335 * u); w.engr:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 240 * u, -350 * u)
+  end
+  w.body:Hide(); w.frameTex:Hide(); w.slot:Hide(); w.gem:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
+  w.art:Hide(); w.spot:Hide(); w.emb:Hide(); w.rays:Hide(); w.nameB:Hide(); w.text:Hide(); w.pow:Hide(); w.powLabel:Hide()
+  if rawget(w, "scn") then hideScene(w.scn) end
+  w.name:SetText(""); w.type:SetText(""); w.num:SetText(""); w.fin:SetText("")
+  w.pclip:Show(); w.mframe:Show()
+  w.prism:SetTexture(MEDIA .. (my.one and "PrismRing" or "Prism")); w.prism:Show()
+  w.mart:SetTexture(MEDIA .. my.art); w.mart:Show()
+  if my.itemIcon then w.micon:SetTexture(iconFor(card)); w.micon:Show() else w.micon:Hide() end
+  -- the rules (what it does in the Arena); too small to read on the little grid cards
+  local rules = RG.Battle and RG.Battle.MYTHIC and RG.Battle.MYTHIC[card.name] and RG.Battle.MYTHIC[card.name][2] or ""
+  local engraved = my.one and a and a.ring and ("Opened by " .. tostring(a.ring.by) .. "  ·  " .. tostring(a.ring.date)) or nil
+  if w.cw >= 120 then
+    setfont(w.mtext, "body", math.max(8, 10.5 * u))
+    w.mtext:ClearAllPoints()
+    w.mtext:SetPoint("TOPLEFT", w, "TOPLEFT", 20 * u, -281 * u); w.mtext:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 236 * u, -(my.one and 333 or 335) * u)
+    w.mtext:SetText(rules); w.mtext:Show()
+    setfont(w.engr, "head", math.max(6, 7 * u))
+    w.engr:SetText(engraved or ""); w.engr:SetShown(engraved ~= nil)
+  else w.mtext:Hide(); w.engr:Hide() end
+  -- glow, light sweep, sparkles, the turning edge
+  local fx = FX[5]
+  w.fxset = fx
+  tintTex(w.aura, my.glow or { 1, 0.9, 0.6 }, 1); w.aura:Show(); w.aura:SetAlpha(fx.aura)
+  w.foil:Show()
+  for _, sp in ipairs(w.sparks) do sp:Show(); tintTex(sp, { 1, 1, 1 }, 0.9) end
+  setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
+  w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
+  if a and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then w.pin:Show() end end end
+  anim[w] = cardAnim
+end
+
 -- card: the card; finish: 1-4 or nil (nothing owned); copies: how many you own
 local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
@@ -1354,6 +1438,8 @@ local function paint(w, card, finish, copies)
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
+  -- (a widget that showed a Mythic before goes back to the ordinary pieces)
+  if rawget(w, "mart") then w.pclip:Hide(); w.mframe:Hide(); w.mtext:Hide(); w.engr:Hide(); w.pow:Show(); w.text:Show() end
   if not card then w:Hide() return end
   w:Show()
   local u = w.u
@@ -1381,6 +1467,7 @@ local function paint(w, card, finish, copies)
     w.num:SetTextColor(0.579, 0.517, 0.393)
     return
   end
+  if card.mythic then RG.ArcadePaintMythic(w, card, copies, a); return end
   w.body:Show(); w.frameTex:Show(); w.slot:Hide(); w.gem:Show(); w.glow:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
   w.num:SetTextColor(0.739, 0.66, 0.502)
   local fx = FX[finish]
@@ -1534,7 +1621,7 @@ local function playSound(finish, tier, role)
   local fx
   if role == "hover" or role == "pick" or role == "best" or role == "deal" or role == "reward" or role == "toast" then fx = role
   elseif role == "crack" then fx = "crack"
-  elseif tier == 6 then fx = "flip_legend"
+  elseif tier >= 6 then fx = "flip_legend"
   elseif finish and finish >= 4 then fx = "flip_full"
   elseif finish == 3 then fx = "flip_holo"
   elseif finish == 2 then fx = "flip_rare"
@@ -1546,7 +1633,7 @@ local function playSound(finish, tier, role)
   elseif role == "pick" then id = kit("IG_CHARACTER_INFO_TAB", "IG_MAINMENU_OPTION_CHECKBOX_ON")
   elseif role == "crack" then id = kit("IG_MAINMENU_OPEN", "IG_BACKPACK_OPEN", "IG_QUEST_LIST_OPEN")
   elseif role == "best" or role == "reward" or role == "toast" then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP", "UI_EPICLOOT_TOAST")
-  elseif tier == 6 then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP")
+  elseif tier >= 6 then id = kit("UI_LEGENDARY_LOOT_TOAST", "LEVEL_UP")
   elseif finish and finish >= 4 then id = kit("UI_EPICLOOT_TOAST", "UI_LEGENDARY_LOOT_TOAST", "IG_QUEST_LIST_COMPLETE")
   elseif finish == 3 then id = kit("UI_EPICLOOT_TOAST", "IG_QUEST_LIST_COMPLETE")
   elseif finish == 2 then id = kit("IG_QUEST_LIST_OPEN", "IG_ABILITY_PAGE_TURN")
@@ -1630,6 +1717,11 @@ end
 local function coverAnim(c, t)
   -- the glow takes the colour of what is inside: blue rare, purple holo, gold full art, red for a top card
   local pc = c.peekCol or { 1, 1, 1 }
+  if c.prismatic then
+    local r, g, b = hsv((t * 0.35 + c.phase) % 1, 0.55, 1)
+    c.glow:SetVertexColor(r, g, b, 0.75 + 0.2 * math.sin(t * 4))
+    return
+  end
   local k = 0.5 + 0.5 * math.sin(t * (c.rare and 3 or 2) + c.phase * 5)
   c.glow:SetVertexColor(pc[1], pc[2], pc[3], (c.rare and 0.45 or 0.28) + (c.rare and 0.3 or 0.15) * k)
 end
@@ -1716,7 +1808,7 @@ local function flip(i)
   c.fold:Hide(); c.peek:Hide(); c:SetHeight(card.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
   c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0)
   local g0 = reveal.got[i]
-  local weight = g0.card.tier == 6 and 3 or (g0.finish >= 3 and 2 or (g0.finish == 2 and 1 or 0))
+  local weight = g0.card.tier >= 6 and 3 or (g0.finish >= 3 and 2 or (g0.finish == 2 and 1 or 0))
   local span = weight >= 2 and 0.6 or (weight == 1 and 0.34 or 0.22)   -- the better the card, the longer the wait
   local t = 0
   c:SetScript("OnUpdate", function(self, dt)
@@ -2241,6 +2333,7 @@ local function showReveal(got, notes, meta)
     c.peel, c.lift, c.holding = 0, 0, false; c.fold:Hide(); c.peek:Hide(); c:SetHeight(w.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
     c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.cued = false
     c.rare = (g.finish >= 3 or g.card.tier == 6) and true or false
+    c.prismatic = g.card.tier == 7 or nil   -- a Mythic inside: the glow runs through every colour
     c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.691, 0.617, 0.469 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
     if g.finish >= 2 or g.card.tier >= 5 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end

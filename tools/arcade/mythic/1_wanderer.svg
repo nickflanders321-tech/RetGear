@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 550" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1440"/><stop offset="0.55" stop-color="#3b2a78"/><stop offset="1" stop-color="#1f6f7a"/></linearGradient>
+          <radialGradient id="moon" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff8dc"/><stop offset="0.7" stop-color="#ffe9a8"/><stop offset="1" stop-color="#f5c96a"/></radialGradient>
+          <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffe9a8" stop-opacity="0.55"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></radialGradient>
+          <radialGradient id="lamp" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff6c9"/><stop offset="0.35" stop-color="#ffd166" stop-opacity="0.9"/><stop offset="1" stop-color="#ffd166" stop-opacity="0"/></radialGradient>
+        </defs>
+        <rect width="390" height="550" fill="url(#sky)"/>
+        <circle cx="235" cy="170" r="190" fill="url(#halo)"/>
+        <circle cx="235" cy="170" r="104" fill="url(#moon)"/>
+        <circle cx="205" cy="140" r="16" fill="#f2d68c" opacity="0.5"/><circle cx="268" cy="196" r="24" fill="#f2d68c" opacity="0.4"/><circle cx="250" cy="120" r="9" fill="#f2d68c" opacity="0.45"/>
+        <polygon points="0,330 60,262 112,310 170,236 232,318 300,250 390,326 390,550 0,550" fill="#2a1f5c"/>
+        <polygon points="0,372 70,318 150,366 214,304 290,372 340,332 390,362 390,550 0,550" fill="#1c1642"/>
+        <polygon points="0,430 90,372 168,356 240,392 320,420 390,400 390,550 0,550" fill="#0f0c26"/>
+        <g fill="#07061a">
+          <path d="M150 362 C146 330 152 300 166 286 C174 276 190 276 197 287 C210 302 214 334 211 366 L216 394 L143 394 Z"/>
+          <path d="M163 290 C166 268 196 266 200 290 C196 282 168 282 163 290 Z"/>
+          <ellipse cx="181" cy="286" rx="19" ry="21"/>
+          <rect x="222" y="232" width="5" height="164" rx="2"/>
+          <path d="M205 318 L226 310 L227 320 L207 330 Z"/>
+        </g>
+        <circle cx="224" cy="226" r="44" fill="url(#lamp)"/>
+        <circle cx="224" cy="226" r="7" fill="#fffbe6"/>
+        <g fill="#fff8dc"><circle cx="40" cy="60" r="1.6"/><circle cx="88" cy="118" r="1.2"/><circle cx="340" cy="52" r="1.8"/><circle cx="362" cy="140" r="1.2"/><circle cx="60" cy="196" r="1.4"/><circle cx="118" cy="40" r="1.1"/><circle cx="310" cy="96" r="1"/><circle cx="24" cy="130" r="1"/></g>
+      </svg>

@@ -8,9 +8,9 @@ local old, id, note = arg[1], arg[2], arg[3] or "some cards changed"
 assert(old and id, "usage: changes.lua OLD_DIR PATCH_ID [NOTE]")
 local function load(base)
   local RG = {}
-  for _, f in ipairs({ "ArcadeCards.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do
+  for _, f in ipairs({ "ArcadeCards.lua", "ArcadeMythic.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do
     local chunk = loadfile(base .. "/" .. f)
-    if chunk then chunk("Waypath", RG) elseif f ~= "ArcadeClasses.lua" then error("missing " .. base .. "/" .. f) end
+    if chunk then chunk("Waypath", RG) elseif f ~= "ArcadeClasses.lua" and f ~= "ArcadeMythic.lua" then error("missing " .. base .. "/" .. f) end
   end
   local B, out = RG.Battle, {}
   for i, c in ipairs(RG.ARCADE_DATA) do

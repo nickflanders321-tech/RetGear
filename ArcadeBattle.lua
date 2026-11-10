@@ -154,6 +154,7 @@ local function paintCard(w, key, owner, live)
     U.paint(w, c, finishOf(key, owner), nil)
     decorate(w)
     w.pow:SetText(""); w.powLabel:Hide(); w.fin:SetText(""); w.num:SetText(""); w.count:SetText("")
+    if c.mythic then cardStats(w, d, live); return end   -- (a Mythic is its own painted card: nothing to lay out)
     w.type:SetText(typeLine(d))
     w.name:ClearAllPoints(); w.name:SetPoint("TOPLEFT", w, "TOPLEFT", 40 * w.u, -13 * w.u); w.name:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 238 * w.u, -37 * w.u)
     if w.cw >= 190 then
@@ -1336,6 +1337,12 @@ refresh = function()
       local dim = mine and S.mode == "play" and not tg and not can
       w:SetAlpha(mull and S.mull[i] and 0.6 or (dim and 0.8 or 1))
       if w.costT then w.costT:SetTextColor(dim and 1 or 1, dim and 0.4 or 1, dim and 0.4 or 1) end
+      -- a discount (the next card costs less): show what it costs now, in green
+      if w.costT and mine and B.costOf and (game.p[ME].discount or 0) > 0 then
+        local dd = B.defs[key]
+        local now = B.costOf(game, ME, key)
+        if dd and now < dd.cost then w.costT:SetText(now); if not dim then w.costT:SetTextColor(0.4, 1, 0.4) end end
+      end
     else w:Hide(); unplace(w) end
   end
   -- buttons

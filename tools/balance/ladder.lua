@@ -10,7 +10,7 @@ local perClass, perDeck = tonumber(arg[4] or 6), tonumber(arg[5] or 16)
 math.randomseed(seed)
 local dir = arg[0]:match("^(.*)/tools/balance/") or "."
 local RG = {}
-for _, f in ipairs({ "ArcadeCards.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
+for _, f in ipairs({ "ArcadeCards.lua", "ArcadeMythic.lua", "ArcadeClasses.lua", "ArcadeBalance.lua", "Battle.lua" }) do assert(loadfile(dir .. "/" .. f))("Waypath", RG) end
 local B = RG.Battle
 if arg[6] then dofile(arg[6])(B, RG) end
 local pool = {}
