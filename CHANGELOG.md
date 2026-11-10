@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.28.0
 
 - **Professions: more from other add-ons** (Ackis Recipe List, Skillet, Ultimate Profession Master):
   - **Where to get the recipe.** When a step needs a recipe you learn from an item (a pattern, plans, a formula), the Professions tab says where: the vendor for your faction (with price, and "limited stock" when it can sell out), the mob that drops it, or the quest that gives it. Double-click for the arrow. Once your profession window has been opened, it says "Learn it first" only when you don't have it. 34 recipes on the routes have a source.
