@@ -46,6 +46,20 @@ local function bookDue(prof)
   bookT[prof] = now
   return true
 end
+-- A recipe's English name (the route's), from the item it makes or its spell: the window shows it in the client's
+-- language. Unknown recipes keep the window's name.
+local byItem, bySpell
+local function canon(name, itemID, spellID)
+  if not byItem then
+    byItem, bySpell = {}, {}
+    for nm, r in pairs(RG.RECIPES or {}) do
+      if r.i and r.i > 0 and not byItem[r.i] then byItem[r.i] = nm end
+      if r.s and r.s > 0 then bySpell[r.s] = nm end
+    end
+  end
+  return (spellID and bySpell[spellID]) or (itemID and byItem[itemID]) or name
+end
+RG.RecipeCanon = function(name, itemID, spellID) return canon(name, itemID, spellID) end
 local function noteColour(name, kind, prof, rank)
   if not (name and COLOUR[kind]) then return end
   RG.db.recipeCol = RG.db.recipeCol or {}
@@ -56,9 +70,11 @@ local function readWindow()
   if GetNumTradeSkills and GetTradeSkillInfo and GetTradeSkillNumReagents then
     local prof, rank
     if GetTradeSkillLine then local ok, a, b = pcall(GetTradeSkillLine); if ok then prof, rank = a, b end end
+    prof = RG.EnglishProf and RG.EnglishProf(prof) or prof
     local doBook = bookDue(prof)
     for i = 1, (GetNumTradeSkills() or 0) do
       local name, kind = GetTradeSkillInfo(i)
+      if name and kind ~= "header" then name = canon(name, itemIDFromLink(GetTradeSkillItemLink and GetTradeSkillItemLink(i))) end
       if name and kind ~= "header" then noteColour(name, kind, prof, rank) end
       if doBook and name and kind ~= "header" then
         local r = {}
@@ -87,8 +103,13 @@ local function readWindow()
   if GetNumCrafts and GetCraftInfo and GetCraftNumReagents then
     local prof, rank
     if GetCraftDisplaySkillLine then local ok, a, b = pcall(GetCraftDisplaySkillLine); if ok then prof, rank = a, b end end
+    prof = RG.EnglishProf and RG.EnglishProf(prof) or prof
     for i = 1, (GetNumCrafts() or 0) do
       local name, _, kind = GetCraftInfo(i)
+      if name and kind ~= "header" then
+        local link = GetCraftItemLink and GetCraftItemLink(i)
+        name = canon(name, itemIDFromLink(link), link and tonumber(link:match("enchant:(%d+)")))
+      end
       if name and kind ~= "header" then noteColour(name, kind, prof, rank) end
       if name and kind ~= "header" and wanted(name) then
         local r = {}
@@ -106,9 +127,11 @@ local function readWindow()
     local ok, ids = pcall(T.GetAllRecipeIDs)
     local prof, rank
     if T.GetTradeSkillLine then local okL, _, nm, r = pcall(T.GetTradeSkillLine); if okL then prof, rank = nm, r end end
+    prof = RG.EnglishProf and RG.EnglishProf(prof) or prof
     local doBook = bookDue(prof)
     for _, rid in ipairs(ok and ids or {}) do
       local info = T.GetRecipeInfo(rid)
+      if info and info.name then info = { name = canon(info.name, nil, rid), learned = info.learned, relativeDifficulty = info.relativeDifficulty, difficulty = info.difficulty } end
       if info and info.name and info.learned ~= false then
         local d = info.relativeDifficulty or info.difficulty
         noteColour(info.name, type(d) == "number" and DIFF[d] or d, prof, rank)

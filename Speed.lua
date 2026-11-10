@@ -153,10 +153,11 @@ local function questTargets()
       local info = C_QuestLog.GetInfo(i)
       local qd = info and not info.isHeader and info.questID and RG.QDATA[info.questID]
       if qd and qd.o and not (C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID)) then
-        for _, o in ipairs(C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}) do
+        local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}
+        for _, o in ipairs(objs) do
           if not o.finished and o.text and o.type ~= "monster" then
-            for _, d in ipairs(qd.o) do
-              if d[1] == "i" and o.text:find(d[2], 1, true) then
+            for k, d in ipairs(qd.o) do
+              if d[1] == "i" and RG.MatchObjective(objs, qd.o, k) == o then
                 for _, mob in ipairs(d[3]) do
                   if not seen[mob] then
                     seen[mob] = true
@@ -241,9 +242,9 @@ function RG.QuestSpots()
     elseif qid then
       local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(qid) or {}
       local used = {}
-      for _, d in ipairs((qd and qd.o) or {}) do
-        local game
-        for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then game = o end end
+      for k, d in ipairs((qd and qd.o) or {}) do
+        -- (by text, or by position on clients in other languages)
+        local game = RG.MatchObjective(objs, qd.o, k)
         if not (game and game.finished) then
           -- spots let go of beside Questie (memory, below): Questie's own spawns for this objective
           local list = d[4] or (RG.QuestieObjectiveSpots and RG.QuestieObjectiveSpots(qid, d[2])) or {}

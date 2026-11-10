@@ -250,7 +250,7 @@ end
 
 -- The zone you're in: skill where every fish bites, and how you compare.
 function RG.FishZone()
-  local zone = GetRealZoneText and GetRealZoneText() or ""
+  local zone = RG.ZoneName()
   local sub = GetSubZoneText and GetSubZoneText() or ""
   local full = RG.FISH_SUBZONES[sub] or RG.FISH_ZONES[zone]
   if not full then return nil, zone end
@@ -380,7 +380,7 @@ RG.FishItemValue = itemValue
 function RG.FishZoneLoot()
   local L = RG.FISH_LOOT
   if not L then return nil end
-  local zone = GetRealZoneText and GetRealZoneText() or ""
+  local zone = RG.ZoneName()
   local sub = GetSubZoneText and GetSubZoneText() or ""
   local lst = L.zones[sub] or L.zones[zone]
   if not lst then return nil, zone end
@@ -491,7 +491,7 @@ local function onCatch()
       local qty = select(3, GetLootSlotInfo(i)) or 1
       session.items[id] = (session.items[id] or 0) + qty
       d.caught[id] = (d.caught[id] or 0) + qty
-      local zn = GetRealZoneText and GetRealZoneText() or ""
+      local zn = RG.ZoneName()
       if zn ~= "" then
         d.seen = d.seen or {}; d.seen[zn] = d.seen[zn] or {}
         d.seen[zn][id] = (d.seen[zn][id] or 0) + qty
@@ -502,7 +502,7 @@ local function onCatch()
       session.value = (session.value or 0) + v * qty
       d.goldTotal = (d.goldTotal or 0) + v * qty
       d.log = d.log or {}
-      table.insert(d.log, 1, { t = time(), id = id, qty = qty, v = v, zone = GetRealZoneText and GetRealZoneText() or "" })
+      table.insert(d.log, 1, { t = time(), id = id, qty = qty, v = v, zone = RG.ZoneName() })
       d.log[101] = nil
     end
   end

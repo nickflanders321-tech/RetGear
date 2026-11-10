@@ -680,23 +680,102 @@ end
 -- ---------------------------------------------------------------------------
 -- Professions: returns { Mining = {rank, max}, Blacksmithing = {rank, max} }
 -- ---------------------------------------------------------------------------
+-- Professions by their English name, whatever language the game client is in (the route data is in English).
+-- The game's skill line numbers are the same everywhere; on clients without them, the profession spells' names
+-- (which the game translates) tell us which is which.
+local SKILL_LINE = { [171] = "Alchemy", [164] = "Blacksmithing", [333] = "Enchanting", [202] = "Engineering", [182] = "Herbalism",
+  [165] = "Leatherworking", [186] = "Mining", [393] = "Skinning", [197] = "Tailoring", [185] = "Cooking", [129] = "First Aid", [356] = "Fishing" }
+local PROF_SPELL = { Alchemy = 2259, Blacksmithing = 2018, Enchanting = 7411, Engineering = 4036, Leatherworking = 2108, Mining = 2575,
+  Skinning = 8613, Tailoring = 3908, Cooking = 2550, ["First Aid"] = 3273, Fishing = 7620 }
+-- (Herbalism's spell is "Herb Gathering", so its skill name is listed per language)
+local HERB = { ["Herbalism"] = true, ["Kräuterkunde"] = true, ["Herboristerie"] = true, ["Herboristería"] = true, ["Herborismo"] = true,
+  ["Erbalismo"] = true, ["Травничество"] = true, ["약초 채집"] = true, ["草药学"] = true, ["草藥學"] = true }
+local localToEnglish
+function RG.EnglishProf(name)
+  if not name or name == "" then return name end
+  if RG.PROFESSIONS and RG.PROFESSIONS[name] then return name end
+  if HERB[name] then return "Herbalism" end
+  if not localToEnglish then
+    localToEnglish = {}
+    local gsi = (C_Spell and C_Spell.GetSpellName) or GetSpellInfo
+    for en, sid in pairs(PROF_SPELL) do
+      local ok, loc = pcall(gsi, sid)
+      if ok and type(loc) == "string" and loc ~= "" then localToEnglish[loc] = en end
+    end
+  end
+  return localToEnglish[name] or name
+end
 function RG.Professions()
   local out = {}
   if GetProfessions and GetProfessionInfo then
     local p = { GetProfessions() }
     for i = 1, 6 do
       if p[i] then
-        local name, _, rank, max = GetProfessionInfo(p[i])
+        local name, _, rank, max, _, _, line = GetProfessionInfo(p[i])
+        name = (line and SKILL_LINE[line]) or RG.EnglishProf(name)
         if name then out[name] = { rank = rank or 0, max = max or 0 } end
       end
     end
   elseif GetNumSkillLines and GetSkillLineInfo then
     for i = 1, GetNumSkillLines() do
       local name, header, _, rank, _, _, max = GetSkillLineInfo(i)
-      if name and not header then out[name] = { rank = rank or 0, max = max or 0 } end
+      if name and not header then out[RG.EnglishProf(name)] = { rank = rank or 0, max = max or 0 } end
     end
   end
   return out
+end
+
+-- The zone you're in, by its English name (the route's), whatever language the client is in: from the game's map
+-- number, which is the same everywhere. Falls back to the game's own (translated) name for places we don't list.
+local INSTANCE_EN = { [389] = "Ragefire Chasm", [43] = "Wailing Caverns", [36] = "The Deadmines", [33] = "Shadowfang Keep", [34] = "The Stockade",
+  [48] = "Blackfathom Deeps", [90] = "Gnomeregan", [47] = "Razorfen Kraul", [189] = "Scarlet Monastery", [129] = "Razorfen Downs",
+  [70] = "Uldaman", [209] = "Zul'Farrak", [349] = "Maraudon", [109] = "The Temple of Atal'Hakkar", [230] = "Blackrock Depths",
+  [229] = "Blackrock Spire", [329] = "Stratholme", [289] = "Scholomance", [429] = "Dire Maul" }
+local CITY_EN = { [1454] = "Orgrimmar", [1456] = "Thunder Bluff", [1458] = "Undercity", [1453] = "Stormwind City", [1455] = "Ironforge", [1457] = "Darnassus" }
+local mapToZone
+local zoneT, zoneV
+function RG.ZoneName()
+  local now = GetTime and GetTime() or 0
+  if zoneV and zoneT == now then return zoneV end
+  local loc = (GetRealZoneText and GetRealZoneText()) or ""
+  if loc == "" and GetZoneText then loc = GetZoneText() or "" end
+  local res = loc
+  local inInst = IsInInstance and IsInInstance()
+  if inInst and GetInstanceInfo then
+    local ok, _, _, _, _, _, _, _, iid = pcall(GetInstanceInfo)
+    if ok and iid and INSTANCE_EN[iid] then res = INSTANCE_EN[iid] end
+  elseif C_Map and C_Map.GetBestMapForUnit then
+    if not mapToZone then
+      mapToZone = {}
+      for z, m in pairs(RG.ZONE_MAPS or {}) do mapToZone[m] = z end
+      for m, z in pairs(CITY_EN) do mapToZone[m] = z end
+    end
+    local m = C_Map.GetBestMapForUnit("player")
+    local guard = 0
+    while m and guard < 6 do
+      guard = guard + 1
+      if mapToZone[m] then res = mapToZone[m]; break end
+      local info = C_Map.GetMapInfo and C_Map.GetMapInfo(m)
+      m = info and info.parentMapID
+      if info and info.mapType and info.mapType <= 2 then break end   -- (reached the continent: not a listed zone)
+    end
+  end
+  zoneT, zoneV = now, res
+  return res
+end
+
+-- Which of the game's quest objectives is our objective #k? By its text (English clients), or else by position
+-- when the quest has the same number of objectives in both (other languages).
+function RG.MatchObjective(objs, qdo, k)
+  local d = qdo and qdo[k]
+  if not (d and objs) then return nil end
+  for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then return o end end
+  if #objs == #qdo then
+    -- only when no objective of this quest matches by text (so an English client never guesses)
+    for _, x in ipairs(qdo) do for _, o in ipairs(objs) do if o.text and o.text:find(x[2], 1, true) then return nil end end end
+    return objs[k]
+  end
+  return nil
 end
 -- Do we know a flight path whose name contains this text? nil = never seen a flight master yet.
 function RG.KnowsFP(part)

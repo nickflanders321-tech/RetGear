@@ -112,7 +112,7 @@ local function mark(k)
   autoPin()
 end
 local function checkPlace()
-  local zone = GetRealZoneText and GetRealZoneText() or ""
+  local zone = RG.ZoneName()
   local sub = GetSubZoneText and GetSubZoneText() or ""
   if sub == HUB.place then mark("brill") end
   if zone == HUB.city then mark("uc") end

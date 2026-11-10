@@ -62,8 +62,7 @@ local function profile()
 end
 
 local function hereZone()
-  local z = GetRealZoneText and GetRealZoneText() or ""
-  if z == "" and GetZoneText then z = GetZoneText() or "" end
+  local z = RG.ZoneName()
   return z
 end
 

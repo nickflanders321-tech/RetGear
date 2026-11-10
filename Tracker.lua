@@ -62,7 +62,7 @@ local function currentEntry()
   local lvl = UnitLevel("player")
   -- standing in a new zone that has no steps yet (WoW Forever's quest data for it isn't out): stay with it
   -- instead of sending you somewhere else; the tracker shows its quests from your log
-  local here = GetRealZoneText and GetRealZoneText() or ""
+  local here = RG.ZoneName()
   if here ~= "" then
     for _, r in ipairs(RG.ROUTE) do
       if r.kind == "zone" and r.zone == here and lvl >= r.from - 1 and lvl <= r.to then
@@ -751,7 +751,7 @@ function RG.RefreshTracker()
             onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
       end
       -- grouped by zone: the zone you're in first, then the nearest zones
-      local here = (GetRealZoneText and GetRealZoneText()) or (GetZoneText and GetZoneText()) or ""
+      local here = RG.ZoneName()
       local groups, byZone = {}, {}
       for _, q in ipairs(quests) do
         local z = q.zone or "Other"

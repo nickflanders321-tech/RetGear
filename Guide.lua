@@ -27,7 +27,7 @@ function RG.Log(ev, a, b)
   local l = RG.db.ptlog
   if not l then l = {}; RG.db.ptlog = l end
   l[#l + 1] = { t = time and time() or 0, ev = ev, a = a, b = b, lvl = UnitLevel and UnitLevel("player") or 0,
-    z = (GetRealZoneText and GetRealZoneText()) or "" }
+    z = RG.ZoneName() }
   while #l > 200 do table.remove(l, 1) end
 end
 

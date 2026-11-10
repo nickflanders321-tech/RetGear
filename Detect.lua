@@ -15,8 +15,7 @@ function RG.Detect()
   d.race = UnitRace and (UnitRace("player")) or "?"
   d.class = UnitClass and (UnitClass("player")) or "?"
   d.level = UnitLevel and UnitLevel("player") or 1
-  d.zone = (GetRealZoneText and GetRealZoneText()) or ""
-  if d.zone == "" and GetZoneText then d.zone = GetZoneText() or "" end
+  d.zone = RG.ZoneName and RG.ZoneName() or ((GetRealZoneText and GetRealZoneText()) or "")
   d.profs = {}
   for name, p in pairs(RG.Professions()) do if IS_PROF[name] then d.profs[name] = p.rank end end
   return d

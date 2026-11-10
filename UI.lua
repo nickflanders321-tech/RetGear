@@ -1181,7 +1181,7 @@ local function renderRoute()
     if gather then sub = sub .. GREY .. "  ·  " .. gather .. "|r" end
     local range = r.from == r.to and ("Level " .. r.from) or ("Levels " .. r.from .. "-" .. r.to)
     -- "You are here" only where you are; the entry the tracker follows says "Now", the others at your level just their range
-    local hereZone = GetRealZoneText and GetRealZoneText() == r.zone
+    local hereZone = RG.ZoneName() == r.zone
     local status = e.done and (GREEN .. "Done|r") or (now and ((hereZone and (GREEN .. "You are here|r")) or (e.focus and (GOLD .. "Now|r")) or (GREY .. range .. "|r")) or (GREY .. range .. "|r"))
     if r.fp and not e.done then
       local k = RG.KnowsFP(r.fp)

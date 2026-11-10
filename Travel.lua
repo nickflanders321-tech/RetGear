@@ -155,7 +155,7 @@ end
 function RG.TravelPlan(target)
   ensure()
   target = RG.TravelZone(target)
-  local here = GetRealZoneText and GetRealZoneText() or ""
+  local here = RG.ZoneName()
   if not target or target == "" or here == "" or target == here then return nil end
   if not edges then buildEdges() end
   -- Dijkstra over zones; flying is an extra edge between any two known flight paths on a continent

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Game clients in other languages.** Several features compared names in English and quietly did nothing on a German, French, Spanish or other client. Now:
+  - Professions are recognised by the game's skill numbers (or their translated spell names), so the Professions tab, reminders and gathering checks work in any language.
+  - Recipes read from your profession window are matched by the item they make (or their spell), so recipe colours, "gone grey", "learn it first" and the profit list work in any language.
+  - The zone you're in comes from the game's map number, so "You are here", the smart route choice, travel tips, fishing zones and the tracker work in any language (inside dungeons too).
+  - Quest objectives that don't match by text are matched by their position in the quest, so finished objectives drop off the arrow in any language.
+  - Still English-only: sub-zone names (a few fishing spots, the bank-alt's Brill check) and targeting quest mobs by name.
 ## v1.29.0
 
 - **Dungeon XP is up.** Blizzard's November 8 hotfix gives 50% more experience for dungeon kills. The route's dungeon cards (Horde and Alliance) now say so while a dungeon is current or coming up: take every quest for the dungeon before you go in (quest XP wasn't raised), and a second run is now worth it with a quick group.
