@@ -2453,11 +2453,11 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
-  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts" } },
-  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan", "ahProgress" } },
-  { "Interface", { "minimap", "sounds", "quietErrors" } },
+  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
+  { "Interface", { "minimap", "sounds", "quietErrors", "sharePrompt" } },
 }
 local function renderGroup()
   local n = 0
@@ -2571,11 +2571,23 @@ local function renderSettings()
   if q ~= "" then
     local hits = 0
     for _, grp in ipairs(ordered) do
-      local gmatch = grp[1]:lower():find(q, 1, true)
+      -- every word you type must appear somewhere (any order), in the setting or its group: "arrow sound", "ah scan"
       local keep = {}
-      for _, o in ipairs(grp[2]) do if gmatch or o.label:lower():find(q, 1, true) then keep[#keep + 1] = o end end
+      for _, o in ipairs(grp[2]) do
+        local hay = (grp[1] .. " " .. o.label .. " " .. o.key):lower()
+        local all = true
+        for w in q:gmatch("%S+") do if not hay:find(w, 1, true) then all = false; break end end
+        if all then keep[#keep + 1] = o end
+      end
+      grp.any = {}
+      for _, o in ipairs(grp[2]) do
+        local hay = (grp[1] .. " " .. o.label .. " " .. o.key):lower()
+        for w in q:gmatch("%S+") do if #w > 2 and hay:find(w, 1, true) then grp.any[#grp.any + 1] = o; break end end
+      end
       grp[2] = keep; hits = hits + #keep
     end
+    -- nothing has every word: show what has any of them
+    if hits == 0 then for _, grp in ipairs(ordered) do grp[2] = grp.any or {}; hits = hits + #grp[2] end end
     if hits == 0 then n = n + 1; setHeader(getRow(n), "No settings match \"" .. state.search .. "\"") end
   end
   if q == "" then

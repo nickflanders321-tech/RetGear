@@ -333,6 +333,11 @@ local function finish(open)
   if RG.RefreshTracker then RG.RefreshTracker() end
   if RG.MinimapButton then RG.MinimapButton() end
   if open and RG.ToggleUI then RG.ToggleUI() end
+  -- the short tour, once, right after setup (not for "cards only"; /wp tour shows it again)
+  if not RG.db.tourSeen and not (RG.CardsOnly and RG.CardsOnly()) and RG.ShowTour then
+    RG.db.tourSeen = true
+    C_Timer.After(1.5, function() RG.ShowTour(1) end)
+  end
   RG.Print("Setup saved. /wp setup runs it again; Settings has every switch.")
 end
 

@@ -308,7 +308,7 @@ function RG.ShowWelcome()
 end
 
 -- ---------------------------------------------------------------------------
--- Tour: four short pages on what to click (/wp tour; offered from the welcome screen)
+-- Tour: a few short pages on what to click (/wp tour; offered from the welcome screen)
 -- ---------------------------------------------------------------------------
 local TOUR = {
   { "The tracker", "The panel on the right is your to-do list: the quest you are on, what to do next, quests ready to hand in, and reminders.\n\n"
@@ -321,6 +321,11 @@ local TOUR = {
     .. "The small buttons at the top turn the arrow, tracker and sounds on and off, and report a wrong step." },
   { "One objective", "The arrow, the tracker's " .. GOLD .. "Now|r line and the " .. GOLD .. "Quest plan|r tab all follow the same thing: the best next stop for the quests in your log, with the others nearby bundled in. "
     .. GOLD .. "/wp next|r (or a key you bind) points the arrow at it, and skips to the next stop if it is already there. " .. GOLD .. "/wp near|r shows what is worth doing close by, " .. GOLD .. "/wp goto 45 60 Camp|r adds a goal of your own, " .. GOLD .. "/wp minimal|r keeps only the Now line." },
+  { "Professions", "The " .. GOLD .. "Professions|r tab walks each profession from 1 to 300: the step you're on, its " .. GOLD .. "shopping list|r with costs "
+    .. "(click the header for the next steps, " .. GOLD .. "< Back|r to return), where to learn recipes, and what you can make right now.\n\n"
+    .. "At a vendor, a " .. GOLD .. "Buy profession materials|r button buys only what's missing, and only when you click it." },
+  { "Your progress", GOLD .. "/wp levels|r shows how long each level took and where the XP came from; a line in chat sums up each level as you go.\n\n"
+    .. "Waypath+ also tells you when a weapon skill falls behind (" .. GOLD .. "/wp weapon|r finds the weapon master), and " .. GOLD .. "/wp share|r passes on quest spots it learned." },
   { "And more", GOLD .. "/wp node|r points the arrow at the next ore or herb you can still gather, " .. GOLD .. "/wp fp|r at the nearest flight path you have not learned.\n"
     .. GOLD .. "Fishing|r hides the interface and shows your lure, food and campfire, what each catch is worth and what to do with it.\n"
     .. GOLD .. "/wp report|r copies the step you are on for a bug report. " .. GOLD .. "/wp setup|r changes your choices any time." },
