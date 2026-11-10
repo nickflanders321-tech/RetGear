@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Professions: more from other add-ons** (Ackis Recipe List, Skillet, Ultimate Profession Master):
+  - **Where to get the recipe.** When a step needs a recipe you learn from an item (a pattern, plans, a formula), the Professions tab says where: the vendor for your faction (with price, and "limited stock" when it can sell out), the mob that drops it, or the quest that gives it. Double-click for the arrow. Once your profession window has been opened, it says "Learn it first" only when you don't have it. 34 recipes on the routes have a source.
+  - **What it really costs.** Ore, herbs, leather and fish from a gathering profession you have count as free (the list says "you gather it", and the "cheapest" pick prefers them). What you craft sells back at a vendor, and that comes off the cost: the shopping list says what the stretch really costs, or that it pays for itself. A recipe you'd still have to buy counts toward a step's cost.
+  - **"You can make N now."** The current step says how many you can make from your bags, how many after making the bars or bolts first, and how many with vendor materials too.
+  - **Your other characters' materials.** Waypath+ remembers the profession materials each of your characters holds (bags and bank), so the shopping list and tooltips can say "40 on Bankalt".
+  - **Tooltips.** A material your next profession steps need says so ("your next Tailoring steps need 64"), so you don't sell it. Can be turned off in Settings.
+  - **Most profitable crafts you know.** Once your profession window has been opened and the AH has prices, the Professions tab lists your five most profitable recipes per profession (materials vs what they sell for).
+  - Bars, bolts and other crafted reagents now break down all the way (bronze bars into copper and tin ore for a miner), and miners can always smelt.
+
 - **Professions shopping list: go back.** The list now has "< Back" and "Show more >" lines to move between this step, this step and the next, and the rest of the route in both directions (right-clicking the header also goes back). Before, clicking only moved forward and wrapped around.
 ## v1.27.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.

@@ -31,6 +31,21 @@ end
 -- RG.db.recipeCol[name] = { c = "optimal"|"medium"|"easy"|"trivial", at = skill, p = profession }
 local COLOUR = { optimal = true, medium = true, easy = true, trivial = true }
 local DIFF = { [0] = "optimal", [1] = "medium", [2] = "easy", [3] = "trivial" }
+-- Every recipe you know (for the profit list): RG.db.recipeBook[prof][name] = { i = item made, y = how many, r = reagents }
+local bookT = {}
+local function book(prof, name, item, yield, reagents)
+  if not (prof and name and item and reagents and #reagents > 0) then return end
+  RG.db.recipeBook = RG.db.recipeBook or {}
+  local b = RG.db.recipeBook[prof] or {}
+  RG.db.recipeBook[prof] = b
+  b[name] = { i = item, y = yield or 1, r = reagents }
+end
+local function bookDue(prof)
+  local now = GetTime and GetTime() or 0
+  if not prof or (bookT[prof] and now - bookT[prof] < 10) then return false end
+  bookT[prof] = now
+  return true
+end
 local function noteColour(name, kind, prof, rank)
   if not (name and COLOUR[kind]) then return end
   RG.db.recipeCol = RG.db.recipeCol or {}
@@ -41,9 +56,21 @@ local function readWindow()
   if GetNumTradeSkills and GetTradeSkillInfo and GetTradeSkillNumReagents then
     local prof, rank
     if GetTradeSkillLine then local ok, a, b = pcall(GetTradeSkillLine); if ok then prof, rank = a, b end end
+    local doBook = bookDue(prof)
     for i = 1, (GetNumTradeSkills() or 0) do
       local name, kind = GetTradeSkillInfo(i)
       if name and kind ~= "header" then noteColour(name, kind, prof, rank) end
+      if doBook and name and kind ~= "header" then
+        local r = {}
+        for j = 1, (GetTradeSkillNumReagents(i) or 0) do
+          local _, _, count = GetTradeSkillReagentInfo(i, j)
+          local id = itemIDFromLink(GetTradeSkillReagentItemLink and GetTradeSkillReagentItemLink(i, j))
+          if id and count then r[#r + 1] = { id, count } end
+        end
+        local lo, hi = 1, 1
+        if GetTradeSkillNumMade then lo, hi = GetTradeSkillNumMade(i) end
+        book(prof, name, itemIDFromLink(GetTradeSkillItemLink and GetTradeSkillItemLink(i)), math.floor(((lo or 1) + (hi or lo or 1)) / 2), r)
+      end
       if name and kind ~= "header" and wanted(name) then
         local r = {}
         for j = 1, (GetTradeSkillNumReagents(i) or 0) do
@@ -77,13 +104,25 @@ local function readWindow()
   local T = C_TradeSkillUI
   if T and T.GetAllRecipeIDs and T.GetRecipeInfo and T.GetRecipeSchematic then
     local ok, ids = pcall(T.GetAllRecipeIDs)
+    local prof, rank
+    if T.GetTradeSkillLine then local okL, _, nm, r = pcall(T.GetTradeSkillLine); if okL then prof, rank = nm, r end end
+    local doBook = bookDue(prof)
     for _, rid in ipairs(ok and ids or {}) do
       local info = T.GetRecipeInfo(rid)
       if info and info.name and info.learned ~= false then
         local d = info.relativeDifficulty or info.difficulty
-        local prof, rank
-        if T.GetTradeSkillLine then local okL, _, nm, r = pcall(T.GetTradeSkillLine); if okL then prof, rank = nm, r end end
         noteColour(info.name, type(d) == "number" and DIFF[d] or d, prof, rank)
+        if doBook then
+          local okS, sch = pcall(T.GetRecipeSchematic, rid, false)
+          if okS and sch and sch.outputItemID and sch.reagentSlotSchematics then
+            local r = {}
+            for _, slot in ipairs(sch.reagentSlotSchematics) do
+              local re = slot.reagents and slot.reagents[1]
+              if re and re.itemID and slot.quantityRequired then r[#r + 1] = { re.itemID, slot.quantityRequired } end
+            end
+            book(prof, info.name, sch.outputItemID, math.floor(((sch.quantityMin or 1) + (sch.quantityMax or 1)) / 2), r)
+          end
+        end
       end
       if info and info.name and wanted(info.name) then
         local okS, sch = pcall(T.GetRecipeSchematic, rid, false)
@@ -129,6 +168,8 @@ function RG.CanMake(recipe)
     end
   end
   for name in pairs(mine) do if planRecipes[name] and planRecipes[name][recipe] then return true end end
+  -- smelting isn't on the Mining route, but every miner can smelt bars (as their skill allows)
+  if mine["Mining"] and recipe:match(" Bar$") then return true end
   return false
 end
 local function matName(id)
@@ -226,15 +267,24 @@ function RG.ProfPickOption(st, crafts, prof)
       end
       local cost, unknown = 0, 0
       if RG.MatsCost then cost, unknown = RG.MatsCost(m) end
+      -- what it really costs: minus what the items sell back for at a vendor, plus a recipe you'd have to buy first
+      local rec = RG.Recipe(o)
+      local made = rec and (rec.i or ((RG.RECIPES or {})[o] or {}).i)
+      local back = (RG.SellBack and made) and RG.SellBack(made) * crafts or 0
+      local learn = 0
+      if RG.RecipeKnown and RG.RecipeKnown(o, prof) ~= true and RG.RecipeSource then
+        local src = RG.RecipeSource(o)
+        if src then learn = (src.how == "Vendor" and (src.price or 0) or 50000) end   -- (a drop or quest: much harder to get)
+      end
       local score
       if cheap then
         -- copper, with an unpriced material counted like a fairly expensive one (so a fully priced option wins a tie)
-        score = cost + unknown * 5000 + ((fishy and not fisher) and 2000 or 0)
+        score = cost - back + learn + unknown * 5000 + ((fishy and not fisher) and 2000 or 0)
       else
         score = short + ((fishy and not fisher) and 0.5 or 0)
       end
       if RG.RecipeColour and RG.RecipeColour(o, prof) == "trivial" then score = score + 1e9 end
-      if not best or score < bestScore then best, bestScore, bestMats, bestCost = o, score, m, cost end
+      if not best or score < bestScore then best, bestScore, bestMats, bestCost = o, score, m, math.max(0, cost - back) end
     end
   end
   return best or opts[1], bestMats, bestCost
@@ -268,8 +318,17 @@ function RG.ProfNow(name, skillOverride)
     -- a few extra for the crafts that won't give a point (yellow and green)
     res.leftWithMisses = RG.CraftsWithMisses and RG.CraftsWithMisses(res.left, res.colour) or res.left
     res.mats = RG.MatsFor(res.craft, res.leftWithMisses)
-    if RG.MatsCost and res.mats then res.cost, res.costUnknown, res.costOwned = RG.MatsCost(res.mats) end
+    if RG.MatsCost and res.mats then res.cost, res.costUnknown, res.costOwned, res.costGathered = RG.MatsCost(res.mats) end
     res.options = opts
+    -- what the crafts sell back for, a recipe to learn first, and how many you can make right now
+    local rec = RG.Recipe(res.craft)
+    local made = rec and (rec.i or ((RG.RECIPES or {})[res.craft] or {}).i)
+    if RG.SellBack and made then res.sellBack = RG.SellBack(made) * (res.leftWithMisses or 0) end
+    if RG.RecipeKnown and RG.RecipeSource then
+      res.known = RG.RecipeKnown(res.craft, name)
+      if res.known ~= true then res.learnSrc = RG.RecipeSource(res.craft) end
+    end
+    if RG.CanMakeCounts then res.canNow, res.canCrafted, res.canVendor = RG.CanMakeCounts(res.craft) end
   end
   -- the next craft step after this one
   for i = idx + 1, #plan do

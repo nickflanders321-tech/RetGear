@@ -787,9 +787,32 @@ local function renderProf()
       local sub = col or (GREY .. "Open your " .. sel .. " window once and Waypath+ reads the recipe's colour.|r")
       if extra > 0 then sub = sub .. GREY .. "  ·  materials include " .. extra .. " extra for misses|r" end
       if #others > 0 then sub = sub .. GREY .. "\nor: " .. table.concat(others, ", ") .. "|r" end
+      -- how many you can make right now (bags), after making the bars/bolts, and with vendor materials too
+      if now.canNow then
+        local parts = { (now.canNow > 0 and "|cffffffff" or GREY) .. "You can make " .. now.canNow .. " now|r" }
+        if (now.canCrafted or 0) > now.canNow then parts[#parts + 1] = now.canCrafted .. " after making the bars or bolts" end
+        if now.canVendor and now.canVendor > (now.canCrafted or 0) then parts[#parts + 1] = now.canVendor .. " with vendor materials" end
+        sub = parts[1] .. (#parts > 1 and (GREY .. "  ·  " .. table.concat(parts, "  ·  ", 2) .. "|r") or "") .. "\n" .. sub
+      end
       local mr = line(nil, "|cffffffffMake " .. (now.left or 0) .. " more " .. now.craft .. "|r", sub,
         GOLD .. (now.left or 0) .. " left|r", GREY .. "to skill " .. st.to .. "|r", P.icon, "gold")
       mr.tip = (st.mats and (st.mats .. "\n\n") or "") .. "Crafts left are the guide's count for the rest of this step (it already includes some misses)."
+      -- a recipe learned from an item (pattern, plans, formula): where to get it
+      if now.learnSrc then
+        local txt = RG.RecipeSourceText(now.craft)
+        if txt then
+          local lr = line(nil, (now.known == false and (GOLD .. "Learn it first|r") or (GREY .. "Not from a trainer|r")) .. "|cffffffff  " .. now.craft .. "|r",
+            txt .. (now.known == nil and (GREY .. "\n(Open your " .. sel .. " window and Waypath+ knows if you have it.)|r") or ""),
+            now.learnSrc.how and (GOLD .. now.learnSrc.how .. "|r") or "", now.learnSrc.rank and now.learnSrc.rank > 0 and (GREY .. "skill " .. now.learnSrc.rank .. "|r") or "", "Interface\\Icons\\INV_Scroll_03", now.known == false and "gold" or nil)
+          if now.learnSrc.best then
+            lr.onDoubleClick = RG.ArrowFn({ now.learnSrc.best[1], now.learnSrc.best[2], now.learnSrc.best[3], now.learnSrc.best[4] })
+          end
+          local more = {}
+          for i = 2, math.min(4, #now.learnSrc.vendors) do more[#more + 1] = "also sold by " .. now.learnSrc.vendors[i][4] end
+          for _, d in ipairs(now.learnSrc.drops) do more[#more + 1] = "drops from " .. d[4] end
+          lr.tip = (now.learnSrc.best and "Double-click: point the arrow there.\n" or "") .. table.concat(more, "\n")
+        end
+      end
       if now.skippedGrey then
         line(nil, GREY .. tostring(now.skippedGrey.craft) .. " has gone grey for you|r", GREY .. "No more points from it, so Waypath+ moved on to this step.|r", "", "", P.icon, nil, nil, true)
       end
@@ -819,12 +842,22 @@ local function renderProf()
         rows[n].onRightClick = function() go(PREV[scope]) end
         rows[n].tip = (NEXT[scope] and ("Click: " .. SC[NEXT[scope]] .. ".") or "") .. (PREV[scope] and ((NEXT[scope] and "\n" or "") .. "Right-click: back to " .. SC[PREV[scope]] .. ".") or "")
         n = n + 1
-        local summary = missing == 0 and (GREEN .. "You have everything for " .. SC[scope] .. "|r")
+        local summary = missing == 0 and #(shop.learn or {}) == 0 and (GREEN .. "You have everything for " .. SC[scope] .. "|r")
           or ("|cffffffff" .. missing .. " to get|r" .. (shop.total > 0 and (GREY .. "  ·  about |r" .. RG.Money(shop.total) .. GREY .. " to buy|r") or "")
             .. (shop.unknown > 0 and (GREY .. "  ·  " .. shop.unknown .. " without a price|r") or "")
             .. (shop.owned > 0 and (GREY .. "  ·  you already have " .. RG.Money(shop.owned) .. " of it|r") or ""))
         setStep(getRow(n), "", summary, false, nil)
         rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+        -- what it really costs you: less what you gather yourself, less what the crafts sell back for at a vendor
+        if (shop.gathered or 0) > 0 or (shop.sellBack or 0) > 0 then
+          local parts = {}
+          if (shop.gathered or 0) > 0 then parts[#parts + 1] = "you gather " .. RG.Money(shop.gathered) .. GREY .. " worth yourself (not in the total)" end
+          if (shop.sellBack or 0) > 0 then parts[#parts + 1] = "what you make sells back for |r" .. RG.Money(shop.sellBack) .. GREY .. " at a vendor" end
+          local net = (shop.total or 0) - (shop.sellBack or 0)
+          n = n + 1
+          setStep(getRow(n), "", GREY .. table.concat(parts, "  ·  ") .. ((shop.sellBack or 0) > 0 and ("  ·  |r" .. (net > 0 and ("|cffffffffreally costs about " .. RG.Money(net) .. "|r") or (GREEN .. "pays for itself|r"))) or "|r"), false, nil)
+          rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = "Gathered: ore, herbs, leather or fish from a gathering profession you have count as free (they cost time, not gold).\nSells back: what a vendor pays for the items you'll make (often more on the Auction House)."
+        end
         -- move between the three views both ways: back to a shorter list, or on to a longer one
         if PREV[scope] then
           n = n + 1
@@ -837,14 +870,23 @@ local function renderProf()
           rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
         end
         local ahOpen = (AuctionHouseFrame and AuctionHouseFrame:IsShown()) or (AuctionFrame and AuctionFrame:IsShown())
+        for _, l in ipairs(shop.learn or {}) do
+          local known = RG.RecipeKnown(l.recipe, sel)
+          local r = line(l.src.item, "|cffffffff" .. (RG.ItemInfo(l.src.item) or ("Recipe: " .. l.recipe)) .. "|r" .. GREY .. "   recipe, skill " .. (l.src.rank or l.from) .. "|r",
+            RG.RecipeSourceText(l.recipe) or "", known == false and ("|cffff6060Learn it|r") or (GREY .. "if you don't have it|r"),
+            (l.src.how == "Vendor" and l.src.price and l.src.price > 0) and (GREY .. "vendor ~|r" .. RG.Money(l.src.price)) or "", "Interface\\Icons\\INV_Scroll_03", nil, nil, true)
+          if l.src.best then r.onDoubleClick = RG.ArrowFn({ l.src.best[1], l.src.best[2], l.src.best[3], l.src.best[4] }); r.tip = "Double-click: point the arrow there." end
+        end
         for _, e in ipairs(shop.list) do
           local info = RG.MAT_INFO and RG.MAT_INFO[e.id]
           local kind = info and KIND_WORD[info[2]] or ""
           local name, _, quality = RG.ItemInfo(e.id)
           local title = (e.short > 0 and "|cffffffff" or GREEN) .. (name or e.name) .. "|r" .. GREY .. "   " .. kind .. "|r"
-          local sub = "Need " .. e.need .. "  ·  you have " .. e.have
+          local sub = "Need " .. e.need .. "  ·  you have " .. e.have .. (e.alts and (GREY .. "  ·  " .. e.alts .. "|r") or "")
           local price = ""
-          if e.short > 0 and e.unit then
+          if e.short > 0 and e.gather then
+            price = GREEN .. "you gather it|r"
+          elseif e.short > 0 and e.unit then
             price = GREY .. ((e.src == "vendor" and "vendor ") or (e.src == "make" and "to make ") or "AH ") .. "~|r" .. RG.Money(math.floor(e.unit * e.short + 0.5))
           end
           local r = line(e.id, title, sub, e.short > 0 and ("|cffff6060" .. e.short .. " more|r") or (GREEN .. "Ready|r"), price, nil, e.short > 0 and nil or "green", quality, true)
@@ -989,6 +1031,24 @@ local function renderProf()
     body(name)
   end
   if browsing then head("Reading: " .. browsing); body(browsing) end
+
+  -- the most profitable things you can make right now (recipes your profession windows showed, at today's prices)
+  if RG.ProfitCrafts and RG.HasPrices and RG.HasPrices() then
+    local any = false
+    for _, name in ipairs(mine) do
+      local list, total = RG.ProfitCrafts(name, 5)
+      if list and #list > 0 then
+        if not any then head("Most profitable crafts you know"); any = true end
+        for _, c in ipairs(list) do
+          local nm, _, quality = RG.ItemInfo(c.item)
+          local r = line(c.item, (nm or c.name) .. GREY .. "   " .. name .. "|r",
+            GREY .. "Materials |r" .. RG.Money(math.floor(c.cost + 0.5)) .. GREY .. "  ·  sells for |r" .. RG.Money(math.floor(c.sell + 0.5)) .. GREY .. " (" .. c.where .. ")|r",
+            GREEN .. "+" .. RG.Money(math.floor(c.profit + 0.5)) .. "|r", "", nil, nil, quality, true)
+          r.tip = "Profit per craft at your last Auction House prices (after the 5% cut), or what a vendor pays if that's more. Out of " .. total .. " " .. name .. " recipes with prices for every material."
+        end
+      end
+    end
+  end
 
   -- every other profession's route
   head("Other professions")

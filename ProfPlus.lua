@@ -37,22 +37,232 @@ function RG.MatUnitCost(id, depth)
   return nil
 end
 
--- What the materials still to get cost: total (copper), how many have no price, and how much of it is in your bags.
+-- A material you gather yourself costs you nothing but time: the gathering profession that brings it, if you have it.
+local GATHERED_BY = { ore = "Mining", stone = "Mining", gem = "Mining", herb = "Herbalism", leather = "Skinning", fish = "Fishing" }
+function RG.GatheredBy(id)
+  local info = RG.MAT_INFO and RG.MAT_INFO[id]
+  local prof = info and GATHERED_BY[info[2]]
+  if prof and RG.Skill and RG.Skill(prof) then return prof end
+  return nil
+end
+-- What a crafted item brings back at a vendor (each). Guaranteed money, so it lowers what a step really costs.
+function RG.SellBack(itemID)
+  if not itemID or itemID == 0 then return 0 end
+  local p = RG.ProfitInfo and RG.ProfitInfo(itemID)
+  if p and p.vendor then return p.vendor end
+  local sell = RG.ItemInfo and select(11, RG.ItemInfo(itemID))
+  return tonumber(sell) or 0
+end
+
+-- What the materials still to get cost you: total (copper), how many have no price, how much of it is in your bags,
+-- and what the materials you gather yourself would cost to buy (they're not in the total).
 -- mats: RG.MatsFor's list (crafted reagents you're short of carry their own materials with `via`).
 function RG.MatsCost(mats)
-  local total, unknown, owned = 0, 0, 0
+  local total, unknown, owned, gathered = 0, 0, 0, 0
   local expanded = {}
   for _, e in ipairs(mats or {}) do if e.via then expanded[e.via] = true end end
   for _, e in ipairs(mats or {}) do
     local c = RG.MatUnitCost(e.id)
     -- a bar or bolt you're short of: its own materials are listed (via), so it isn't bought as well
     local short = (expanded[e.name] and not e.via) and 0 or e.short
-    if c then
+    if RG.GatheredBy(e.id) then
+      if c then gathered = gathered + c * short end
+    elseif c then
       total = total + c * short
       owned = owned + c * math.min(e.have or 0, e.need or 0)
     elseif short > 0 then unknown = unknown + 1 end
   end
-  return math.floor(total + 0.5), unknown, math.floor(owned + 0.5)
+  return math.floor(total + 0.5), unknown, math.floor(owned + 0.5), math.floor(gathered + 0.5)
+end
+
+-- ---------------------------------------------------------------------------
+-- Recipes you learn from an item (patterns, plans, formulas): do you know it, and where to get it
+-- ---------------------------------------------------------------------------
+-- true: your profession window showed it; false: the window was read and it wasn't there; nil: not read yet
+function RG.RecipeKnown(recipe, prof)
+  if not (RG.db and recipe) then return nil end
+  if RG.db.recipeCol and RG.db.recipeCol[recipe] then return true end
+  local b = RG.db.recipeBook
+  if b then
+    if prof and b[prof] then return b[prof][recipe] ~= nil end
+    for _, list in pairs(b) do if list[recipe] then return true end end
+  end
+  return nil
+end
+-- { item, rank, price, lim, best = the closest place for your faction {map, x, y, label}, how = "Vendor"/"Drop"/"Quest",
+--   vendors, drops, quests } or nil when a trainer teaches it
+function RG.RecipeSource(recipe)
+  local s = RG.RECIPE_SRC and RG.RECIPE_SRC[recipe]
+  if not s then return nil end
+  local fac = RG.PLAYER_FACTION == "Alliance" and "A" or "H"
+  local vendors = {}
+  for _, v in ipairs(s.v or {}) do if v[5] == "AH" or v[5] == fac then vendors[#vendors + 1] = v end end
+  local here = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  local best
+  for _, v in ipairs(vendors) do if v[1] == here then best = v; break end end
+  best = best or vendors[1]
+  local out = { item = s.item, rank = s.rank, price = s.price, lim = s.lim, vendors = vendors, drops = s.d or {}, quests = s.q or {} }
+  if best then out.best, out.how = best, "Vendor"
+  elseif s.d and s.d[1] then out.best, out.how = s.d[1], "Drop"
+  elseif s.q and s.q[1] then out.how = "Quest" end
+  return out
+end
+-- One line about where to get it ("Vendor: Keena (Arathi Highlands), 16s, limited stock")
+function RG.RecipeSourceText(recipe)
+  local s = RG.RecipeSource(recipe)
+  if not s then return nil end
+  if s.how == "Vendor" then
+    return "Sold by " .. s.best[4] .. (s.price and s.price > 0 and (", " .. RG.Money(s.price)) or "") .. (s.lim and " (limited stock: it may be sold out)" or "")
+  elseif s.how == "Drop" then
+    return "Drops from " .. s.best[4] .. (s.best[5] and (", " .. (s.best[5] >= 1 and string.format("%.0f", s.best[5]) or string.format("%.1f", s.best[5])) .. "%") or "")
+  elseif s.how == "Quest" then
+    local q = RG.QDATA and RG.QDATA[s.quests[1]]
+    return "Reward from the quest " .. (q and q.n or ("#" .. s.quests[1]))
+  end
+  return nil
+end
+
+-- ---------------------------------------------------------------------------
+-- How many you can make: from your bags, after making the bars/bolts first, and with vendor materials too
+-- ---------------------------------------------------------------------------
+function RG.CanMakeCounts(recipe)
+  local rec = RG.Recipe and RG.Recipe(recipe)
+  if not (rec and rec.r and #rec.r > 0) then return nil end
+  local count = RG.MatCount or function() return 0 end
+  local function fromBags(r) return math.floor(count(r[1]) / r[2]) end
+  local now, crafted, vendor = math.huge, math.huge, math.huge
+  for _, r in ipairs(rec.r) do
+    local have = count(r[1])
+    now = math.min(now, math.floor(have / r[2]))
+    -- crafted reagent: what you have plus what you can make of it from your bags
+    local info = RG.MAT_INFO and RG.MAT_INFO[r[1]]
+    local sub = info and info[2] == "crafted" and RG.CanMake and RG.CanMake(info[1]) and RG.Recipe(info[1])
+    local more = 0
+    if sub and sub.r and #sub.r > 0 then
+      local m = math.huge
+      for _, sr in ipairs(sub.r) do m = math.min(m, fromBags(sr)) end
+      more = (m == math.huge and 0 or m) * math.max(1, sub.y or 1)
+    end
+    crafted = math.min(crafted, math.floor((have + more) / r[2]))
+    -- vendor materials don't limit you (you can always buy more)
+    if not (info and info[2] == "vendor") then vendor = math.min(vendor, math.floor((have + more) / r[2])) end
+  end
+  if vendor == math.huge then vendor = nil end
+  local y = math.max(1, rec.y or 1)
+  return now * y, crafted * y, vendor and vendor * y
+end
+
+-- ---------------------------------------------------------------------------
+-- Your other characters' materials (bags, and bank as of their last visit), so lists can say "8 on Bankalt"
+-- WaypathDB.matStock["Name-Realm"] = { t = time, n = { [itemID] = count } }   (profession materials only)
+-- ---------------------------------------------------------------------------
+local function saveStock()
+  if not (RG.db and RG.root and RG.MAT_INFO) then return end
+  local key = RG.PlayerKey and RG.PlayerKey()
+  if not key then return end
+  local f = (C_Item and C_Item.GetItemCount) or GetItemCount
+  if not f then return end
+  local n = {}
+  for id in pairs(RG.MAT_INFO) do
+    local c = f(id, true) or 0
+    if c > 0 then n[id] = c end
+  end
+  RG.root.matStock = RG.root.matStock or {}
+  RG.root.matStock[key] = { t = time and time() or 0, n = n }
+end
+-- { { name = "Bankalt", n = 8 }, ... } for the other characters on your realm
+function RG.AltStock(id)
+  local out = {}
+  local me = RG.PlayerKey and RG.PlayerKey()
+  local realm = me and me:match("%-(.*)$") or ""
+  for key, s in pairs(RG.root and RG.root.matStock or {}) do
+    if key ~= me and key:match("%-(.*)$") == realm and s.n and (s.n[id] or 0) > 0 then out[#out + 1] = { name = key:match("^(.-)%-") or key, n = s.n[id] } end
+  end
+  table.sort(out, function(a, b) return a.n > b.n end)
+  return out
+end
+function RG.AltStockText(id)
+  local l = RG.AltStock(id)
+  if #l == 0 then return nil end
+  local parts = {}
+  for i = 1, math.min(3, #l) do parts[#parts + 1] = l[i].n .. " on " .. l[i].name end
+  return table.concat(parts, ", ")
+end
+do
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "PLAYER_LOGOUT", "BANKFRAME_CLOSED", "PLAYER_ENTERING_WORLD", "MAIL_CLOSED" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function(_, ev)
+    if ev == "PLAYER_ENTERING_WORLD" then C_Timer.After(20, function() pcall(saveStock) end) return end
+    pcall(saveStock)
+  end)
+end
+
+-- ---------------------------------------------------------------------------
+-- Profit: the recipes you know, by what they make you (AH price after the cut, or vendor) minus what they cost
+-- ---------------------------------------------------------------------------
+function RG.ProfitCrafts(prof, limit)
+  local book = RG.db and RG.db.recipeBook and RG.db.recipeBook[prof]
+  if not book then return nil end
+  local out = {}
+  for name, r in pairs(book) do
+    local cost, unknown = 0, false
+    for _, x in ipairs(r.r or {}) do
+      local c = RG.MatUnitCost(x[1])
+      if not c then unknown = true; break end
+      cost = cost + c * x[2]
+    end
+    if not unknown then
+      local y = math.max(1, r.y or 1)
+      local p = RG.ProfitInfo and RG.ProfitInfo(r.i)
+      local ahNet = p and p.net
+      local vendor = (p and p.vendor) or RG.SellBack(r.i)
+      local sell = math.max(ahNet or 0, vendor or 0) * y
+      local where = (ahNet and ahNet >= (vendor or 0)) and "AH" or "vendor"
+      if sell > 0 then out[#out + 1] = { name = name, item = r.i, cost = cost, sell = sell, profit = sell - cost, where = where } end
+    end
+  end
+  table.sort(out, function(a, b) if a.profit ~= b.profit then return a.profit > b.profit end return a.name < b.name end)
+  local res = {}
+  for i = 1, math.min(limit or 5, #out) do if out[i].profit > 0 then res[#res + 1] = out[i] end end
+  return res, #out
+end
+
+-- ---------------------------------------------------------------------------
+-- Tooltips: "your Tailoring route needs 64 of these" on a material, so you don't sell what the next steps need
+-- ---------------------------------------------------------------------------
+local tipNeed, tipNeedT = {}, 0
+local function routeNeeds()
+  local now = GetTime and GetTime() or 0
+  if now - tipNeedT < 5 then return tipNeed end
+  tipNeedT = now
+  tipNeed = {}
+  for prof in pairs(RG.Professions and RG.Professions() or {}) do
+    local ok, shop = pcall(RG.ProfShopping, prof, "next")
+    for _, e in ipairs(ok and shop and shop.list or {}) do
+      local t = tipNeed[e.id] or {}
+      t[#t + 1] = { prof = prof, need = e.need }
+      tipNeed[e.id] = t
+    end
+  end
+  return tipNeed
+end
+local function onTip(tt, data)
+  if not (RG.db and RG.Opt and RG.Opt("profTooltip")) then return end
+  if tt ~= GameTooltip and tt ~= ItemRefTooltip then return end
+  local id = data and data.id
+  if not id and tt.GetItem then local _, link = tt:GetItem(); id = link and tonumber(link:match("item:(%d+)")) end
+  if not id or (RG.IsSecret and RG.IsSecret(id)) then return end
+  local n = routeNeeds()[id]
+  if n then
+    for _, x in ipairs(n) do tt:AddLine("|cff7fd3ffWaypath+:|r your next " .. x.prof .. " steps need " .. x.need, 0.8, 0.8, 0.8) end
+  end
+  local alt = RG.AltStockText(id)
+  if alt and (n or (RG.MAT_INFO and RG.MAT_INFO[id])) then tt:AddLine("|cff7fd3ffWaypath+:|r " .. alt, 0.8, 0.8, 0.8) end
+end
+if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
+  TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tt, data) pcall(onTip, tt, data) end)
+elseif GameTooltip and GameTooltip.HookScript then
+  GameTooltip:HookScript("OnTooltipSetItem", function(tt) pcall(onTip, tt) end)
 end
 
 -- ---------------------------------------------------------------------------
@@ -108,6 +318,7 @@ function RG.ProfShopping(name, scope)
   local plan = RG.ProfPlan(P)
   local need, order = {}, {}
   local steps = 0
+  local sellBack, learn, learnSeen = 0, {}, {}
   local function add(id, n)
     if not need[id] then need[id] = 0; order[#order + 1] = id end
     need[id] = need[id] + n
@@ -122,13 +333,23 @@ function RG.ProfShopping(name, scope)
         steps = steps + 1
         local runs = math.ceil(crafts / math.max(1, rec.y or 1))
         for _, r in ipairs(rec.r) do add(r[1], r[2] * runs) end
+        -- what you make sells back at a vendor
+        local made = rec.i or ((RG.RECIPES or {})[recipe] or {}).i
+        sellBack = sellBack + RG.SellBack(made) * runs * math.max(1, rec.y or 1)
+        -- a recipe you still have to learn from an item
+        if not learnSeen[recipe] and RG.RecipeKnown(recipe, name) ~= true then
+          local src = RG.RecipeSource(recipe)
+          if src then learnSeen[recipe] = true; learn[#learn + 1] = { recipe = recipe, src = src, from = st.from } end
+        end
       end
       if scope == "step" or (scope == "next" and steps >= 2) then break end
     end
   end
   -- crafted reagents (bars, bolts): make them from what you're short of, one level down
   local count = RG.MatCount or function() return 0 end
-  for k = 1, #order do
+  local k = 0
+  while k < #order and k < 200 do   -- (new entries get broken down too: bronze -> copper and tin bars -> ore)
+    k = k + 1
     local id = order[k]
     local info = RG.MAT_INFO and RG.MAT_INFO[id]
     local rec = info and info[2] == "crafted" and RG.CanMake and RG.CanMake(info[1]) and RG.Recipe(info[1])
@@ -141,20 +362,25 @@ function RG.ProfShopping(name, scope)
       end
     end
   end
-  local out = { list = {}, total = 0, unknown = 0, owned = 0, steps = steps }
+  local out = { list = {}, total = 0, unknown = 0, owned = 0, steps = steps, sellBack = math.floor(sellBack), learn = learn, gathered = 0 }
   for _, id in ipairs(order) do
     if need[id] > 0 then
       local have = count(id)
       local short = math.max(0, need[id] - have)
       local unit, src = RG.MatUnitCost(id)
       local info = RG.MAT_INFO and RG.MAT_INFO[id]
-      local e = { id = id, name = (RG.MatName and RG.MatName(id)) or (info and info[1]) or ("item " .. id), need = need[id], have = have, short = short, unit = unit, src = src, kind = info and info[2] }
+      local e = { id = id, name = (RG.MatName and RG.MatName(id)) or (info and info[1]) or ("item " .. id), need = need[id], have = have, short = short, unit = unit, src = src, kind = info and info[2],
+        gather = RG.GatheredBy(id), alts = RG.AltStockText(id) }
       out.list[#out.list + 1] = e
-      if unit then out.total = out.total + unit * short; out.owned = out.owned + unit * math.min(have, need[id])
+      if e.gather then
+        if unit then out.gathered = out.gathered + unit * short end   -- (you gather it: not in what you'll spend)
+      elseif unit then out.total = out.total + unit * short; out.owned = out.owned + unit * math.min(have, need[id])
       elseif short > 0 then out.unknown = out.unknown + 1 end
     end
   end
-  out.total, out.owned = math.floor(out.total + 0.5), math.floor(out.owned + 0.5)
+  -- recipes to buy from a vendor count toward what you'll spend
+  for _, l in ipairs(learn) do if l.src.how == "Vendor" and l.src.price then out.total = out.total + l.src.price end end
+  out.total, out.owned, out.gathered = math.floor(out.total + 0.5), math.floor(out.owned + 0.5), math.floor(out.gathered + 0.5)
   table.sort(out.list, function(a, b) if (a.short > 0) ~= (b.short > 0) then return a.short > 0 end return a.name < b.name end)
   return out
 end
@@ -343,4 +569,5 @@ do
 end
 
 table.insert(RG.OPTIONS, { key = "profTips", label = "Profession reminders: a new ore or herb, train before the cap, gathering behind your level", default = true })
+table.insert(RG.OPTIONS, { key = "profTooltip", label = "Item tooltips: how many your next profession steps need, and what your other characters hold", default = true })
 table.insert(RG.OPTIONS, { key = "profBuyButton", label = "At a vendor, show a button that buys the materials for my next profession steps", default = true })

@@ -3,6 +3,8 @@
 and to send you somewhere (double-click a place and the arrow takes you there).
 
   RG.RECIPES[craft name]  = { s = spell, i = item made, y = how many per craft, r = { {itemID, count}, ... } }
+  RG.RECIPE_SRC[craft name] = { item = recipe item, rank = skill to learn, price = vendor price, lim = limited stock,
+                               v = { vendor spots, faction "A"/"H"/"AH" last }, d = { drop spots, chance last }, q = { quest ids } }
                             for every craft in Professions/*.lua plans, plus the recipes for crafted
                             reagents (bars, bolts, elixirs, ...)
   RG.MAT_INFO[itemID]     = { name, kind, p = vendor price per item (copper), b = sold in bundles of }   kind: vendor, herb, ore, stone, gem, cloth,
@@ -70,6 +72,10 @@ items = {int(r["entry"]): r for r in rows("item_template")}
 spells = rows("spell_template")
 creatures = {int(r["Entry"]): r for r in rows("creature_template")}
 cloot, rloot, sloot, vend = rows("creature_loot_template"), rows("reference_loot_template"), rows("skinning_loot_template"), rows("npc_vendor")
+try: trainer_rows = rows("npc_trainer") + rows("npc_trainer_template")
+except Exception: trainer_rows = []
+try: quest_rows = rows("quest_template")
+except Exception: quest_rows = []
 gobj = {int(r["entry"]): r for r in rows("gameobject_template")}
 try: gloot = rows("gameobject_loot_template")
 except Exception: gloot = []
@@ -201,13 +207,15 @@ for c in sorted(plan_crafts):
     r = resolve(c) or from_text(c)
     if r: RECIPES[c] = r
     else: missing.append(c)
-# crafted reagents (one level down is enough: bars, bolts, elixirs, oils, rods)
-for c in list(RECIPES):
+# crafted reagents, all the way down (bronze bars -> copper and tin bars; bolts, elixirs, oils, rods)
+todo = list(RECIPES)
+while todo:
+    c = todo.pop()
     for iid, _ in RECIPES[c]["r"]:
         if iid in made_by:
             rec = made_by[iid]
             nm = items[iid]["name"] if iid in items else rec["name"]
-            if nm not in RECIPES: RECIPES[nm] = rec
+            if nm not in RECIPES: RECIPES[nm] = rec; todo.append(nm)
 print("recipes %d, not found: %s" % (len(RECIPES), ", ".join(missing)), file=sys.stderr)
 
 mats = set()
@@ -437,6 +445,85 @@ print("mats %d (spots %d, vendors %d, nodes %d), gather %d, skin spots %d, fish 
     len(MAT_INFO), len(MAT_SPOTS), len(MAT_VENDORS), len(MAT_NODES), len(GATHER), len(SKIN), len(FISH), len(TRAINERS), len(trainer_names)), file=sys.stderr)
 
 # ---------------------------------------------------------------------------
+# Recipes you learn from an item (a pattern, plans, formula...): who sells it, what drops it, which quest gives it
+# (recipes a trainer teaches are left out: the trainer lines cover those)
+# ---------------------------------------------------------------------------
+spell_by_id = {int(x["Id"]): x for x in spells}
+def taught(sid):
+    sp = spell_by_id.get(sid)
+    if sp and int(sp["Effect1"]) == 36: return int(sp.get("EffectTriggerSpell1") or 0)
+    return 0
+trainer_taught = set()
+for row in trainer_rows:
+    t = int(row["spell"]); trainer_taught.add(t)
+    if taught(t): trainer_taught.add(taught(t))
+recipe_items = defaultdict(list)   # craft spell -> recipe items
+for iid, it in items.items():
+    if int(it["class"]) != 9: continue
+    for k in (1, 2):
+        sid = taught(int(it.get("spellid_%d" % k) or 0))
+        if sid: recipe_items[sid].append(iid)
+vend_rows = defaultdict(list)      # item -> (vendor, limited)
+for row in vend: vend_rows[int(row["item"])].append((int(row["entry"]), int(row.get("maxcount") or 0) > 0))
+quest_rewards = defaultdict(list)  # item -> quests
+for q in quest_rows:
+    for k in range(1, 7):
+        for col in ("RewChoiceItemId%d" % k, "RewItemId%d" % k):
+            v = int(q.get(col) or 0)
+            if v: quest_rewards[v].append(int(q["entry"]))
+recipe_drop = defaultdict(dict)    # recipe item -> creature -> chance
+want_items = set()
+for nm, r in RECIPES.items():
+    if r["s"] and r["s"] not in trainer_taught: want_items.update(recipe_items.get(r["s"], []))
+for cid, c in creatures.items():
+    lid = int(c["LootId"] or 0)
+    if lid:
+        for iid, ch in expand(by_loot.get(lid, [])):
+            if iid in want_items and ch >= 0.2: recipe_drop[iid][cid] = max(recipe_drop[iid].get(cid, 0), ch)
+def recipe_vendor_spots(iid, limit=6):
+    out = []
+    for vid, lim in vend_rows.get(iid, []):
+        sp = npc_spawns.get(vid)
+        if not sp: continue
+        fac = "AH" if sp[1] in ("AH", "") else sp[1]
+        for z, pts in sp[0].items():
+            if z not in ui or z in DUNGEON_AREAS: continue
+            out.append((CAPITAL_MAPS.get(ui[z], 1), ui[z], pts[0], "%s%s (%s)" % (npc_name[vid], (" <" + sp[2] + ">") if sp[2] else "", AREA.get(z, "?")), fac, lim))
+            break
+    out.sort(key=lambda o: (o[0], o[3]))
+    return out[:limit]
+def recipe_drop_spots(iid, limit=3):
+    out = []
+    for cid, ch in recipe_drop.get(iid, {}).items():
+        n = FN.get(str(cid)); sp = npc_spawns.get(cid)
+        if not n or not sp: continue
+        for z, pts in sp[0].items():
+            if z not in ui: continue
+            p, cnt = centre(pts)
+            lo, hi = n.get("minLevel") or 1, n.get("maxLevel") or 1
+            where = AREA.get(z) or next((dn for dn, (m, _) in ENTRANCE.items() if m == ui[z]), "?")
+            out.append((ch * min(cnt, 10), ui[z], p, "%s (%s, level %s)" % (npc_name.get(cid, n["name"]), where, lo if lo == hi else "%d-%d" % (lo, hi)), ch))
+    out.sort(key=lambda o: (-o[0], o[3]))
+    seen, res = set(), []
+    for o in out:
+        if o[3] in seen: continue
+        seen.add(o[3]); res.append(o)
+        if len(res) >= limit: break
+    return res
+RECIPE_SRC = {}
+for nm in sorted(RECIPES):
+    r = RECIPES[nm]
+    if not r["s"] or r["s"] in trainer_taught: continue
+    for iid in sorted(recipe_items.get(r["s"], [])):
+        it = items[iid]
+        v, d, q = recipe_vendor_spots(iid), recipe_drop_spots(iid), sorted(set(quest_rewards.get(iid, [])))[:3]
+        if not (v or d or q): continue
+        RECIPE_SRC[nm] = {"item": iid, "rank": int(it.get("RequiredSkillRank") or 0), "price": int(it.get("BuyPrice") or 0) if v else 0,
+                          "lim": any(o[5] for o in v), "v": v, "d": d, "q": q}
+        break
+print("recipe sources: %d of %d recipes are learned from an item" % (len(RECIPE_SRC), sum(1 for r in RECIPES.values() if r["s"] and r["s"] not in trainer_taught and recipe_items.get(r["s"]))), file=sys.stderr)
+
+# ---------------------------------------------------------------------------
 # Write
 # ---------------------------------------------------------------------------
 def wp(m, p, label, extra=""): return "{ %d, %s, %s, %s%s }" % (m, r1(p[0]), r1(p[1]), lua_str(label), extra)
@@ -477,6 +564,16 @@ L.append("}"); L.append("RG.FISH_SPOTS = {")
 for m in sorted(FISH): L.append("  [%d] = %s," % (m, wp(m, FISH[m][0], FISH[m][1])))
 L.append("}"); L.append("RG.PROF_TRAINERS = {")
 for nm in sorted(TRAINERS): t = TRAINERS[nm]; L.append("  [%s] = %s," % (lua_str(nm), wp(t[0], t[1], t[2])))
+L.append("}"); L.append("RG.RECIPE_SRC = {")
+for nm in sorted(RECIPE_SRC):
+    x = RECIPE_SRC[nm]
+    parts = ["item = %d" % x["item"], "rank = %d" % x["rank"]]
+    if x["price"]: parts.append("price = %d" % x["price"])
+    if x["lim"]: parts.append("lim = true")
+    if x["v"]: parts.append("v = { %s }" % ", ".join(wp(o[1], o[2], o[3], ", %s" % lua_str(o[4])) for o in x["v"]))
+    if x["d"]: parts.append("d = { %s }" % ", ".join(wp(o[1], o[2], o[3], ", %s" % r1(o[4])) for o in x["d"]))
+    if x["q"]: parts.append("q = { %s }" % ", ".join(str(qq) for qq in x["q"]))
+    L.append("  [%s] = { %s }," % (lua_str(nm), ", ".join(parts)))
 L.append("}"); L.append("RG.ZONE_MAPS = {")
 for a in sorted(AREA, key=lambda a: AREA[a]):
     if a in ui and a not in DUNGEON_AREAS: L.append("  [%s] = %d," % (lua_str(AREA[a]), ui[a]))

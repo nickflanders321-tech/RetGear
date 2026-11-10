@@ -104,7 +104,7 @@ local SHARED = {
   main = true, mainHave = true, mainLevel = true, mainBS = true, mailDone = true,
   errors = true, chars = true, profiles = true, profilesMigrated = true, migratedFrom = true, altGuide = true,
   trackerPos = true, trackerScale = true, trackerWidth = true, windowPos = true, arrowPos = true, arrowScale = true,
-  speedBarPos = true, mmAngle = true, textSize = true, seenVersion = true,
+  speedBarPos = true, mmAngle = true, textSize = true, seenVersion = true, matStock = true,
 }
 RG.SHARED_KEYS = SHARED
 local function charKey() return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "") end
