@@ -124,6 +124,7 @@ ProfGuide.lua
 ProfNudge.lua
 ProfPlus.lua
 WeaponSkill.lua
+Levels.lua
 UI.lua
 Compat.lua
 GateOff.lua
