@@ -8,14 +8,13 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 4307, slot = "Hands", lvl = 5, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 1, prof = "Tailoring", sk = 35, boe = true, ah = true, gen = true },  -- Heavy Linen Gloves
   { id = 4343, slot = "Legs", lvl = 5, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 1, prof = "Tailoring", sk = 30, boe = true, ah = true, gen = true },  -- Brown Linen Pants
   { id = 263314, slot = "Main Hand", lvl = 5, how = "Quest", src = "Deliver the News (Aamelia Windfield)", zone = "Zephras Isle", score = 1, q = 92703, gen = true },  -- Roofing Hammer
+  { id = 281274, slot = "2H", lvl = 6, how = "Quest", src = "Stormy Potential (Rezlak)", zone = "Durotar", score = 6, q = 97282, gen = true },  -- Makeshift Stormcaller
   { id = 277078, slot = "Legs", lvl = 6, how = "Vendor", src = "Brother Zendraas", zone = "Zephras Isle", score = 1, gen = true },  -- Al'aketh Leggings
-  { id = 281274, slot = "2H", lvl = 7, how = "Quest", src = "Stormy Potential (Rezlak)", zone = "Durotar", score = 6, q = 97282, gen = true },  -- Makeshift Stormcaller
   { id = 2580, slot = "Back", lvl = 7, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 1, prof = "Tailoring", sk = 60, boe = true, ah = true, gen = true },  -- Reinforced Linen Cape
   { id = 6240, slot = "Chest", lvl = 7, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Vendor: Borya (Orgrimmar)", score = 2, prof = "Tailoring", sk = 55, boe = true, ah = true, gen = true },  -- Blue Linen Vest
   { id = 284287, slot = "2H", lvl = 8, how = "Rare mob", src = "Felweaver Scornn", zone = "Durotar", score = 8, bl = 11, gen = true },  -- Felweaver's Staff
   { id = 3446, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 8, q = 408, gen = true },  -- Darkwood Staff
   { id = 263332, slot = "Chest", lvl = 8, how = "Quest", src = "Unfortunate News (Dead Cultist)", zone = "Zephras Isle", score = 2, q = 92644, gen = true },  -- Elder's Tunic
-  { id = 263339, slot = "Feet", lvl = 8, how = "Quest", src = "Tower Defense (Valennia Stormfist)", zone = "Zephras Isle", score = 1, q = 93320, gen = true },  -- Windswept Slippers
   { id = 273876, slot = "Hands", lvl = 8, how = "Quest", src = "Desperate Times (Talaanis Shadowsong)", zone = "Zephras Isle", score = 1, q = 92640, gen = true },  -- Broken Cultist Gloves
   { id = 263307, slot = "Legs", lvl = 8, how = "Quest", src = "Mercy Falls on Deaf Ears (Vayn Moongaze)", zone = "Zephras Isle", score = 2, q = 93165, gen = true },  -- Shadowgale Pants
   { id = 286743, slot = "Ranged", lvl = 8, how = "Quest", src = "Rear Guard Patrol (Deathguard Linnea)", zone = "Tirisfal Glades", score = 47, q = 99156, gen = true },  -- Riptear's Spare Arm
@@ -59,7 +58,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 6465, slot = "Chest", lvl = 17, how = "Dungeon", src = "Lord Cobrahn", zone = "Wailing Caverns", score = 10, bl = 20, gen = true },  -- Robe of the Moccasin
   { id = 273289, slot = "Legs", lvl = 17, how = "Dungeon", src = "Rhahk'Zor", zone = "The Deadmines", score = 11, bl = 19, gen = true },  -- Ogre Loincloth
   { id = 273457, slot = "Neck", lvl = 17, how = "Dungeon", src = "Rethilgore", zone = "Shadowfang Keep", score = 2, bl = 20, gen = true },  -- Sorcerer Collar
-  { id = 273137, slot = "Off Hand", lvl = 17, how = "Dungeon", src = "Skum", zone = "Wailing Caverns", score = 6, bl = 21, gen = true },  -- Skum's Bucket
+  { id = 2879, slot = "Off Hand", lvl = 17, how = "Dungeon", src = "Fallenroot Shadowstalker", zone = "Blackfathom Deeps", score = 6, bl = 24, gen = true },  -- Antipodean Rod
   { id = 1156, slot = "Ring", lvl = 17, how = "Dungeon", src = "Gilnid", zone = "The Deadmines", score = 3, bl = 20, gen = true },  -- Lavishly Jeweled Ring
   { id = 4314, slot = "Shoulder", lvl = 17, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Trainer", score = 6, prof = "Tailoring", sk = 110, boe = true, ah = true, gen = true },  -- Double-stitched Woolen Shoulders
   { id = 273089, slot = "Waist", lvl = 17, how = "Dungeon", src = "Lord Pythas", zone = "Wailing Caverns", score = 4, bl = 21, gen = true },  -- Slither Cord
@@ -100,6 +99,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 274158, slot = "2H", lvl = 26, how = "Dungeon", src = "Aggem Thorncurse", zone = "Razorfen Kraul", score = 51, bl = 30, gen = true },  -- Death Prophet Spine
   { id = 6682, slot = "Chest", lvl = 26, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 17, bl = 30, gen = true },  -- Death Speaker Robes
   { id = 10654, slot = "Hands", lvl = 26, how = "Quest", src = "Horde Presence (Kadrak)", zone = "The Barrens", score = 9, q = 3514, gen = true },  -- Jutebraid Gloves
+  { id = 284383, slot = "Back", lvl = 27, how = "Rare mob", src = "Nal'taszar", zone = "Stonetalon Mountains", score = 13, bl = 30, gen = true },  -- Faerie Dragon's Skin
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 12, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 6, bl = 32, gen = true },  -- Stygian Bone Amulet
   { id = 271767, slot = "2H", lvl = 28, how = "Quest", src = "Earthen Echo (Bashana Runetotem)", zone = "Excavation Site: Wetlands", score = 44, q = 98823, gen = true },  -- Healer's Staff
@@ -159,6 +159,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 11824, slot = "Ring", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 19, bl = 53, gen = true },  -- Cyclopean Band
   { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 29, bl = 53, gen = true },  -- Ban'thok Sash
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, gen = true },  -- Coldstone Slippers
+  { id = 226958, slot = "Hands", lvl = 50, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 40, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Hands
   { id = 19303, slot = "Neck", lvl = 50, how = "Vendor", src = "Lhara", zone = "Mulgore", score = 12, gen = true },  -- Darkmoon Necklace
   { id = 20082, slot = "Ranged", lvl = 50, how = "Quest", src = "Blood of Morphaz (Ogtinc)", zone = "", score = 269, q = 8257, gen = true },  -- Woestave
   { id = 22245, slot = "Feet", lvl = 51, how = "Dungeon", src = "Panzor the Invincible", zone = "Blackrock Depths", score = 19, bl = 57, gen = true },  -- Soot Encrusted Footwear
@@ -173,10 +174,12 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 11822, slot = "Feet", lvl = 54, how = "Dungeon", src = "Golem Lord Argelmach", zone = "Blackrock Depths", score = 32, bl = 57, gen = true },  -- Omnicast Boots
   { id = 18727, slot = "Head", lvl = 54, how = "Dungeon", src = "Magistrate Barthilas", zone = "Stratholme", score = 46, bl = 58, gen = true },  -- Crimson Felt Hat
   { id = 20647, slot = "Main Hand", lvl = 54, how = "Quest", src = "Wanted - Deathclasp, Terror of the Sands", zone = "Silithus", score = 67, q = 8283, gen = true },  -- Black Crystal Dagger
-  { id = 11924, slot = "Chest", lvl = 55, how = "Dungeon", src = "Emperor Dagran Thaurissan", zone = "Blackrock Depths", score = 40, bl = 59, gen = true },  -- Robes of the Royal Crown
-  { id = 13253, slot = "Hands", lvl = 55, how = "Dungeon", src = "Quartermaster Zigris", zone = "Blackrock Spire", score = 36, bl = 59, gen = true },  -- Hands of Power
+  { id = 226960, slot = "Chest", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 56, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Gown
+  { id = 226959, slot = "Feet", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 44, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Slippers
+  { id = 226957, slot = "Head", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 58, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Cowl
   { id = 13170, slot = "Legs", lvl = 55, how = "Dungeon", src = "Highlord Omokk", zone = "Blackrock Spire", score = 46, bl = 59, gen = true },  -- Skyshroud Leggings
   { id = 22657, slot = "Neck", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 29, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Amulet of the Dawn
+  { id = 234016, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 36, gen = true },  -- Signet Ring of the Bronze Dragonflight
   { id = 12930, slot = "Trinket", lvl = 55, how = "Dungeon", src = "Jed Runewatcher", zone = "Blackrock Spire", score = 33, bl = 59, gen = true },  -- Briarwood Reed
   { id = 272393, slot = "Waist", lvl = 55, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 39, gen = true },  -- Magician's Cord
   { id = 22667, slot = "Wrist", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 25, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Bracers of Hope
@@ -199,10 +202,10 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 22631, slot = "2H", lvl = 60, how = "Quest", src = "Atiesh, Greatstaff of the Guardian (Anachronos)", zone = "", score = 206, q = 9257, gen = true },  -- Atiesh, Greatstaff of the Guardian
   { id = 19101, slot = "2H", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 103, bl = 58, gen = true },  -- Whiteout Staff
   { id = 272411, slot = "Back", lvl = 60, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 28, gen = true },  -- Arcanoweave Cloak
-  { id = 22267, slot = "Head", lvl = 60, how = "Dungeon", src = "General Drakkisath", zone = "Blackrock Spire", score = 52, bl = 62, gen = true },  -- Spellweaver's Turban
   { id = 19426, slot = "Neck", lvl = 60, how = "Quest", src = "1200 Tickets - Orb of the Darkmoon (Gelvas Grimegate)", zone = "", score = 34, q = 7940, gen = true },  -- Orb of the Darkmoon
   { id = 19311, slot = "Off Hand", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 40, bl = 58, gen = true },  -- Tome of Fiery Arcana
   { id = 21210, slot = "Ring", lvl = 60, how = "Quest", src = "The Grand Invoker (Anachronos)", zone = "Tanaris", score = 47, q = 8761, also = { { how = "Quest", src = "The Changing of Paths - Protector No More (Anachronos)", zone = "Tanaris", q = 8764 }, { how = "Quest", src = "The Changing of Paths - Conqueror No More (Anachronos)", zone = "Tanaris", q = 8766 } }, gen = true },  -- Signet Ring of the Bronze Dragonflight
+  { id = 226955, slot = "Shoulder", lvl = 60, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 38, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Epaulets
   { id = 22082, slot = "Shoulder", lvl = 60, how = "Quest", src = "Anthion's Parting Words (Anthion Harmon)", zone = "Orgrimmar", score = 32, q = 9019, gen = true },  -- Virtuous Mantle
 }
 RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
@@ -307,6 +310,7 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 274158, slot = "2H", lvl = 26, how = "Dungeon", src = "Aggem Thorncurse", zone = "Razorfen Kraul", score = 51, bl = 30, gen = true },  -- Death Prophet Spine
   { id = 9609, slot = "Hands", lvl = 26, how = "Quest", src = "Gyrodrillmatic Excavationators (Shoni the Shilent)", zone = "Gnomeregan", score = 13, q = 2928, gen = true },  -- Shilly Mitts
   { id = 281312, slot = "2H", lvl = 27, how = "Quest", src = "Stopping the Cycle (Howin Kindfeather)", zone = "Wetlands", score = 55, q = 98297, gen = true },  -- Fallen Dragon's Scepter
+  { id = 284383, slot = "Back", lvl = 27, how = "Rare mob", src = "Nal'taszar", zone = "Stonetalon Mountains", score = 13, bl = 30, gen = true },  -- Faerie Dragon's Skin
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 12, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 6, bl = 32, gen = true },  -- Stygian Bone Amulet
   { id = 2816, slot = "Main Hand", lvl = 28, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 38, bl = 30, gen = true },  -- Death Speaker Scepter
@@ -363,6 +367,7 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 29, bl = 53, gen = true },  -- Ban'thok Sash
   { id = 10806, slot = "Chest", lvl = 50, how = "Dungeon", src = "Jammal'an the Prophet", zone = "The Temple of Atal'Hakkar", score = 22, bl = 54, gen = true },  -- Vestments of the Atal'ai Prophet
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, gen = true },  -- Coldstone Slippers
+  { id = 226958, slot = "Hands", lvl = 50, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 40, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Hands
   { id = 20082, slot = "Ranged", lvl = 50, how = "Quest", src = "Blood of Morphaz (Ogtinc)", zone = "", score = 269, q = 8257, gen = true },  -- Woestave
   { id = 22245, slot = "Feet", lvl = 51, how = "Dungeon", src = "Panzor the Invincible", zone = "Blackrock Depths", score = 19, bl = 57, gen = true },  -- Soot Encrusted Footwear
   { id = 11904, slot = "Off Hand", lvl = 51, how = "Quest", src = "It's Dangerous to Go Alone (Linken)", zone = "Un'Goro Crater", score = 24, q = 3962, gen = true },  -- Spirit of Aquementas
@@ -376,10 +381,12 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 11822, slot = "Feet", lvl = 54, how = "Dungeon", src = "Golem Lord Argelmach", zone = "Blackrock Depths", score = 32, bl = 57, gen = true },  -- Omnicast Boots
   { id = 18727, slot = "Head", lvl = 54, how = "Dungeon", src = "Magistrate Barthilas", zone = "Stratholme", score = 46, bl = 58, gen = true },  -- Crimson Felt Hat
   { id = 20647, slot = "Main Hand", lvl = 54, how = "Quest", src = "Wanted - Deathclasp, Terror of the Sands", zone = "Silithus", score = 67, q = 8283, gen = true },  -- Black Crystal Dagger
-  { id = 11924, slot = "Chest", lvl = 55, how = "Dungeon", src = "Emperor Dagran Thaurissan", zone = "Blackrock Depths", score = 40, bl = 59, gen = true },  -- Robes of the Royal Crown
-  { id = 13253, slot = "Hands", lvl = 55, how = "Dungeon", src = "Quartermaster Zigris", zone = "Blackrock Spire", score = 36, bl = 59, gen = true },  -- Hands of Power
+  { id = 226960, slot = "Chest", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 56, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Gown
+  { id = 226959, slot = "Feet", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 44, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Slippers
+  { id = 226957, slot = "Head", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 58, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Cowl
   { id = 13170, slot = "Legs", lvl = 55, how = "Dungeon", src = "Highlord Omokk", zone = "Blackrock Spire", score = 46, bl = 59, gen = true },  -- Skyshroud Leggings
   { id = 22657, slot = "Neck", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 29, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Amulet of the Dawn
+  { id = 234016, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 36, gen = true },  -- Signet Ring of the Bronze Dragonflight
   { id = 12930, slot = "Trinket", lvl = 55, how = "Dungeon", src = "Jed Runewatcher", zone = "Blackrock Spire", score = 33, bl = 59, gen = true },  -- Briarwood Reed
   { id = 272393, slot = "Waist", lvl = 55, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 39, gen = true },  -- Magician's Cord
   { id = 22667, slot = "Wrist", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 25, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Bracers of Hope
@@ -402,9 +409,9 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 22631, slot = "2H", lvl = 60, how = "Quest", src = "Atiesh, Greatstaff of the Guardian (Anachronos)", zone = "", score = 206, q = 9257, gen = true },  -- Atiesh, Greatstaff of the Guardian
   { id = 19101, slot = "2H", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 103, bl = 58, gen = true },  -- Whiteout Staff
   { id = 272411, slot = "Back", lvl = 60, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 28, gen = true },  -- Arcanoweave Cloak
-  { id = 22267, slot = "Head", lvl = 60, how = "Dungeon", src = "General Drakkisath", zone = "Blackrock Spire", score = 52, bl = 62, gen = true },  -- Spellweaver's Turban
   { id = 19426, slot = "Neck", lvl = 60, how = "Quest", src = "1200 Tickets - Orb of the Darkmoon (Gelvas Grimegate)", zone = "", score = 34, q = 7940, gen = true },  -- Orb of the Darkmoon
   { id = 19311, slot = "Off Hand", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 40, bl = 58, gen = true },  -- Tome of Fiery Arcana
   { id = 21210, slot = "Ring", lvl = 60, how = "Quest", src = "The Grand Invoker (Anachronos)", zone = "Tanaris", score = 47, q = 8761, also = { { how = "Quest", src = "The Changing of Paths - Protector No More (Anachronos)", zone = "Tanaris", q = 8764 }, { how = "Quest", src = "The Changing of Paths - Conqueror No More (Anachronos)", zone = "Tanaris", q = 8766 } }, gen = true },  -- Signet Ring of the Bronze Dragonflight
+  { id = 226955, slot = "Shoulder", lvl = 60, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 38, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Epaulets
   { id = 22082, slot = "Shoulder", lvl = 60, how = "Quest", src = "Anthion's Parting Words (Anthion Harmon)", zone = "Ironforge", score = 32, q = 8955, gen = true },  -- Virtuous Mantle
 }

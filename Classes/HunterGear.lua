@@ -83,7 +83,6 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 6696, slot = "Ranged", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 232, bl = 32, gen = true },  -- Nightstalker Bow
   { id = 6697, slot = "Shoulder", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 11, bl = 32, gen = true },  -- Batwing Mantle
   { id = 285190, slot = "Ring", lvl = 29, how = "Rare mob", src = "Heartrazor", zone = "Thousand Needles", score = 19, bl = 32, gen = true },  -- Wyvern Heart Band
-  { id = 271800, slot = "2H", lvl = 30, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 58, q = 93196, gen = true },  -- Scavenged Magram Armament
   { id = 7374, slot = "Chest", lvl = 30, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 28, prof = "Leatherworking", sk = 175, boe = true, ah = true, gen = true },  -- Dusky Leather Armor
   { id = 7690, slot = "Hands", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 15, bl = 33, gen = true },  -- Ebon Vise
   { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 9, bl = 33, gen = true },  -- Embalmed Shroud
@@ -99,6 +98,7 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 45, bl = 37, gen = true },  -- Illusionary Rod
   { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 17, bl = 40, gen = true },  -- Swine Fists
   { id = 7387, slot = "Waist", lvl = 34, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 18, prof = "Leatherworking", sk = 195, boe = true, ah = true, gen = true },  -- Dusky Belt
+  { id = 271800, slot = "2H", lvl = 35, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 58, q = 93196, gen = true },  -- Scavenged Magram Armament
   { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, bl = 40, gen = true },  -- Worn Running Boots
   { id = 8175, slot = "Chest", lvl = 36, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 32, prof = "Leatherworking", sk = 205, boe = true, ah = true, gen = true },  -- Nightscape Tunic
   { id = 4109, slot = "Feet", lvl = 36, how = "Quest", src = "Excelsior (Drizzlik)", zone = "Stranglethorn Vale", score = 19, q = 628, gen = true },  -- Excelsior Boots
@@ -122,6 +122,7 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 14787, slot = "Shoulder", lvl = 42, how = "Dungeon", src = "Gahz'rilla", zone = "Zul'Farrak", score = 25, bl = 46, gen = true },  -- Khan's Mantle
   { id = 17778, slot = "Waist", lvl = 42, how = "Quest", src = "Vyletongue Corruption (Vark Battlescar)", zone = "Maraudon", score = 30, q = 7029, gen = true },  -- Sagebrush Girdle
   { id = 9480, slot = "2H", lvl = 43, how = "Dungeon", src = "Theka the Martyr", zone = "Zul'Farrak", score = 89, bl = 46, also = { { how = "Dungeon", src = "Sandfury Executioner", zone = "Zul'Farrak", bl = 46 }, { how = "Dungeon", src = "Nekrum Gutchewer", zone = "Zul'Farrak", bl = 46 } }, gen = true },  -- Eyegouger
+  { id = 277254, slot = "Ranged", lvl = 43, how = "Quest", src = "Greater Friend of the Library (Owen Thadd)", zone = "", score = 369, q = 82208, gen = true },  -- Truthseeker's Bow
   { id = 9647, slot = "Shoulder", lvl = 43, how = "Quest", src = "Rescue OOX-22/FE! (Homing Robot OOX-22/FE)", zone = "Feralas", score = 21, q = 2767, gen = true },  -- Failed Flying Experiment
   { id = 19127, slot = "Chest", lvl = 45, how = "Quest", src = "WANTED: Overseer Maltorius", zone = "Searing Gorge", score = 38, q = 7701, gen = true },  -- Charred Leather Tunic
   { id = 9479, slot = "Head", lvl = 45, how = "Dungeon", src = "Chief Ukorz Sandscalp", zone = "Zul'Farrak", score = 55, bl = 48, gen = true },  -- Embrace of the Lycan
@@ -149,10 +150,14 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 16711, slot = "Feet", lvl = 54, how = "Dungeon", src = "Rattlegore", zone = "Scholomance", score = 50, bl = 61, gen = true },  -- Shadowcraft Boots
   { id = 13395, slot = "Hands", lvl = 54, how = "Dungeon", src = "Skul", zone = "Stratholme", score = 63, bl = 58, gen = true },  -- Skul's Fingerbone Claws
   { id = 12653, slot = "Ranged", lvl = 54, how = "Dungeon", src = "Shadow Hunter Vosh'gajin", zone = "Blackrock Spire", score = 456, bl = 58, gen = true },  -- Riphook
+  { id = 226825, slot = "Chest", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 96, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Darkmantle Tunic
+  { id = 226831, slot = "Feet", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 65, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Darkmantle Footpads
   { id = 13210, slot = "Feet", lvl = 55, how = "Dungeon", src = "Halycon", zone = "Blackrock Spire", score = 64, bl = 59, gen = true },  -- Pads of the Dread Wolf
+  { id = 226829, slot = "Head", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 78, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Darkmantle Cap
   { id = 11933, slot = "Neck", lvl = 55, how = "Dungeon", src = "Emperor Dagran Thaurissan", zone = "Blackrock Depths", score = 50, bl = 59, gen = true },  -- Imperial Jewel
   { id = 13173, slot = "Ranged", lvl = 55, how = "Dungeon", src = "War Master Voone", zone = "Blackrock Spire", score = 496, bl = 58, gen = true },  -- Flightblade Throwing Axe
   { id = 22656, slot = "Ranged", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 494, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- The Purifier
+  { id = 234198, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 56, gen = true },  -- Signet Ring of the Bronze Dragonflight
   { id = 16708, slot = "Shoulder", lvl = 55, how = "Dungeon", src = "Cannon Master Willey", zone = "Stratholme", score = 50, bl = 60, gen = true },  -- Shadowcraft Spaulders
   { id = 12634, slot = "Waist", lvl = 55, how = "Dungeon", src = "Bannok Grimaxe", zone = "Blackrock Spire", score = 69, bl = 59, gen = true },  -- Chiselbrand Girdle
   { id = 13211, slot = "Wrist", lvl = 55, how = "Dungeon", src = "Halycon", zone = "Blackrock Spire", score = 35, bl = 59, gen = true },  -- Slashclaw Bracers
@@ -169,7 +174,6 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 13359, slot = "Head", lvl = 58, how = "Dungeon", src = "Balnazzar", zone = "Stratholme", score = 86, bl = 62, gen = true },  -- Crown of Tyranny
   { id = 13098, slot = "Ring", lvl = 58, how = "Dungeon", src = "General Drakkisath", zone = "Blackrock Spire", score = 46, bl = 62, gen = true },  -- Painweaver Band
   { id = 21205, slot = "Ring", lvl = 60, how = "Quest", src = "The Qiraji Conqueror (Anachronos)", zone = "Tanaris", score = 70, q = 8756, also = { { how = "Quest", src = "The Changing of Paths - Protector No More (Anachronos)", zone = "Tanaris", q = 8764 }, { how = "Quest", src = "The Changing of Paths - Invoker No More (Anachronos)", zone = "Tanaris", q = 8765 } }, gen = true },  -- Signet Ring of the Bronze Dragonflight
-  { id = 19325, slot = "Ring", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 49, bl = 58, gen = true },  -- Don Julio's Band
 }
 RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
 RG.CLASS_GEAR_A.HUNTER = {
@@ -247,7 +251,6 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 6696, slot = "Ranged", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 232, bl = 32, gen = true },  -- Nightstalker Bow
   { id = 6697, slot = "Shoulder", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 11, bl = 32, gen = true },  -- Batwing Mantle
   { id = 285190, slot = "Ring", lvl = 29, how = "Rare mob", src = "Heartrazor", zone = "Thousand Needles", score = 19, bl = 32, gen = true },  -- Wyvern Heart Band
-  { id = 271800, slot = "2H", lvl = 30, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 58, q = 93196, gen = true },  -- Scavenged Magram Armament
   { id = 7374, slot = "Chest", lvl = 30, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 28, prof = "Leatherworking", sk = 175, boe = true, ah = true, gen = true },  -- Dusky Leather Armor
   { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 9, bl = 33, gen = true },  -- Embalmed Shroud
   { id = 9456, slot = "Ranged", lvl = 30, how = "Dungeon", src = "Dark Iron Ambassador", zone = "Gnomeregan", score = 251, bl = 33, gen = true },  -- Glass Shooter
@@ -260,6 +263,7 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 7713, slot = "2H", lvl = 34, how = "Dungeon", src = "Arcanist Doan", zone = "Scarlet Monastery", score = 45, bl = 37, gen = true },  -- Illusionary Rod
   { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 17, bl = 40, gen = true },  -- Swine Fists
   { id = 7387, slot = "Waist", lvl = 34, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 18, prof = "Leatherworking", sk = 195, boe = true, ah = true, gen = true },  -- Dusky Belt
+  { id = 271800, slot = "2H", lvl = 35, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 58, q = 93196, gen = true },  -- Scavenged Magram Armament
   { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, bl = 40, gen = true },  -- Worn Running Boots
   { id = 8175, slot = "Chest", lvl = 36, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 32, prof = "Leatherworking", sk = 205, boe = true, ah = true, gen = true },  -- Nightscape Tunic
   { id = 8176, slot = "Head", lvl = 36, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 27, prof = "Leatherworking", sk = 205, boe = true, ah = true, gen = true },  -- Nightscape Headband
@@ -283,6 +287,7 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 14787, slot = "Shoulder", lvl = 42, how = "Dungeon", src = "Gahz'rilla", zone = "Zul'Farrak", score = 25, bl = 46, gen = true },  -- Khan's Mantle
   { id = 17778, slot = "Waist", lvl = 42, how = "Quest", src = "Vyletongue Corruption (Talendria)", zone = "Maraudon", score = 30, q = 7041, gen = true },  -- Sagebrush Girdle
   { id = 9480, slot = "2H", lvl = 43, how = "Dungeon", src = "Theka the Martyr", zone = "Zul'Farrak", score = 89, bl = 46, also = { { how = "Dungeon", src = "Sandfury Executioner", zone = "Zul'Farrak", bl = 46 }, { how = "Dungeon", src = "Nekrum Gutchewer", zone = "Zul'Farrak", bl = 46 } }, gen = true },  -- Eyegouger
+  { id = 277254, slot = "Ranged", lvl = 43, how = "Quest", src = "Greater Friend of the Library (Owen Thadd)", zone = "", score = 369, q = 82208, gen = true },  -- Truthseeker's Bow
   { id = 9647, slot = "Shoulder", lvl = 43, how = "Quest", src = "Rescue OOX-22/FE! (Homing Robot OOX-22/FE)", zone = "Feralas", score = 21, q = 2767, gen = true },  -- Failed Flying Experiment
   { id = 9470, slot = "Head", lvl = 44, how = "Dungeon", src = "Shadowpriest Sezz'ziz", zone = "Zul'Farrak", score = 10, bl = 47, gen = true },  -- Bad Mojo Mask
   { id = 19127, slot = "Chest", lvl = 45, how = "Quest", src = "WANTED: Overseer Maltorius", zone = "Searing Gorge", score = 38, q = 7701, gen = true },  -- Charred Leather Tunic
@@ -312,10 +317,14 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 16711, slot = "Feet", lvl = 54, how = "Dungeon", src = "Rattlegore", zone = "Scholomance", score = 50, bl = 61, gen = true },  -- Shadowcraft Boots
   { id = 13395, slot = "Hands", lvl = 54, how = "Dungeon", src = "Skul", zone = "Stratholme", score = 63, bl = 58, gen = true },  -- Skul's Fingerbone Claws
   { id = 12653, slot = "Ranged", lvl = 54, how = "Dungeon", src = "Shadow Hunter Vosh'gajin", zone = "Blackrock Spire", score = 456, bl = 58, gen = true },  -- Riphook
+  { id = 226825, slot = "Chest", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 96, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Darkmantle Tunic
+  { id = 226831, slot = "Feet", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 65, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Darkmantle Footpads
   { id = 13210, slot = "Feet", lvl = 55, how = "Dungeon", src = "Halycon", zone = "Blackrock Spire", score = 64, bl = 59, gen = true },  -- Pads of the Dread Wolf
+  { id = 226829, slot = "Head", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 78, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Darkmantle Cap
   { id = 11933, slot = "Neck", lvl = 55, how = "Dungeon", src = "Emperor Dagran Thaurissan", zone = "Blackrock Depths", score = 50, bl = 59, gen = true },  -- Imperial Jewel
   { id = 13173, slot = "Ranged", lvl = 55, how = "Dungeon", src = "War Master Voone", zone = "Blackrock Spire", score = 496, bl = 58, gen = true },  -- Flightblade Throwing Axe
   { id = 22656, slot = "Ranged", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 494, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- The Purifier
+  { id = 234198, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 56, gen = true },  -- Signet Ring of the Bronze Dragonflight
   { id = 16708, slot = "Shoulder", lvl = 55, how = "Dungeon", src = "Cannon Master Willey", zone = "Stratholme", score = 50, bl = 60, gen = true },  -- Shadowcraft Spaulders
   { id = 12634, slot = "Waist", lvl = 55, how = "Dungeon", src = "Bannok Grimaxe", zone = "Blackrock Spire", score = 69, bl = 59, gen = true },  -- Chiselbrand Girdle
   { id = 13211, slot = "Wrist", lvl = 55, how = "Dungeon", src = "Halycon", zone = "Blackrock Spire", score = 35, bl = 59, gen = true },  -- Slashclaw Bracers
@@ -332,5 +341,4 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 13359, slot = "Head", lvl = 58, how = "Dungeon", src = "Balnazzar", zone = "Stratholme", score = 86, bl = 62, gen = true },  -- Crown of Tyranny
   { id = 13098, slot = "Ring", lvl = 58, how = "Dungeon", src = "General Drakkisath", zone = "Blackrock Spire", score = 46, bl = 62, gen = true },  -- Painweaver Band
   { id = 21205, slot = "Ring", lvl = 60, how = "Quest", src = "The Qiraji Conqueror (Anachronos)", zone = "Tanaris", score = 70, q = 8756, also = { { how = "Quest", src = "The Changing of Paths - Protector No More (Anachronos)", zone = "Tanaris", q = 8764 }, { how = "Quest", src = "The Changing of Paths - Invoker No More (Anachronos)", zone = "Tanaris", q = 8765 } }, gen = true },  -- Signet Ring of the Bronze Dragonflight
-  { id = 19325, slot = "Ring", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 49, bl = 58, gen = true },  -- Don Julio's Band
 }
