@@ -23,6 +23,61 @@ function RG.StepIsDone(entry, i)
   return false
 end
 
+-- The step to do next in a route entry. Not always the first open one: among the next few, a step where you can
+-- hand something in, or whose quests are already in your log, or that's right where you are comes first (less
+-- walking). It looks only a few steps ahead (later ones can depend on earlier ones) and keeps its pick unless another
+-- is clearly better, so it doesn't flip back and forth as you move. Off in Settings: always the guide's order.
+local LOOKAHEAD = 4
+local stepMemo, stepMemoT = {}, nil
+local stepHold = {}   -- key -> index chosen last time
+function RG.NextStep(r)
+  if not (r and RG.STEPS) then return nil end
+  local key = r.zone .. "|" .. r.from
+  local steps = RG.STEPS[key] or {}
+  local now = GetTime and GetTime() or 0
+  if stepMemoT ~= now then stepMemo, stepMemoT = {}, now end
+  if stepMemo[key] ~= nil then return stepMemo[key] or nil end
+  local open = {}
+  for i = 1, #steps do
+    if not RG.StepIsDone(r, i) then open[#open + 1] = i; if #open >= LOOKAHEAD then break end end
+  end
+  local pick = open[1]
+  if pick and #open > 1 and RG.Opt and RG.Opt("smartStepOrder") then
+    local quests = RG.MyQuests and RG.MyQuests() or nil
+    local here = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    local px, py
+    if here and C_Map.GetPlayerMapPosition then
+      local pos = C_Map.GetPlayerMapPosition(here, "player")
+      if pos and pos.GetXY then px, py = pos:GetXY() elseif pos then px, py = pos.x, pos.y end
+      if RG.IsSecret and (RG.IsSecret(px) or RG.IsSecret(py)) then px, py = nil, nil end
+    end
+    local score = {}
+    for rank, i in ipairs(open) do
+      local s = rank   -- the guide's order
+      local ql = RG.StepQuestLines and RG.StepQuestLines(r, i, quests)
+      local turnin, doing = false, false
+      for _, l in ipairs(ql or {}) do
+        if l.act == "turnin" then turnin = true elseif l.act == "doing" then doing = true end
+      end
+      if turnin then s = s - 3 elseif doing then s = s - 2 end
+      local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+      if wp and px and wp[1] == here then
+        local dx, dy = (wp[2] / 100) - px, (wp[3] / 100) - py
+        local d = math.sqrt(dx * dx + dy * dy)
+        if d < 0.05 then s = s - 3 elseif d < 0.12 then s = s - 1 end
+      end
+      score[i] = s
+    end
+    for _, i in ipairs(open) do if score[i] < score[pick] then pick = i end end
+    -- keep last time's pick unless the new one is clearly better
+    local held = stepHold[key]
+    if held and held ~= pick and score[held] and score[held] - score[pick] < 1 then pick = held end
+  end
+  stepHold[key] = pick
+  stepMemo[key] = pick or false
+  return pick
+end
+
 -- Ticking a task by hand can be undone: the last few ticks are remembered.
 local UNDO_SHOW = 600   -- the tracker offers "Undo" for 10 minutes after a tick
 function RG.TickStep(sk, text)
@@ -100,7 +155,8 @@ end
 local function destWp(r)
   if not (r and RG.STEPS and RG.StepWaypoint) then return nil end
   local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
-  for i = 1, #steps do if not RG.StepIsDone(r, i) then return RG.StepWaypoint(r, i) end end
+  local i = RG.NextStep(r)
+  if i then return RG.StepWaypoint(r, i) end
   return RG.StepWaypoint(r, 1)
 end
 function RG.CurrentRouteEntry() local ok, r = pcall(currentEntry); return ok and r or nil end
@@ -655,14 +711,10 @@ function RG.RefreshTracker()
     if not txt and not (RG.IsAlt and RG.IsAlt()) then
       local ok, r = pcall(currentEntry)
       local steps = ok and r and RG.STEPS[r.zone .. "|" .. r.from]
-      if steps then
-        for i = 1, #steps do
-          if not RG.StepIsDone(r, i) then
-            txt = plain(steps[i]):gsub("%s+", " ")
-            if #txt > 110 then txt = txt:sub(1, 107):gsub("[%s%p]+$", "") .. "..." end
-            break
-          end
-        end
+      local i = steps and RG.NextStep(r)
+      if i then
+        txt = plain(steps[i]):gsub("%s+", " ")
+        if #txt > 110 then txt = txt:sub(1, 107):gsub("[%s%p]+$", "") .. "..." end
       end
     end
     if not rawget(tr, "nextLine") then
@@ -867,8 +919,7 @@ function RG.RefreshTracker()
     local doneN = 0
     for i = 1, #steps do if RG.StepIsDone(r, i) then doneN = doneN + 1 end end
     -- the first open step, split into its quests when it's a generated one
-    local firstOpen
-    for i = 1, #steps do if not RG.StepIsDone(r, i) then firstOpen = i break end end
+    local firstOpen = RG.NextStep(r)
     local qlines, qdone, qtotal, place, levels
     if firstOpen then qlines, qdone, qtotal, place, levels = RG.StepQuestLines(r, firstOpen, quests) end
     local isFolded
@@ -949,7 +1000,7 @@ function RG.RefreshTracker()
       if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 12, noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       -- what comes after this step
       local nextI
-      for i = firstOpen + 1, #steps do if not RG.StepIsDone(r, i) then nextI = i break end end
+      for i = 1, #steps do if i ~= firstOpen and not RG.StepIsDone(r, i) then nextI = i break end end
       if nextI then
         local _, _, nt, np, nl = RG.StepQuestLines(r, nextI, quests)
         n = n + 1

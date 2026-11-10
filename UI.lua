@@ -1253,6 +1253,7 @@ local function renderRoute()
         rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
       end
       local seen = 0
+      local nextI = (not e.done and not e.past and RG.NextStep) and RG.NextStep(r) or nil
       for i, text in ipairs(e.steps) do
         local sk = e.key .. "#" .. i
         local auto = e.auto[i]
@@ -1268,6 +1269,7 @@ local function renderRoute()
           if RG.StepQuestLines then ql, qd, qt, place, levels = RG.StepQuestLines(r, i) end
           local shown = text
           if ql and place then shown = place .. (levels and (" (" .. levels .. ")") or "") .. GREY .. "  ·  " .. qd .. "/" .. qt .. " quests done|r" end
+          if i == nextI and not isDone then shown = GOLD .. "Next:|r " .. shown end
           setStep(srow, i, (wp and RG.PIN or "") .. shown, isDone, function()
             -- steps tick themselves from your quest log; a hand tick needs Shift so a stray click can't skip a step
             if RG.db.stepsDone[sk] then RG.db.stepsDone[sk] = nil; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end

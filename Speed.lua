@@ -13,6 +13,7 @@ for _, o in ipairs({
   { key = "arrow",         label = "Arrow to my map pin (/wp way 45 60)", default = true },
   { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
+  { key = "smartStepOrder", label = "Within a zone, do the step with quests I already have, or the one I'm standing at, first (otherwise the guide's order)", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
   { key = "compactTracker", label = "Keep the tracker short (fewer lines: quests near you first, a one-line fishing readout)", default = true },
   { key = "mapClicks",     label = "Let map clicks drive the arrow (quests picked on the map, minimap Ctrl-click, Questie and TomTom pins)", default = true },

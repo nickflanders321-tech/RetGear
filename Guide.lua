@@ -445,8 +445,9 @@ local function buildObjective()
   local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   if r and RG.STEPS then
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
+    local nx = RG.NextStep and RG.NextStep(r)
     for i = 1, #steps do
-      if not RG.StepIsDone(r, i) then
+      if i == (nx or i) and not RG.StepIsDone(r, i) then
         local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
         if wp then
           local place = steps[i]:gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^At (.-) %(") or wp[4] or r.zone
