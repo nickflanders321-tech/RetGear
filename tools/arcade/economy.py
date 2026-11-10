@@ -5,7 +5,7 @@ Defaults: 10155 coins, 10.4 coins a card, 190 free packs (daily + bonuses + the 
 Card counts per tier and the draw weights mirror Arcade.lua (TIER, FINISH) and ArcadeCards.lua."""
 import random, sys, statistics as st
 CNT = [220, 272, 143, 410, 161]; W = [44, 26, 14, 12, 4]
-FW = [70, 22, 6, 2]; SELL = [1, 3, 10, 30]
+FW = [70, 22, 6, 2]; SELL = [1, 3, 5, 15]
 N = sum(CNT)
 start = [sum(CNT[:t]) for t in range(5)]
 

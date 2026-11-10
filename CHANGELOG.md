@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Arena: refunds only for the cards you had.** After an Arena card update, the full crafting value is now paid only for the copies of a changed card you owned when the update came. Copies pulled later sell at the normal price, with Refund or with Sell extras (before, every extra copy of a changed card sold for its full crafting value, so opening packs during the two weeks paid back far more than they cost). Coins you already have stay yours. Sell extras now says how many of the cards sold were refunds. Future card updates work the same way.
+- **Arena: Holo and Full art extras sell for less.** An extra Holo now sells for 5 coins (was 10) and an extra Full art for 15 (was 30); Common and Rare extras are unchanged (1 and 3). In the economy simulation this barely changes how much of the set a player has at level 60.
+
 ## v1.29.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

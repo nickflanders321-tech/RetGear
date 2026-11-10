@@ -15,7 +15,7 @@ local TIER = {  -- how rare the subject itself is: draw weight, name colour
   { "Mythic", 0, { 1, 0.9, 0.55 }, rate = 1 / 400, ring = 1 / 5000 },
 }
 local FINISH = {  -- finish names, draw weights, power bonus, sell price
-  { "Common", 70, 0, 1 }, { "Rare", 22, 6, 3 }, { "Holo", 6, 16, 10 }, { "Full art", 2, 30, 30 },
+  { "Common", 70, 0, 1 }, { "Rare", 22, 6, 3 }, { "Holo", 6, 16, 5 }, { "Full art", 2, 30, 15 },
 }
 local CREATURE_ICON = {
   [1] = "Ability_Hunter_Pet_Wolf", [2] = "INV_Misc_Head_Dragon_01", [3] = "Spell_Shadow_SummonFelHunter", [4] = "Spell_Fire_Elemental_Totem",
@@ -132,14 +132,30 @@ local function store()
   a.cards = a.cards or {}
   -- an Arena card update: changed cards sell back for their full crafting value for two weeks
   local P = RG.ARCADE_PATCH
+  -- Only the copies you owned when the update came are refundable: they are counted then (a.refundOwned), so cards
+  -- pulled later sell at the normal price
+  local function snapshot()
+    local own, n = {}, 0
+    for k in pairs(P.changed or {}) do
+      local slot = a.cards[k]
+      if type(slot) == "table" then
+        local t
+        for f = 1, 4 do if (slot[f] or 0) > 0 then t = t or {}; t[f] = slot[f]; n = n + slot[f] end end
+        own[k] = t
+      end
+    end
+    a.refundOwned = own
+    return n
+  end
   if P and a.refundPatch ~= P.id then
     a.refundPatch, a.refundUntil = P.id, time() + 14 * 86400
-    local n = 0
-    for k in pairs(P.changed or {}) do local slot = a.cards[k]; if type(slot) == "table" then for f = 1, 4 do n = n + (slot[f] or 0) end end end
+    local n = snapshot()
     if n > 0 and RG.Print then
       RG.Print("Arena card update: " .. (P.note or "some cards changed") .. ". " .. n .. " of your cards changed. Until " .. date("%b %d", a.refundUntil)
-        .. ", open a changed card and press Refund to sell a copy back for its full crafting value (extras sold with Sell extras also get the full value).")
+        .. ", those copies sell back for their full crafting value: press Refund on a changed card, or Sell extras. Copies you get later sell at the normal price.")
     end
+  elseif P and a.refundPatch == P.id and not a.refundOwned then
+    snapshot()   -- (a window that opened before refunds were counted: the copies you hold now count)
   end
   return a
 end
@@ -657,14 +673,27 @@ function RG.ArcadeRefundOpen(a, key)
   local P = RG.ARCADE_PATCH
   return P and P.changed and P.changed[key] and a and a.refundPatch == P.id and (a.refundUntil or 0) > time() and true or false
 end
+-- how many copies of a print still sell back at full value: ones owned when the update came, not yet refunded or sold
+function RG.ArcadeRefundable(a, key, f)
+  if not RG.ArcadeRefundOpen(a, key) then return 0 end
+  local t = a.refundOwned and a.refundOwned[key]
+  local slot = a.cards and a.cards[key]
+  return math.min(t and t[f] or 0, slot and slot[f] or 0)
+end
+function RG.ArcadeUseRefund(a, key, f, n)
+  local t = a.refundOwned and a.refundOwned[key]
+  if t and t[f] then t[f] = math.max(0, t[f] - n) end
+end
 function RG.ArcadeRefund(c, f)
   local a = store(); if not (a and c) then return false, "Nothing to refund." end
   local key = c.key or c.name
   if not RG.ArcadeRefundOpen(a, key) then return false, "This card can't be refunded." end
   local slot = a.cards[key]
   if not (slot and (slot[f] or 0) > 0) then return false, "You have no copy of that print." end
+  if RG.ArcadeRefundable(a, key, f) < 1 then return false, "Only copies you owned when the card changed can be refunded." end
   local v = RG.ArcadeCraftCost(c, f) or 0
   slot[f] = slot[f] - 1
+  RG.ArcadeUseRefund(a, key, f, 1)
   a.coins = (a.coins or 0) + v
   return true, "Refunded " .. c.name .. " (" .. FINISH[f][1] .. ") for " .. v .. " coins."
 end
@@ -672,17 +701,26 @@ end
 -- keep one of each print, sell the rest
 function RG.ArcadeSellExtras()
   local a = store(); if not a then return 0, 0 end
-  local coins, cnt = 0, 0
+  local coins, cnt, rn, rc = 0, 0, 0, 0
   for key, slot in pairs(a.cards) do
-    local full = RG.ArcadeRefundOpen(a, key) and byKey[key]
+    local c = RG.ArcadeRefundOpen(a, key) and byKey[key]
     for f = 1, 4 do
       local n = slot[f] or 0
-      if n > 1 then coins = coins + (n - 1) * (full and (RG.ArcadeCraftCost(full, f) or FINISH[f][4]) or FINISH[f][4]); cnt = cnt + n - 1; slot[f] = 1 end
+      if n > 1 then
+        -- copies owned when the card changed sell at full value (the one you keep counts as one of them); the rest at
+        -- the normal price
+        local full = c and math.min(n - 1, math.max(0, RG.ArcadeRefundable(a, key, f) - 1)) or 0
+        local fv = full > 0 and RG.ArcadeCraftCost(c, f) or nil
+        if not fv then full = 0 end
+        if full > 0 then rn = rn + full; rc = rc + full * fv; RG.ArcadeUseRefund(a, key, f, full) end
+        coins = coins + (n - 1 - full) * FINISH[f][4]
+        cnt = cnt + n - 1; slot[f] = 1
+      end
     end
   end
-  a.coins = (a.coins or 0) + coins
+  a.coins = (a.coins or 0) + coins + rc
   local g = cnt > 0 and goalProgress(a, "sell", 1)
-  return cnt, coins, g
+  return cnt, coins + rc, g, rn, rc
 end
 
 local function power(c, f) return (c.tier == 6 and 5.5 or (c.tier == 7 and 6.5 or c.tier)) * 18 + FINISH[f or 1][3] + (c.id % 7) end
@@ -2531,7 +2569,7 @@ local function refreshDetail()
       if d.hclass then body = (d.hclass:sub(1, 1) .. d.hclass:sub(2):lower()) .. " " .. body end
       local txt = B.describe and B.describe(d) or ""
       arena = "\nArena: |cffffffff" .. d.cost .. " mana " .. body .. "|r" .. (txt ~= "" and ("  ·  " .. txt) or "")
-      if RG.ArcadeRefundOpen(a, k) then arena = arena .. "\n|cff7be08aChanged in the latest Arena card update: Refund pays full crafting value until " .. date("%b %d", a.refundUntil) .. "|r" end
+      if RG.ArcadeRefundOpen(a, k) then arena = arena .. "\n|cff7be08aChanged in the latest Arena card update: copies you owned then refund for full crafting value until " .. date("%b %d", a.refundUntil) .. "|r" end
     end
   end
   detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r" .. arena .. "\nDuel power: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
@@ -2543,7 +2581,7 @@ local function refreshDetail()
     b:SetEnabled(true); b:SetActive(k == f)
   end
   local cost = RG.ArcadeCraftCost(c, f)
-  local refund = RG.ArcadeRefundOpen(a, c.key or c.name) and (slot[f] or 0) > 0
+  local refund = RG.ArcadeRefundable(a, c.key or c.name, f) > 0
   detail.craft:SetWidth(refund and 160 or 324)
   detail.craft:SetText(cost and (refund and ("Craft  ·  " .. cost) or ("Craft " .. FNAME[f] .. "  ·  " .. cost .. " coins")) or "Cannot be crafted")
   detail.craft:SetEnabled(cost ~= nil and (a.coins or 0) >= cost)
@@ -2822,8 +2860,9 @@ local function build()
   end)
   frame.duel:SetPoint("BOTTOM", -231, 22)
   frame.sell = gbtn(frame, "Sell extras", 102, 28, function()
-    local n, coins, g = RG.ArcadeSellExtras()
-    say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins. One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
+    local n, coins, g, rn, rc = RG.ArcadeSellExtras()
+    local split = (rn or 0) > 0 and (" (" .. rn .. " refund" .. (rn > 1 and "s" or "") .. " for " .. rc .. ", " .. (n - rn) .. " at the normal price for " .. (coins - rc) .. ")") or ""
+    say(n > 0 and ("Sold " .. n .. " extra cards for " .. coins .. " coins" .. split .. ". One of each print is kept." .. (g and ("  ·  " .. g) or "")) or "No extras to sell: you keep one of each print.")
     RG.ArcadeRefresh(true)
   end)
   frame.sell:SetPoint("BOTTOM", 240, 22)
