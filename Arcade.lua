@@ -1755,8 +1755,9 @@ local function makeCover(card)
   return c
 end
 local function coverAnim(c, t)
-  -- the glow takes the colour of what is inside: blue rare, purple holo, gold full art, red for a top card
-  local pc = c.peekCol or { 1, 1, 1 }
+  -- the glow says how good the card inside is, by the better of its rarity and its print: blue (Renowned or a Rare
+  -- print), purple (Epic or Holo), gold (Legendary or Full art), red for a Raider, every colour for a Mythic
+  local pc = c.glowCol or c.peekCol or { 1, 1, 1 }
   if c.prismatic then
     local r, g, b = hsv((t * 0.35 + c.phase) % 1, 0.55, 1)
     c.glow:SetVertexColor(r, g, b, 0.75 + 0.2 * math.sin(t * 4))
@@ -1819,6 +1820,16 @@ local function summarize()
   for _, b in ipairs(reveal.setBits or {}) do more[#more + 1] = b end
   for _, b in ipairs(extra) do more[#more + 1] = b end
   if #more > 0 then rows[#rows + 1] = { "Progress", table.concat(more, "   ·   ") } end
+  do   -- packs still waiting to be opened
+    local a, left = store(), {}
+    if a then
+      for _, kk in ipairs(PACK_ORDER) do
+        local n = tokenCount(a, kk)
+        if n > 0 then left[#left + 1] = n .. " " .. PACKS[kk].name:lower() .. (n > 1 and "s" or "") end
+      end
+    end
+    if #left > 0 and #rows < 4 then rows[#rows + 1] = { "Still to open", table.concat(left, "   ·   ") } end
+  end
   setPlaque(rows)
 end
 
@@ -1837,7 +1848,7 @@ end
 local function badgeFor(g)
   if g.new then return GOLDHEX .. "NEW|r" end
   if g.newPrint then local t = TIER[g.card.tier][3]; return string.format("|cff%02x%02x%02x", math.floor(t[1] * 255 + 0.5), math.floor(t[2] * 255 + 0.5), math.floor(t[3] * 255 + 0.5)) .. "NEW PRINT|r" end
-  return "|cff9a96b0Extra · " .. (g.value or 0) .. "c|r"
+  return "|cff9a96b0You have " .. (g.copies or 2) .. " · " .. (g.value or 0) .. "c|r"
 end
 local function flip(i)
   local card = reveal.cards[i]
@@ -1869,6 +1880,7 @@ local function flip(i)
       if big > 0 then burstAt(card, big) end
       if big >= 2 then reveal.shakeT, reveal.shakeK = 0.35, big end
       if g.record then reveal.record = true; reveal.title:SetText("Your rarest pull yet!"); playSound(nil, nil, "best") end
+      if g.card.tier == 7 then RG.ArcadeMythicMoment(g) end
       if reveal.flipped >= #reveal.got then
         reveal.all:Hide(); reveal.ok:SetText("Done")
         if not reveal.record then reveal.title:SetText("Pack opened") end
@@ -1908,7 +1920,9 @@ local function dealPositions(i, n)
   local row, col = math.floor((i - 1) / per), (i - 1) % per
   local inRow = math.min(per, n - row * per)
   local rowW = inRow * cw + (inRow - 1) * gap
-  return (RW - rowW) / 2 + col * (cw + gap), -(top + row * (chh + rowGap)), sc, cw
+  -- one row of cards sits in a shallow arc, like a hand of cards (the ends a little lower)
+  local arc = rows == 1 and 5 * (col - (inRow - 1) / 2) ^ 2 or 0
+  return (RW - rowW) / 2 + col * (cw + gap), -(top + row * (chh + rowGap) + arc), sc, cw
 end
 local function placeCard(c, x, y, sc)
   c:SetScale(sc); c:ClearAllPoints(); c:SetPoint("TOPLEFT", reveal, "TOPLEFT", x / sc, y / sc)
@@ -1918,10 +1932,11 @@ local function startDeal()
   reveal.phase = "deal"; reveal.dealT = 0
   reveal.sealFade = 0.55; reveal.sealGlow:Hide()
   reveal.plaque:SetShown(false)
+  if rawget(reveal, "setNextUp") then reveal.setNextUp(false) end
   reveal.title:SetText("Turn each card")
   local n = #(reveal.got or {})
   for i = 1, n do local x, y, sc = dealPositions(i, n); placeCard(reveal.cards[i], x, y, sc); reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
-  setPlaque({ { "Tip", "Hold a card to peek at how rare it is, let go to turn it" } })
+  setPlaque({ { "Tip", "A glowing back hides a better card   ·   hold a card to peek at its print, let go to turn it" } })
   reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 30); reveal.spot:SetSize(760, n > 5 and 520 or 380)
   playSound(nil, nil, "deal")
 end
@@ -2017,6 +2032,41 @@ local function stripSet(r, sc, dx, dy, rot, alpha)
     t:SetSize(PKW * sc, PKW / 2 * sc); t:ClearAllPoints(); t:SetPoint("TOP", r.seal, "TOP", dx, dy)
     if t.SetRotation then t:SetRotation(rot) end
     t:SetAlpha(alpha)
+  end
+end
+
+-- A Mythic turns over: the table goes dark, rays in every colour turn behind it, and the card rises to the middle at
+-- full size. Click anywhere to go on.
+function RG.ArcadeMythicMoment(g)
+  if not (reveal and g and g.card) then return end
+  local m = rawget(reveal, "myth")
+  if not m then
+    m = CreateFrame("Button", nil, reveal); m:SetAllPoints(reveal); m:SetFrameLevel(lv(reveal) + 60)
+    m.veil = m:CreateTexture(nil, "BACKGROUND"); m.veil:SetAllPoints(m); m.veil:SetColorTexture(0.01, 0.01, 0.03, 0.92)
+    m.rays = m:CreateTexture(nil, "BORDER"); m.rays:SetTexture(MEDIA .. "Rays"); m.rays:SetBlendMode("ADD"); m.rays:SetSize(900, 900); m.rays:SetPoint("CENTER", 0, 0)
+    m.rays2 = m:CreateTexture(nil, "BORDER"); m.rays2:SetTexture(MEDIA .. "Rays"); m.rays2:SetBlendMode("ADD"); m.rays2:SetSize(640, 640); m.rays2:SetPoint("CENTER", 0, 0)
+    m.halo = m:CreateTexture(nil, "ARTWORK"); m.halo:SetTexture(MEDIA .. "Glow"); m.halo:SetBlendMode("ADD"); m.halo:SetSize(620, 620); m.halo:SetPoint("CENTER", 0, 0)
+    m.title = fs(m, "title", 30); m.title:SetPoint("TOP", 0, -34); m.title:SetTextColor(1, 0.95, 0.77); m.title:SetText("M Y T H I C")
+    m.hint = fs(m, "head", 12); m.hint:SetPoint("BOTTOM", 0, 30); m.hint:SetTextColor(0.84, 0.82, 0.92)
+    m.card = makeCard(m, 300); m.card:SetPoint("CENTER", 0, -6); m.card:SetFrameLevel(lv(m) + 2); m.card.noTip = true; m.card.hover = false; m.card:EnableMouse(false)
+    m:SetScript("OnClick", function(self) anim[self] = nil; self:Hide() end)
+    reveal.myth = m
+  end
+  paint(m.card, g.card, g.finish, 1)
+  local one = g.card.mythic and g.card.mythic.one
+  m.hint:SetText((one and "The rarest card there is: one per account" or "About 1 pack in 400") .. "   ·   click anywhere to go on")
+  m.t0 = nil
+  m.card:SetScale(0.7); m.title:SetAlpha(0)
+  m:Show()
+  anim[m] = function(self, t)
+    self.t0 = self.t0 or t
+    local e = math.min(1, (t - self.t0) / 0.7)
+    local k = 1 - (1 - e) ^ 3
+    local r, gg, b = hsv((t * 0.07) % 1, 0.45, 1)
+    self.rays:SetVertexColor(r, gg, b, 0.5 * k); self.rays2:SetVertexColor(b, r, gg, 0.4 * k)
+    if self.rays.SetRotation then self.rays:SetRotation((t * 0.1) % 6.2832); self.rays2:SetRotation((-t * 0.16) % 6.2832) end
+    self.halo:SetVertexColor(1, 0.94, 0.78, (0.5 + 0.1 * math.sin(t * 2)) * k)
+    self.card:SetScale(0.7 + 0.3 * k); self.title:SetAlpha(k); self.hint:SetAlpha(k)
   end
 end
 
@@ -2179,7 +2229,42 @@ local function showReveal(got, notes, meta)
       end
     end)
     reveal.all:SetPoint("BOTTOM", -160, 22)
-    reveal.again = gbtn(reveal, "Open another pack", 190, 30, function() if frame and frame.buyNow then frame.buyNow((reveal.meta and reveal.meta.many) and "normal" or reveal.kind) end end, true)
+    -- opens the next waiting pack: one like this if you have it, else whichever kind is waiting, else buys one like this
+    reveal.again = gbtn(reveal, "Open next pack", 190, 30, function()
+      if not (frame and frame.buyNow) then return end
+      local a, k = store(), (reveal.meta and reveal.meta.many) and "normal" or reveal.kind
+      if a and tokenCount(a, k) == 0 then
+        for _, kk in ipairs(PACK_ORDER) do if tokenCount(a, kk) > 0 then k = kk break end end
+      end
+      frame.buyNow(k)
+    end, true)
+    -- the packs still waiting, beside the sealed one
+    local nu = CreateFrame("Frame", nil, reveal); nu:SetSize(150, 190); nu:SetPoint("RIGHT", reveal, "RIGHT", -40, 40); nu:SetFrameLevel(lv(reveal) + 2)
+    nu.head = fs(nu, "head", 11); nu.head:SetPoint("TOPLEFT", 0, 0); nu.head:SetTextColor(0.769, 0.687, 0.522); nu.head:SetText("UP NEXT")
+    nu.rows = {}
+    for i, kk in ipairs(PACK_ORDER) do
+      local r = {}
+      r.tex = nu:CreateTexture(nil, "ARTWORK"); r.tex:SetTexture(MEDIA .. "PackArt" .. i); r.tex:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512); r.tex:SetSize(27, 41)
+      r.name = fs(nu, "body", 13); r.name:SetTextColor(0.93, 0.89, 0.78); r.name:SetText(PACKS[kk].name)
+      r.n = fs(nu, "head", 11); r.n:SetTextColor(0.769, 0.687, 0.522)
+      nu.rows[i] = r
+    end
+    reveal.nextUp = nu
+    function reveal.setNextUp(show)
+      local a, y = store(), -22
+      for i, kk in ipairs(PACK_ORDER) do
+        local r, n = nu.rows[i], a and tokenCount(a, kk) or 0
+        local on = show and n > 0
+        r.tex:SetShown(on); r.name:SetShown(on); r.n:SetShown(on)
+        if on then
+          r.tex:ClearAllPoints(); r.tex:SetPoint("TOPLEFT", nu, "TOPLEFT", 0, y)
+          r.name:ClearAllPoints(); r.name:SetPoint("TOPLEFT", r.tex, "TOPRIGHT", 10, -4)
+          r.n:ClearAllPoints(); r.n:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -3); r.n:SetText(n .. " waiting")
+          y = y - 52
+        end
+      end
+      nu:SetShown(show and y < -22)
+    end
     reveal.again:SetPoint("BOTTOM", 0, 22)
     reveal.ok = gbtn(reveal, "Skip", 132, 30, function() reveal:Hide(); RG.ArcadeRefresh(true) end)
     reveal.ok:SetPoint("BOTTOM", 160, 22)
@@ -2256,6 +2341,7 @@ local function showReveal(got, notes, meta)
         self.sealGlow:SetAlpha(0)
         local c = self.sealCol
         local r, g, b = c[1] + (1 - c[1]) * tt * 0.4, c[2] + (1 - c[2]) * tt * 0.4, c[3] + (1 - c[3]) * tt * 0.4
+        if self.artPack then r, g, b = 1, 1, 1 end   -- (a wrapper with its own picture is not tinted)
         self.sealTex:SetVertexColor(r, g, b, 1); self.strip:SetVertexColor(r, g, b, 1); self.glowTex:SetVertexColor(c[1], c[2], c[3], 1); self.sheen:SetVertexColor(1, 1, 1, 1)
         self.spot:SetVertexColor(c[1], c[2], c[3], 0.34 + 0.05 * math.sin(t * 1.7) + 0.12 * tt)
         self.floor:SetVertexColor(c[1], c[2], c[3], 0.5)
@@ -2270,7 +2356,8 @@ local function showReveal(got, notes, meta)
           local x, y, sc, cw = dealPositions(i, n)
           local cx = (RW - cw) / 2
           local c = self.cards[i]
-          c:ClearAllPoints(); c:SetPoint("TOPLEFT", self, "TOPLEFT", (cx + (x - cx) * e) / sc, y / sc)
+          -- each card rises out of the open wrapper and slides to its place
+          c:ClearAllPoints(); c:SetPoint("TOPLEFT", self, "TOPLEFT", (cx + (x - cx) * e) / sc, (y - 130 * (1 - e)) / sc)
           c:SetAlpha(e)
           if k < 1 then all = false end
         end
@@ -2336,8 +2423,17 @@ local function showReveal(got, notes, meta)
     if meta.bonus or pb >= PITY then info[#info + 1] = { "Guarantee", "|cffd9a8ffThis pack holds a holo or full art|r" }
     else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") .. " worth of opening" } end
   end
+  -- a plain pack, jumbo or super jumbo has its own wrapper (picture and colour); gifts, reward packs and several packs
+  -- at once keep the tinted foil
+  local artN = (not meta.gift and not meta.bonus and not meta.many) and (kind == "normal" and 1 or (kind == "jumbo" and 2 or 3)) or nil
+  reveal.artPack = artN
+  if artN then col = ({ { 0.62, 0.52, 1 }, { 1, 0.62, 0.28 }, { 0.3, 0.92, 0.82 } })[artN] end
   reveal.sealCol = col
-  reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1); reveal.strip:SetVertexColor(col[1], col[2], col[3], 1)
+  reveal.sealTex:SetTexture(MEDIA .. (artN and ("PackArt" .. artN) or "PackBody")); reveal.strip:SetTexture(MEDIA .. (artN and ("PackArtTop" .. artN) or "PackTop"))
+  reveal.trim:SetShown(not artN); reveal.packName:SetShown(not artN)
+  if artN then reveal.sealTex:SetVertexColor(1, 1, 1, 1); reveal.strip:SetVertexColor(1, 1, 1, 1)
+  else reveal.sealTex:SetVertexColor(col[1], col[2], col[3], 1); reveal.strip:SetVertexColor(col[1], col[2], col[3], 1) end
+  if rawget(reveal, "myth") then reveal.myth:Hide() end
   reveal.baseK = meta.many and 1.04 or (kind == "super" and 1.08 or (kind == "jumbo" and 1.04 or 1))
   -- the wrapper: tinted by pack type, the rune in the medallion; several packs fan out
   reveal.emb:Hide(); reveal.sealCount:SetText(""); reveal.ribbon:Hide(); reveal.ribbonText:SetText("")
@@ -2346,7 +2442,9 @@ local function showReveal(got, notes, meta)
   reveal.packName:SetText(kind == "normal" and "WAYPATH" or (kind == "jumbo" and "JUMBO" or "SUPER JUMBO"))
   if meta.many then reveal.sealCount:SetText("x" .. meta.many.count)
   else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(math.min(1, col[1] + 0.3), math.min(1, col[2] + 0.3), math.min(1, col[3] + 0.3), 0.95); reveal.emb:Show() end
+  if artN then reveal.emb:Hide() end   -- (the picture is on the wrapper)
   reveal.sealFade = nil; reveal.seal:SetAlpha(1)
+  reveal.setNextUp(true)
   setPlaque(info)
   reveal.plaque.bar:SetColorTexture(math.min(1, col[1] + 0.1), math.min(1, col[2] + 0.1), math.min(1, col[3] + 0.1), 1)
   reveal.title:SetText(title)
@@ -2372,14 +2470,22 @@ local function showReveal(got, notes, meta)
     c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c:Show()
     c.peel, c.lift, c.holding = 0, 0, false; c.fold:Hide(); c.peek:Hide(); c:SetHeight(w.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
     c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.cued = false
-    c.rare = (g.finish >= 3 or g.card.tier == 6) and true or false
+    -- how good the card inside is: the better of its print (Rare 2, Holo 3, Full art 4) and its rarity (Renowned 2, Epic 3, Legendary 4)
+    local glowLv = math.max(g.finish, (g.card.tier >= 3 and g.card.tier <= 5) and g.card.tier - 1 or 1)
+    c.rare = (glowLv >= 3 or g.card.tier == 6) and true or false
+    c.glowCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (glowLv == 4 and { 1, 0.7, 0.15 } or (glowLv == 3 and { 0.7, 0.35, 0.95 } or { 0.3, 0.55, 1 }))
     c.prismatic = g.card.tier == 7 or nil   -- a Mythic inside: the glow runs through every colour
     c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.691, 0.617, 0.469 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
-    if g.finish >= 2 or g.card.tier >= 5 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
+    if glowLv >= 2 or g.card.tier >= 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
   end
-  reveal.again:SetEnabled(afford(meta.many and "normal" or kind) and true or false)
+  do   -- "Open next pack" while packs are waiting, else it buys another like this one
+    local a, waiting = store(), 0
+    if a then for _, kk in ipairs(PACK_ORDER) do waiting = waiting + tokenCount(a, kk) end end
+    reveal.again:SetText(waiting > 0 and "Open next pack" or "Buy another pack")
+    reveal.again:SetEnabled((waiting > 0 or afford(meta.many and "normal" or kind)) and true or false)
+  end
 end
 
 -- the present for reaching level 60 (shown when you are out of combat, or the next time you open the cards)
