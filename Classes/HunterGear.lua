@@ -83,6 +83,7 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 252514, slot = "Head", lvl = 25, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 6, bl = 30, also = { { how = "Dungeon", src = "Aku'mai", zone = "Blackfathom Deeps", bl = 28 }, { how = "Dungeon", src = "Grubbis", zone = "Gnomeregan", bl = 32 } }, gen = true },  -- Stormrider's Leather Helm
   { id = 252517, slot = "Legs", lvl = 25, how = "Crafted", src = "Leatherworking", zone = "Bind on Pickup · Merchant's Favor: Pawani (The Barrens) · 30 favor", score = 24, prof = "Leatherworking", sk = 125, gen = true },  -- Trapper's Leather Legguards
   { id = 9509, slot = "Legs", lvl = 25, how = "BoE", src = "World drop", zone = "Auction House", score = 30, ah = true, gen = true },  -- Petrolspill Leggings
+  { id = 284399, slot = "Shoulder", lvl = 25, how = "Rare mob", src = "Sister Riven", zone = "Stonetalon Mountains", score = 14, bl = 28, gen = true },  -- Seared Grove Shoulderpads
   { id = 9536, slot = "Shoulder", lvl = 25, how = "Quest", src = "A Fine Mess (Kernobee)", zone = "Gnomeregan", score = 4, q = 2904, gen = true },  -- Fairywing Mantle
   { id = 2264, slot = "Shoulder", lvl = 25, how = "BoE", src = "World drop", zone = "Auction House", score = 22, ah = true, gen = true },  -- Mantle of Thieves
   { id = 274152, slot = "Trinket", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 1, bl = 28, gen = true },  -- Roogug's Severed Head
@@ -108,7 +109,6 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 10583, slot = "Chest", lvl = 34, how = "BoE", src = "World drop", zone = "Auction House", score = 39, ah = true, gen = true },  -- Quillward Harness
   { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 17, bl = 40, gen = true },  -- Swine Fists
   { id = 7387, slot = "Waist", lvl = 34, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 18, prof = "Leatherworking", sk = 195, boe = true, ah = true, gen = true },  -- Dusky Belt
-  { id = 271800, slot = "2H", lvl = 35, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 58, q = 93196, gen = true },  -- Scavenged Magram Armament
   { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, bl = 40, gen = true },  -- Worn Running Boots
   { id = 252526, slot = "Hands", lvl = 35, how = "Crafted", src = "Leatherworking", zone = "Bind on Pickup · Merchant's Favor: Pawani (The Barrens) · 60 favor at Friendly", score = 26, prof = "Leatherworking", sk = 175, gen = true },  -- Stalker's Leather Gloves
   { id = 8175, slot = "Chest", lvl = 36, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 32, prof = "Leatherworking", sk = 205, boe = true, ah = true, gen = true },  -- Nightscape Tunic
@@ -118,6 +118,7 @@ RG.CLASS_GEAR.HUNTER = {
   { id = 9426, slot = "Ranged", lvl = 36, how = "BoE", src = "World drop", zone = "Auction House", score = 313, ah = true, gen = true },  -- Monolithic Bow
   { id = 19508, slot = "Wrist", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 22, bl = 40, gen = true },  -- Branded Leather Bracers
   { id = 4114, slot = "Back", lvl = 37, how = "Quest", src = "Keep An Eye Out (Dizzy One-Eye)", zone = "Stranglethorn Vale", score = 14, q = 576, gen = true },  -- Darktide Cape
+  { id = 282561, slot = "Ranged", lvl = 37, how = "Rare mob", src = "Siege Golem", zone = "Badlands", score = 312, bl = 40, gen = true },  -- Siegebreaker's Blaster
   { id = 10774, slot = "Shoulder", lvl = 37, how = "Dungeon", src = "Glutton", zone = "Razorfen Downs", score = 17, bl = 40, gen = true },  -- Fleshhide Shoulders
   { id = 8192, slot = "Shoulder", lvl = 37, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Vendor: Jangdor Swiftstrider (Feralas)", score = 24, prof = "Leatherworking", sk = 210, boe = true, ah = true, gen = true },  -- Nightscape Shoulders
   { id = 6788, slot = "Waist", lvl = 37, how = "Quest", src = "Khan Hratha (Warug)", zone = "Desolace", score = 19, q = 1381, gen = true },  -- Magram Hunter's Belt
@@ -264,6 +265,7 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 252514, slot = "Head", lvl = 25, how = "Dungeon", src = "Bazil Thredd", zone = "The Stockade", score = 6, bl = 29, also = { { how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", bl = 30 }, { how = "Dungeon", src = "Aku'mai", zone = "Blackfathom Deeps", bl = 28 } }, gen = true },  -- Stormrider's Leather Helm
   { id = 252517, slot = "Legs", lvl = 25, how = "Crafted", src = "Leatherworking", zone = "Bind on Pickup · Merchant's Favor: Daniel Stitchsong (Redridge Mountains) · 30 favor", score = 24, prof = "Leatherworking", sk = 125, gen = true },  -- Trapper's Leather Legguards
   { id = 9509, slot = "Legs", lvl = 25, how = "BoE", src = "World drop", zone = "Auction House", score = 30, ah = true, gen = true },  -- Petrolspill Leggings
+  { id = 284399, slot = "Shoulder", lvl = 25, how = "Rare mob", src = "Sister Riven", zone = "Stonetalon Mountains", score = 14, bl = 28, gen = true },  -- Seared Grove Shoulderpads
   { id = 2264, slot = "Shoulder", lvl = 25, how = "BoE", src = "World drop", zone = "Auction House", score = 22, ah = true, gen = true },  -- Mantle of Thieves
   { id = 274152, slot = "Trinket", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 1, bl = 28, gen = true },  -- Roogug's Severed Head
   { id = 6719, slot = "Waist", lvl = 25, how = "Quest", src = "Highperch Venom (Fiora Longears)", zone = "Dustwallow Marsh", score = 14, q = 1135, gen = true },  -- Windborne Belt
@@ -289,7 +291,6 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 10570, slot = "2H", lvl = 34, how = "BoE", src = "World drop", zone = "Auction House", score = 94, ah = true, gen = true },  -- Manslayer
   { id = 10583, slot = "Chest", lvl = 34, how = "BoE", src = "World drop", zone = "Auction House", score = 39, ah = true, gen = true },  -- Quillward Harness
   { id = 10760, slot = "Hands", lvl = 34, how = "Dungeon", src = "Plaguemaw the Rotting", zone = "Razorfen Downs", score = 17, bl = 40, gen = true },  -- Swine Fists
-  { id = 271800, slot = "2H", lvl = 35, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 58, q = 93196, gen = true },  -- Scavenged Magram Armament
   { id = 9398, slot = "Feet", lvl = 35, how = "Dungeon", src = "Eric \"The Swift\"", zone = "Uldaman", score = 23, bl = 40, gen = true },  -- Worn Running Boots
   { id = 252526, slot = "Hands", lvl = 35, how = "Crafted", src = "Leatherworking", zone = "Bind on Pickup · Merchant's Favor: Daniel Stitchsong (Redridge Mountains) · 60 favor at Friendly", score = 26, prof = "Leatherworking", sk = 175, gen = true },  -- Stalker's Leather Gloves
   { id = 8175, slot = "Chest", lvl = 36, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Trainer", score = 32, prof = "Leatherworking", sk = 205, boe = true, ah = true, gen = true },  -- Nightscape Tunic
@@ -298,6 +299,7 @@ RG.CLASS_GEAR_A.HUNTER = {
   { id = 19508, slot = "Wrist", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 22, bl = 40, gen = true },  -- Branded Leather Bracers
   { id = 4114, slot = "Back", lvl = 37, how = "Quest", src = "Keep An Eye Out (Dizzy One-Eye)", zone = "Stranglethorn Vale", score = 14, q = 576, gen = true },  -- Darktide Cape
   { id = 10748, slot = "Feet", lvl = 37, how = "Quest", src = "Mazen's Behest (Acolyte Dellis)", zone = "Stormwind City", score = 20, q = 1364, gen = true },  -- Wanderlust Boots
+  { id = 282561, slot = "Ranged", lvl = 37, how = "Rare mob", src = "Siege Golem", zone = "Badlands", score = 312, bl = 40, gen = true },  -- Siegebreaker's Blaster
   { id = 10774, slot = "Shoulder", lvl = 37, how = "Dungeon", src = "Glutton", zone = "Razorfen Downs", score = 17, bl = 40, gen = true },  -- Fleshhide Shoulders
   { id = 8192, slot = "Shoulder", lvl = 37, how = "Crafted", src = "Leatherworking", zone = "Bind on Equip · Vendor: Nioma (The Hinterlands)", score = 24, prof = "Leatherworking", sk = 210, boe = true, ah = true, gen = true },  -- Nightscape Shoulders
   { id = 6788, slot = "Waist", lvl = 37, how = "Quest", src = "Khan Hratha (Warug)", zone = "Desolace", score = 19, q = 1381, gen = true },  -- Magram Hunter's Belt

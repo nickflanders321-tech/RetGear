@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## v1.31.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
 - **The "Economy" group in the Waypath+ menu is now called "Professions"** (professions, fishing, Auction House, gold and mail).
 

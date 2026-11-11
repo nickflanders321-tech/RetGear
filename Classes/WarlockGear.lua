@@ -100,7 +100,6 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 6392, slot = "Waist", lvl = 24, how = "Dungeon", src = "Archmage Arugal", zone = "Shadowfang Keep", score = 13, bl = 26, gen = true },  -- Belt of Arugal
   { id = 274149, slot = "Back", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 10, bl = 28, gen = true },  -- Thornweaver Drape
   { id = 15468, slot = "Back", lvl = 25, how = "Quest", src = "Free at Last (Lakota Windsong)", zone = "Thousand Needles", score = 7, q = 4904, gen = true },  -- Windsong Drape
-  { id = 253977, slot = "Head", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Dungeon: Twilight Lord Kelris (Blackfathom Deeps)", score = 21, prof = "Tailoring", sk = 125, gen = true },  -- Filigreed Silky Circlet
   { id = 253989, slot = "Legs", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Jim'bek (The Barrens) · 30 favor", score = 24, prof = "Tailoring", sk = 125, gen = true },  -- Silky Leggings
   { id = 274152, slot = "Trinket", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 3, bl = 28, gen = true },  -- Roogug's Severed Head
   { id = 274158, slot = "2H", lvl = 26, how = "Dungeon", src = "Aggem Thorncurse", zone = "Razorfen Kraul", score = 46, bl = 30, gen = true },  -- Death Prophet Spine
@@ -109,6 +108,7 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 284383, slot = "Back", lvl = 27, how = "Rare mob", src = "Nal'taszar", zone = "Stonetalon Mountains", score = 14, bl = 30, gen = true },  -- Faerie Dragon's Skin
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 10, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 6, bl = 32, gen = true },  -- Stygian Bone Amulet
+  { id = 284697, slot = "Chest", lvl = 29, how = "Rare mob", src = "Prince Raze", zone = "Ashenvale", score = 16, bl = 32, gen = true },  -- Arcane Charged Robes
   { id = 274068, slot = "Neck", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 7, bl = 32, gen = true },  -- Thermaplugg Medal of Honor
   { id = 13063, slot = "Ranged", lvl = 29, how = "BoE", src = "World drop", zone = "Auction House", score = 172, ah = true, gen = true },  -- Starfaller
   { id = 9447, slot = "Ring", lvl = 29, how = "Dungeon", src = "Electrocutioner 6000", zone = "Gnomeregan", score = 7, bl = 32, gen = true },  -- Electrocutioner Lagnut
@@ -130,7 +130,6 @@ RG.CLASS_GEAR.WARLOCK = {
   { id = 4545, slot = "Wrist", lvl = 35, how = "Quest", src = "Foul Magics (Tor'gan)", zone = "Arathi Highlands", score = 7, q = 673, gen = true },  -- Radiant Silver Bracers
   { id = 23177, slot = "Ranged", lvl = 36, how = "Dungeon", src = "Lady Falther'ess", zone = "Razorfen Downs", score = 200, bl = 40, gen = true },  -- Lady Falther'ess' Finger
   { id = 19507, slot = "Shoulder", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 12, bl = 40, gen = true },  -- Inquisitor's Shawl
-  { id = 10762, slot = "Chest", lvl = 39, how = "Dungeon", src = "Amnennar the Coldbringer", zone = "Razorfen Downs", score = 16, bl = 41, gen = true },  -- Robes of the Lich
   { id = 7720, slot = "Head", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 18, bl = 42, gen = true },  -- Whitemane's Chapeau
   { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 10, bl = 42, gen = true },  -- Triune Amulet
   { id = 10711, slot = "Neck", lvl = 39, how = "Quest", src = "Into The Scarlet Monastery (Varimathras)", zone = "Scarlet Monastery", score = 10, q = 1048, gen = true },  -- Dragon's Blood Necklace
@@ -316,7 +315,6 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 273808, slot = "Wrist", lvl = 24, how = "Dungeon", src = "Kam Deepfury", zone = "The Stockade", score = 3, bl = 27, gen = true },  -- Bridgebreaker Bindings
   { id = 274149, slot = "Back", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 10, bl = 28, gen = true },  -- Thornweaver Drape
   { id = 3556, slot = "Head", lvl = 25, how = "Quest", src = "You Have Served Us Well (Zardeth of the Black Claw)", zone = "Stormwind City", score = 6, q = 397, gen = true },  -- Dread Mage Hat
-  { id = 253977, slot = "Head", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Dungeon: Twilight Lord Kelris (Blackfathom Deeps)", score = 21, prof = "Tailoring", sk = 125, gen = true },  -- Filigreed Silky Circlet
   { id = 253989, slot = "Legs", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Mivin Shadowweave (Redridge Mountains) · 30 favor", score = 24, prof = "Tailoring", sk = 125, gen = true },  -- Silky Leggings
   { id = 9536, slot = "Shoulder", lvl = 25, how = "Quest", src = "A Fine Mess (Kernobee)", zone = "Gnomeregan", score = 11, q = 2904, gen = true },  -- Fairywing Mantle
   { id = 6685, slot = "Shoulder", lvl = 25, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 10, bl = 30, gen = true },  -- Death Speaker Mantle
@@ -328,6 +326,7 @@ RG.CLASS_GEAR_A.WARLOCK = {
   { id = 284383, slot = "Back", lvl = 27, how = "Rare mob", src = "Nal'taszar", zone = "Stonetalon Mountains", score = 14, bl = 30, gen = true },  -- Faerie Dragon's Skin
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 10, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 6, bl = 32, gen = true },  -- Stygian Bone Amulet
+  { id = 284697, slot = "Chest", lvl = 29, how = "Rare mob", src = "Prince Raze", zone = "Ashenvale", score = 16, bl = 32, gen = true },  -- Arcane Charged Robes
   { id = 274068, slot = "Neck", lvl = 29, how = "Dungeon", src = "Crowd Pummeler 9-60", zone = "Gnomeregan", score = 7, bl = 32, gen = true },  -- Thermaplugg Medal of Honor
   { id = 13063, slot = "Ranged", lvl = 29, how = "BoE", src = "World drop", zone = "Auction House", score = 172, ah = true, gen = true },  -- Starfaller
   { id = 7709, slot = "Legs", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 18, bl = 33, gen = true },  -- Blighted Leggings

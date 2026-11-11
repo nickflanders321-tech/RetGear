@@ -16,6 +16,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 284287, slot = "2H", lvl = 8, how = "Rare mob", src = "Felweaver Scornn", zone = "Durotar", score = 8, bl = 11, gen = true },  -- Felweaver's Staff
   { id = 3446, slot = "2H", lvl = 8, how = "Quest", src = "The Family Crypt (Magistrate Sevren)", zone = "Tirisfal Glades", score = 8, q = 408, gen = true },  -- Darkwood Staff
   { id = 263332, slot = "Chest", lvl = 8, how = "Quest", src = "Unfortunate News (Dead Cultist)", zone = "Zephras Isle", score = 2, q = 92644, gen = true },  -- Elder's Tunic
+  { id = 263339, slot = "Feet", lvl = 8, how = "Quest", src = "Tower Defense (Valennia Stormfist)", zone = "Zephras Isle", score = 1, q = 93320, gen = true },  -- Windswept Slippers
   { id = 273876, slot = "Hands", lvl = 8, how = "Quest", src = "Desperate Times (Talaanis Shadowsong)", zone = "Zephras Isle", score = 1, q = 92640, gen = true },  -- Broken Cultist Gloves
   { id = 263307, slot = "Legs", lvl = 8, how = "Quest", src = "Mercy Falls on Deaf Ears (Vayn Moongaze)", zone = "Zephras Isle", score = 2, q = 93165, gen = true },  -- Shadowgale Pants
   { id = 286743, slot = "Ranged", lvl = 8, how = "Quest", src = "Rear Guard Patrol (Deathguard Linnea)", zone = "Tirisfal Glades", score = 47, q = 99156, gen = true },  -- Riptear's Spare Arm
@@ -140,7 +141,6 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 7749, slot = "Off Hand", lvl = 36, how = "Quest", src = "Compendium of the Fallen (Sage Truthseeker)", zone = "Scarlet Monastery", score = 13, q = 1049, gen = true },  -- Omega Orb
   { id = 23177, slot = "Ranged", lvl = 36, how = "Dungeon", src = "Lady Falther'ess", zone = "Razorfen Downs", score = 200, bl = 40, gen = true },  -- Lady Falther'ess' Finger
   { id = 19507, slot = "Shoulder", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 14, bl = 40, gen = true },  -- Inquisitor's Shawl
-  { id = 271804, slot = "Main Hand", lvl = 38, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 60, q = 93196, gen = true },  -- Soulsplatter Mace
   { id = 7720, slot = "Head", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 19, bl = 42, gen = true },  -- Whitemane's Chapeau
   { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 10, bl = 42, gen = true },  -- Triune Amulet
   { id = 10824, slot = "Neck", lvl = 39, how = "Quest", src = "Bring the End (Andrew Brownell)", zone = "Razorfen Downs", score = 9, q = 3341, gen = true },  -- Amberglow Talisman
@@ -179,6 +179,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, also = { { how = "BoE", src = "World drop", zone = "Auction House" } }, gen = true },  -- Coldstone Slippers
   { id = 254109, slot = "Feet", lvl = 50, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Jim'bek (The Barrens) · 90 favor at Honored", score = 30, prof = "Tailoring", sk = 235, gen = true },  -- Frothing Sandals
   { id = 226958, slot = "Hands", lvl = 50, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 40, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Hands
+  { id = 15863, slot = "Main Hand", lvl = 50, how = "Quest", src = "Return to Tinkee (Felnok Steelspring)", zone = "Winterspring", score = 60, q = 4810, gen = true },  -- Grave Scepter
   { id = 19303, slot = "Neck", lvl = 50, how = "Vendor", src = "Lhara", zone = "Mulgore", score = 12, gen = true },  -- Darkmoon Necklace
   { id = 20082, slot = "Ranged", lvl = 50, how = "Quest", src = "Blood of Morphaz (Ogtinc)", zone = "", score = 269, q = 8257, gen = true },  -- Woestave
   { id = 22245, slot = "Feet", lvl = 51, how = "Dungeon", src = "Panzor the Invincible", zone = "Blackrock Depths", score = 19, bl = 57, gen = true },  -- Soot Encrusted Footwear
@@ -367,7 +368,6 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 10769, slot = "Neck", lvl = 36, how = "Dungeon", src = "Mordresh Fire Eye", zone = "Razorfen Downs", score = 9, bl = 39, gen = true },  -- Glowing Eye of Mordresh
   { id = 23177, slot = "Ranged", lvl = 36, how = "Dungeon", src = "Lady Falther'ess", zone = "Razorfen Downs", score = 200, bl = 40, gen = true },  -- Lady Falther'ess' Finger
   { id = 19507, slot = "Shoulder", lvl = 36, how = "Dungeon", src = "High Inquisitor Fairbanks", zone = "Scarlet Monastery", score = 14, bl = 40, gen = true },  -- Inquisitor's Shawl
-  { id = 271804, slot = "Main Hand", lvl = 38, how = "Quest", src = "Khan Jehn", zone = "Desolace", score = 60, q = 93196, gen = true },  -- Soulsplatter Mace
   { id = 7720, slot = "Head", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 19, bl = 42, gen = true },  -- Whitemane's Chapeau
   { id = 7722, slot = "Neck", lvl = 39, how = "Dungeon", src = "High Inquisitor Whitemane", zone = "Scarlet Monastery", score = 10, bl = 42, gen = true },  -- Triune Amulet
   { id = 10824, slot = "Neck", lvl = 39, how = "Quest", src = "Bring the Light (Archbishop Benedictus)", zone = "Razorfen Downs", score = 9, q = 3636, gen = true },  -- Amberglow Talisman
@@ -407,6 +407,7 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, also = { { how = "BoE", src = "World drop", zone = "Auction House" } }, gen = true },  -- Coldstone Slippers
   { id = 254109, slot = "Feet", lvl = 50, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Mivin Shadowweave (Redridge Mountains) · 90 favor at Honored", score = 30, prof = "Tailoring", sk = 235, gen = true },  -- Frothing Sandals
   { id = 226958, slot = "Hands", lvl = 50, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 40, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Hands
+  { id = 15863, slot = "Main Hand", lvl = 50, how = "Quest", src = "Return to Tinkee (Felnok Steelspring)", zone = "Winterspring", score = 60, q = 4810, gen = true },  -- Grave Scepter
   { id = 20082, slot = "Ranged", lvl = 50, how = "Quest", src = "Blood of Morphaz (Ogtinc)", zone = "", score = 269, q = 8257, gen = true },  -- Woestave
   { id = 22245, slot = "Feet", lvl = 51, how = "Dungeon", src = "Panzor the Invincible", zone = "Blackrock Depths", score = 19, bl = 57, gen = true },  -- Soot Encrusted Footwear
   { id = 11904, slot = "Off Hand", lvl = 51, how = "Quest", src = "It's Dangerous to Go Alone (Linken)", zone = "Un'Goro Crater", score = 24, q = 3962, gen = true },  -- Spirit of Aquementas

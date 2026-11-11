@@ -102,7 +102,6 @@ RG.CLASS_GEAR.MAGE = {
   { id = 249392, slot = "2H", lvl = 25, how = "Crafted", src = "Enchanting", zone = "Bind on Pickup · Merchant's Favor: Beneris (The Barrens) · 45 favor", score = 44, prof = "Enchanting", sk = 140, gen = true },  -- Glimmering Staff
   { id = 274149, slot = "Back", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 9, bl = 28, gen = true },  -- Thornweaver Drape
   { id = 15468, slot = "Back", lvl = 25, how = "Quest", src = "Free at Last (Lakota Windsong)", zone = "Thousand Needles", score = 7, q = 4904, gen = true },  -- Windsong Drape
-  { id = 253977, slot = "Head", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Dungeon: Twilight Lord Kelris (Blackfathom Deeps)", score = 18, prof = "Tailoring", sk = 125, gen = true },  -- Filigreed Silky Circlet
   { id = 253989, slot = "Legs", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Jim'bek (The Barrens) · 30 favor", score = 22, prof = "Tailoring", sk = 125, gen = true },  -- Silky Leggings
   { id = 249394, slot = "Off Hand", lvl = 25, how = "Crafted", src = "Enchanting", zone = "Bind on Pickup · Merchant's Favor: Beneris (The Barrens) · 45 favor", score = 11, prof = "Enchanting", sk = 140, gen = true },  -- Orb of Mystic Insight
   { id = 6685, slot = "Shoulder", lvl = 25, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 13, bl = 30, gen = true },  -- Death Speaker Mantle
@@ -114,6 +113,7 @@ RG.CLASS_GEAR.MAGE = {
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 11, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 4, bl = 32, gen = true },  -- Stygian Bone Amulet
   { id = 6407, slot = "Wrist", lvl = 28, how = "Dungeon", src = "Grubbis", zone = "Gnomeregan", score = 5, bl = 32, gen = true },  -- Nightsky Wristbands
+  { id = 284697, slot = "Chest", lvl = 29, how = "Rare mob", src = "Prince Raze", zone = "Ashenvale", score = 17, bl = 32, gen = true },  -- Arcane Charged Robes
   { id = 13063, slot = "Ranged", lvl = 29, how = "BoE", src = "World drop", zone = "Auction House", score = 173, ah = true, gen = true },  -- Starfaller
   { id = 9447, slot = "Ring", lvl = 29, how = "Dungeon", src = "Electrocutioner 6000", zone = "Gnomeregan", score = 5, bl = 32, gen = true },  -- Electrocutioner Lagnut
   { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 14, bl = 33, gen = true },  -- Embalmed Shroud
@@ -325,7 +325,6 @@ RG.CLASS_GEAR_A.MAGE = {
   { id = 273808, slot = "Wrist", lvl = 24, how = "Dungeon", src = "Kam Deepfury", zone = "The Stockade", score = 3, bl = 27, gen = true },  -- Bridgebreaker Bindings
   { id = 249392, slot = "2H", lvl = 25, how = "Crafted", src = "Enchanting", zone = "Bind on Pickup · Merchant's Favor: Alynsia (Redridge Mountains) · 45 favor", score = 44, prof = "Enchanting", sk = 140, gen = true },  -- Glimmering Staff
   { id = 274149, slot = "Back", lvl = 25, how = "Dungeon", src = "Roogug", zone = "Razorfen Kraul", score = 9, bl = 28, gen = true },  -- Thornweaver Drape
-  { id = 253977, slot = "Head", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Dungeon: Twilight Lord Kelris (Blackfathom Deeps)", score = 18, prof = "Tailoring", sk = 125, gen = true },  -- Filigreed Silky Circlet
   { id = 253989, slot = "Legs", lvl = 25, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Mivin Shadowweave (Redridge Mountains) · 30 favor", score = 22, prof = "Tailoring", sk = 125, gen = true },  -- Silky Leggings
   { id = 249394, slot = "Off Hand", lvl = 25, how = "Crafted", src = "Enchanting", zone = "Bind on Pickup · Merchant's Favor: Alynsia (Redridge Mountains) · 45 favor", score = 11, prof = "Enchanting", sk = 140, gen = true },  -- Orb of Mystic Insight
   { id = 6685, slot = "Shoulder", lvl = 25, how = "Dungeon", src = "Death Speaker Jargba", zone = "Razorfen Kraul", score = 13, bl = 30, gen = true },  -- Death Speaker Mantle
@@ -337,6 +336,7 @@ RG.CLASS_GEAR_A.MAGE = {
   { id = 284383, slot = "Back", lvl = 27, how = "Rare mob", src = "Nal'taszar", zone = "Stonetalon Mountains", score = 12, bl = 30, gen = true },  -- Faerie Dragon's Skin
   { id = 9454, slot = "Feet", lvl = 27, how = "Dungeon", src = "Viscous Fallout", zone = "Gnomeregan", score = 11, bl = 30, gen = true },  -- Acidic Walkers
   { id = 6695, slot = "Neck", lvl = 27, how = "Dungeon", src = "Blind Hunter", zone = "Razorfen Kraul", score = 4, bl = 32, gen = true },  -- Stygian Bone Amulet
+  { id = 284697, slot = "Chest", lvl = 29, how = "Rare mob", src = "Prince Raze", zone = "Ashenvale", score = 17, bl = 32, gen = true },  -- Arcane Charged Robes
   { id = 13063, slot = "Ranged", lvl = 29, how = "BoE", src = "World drop", zone = "Auction House", score = 173, ah = true, gen = true },  -- Starfaller
   { id = 7691, slot = "Head", lvl = 30, how = "Dungeon", src = "Fallen Champion", zone = "Scarlet Monastery", score = 14, bl = 33, gen = true },  -- Embalmed Shroud
   { id = 7708, slot = "Ranged", lvl = 30, how = "Dungeon", src = "Azshir the Sleepless", zone = "Scarlet Monastery", score = 166, bl = 33, gen = true },  -- Necrotic Wand
@@ -389,7 +389,6 @@ RG.CLASS_GEAR_A.MAGE = {
   { id = 10751, slot = "Head", lvl = 49, how = "Quest", src = "The God Hakkar (Yeh'kinya)", zone = "The Temple of Atal'Hakkar", score = 20, q = 3528, gen = true },  -- Gemburst Circlet
   { id = 11824, slot = "Ring", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 17, bl = 53, gen = true },  -- Cyclopean Band
   { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 30, bl = 53, gen = true },  -- Ban'thok Sash
-  { id = 10806, slot = "Chest", lvl = 50, how = "Dungeon", src = "Jammal'an the Prophet", zone = "The Temple of Atal'Hakkar", score = 17, bl = 54, gen = true },  -- Vestments of the Atal'ai Prophet
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, also = { { how = "BoE", src = "World drop", zone = "Auction House" } }, gen = true },  -- Coldstone Slippers
   { id = 254109, slot = "Feet", lvl = 50, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Mivin Shadowweave (Redridge Mountains) · 90 favor at Honored", score = 29, prof = "Tailoring", sk = 235, gen = true },  -- Frothing Sandals
   { id = 226930, slot = "Hands", lvl = 50, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 36, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Sorcerer's Gauntlets
