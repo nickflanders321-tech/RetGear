@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **The "Economy" group in the Waypath+ menu is now called "Professions"** (professions, fishing, Auction House, gold and mail).
+
 ## v1.31.0
 
 - **Riverglades is on the route.** WoW Forever's quest data now has the zone, so its steps fill in for both factions (Horde: Rog'mar, Powderfuse Port and Bolder'ok; Alliance: Farholde Keep and around), and the route notes name each hub and its quest givers. A travel tip at 36 sends you there: Commander Aggro'gosh at Grom'gol gives Report to Rog'mar (Horde), the Redridge road fork leads to Farholde Keep (Alliance).

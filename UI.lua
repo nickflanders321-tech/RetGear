@@ -56,7 +56,7 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 local SECTIONS = {
   { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "plan", "flights" } },
   { key = "equip",   label = "Gear",    icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Gear", tabs = { "guide", "gear", "spec", "heal" } },
-  { key = "economy", label = "Economy", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Economy", tabs = { "prof", "fish", "ah", "gold", "mail" } },
+  { key = "economy", label = "Professions", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Economy", tabs = { "prof", "fish", "ah", "gold", "mail" } },
   { key = "cards",   label = "Cards",   icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Cards", tabs = { "cards" } },
 }
 local GROUPS, PARENT = {}, {}

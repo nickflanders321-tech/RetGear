@@ -1150,7 +1150,7 @@ function RG.RefreshTracker()
     y = gap(y)
   end
   -- 5b. professions: the step you're on and what you're short of
-  if false and RG.Opt("trackerProfs") and RG.ProfNow then   -- professions: Economy in the main window
+  if false and RG.Opt("trackerProfs") and RG.ProfNow then   -- professions: the Professions group in the main window
     local entries = {}
     for name, k in pairs(RG.Professions and RG.Professions() or {}) do
       local now = RG.PROFESSIONS and RG.PROFESSIONS[name] and RG.ProfNow(name, k.rank)
