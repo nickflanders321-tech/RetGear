@@ -336,7 +336,7 @@ end
 local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
 local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand" }
 -- "Upgrades only": hide pieces you already beat; keep tips, things you cannot use yet, and ones still loading
-local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Chest", "Reputation", "Drop" }
+local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Chest", "Reputation", "BoE", "Drop" }
 local function guideKeep(g, lvl)
   if g.tip or not g.id then return true end
   if not RG.GearShown(g) then return false end
@@ -499,7 +499,7 @@ local function renderGuide()
     elseif e.ctl == "view" then
       setItem(r, nil, nil, GREY .. "View|r  " .. (state.bySlot and "slot by slot" or "by level") .. GREY .. "     ·     Source|r  " .. (state.src or "any"), "", "", "", nil, nil, true)
       r.icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
-      r.tip = "Click: switch between by level and slot by slot.\nRight-click: show only gear from one source (Dungeon, Quest, Vendor, Crafted, Rare mob, Chest, Reputation, Drop)."
+      r.tip = "Click: switch between by level and slot by slot.\nRight-click: show only gear from one source (Dungeon, Quest, Vendor, Crafted, Rare mob, Chest, Reputation, BoE world drops, Drop)."
       r.onClick = function() state.bySlot = not state.bySlot; scroll:SetVerticalScroll(0); RG.RefreshUINow() end
       r.onRightClick = function()
         local cur = 1

@@ -26,6 +26,12 @@ if [ ! -d "$T/itemdb/Forever" ]; then
   git clone -q --depth 1 -b data/itemdb "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/itemdb" || true
 fi
 IDB=""; [ -d "$T/itemdb/Forever" ] && IDB="--itemdb $T/itemdb"
+# WoW Forever's own crafting tables (wago.tools DB2 export: the data/wago branch, kept fresh by .github/workflows/fetch-wago.yml)
+if [ ! -s "$T/wago/SkillLineAbility.csv.gz" ] && [ ! -s "$T/wago/SkillLineAbility.csv" ]; then
+  rm -rf "$T/wago"
+  git clone -q --depth 1 -b data/wago "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/wago" || true
+fi
+[ -s "$T/wago/SkillLineAbility.csv.gz" ] || [ -s "$T/wago/SkillLineAbility.csv" ] && IDB="$IDB --wago $T/wago"
 $LUA tools/gear/specs_dump.lua . "$T/specs.json"
 python3 tools/gear/gen.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" . --specs "$T/specs.json" $IDB
 $LUA tools/waypoints/dump.lua "$C/foreverNpcDB.lua" "$T/npcs.tsv"

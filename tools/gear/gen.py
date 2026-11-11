@@ -22,7 +22,13 @@ Usage:
   lua5.1 dump.lua /tmp/qdb/src/corrections/Forever/combined /tmp/forever_gear.json
   lua5.1 specs_dump.lua <Waypath+ folder> /tmp/specs.json
   git clone --depth 1 -b data/itemdb https://github.com/nickflanders321-tech/RetGear.git /tmp/itemdb   (LibItemDB, MIT)
-  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json] [--itemdb /tmp/itemdb]
+  git clone --depth 1 -b data/wago https://github.com/nickflanders321-tech/RetGear.git /tmp/wago   (the client's DB2 tables, .github/workflows/fetch-wago.yml)
+  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json] [--itemdb /tmp/itemdb] [--wago /tmp/wago]
+
+With --wago, WoW Forever's own recipes join: the game client's tables say which craft makes which item, which recipe
+item teaches it and the skill it needs (a craft no recipe item teaches is learned from the trainer). Where a recipe
+comes from is QuestieDB's (vendors, drops, quests), including the Merchant's Favor vendors of the Waylaid Crates
+(Durotar Supply and Logistics / Azeroth Commerce Authority).
 """
 import json, re, sys
 from collections import defaultdict
@@ -30,6 +36,9 @@ from collections import defaultdict
 args = sys.argv[1:]
 SPECS_JSON = None
 ITEMDB = None
+WAGO = None
+if "--wago" in args:
+    i = args.index("--wago"); WAGO = args[i + 1]; del args[i:i + 2]
 if "--itemdb" in args:
     i = args.index("--itemdb"); ITEMDB = args[i + 1]; del args[i:i + 2]
 if "--specs" in args:
@@ -412,6 +421,12 @@ def sources(iid, ally=False):
             elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in other:
                 out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
     d = items.get(int(iid)) or {}
+    # a blue or purple Bind on Equip piece many mobs drop: not something to farm, but anyone can sell it on the
+    # Auction House (not raid trash: everything that drops it must be outside the raids)
+    if len(drops) > 4 and str(d.get("bonding")) == "2" and int(d.get("Quality") or 0) >= 3:
+        zs = [FN.get(str(n), {}).get("zone") for n in drops]
+        if not any(z in RAID_ZONES or DUNGEON.get(z) in RAIDS for z in zs):
+            out.append({"how": "BoE", "lvl": 0, "src": "World drop", "zone": "Auction House"})
     rep_rank = int(d.get("RequiredReputationRank") or 0) if int(d.get("RequiredReputationFaction") or 0) else 0
     for vid in sorted(set(int(v) for v in L(f.get("vendors"))) | VEND.get(int(iid), set())):
         n = FN.get(str(vid))
@@ -433,7 +448,22 @@ REP_RANK = {3: "Neutral", 4: "Friendly", 5: "Honored", 6: "Revered", 7: "Exalted
 # (a trainer, a vendor of your faction, a quest, or a dungeon boss; recipes that are only a rare
 # world drop are left out, since nobody can plan on them)
 # ---------------------------------------------------------------------------
-PROF = {164: "Blacksmithing", 165: "Leatherworking", 197: "Tailoring", 202: "Engineering"}
+PROF = {164: "Blacksmithing", 165: "Leatherworking", 197: "Tailoring", 202: "Engineering", 333: "Enchanting"}
+# The Merchant's Favor recipe vendors (Waylaid Crates): Horde at the Crossroads, Alliance at Three Corners (Redridge).
+# What a recipe costs there and the standing it needs, by profession and skill (method.gg and wowhandbook.com,
+# November 2026: "Azeroth Commerce Authority and Durotar Supply and Logistics Reputation Guide", "Merchant's Favor")
+MF_VENDORS = {248197, 248201, 248202, 248199, 248200, 256730, 256734, 256735, 256732, 256733}
+MF_PRICE = {   # profession: [(highest skill, favor, standing), ...]
+    "Blacksmithing": [(125, 30, None), (210, 60, "Friendly"), (250, 90, "Honored"), (300, 120, "Honored")],
+    "Leatherworking": [(125, 30, None), (210, 60, "Friendly"), (300, 90, "Honored")],
+    "Tailoring": [(125, 30, None), (215, 60, "Friendly"), (300, 90, "Honored")],
+    "Enchanting": [(140, 45, None), (220, 120, "Friendly"), (275, 180, "Honored"), (300, 240, "Honored")],
+    "Engineering": [(145, 45, None), (200, 180, "Friendly"), (285, 270, "Honored"), (300, 360, "Honored")],
+}
+def mf_note(prof, sk):
+    for top, cost, rank in MF_PRICE.get(prof, []):
+        if sk <= top: return "%d favor%s" % (cost, (" at " + rank) if rank else "")
+    return "Merchant's Favor"
 FR = fv.get("recipes") or {}
 def craft_of(spell_id, depth=0):
     """The item a spell makes, following 'learn' spells to the craft they teach."""
@@ -446,7 +476,7 @@ CRAFT = defaultdict(list)   # item made -> [ {prof, sk, spec, rec, recA(lliance-
 for sid, (sk, val) in TRAINER.items():
     it = craft_of(sid)
     if it and sk in PROF: CRAFT[it].append({"prof": PROF[sk], "sk": val, "spec": None, "rec": "Trainer", "H": True, "A": True})
-def recipe_source(rid, ally):
+def recipe_source(rid, ally, prof=None, sk=0):
     f = FR.get(str(rid))
     if not f: return None
     other = HORDE_ZONES if ally else ALLIANCE_ZONES
@@ -456,6 +486,8 @@ def recipe_source(rid, ally):
         if n and ("A" if ally else "H") in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in other \
            and not re.search(r"Quartermaster|Supply Officer|Brotherhood|Argent Dawn|Cenarion|Zandalar|Timbermaw|Brood", n.get("sub") or ""):
             z = zone_name(n.get("zone"))
+            if int(vid) in MF_VENDORS:   # Waylaid Crates: paid in Merchant's Favor
+                return "Merchant's Favor: " + n["name"] + (" (" + z + ")" if z else "") + " · " + mf_note(prof, sk)
             return "Vendor: " + n["name"] + (" (" + z + ")" if z else "")
     for qid in L(f.get("questRewards")):
         q = horde_quest(qid, ally)
@@ -479,12 +511,49 @@ for rid, d in items.items():
     spec = int(d.get("requiredspell") or 0)
     spec_name = spells[spec]["SpellName"] if spec in spells else None
     CRAFT[made].append({"prof": PROF[sk], "sk": int(d["RequiredSkillRank"] or 0), "spec": spec_name, "rid": rid})
+# WoW Forever's own crafts, from the game client's tables (--wago)
+WAGO_CRAFTS = 0
+if WAGO:
+    import csv, gzip
+    def _wago(name):
+        path = os.path.join(WAGO, name + ".csv")
+        fh = open(path, encoding="utf-8") if os.path.exists(path) else gzip.open(path + ".gz", "rt", encoding="utf-8")
+        return csv.DictReader(fh)
+    makes = defaultdict(set)                     # craft spell -> items it creates
+    for r in _wago("SpellEffect"):
+        if r["Effect"] == "24" and int(r["EffectItemType"] or 0): makes[int(r["SpellID"])].add(int(r["EffectItemType"]))
+    effect_spell = {r["ID"]: int(r["SpellID"] or 0) for r in _wago("ItemEffect")}
+    item_class = {int(r["ID"]): int(r["ClassID"] or 0) for r in _wago("Item")}
+    sparse = {int(r["ID"]): r for r in _wago("ItemSparse")}
+    taught_by = defaultdict(list)                # craft spell -> recipe items that teach it
+    for r in _wago("ItemXItemEffect"):
+        it = int(r["ItemID"])
+        if item_class.get(it) == 9: taught_by[effect_spell.get(r["ItemEffectID"], 0)].append(it)
+    for it, r in sparse.items():               # the client knows each item's binding
+        if it in items and items[it].get("_idb") and int(r.get("Bonding") or 0): items[it]["bonding"] = str(r["Bonding"])
+    for r in _wago("SkillLineAbility"):
+        sk_line, spell = int(r["SkillLine"] or 0), int(r["Spell"] or 0)
+        if sk_line not in PROF: continue
+        for made in makes.get(spell, ()):
+            if made not in items: continue
+            known = CRAFT.get(made, [])
+            recs = [rid for rid in taught_by.get(spell, []) if int(sparse.get(rid, {}).get("RequiredSkill") or 0) == sk_line]
+            if recs:
+                for rid in recs:
+                    if any(c.get("rid") == rid for c in known): continue
+                    CRAFT[made].append({"prof": PROF[sk_line], "sk": int(sparse[rid].get("RequiredSkillRank") or 0), "spec": None, "rid": rid})
+                    WAGO_CRAFTS += 1
+            elif int(r["MinSkillLineRank"] or 0) > 1 and not any(c.get("rec") == "Trainer" for c in known):
+                # no recipe item teaches it: the trainer does
+                CRAFT[made].append({"prof": PROF[sk_line], "sk": int(r["MinSkillLineRank"]), "spec": None, "rec": "Trainer", "H": True, "A": True})
+                WAGO_CRAFTS += 1
+    print("wago (WoW Forever client tables): %d more ways to craft gear" % WAGO_CRAFTS, file=sys.stderr)
 def craft_source(iid, ally=False):
     """The easiest way to learn to make this item, or None."""
     best = None
     for c in CRAFT.get(iid, []):
         if c.get("rid"):
-            rec = recipe_source(c["rid"], ally)
+            rec = recipe_source(c["rid"], ally, c["prof"], c["sk"])
             if not rec: continue
         else: rec = c["rec"]
         cand = dict(c, rec=rec)
@@ -500,7 +569,8 @@ def craft_source(iid, ally=False):
 # Pick the upgrades, class by class
 # ---------------------------------------------------------------------------
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
-ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Chest": 3, "Rare mob": 4, "Reputation": 5, "Crafted": 6}
+ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Chest": 3, "Rare mob": 4, "Reputation": 5, "Crafted": 6, "BoE": 7}
+EXTRA = ("Crafted", "BoE")   # only listed when clearly better than what your route gives
 src_cache = {}
 def pick(C, lvl_from=5, ally=False):
     """The upgrade path for every slot plus the best quest reward and dungeon drop per
@@ -538,7 +608,7 @@ def pick(C, lvl_from=5, ally=False):
     start = (lvl_from // 5) * 5
     for slot, all_c in cands.items():
         all_c.sort(key=lambda c: (c["lvl"], -c["score"]))
-        lst = [c for c in all_c if c["how"] != "Crafted"]
+        lst = [c for c in all_c if c["how"] not in EXTRA]
         by_id = {}
         # 1) the upgrade path: anything better than everything available at its level or below
         best = 0
@@ -554,14 +624,16 @@ def pick(C, lvl_from=5, ally=False):
                     top = max(w, key=lambda c: c["score"])
                     prior = max([c["score"] for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
                     if top["score"] > prior * 1.05: by_id[top["id"]] = top
-        # 3) crafted gear, only when it clearly beats everything else you can get by then (15% or more)
-        #    and the last crafted piece picked for the slot (10%), so it doesn't crowd out your route's rewards
-        best_craft = 0
-        for c in all_c:
-            if c["how"] != "Crafted": continue
-            other = max([x["score"] for x in lst if x["lvl"] <= c["lvl"]] or [0])
-            if c["score"] > other * 1.15 and c["score"] > best_craft * 1.10:
-                by_id[c["id"]] = c; best_craft = c["score"]
+        # 3) crafted gear and Auction House world drops, only when they clearly beat everything else you can get by
+        #    then (15% or more) and the last such piece picked for the slot (10%), so they don't crowd out your
+        #    route's rewards
+        for how in EXTRA:
+            best_x = 0
+            for c in all_c:
+                if c["how"] != how: continue
+                other = max([x["score"] for x in lst if x["lvl"] <= c["lvl"]] or [0])
+                if c["score"] > other * 1.15 and c["score"] > best_x * 1.10:
+                    by_id[c["id"]] = c; best_x = c["score"]
         picked += [c for c in by_id.values() if c["lvl"] >= lvl_from - 2]
     picked.sort(key=lambda c: (c["lvl"], c["slot"]))
     return picked
@@ -573,6 +645,7 @@ def entry(c):
     if c.get("prof"):
         extra += ", prof = %s, sk = %d" % (lua_str(c["prof"]), c["sk"] or 0)
         if c.get("boe"): extra += ", boe = true, ah = true"
+    elif c["how"] == "BoE": extra += ", ah = true"
     # other places it comes from (a second quest, a dungeon boss, a vendor)
     also = []
     for x in c.get("also") or []:

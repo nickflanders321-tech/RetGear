@@ -181,6 +181,10 @@ local function describe(src, lvl)
     out.title = (how == "BoE" and "World drop (Bind on Equip)") or how or "Source"
     out.icon = 133784
     line("From", WHITE .. (src.src or "?") .. "|r" .. ((src.zone or "") ~= "" and (GREY .. "  ·  " .. src.zone .. "|r") or ""))
+    if how == "BoE" then
+      line("Where", GREY .. "many mobs drop it; anyone can sell it, so look on the Auction House|r")
+      if src.id and RG.PriceText then local pt = RG.PriceText(src.id); if pt then line("Auction House", pt) end end
+    end
   end
   return out
 end
