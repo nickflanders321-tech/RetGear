@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.30.0
 
 - **Gear guide: WoW Forever's own crafted gear and the Merchant's Favor recipes.** The gear lists for every class and spec (and the 2nd spec lists) now include the gear WoW Forever's new recipes make: the Silky, Pristine, Netherfroth and Frothing cloth, the Veteran's, Justicar's and Enriched Thorium plate and chain, the Mender's, Prowler's and Skycaller's leather and mail, enchanted staves, wands and orbs, and the new engineering gear. The data comes from the game client's own tables (which recipe makes what, and the skill it needs), so it's exact. Recipes bought with Merchant's Favor (the currency from Waylaid Crates) say where and what they cost, for example "Jim'bek (The Barrens) · 60 favor at Friendly"; the Alliance lists name the Three Corners vendors. Crafted pieces are listed when they clearly beat what your route gives, and only if you have that profession when they're Bind on Pickup.
 - **Gear guide: Auction House world drops.** Blue and purple Bind on Equip items that many mobs drop (Slaghammer, Wolfclaw Gloves, Shadowcraft Bracers...) are listed when they clearly beat everything else at that level, with the price your Auction House scans have seen. The source filter on the Gear tab has a "BoE" step for them.
