@@ -3,8 +3,7 @@
 ## Unreleased
 
 - **Fishing: cast, lure and hook with less fuss.** The Fishing tab has a new "Your fishing tools" section, one row each, click to change:
-  - **Double right-click to cast** with your pole in hand, no action bar slot needed. If your lure ran out and you carry one, that double-click puts it on first.
-  - **One-key fishing:** pick a key; it casts, and once your bobber is in the water the same key hooks it with the game's own interact key, so you press it at the splash. The key is only taken over while your pole is in your hands, and a fight gives it straight back.
+  - **One-key fishing:** pick a key; it casts (putting a lure on first if yours ran out and you carry one), and once your bobber is in the water the same key hooks it with the game's own interact key, so you press it at the splash. The key is only taken over while your pole is in your hands, and a fight gives it straight back.
   - **Auto-loot while fishing**, with your own setting back 30 seconds after your last cast.
   - **Fishing outfit:** "Go fishing" puts on your best pole and any fishing gear in your bags; "Weapons back" puts your weapons and gear back. Right-click it while wearing your fishing hat, boots or gloves to add them. A fight while you hold the pole puts your weapons back (`/wp gofish`, `/wp weapons`).
   Everything waits for your own click or key press: the game doesn't let add-ons fish for you. If a cast doesn't happen, `/wp fishcheck` shows what the tools see.

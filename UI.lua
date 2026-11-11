@@ -2212,11 +2212,8 @@ local function renderFish()
   n = n + 1; setHeader(getRow(n), "Your fishing tools")
   rows[n].tip = "Everything here waits for your own click or key press: the game doesn't let add-ons fish for you."
   n = n + 1
-  setItem(getRow(n), nil, nil, "|cffffffffDouble right-click to cast|r", "With your pole in hand, double right-click the water. If your lure ran out, that double-click puts a new one on first.", onOff(RG.Opt("fishEasyCast")), "", nil, nil, true)
-  rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing"); rows[n].onClick = function() toggle("fishEasyCast") end; rows[n].tip = "Click to turn it " .. (RG.Opt("fishEasyCast") and "off" or "on") .. "."
-  n = n + 1
   local key = RG.FishKey and RG.FishKey()
-  setItem(getRow(n), nil, nil, "|cffffffffOne-key fishing|r", key and ("Press " .. key .. " to cast, then press it again at the splash to hook the fish. It's only taken over while your pole is in your hands.") or "Pick a key: it casts, then hooks the fish when you press it at the splash.",
+  setItem(getRow(n), nil, nil, "|cffffffffOne-key fishing|r", key and ("Press " .. key .. " to cast (it puts a lure on first if yours ran out), then press it again at the splash to hook the fish. It's only taken over while your pole is in your hands.") or "Pick a key: it casts, then hooks the fish when you press it at the splash.",
     key and (GOLD .. key .. "|r") or (GOLD .. "Set a key|r"), "", nil, nil, true)
   rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Key_03")
   rows[n].onClick = function() if RG.FishPickKey then RG.FishPickKey(function() RG.RefreshUI() end) end end

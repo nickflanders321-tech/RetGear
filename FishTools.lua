@@ -1,11 +1,8 @@
--- Waypath+ fishing tools: casting without an action bar, lures put on for you, one key to cast and hook,
+-- Waypath+ fishing tools: one key to cast and hook (a lure put on first when yours ran out),
 -- loot taken while you fish, and a fishing outfit you put on and take off with one click.
 --
 -- Everything that casts or uses an item goes through a secure button and your own click or key press: the
 -- game allows that, never an add-on acting by itself. Bindings only change out of combat, as the game requires.
---   Easy cast: double right-click the world with your pole in hand (a right-click lends the right mouse button to
---              our cast button for 0.4 seconds, so the second click of a double-click casts). If your lure has run out and you carry
---              one, that double-click puts the lure on first; the next one casts.
 --   One key:   a key you choose (Fishing tab). It casts while your bobber is out of the water and, once it's
 --              in, uses the game's own interact key on it, so pressing it at the splash hooks the fish. The key
 --              is only taken over while your pole is in your hands; otherwise it does what it always did.
@@ -15,7 +12,6 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 
-table.insert(RG.OPTIONS, { key = "fishEasyCast", label = "Double right-click to cast Fishing (puts a lure on first when yours ran out)", default = true })
 table.insert(RG.OPTIONS, { key = "fishAutoLoot", label = "Auto-loot while I fish", default = true })
 table.insert(RG.OPTIONS, { key = "fishCombatSwap", label = "Weapons back on when a fight starts while I hold my fishing pole", default = true })
 
@@ -74,7 +70,7 @@ local function prepare()
   if not b or inCombat() then return end
   local c = RG.FishBoostChoice and RG.FishBoostChoice()
   local lure = c and c.lure
-  if lure and RG.Opt("fishEasyCast") then
+  if lure then
     b:SetAttribute("type", "macro"); b:SetAttribute("macrotext", lure.macro); lureNext = true
   else
     b:SetAttribute("type", "spell"); b:SetAttribute("spell", fishSpell()); lureNext = false
@@ -82,51 +78,7 @@ local function prepare()
 end
 RG.FishToolsPrepare = prepare
 
--- ---------------------------------------------------------------------------
--- Easy cast: double right-click on the world
--- ---------------------------------------------------------------------------
-local easyOwner = CreateFrame and CreateFrame("Frame")
-local armed = nil
-local channeling = false
-local function disarm()
-  if not armed then return end
-  armed = nil
-  if easyOwner and not inCombat() and ClearOverrideBindings then ClearOverrideBindings(easyOwner) end
-end
-local function overWorld()
-  local f
-  if GetMouseFoci then local t = GetMouseFoci(); f = t and t[1] elseif GetMouseFocus then f = GetMouseFocus() end
-  return f == nil or f == WorldFrame
-end
--- The first right-click on the world lends the right mouse button to our button for a moment: a second right-click
--- within 0.4 seconds is the double-click and casts; otherwise it's handed back and nothing happened.
--- (The game sends a click to whoever holds the button when it goes down, so the binding must be in place before
--- the second click, not during it.)
-local DOUBLE = 0.4
-local lastSeen, seenDown = 0, 0
-local function onMouseDown(button)
-  if button ~= "RightButton" then return end
-  -- (the click event and the world's own mouse-down can both report the same click)
-  local t = GetTime()
-  if t - lastSeen < 0.03 then return end
-  lastSeen = t; seenDown = seenDown + 1
-  if armed then
-    -- the second click went to our button: hand the right mouse button back right after
-    if C_Timer then C_Timer.After(0.1, disarm) else disarm() end
-    return
-  end
-  if not RG.Opt("fishEasyCast") or not RG.HasPole or not RG.HasPole() then return end
-  if inCombat() or channeling or (IsMounted and IsMounted()) or not overWorld() then return end
-  prepare()
-  if SetOverrideBindingClick then
-    SetOverrideBindingClick(easyOwner, true, "BUTTON2", "WaypathFishEasy")
-    local at = GetTime(); armed = at
-    if C_Timer then C_Timer.After(DOUBLE, function() if armed == at then disarm() end end) end
-  end
-end
-RG.FishEasyMouseDown = onMouseDown   -- (tests)
-if WorldFrame and WorldFrame.HookScript then pcall(WorldFrame.HookScript, WorldFrame, "OnMouseDown", function(_, b) onMouseDown(b) end) end
-
+local channeling = false   -- your bobber is in the water
 -- ---------------------------------------------------------------------------
 -- One key: cast while the bobber is out of the water, the interact key while it's in
 -- ---------------------------------------------------------------------------
@@ -302,21 +254,19 @@ end
 -- ---------------------------------------------------------------------------
 local ev = CreateFrame and CreateFrame("Frame")
 if ev then
-  for _, e in ipairs({ "PLAYER_LOGIN", "GLOBAL_MOUSE_DOWN", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP",
+  for _, e in ipairs({ "PLAYER_LOGIN", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP",
     "PLAYER_EQUIPMENT_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "BAG_UPDATE_DELAYED", "UNIT_INVENTORY_CHANGED", "PLAYER_LOGOUT" }) do
     pcall(ev.RegisterEvent, ev, e)
   end
   ev:SetScript("OnEvent", function(_, event, a1, _, a3)
     if not RG.db or (RG.IsAlt and RG.IsAlt()) then return end
-    if event == "GLOBAL_MOUSE_DOWN" then onMouseDown(a1)
-    elseif event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+    if event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
       if a1 ~= "player" or not isFishing(a3) then return end
       channeling = event == "UNIT_SPELLCAST_CHANNEL_START"
       if channeling then lastCast = GetTime(); lootOn() end
-      disarm(); applyKey()
+      applyKey()
     elseif event == "PLAYER_REGEN_DISABLED" then
       -- the last moment bindings can change: give your keys back for the fight
-      disarm()
       if keyOwner and ClearOverrideBindings then ClearOverrideBindings(keyOwner) end
       keyMode = nil; softOff(); lootOff()
       if RG.Opt("fishCombatSwap") and RG.HasPole and RG.HasPole() then
@@ -333,7 +283,6 @@ if ev then
   end)
   if C_Timer and C_Timer.NewTicker then
     C_Timer.NewTicker(5, function()
-      if armed and GetTime() - armed > 1 then disarm() end
       if lootSaved and lastCast and GetTime() - lastCast > 30 and not channeling and not inCombat() then lootOff() end
     end)
   end
@@ -345,7 +294,7 @@ local function fishCheck()
   local cv = GetCVar and GetCVar("ActionButtonUseKeyDown")
   local lines = {
     "pole in hand: " .. tostring(RG.HasPole and RG.HasPole()) .. "  ·  in a fight: " .. tostring(inCombat() and true or false) .. "  ·  bobber out: " .. tostring(channeling),
-    "double right-click: " .. (RG.Opt("fishEasyCast") and "on" or "off") .. "  ·  right-clicks seen: " .. seenDown .. "  ·  spell: " .. fishSpell(),
+    "spell: " .. fishSpell(),
     "one key: " .. tostring(key) .. "  ·  now does: " .. tostring(key and GetBindingAction and GetBindingAction(key, true)) .. "  ·  mode: " .. tostring(keyMode),
     "cast on key down: " .. tostring(cv) .. "  ·  soft interact: " .. tostring(GetCVar and GetCVar("SoftTargetInteract")),
   }
