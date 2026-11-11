@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Fishing: cast, lure and hook with less fuss.** The Fishing tab has a new "Your fishing tools" section, one row each, click to change:
+  - **Double right-click to cast** with your pole in hand, no action bar slot needed. If your lure ran out and you carry one, that double-click puts it on first.
+  - **One-key fishing:** pick a key; it casts, and once your bobber is in the water the same key hooks it with the game's own interact key, so you press it at the splash. The key is only taken over while your pole is in your hands, and a fight gives it straight back.
+  - **Auto-loot while fishing**, with your own setting back 30 seconds after your last cast.
+  - **Fishing outfit:** "Go fishing" puts on your best pole and any fishing gear in your bags; "Weapons back" puts your weapons and gear back. Right-click it while wearing your fishing hat, boots or gloves to add them. A fight while you hold the pole puts your weapons back (`/wp gofish`, `/wp weapons`).
+  Everything waits for your own click or key press: the game doesn't let add-ons fish for you.
+- **Fishing: goals.** A Goals section with Nat Pagle's four fish for Artisan Fishing (which you have, click one to pin where it bites), the Stranglethorn Fishing Extravaganza with your Speckled Tastyfish count toward 40 (click to pin the schools, right-click for the rules) and a reminder to set down your Fishing Rack or Hut, with what it needs. The tracker shows the same while you fish.
+- **Fishing: what to expect.** The skill line on the tracker says how many catches (and, at this session's pace, how long) it takes to reach your rank's cap. "What you can catch here" shows your own share of each fish once you've caught 20 there. The catch log shows the last 5 with more on a click, and the Extravaganza notes moved into Goals, so the tab is shorter.
+
 ## v1.30.0
 
 - **Gear guide: WoW Forever's own crafted gear and the Merchant's Favor recipes.** The gear lists for every class and spec (and the 2nd spec lists) now include the gear WoW Forever's new recipes make: the Silky, Pristine, Netherfroth and Frothing cloth, the Veteran's, Justicar's and Enriched Thorium plate and chain, the Mender's, Prowler's and Skycaller's leather and mail, enchanted staves, wands and orbs, and the new engineering gear. The data comes from the game client's own tables (which recipe makes what, and the skill it needs), so it's exact. Recipes bought with Merchant's Favor (the currency from Waylaid Crates) say where and what they cost, for example "Jim'bek (The Barrens) · 60 favor at Friendly"; the Alliance lists name the Three Corners vendors. Crafted pieces are listed when they clearly beat what your route gives, and only if you have that profession when they're Bind on Pickup.

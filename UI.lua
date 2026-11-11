@@ -2200,20 +2200,95 @@ local function renderFish()
       table.concat(parts, ", "), s.gained > 0 and (GREEN .. "+" .. s.gained .. " skill|r") or "", (s.value or 0) > 0 and ("|cffffffff" .. RG.FishMoney(s.value) .. "|r" .. (s.goldPerHour and (GREY .. "  ·  " .. RG.FishMoney(s.goldPerHour) .. "/hr|r") or "")) or "")
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_14")
   end
+  -- a quiet "+ more / fewer" line under a list
+  local function foldLine(open, text, key)
+    n = n + 1
+    setStep(getRow(n), "", GREY .. (open and "Show fewer" or text) .. "|r", false, function() state[key] = not open; RG.RefreshUI() end)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  end
+  local function onOff(v) return v and (GREEN .. "On|r") or (GREY .. "Off|r") end
+  local function toggle(key) RG.db[key] = not RG.Opt(key); RG.RefreshUI() end
+  -- your fishing tools: one row each, click to change
+  n = n + 1; setHeader(getRow(n), "Your fishing tools")
+  rows[n].tip = "Everything here waits for your own click or key press: the game doesn't let add-ons fish for you."
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffDouble right-click to cast|r", "With your pole in hand, double right-click the water. If your lure ran out, that double-click puts a new one on first.", onOff(RG.Opt("fishEasyCast")), "", nil, nil, true)
+  rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing"); rows[n].onClick = function() toggle("fishEasyCast") end; rows[n].tip = "Click to turn it " .. (RG.Opt("fishEasyCast") and "off" or "on") .. "."
+  n = n + 1
+  local key = RG.FishKey and RG.FishKey()
+  setItem(getRow(n), nil, nil, "|cffffffffOne-key fishing|r", key and ("Press " .. key .. " to cast, then press it again at the splash to hook the fish. It's only taken over while your pole is in your hands.") or "Pick a key: it casts, then hooks the fish when you press it at the splash.",
+    key and (GOLD .. key .. "|r") or (GOLD .. "Set a key|r"), "", nil, nil, true)
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Key_03")
+  rows[n].onClick = function() if RG.FishPickKey then RG.FishPickKey(function() RG.RefreshUI() end) end end
+  rows[n].onRightClick = function() if RG.FishSetKey then RG.FishSetKey(nil); RG.RefreshUI() end end
+  rows[n].tip = "Click to pick a key" .. (key and ", right-click to stop using " .. key or "") .. ". Hooking uses the game's interact key on your bobber."
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffAuto-loot while fishing|r", "Your catch goes straight to your bags; your own setting comes back 30 seconds after your last cast.", onOff(RG.Opt("fishAutoLoot")), "", nil, nil, true)
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_10"); rows[n].onClick = function() toggle("fishAutoLoot") end; rows[n].tip = "Click to turn it " .. (RG.Opt("fishAutoLoot") and "off" or "on") .. "."
+  if RG.FishOutfitState then
+    local st, pole = RG.FishOutfitState()
+    n = n + 1
+    local poleName = pole and itemName(pole)
+    setItem(getRow(n), nil, nil, "|cffffffffFishing outfit|r", st == "on" and "Your pole is in your hands. Click for your weapons and gear back; a fight puts your weapons back too." or (pole and ("Puts on " .. poleName .. GREY .. " and any fishing gear in your bags.|r") or "No fishing pole in your bags yet: see Poles, lures and fishing gear below."),
+      st == "on" and (GOLD .. "Weapons back|r") or (pole and (GOLD .. "Go fishing|r") or ""), "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Fishingpole_02")
+    rows[n].onClick = function() if st == "on" then RG.FishGearOff() else RG.FishGearOn() end; if C_Timer then C_Timer.After(0.5, RG.RefreshUI) end end
+    rows[n].onRightClick = function() RG.FishSaveOutfit() end
+    rows[n].tip = "Click to " .. (st == "on" and "put your weapons back" or "put your fishing outfit on") .. ". Right-click while wearing your fishing hat, boots or gloves to make them part of the outfit.  /wp gofish  ·  /wp weapons"
+  end
+  -- goals: Artisan, the Extravaganza, your camp
+  local pg = RG.FishPagle and RG.FishPagle()
   local dst, dmin
   if RG.FishDerby then dst, dmin = RG.FishDerby() end
+  local ct = RG.FishCampTip and RG.FishCampTip()
+  if pg or dst or ct then n = n + 1; setHeader(getRow(n), "Goals") end
+  if pg then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffArtisan Fishing: Nat Pagle's four fish|r", "Take Nat Pagle, Angler Extreme at Tidefury Cove, Dustwallow Marsh first: these fish only bite once you have it. Click a fish to pin where it bites.",
+      (pg.done == 4 and GREEN or GOLD) .. pg.done .. " / 4|r", "", pg.done == 4 and "green" or "gold")
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_31")
+    for _, f in ipairs(pg.list) do
+      n = n + 1
+      local name, link, quality = itemName(f.id)
+      setItem(getRow(n), f.id, link, name, GREY .. f.where .. "|r", f.have > 0 and (GREEN .. "Got it|r") or (GREY .. "Not yet|r"), "", nil, quality, true)
+      if f.wp then local wp = f.wp; rows[n].onClick = function() RG.Follow(wp) end; rows[n].tip = "Click to pin where it bites and turn the arrow on." end
+    end
+  end
   if dst then
     n = n + 1
     local h, m = math.floor(dmin / 60), dmin % 60
     local when = (h >= 24 and (math.floor(h / 24) .. " d " .. (h % 24) .. " h") or (h > 0 and (h .. " h " .. m .. " min") or (m .. " min")))
-    setItem(getRow(n), nil, nil, "|cffffffffStranglethorn Fishing Extravaganza|r", "Sundays from 2 pm server time. Turn in 40 Speckled Tastyfish to Riggle Bassbait in Booty Bay first; the winner picks the Arcanite Fishing Pole or the Hook of the Master Angler.",
-      dst == "on" and (GREEN .. "On now: " .. math.floor(dmin / 60) .. "h " .. (dmin % 60) .. "m left|r") or (GREY .. "in " .. when .. "|r"), "", dst == "on" and "gold" or nil)
-    rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing")
+    local tf, school = 0, nil
+    if RG.FishTastyfish then tf, school = RG.FishTastyfish() end
+    local sub = dst == "on" and ("Speckled Tastyfish: " .. tf .. " / 40. Turn in 40 to Riggle Bassbait in Booty Bay to win; every 5 also pay out at Jang.") or
+      ("Sundays from 2 pm server time in Stranglethorn Vale." .. (tf > 0 and (" You have " .. tf .. " Speckled Tastyfish: Jang in Booty Bay pays out for every 5.") or ""))
+    setItem(getRow(n), nil, nil, "|cffffffffStranglethorn Fishing Extravaganza|r", sub,
+      dst == "on" and (GREEN .. "On: " .. h .. "h " .. m .. "m left|r") or (GREY .. "in " .. when .. "|r"), "", dst == "on" and "gold" or nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_30")
+    rows[n].onClick = function() if school then RG.Follow(school) else state.fishDerby = not state.fishDerby; RG.RefreshUI() end end
+    rows[n].onRightClick = function() state.fishDerby = not state.fishDerby; RG.RefreshUI() end
+    rows[n].tip = (school and "Click to pin the Tastyfish schools. " or "") .. "Right-click for how it works and the prizes."
+    if state.fishDerby then
+      for _, line in ipairs(RG.FISH_DERBY) do
+        n = n + 1; setStep(getRow(n), "", GREY .. line .. "|r", false, nil)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+      end
+    end
+  end
+  if ct then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffYour " .. ct.name .. "|r", "Set it down where you fish: " .. ct.what .. ". Needs " .. ct.mats .. ".", GREY .. "Camp tab|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_24")
+    rows[n].onClick = function() if RG.ShowTab then RG.ShowTab("camp") end end
+    rows[n].tip = "Click for the Camp tab: blueprints, materials and where to get them."
   end
   -- what this zone can bring up, and what is worth your time
   local best = RG.FishBest and RG.FishBest()
   if best then
-    n = n + 1; setHeader(getRow(n), "What you can catch here  ·  " .. best.zone .. GREY .. "  (about " .. RG.FishMoney(best.perCatch) .. " per catch)|r")
+    local mine, myN = nil, 0
+    if RG.FishMyRates then mine, myN = RG.FishMyRates(best.zone) end
+    if myN < 20 then mine = nil end   -- (too few catches to say)
+    n = n + 1; setHeader(getRow(n), "What you can catch here  ·  " .. best.zone .. GREY .. "  (about " .. RG.FishMoney(best.perCatch) .. " per catch" .. (mine and (", your " .. myN .. " catches here in brackets") or "") .. ")|r")
     local shown = 0
     for _, e in ipairs(best.list) do
       if shown >= 8 then break end
@@ -2221,14 +2296,15 @@ local function renderFish()
       n = n + 1
       local name, link, quality = itemName(e.id)
       local pill = (e == best.bestEv and e.ev > 0) and (GREEN .. "Worth the most|r") or (e == best.bestValue and e.value > 0 and (GOLD .. "Priciest fish|r")) or ""
-      setItem(getRow(n), e.id, link, name .. GREY .. string.format("   %.1f%% of catches|r", e.chance), e.value > 0 and ("Worth " .. RG.FishMoney(e.value) .. GREY .. " each (" .. (e.src == "AH" and "auction house" or "vendor") .. ")  ·  about " .. RG.FishMoney(e.ev) .. " per catch|r") or (GREY .. "No price yet: scan the auction house|r"), pill, "", pill ~= "" and "gold" or nil, quality, true)
+      setItem(getRow(n), e.id, link, name .. GREY .. string.format("   %.1f%% of catches", e.chance) .. (mine and string.format("  (you: %d%%)", math.floor((mine[e.id] or 0) + 0.5)) or "") .. "|r", e.value > 0 and ("Worth " .. RG.FishMoney(e.value) .. GREY .. " each (" .. (e.src == "AH" and "auction house" or "vendor") .. ")  ·  about " .. RG.FishMoney(e.ev) .. " per catch|r") or (GREY .. "No price yet: scan the auction house|r"), pill, "", pill ~= "" and "gold" or nil, quality, true)
     end
   end
   -- catch log
   local flog = RG.db.fish and RG.db.fish.log
   if flog and #flog > 0 then
-    n = n + 1; setHeader(getRow(n), string.format("Catch log  ·  last %d  ·  all time %s", math.min(#flog, 12), RG.FishMoney(RG.db.fish.goldTotal or 0)))
-    for i = 1, math.min(12, #flog) do
+    local shownLog = state.fishLogAll and math.min(30, #flog) or math.min(5, #flog)
+    n = n + 1; setHeader(getRow(n), string.format("Catch log  ·  all time %s", RG.FishMoney(RG.db.fish.goldTotal or 0)))
+    for i = 1, shownLog do
       local e = flog[i]
       n = n + 1
       local name, link, quality = itemName(e.id)
@@ -2238,6 +2314,7 @@ local function renderFish()
       if RG.FishAdvice then adv, advTip = RG.FishAdvice(e.id) end
       setItem(getRow(n), e.id, link, name .. GREY .. "   x" .. (e.qty or 1) .. "|r", GREY .. (e.zone or "") .. "  ·  " .. when .. "|r" .. (adv and ("  ·  " .. adv) or ""), (e.v or 0) > 0 and (GOLD .. RG.FishMoney((e.v or 0) * (e.qty or 1)) .. "|r") or "", "", nil, quality, true)
     end
+    if #flog > 5 then foldLine(state.fishLogAll, "+ " .. (math.min(30, #flog) - 5) .. " more catches", "fishLogAll") end
   end
   -- cook now
   local cook, total = RG.CookNow()
@@ -2311,18 +2388,6 @@ local function renderFish()
     setItem(getRow(n), g.id, link, name .. GREY .. "   +" .. g.bonus .. (g.mins and (" for " .. g.mins .. " min") or "") .. "|r", g.how, pill, "", have > 0 and "green" or nil, quality, true)
   end
   if #other > 0 then moreLine(state.fishGearAll, #other, "more for higher skill and the Extravaganza", "fishGearAll") end
-  -- extravaganza: folded until you open it
-  n = n + 1; setHeader(getRow(n), "Stranglethorn Fishing Extravaganza")
-  rows[n].onClick = function() state.fishDerby = not state.fishDerby; RG.RefreshUI() end
-  rows[n].tip = "Sundays in Booty Bay. Click to " .. (state.fishDerby and "fold" or "read how it works") .. "."
-  if state.fishDerby then
-    for _, line in ipairs(RG.FISH_DERBY) do
-      n = n + 1; setStep(getRow(n), "", line, false, nil)
-      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
-    end
-  else
-    moreLine(false, #RG.FISH_DERBY, "notes: when it runs, prizes, rare fish", "fishDerby")
-  end
   -- everything fishing can bring up
   local FL = RG.FISH_LOOT
   local idx = FL and RG.FishLootIndex()

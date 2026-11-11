@@ -524,6 +524,75 @@ function RG.FishSession()
     value = session.value or 0, goldPerHour = (session.last - session.start >= 180) and math.floor((session.value or 0) / mins * 60 + 0.5) or nil }
 end
 
+-- How long to your next goal: catches per point now, and to your rank's cap (or the next zone where every fish
+-- bites), at the pace of this session when there is one. { per, target, catches, mins, what }
+function RG.FishForecast()
+  local skill, max = RG.FishSkill()
+  if not skill or skill >= 300 then return nil end
+  local per = RG.FishCatchesPerPoint(skill)
+  local target, what = max, "your rank's cap"
+  if skill >= max then return { per = per } end
+  local catches = 0
+  for k = skill, target - 1 do catches = catches + RG.FishCatchesPerPoint(k) end
+  local s = RG.FishSession()
+  local mins = s and s.perHour and s.perHour > 0 and math.floor(catches / s.perHour * 60 + 0.5) or nil
+  return { per = per, target = target, catches = catches, mins = mins, what = what }
+end
+-- What you've caught in a zone yourself: { [id] = percent }, and how many catches that's from
+function RG.FishMyRates(zone)
+  local d = RG.db and RG.db.fish
+  local seen = d and d.seen and d.seen[zone]
+  if not seen then return nil, 0 end
+  local total = 0
+  for _, n in pairs(seen) do total = total + n end
+  if total == 0 then return nil, 0 end
+  local out = {}
+  for id, n in pairs(seen) do out[id] = n * 100 / total end
+  return out, total
+end
+
+-- Artisan Fishing: Nat Pagle wants one of each of these (take his quest first: they only bite then)
+RG.FISH_PAGLE = {
+  { id = 16967, pool = "Feralas Ahi Fishing Location", where = "Verdantis River, Feralas" },
+  { id = 16970, pool = "Misty Reed Mahi Mahi Fishing Location", where = "Misty Reed Strand, Swamp of Sorrows" },
+  { id = 16968, pool = "Sar'theris Striker Fishing Location", where = "Sar'theris Strand, Desolace" },
+  { id = 16969, pool = "Savage Coast Blue Sailfin Fishing Location", where = "Savage Coast, Stranglethorn Vale" },
+}
+local function poolSpot(name)
+  for _, p in ipairs(RG.FISH_LOOT and RG.FISH_LOOT.pools or {}) do
+    if p.name == name and p.spots and p.spots[1] then local s = p.spots[1]; return { s[1], s[2], s[3], name:gsub(" Fishing Location", "") } end
+  end
+end
+RG.FishPoolSpot = poolSpot
+-- { list = { {id, have, wp, where}, ... }, done = n } while Artisan is your next rank
+function RG.FishPagle()
+  local skill, max = RG.FishSkill()
+  if not skill or (max or 0) >= 300 or skill < 150 then return nil end
+  local out, done = {}, 0
+  for _, f in ipairs(RG.FISH_PAGLE) do
+    local have = (GetItemCount and GetItemCount(f.id)) or 0
+    if have > 0 then done = done + 1 end
+    out[#out + 1] = { id = f.id, have = have, wp = poolSpot(f.pool), where = f.where }
+  end
+  return { list = out, done = done }
+end
+-- Speckled Tastyfish for the Extravaganza: how many you carry, and where the schools are
+RG.TASTYFISH = 19807
+function RG.FishTastyfish()
+  return (GetItemCount and GetItemCount(RG.TASTYFISH)) or 0, poolSpot("School of Tastyfish")
+end
+-- Your Fishing Rack or Fishing Hut (Camp.lua): uncommon or rare fish for an hour. Offered once per session.
+function RG.FishCampTip()
+  local skill = RG.FishSkill()
+  if not skill or skill < 140 or not RG.Opt("fishCampTip") then return nil end
+  local s = RG.FishSessionData
+  if s.campTipHidden then return nil end
+  local hut = skill >= 300
+  return { name = hut and "Fishing Hut" or "Fishing Rack", what = hut and "rare fish for an hour, plus lures" or "uncommon fish for an hour, plus lures",
+    mats = hut and "5 Simple Wood, 2 Bolt of Runecloth, 1 Seasonal Fish Steaks" or "2 Simple Wood, 1 Crystal Vial, 2 Raw Mithril Head Trout" }
+end
+table.insert(RG.OPTIONS, { key = "fishCampTip", label = "Remind me to set down my Fishing Rack or Hut when I start fishing", default = true })
+
 -- Lines for the tracker's Fishing section: { text, right, onClick, tip }
 function RG.FishTrackerLines()
   if not RG.FishActive() then return nil end
@@ -535,8 +604,10 @@ function RG.FishTrackerLines()
     return out, nil
   end
   local per = RG.FishCatchesPerPoint(skill)
-  out[#out + 1] = { "|cffffffffSkill " .. skill .. "/" .. max .. "|r" .. GREY .. "  ·  about " .. per .. " catch" .. (per > 1 and "es" or "") .. " per point|r", nil, open,
-    "Your Fishing skill. At " .. skill .. " it takes about " .. per .. " catch" .. (per > 1 and "es" or "") .. " for each point." }
+  local fc = RG.FishForecast()
+  local eta = fc and fc.catches and (fc.mins and (" · " .. (fc.mins >= 60 and (math.floor(fc.mins / 60) .. "h " .. (fc.mins % 60) .. "m") or (fc.mins .. " min")) .. " to " .. fc.target) or (" · " .. fc.catches .. " catches to " .. fc.target)) or ""
+  out[#out + 1] = { "|cffffffffSkill " .. skill .. "/" .. max .. "|r" .. GREY .. "  ·  " .. per .. " catch" .. (per > 1 and "es" or "") .. " a point" .. eta .. "|r", nil, open,
+    "Your Fishing skill. At " .. skill .. " it takes about " .. per .. " catch" .. (per > 1 and "es" or "") .. " for each point." .. (fc and fc.catches and ("\nAbout " .. fc.catches .. " catches to " .. fc.target .. (fc.mins and (", around " .. fc.mins .. " minutes at this session's pace") or "") .. ".") or "") }
   if skill >= max and max < 300 then
     local r = RG.FishNextRank()
     if r then out[#out + 1] = { ORANGE .. "Capped: train " .. r.name .. "|r", nil, open, r.how } end
@@ -576,6 +647,15 @@ function RG.FishTrackerLines()
   local dst, dmin = RG.FishDerby()
   if dst == "on" then out[#out + 1] = { GREEN .. "Fishing Extravaganza is on|r", GREY .. fmtLeft(dmin * 60) .. " left|r", open, "Stranglethorn Fishing Extravaganza (Sundays from 2 pm server time). Turn in 40 Speckled Tastyfish to Riggle Bassbait in Booty Bay first." }
   elseif dst == "soon" and dmin < 12 * 60 then out[#out + 1] = { GREY .. "Fishing Extravaganza|r", "|cffffffffin " .. fmtLeft(dmin * 60) .. "|r", open, "Stranglethorn Fishing Extravaganza: Sundays from 2 pm server time (beta report)." } end
+  local ct = RG.FishCampTip()
+  if ct and s and s.catches > 0 and s.catches < 15 then
+    out[#out + 1] = { GOLD .. "Set down your " .. ct.name .. "|r", nil, function() RG.FishSessionData.campTipHidden = true; if RG.QueueTracker then RG.QueueTracker() end end,
+      ct.name .. ": " .. ct.what .. ".\nNeeds " .. ct.mats .. ".\nClick to hide this for the session." }
+  end
+  local pg = RG.FishPagle()
+  if pg and pg.done > 0 and pg.done < 4 then out[#out + 1] = { GREY .. "Nat Pagle's fish|r", "|cffffffff" .. pg.done .. "/4|r", open, "The four fish Nat Pagle wants for Artisan Fishing (Fishing tab)." } end
+  local tf = RG.FishTastyfish()
+  if dst == "on" and tf > 0 then out[#out + 1] = { GREY .. "Speckled Tastyfish|r", (tf >= 40 and GREEN or "|cffffffff") .. tf .. "/40|r", open, tf >= 40 and "Hurry to Riggle Bassbait in Booty Bay!" or "40 wins the Extravaganza: turn them in to Riggle Bassbait in Booty Bay." } end
   local cook, n = RG.CookNow()
   if n > 0 then
     out[#out + 1] = { GOLD .. "Cook " .. n .. " raw fish|r" .. GREY .. ": still levels Cooking|r", nil, open,
