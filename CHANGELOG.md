@@ -7,7 +7,7 @@
   - **One-key fishing:** pick a key; it casts, and once your bobber is in the water the same key hooks it with the game's own interact key, so you press it at the splash. The key is only taken over while your pole is in your hands, and a fight gives it straight back.
   - **Auto-loot while fishing**, with your own setting back 30 seconds after your last cast.
   - **Fishing outfit:** "Go fishing" puts on your best pole and any fishing gear in your bags; "Weapons back" puts your weapons and gear back. Right-click it while wearing your fishing hat, boots or gloves to add them. A fight while you hold the pole puts your weapons back (`/wp gofish`, `/wp weapons`).
-  Everything waits for your own click or key press: the game doesn't let add-ons fish for you.
+  Everything waits for your own click or key press: the game doesn't let add-ons fish for you. If a cast doesn't happen, `/wp fishcheck` shows what the tools see.
 - **Fishing: goals.** A Goals section with Nat Pagle's four fish for Artisan Fishing (which you have, click one to pin where it bites), the Stranglethorn Fishing Extravaganza with your Speckled Tastyfish count toward 40 (click to pin the schools, right-click for the rules) and a reminder to set down your Fishing Rack or Hut, with what it needs. The tracker shows the same while you fish.
 - **Fishing: what to expect.** The skill line on the tracker says how many catches (and, at this session's pace, how long) it takes to reach your rank's cap. "What you can catch here" shows your own share of each fish once you've caught 20 there. The catch log shows the last 5 with more on a click, and the Extravaganza notes moved into Goals, so the tab is shorter.
 
