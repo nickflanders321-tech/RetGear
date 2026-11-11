@@ -70,6 +70,11 @@ for f in (12, 55, 80, 894, 694): FAC[f] = "A"
 NOT_FP = {11798, 11800}   # Moonglade's druid-only flight masters
 FRIEND = {"H": "H", "A": "A"}
 FORE = {}                 # npcID -> faction, for the Forever-only ones
+FM_TITLE = re.compile(r'^(.* )?(Flight Master|Flight Mistress|Gryphon Master|Wind Rider Master|Hippogryph Master|Bat Handler)$')
+# names of WoW Forever's own flight paths whose flight master's subtitle doesn't say it (Bind on Forever's client
+# files: Rog'mar node 3203, Farholde Keep node 3276); the rest fall back to their zone's name, which the game's
+# own taxi node names contain too ("<place>, <zone>")
+NODE.update({255993: "Rog'mar", 257087: "Farholde Keep"})
 out = []
 for l in open(npcs, encoding='utf-8', errors='replace'):
     p = l.rstrip('\n').split('\t')
@@ -78,8 +83,10 @@ for l in open(npcs, encoding='utf-8', errors='replace'):
     if i not in fm and i not in NOT_FP and len(p) >= 6:
         try: flags = int(p[3] or 0)
         except ValueError: flags = 0
-        if flags & 8:
-            sub = p[4] or ""
+        sub = p[4] or ""
+        # WoW Forever's own flight masters come with npcFlags 0 in QuestieDB's Forever data (Grakna in Rog'mar,
+        # Gretchen Mayberry in Farholde Keep, Bluebell in Mount Hyjal): their subtitle says what they are
+        if flags & 8 or (i > 200000 and FM_TITLE.match(sub)):
             node = sub[:-len(" Flight Master")] if sub.endswith(" Flight Master") else ""
             fm[i] = (p[1], None)
             if node: NODE.setdefault(i, node)

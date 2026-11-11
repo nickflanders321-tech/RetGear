@@ -35,7 +35,7 @@ C.shield = false
 C.guide = {
   { tip = true, lvl = 10, text = "Get your Voidwalker at 10 from the class quest on your tracker: it tanks while your DoTs work." },
   { tip = true, lvl = 5, text = "Life Tap and drink less: Stamina is worth more to you than to any other caster." },
-  { tip = true, lvl = 30, text = "Your felhunter quest at 30 and Felsteed at 40 are on the tracker when you reach them." },
+  { tip = true, lvl = 30, text = "Your felhunter quest at 30 and Felsteed at 40 are on the tracker when you reach them. Since the November 9 hotfix Summon Felsteed teaches the riding skill too; if you did it before, summon your Felsteed once to get it." },
 }
 
 RG.RegisterClass("WARLOCK", C)

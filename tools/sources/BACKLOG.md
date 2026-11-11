@@ -7,7 +7,7 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
-1. **Riverglades (36-44) has no route steps:** QuestieDB's Forever data has only one
+1. **Mount Hyjal and Shen'dralas still thin (Riverglades done in v1.31.0):** QuestieDB's Forever data has only one
    Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship
    from Tanaris to Powderfuse Port (or the new fork off the Redridge road), Horde flight point
    Rog'mar (links to Kargath, Flame Crest, Hammerfall, Stonard), Krol'dok Stronghold is a
@@ -36,6 +36,14 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    2026-11-10: QuestieDB's Forever data unchanged (tree f9a90a1): still no Riverglades or Mount Hyjal steps, Shen'dralas 4
    Horde quests. Bind on Forever (client files of 1.60.1.70862) confirms Rog'mar (flight node 3203, subzone level 38) and
    lists a retired "zzOLD Bolder'ok" flight node: Bolder'ok stays in the note as the ogres' settlement, but has no flight path.
+   2026-11-11 (v1.31.0): **Riverglades done.** QuestieDB's November 10 data brought its quests (Horde 11 steps / 17 quests
+   from Rog'mar, Powderfuse Port and Bolder'ok; Alliance 16 steps / 26 quests from Farholde Keep and around); the route notes
+   for both factions name the hubs and givers, the Horde breadcrumb Report to Rog'mar (Commander Aggro'gosh, Grom'gol) and the
+   Alliance walk-in are travel tips, and the Rog'mar, Farholde Keep and Mount Hyjal (Bluebell) flight masters are in
+   FlightPaths.lua. Still open here: **Mount Hyjal** (no steps: no quests in the data yet) and **Shen'dralas** (Horde 5 quests,
+   thin); about a third of the Riverglades quests (Jom-jom's Escape, The Rog'mar Situation, Hunting the Hunters, WANTED:
+   Blademaster Kaijo...) have no giver in the data yet, so they appear once it does. Powderfuse Port's flight master (neutral
+   nodes 3274/3275 in the client) isn't in the data: add it when it is.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -87,6 +95,8 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 13. **November 10 class tuning:** Blizzard's announced changes (pet and Voidwalker durability, Affliction DoTs vs Wrack,
    Enhancement Strength over Intellect) are on the 2nd Spec tab as planned changes. Once the hotfix notes are out, reword
    them as done and check whether Enhancement's leveling weights (Classes/Shaman.lua: INT 0.4, SP 0.25) need a change.
+   2026-11-11: Blizzard's November 9 hotfix list (posted November 10) doesn't include them and ForeverChanges lists nothing
+   for November 10-11, so they stay "planned".
 
 ## Open questions
 
@@ -100,6 +110,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.31.0: Riverglades hubs, givers, flight points and travel tips for both factions (item 1, Riverglades part); WoW Forever's
+  own flight masters in FlightPaths.lua; Blizzard's November 9 hotfixes applied (Drowned City, Alcaz Prison, Waylaid Crates,
+  Felsteed riding).
 
 - v1.29.0: Blizzard's November 8 hotfix (dungeon kill XP +50%) on the route's dungeon cards for both factions, with the
   guides' advice that follows from it (quests first; a second run pays off with a quick group).

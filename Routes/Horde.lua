@@ -32,7 +32,7 @@ H.route = {
   { o = 21, from = 32, to = 45, kind = "zone",    zone = "Stranglethorn Vale", hub = "Grom'gol Base Camp", fp = "Grom'gol", notes = "Nesingwary hunting quests. Miners: Iron and Mithril up north." },
   { o = 22, from = 36, to = 45, kind = "zone",    zone = "Dustwallow Marsh", hub = "Brackenwall Village", fp = "Brackenwall", notes = "" },
   { o = 22.5, from = 37, to = 46, kind = "dungeon", zone = "Razorfen Downs", hub = "The Barrens / Thousand Needles", notes = "South end of The Barrens, at the top of the Thousand Needles road." },
-  { o = 23, from = 36, to = 44, kind = "zone",    zone = "Riverglades", hub = "Rog'mar", fp = "Rog'mar", notes = "New Forever zone (36-44): take the Steamwheedle boat from Tanaris to Powderfuse Port, or walk in: the new fork off the Redridge road to the Burning Steppes (Blackrock Pass), from the Badlands north of Twilight's Shroud (fly to Kargath), or from the Swamp of Sorrows through Redridge Pass (fly to Stonard). Your base is Rog'mar (wind rider master Grakna; its flight point links to Kargath, Flame Crest, Hammerfall and Stonard); Powderfuse Port is neutral. The Boulderrock Ogres (former Twilight's Hammer) are your allies here; their settlement Bolder'ok is in the north. Steps come from WoW Forever's quest data and fill in as it is published." },
+  { o = 23, from = 36, to = 44, kind = "zone",    zone = "Riverglades", hub = "Rog'mar", fp = "Rog'mar", notes = "New Forever zone (36-44): take the Steamwheedle boat from Tanaris to Powderfuse Port, or walk in: the new fork off the Redridge road to the Burning Steppes (Blackrock Pass), from the Badlands north of Twilight's Shroud (fly to Kargath), or from the Swamp of Sorrows through Redridge Pass (fly to Stonard). Your base is Rog'mar (wind rider master Grakna; its flight point links to Kargath, Flame Crest, Hammerfall and Stonard); Powderfuse Port is neutral. The Boulderrock Ogres (former Twilight's Hammer) are your allies here; their settlement Bolder'ok is in the north. Quest hubs: Rog'mar itself (Krom'rosh, Tan'jani, Kreza Darkthorn and Neza Bloodsnout, about 59, 45), Powderfuse Port on the east coast (the goblins Friz Frazzlespark, Wharfmaster Whizzbuzz and Argo Brinewhistle, about 78, 53) and Clugfist at Bolder'ok in the far north (64.9, 16.8), whose Clugfist's Decree goes back to Krom'rosh. Commander Aggro'gosh at Grom'gol sends you here with Report to Rog'mar. Powderfuse Port has a neutral flight point in the game files, but no flight master was seen there in the beta: check on arrival. More quests fill in as WoW Forever's quest data grows." },
   { o = 23.7, from = 38, to = 43, kind = "zone",    zone = "Shen'dralas", hub = "Shen'dralas", notes = "New Forever zone: elven ruins between Mulgore and Desolace. Go south from Desolace through the Valley of Bones. Its quests lead on toward Maraudon and Razorfen Downs. Steps come from WoW Forever's quest data and fill in as it is published." },
   { o = 24, from = 38, to = 45, kind = "zone",    zone = "Badlands", hub = "Kargath", fp = "Kargath", notes = "Uldaman is here. Miners: Mithril." },
   { o = 25, from = 41, to = 51, kind = "dungeon", zone = "Uldaman", hub = "Badlands", notes = "In the north of the Badlands, near Kargath." },
@@ -61,8 +61,8 @@ H.route = {
 -- Quest givers are from the original game; Forever may move some of them.
 H.dungeons = {
   ["The Drowned City"] = { go = 35, prep = 33, quests = {
-    { "The Drowned City", "Inside The Drowned City", "Inside the dungeon" },
-    { "The Only Good Brinescale...", "Inside The Drowned City", "Inside the dungeon" },
+    { "The Drowned City", "Kin'weelay", "Stranglethorn Vale, Grom'gol Base Camp" },
+    { "The Only Good Brinescale...", "Commander Aggro'gosh", "Stranglethorn Vale, Grom'gol Base Camp" },
   } },
   ["Krol'dok Stronghold"] = { go = 40, prep = 38, quests = {} },
   ["Alcaz Prison"] = { go = 48, prep = 46, quests = {} },
@@ -156,6 +156,7 @@ H.travel = {
   { lvl = 18, text = "In The Barrens, also grab Ratchet and Camp Taurajo on your way past. Ratchet's boat goes to Booty Bay later.", fp = "Ratchet" },
   { lvl = 20, text = "Detour into Mulgore for the Thunder Bluff flight path. Several dungeon quests start there.", fp = "Thunder Bluff" },
   { lvl = 24, text = "Grab Zoram'gar Outpost on the Ashenvale coast before Blackfathom Deeps.", fp = "Zoram'gar" },
+  { lvl = 36, text = "Riverglades next: Commander Aggro'gosh at Grom'gol gives Report to Rog'mar. Fly to Kargath or Stonard and walk in, then grab Rog'mar's flight point (wind rider master Grakna); it links to Kargath, Flame Crest, Hammerfall and Stonard.", fp = "Rog'mar" },
   { lvl = 47, text = "Grab Valormok in Azshara if you quest there; it's a quick hop from Orgrimmar.", fp = "Valormok" },
   { lvl = 55, text = "Cenarion Hold in Silithus and Moonglade (Nighthaven) are worth grabbing for the endgame quests.", fp = "Cenarion Hold" },
 }
@@ -166,7 +167,8 @@ H.steps = {
   ["The Drowned City|35"] = {
     "Fly to Grom'gol, swim west past The Vile Reef and dive into the underwater Sunken Hollow cave (about 21.4, 27.9): the entrance is inside, with Brinescale naga around it.",
     "Mazu'kon of the Earthen Ring, in the north of Mulgore, is reported to give Ancient Gurubashi Idol for this dungeon: take it first if he offers it.",
-    "The Drowned City and The Only Good Brinescale... are picked up inside. Known bosses: Zul'Alai, Var'Taka, Zin'aka and Captain Dreadrise.",
+    "Pick up The Drowned City from Kin'weelay and The Only Good Brinescale... (kill Var'Taka) from Commander Aggro'gosh at Grom'gol before you swim out (WoW Forever's quest data since November 10; before, they were thought to start inside). Known bosses: Zul'Alai, Var'Taka, Zin'aka and Captain Dreadrise.",
+    "Easier since the November 9 hotfix: its creatures no longer hit about 30% harder than intended, and in the Deathless Marrow wing they have 25% less health (Fireball -25%, Charge -50%, Shield Slam half as often).",
   },
   ["Krol'dok Stronghold|40"] = {
     "The entrance is reported to be a cave west of the fortress's big gates in the north of Riverglades (about 37.5, 37.5), north-west of Rog'mar.",
@@ -175,7 +177,7 @@ H.steps = {
   ["Alcaz Prison|48"] = {
     "Fly to Brackenwall Village, ride east through the north of Dustwallow Marsh to the coast and swim across to the pier on Alcaz Island's west shore.",
     "The entrance is in the prison building at the north end of the island path (about 75.0, 14.7): the portal is down the stone and wooden stairs in its cellar.",
-    "Blazeroar, an elite dragon, is the last boss; no Horde quest for the prison is known yet.",
+    "Blazeroar, an elite dragon, is the last boss; no Horde quest for the prison is known yet. Zarla Ober drops loot since the November 9 hotfix.",
   },
   ["Blackmaw Hold|55"] = {
     "Fly to Valormok, then head north-east to Darkwhisper Gorge.",

@@ -10,7 +10,7 @@
 local _, RG = ...
 
 RG.GOLD = {
-  updated = "2026-11-05",
+  updated = "2026-11-11",
   note = "Forever's economy is brand new (launched Nov 4 2026). Prices are still settling, so the live AH prices next to each tip matter more than any guide.",
   tips = {
     -- Every level
@@ -47,7 +47,7 @@ RG.GOLD = {
     { cat = "Fishing", from = 45, to = 60, prof = "Fishing", title = "Stonescale Eels", text = "Azshara and coastal schools, best at night. Raiders' potions use them, so they hold their price.", ids = { 13422 } },
     { cat = "Fishing", from = 1, to = 60, prof = "Fishing", title = "Fish while you wait", text = "Waiting on respawns, a group or a camp buff? Fish. It levels Fishing and Cooking for free and stocks your Fish Bowls and Well Fed food." },
     -- Forever-only
-    { cat = "Forever", from = 1, to = 60, title = "Waylaid Crates", text = "Players turn in supply crates for Merchant's Favor and need set materials to fill them (Copper Bar showed up in the beta). Watch for crate materials spiking on the AH and sell into it." },
+    { cat = "Forever", from = 1, to = 60, title = "Waylaid Crates", text = "Players turn in supply crates for Merchant's Favor and need set materials to fill them (Copper Bar showed up in the beta). Watch for crate materials spiking on the AH and sell into it. Since the November 9 hotfix, Waylaid Crates and Craftsman's Writs also drop inside dungeons." },
     { cat = "Forever", from = 1, to = 60, title = "Sell the mats for new recipes", text = "Forever adds 600+ new profession recipes, and some Blueprints drop from dungeon bosses. Mats those recipes need can jump in price, so check before vendoring anything that looks odd." },
     { cat = "Forever", from = 1, to = 60, title = "Rare mobs and dungeon drops", text = "Blizzard added hundreds of new rare and dungeon drops. Check any unfamiliar bind on equip item on the AH before selling it." },
     { cat = "Forever", from = 1, to = 60, title = "Each ruleset has its own AH", text = "Prices are different on every ruleset, so a guide's price might not match yours. Trust your own scans." },

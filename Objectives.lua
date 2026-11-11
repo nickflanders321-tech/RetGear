@@ -4119,7 +4119,7 @@ RG.QDATA = {
 [98341]={e={1450,43.9,73.4,"Avatar of Saeyleenan"},s={1450,56.2,30.6,"Dendrite Starblaze"},n="The Great Windborne Cat Spirit",r=20,l=20,ra="SA"},
 [98342]={e={1450,58.4,73.5,"Great Cat Spirit"},s={1450,58.4,73.5,"Great Cat Spirit"},n="The Great Cat Spirit",r=20,l=20,ra="T",cl="D",cq=true,o={{"i","Relic of the Fang",{},{{1450,72.4,66.0,0}}},{"i","Relic of the Claw",{},{{1450,75.2,67.2,0}}},{"i","Relic of the Silent Shadow",{},{{1450,74.4,65.4,0}}}}},
 [98362]={e={1456,76.5,27.2,"Turak Runetotem"},s={1450,56.2,30.6,"Dendrite Starblaze"},n="To Thunder Bluff",r=20,l=20,ra="TS",cl="D",cq=true},
-[98372]={e={1431,17.0,54.9,"Night Watch Guard"},n="An Unfortunate End",r=1,l=60},
+[98372]={e={1431,45.6,79.2,"Night Watch Guard"},s={1431,45.6,79.2,"Night Watch Guard"},n="An Unfortunate End",r=1,l=60},
 [98389]={e={1420,31.1,66.4,"Aramis Hammerhand"},s={1420,31.1,66.4,"Aramis Hammerhand"},n="A Light in the Darkness",r=2,l=4,ps={376},ra="U",o={{"k","?",{"Webbed Forsaken","Forsaken Adventurer"},{{1420,25.4,59.8,1},{1420,23.4,59.2,1},{1420,27.4,59.3,1},{1420,24.5,59.5,2},{1420,26.1,59.6,2}}}}},
 [98394]={e={1450,58.4,73.5,"Great Cat Spirit"},s={1450,56.2,30.6,"Dendrite Starblaze"},n="The Great Cat Spirit",r=20,l=20,ra="N",cl="D",cq=true},
 [98396]={e={1450,58.4,73.5,"Great Cat Spirit"},s={1450,58.4,73.5,"Great Cat Spirit"},n="The Great Cat Spirit",r=20,l=20,ra="N",cl="D",cq=true,o={{"i","Relic of the Fang",{},{{1450,72.4,66.0,0}}},{"i","Relic of the Claw",{},{{1450,75.2,67.2,0}}},{"i","Relic of the Silent Shadow",{},{{1450,74.4,65.4,0}}}}},
@@ -4196,7 +4196,7 @@ RG.QDATA = {
 [99207]={n="Swift as the Wind",r=60,l=60,ra="G"},
 [99208]={n="Swift as the Wind",r=60,l=60,ra="U"},
 [99209]={n="Swift as the Wind",r=60,l=60,ra="D"},
-[99267]={e={1431,17.0,54.9,"Night Watch Guard"},s={1431,17.0,54.9,"Night Watch Guard"},n="An Unfortunate End",r=1,l=60,ra="HDNGA"},
+[99267]={e={1431,45.6,79.2,"Night Watch Guard"},s={1431,45.6,79.2,"Night Watch Guard"},n="An Unfortunate End",r=1,l=60,ra="HDNGA"},
 [99326]={n="Your First Horse",r=40,l=40,ra="H"},
 [99411]={e={1412,47.3,57.6,"Ahab Wheathoof"},s={1412,47.3,57.6,"Ahab Wheathoof"},n="Kyle's Gone Missing!",r=5,l=7,ra="OUTRS",o={{"k","Kyle the Frenzied",{"Kyle the Frenzied"},{{1412,46.3,62.3,1}}}}}
 }

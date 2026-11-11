@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## v1.31.0
 
+- **Riverglades is on the route.** WoW Forever's quest data now has the zone, so its steps fill in for both factions (Horde: Rog'mar, Powderfuse Port and Bolder'ok; Alliance: Farholde Keep and around), and the route notes name each hub and its quest givers. A travel tip at 36 sends you there: Commander Aggro'gosh at Grom'gol gives Report to Rog'mar (Horde), the Redridge road fork leads to Farholde Keep (Alliance).
+- **New flight paths in the Flights list.** Rog'mar (Grakna), Farholde Keep (Gretchen Mayberry) and Bluebell in Mount Hyjal are now pinned and reminded like every other flight path (`/wp fp`).
+- **The Drowned City's quests start at Grom'gol.** The Drowned City (Kin'weelay) and The Only Good Brinescale... (Commander Aggro'gosh) are picked up at Grom'gol before you swim out, not inside. The dungeon card also notes the November 9 hotfix: its creatures no longer hit about 30% too hard and Deathless Marrow is easier.
+- **November 9 hotfixes:** Zarla Ober in Alcaz Prison drops loot, Waylaid Crates and Craftsman's Writs drop in dungeons (Gold tab), and Warlocks' Summon Felsteed teaches riding (summon it once if you did the quest before).
 - **Fishing: cast, lure and hook with less fuss.** The Fishing tab has a new "Your fishing tools" section, one row each, click to change:
   - **One-key fishing:** pick a key; it casts (putting a lure on first if yours ran out and you carry one), and once your bobber is in the water the same key hooks it with the game's own interact key, so you press it at the splash. The key is only taken over while your pole is in your hands, and a fight gives it straight back.
   - **Auto-loot while fishing**, with your own setting back 30 seconds after your last cast.
