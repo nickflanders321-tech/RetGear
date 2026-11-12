@@ -202,6 +202,7 @@ end
 function RG.UpdateGearPanel()
   if not CharacterFrame or not RG.db then return end
   local want = RG.Opt("gearPanel") and not (RG.CardsOnly and RG.CardsOnly()) and not (RG.IsAlt and RG.IsAlt()) and CharacterFrame:IsShown()
+    and not (PaperDollFrame and PaperDollFrame.IsShown and not PaperDollFrame:IsShown())
   if not want then if panel then panel:Hide() end return end
   if not panel then makePanel() else RG.PlaceGearPanel() end
   RG.GearStatusInvalidate()
@@ -409,21 +410,32 @@ end
 -- ---------------------------------------------------------------------------
 local ev = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "ADDON_LOADED", "GET_ITEM_INFO_RECEIVED" }) do pcall(ev.RegisterEvent, ev, e) end
+-- update the panel; an error goes to /wp errors instead of silently leaving the panel closed
+local function refresh()
+  local ok, err = pcall(RG.UpdateGearPanel)
+  if not ok and RG.RecordError then RG.RecordError(err) end
+end
 local pending = false
 local function soon()
   if pending or not C_Timer then return end
   pending = true
-  C_Timer.After(0.3, function() pending = false; if CharacterFrame and CharacterFrame:IsShown() then pcall(RG.UpdateGearPanel) end end)
+  C_Timer.After(0.3, function() pending = false; if CharacterFrame and CharacterFrame:IsShown() then refresh() end end)
 end
 ev:SetScript("OnEvent", function(_, event, a1)
   if event == "PLAYER_LOGIN" then
+    -- show with the gear tab: when the Character window opens, and when you switch back to its gear
+    -- tab from reputation or skills; once more a moment later, after the window and its side tabs settle
+    local function opened()
+      refresh()
+      if C_Timer then C_Timer.After(0.15, refresh) end
+    end
     if CharacterFrame then
-      CharacterFrame:HookScript("OnShow", function()
-        pcall(RG.UpdateGearPanel)
-        -- the side tabs settle after the window opens: place the panel again once they have
-        if C_Timer then C_Timer.After(0.1, function() pcall(RG.PlaceGearPanel) end) end
-      end)
+      CharacterFrame:HookScript("OnShow", opened)
       CharacterFrame:HookScript("OnHide", function() if panel then panel:Hide() end end)
+    end
+    if PaperDollFrame and PaperDollFrame.HookScript then
+      PaperDollFrame:HookScript("OnShow", opened)
+      PaperDollFrame:HookScript("OnHide", function() if C_Timer then C_Timer.After(0, refresh) else refresh() end end)
     end
     baganator()
     if C_Timer then C_Timer.After(0, weaponSlots) end
