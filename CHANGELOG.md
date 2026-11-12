@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Mythic cards are easier to find: about 1 pack in 150** (was 1 in 400, so rare that few players ever saw one). A jumbo pack is about 1 in 75, a super jumbo about 1 in 50. The 1 Ring stays at 1 in 5,000.
+- **Pack odds are shown.** Hover a pack button to see its odds (Mythic, holo or full art, full art), and the pack opening screen lists them too. The numbers come from the same rolls the packs use.
 - **Quests whose reward is an upgrade are marked** before you get to the quest giver: a green arrow with how much the best reward adds (and what it adds for your 2nd spec, in its colour) on the tracker's quest list, new quests nearby, the route's quest lines and the quest log. Hover a quest in the tracker to see which reward it is. Rewards you already have, and ones well above your level, aren't marked. Turn it off in Settings (Gear and combat).
 
 ## v1.35.1

@@ -12,7 +12,7 @@ local TIER = {  -- how rare the subject itself is: draw weight, name colour
   { "Artifact", 3, { 1, 0.2, 0.35 } },   -- the Raiders
   -- the six chase cards (ArcadeMythic.lua): never rolled with the others, see openOne. rate: the chance that a pack's
   -- last card is a Mythic (a jumbo counts as more than one pack); ring: ... that it is The 1 Ring (once per account)
-  { "Mythic", 0, { 1, 0.9, 0.55 }, rate = 1 / 400, ring = 1 / 5000 },
+  { "Mythic", 0, { 1, 0.9, 0.55 }, rate = 1 / 150, ring = 1 / 5000 },   -- 1 in 400 until 1.36: too rare to ever see
 }
 local FINISH = {  -- finish names, draw weights, power bonus, sell price
   { "Common", 70, 0, 1 }, { "Rare", 22, 6, 3 }, { "Holo", 6, 16, 5 }, { "Full art", 2, 30, 15 },
@@ -437,6 +437,22 @@ end
 RG.ArcadeFeatured = function() return nil end   -- (packs are no longer themed: every card can come out of every pack)
 local function yesterdayStr() return date and time and date("%Y-%m-%d", time() - 86400) or "yesterday" end
 
+-- a pack's odds, worked out from the same numbers openOne rolls with (shown on the pack screen)
+function RG.ArcadePackOdds(kind)
+  local def = PACKS[kind or "normal"] or PACKS.normal
+  local function share(from, f0)   -- chance a card rolled "at least from" comes out at finish f0 or better
+    local all, hit = 0, 0
+    for f = from, #FINISH do all = all + FINISH[f][2]; if f >= f0 then hit = hit + FINISH[f][2] end end
+    return hit / all
+  end
+  local plain, rare = def.size - def.rares, def.rares   -- the last cards are rare or better
+  -- a Raider (once you have met some) always comes holo or better
+  if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
+  local raider = (byTier[6] and #byTier[6] > 0 and tierWeight > 0) and (TIER[6][2] / tierWeight) * (1 - COLLECTOR_LUCK) or 0
+  local function card(from, f0) return raider * share(3, f0) + (1 - raider) * share(from, f0) end
+  local function anyOf(f0) return 1 - (1 - card(1, f0)) ^ plain * (1 - card(2, f0)) ^ rare end
+  return { mythic = math.floor(1 / (TIER[7].rate * (def.weight or 1)) + 0.5), holo = anyOf(3), full = anyOf(4), size = def.size, rares = def.rares, pity = PITY }
+end
 -- one seal: pays for it, rolls the five cards, returns got, notes, meta
 local function openOne(a, kind)
   kind = PACKS[kind or "normal"] and (kind or "normal") or "normal"
@@ -1269,7 +1285,7 @@ local function makeCard(parent, w)
       GameTooltip:AddLine(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1] .. "  ·  " .. FINISH[self.finish][1], 1, 1, 1)
       GameTooltip:AddLine(c.text, 0.75, 0.75, 0.75, true)
       if c.mythic and RG.Battle and RG.Battle.MYTHIC and RG.Battle.MYTHIC[c.name] then GameTooltip:AddLine(RG.Battle.MYTHIC[c.name][2], 1, 0.91, 0.66, true) end
-      if c.mythic then GameTooltip:AddLine(c.mythic.one and "The rarest card: about 1 pack in 5,000, one per account. It can't be crafted, traded or sold." or "A Mythic: about 1 pack in 400. It can't be crafted or traded.", 0.8, 0.8, 0.8, true) end
+      if c.mythic then GameTooltip:AddLine(c.mythic.one and "The rarest card: about 1 pack in 5,000, one per account. It can't be crafted, traded or sold." or "A Mythic: about 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5) .. ". It can't be crafted or traded.", 0.8, 0.8, 0.8, true) end
       GameTooltip:AddLine("Duel power " .. power(c, self.finish) .. "  (quick card duels; the Arena uses the card's own mana, attack and health)", 0.7, 0.9, 0.7, true)
       if self.copies and self.copies > 1 then GameTooltip:AddLine("You own " .. self.copies, 0.7, 0.7, 0.7) end
     end
@@ -2092,7 +2108,7 @@ function RG.ArcadeMythicMoment(g)
   end
   paint(m.card, g.card, g.finish, 1)
   local one = g.card.mythic and g.card.mythic.one
-  m.hint:SetText((one and "The rarest card there is: one per account" or "About 1 pack in 400") .. "   ·   click anywhere to go on")
+  m.hint:SetText((one and "The rarest card there is: one per account" or ("About 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5))) .. "   ·   click anywhere to go on")
   m.t0 = nil
   m.card:SetScale(0.7); m.title:SetAlpha(0)
   m:Show()
@@ -2460,6 +2476,9 @@ local function showReveal(got, notes, meta)
     local pb = meta.pityBefore or 0
     if meta.bonus or pb >= PITY then info[#info + 1] = { "Guarantee", "|cffd9a8ffThis pack holds a holo or full art|r" }
     else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") .. " worth of opening" } end
+    -- the odds of this pack, from the same numbers it rolls with
+    local o = RG.ArcadePackOdds(kind)
+    info[#info + 1] = { "Odds", "|cffffe58cMythic 1 in " .. o.mythic .. " packs|r   ·   holo or full art in " .. math.floor(o.holo * 100 + 0.5) .. "%   ·   full art in " .. math.floor(o.full * 100 + 0.5) .. "%" }
   end
   -- a plain pack, jumbo or super jumbo has its own wrapper (picture and colour); gifts, reward packs and several packs
   -- at once keep the tinted foil
@@ -2829,6 +2848,19 @@ local function build()
     b:SetPoint("BOTTOM", PX[i], 16)
     b.label:ClearAllPoints(); b.label:SetPoint("TOP", 0, -7)
     b.sub = fs(b, "body", 11); b.sub:SetPoint("BOTTOM", 0, 7); b.sub:SetTextColor(0.769, 0.687, 0.522)
+    -- the odds, on hover
+    b:HookScript("OnEnter", function(self)
+      local o = RG.ArcadePackOdds(kind)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine(PACKS[kind].name .. " odds")
+      GameTooltip:AddDoubleLine("Mythic", "1 in " .. o.mythic .. " packs", 1, 0.9, 0.55, 1, 1, 1)
+      GameTooltip:AddDoubleLine("Holo or full art", string.format("%d%% of packs", math.floor(o.holo * 100 + 0.5)), 0.7, 0.35, 0.95, 1, 1, 1)
+      GameTooltip:AddDoubleLine("Full art", string.format("%d%% of packs", math.floor(o.full * 100 + 0.5)), 1, 0.6, 0.1, 1, 1, 1)
+      GameTooltip:AddLine(o.size .. " cards; the last " .. (o.rares > 1 and (o.rares .. " are") or "one is") .. " rare or better.", 0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine("After " .. o.pity .. " packs without a holo, the next one has one.", 0.8, 0.8, 0.8, true)
+      GameTooltip:Show()
+    end)
+    b:HookScript("OnLeave", function() GameTooltip:Hide() end)
     frame.packBtns[kind] = b
   end
   frame.buy = frame.packBtns.normal
