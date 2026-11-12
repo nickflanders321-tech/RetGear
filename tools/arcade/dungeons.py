@@ -148,6 +148,86 @@ for d in DUNS:
             nreg += 1
             if cdisp.get(x): displays[nm] = cdisp[x]
     pools.append((d, IID[d], max(1, lo - 2), hi, pool))
+
+# ---------------------------------------------------------------------------
+# WoW Forever's own dungeons. Their creatures have no spawn zone in the quest data (or the zone of the entrance),
+# so each is built from the game client's tables: the instance number from Map, the last boss from its Legacy
+# challenge criterion, and the other bosses from loot: each boss drops its own run of items, and a dungeon's bosses
+# drop neighbouring runs (and have neighbouring creature numbers). Dungeons with no loot in the data yet are left
+# out until it arrives.
+# ---------------------------------------------------------------------------
+NEW_DUNS = ["The Hall of Thanes", "Ruins of Lordaeron", "Excavation Site: Wetlands", "City of Dalaran", "The Drowned City",
+            "Krol'dok Stronghold", "Alcaz Prison", "Blackmaw Hold", "The Shaper's Terrace"]
+if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
+    def _t(n): return list(csv.DictReader(gzip.open(os.path.join(wago, n + ".csv.gz"), "rt", encoding="utf-8")))
+    map_id = {r["MapName_lang"]: int(r["ID"]) for r in _t("Map") if r["InstanceType"] == "1"}
+    crit = {r["ID"]: r for r in _t("Criteria")}
+    final_of = {}
+    for r in _t("CriteriaTree"):
+        c = crit.get(r["CriteriaID"])
+        if c and c["Type"] == "0" and r["Description_lang"] in NEW_DUNS: final_of[r["Description_lang"]] = int(c["Asset"])
+    zone_ids = collections.defaultdict(set)
+    for m in re.finditer(r'\[(\d+)\] = \{"([^"]+)"', open(qdb + "support/Forever/Zones/dungeons.lua", encoding="utf-8").read()):
+        if m.group(2) in NEW_DUNS: zone_ids[m.group(2)].add(int(m.group(1)))
+    droppers = collections.defaultdict(list); loot_of = collections.defaultdict(set)
+    for iid, f in FI.items():
+        for x in L(f.get("npcDrops")): droppers[int(iid)].append(int(x)); loot_of[int(x)].add(int(iid))
+    def own(n): return sorted(i for i in loot_of.get(n, ()) if len(droppers[i]) <= 2)   # items only it (or a pair) drops
+    taken = set()
+    for p in pools:
+        for nm in p[4]: taken.add(nm.lower())
+    for d in NEW_DUNS:
+        iid = map_id.get(d)
+        zones = zone_ids.get(d, set())
+        seeds = {n for n, v in FN.items() if v.get("zone") in zones and int(n) > 240000 and own(int(n))}
+        seeds = {int(n) for n in seeds}
+        fb = final_of.get(d)
+        if fb and own(fb): seeds.add(fb)
+        if not iid or not seeds: print("no loot data yet for", d, file=sys.stderr); continue
+        anchor = fb or min(seeds)
+        allowed = zones | {None, 0} | ({FN[str(fb)].get("zone")} if fb and str(fb) in FN else set())
+        bosses = set(seeds)
+        items = {i for n in bosses for i in own(n)}
+        grew = True
+        while grew:
+            grew = False
+            for n, v in FN.items():
+                n = int(n)
+                if n in bosses or n < 240000 or abs(n - anchor) > 6000 or v.get("zone") not in allowed: continue
+                mine = own(n)
+                if mine and any(abs(i - j) <= 6 for i in mine for j in items):
+                    bosses.add(n); items |= set(mine); grew = True
+        if len(bosses) < 2: print("too few bosses for", d, file=sys.stderr); continue
+        # the last boss: its Legacy criterion's, else the one with the highest item numbers
+        last = fb if fb in bosses else max(bosses, key=lambda n: max(own(n)))
+        req = [int((FI.get(str(i)) or {}).get("reqLevel") or 0) for i in items]
+        req = [r for r in req if r > 0]
+        lo, hi = (min(req), max(req)) if req else (1, 60)
+        pool = []
+        card(3, d, 3, 0, ("Dungeon, level %d" % lo) if lo == hi else ("Dungeon, levels %d-%d" % (lo, hi)), pool)
+        order = [last] + sorted((n for n in bosses if n != last), key=lambda n: min(own(n)))
+        for n in order:
+            nm = clean(FN[str(n)]["name"])
+            if ok(nm) and nm.lower() not in taken: card(2, nm, 4 if n == last else 3, 7, "Dungeon boss, level %d humanoid" % hi, pool)
+        shown = 0
+        for i in sorted(items):
+            nm = clean((FI.get(str(i)) or {}).get("name") or iname.get(i) or "")
+            if not nm or not ok(nm) or shown >= 16: continue
+            before = len(pool)
+            card(1, nm, 2, i, "Rare dungeon drop, required level %d" % int((FI.get(str(i)) or {}).get("reqLevel") or lo), pool)
+            if len(pool) > before: shown += 1
+        # its regulars: other creatures of the dungeon that drop something
+        regs = sorted({int(n) for n, v in FN.items() if v.get("zone") in zones and int(n) > 240000 and int(n) not in bosses and loot_of.get(int(n))})
+        nreg = 0
+        for n in regs:
+            nm = clean(FN[str(n)]["name"])
+            if nreg >= 8 or not ok(nm) or nm.lower() in taken: continue
+            before = len(pool)
+            card(2, nm, 1, 7, "Dungeon elite, level %d humanoid" % max(lo, hi - 1), pool)
+            if len(pool) > before: nreg += 1
+        pools.append((d, iid, lo, hi, pool))
+        IID[d] = iid
+        print("  %s: instance %d, levels %d-%d, %d bosses, %d cards" % (d, iid, lo, hi, len(bosses), len(pool)), file=sys.stderr)
 pools.sort(key=lambda p: (p[2], p[0]))
 
 # WoW Forever's Legacy challenges (Novice, Experienced and Master Spelunker) list each dungeon as its own
@@ -160,8 +240,10 @@ if wago and os.path.exists(os.path.join(wago, "Achievement.csv.gz")):
     for r in _t("CriteriaTree"):
         if r["Parent"] not in roots or not int(r["CriteriaID"] or 0): continue
         d = r["Description_lang"]
-        n = LEGACY_NAME.get(d) or d.split(":")[0]
+        n = LEGACY_NAME.get(d) or (d if d in IID else d.split(":")[0])   # ("Scarlet Monastery: Library" is a wing; "Excavation Site: Wetlands" a name)
         if n in IID: legacy[n].append((roots[r["Parent"]], int(r["CriteriaID"])))
+        # (Ragefire Chasm or Hall of Thanes is one criterion: the Horde and Alliance versions of the first dungeon)
+        if d == "Ragefire Chasm or Hall of Thanes" and "The Hall of Thanes" in IID: legacy["The Hall of Thanes"].append((roots[r["Parent"]], int(r["CriteriaID"])))
 def q(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 L_ = ["-- GENERATED by tools/arcade/dungeons.py: do not edit by hand.",
       "-- Dungeon packs: each levelling dungeon's own cards (the place, its bosses, their drops and its elites), from the game",

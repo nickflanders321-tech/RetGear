@@ -3196,7 +3196,7 @@ function RG.ArcadeRefresh(keepMsg)
       frame.pageText:SetText(view.albumPage .. " / " .. pages)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
       local clearedHere = st.dungeon and select(2, RG.ArcadeDungeonPacks(st.name))
-      frame.albTitle:SetText(st.name .. (st.dungeon and ("|cffa89bc9   ·   levels " .. st.lo .. "-" .. st.hi .. "|r") or "") .. "|cffa89bc9   ·   " .. n .. " cards|r" .. (clearedHere and "   |cff7be08acleared|r" or ""))
+      frame.albTitle:SetText(st.name .. (st.dungeon and ("|cffa89bc9   ·   " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. "|cffa89bc9   ·   " .. n .. " cards|r" .. (clearedHere and "   |cff7be08acleared|r" or ""))
       -- the stages (under the title, where the collection's totals usually are)
       a.setStage = a.setStage or {}
       local paid = a.setStage[st.name] or ((a.setsDone or {})[st.name] and 1 or 0)
