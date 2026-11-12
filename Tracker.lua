@@ -635,10 +635,15 @@ function RG.Follow(wp)
 end
 
 -- Tooltip for a quest in your log.
+-- the reward-upgrade mark and tooltip line for a quest (GearPlus.lua)
+local function upTag(id) return (id and RG.QuestUpgradeTag and RG.QuestUpgradeTag(id)) or "" end
+-- before the name, for one-line rows that cut long names short
+local function upFront(id) local t = upTag(id); return t ~= "" and (t:gsub("^%s+", "") .. " ") or "" end
+local function upTip(id) return (id and RG.QuestUpgradeTip and RG.QuestUpgradeTip(id)) or "" end
 local function questTip(q)
   local t = RG.LevelTag(q.level) .. "|cffffffff" .. q.title .. "|r"
   if q.zone then t = t .. "\n" .. GREY .. q.zone .. "|r" end
-  t = t .. noteTip(RG.QuestNote(q.id, q.group))
+  t = t .. noteTip(RG.QuestNote(q.id, q.group)) .. upTip(q.id)
   if q.complete then t = t .. "\n" .. GREEN .. "Complete: ready to turn in|r"
   else
     for _, o in ipairs(q.objs or {}) do
@@ -848,7 +853,7 @@ function RG.RefreshTracker()
                 local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
                 n = n + 1
                 local qn = RG.QuestNote(q.id, q.group)
-                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
+                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. upFront(q.id) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
                   { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
                     onClick = function()
@@ -902,8 +907,8 @@ function RG.RefreshTracker()
     if not isFolded then
       for _, q in ipairs(new) do
         n = n + 1
-        y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r", wp = q.wp,
-          tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map\n" .. GOLD .. "Click:|r arrow on / off",
+        y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.lvl) .. upFront(q.id) .. "|cffffffff" .. q.name .. "|r", { single = true, right = GREY .. RG.FormatYards(q.dist) .. "|r", wp = q.wp,
+          tip = RG.LevelTag(q.lvl) .. "|cffffffff" .. q.name .. "|r\n" .. GREY .. "From " .. (q.giver or "a quest giver") .. "|r" .. upTip(q.id) .. "\n\n" .. GOLD .. "Click:|r show " .. (q.giver or "the quest giver") .. " on the map\n" .. GOLD .. "Click:|r arrow on / off",
           onClick = function() RG.PinWaypoint(q.wp) end, onRightClick = function() RG.Follow(q.wp) end,
           menu = function()
             return { { "Arrow to " .. (q.giver or "the quest giver"), function() RG.Follow(q.wp) end },
@@ -991,9 +996,9 @@ function RG.RefreshTracker()
           if l.act == "doing" then tip = tip .. (l.wp and "\n" or "\n\n") .. GOLD .. "Click:|r open the quest" end
           -- what kind of quest it is, and the one thing people get wrong about it (QuestNotes.lua)
           local qn = RG.QuestNote(l.id)
-          tip = tip .. noteTip(qn)
+          tip = tip .. noteTip(qn) .. upTip(l.id)
           n = n + 1
-          y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
+          y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or "") .. upTag(l.id),
             { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
               onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
               onRightClick = l.wp and function() RG.Follow(l.wp) end or nil })

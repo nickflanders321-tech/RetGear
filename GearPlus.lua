@@ -503,3 +503,108 @@ SlashCmdList.WAYPATH = function(msg)
   end
   return base(msg)
 end
+
+-- ---------------------------------------------------------------------------
+-- Quests whose reward is an upgrade: the best reward for a quest from the gear lists (they know which quest
+-- gives each piece), so the tracker, route and quest log can say so before you get to the quest giver.
+-- ---------------------------------------------------------------------------
+local qCache, qCacheAt = {}, 0
+local qIndex, qIndexFor
+local UP_ICON = "|TInterface\\Buttons\\UI-MicroStream-Green:12:12:0:0|t"
+-- { d = main spec gain, d2 = 2nd spec gain or nil, name, id, link } or false
+function RG.QuestUpgrade(qid)
+  if not qid or not RG.GUIDE then return nil end
+  if qIndexFor ~= RG.GUIDE then
+    qIndex, qIndexFor, qCache = {}, RG.GUIDE, {}
+    for _, list in ipairs({ RG.GUIDE, RG.GUIDE_ALT or {} }) do
+      for _, g in ipairs(list) do
+        if g.q then
+          qIndex[g.q] = qIndex[g.q] or {}
+          table.insert(qIndex[g.q], g)
+        end
+      end
+    end
+  end
+  local now = GetTime()
+  if now - qCacheAt > 5 then qCache, qCacheAt = {}, now end   -- gear changes: look again every few seconds
+  local c = qCache[qid]
+  if c ~= nil then return c or nil end
+  local best = false
+  local lvl = UnitLevel("player") or 1
+  for _, g in ipairs(qIndex[qid] or {}) do
+    if not RG.OwnState(g.id) then
+      local d = RG.GuideDelta(g)
+      local _, link = RG.ItemInfo(g.id)
+      local d2 = link and RG.SecondSpecActive and RG.SecondSpecActive() and RG.SpecDelta and RG.SpecDelta(link) or nil
+      if d2 and d2 <= 0 then d2 = nil end
+      -- far above your level it isn't a reward you'd get now
+      if (d and d > 0 or d2) and (g.lvl or 0) <= lvl + 6 then
+        if not best or (d or 0) > (best.d or 0) then best = { d = d and d > 0 and d or nil, d2 = d2, name = link and RG.ItemInfo(g.id) or g.name, id = g.id, link = link } end
+      end
+    end
+  end
+  qCache[qid] = best
+  return best or nil
+end
+-- "  ^+12" for a quest line (green arrow, main spec; the 2nd spec's gain in its colour)
+function RG.QuestUpgradeTag(qid)
+  if not RG.Opt("questUpgradeMarks") then return "" end
+  local ok, u = pcall(RG.QuestUpgrade, qid)
+  if not (ok and u) then return "" end
+  return "  " .. UP_ICON .. (u.d and (GREEN .. "+" .. u.d .. "|r") or "") .. (u.d2 and ((u.d and " " or "") .. "|cffF58CBA+" .. u.d2 .. "|r") or "")
+end
+-- the tooltip line: which reward, and what it adds
+function RG.QuestUpgradeTip(qid)
+  if not RG.Opt("questUpgradeMarks") then return "" end
+  local ok, u = pcall(RG.QuestUpgrade, qid)
+  if not (ok and u) then return "" end
+  return "\n" .. GREEN .. "Reward upgrade:|r " .. (u.link or ("|cffffffff" .. (u.name or ("item " .. u.id)) .. "|r"))
+    .. (u.d and (GREEN .. " +" .. u.d .. "|r") or "") .. (u.d2 and (" |cffF58CBA+" .. u.d2 .. " for your 2nd spec|r") or "")
+end
+table.insert(RG.OPTIONS, { key = "questUpgradeMarks", label = "Mark quests whose reward is an upgrade (tracker, route, quest log)", default = true })
+
+-- the quest log (classic-style QuestLogFrame): our own label on each quest whose reward is an upgrade
+local function questIdAt(idx)
+  if C_QuestLog and C_QuestLog.GetInfo then
+    local info = C_QuestLog.GetInfo(idx)
+    if info then return (not info.isHeader) and info.questID or nil end
+  end
+  if GetQuestLogTitle then
+    local _, _, _, isHeader, _, _, _, id = GetQuestLogTitle(idx)
+    if not isHeader then return id end
+  end
+end
+local qlMarks = setmetatable({}, { __mode = "k" })
+local function markQuestLog()
+  local shown = RG.Opt("questUpgradeMarks")
+  for i = 1, 40 do
+    local b = _G["QuestLogTitle" .. i]
+    if not b then break end
+    local tag = ""
+    if shown and b:IsShown() and b.GetID then
+      local qid = questIdAt(b:GetID())
+      if qid then tag = RG.QuestUpgradeTag(qid):gsub("^%s+", "") end
+    end
+    -- our label lives in our own table, not as a field on Blizzard's button
+    local fs = qlMarks[b]
+    if tag ~= "" and not fs then
+      fs = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+      qlMarks[b] = fs
+    end
+    if fs then
+      fs:ClearAllPoints()
+      local t = _G["QuestLogTitle" .. i .. "Tag"]
+      if t and t:IsShown() and (t:GetText() or "") ~= "" then fs:SetPoint("RIGHT", t, "LEFT", -4, 0)
+      else fs:SetPoint("RIGHT", b, "RIGHT", -4, 0) end
+      fs:SetText(tag)
+      if tag ~= "" then fs:Show() else fs:Hide() end
+    end
+  end
+end
+local qlEv = CreateFrame("Frame")
+qlEv:RegisterEvent("PLAYER_LOGIN")
+qlEv:SetScript("OnEvent", function()
+  if hooksecurefunc and QuestLog_Update then
+    hooksecurefunc("QuestLog_Update", function() local ok, err = pcall(markQuestLog); if not ok and RG.RecordError then RG.RecordError(err) end end)
+  end
+end)

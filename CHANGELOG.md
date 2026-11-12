@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Quests whose reward is an upgrade are marked** before you get to the quest giver: a green arrow with how much the best reward adds (and what it adds for your 2nd spec, in its colour) on the tracker's quest list, new quests nearby, the route's quest lines and the quest log. Hover a quest in the tracker to see which reward it is. Rewards you already have, and ones well above your level, aren't marked. Turn it off in Settings (Gear and combat).
+
 ## v1.35.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
