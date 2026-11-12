@@ -455,7 +455,7 @@ local function applySeen(zone, id)
   learned[zone .. ":" .. id] = true
   L.info = L.info or {}
   if not L.info[id] then
-    local name, _, q = GetItemInfo and GetItemInfo(id)
+    local name, _, q = RG.ItemInfo(id)
     L.info[id] = { name or ("Item " .. id), "misc", q or 1 }
   end
   lootIdx = nil

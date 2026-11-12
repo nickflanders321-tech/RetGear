@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed an error ("GearPlus.lua:100: attempt to call a nil value"), and the same kind of error in two fishing features, on clients where an old item-info function no longer exists.
 - **Gear panel beside the Character window.** Opening your character shows how many slots are at their best for your level and the next upgrade for each slot (click one to see where it drops). Turn it off with its close button or in Settings, or type /wp gearpanel.
 - **Best from each source.** Click an equipped slot in the Gear tab to see the best quest, dungeon, crafted and Auction House piece for it around your level, and whether you're already wearing it or have it in your bags.
 - **"% of the best for your level" in item tooltips**, naming the best piece for that slot.

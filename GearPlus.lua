@@ -97,7 +97,7 @@ local function bestFor(gs)
   for _, list in ipairs({ RG.GUIDE or {}, RG.GUIDE_ALT or {} }) do
     for _, g in ipairs(list) do
       if g.id and g.slot == gs and (g.lvl or 0) <= lvl and RG.GearShown(g) then
-        local _, link = GetItemInfo(g.id)
+        local _, link = RG.ItemInfo(g.id)
         if link then
           local sc = RG.Score(link)
           if sc and (not top or sc > top) then top, topG = sc, g end
@@ -145,10 +145,34 @@ end
 -- ---------------------------------------------------------------------------
 local panel
 local ROWS = 9
+-- the Character window has side tabs (character, reputation, skills...) sticking out of its right edge:
+-- sit to the right of whatever sticks out, so nothing of Blizzard's is covered
+function RG.PlaceGearPanel()
+  if not panel or not CharacterFrame then return end
+  local right, scale = CharacterFrame:GetRight(), CharacterFrame:GetEffectiveScale()
+  local out = 0
+  if right then
+    local kids = { CharacterFrame:GetChildren() }
+    for _, k in ipairs(kids) do
+      if k ~= panel and k.IsShown and k:IsShown() and k.GetRight then
+        local ok, r = pcall(k.GetRight, k)
+        local ok2, l = pcall(k.GetLeft, k)
+        if ok and ok2 and type(r) == "number" and type(l) == "number" and l < right + 10 and r > right then
+          local d = (r * k:GetEffectiveScale() - right * scale) / scale
+          if d > out and d < 140 then out = d end
+        end
+      end
+    end
+  end
+  -- nothing found (tabs not parented to the window): leave room for WoW Forever's side tabs anyway
+  if out == 0 then out = 48 end
+  panel:ClearAllPoints()
+  panel:SetPoint("TOPLEFT", CharacterFrame, "TOPRIGHT", out + 4, -12)
+end
 local function makePanel()
   panel = CreateFrame("Frame", "WaypathGearPanel", CharacterFrame, "BackdropTemplate")
   panel:SetSize(248, 360)
-  panel:SetPoint("TOPLEFT", CharacterFrame, "TOPRIGHT", 4, -12)
+  RG.PlaceGearPanel()
   RG.Backdrop(panel, { 0.05, 0.045, 0.04, 0.94 }, { 0.6, 0.5, 0.3, 0.8 })
   panel.title = panel:CreateFontString(nil, "OVERLAY"); RG.Font(panel.title, "semibold", 13); panel.title:SetPoint("TOPLEFT", 12, -10)
   panel.title:SetText((RG.LOGO_INLINE or "") .. GOLD .. "Waypath+ gear|r")
@@ -179,7 +203,7 @@ function RG.UpdateGearPanel()
   if not CharacterFrame or not RG.db then return end
   local want = RG.Opt("gearPanel") and not (RG.CardsOnly and RG.CardsOnly()) and not (RG.IsAlt and RG.IsAlt()) and CharacterFrame:IsShown()
   if not want then if panel then panel:Hide() end return end
-  if not panel then makePanel() end
+  if not panel then makePanel() else RG.PlaceGearPanel() end
   RG.GearStatusInvalidate()
   local st = RG.GearStatus()
   panel.sub:SetText(WHITE .. st.atBest .. " of " .. st.total .. "|r" .. GREY .. " slots at their best for your level|r")
@@ -196,7 +220,7 @@ function RG.UpdateGearPanel()
       local g = e.next.g
       local name, _, quality, _, _, _, _, _, _, tex = RG.ItemInfo(g.id)
       local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
-      r.icon:SetTexture(tex or (GetItemIcon and GetItemIcon(g.id)) or 134400)
+      r.icon:SetTexture(tex or (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(g.id)) or (GetItemIcon and GetItemIcon(g.id)) or 134400)
       r.name:SetText((c and c.hex or WHITE) .. (name or ("Item " .. g.id)) .. "|r")
       r.src:SetText(GREY .. (RG.SLOT_NAMES[e.slot] or "") .. " · " .. (g.src or "") .. ((g.zone and g.zone ~= "") and (", " .. g.zone) or "") .. "|r")
       r.d:SetText((e.next.soon and GREEN or GOLD) .. "+" .. string.format("%.0f", e.next.d) .. "|r" .. (e.next.soon and "" or (GREY .. " L" .. g.lvl .. "|r")))
@@ -394,7 +418,11 @@ end
 ev:SetScript("OnEvent", function(_, event, a1)
   if event == "PLAYER_LOGIN" then
     if CharacterFrame then
-      CharacterFrame:HookScript("OnShow", function() pcall(RG.UpdateGearPanel) end)
+      CharacterFrame:HookScript("OnShow", function()
+        pcall(RG.UpdateGearPanel)
+        -- the side tabs settle after the window opens: place the panel again once they have
+        if C_Timer then C_Timer.After(0.1, function() pcall(RG.PlaceGearPanel) end) end
+      end)
       CharacterFrame:HookScript("OnHide", function() if panel then panel:Hide() end end)
     end
     baganator()

@@ -187,7 +187,7 @@ local function outfit()
   if pole then want[16] = pole end
   for _, g in ipairs(RG.FISH_GEAR or {}) do
     if g.kind == "gear" and count(g.id) > 0 then
-      local loc = select(9, GetItemInfo(g.id))
+      local loc = select(9, RG.ItemInfo(g.id))
       local slot = INVTYPE_SLOT[loc or ""]
       if slot and not want[slot] then want[slot] = g.id end
     end
