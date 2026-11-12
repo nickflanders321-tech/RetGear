@@ -1248,3 +1248,45 @@ ev:SetScript("OnEvent", function(_, event)
   if event == "TRAINER_SHOW" and RG.db then RG.db.trainerDue = nil end
   if event == "PLAYER_LOGIN" then C_Timer.After(2, RG.RefreshTracker) else queue() end
 end)
+
+-- Questie's own quest tracker shares the top-right corner: when the two overlap, sit just below
+-- Questie's (only moving ours; Questie's frame and settings are left alone). Dragging ours keeps it where you put it.
+local function overlap(a, b)
+  local al, ab, aw, ah = a:GetRect()
+  local bl, bb, bw, bh = b:GetRect()
+  if not (al and bl) then return false end
+  local as, bs = a:GetEffectiveScale(), b:GetEffectiveScale()
+  al, ab, aw, ah = al * as, ab * as, aw * as, ah * as
+  bl, bb, bw, bh = bl * bs, bb * bs, bw * bs, bh * bs
+  return al < bl + bw and bl < al + aw and ab < bb + bh and bb < ab + ah
+end
+local function avoidQuestie()
+  local q = _G.Questie_BaseFrame
+  if not (tr and tr:IsShown() and q and q.IsShown and q:IsShown()) then return end
+  local ok, hit = pcall(overlap, tr, q)
+  if not (ok and hit) then return end
+  -- you dragged ours onto Questie's on purpose: leave it there
+  if RG.db and RG.db.trackerOverQuestie then return end
+  local okB, qb = pcall(q.GetBottom, q)
+  local right = tr:GetRight()
+  if not (okB and qb and right) then return end
+  -- offsets are in our frame's own scale; not if that pushes ours into the bottom third of the screen
+  local top = qb * q:GetEffectiveScale() / tr:GetEffectiveScale() - 8
+  if top * tr:GetEffectiveScale() < UIParent:GetHeight() * UIParent:GetEffectiveScale() * 0.35 then return end
+  tr:ClearAllPoints()
+  tr:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", right, top)
+end
+local hooked
+local function hookDrag()
+  if hooked or not tr then return end
+  hooked = true
+  tr:HookScript("OnDragStop", function()
+    local q = _G.Questie_BaseFrame
+    local ok, hit = false, false
+    if q and q.IsShown and q:IsShown() then ok, hit = pcall(overlap, tr, q) end
+    if RG.db then RG.db.trackerOverQuestie = (ok and hit) or nil end
+  end)
+end
+if C_Timer and C_Timer.NewTicker then
+  C_Timer.NewTicker(3, function() pcall(hookDrag); pcall(avoidQuestie) end)
+end

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Tracker: when Questie's quest tracker sits in the same spot, the Waypath+ tracker moves just below it, so Questie's heading no longer shows through ours. Drag ours back over it if you want it there; it stays.
+
 ## v1.34.1
 
 - Fixed the gear panel not showing beside the Character window on WoW Forever's client in 1.34.0. Its close button now only closes it until you next open the window (it used to turn it off for good, and anyone it turned off has it back). Type /wp gearpanel why to see why it isn't showing, if it ever doesn't.
