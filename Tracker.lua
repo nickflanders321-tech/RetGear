@@ -842,10 +842,8 @@ function RG.RefreshTracker()
                 RG.RefreshTracker()
               end })
           if not zf then
-            for _, q in ipairs(g.list) do
-              if shownQ >= MAXQ then hidden = hidden + 1
-              else
-                shownQ = shownQ + 1
+            -- one quest line (level, name, progress, distance)
+            local function questLine(q)
                 local status
                 if q.complete then status = GREEN .. "turn in|r"
                 elseif q.failed then status = "|cffff3333failed|r"
@@ -871,6 +869,30 @@ function RG.RefreshTracker()
                       if q.wp then RG.Follow(q.wp)
                       else RG.Print("No location known for " .. q.title .. " yet. Click it to open the quest.") end
                     end })
+            end
+            if g.here then
+              -- the zone you're in: every quest you're still doing is listed, whatever the limit; three or more ready
+              -- to hand in fold into one line (the turn-in run takes you round them), so they don't push the rest out
+              local readyL, active = {}, {}
+              for _, q in ipairs(g.list) do if q.complete then readyL[#readyL + 1] = q else active[#active + 1] = q end end
+              if #readyL >= 3 then
+                local names = {}
+                for _, q in ipairs(readyL) do names[#names + 1] = q.title end
+                n = n + 1
+                y = item(n, y, GREEN .. #readyL .. " ready to turn in|r" .. GREY .. ": " .. table.concat(names, ", ") .. "|r",
+                  { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. "\n\n" .. GOLD .. "Click:|r the arrow takes you to each, nearest first",
+                    onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
+                shownQ = shownQ + 1
+              else
+                for _, q in ipairs(readyL) do shownQ = shownQ + 1; questLine(q) end
+              end
+              for k, q in ipairs(active) do
+                if k > 15 then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
+              end
+            else
+              for _, q in ipairs(g.list) do
+                if shownQ >= MAXQ then hidden = hidden + 1
+                else shownQ = shownQ + 1; questLine(q) end
               end
             end
           end
