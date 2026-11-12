@@ -678,8 +678,9 @@ def entry(c):
     if also: extra += ", also = { " + ", ".join(also) + " }"
     if c.get("alt"): extra += ", alt = true"
     if c.get("ws"): extra += ", ws = %s" % lua_str(c["ws"])
-    return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d%s, gen = true },  -- %s\n" % (
-        c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), extra, c["name"])
+    # the name too: the game never sends some items' details (the list shows this name instead of "Loading item")
+    return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d%s, name = %s, gen = true },\n" % (
+        c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), extra, lua_str(c["name"]))
 
 CLASSES = {}
 for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):

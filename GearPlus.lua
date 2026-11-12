@@ -120,6 +120,9 @@ function RG.PercentOfBest(link)
   local loc = link and RG.EquipLoc(link)
   local gs = loc and LOC_GUIDE[loc]
   if not gs or not RG.CanUse(link) then return nil end
+  -- an item you can't wear yet isn't compared with the best for your level
+  local minLevel = select(5, RG.ItemInfo(link))
+  if minLevel and minLevel > (UnitLevel("player") or 1) then return nil end
   local b = bestFor(gs)
   if not b or b.score <= 0 then return nil end
   return RG.Score(link) / b.score * 100, b.g
@@ -240,7 +243,7 @@ function RG.UpdateGearPanel()
       local name, _, quality, _, _, _, _, _, _, tex = RG.ItemInfo(g.id)
       local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
       r.icon:SetTexture(tex or (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(g.id)) or (GetItemIcon and GetItemIcon(g.id)) or 134400)
-      r.name:SetText((c and c.hex or WHITE) .. (name or ("Item " .. g.id)) .. "|r")
+      r.name:SetText((c and c.hex or WHITE) .. (name or g.name or ("Item " .. g.id)) .. "|r")
       r.src:SetText(GREY .. (RG.SLOT_NAMES[e.slot] or "") .. " · " .. (g.src or "") .. ((g.zone and g.zone ~= "") and (", " .. g.zone) or "") .. "|r")
       r.d:SetText((e.next.soon and GREEN or GOLD) .. "+" .. string.format("%.0f", e.next.d) .. "|r" .. (e.next.soon and "" or (GREY .. " L" .. g.lvl .. "|r")))
       r.g, r.note = g, GREEN .. string.format("+%.0f", e.next.d) .. "|r" .. GREY .. " for your " .. (RG.SLOT_NAMES[e.slot] or "slot") .. "|r"

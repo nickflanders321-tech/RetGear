@@ -105,9 +105,25 @@ local function itemIcon(id)
   local _, _, _, _, icon = (C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant)(id)
   return icon or 134400
 end
+-- a guide item's name from the gear data, for items whose details the game hasn't sent (or never sends)
+local guideNames, guideNamesFor
+function RG.GuideItemName(id)
+  if guideNamesFor ~= RG.GUIDE then
+    guideNames, guideNamesFor = {}, RG.GUIDE
+    for _, list in ipairs({ RG.GUIDE or {}, RG.GUIDE_ALT or {} }) do
+      for _, g in ipairs(list) do if g.id and g.name then guideNames[g.id] = g.name end end
+    end
+  end
+  return guideNames[id]
+end
 local function itemName(id)
   local name, link, quality = RG.ItemInfo(id)
-  if not name then RG.RequestItem(id); return GREY .. "Loading item " .. id .. "...|r", nil, nil end
+  if not name then
+    RG.RequestItem(id)
+    local known = RG.GuideItemName(id)
+    if known then return GREY .. known .. "|r", nil, nil end
+    return GREY .. "Loading item " .. id .. "...|r", nil, nil
+  end
   local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
   return (c and c.hex or "|cffffffff") .. name .. "|r", link, quality
 end
@@ -268,7 +284,8 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   -- long text wraps and the row grows to fit it (nothing is cut off with "...")
   local th = fitText(r.title, math.max(120, CW - leftX - rightW - 26))
   local hasSub = sub and sub ~= ""
-  local shh = fitText(r.sub, math.max(120, CW - leftX - (r.meta:IsShown() and r.meta:GetStringWidth() or 0) - 26))
+  -- small rows centre the pill, so the second line has to stay clear of it too
+  local shh = fitText(r.sub, math.max(120, CW - leftX - (small and rightW or (r.meta:IsShown() and r.meta:GetStringWidth() or 0)) - 26))
   if not hasSub then shh = 0 end
   local gap = hasSub and 2 or 0
   local content = th + gap + shh
@@ -690,7 +707,7 @@ local function renderGear()
     local quality = link and select(3, RG.ItemInfo(link))
     local sub = RG.SLOT_NAMES[slot]
     if nextUp then
-      local nm = RG.ItemInfo(nextUp.g.id) or ("item " .. nextUp.g.id)
+      local nm = RG.ItemInfo(nextUp.g.id) or nextUp.g.name or ("item " .. nextUp.g.id)
       sub = sub .. GREY .. "  ·  next: |r" .. nm .. ((nextUp.g.zone and nextUp.g.zone ~= "") and (GREY .. " · " .. nextUp.g.zone .. "|r") or "")
     end
     setItem(r, id, link, link or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)

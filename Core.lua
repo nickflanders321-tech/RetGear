@@ -645,7 +645,7 @@ for _, g in ipairs(RG.GUIDE) do if g.id then RG.GuideByID[g.id] = g end end
 function RG.GuideDelta(g)
   local _, link = GetItemInfo(g.id)
   if not link then RG.RequestItem(g.id); return nil end
-  return (RG.Compare(link))
+  return RG.Compare(link)   -- delta, slot, new score, old score
 end
 
 -- The best upgrades for you that drop in a dungeon (from your class's gear guide).

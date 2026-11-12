@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Gear tab: upgrades now say which item they replace (two-handers said "Replaces an empty slot" while you wore one).
+- Gear tab: long dungeon lines no longer run under the "+N total" badge.
+- Item tooltips: no "best for your level" line on items you aren't high enough level to wear yet.
+- Items the game never sends details for show their name instead of "Loading item 234017...".
 - Tracker: when Questie's quest tracker sits in the same spot, the Waypath+ tracker moves just below it, so Questie's heading no longer shows through ours. Drag ours back over it if you want it there; it stays.
 
 ## v1.34.1
