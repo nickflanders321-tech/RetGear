@@ -51,7 +51,9 @@ def _sorted_pairs(kv):
         return (0, int(s), '') if s.lstrip('-').isdigit() else (1, 0, s)
     return dict(sorted(kv, key=k))
 fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
-FI, FN = fv["items"], fv["npcs"]
+# (an entry can come through as a list in a fresh dump: only proper records are used)
+FI = {k: v for k, v in fv["items"].items() if isinstance(v, dict)}
+FN = {k: v for k, v in fv["npcs"].items() if isinstance(v, dict)}
 def L(v):
     if v is None: return []
     if isinstance(v, dict): return [v[k] for k in sorted(v, key=lambda x: int(x))]
@@ -93,7 +95,7 @@ def find_bosses(min_q):
         if len(ds) != 1 or None in ds: continue
         d = ds.pop()
         for x in drops:
-            if (FN[str(x)].get("rank") or 0) >= 1: found[d][x].add(iid)
+            if (FN.get(str(x), {}).get("rank") or 0) >= 1: found[d][x].add(iid)
     return found
 boss_items = find_bosses(3)
 greens = find_bosses(2)
