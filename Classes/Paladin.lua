@@ -87,7 +87,7 @@ P.guide = {
   { id = 11815, slot = "Trinket", lvl = 53, how = "Dungeon", src = "Rare drop", zone = "Blackrock Depths" },
   { id = 15063, slot = "Hands", lvl = 53, how = "Crafted", src = "Leatherworking", zone = "Often sold on the Auction House", ah = true },
   { id = 12422, slot = "Chest", lvl = 55, how = "Crafted", src = "Blacksmithing", zone = "Your own craft (20 Thorium Bars)", bs = 300, ah = true },
-  { id = 13400, slot = "Wrist", lvl = 54, how = "Dungeon", src = "Timmy the Cruel", zone = "Stratholme" },
+  { id = 13400, slot = "Wrist", lvl = 55, how = "Dungeon", src = "Timmy the Cruel", zone = "Stratholme" },
   { id = 15062, slot = "Legs", lvl = 55, how = "Crafted", src = "Tribal Leatherworking", zone = "Bind on Equip", ah = true },
   { id = 12927, slot = "Shoulder", lvl = 56, how = "Dungeon", src = "Pyroguard Emberseer", zone = "Upper Blackrock Spire" },
   { id = 12640, slot = "Head", lvl = 56, how = "Crafted", src = "Blacksmithing (epic)", zone = "Bind on Equip", bs = 300, ah = true },

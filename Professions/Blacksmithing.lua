@@ -29,7 +29,7 @@ B.stones = {
 B.plan = {
   { from = 1,   to = 25,  craft = "Rough Sharpening Stone", n = 30, mats = "1 Rough Stone each. Buy a Blacksmith Hammer when you learn the profession." },
   { from = 25,  to = 50,  craft = "Rough Grinding Stone", n = 30, mats = "2 Rough Stone each. Keep 26 (16 for gauntlets, 10 for Silver Rods)." },
-  { from = 50,  to = 67,  craft = "Coarse Grinding Stone", n = 36, mats = "2 Coarse Stone each. Keep all 36 (10 at 95, 26 at 112)." },
+  { from = 50,  to = 67,  craft = "Coarse Grinding Stone", n = 36, mats = "2 Coarse Stone each. Keep all 36 (10 at 95, 26 at 112). Since the November 10 hotfix they give skill-ups up to 90 (was 75), so with spare Coarse Stone you can make extras instead of the copper gauntlets and belts." },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 67,  to = 75,  craft = "Runed Copper Gauntlets", n = 8, mats = "8 Copper Bar, 2 Rough Grinding Stone each" },
   { from = 75,  to = 80,  craft = "Runed Copper Belt", n = 5, mats = "10 Copper Bar each (or Silver Rods: 1 Silver Bar, 2 Rough Grinding Stone)" },

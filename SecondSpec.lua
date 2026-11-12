@@ -157,7 +157,7 @@ RG.SPEC_HAND = {
     { id = 7720,  slot = "Head",      lvl = 39, how = "Drop",  src = "High Inquisitor Whitemane", zone = "Scarlet Monastery Cathedral" },
     { id = 7722,  slot = "Neck",      lvl = 39, how = "Drop",  src = "High Inquisitor Whitemane", zone = "Scarlet Monastery Cathedral" },
     { id = 7721,  slot = "Main Hand", lvl = 39, how = "Drop",  src = "High Inquisitor Whitemane", zone = "Scarlet Monastery Cathedral", note = "+15 healing mace, your first real healing weapon" },
-    { id = 18083, slot = "Hands",     lvl = 42, how = "Drop",  src = "Witch Doctor Zum'rah", zone = "Zul'Farrak" },
+    { id = 18083, slot = "Hands",     lvl = 43, how = "Drop",  src = "Witch Doctor Zum'rah", zone = "Zul'Farrak" },
     { id = 17755, slot = "Waist",     lvl = 45, how = "Drop",  src = "Lord Vyletongue", zone = "Maraudon" },
     { id = 17748, slot = "Feet",      lvl = 46, how = "Drop",  src = "Razorlash", zone = "Maraudon" },
     { id = 17737, slot = "Off Hand",  lvl = 48, how = "Drop",  src = "Landslide", zone = "Maraudon" },

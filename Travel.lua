@@ -78,7 +78,7 @@ local BORDERS = {
   -- the Badlands north of Twilight's Shroud and from the Swamp of Sorrows through Redridge Pass (Warcraft Wiki and
   -- Mmonster), Shen'dralas south of Desolace through the Valley of Bones, Mount Hyjal through Darkwhisper Gorge
   { "Riverglades", "Redridge Mountains" }, { "Riverglades", "Burning Steppes" }, { "Riverglades", "Badlands" }, { "Riverglades", "Swamp of Sorrows" },
-  { "Desolace", "Shen'dralas" }, { "Winterspring", "Mount Hyjal" },
+  { "Desolace", "Shen'dralas" }, { "Desolace", "Shen'Dralas" }, { "Winterspring", "Mount Hyjal" },  -- (the Alliance route spells it Shen'Dralas)
   -- Alliance towns and zones
   { "Dun Morogh", "Ironforge", 2 }, { "Elwynn Forest", "Stormwind City", 2 }, { "Elwynn Forest", "Redridge Mountains" }, { "Elwynn Forest", "Duskwood" },
   { "Teldrassil", "Darnassus", 3 }, { "Wetlands", "Loch Modan" }, { "Stranglethorn Vale", "Blasted Lands", 20 },

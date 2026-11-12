@@ -15,7 +15,7 @@ table.insert(RG.OPTIONS, { key = "wellFed", label = "Remind me to eat for Well F
 -- ---------------------------------------------------------------------------
 RG.CAMPFIRES = {
   { name = "Basic Campfire",      cook = 1,   slots = 3,  wood = "Simple Wood", how = "Learned with Cooking. Buy Simple Wood and Flint and Tinder from the Cooking trainer." },
-  { name = "Journeyman Campfire", cook = 140, learn = 90,  slots = 5,  wood = "Star Wood",   how = "Blueprint from Lord Serpentis in Wailing Caverns (also reported in Deadmines)." },
+  { name = "Journeyman Campfire", cook = 90,  learn = 90,  slots = 5,  wood = "Star Wood",   how = "Blueprint from Lord Serpentis in Wailing Caverns (also reported in Deadmines). Cooking 90 to place it since the November 10 hotfix (was 140)." },
   { name = "Expert Campfire",     cook = 220, learn = 200, slots = 10, wood = "Thick Logs",  how = "Blueprint source not found yet. The weekly update will add it." },
 }
 -- Your professions' camp objects. buff = what you get; mats = what it costs to place.
@@ -67,7 +67,7 @@ RG.CAMP_PLAN = {
   { lvl = 8,  zone = "@start", text = "At skill 20, learn your professions' camp objects from their trainers (the Camping tab lists them): one object per camp, and the best one for you is marked.", need = { Cooking = 20 } },
   { lvl = 10, zone = "@second", text = "Train Journeyman Fishing (Fishing 50, level 10) and Journeyman Cooking (Cooking 50). Fish wherever you quest to 130.", need = { Fishing = 130 } },
   { lvl = 12, zone = "@second", text = "Cook what you catch: Longjaw Mud Snapper and Rainbow Fin Albacore (recipes from the fishing and cooking vendors in your capital). Push Cooking toward 90 for the Journeyman Campfire.", need = { Cooking = 90 } },
-  { lvl = 18, zone = "Wailing Caverns", text = "Kill Lord Serpentis for the Journeyman Campfire blueprint (Cooking 90 to learn, 140 to use: 5 object slots). Fish the oasis outside for Deviate Fish.", need = { Cooking = 140 } },
+  { lvl = 18, zone = "Wailing Caverns", text = "Kill Lord Serpentis for the Journeyman Campfire blueprint (Cooking 90 to learn and to place: 5 object slots). Fish the oasis outside for Deviate Fish.", need = { Cooking = 90 } },
   { lvl = 20, zone = "Stonetalon Mountains", text = "Get Expert Fishing (\"The Bass and You\", Old Man Heming in Booty Bay, 1g, level 20; or the AH) at Fishing 125. Buy Nightcrawlers at Sun Rock Retreat and fish Stonetalon's lakes to 205.", need = { Fishing = 205 } },
   { lvl = 22, zone = "Stonetalon Mountains", text = "Get the Expert Cookbook at Cooking 125, before you reach 150 (Wulan, Shadowprey Village in Desolace, or the AH). Without it you stop gaining skill at 150.", need = { Cooking = 150 } },
   { lvl = 26, zone = "Blackfathom Deeps", text = "Kill Gelihast for the Fishing Rack blueprint (Fishing 140): it gives your Fish Bowl plus uncommon fish for an hour.", need = { Fishing = 140 } },
@@ -231,7 +231,7 @@ end
 local lastSkill = {}
 local MILESTONES = {
   Fishing = { [20] = "Learn the Fish Bowl at your Fishing trainer.", [50] = "Train Journeyman Fishing (level 10).", [125] = "Get Expert Fishing: \"The Bass and You\" (Old Man Heming, Booty Bay, 1g, level 20; or the AH).", [140] = "Fishing Rack unlocked if you have the blueprint (Gelihast, Blackfathom Deeps).", [225] = "Take Nat Pagle, Angler Extreme in Dustwallow Marsh (level 35) for Artisan Fishing." },
-  Cooking = { [50] = "Train Journeyman Cooking.", [90] = "You can learn the Journeyman Campfire blueprint (Lord Serpentis, Wailing Caverns).", [125] = "Get the Expert Cookbook now. Skill stops at 150 without it.", [140] = "Journeyman Campfire usable: 5 object slots.", [200] = "You can learn the Expert Campfire blueprint.", [225] = "Artisan Cooking: Clamlette Surprise in Gadgetzan (level 35)." },
+  Cooking = { [50] = "Train Journeyman Cooking.", [90] = "You can learn and place the Journeyman Campfire (blueprint from Lord Serpentis, Wailing Caverns): 5 object slots.", [125] = "Get the Expert Cookbook now. Skill stops at 150 without it.", [200] = "You can learn the Expert Campfire blueprint.", [225] = "Artisan Cooking: Clamlette Surprise in Gadgetzan (level 35)." },
   Blacksmithing = { [20] = "Learn the Sharpening Wheel camp object at your trainer.", [140] = "Anvil camp object unlocked if you have the blueprint (Deadmines, or the AH)." },
   Mining = { [20] = "Lodestone camp object unlocked (good for groups without a paladin).", [140] = "Rock Garden unlocked if you have the blueprint (Wetlands excavation site, or the AH)." },
 }

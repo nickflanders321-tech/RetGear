@@ -10,7 +10,7 @@
 local _, RG = ...
 
 RG.GOLD = {
-  updated = "2026-11-11",
+  updated = "2026-11-12",
   note = "Forever's economy is brand new (launched Nov 4 2026). Prices are still settling, so the live AH prices next to each tip matter more than any guide.",
   tips = {
     -- Every level
@@ -48,6 +48,7 @@ RG.GOLD = {
     { cat = "Fishing", from = 1, to = 60, prof = "Fishing", title = "Fish while you wait", text = "Waiting on respawns, a group or a camp buff? Fish. It levels Fishing and Cooking for free and stocks your Fish Bowls and Well Fed food." },
     -- Forever-only
     { cat = "Forever", from = 1, to = 60, title = "Waylaid Crates", text = "Players turn in supply crates for Merchant's Favor and need set materials to fill them (Copper Bar showed up in the beta). Watch for crate materials spiking on the AH and sell into it. Since the November 9 hotfix, Waylaid Crates and Craftsman's Writs also drop inside dungeons." },
+    { cat = "Forever", from = 46, to = 60, title = "Turn quests in as you go after 48", text = "Since the November 10 hotfix most quests of level 48 and up also pay gold on top of their XP, so there's no reason to hold them back until 60 for the gold. Quests with a valuable item reward, repeatables and quick throwaway quests don't get the extra gold." },
     { cat = "Forever", from = 1, to = 60, title = "Sell the mats for new recipes", text = "Forever adds 600+ new profession recipes, and some Blueprints drop from dungeon bosses. Mats those recipes need can jump in price, so check before vendoring anything that looks odd." },
     { cat = "Forever", from = 1, to = 60, title = "Rare mobs and dungeon drops", text = "Blizzard added hundreds of new rare and dungeon drops. Check any unfamiliar bind on equip item on the AH before selling it." },
     { cat = "Forever", from = 1, to = 60, title = "Each ruleset has its own AH", text = "Prices are different on every ruleset, so a guide's price might not match yours. Trust your own scans." },
@@ -58,6 +59,7 @@ RG.GOLD = {
     "expcarry.com/wow-forever-mining-guide",
     "icy-veins.com/wow-forever/blacksmithing",
     "Blizzard WoW Forever launch notes (November 2, 2026)",
+    "Blizzard WoW Forever hotfixes (November 10, 2026)",
   },
 }
 

@@ -3850,7 +3850,7 @@ RG.QDATA = {
 [96241]={e={1412,32.5,20.7,"Mazu'kon"},s={1412,32.5,20.7,"Mazu'kon"},n="Talkin' bout Toxins, Mon",r=23,l=29,ra="OUTRS",o={{"i","Gloomrise Toxin Sample",{"Gnawed Corpse"},{{1412,33.5,10.2,1},{1412,34.8,14.1,1},{1412,32.7,20.9,1},{1412,47.3,57.7,1},{1442,60.0,92.6,1}}}}},
 [96259]={e={1412,33.4,22.6,"Muln Earthfury"},s={1412,33.4,22.6,"Muln Earthfury"},n="Defending the Dead",r=23,l=29,ra="OUTRS",o={{"k","Gloomrise Hatchling",{"Gloomrise Hatchling"},{{1412,34.2,8.7,1},{1412,33.8,11.5,1},{1412,36.0,12.6,1},{1412,33.1,14.1,1},{1442,61.1,95.6,1}}},{"k","Gloomrise Soldier",{"Gloomrise Soldier"},{{1412,33.7,9.6,1},{1412,35.3,12.8,1},{1412,33.0,12.9,1},{1412,33.3,18.5,1},{1442,59.9,92.5,1},{1442,61.3,95.5,1}}}}},
 [96260]={e={1412,32.5,20.0,"Yorn Grimtotem"},s={1412,32.5,20.0,"Yorn Grimtotem"},n="Stronger than Steel",r=23,l=29,ra="OUTRS",o={{"i","Crystalline Silk",{"Gloomrise Spinner"},{{1412,33.9,8.3,1},{1412,32.8,11.5,1},{1412,34.9,12.2,1},{1412,33.6,14.8,1},{1443,81.7,20.1,1}}}}},
-[96261]={e={1412,33.4,22.6,"Muln Earthfury"},s={1412,33.4,22.6,"Muln Earthfury"},n="The Broodmother",r=23,l=30,ra="OUTRS",o={{"k","Broodmother Valraxx",{"Broodmother Valraxx"},{{1412,33.9,11.3,1},{1412,33.5,9.4,1},{1412,33.4,7.6,1},{1412,33.2,16.1,1},{1442,60.0,91.1,1}}}}},
+[96261]={e={1412,33.4,22.6,"Muln Earthfury"},s={1412,33.4,22.6,"Muln Earthfury"},n="The Broodmother",r=23,l=30,ps={96259},ra="OUTRS",o={{"k","Broodmother Valraxx",{"Broodmother Valraxx"},{{1412,33.9,11.3,1},{1412,33.5,9.4,1},{1412,33.4,7.6,1},{1412,33.2,16.1,1},{1442,60.0,91.1,1}}}}},
 [96294]={e={1412,33.4,22.6,"Muln Earthfury"},n="A Darker Truth",r=23,l=30,ra="OUTRS"},
 [96332]={n="A Little Payback",r=48,l=53,ra="OUTRS"},
 [96334]={n="Blood Red Bandanas",r=48,l=53,ra="OUTRS"},

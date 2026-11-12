@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.32.0
+
+- **Shen'dralas is on the route.** WoW Forever's quest data now has the zone's quests, and the route notes say how to get in for both factions: no flight point inside, so fly to Shadowprey Village (Horde) or Nijel's Point (Alliance); Uthek the Wise in Gelkis Village gives Valley of Bones (Alliance can also start with Warug in Magram Village). The notes name the Gelkis givers (Nerlokh, Rokren) and the Magram ones (Orgrul, Hagiak) with coordinates, and warn that the two clans are rivals, with which profession recipes each sells at Honored. A travel tip at 38 sends you there.
+- **November 10 hotfixes:** the Journeyman Campfire can be placed at Cooking 90 (was 140); Coarse Grinding Stones give Blacksmithing skill-ups up to 90; a Gold tip says most level 48+ quests now also pay gold, so turn them in as you go. The 2nd Spec tab now describes the class changes as live: Enhancement Stormstrike (100% weapon damage, 8 sec), Strength first again, Affliction's Wrack and Soul Siphon, Hunter pets at 115% health, sturdier warlock demons.
+- **Gear guide:** Vambraces of the Sadist (Paladin) and Jumanza Grips (Holy Paladin 2nd spec) are listed at the level WoW Forever requires (55 and 43).
+- **Auction House:** no more "sell on the AH" advice for soulbound, Bind on Pickup or quest items, whatever another add-on's price list says.
+- Quest data updated from WoW Forever's latest game data.
+
 ## v1.31.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
