@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.35.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.35.0
 
 - **Ammo reminder.** Anyone with a bow, crossbow or gun is reminded to stock up on arrows or bullets while in town: once in chat when you arrive, and on the tracker while you're there. It names the best ammo for your level and the nearest vendor on the map that sells it (click to pin). Hunters are reminded below 600 and fill up to five stacks; Warriors and Rogues, who only pull with it, below 100 and fill up to one stack. At a vendor with your ammo, a "Buy N arrows" button beside the vendor window buys whole stacks up to that amount, as many as you can afford; nothing is bought until you click it. Turn it off in Settings.
