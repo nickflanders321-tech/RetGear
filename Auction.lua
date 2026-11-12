@@ -129,6 +129,8 @@ end
 RG.MarketValue = function(id) return marketOf(RG.db and RG.db.prices and RG.db.prices[id]) end
 
 function RG.Price(id)
+  -- Bind on Pickup and quest items never sell there, whatever another add-on's price list says
+  if RG.NeverAuctioned and id and RG.NeverAuctioned(id) then return nil end
   local rec = RG.db.prices[id]
   local mv = marketOf(rec)
   if mv then return mv, "market", rec end

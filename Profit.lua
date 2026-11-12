@@ -30,9 +30,16 @@ end
 -- Returns a table for one unit of an item, or nil if it can't be sold:
 --   { ah = lowest listing, net = what you keep after the AH cut,
 --     vendor = vendor price, gain = net - vendor, src = price source }
+-- Bind on Pickup and quest items can never go on the Auction House, whatever a price list says
+local function neverAuctioned(id)
+  local bind = select(14, RG.ItemInfo(id))
+  return bind == 1 or bind == 4
+end
+RG.NeverAuctioned = neverAuctioned
 function RG.ProfitInfo(id)
   if not id then return nil end
   local vendor = select(11, RG.ItemInfo(id)) or 0
+  if neverAuctioned(id) then return { vendor = vendor, bound = true } end
   local ah, src, rec = RG.Price(id)
   if not ah or (rec and rec.none) then return { vendor = vendor, unpriced = true } end
   local net = math.floor(ah * (1 - AH_CUT))
@@ -41,7 +48,7 @@ end
 
 -- Is this stack worth taking to the AH instead of a vendor?
 local function worthIt(p, count)
-  if not p or p.unpriced then return false end
+  if not p or p.unpriced or p.bound then return false end
   if p.gain <= 0 then return false end
   if p.vendor > 0 and p.net < p.vendor * 1.25 then return false end -- tiny margins aren't worth the trip
   return p.gain * (count or 1) >= RG.ProfitMin()
@@ -53,6 +60,16 @@ end
 local C = C_Container
 local function numSlots(bag) return ((C and C.GetContainerNumSlots) or GetContainerNumSlots)(bag) or 0 end
 local function slotInfo(bag, slot) return C and C.GetContainerItemInfo and C.GetContainerItemInfo(bag, slot) end
+-- soulbound: the slot says so, or the game does when asked about that bag slot (a Bind on Equip piece you wore)
+local function bound(bag, slot, info)
+  if info.isBound then return true end
+  if C_Item and C_Item.IsBound and ItemLocation and ItemLocation.CreateFromBagAndSlot then
+    local ok, b = pcall(function() return C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(bag, slot)) end)
+    if ok and b == true then return true end
+  end
+  return info.itemID and neverAuctioned(info.itemID) or false
+end
+RG.BagSlotBound = function(bag, slot) local info = slotInfo(bag, slot); return info and bound(bag, slot, info) or false end
 
 -- Items in your bags that could go on the AH: not soulbound, not quest items.
 local sellable, sellStamp = {}, nil
@@ -63,7 +80,7 @@ function RG.BagSellSet()
   for bag = 0, 4 do
     for slot = 1, numSlots(bag) do
       local info = slotInfo(bag, slot)
-      if info and info.itemID and not info.isBound and classOf(info.itemID) ~= 12 then set[info.itemID] = (set[info.itemID] or 0) + (info.stackCount or 1) end
+      if info and info.itemID and not bound(bag, slot, info) and classOf(info.itemID) ~= 12 then set[info.itemID] = (set[info.itemID] or 0) + (info.stackCount or 1) end
     end
   end
   sellable = set
@@ -92,7 +109,7 @@ function RG.ProfitList()
       for slot = 1, numSlots(bag) do
         local info = slotInfo(bag, slot)
         local id = info and info.itemID
-        if id and not info.isBound and not pdb().profitIgnore[id] and classOf(id) ~= 12 and not (RG.IsHealKeeper and RG.IsHealKeeper(id)) then
+        if id and not bound(bag, slot, info) and not pdb().profitIgnore[id] and classOf(id) ~= 12 and not (RG.IsHealKeeper and RG.IsHealKeeper(id)) then
           local e = byID[id]
           if not e then e = { id = id, link = info.hyperlink, count = 0, quality = info.quality, slots = {} }; byID[id] = e end
           e.count = e.count + (info.stackCount or 1)
@@ -146,7 +163,7 @@ local function OnTooltip(tooltip, data)
   if not id and tooltip.GetItem then local _, link = tooltip:GetItem(); id = link and tonumber(link:match("item:(%d+)")) end
   if not id or pdb().profitIgnore[id] then return end
   local p = RG.ProfitInfo(id)
-  if not p or p.unpriced then return end
+  if not p or p.unpriced or p.bound then return end
   if worthIt(p, 1) or (p.gain > 0 and RG.BagSellSet()[id] and worthIt(p, RG.BagSellSet()[id])) then
     tooltip:AddLine(COIN .. " " .. GOLD .. "Sell this on the Auction House|r", 1, 1, 1)
     tooltip:AddDoubleLine(GREY .. "  You keep " .. "|r" .. RG.Money(p.net) .. GREY .. " each after the AH cut|r", GREY .. "vendor " .. "|r" .. RG.Money(p.vendor))
