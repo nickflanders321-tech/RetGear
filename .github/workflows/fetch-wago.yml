@@ -48,7 +48,7 @@ jobs:
         run: |
           set -e
           mkdir -p /tmp/out && cd /tmp/out
-          for t in SkillLineAbility SkillLine SpellEffect SpellName ItemEffect ItemXItemEffect Item ItemSparse SpellReagents; do
+          for t in SkillLineAbility SkillLine SpellEffect SpellName ItemEffect ItemXItemEffect Item ItemSparse SpellReagents Achievement Criteria CriteriaTree Map; do
             curl -sSL -A "Mozilla/5.0" -o "$t.csv" "https://wago.tools/db2/$t/csv?build=$BUILD"
             echo "$t: $(wc -l < $t.csv) rows; $(head -c 300 $t.csv | head -1)"
           done
