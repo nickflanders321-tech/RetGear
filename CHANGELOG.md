@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+
+- Fixed the gear panel not showing beside the Character window on WoW Forever's client in 1.34.0. Type /wp gearpanel why to see why it isn't showing, if it ever doesn't.
 ## v1.34.0
 
 - Gear panel: now shows every time the gear tab of the Character window opens, including when you switch back to it from reputation or skills, and hides on those other tabs.

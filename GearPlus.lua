@@ -199,10 +199,28 @@ local function makePanel()
   panel.open.t = panel.open:CreateFontString(nil, "OVERLAY"); RG.Font(panel.open.t, "semibold", 11); panel.open.t:SetPoint("RIGHT"); panel.open.t:SetText(GOLD .. "Gear tab »|r")
   panel.open:SetScript("OnClick", function() if RG.ShowTab then RG.ShowTab("gear") end end)
 end
+-- the Character window's other tabs: the panel hides while one of them is open
+local OTHER_TABS_LIST = { "ReputationFrame", "SkillFrame", "HonorFrame", "TokenFrame", "PetPaperDollFrame", "PVPFrame" }
+function RG.OtherCharacterTab()
+  for _, name in ipairs(OTHER_TABS_LIST) do
+    local f = _G[name]
+    if f and f.IsShown and f:IsShown() then return name end
+  end
+end
+-- why the panel isn't showing (nil = it should show)
+function RG.GearPanelBlocked()
+  if not CharacterFrame then return "the game has no Character window frame" end
+  if not RG.Opt("gearPanel") then return "it's turned off (Settings > Gear and combat, or /wp gearpanel)" end
+  if RG.CardsOnly and RG.CardsOnly() then return "Waypath+ is in cards-only mode" end
+  if RG.IsAlt and RG.IsAlt() then return "this character is marked as a bank alt" end
+  if not CharacterFrame:IsShown() then return "the Character window is closed" end
+  local other = RG.OtherCharacterTab()
+  if other then return "another tab of the Character window is open (" .. other .. ")" end
+end
 function RG.UpdateGearPanel()
   if not CharacterFrame or not RG.db then return end
   local want = RG.Opt("gearPanel") and not (RG.CardsOnly and RG.CardsOnly()) and not (RG.IsAlt and RG.IsAlt()) and CharacterFrame:IsShown()
-    and not (PaperDollFrame and PaperDollFrame.IsShown and not PaperDollFrame:IsShown())
+    and not RG.OtherCharacterTab()
   if not want then if panel then panel:Hide() end return end
   if not panel then makePanel() else RG.PlaceGearPanel() end
   RG.GearStatusInvalidate()
@@ -433,9 +451,13 @@ ev:SetScript("OnEvent", function(_, event, a1)
       CharacterFrame:HookScript("OnShow", opened)
       CharacterFrame:HookScript("OnHide", function() if panel then panel:Hide() end end)
     end
-    if PaperDollFrame and PaperDollFrame.HookScript then
-      PaperDollFrame:HookScript("OnShow", opened)
-      PaperDollFrame:HookScript("OnHide", function() if C_Timer then C_Timer.After(0, refresh) else refresh() end end)
+    -- switching tabs inside the open window: hide on reputation, skills, honor or currency, show again after
+    for _, name in ipairs(OTHER_TABS_LIST) do
+      local f = _G[name]
+      if f and f.HookScript then
+        f:HookScript("OnShow", function() if panel then panel:Hide() end end)
+        f:HookScript("OnHide", function() if C_Timer then C_Timer.After(0, refresh) else refresh() end end)
+      end
     end
     baganator()
     if C_Timer then C_Timer.After(0, weaponSlots) end
@@ -455,8 +477,17 @@ SlashCmdList.WAYPATH = function(msg)
   cmd = cmd and cmd:lower()
   if cmd == "weights" then RG.OpenWeightEditor() return end
   if cmd == "gearpanel" then
+    local arg = (msg or ""):match("^%s*%S+%s+(%S+)")
+    if arg == "why" then
+      local why = RG.GearPanelBlocked()
+      local ok, err = pcall(RG.UpdateGearPanel)
+      if not ok then RG.Print("Gear panel error: " .. tostring(err):sub(1, 200))
+      elseif why then RG.Print("Gear panel isn't showing because " .. why .. ".")
+      else RG.Print("Gear panel should be showing" .. ((panel and panel:IsShown()) and " (and it is)." or ", but it isn't: please send a screenshot.")) end
+      return
+    end
     RG.db.gearPanel = not RG.Opt("gearPanel")
-    RG.Print("Gear panel beside the Character window " .. (RG.db.gearPanel and "on." or "off."))
+    RG.Print("Gear panel beside the Character window " .. (RG.db.gearPanel and "on." or "off.") .. GREY .. " (/wp gearpanel why tells you why it isn't showing)|r")
     pcall(RG.UpdateGearPanel)
     return
   end
