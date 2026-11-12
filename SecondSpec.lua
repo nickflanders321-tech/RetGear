@@ -48,6 +48,9 @@ function RG.ApplyMainSpec(quiet, fresh)
   local isDefault = (not default) or m.key == default.key
   if isDefault then
     RG.DEFAULT_WEIGHTS, RG.WEAPON_MODEL, RG.SCORE_NAME = W0, MODEL0, SCORE0
+    -- a weapon setup you picked on the Gear tab scores weapons its way
+    local setup = RG.WeaponSetup and RG.WeaponSetup()
+    if setup then RG.WEAPON_MODEL = RG.SETUP_MODEL[setup] or MODEL0 end
   else
     RG.DEFAULT_WEIGHTS = m.weights or W0
     RG.WEAPON_MODEL = m.model or C0.model or MODEL0
@@ -182,7 +185,7 @@ function RG.SpecGuide(s)
   for _, g in ipairs(((RG.SPEC_HAND[s.class] or {})[s.key]) or {}) do out[#out + 1] = g; have[g.id] = true end
   local gen = (s.main and RG.IsMainSpec(s)) and ((RG.CLASS_GEAR or {})[s.class] or {}) or (((RG.SPEC_GEAR or {})[s.class] or {})[s.key] or {})
   for _, g in ipairs(gen) do
-    if not have[g.id] and g.lvl >= SPEC_FROM and RG.GearShown(g) then
+    if not have[g.id] and g.lvl >= SPEC_FROM and not g.alt and not g.ws and RG.GearShown(g) then
       local e = {}
       for k, v in pairs(g) do e[k] = v end
       if e.slot == "2H" then e.slot = "Two-Hand" end

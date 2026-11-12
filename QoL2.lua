@@ -203,6 +203,7 @@ local function judge(link)
   cache[link] = { t = GetTime(), up = up, heal = heal }
   return up, heal
 end
+RG.UpgradeJudge = judge   -- (bag add-ons: GearPlus.lua)
 local function linkAt(bag, slot)
   local C = C_Container
   if C and C.GetContainerItemLink then return C.GetContainerItemLink(bag, slot) end

@@ -149,6 +149,22 @@ RG.CLASS_QUESTS = own.classQuests or {}
 -- What item scores are called on tooltips and toasts ("Ret score").
 RG.SCORE_NAME = own.scoreName and (own.scoreName .. " score") or "Upgrade score"
 
+-- Weapon setups the Gear tab offers besides the class's own: two weapons (DW) or a one-hander and a shield (SB).
+-- The generated lists carry their weapons (ws = "DW" / "SB"); a setup scores weapons its own way.
+RG.WEAPON_SETUPS = { WARRIOR = { "DW", "SB" }, PALADIN = { "SB" }, SHAMAN = { "SB" }, HUNTER = { "DW" } }
+RG.SETUP_MODEL = { DW = "DW", SB = "tank" }
+RG.SETUP_LABEL = { ["2H"] = "Two-hander", DW = "Two weapons", SB = "One-hander and shield", ranged = "Two-hander", caster = "Staff, or one-hander and off-hand", feral = "Staff or two-hander" }
+-- the setup you picked for this class (nil = the class's own)
+function RG.WeaponSetup()
+  local by = RG.db and RG.db.weaponSetupByClass
+  local s = by and by[C.token]
+  for _, v in ipairs(RG.WEAPON_SETUPS[C.token] or {}) do if v == s then return s end end
+  return nil
+end
+local WEAPON_SLOT = { ["2H"] = true, ["Main Hand"] = true, ["Off Hand"] = true }
+-- The best piece from each kind of source, beyond the guide's own picks (the Gear tab's by-source view)
+RG.GUIDE_ALT = RG.GUIDE_ALT or {}
+
 -- Gear guide: hand-written entries, then the generated list (hand-written
 -- entries win when both list an item).
 -- specKey: build the guide for a leveling spec other than the class's default (generated gear lists only)
@@ -162,9 +178,14 @@ local function buildGuide(specKey)
     for _, w in ipairs(HORDE_TEXT) do if t:find(w, 1, true) then return true end end
     return false
   end
+  -- a weapon setup of your own (leveling spec only): its weapons replace the class's
+  local setup = not specKey and RG.WeaponSetup and RG.WeaponSetup() or nil
+  local function setupSkip(g) return setup and WEAPON_SLOT[g.slot] and g.ws ~= setup end
   for _, g in ipairs(specKey and (((RG.SPEC_HAND or {})[C.token] or {})[specKey] or {}) or (C.guide or {})) do
-    if not (faction == "Alliance" and hordeOnly(g)) then guide[#guide + 1] = g; if g.id then have[g.id] = true end end
+    if not (faction == "Alliance" and hordeOnly(g)) and not setupSkip(g) then guide[#guide + 1] = g; if g.id then have[g.id] = true end end
   end
+  local alt = RG.GUIDE_ALT
+  for i = #alt, 1, -1 do alt[i] = nil end
   -- Before level 13 you're still in or near your own starting zone: skip early
   -- items from the other races' starting zones (an Orc won't walk to Tirisfal at 8).
   local HOME = { O = { Durotar = true }, R = { Durotar = true }, T = { Mulgore = true }, U = { ["Tirisfal Glades"] = true }, S = { ["Zephras Isle"] = true, Mulgore = true },
@@ -173,7 +194,11 @@ local function buildGuide(specKey)
   local home = HOME[RG.RACE_LETTER] or {}
   for _, g in ipairs(specKey and (((RG.SPEC_GEAR or {})[C.token] or {})[specKey] or {}) or ((RG.CLASS_GEAR or {})[C.token] or {})) do
     local farStart = (g.lvl or 0) < 13 and START[g.zone] and not home[g.zone]
-    if not have[g.id] and not farStart then guide[#guide + 1] = g; have[g.id] = true end
+    if g.ws and g.ws ~= setup then farStart = true end   -- (another setup's weapons)
+    if setupSkip(g) then farStart = true end
+    if g.alt then
+      if not farStart then alt[#alt + 1] = g end
+    elseif not have[g.id] and not farStart then guide[#guide + 1] = g; have[g.id] = true end
   end
   table.sort(guide, function(a, b)
     if a.lvl ~= b.lvl then return a.lvl < b.lvl end

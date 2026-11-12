@@ -572,15 +572,26 @@ def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Chest": 3, "Rare mob": 4, "Reputation": 5, "Crafted": 6, "BoE": 7}
 EXTRA = ("Crafted", "BoE")   # only listed when clearly better than what your route gives
 src_cache = {}
-def pick(C, lvl_from=5, ally=False):
+# The Gear tab's "best from each source" view: every source falls in one of these groups
+SRC_GROUP = {"Quest": "Quest", "Dungeon": "Dungeon", "Crafted": "Crafted", "BoE": "BoE"}
+SRC_GROUPS = ("Quest", "Dungeon", "Crafted", "BoE", "Other")
+# Weapon setups a leveling character can pick on the Gear tab besides the class's own (Classes/<Class>.lua
+# model): two weapons, or a one-hander and a shield. Their weapon lists are generated with that setup's scoring.
+SETUPS = {"WARRIOR": ("DW", "SB"), "PALADIN": ("SB",), "SHAMAN": ("SB",), "HUNTER": ("DW",)}
+SETUP_MODEL = {"DW": "DW", "SB": "tank"}
+WEAPON_SLOTS = {"2H", "Main Hand", "Off Hand"}
+
+def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
     """The upgrade path for every slot plus the best quest reward and dungeon drop per
-    5-level window, from lvl_from to 60."""
+    5-level window, from lvl_from to 60. alts: also the best piece from each kind of source per
+    window (marked alt, for the Gear tab's by-source view)."""
     global CLASS_BIT
     CLASS_BIT = C["bit"]
     cands = defaultdict(list)
     for iid, d in items.items():
         slot = eligible(d, C)
         if not slot: continue
+        if only_slots and slot not in only_slots: continue
         key = (iid, CLASS_BIT, ally)
         if key not in src_cache: src_cache[key] = sources(iid, ally)
         src = [dict(x) for x in src_cache[key]]
@@ -635,6 +646,18 @@ def pick(C, lvl_from=5, ally=False):
                 if c["score"] > other * 1.15 and c["score"] > best_x * 1.10:
                     by_id[c["id"]] = c; best_x = c["score"]
         picked += [c for c in by_id.values() if c["lvl"] >= lvl_from - 2]
+        # 4) the best piece from each kind of source per 5-level window (the Gear tab's by-source view)
+        if alts:
+            extra = {}
+            for lo in range(start, 61, 5):
+                win = [c for c in all_c if lo <= c["lvl"] < lo + 5]
+                for grp in SRC_GROUPS:
+                    w = [c for c in win if SRC_GROUP.get(c["how"], "Other") == grp]
+                    if not w: continue
+                    top = max(w, key=lambda c: c["score"])
+                    if top["id"] not in by_id and top["id"] not in extra and top["lvl"] >= lvl_from - 2:
+                        extra[top["id"]] = dict(top, alt=True)
+            picked += list(extra.values())
     picked.sort(key=lambda c: (c["lvl"], c["slot"]))
     return picked
 
@@ -653,6 +676,8 @@ def entry(c):
         also.append("{ how = %s, src = %s, zone = %s%s%s }" % (lua_str(x["how"]), lua_str(x["src"]), lua_str(x.get("zone") or ""),
                     (", q = %d" % x["q"]) if x.get("q") else "", (", bl = %d" % x["bl"]) if x.get("bl") else ""))
     if also: extra += ", also = { " + ", ".join(also) + " }"
+    if c.get("alt"): extra += ", alt = true"
+    if c.get("ws"): extra += ", ws = %s" % lua_str(c["ws"])
     return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d%s, gen = true },  -- %s\n" % (
         c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), extra, c["name"])
 
@@ -664,6 +689,13 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
     if ONLY and C["name"] not in ONLY and C["tok"] not in ONLY: continue
     picked = pick(C)
     picked_a = pick(C, ally=True)
+    # weapon lists for the other weapon setups the Gear tab offers this class
+    for setup in SETUPS.get(C["tok"], ()):
+        C2 = dict(C, model=SETUP_MODEL[setup], shield=(setup == "SB"))
+        for lst, ally in ((picked, False), (picked_a, True)):
+            ws = [dict(c, ws=setup) for c in pick(C2, ally=ally, only_slots=WEAPON_SLOTS) if c["slot"] in MODEL_SLOTS[C2["model"]]]
+            lst += ws
+            lst.sort(key=lambda c: (c["lvl"], c["slot"]))
     cnt = defaultdict(int)
     for c in picked: cnt[c["slot"]] += 1
     print("%-8s %-14s picked %3d (Alliance %3d): %s" % (C["name"], C["spec"], len(picked), len(picked_a), dict(sorted(cnt.items()))), file=sys.stderr)
@@ -710,7 +742,7 @@ if SPECS_JSON:
                 if sp.get("weapons"): S["weapons"] = set(sp["weapons"])
                 S["shield"] = bool(sp.get("shield"))
                 S["kind"] = sp.get("kind")
-                picked = pick(S, SPEC_FROM, ally)
+                picked = pick(S, SPEC_FROM, ally, alts=False)
                 cnt = defaultdict(int)
                 for c in picked: cnt[c["slot"]] += 1
                 print("%-8s %-14s %s picked %3d: %s" % (C["name"], sp["name"], "Alliance" if ally else "Horde", len(picked), dict(sorted(cnt.items()))), file=sys.stderr)

@@ -536,6 +536,7 @@ local function guideSlotFor(slot)
   if slot == 17 and RG.WEAPON_MODEL == "DW" then return "Main Hand" end   -- any one-hander fits the off hand
   return SLOT_GUIDE[slot]
 end
+RG.GuideSlotFor = guideSlotFor
 local function renderGear()
   local n, total = 0, 0
   local hit, cap = RG.CurrentHit(), RG.db.hitCap
@@ -543,6 +544,48 @@ local function renderGear()
   n = n + 1; local scoreRow = getRow(n)
   n = n + 1
   setBar(getRow(n), "Hit chance", math.min(hit, cap), cap, hit >= cap and T.green or T.gold, string.format("%s%.0f%%|r / %d%% cap", hit >= cap and GREEN or "|cffffffff", hit, cap))
+  -- slots at their best for your level
+  if RG.GearStatus then
+    local st = RG.GearStatus()
+    n = n + 1
+    setBar(getRow(n), "Slots at their best for your level", st.atBest, math.max(1, st.total), st.atBest >= st.total and T.green or T.gold,
+      string.format("%s%d|r / %d", st.atBest >= st.total and GREEN or "|cffffffff", st.atBest, st.total))
+  end
+  -- how you fight, and the weights your scores use
+  local setups = RG.WeaponSetupChoices and RG.WeaponSetupChoices()
+  if setups then
+    local cur = RG.WeaponSetup and RG.WeaponSetup()
+    local idx = 1
+    for i, o in ipairs(setups) do if o.key == cur then idx = i end end
+    n = n + 1
+    local labels = {}
+    for i, o in ipairs(setups) do labels[#labels + 1] = (i == idx and GOLD or GREY) .. o.label .. "|r" end
+    setItem(getRow(n), nil, nil, "|cffffffffWeapon setup|r", table.concat(labels, GREY .. "  ·  |r"), GOLD .. setups[idx].label .. "|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Sword_04")
+    rows[n].onClick = function() local nx = setups[idx % #setups + 1]; RG.SetWeaponSetup(nx.key) end
+    rows[n].tip = "Click for the next setup. Your weapon lists and upgrade scores follow how you fight."
+  end
+  if RG.OpenWeightEditor then
+    n = n + 1
+    local pname = RG.WeightProfileName and RG.WeightProfileName()
+    setItem(getRow(n), nil, nil, "|cffffffffStat weights|r", GREY .. (pname and ("Your profile \"" .. pname .. "\"") or "Waypath+'s own for your spec") .. "  ·  edit them or import a Pawn scale|r",
+      GOLD .. "Edit|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+    rows[n].onClick = function() RG.OpenWeightEditor() end
+    local profs = RG.WeightProfiles and RG.WeightProfiles() or {}
+    local names = {}
+    for k in pairs(profs) do names[#names + 1] = k end
+    table.sort(names)
+    if #names > 0 then
+      rows[n].onRightClick = function()
+        local i = 0
+        for j, k in ipairs(names) do if k == pname then i = j end end
+        local nx = names[i + 1]
+        RG.UseWeightProfile(nx)
+      end
+      rows[n].tip = "Click to edit. Right-click to switch profile: " .. table.concat(names, ", ") .. ", then Waypath+'s own."
+    else rows[n].tip = "Click to edit your weights, save them as a profile, or paste a Pawn scale to import it." end
+  end
   -- gear check: every guide item compared with what you wear right now
   local lvl = UnitLevel("player")
   local ups, loading = {}, 0
@@ -595,12 +638,34 @@ local function renderGear()
         local it = e.items[j]
         parts[#parts + 1] = (RG.ItemInfo(it.g.id) or "item") .. " " .. GREEN .. string.format("+%.0f", it.d) .. "|r" .. GREY .. " (" .. it.g.src .. ")|r"
       end
+      -- the quests to pick up before going in
+      local dq = RG.DUNGEON_QUESTS and RG.DUNGEON_QUESTS[e.zone]
+      local qn = dq and dq.quests and #dq.quests or 0
+      if qn > 0 then parts[#parts + 1] = GOLD .. qn .. " quest" .. (qn > 1 and "s" or "") .. " to pick up first|r" end
       n = n + 1
       setItem(getRow(n), nil, nil, "|cffA58BD8" .. e.zone .. "|r" .. GREY .. "   " .. #e.items .. " upgrade" .. (#e.items > 1 and "s" or "") .. "|r", table.concat(parts, GREY .. "  ·  |r"),
         GREEN .. "+" .. string.format("%.0f", e.total) .. " total|r", e.lvl > lvl and (GREY .. "from level " .. e.lvl .. "|r") or "", nil, nil, true)
       rows[n].icon:SetTexture(136058)
       local ew = RG.WAYPOINTS and RG.WAYPOINTS.dungeons[e.zone]
-      if ew then rows[n].onClick = function() RG.PinWaypoint(ew) end; rows[n].tip = "Click to show the " .. e.zone .. " entrance on the map." end
+      local zone = e.zone
+      rows[n].onClick = function() state.gearDungeon = state.gearDungeon ~= zone and zone or nil; RG.RefreshUI() end
+      if ew then rows[n].onRightClick = function() RG.PinWaypoint(ew) end end
+      rows[n].tip = "Click for its upgrades and the quests to bring" .. (ew and "; right-click to show the entrance on the map." or ".")
+      if state.gearDungeon == zone then
+        for _, it in ipairs(e.items) do
+          n = n + 1
+          local nm, l2, q2 = itemName(it.g.id)
+          setItem(getRow(n), it.g.id, l2, nm, GREY .. it.g.src .. (it.g.lvl > lvl and ("  ·  level " .. it.g.lvl) or "") .. "|r", GREEN .. string.format("+%.0f", it.d) .. "|r", "", nil, q2, true)
+          local gg = it.g
+          rows[n].onClick = function() RG.ShowItemSource(gg) end
+        end
+        for _, q in ipairs(dq and dq.quests or {}) do
+          n = n + 1
+          setItem(getRow(n), nil, nil, GOLD .. "Quest|r  " .. q[1], GREY .. (q[2] or "") .. ((q[3] and q[3] ~= "") and ("  ·  " .. q[3]) or "") .. "|r", "", "", nil, nil, true)
+          rows[n].icon:SetTexture("Interface\\GossipFrame\\AvailableQuestIcon")
+          if q.wp then local wp = q.wp; rows[n].onClick = function() RG.Follow(wp) end; rows[n].tip = "Click to point the arrow at the quest giver." end
+        end
+      end
     end
   end
   n = n + 1; setHeader(getRow(n), "Equipped")
@@ -630,13 +695,30 @@ local function renderGear()
     end
     setItem(r, id, link, link or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
     local slotName = RG.SLOT_NAMES[slot]
-    if nextUp then
-      r.onClick = function() RG.ShowItemSource(nextUp.g, { note = GOLD .. "Next upgrade for your " .. slotName .. ":|r " .. GREEN .. string.format("+%.0f", nextUp.d) .. "|r" }) end
-      r.tip = nil
-    elseif id then
-      r.onClick = function() RG.ShowItemSource(id, { note = GREY .. "You're wearing this. Nothing on your list beats it yet.|r" }) end
-    end
+    -- click: the best piece from each kind of source for this slot
+    r.onClick = function() state.gearSlot = state.gearSlot ~= slot and slot or nil; RG.RefreshUI() end
+    r.onRightClick = nextUp and function() RG.ShowItemSource(nextUp.g, { note = GOLD .. "Next upgrade for your " .. slotName .. ":|r " .. GREEN .. string.format("+%.0f", nextUp.d) .. "|r" }) end or nil
+    r.tip = "Click for the best quest reward, dungeon drop, crafted piece and Auction House find for this slot" .. (nextUp and "; right-click for the next upgrade." or ".")
     if not link then r.icon:SetTexture(136516); r.icon:SetDesaturated(true) else r.icon:SetDesaturated(false) end
+    if state.gearSlot == slot and RG.GearBySource then
+      local by = RG.GearBySource(guideSlotFor(slot))
+      local any = false
+      for _, grp in ipairs(RG.SOURCE_GROUPS) do
+        local b = by[grp]
+        if b then
+          any = true
+          n = n + 1
+          local nm, l2, q2 = itemName(b.g.id)
+          local pill = b.own == "equipped" and (GREEN .. "Wearing it|r") or (b.own and (GOLD .. "In your bags|r"))
+            or (b.d > 0.5 and (GREEN .. string.format("+%.0f", b.d) .. "|r") or (GREY .. "no better|r"))
+          setItem(getRow(n), b.g.id, l2, GOLD .. grp .. "|r  " .. nm, GREY .. (b.g.src or "") .. ((b.g.zone and b.g.zone ~= "") and (", " .. b.g.zone) or "") .. "|r",
+            pill, b.g.lvl > lvl and (GREY .. "Level " .. b.g.lvl .. "|r") or "", nil, q2, true)
+          local gg = b.g
+          rows[n].onClick = function() RG.ShowItemSource(gg) end
+        end
+      end
+      if not any then n = n + 1; setStep(getRow(n), "", GREY .. "Nothing in the guide for this slot near your level yet.|r", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
+    end
   end
   setBar(scoreRow, (RG.SCORE_NAME or "Upgrade score"):gsub(" score$", "") .. " gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
   -- pre-raid checklist: the level 52+ picks from the gear guide, one row per item
@@ -2516,7 +2598,7 @@ end
 
 local SETTING_GROUPS = {
   { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
-  { "Gear and combat", { "tooltip", "upgradeToast", "paperdoll", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
+  { "Gear and combat", { "tooltip", "tooltipBest", "upgradeToast", "paperdoll", "gearPanel", "exorcism", "stoneReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
   { "Interface", { "minimap", "sounds", "quietErrors", "sharePrompt" } },

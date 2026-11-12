@@ -27,7 +27,7 @@ local function rewardButton(i)
   return _G["QuestInfoRewardsFrameQuestInfoItem" .. i] or _G["QuestInfoItem" .. i]
 end
 local function clearMarks() for _, m in pairs(marks) do m:Hide() end end
-local function markButton(i, text, good)
+local function markButton(i, text, good, plain)
   local b = rewardButton(i)
   if not b then return end
   local m = marks[b]
@@ -38,7 +38,7 @@ local function markButton(i, text, good)
     m.label = m:CreateFontString(nil, "OVERLAY"); m.label:SetFont("Fonts\\ARIALN.TTF", 12, "OUTLINE"); m.label:SetPoint("BOTTOMRIGHT", -4, 3)
     marks[b] = m
   end
-  m:SetBackdropBorderColor(good and 0.31 or GOLDC[1], good and 0.68 or GOLDC[2], good and 0.48 or GOLDC[3], 1)
+  m:SetBackdropBorderColor(good and 0.31 or GOLDC[1], good and 0.68 or GOLDC[2], good and 0.48 or GOLDC[3], plain and 0 or 1)
   m.label:SetText(text); m:Show()
 end
 
@@ -69,11 +69,37 @@ function RG.ScoreRewards()
   return r
 end
 
+-- every reward that's an upgrade gets its number (your main spec, and your 2nd spec in its colour): the choices
+-- the outlined best one doesn't cover, and the items every turn-in gives
+local function markOthers(n, skip)
+  local s2 = RG.SecondSpecActive and RG.SecondSpecActive()
+  local function label(link)
+    if not link then return nil end
+    local loc = RG.EquipLoc(link)
+    if not (loc and RG.EQUIP_SLOTS[loc]) then return nil end
+    local parts = {}
+    local d = RG.Compare(link)
+    if d and d > 0.5 then parts[#parts + 1] = GREEN .. string.format("+%.0f", d) .. "|r" end
+    if s2 and RG.SpecDelta then
+      local hd = RG.SpecDelta(link)
+      if hd and hd > 0.5 then parts[#parts + 1] = "|cffF58CBA" .. (s2.short or s2.name or "2nd") .. " +" .. string.format("%.0f", hd) .. "|r" end
+    end
+    return #parts > 0 and table.concat(parts, " ") or nil
+  end
+  for i = 1, n do
+    if not skip[i] then local t = label(GetQuestItemLink("choice", i)); if t then markButton(i, t, true, true) end end
+  end
+  local nr = GetNumQuestRewards and GetNumQuestRewards() or 0
+  for j = 1, nr do
+    local t = label(GetQuestItemLink("reward", j))
+    if t then markButton(n + j, t, true, true) end
+  end
+end
 local function pickReward()
   clearMarks()
   if not RG.Opt("rewardPicker") then return end
   local n = GetNumQuestChoices and GetNumQuestChoices() or 0
-  if n < 2 then return end
+  if n < 2 then markOthers(n, {}) return end
   local r = RG.ScoreRewards()
   local bestUp, bestUpI, bestGold, bestGoldI = r.up, r.upI, r.gold, r.goldI
   if r.healI and r.healI ~= bestUpI then markButton(r.healI, "|cffF58CBA" .. (RG.SecondSpecName and RG.SecondSpecName() or "2nd spec") .. " +" .. string.format("%.0f", r.heal) .. "|r", true) end
@@ -84,6 +110,7 @@ local function pickReward()
     markButton(bestGoldI, GOLD .. "Sells best|r", false)
     RG.Print("No upgrades here. " .. (GetQuestItemLink("choice", bestGoldI) or "") .. " sells for the most (" .. RG.Money(bestGold) .. ").")
   end
+  markOthers(n, { [bestUpI or 0] = true, [r.healI or 0] = true, [(not bestUpI) and bestGoldI or 0] = true })
 end
 
 -- ===========================================================================

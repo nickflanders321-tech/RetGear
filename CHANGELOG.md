@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Gear panel beside the Character window.** Opening your character shows how many slots are at their best for your level and the next upgrade for each slot (click one to see where it drops). Turn it off with its close button or in Settings, or type /wp gearpanel.
+- **Best from each source.** Click an equipped slot in the Gear tab to see the best quest, dungeon, crafted and Auction House piece for it around your level, and whether you're already wearing it or have it in your bags.
+- **"% of the best for your level" in item tooltips**, naming the best piece for that slot.
+- **Quest rewards: every choice is marked.** Besides the best pick, the other rewards show how much they'd add (+score), and with a 2nd spec on, what they'd add for it too.
+- **Dungeon summary:** each dungeon in the Gear tab lists the quests to pick up before you go; click to see its upgrades and those quests (with an arrow to the quest giver), right-click to pin the entrance.
+- **Weapon setup choice** for Warriors (two-handed, dual wield or sword and board), Paladins and Shamans (two-handed or shield) and Hunters (two-handed or dual wield). Click the row in the Gear tab to switch; the weapon list changes to match.
+- **Stat weights you can edit.** Click "Stat weights" in the Gear tab to paste a Pawn scale or type your own, save it as a profile per class, and right-click to switch profiles. Scores, tooltips and upgrade arrows use your weights.
+- **Baganator upgrade arrows** now use Waypath+'s upgrade check.
 - **Gear guide: Hit counts for more for physical damage dealers.** Checked every spec's stat priorities again against the November 10-11 hotfixes and the newest WoW Forever stat guides, which put Hit (up to 9%) first or second for physical damage. Arms and Fury Warriors, all three Hunter specs, Combat Rogues and Feral Druids now value Hit above crit, and Shadow Priests value spell hit a little more, so pieces with Hit move up in their gear lists and upgrade scores. The 2nd Spec tab's stat lines say so too. (Enhancement Shaman's Strength-first change from the November 10 hotfix was already in.)
 
 ## v1.33.1
