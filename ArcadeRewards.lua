@@ -48,24 +48,32 @@ local function bosses()
   if bossSet then return bossSet end
   bossSet = {}
   for _, c in ipairs(RG.ARCADE_CARDS or {}) do
-    if c.kind == 2 and c.text and c.text:find("^Boss,") then bossSet[c.name] = true end
+    if c.kind == 2 and c.text and (c.text:find("^Boss,") or c.text:find("^Dungeon boss,")) then bossSet[c.name] = true end
   end
   return bossSet
 end
 local run = { key = nil, names = {}, n = 0 }
-local function dungeonDone(name)
+-- the dungeon's English name (its pack's name) from the instance number
+local function dungeonOf(iid)
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do if d[2] == iid then return d[1] end end
+end
+local function dungeonDone(name, iid)
   local a = A(); if not a then return end
   a.dun = a.dun or {}; a.dunDay = a.dunDay or {}
   local lvl = level()
+  local dn = dungeonOf(iid)
   if not a.dun[name] then
     a.dun[name] = true
     RG.ArcadeGrant(name .. " cleared for the first time", 15 + math.floor(lvl / 3), { jumbo = 1 })
+    if dn and RG.ArcadeGrantDungeon then RG.ArcadeGrantDungeon(dn, 2, dn .. " cleared") end
   elseif a.dunDay.day == today() and (a.dunDay.n or 0) >= 2 then
+    if dn and RG.ArcadeGrantDungeon then RG.ArcadeGrantDungeon(dn, 0) end
     return
   else
     if a.dunDay.day ~= today() then a.dunDay = { day = today(), n = 0 } end
     a.dunDay.n = a.dunDay.n + 1
     RG.ArcadeGrant(name .. " cleared again", 8 + math.floor(lvl / 6), { normal = 1 })
+    if dn and RG.ArcadeGrantDungeon then RG.ArcadeGrantDungeon(dn, 1, dn .. " cleared again") end
   end
 end
 local function onDeath(destName)
@@ -79,7 +87,7 @@ local function onDeath(destName)
   if run.key ~= key then run = { key = key, names = {}, n = 0, paid = false } end
   if run.names[destName] then return end
   run.names[destName] = true; run.n = run.n + 1
-  if run.n >= 3 and not run.paid then run.paid = true; dungeonDone(name) end
+  if run.n >= 3 and not run.paid then run.paid = true; dungeonDone(name, id) end
 end
 
 -- ---------------------------------------------------------------------------

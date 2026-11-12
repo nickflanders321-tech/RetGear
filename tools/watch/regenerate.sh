@@ -44,6 +44,9 @@ python3 tools/fishloot/gen.py "$T/classic.sql" "$T/qdb" "$T/fl_obj.tsv" "$T/fl_i
 python3 tools/flights/gen.py "$T/classic.sql" "$T/qdb" "$T/npcs.tsv" .
 python3 tools/arcade/gen.py "$T/classic.sql" "$T/qdb" .
 python3 tools/arcade/gear.py "$T/classic.sql" .
+# dungeon packs: each levelling dungeon's own cards (WoW Forever's item names and qualities when the client tables are there)
+WG=""; [ -s "$T/wago/ItemSparse.csv.gz" ] && WG="--wago $T/wago"
+python3 tools/arcade/dungeons.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" . $WG
 # players' /wp share reports (GitHub issues labelled "quests"): quests the published data doesn't have yet
 python3 tools/community/import.py "${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}" Objectives.lua || true
 # quest tags and notes from Polestar's forever-db (CC BY 4.0 layer); a failed download keeps the last QuestNotes.lua

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Dungeon packs.** Every levelling dungeon, from Ragefire Chasm to Scholomance, has its own pack of cards: the dungeon itself, its bosses (the last boss is its top card), their blue and purple drops, and its elites. That's 571 new cards, taken from the game data, with the bosses' and elites' own 3D models. Clearing a dungeon (three of its bosses) gives two of its packs the first time and one more each time after (twice a day), on top of the usual coins. Once you've cleared it, you can also buy its packs for 70 coins. Dungeon cards only come from their dungeon's packs, so regular packs and the master set are unchanged.
+- **Set rewards in three stages.** Every set now pays three times: bronze for every card, silver for every card rare or better, gold for every card holo or full art. Silver adds a jumbo pack, gold a super jumbo, and a dungeon's bronze two of its packs. Sets you already finished keep their bronze; silver and gold pay the next time you open a pack, if you already qualify.
+- **The Album.** A new tab shows one set at a time, like a binder page: your cards in their best print and empty slots for the ones you're missing (hover one to see where it comes from). The line under the title shows the set's bronze, silver and gold progress and the next reward. Flip between sets with < >; for a dungeon, open or buy its pack right there. The Sets tab shows each set's stage, and clicking one opens it in the Album.
+
 ## v1.36.0
 
 - **Mythic cards are easier to find: about 1 pack in 150** (was 1 in 400, so rare that few players ever saw one). A jumbo pack is about 1 in 75, a super jumbo about 1 in 50. The 1 Ring stays at 1 in 5,000.

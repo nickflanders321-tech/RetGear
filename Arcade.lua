@@ -7,8 +7,9 @@ local _, RG = ...
 
 local KIND = { "Item", "NPC", "Place", "Raider" }
 local TIER = {  -- how rare the subject itself is: draw weight, name colour
-  { "Mundane", 44, { 0.78, 0.78, 0.8 } }, { "Uncommon", 26, { 0.3, 0.85, 0.3 } }, { "Renowned", 14, { 0.3, 0.55, 1 } },
-  { "Epic", 12, { 0.7, 0.35, 0.95 } }, { "Legendary", 4, { 1, 0.6, 0.1 } },
+  -- (dw: the weight in a dungeon pack, where a dungeon's top boss and its purple drops are the rare pulls)
+  { "Mundane", 44, { 0.78, 0.78, 0.8 }, dw = 40 }, { "Uncommon", 26, { 0.3, 0.85, 0.3 }, dw = 34 }, { "Renowned", 14, { 0.3, 0.55, 1 }, dw = 20 },
+  { "Epic", 12, { 0.7, 0.35, 0.95 }, dw = 6 }, { "Legendary", 4, { 1, 0.6, 0.1 }, dw = 2 },
   { "Artifact", 3, { 1, 0.2, 0.35 } },   -- the Raiders
   -- the six chase cards (ArcadeMythic.lua): never rolled with the others, see openOne. rate: the chance that a pack's
   -- last card is a Mythic (a jumbo counts as more than one pack); ring: ... that it is The 1 Ring (once per account)
@@ -61,6 +62,8 @@ local PACKS = {
   normal = { name = "Pack", size = 5, price = 52, rares = 1, weight = 1, col = { 0.956, 0.853, 0.649 } },
   jumbo = { name = "Jumbo Pack", size = 8, price = 84, rares = 2, weight = 2, col = { 1, 0.8, 0.4 } },
   super = { name = "Super Jumbo Pack", size = 12, price = 120, rares = 3, weight = 3, col = { 1, 0.45, 0.52 } },
+  -- a dungeon's own pack: only that dungeon's cards. Free for clearing it; once cleared, also for coins
+  dungeon = { name = "Dungeon Pack", size = 5, price = 70, rares = 1, weight = 1, col = { 0.55, 0.8, 1 } },
 }
 local PACK_ORDER = { "normal", "jumbo", "super" }
 local PACK_MAX = 12
@@ -85,7 +88,7 @@ local MASTER_GOAL = 0.75
 
 local CARDS = {}
 for i, d in ipairs(RG.ARCADE_DATA or {}) do
-  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5] }
+  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6] }
   local my = d[3] == 7 and RG.ARCADE_MYTHIC and RG.ARCADE_MYTHIC[d[2]]
   if my then CARDS[i].mythic = my; if my.icon then CARDS[i].icon = "Interface\\Icons\\" .. my.icon end end
 end
@@ -274,14 +277,38 @@ end)
 local byTier, tierWeight
 local function buildPools()   -- (the Raiders pool only counts once there is one)
   byTier, tierWeight = {}, 0
-  for _, c in ipairs(CARDS) do byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end
+  for _, c in ipairs(CARDS) do if not c.dun then byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end end
   for t = 1, #TIER do if byTier[t] then tierWeight = tierWeight + TIER[t][2] end end
+  -- dungeon packs: { [dungeon] = { list, byTier, weight } } from ArcadeDungeons.lua (cards found by name)
+  RG.ArcadeDunPools = {}
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
+    local p = { list = {}, byTier = {}, weight = 0, name = d[1], iid = d[2], lo = d[3], hi = d[4] }
+    for _, n in ipairs(d[5]) do
+      local c = byKey[n]
+      if c and c.tier < 6 then p.list[#p.list + 1] = c; p.byTier[c.tier] = p.byTier[c.tier] or {}; table.insert(p.byTier[c.tier], c) end
+    end
+    for t = 1, 5 do if p.byTier[t] then p.weight = p.weight + (TIER[t].dw or 0) end end
+    if #p.list > 0 then RG.ArcadeDunPools[d[1]] = p end
+  end
 end
-local function rollCard(a)
+local function rollCard(a, dn)
   if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
+  -- a dungeon pack: that dungeon's cards only (the same small mercy for ones you don't have)
+  local dp = dn and RG.ArcadeDunPools[dn]
+  if dp then
+    if a and math.random() < COLLECTOR_LUCK then
+      local missing = {}
+      for _, c in ipairs(dp.list) do if owned(a, c.id) == 0 then missing[#missing + 1] = c end end
+      if #missing > 0 then return missing[math.random(#missing)] end
+    end
+    local x, tier = math.random() * dp.weight, nil
+    for t = 1, 5 do if dp.byTier[t] then x = x - (TIER[t].dw or 0); if x <= 0 then tier = t; break end end end
+    local pool = dp.byTier[tier] or dp.list
+    return pool[math.random(#pool)]
+  end
   if a and math.random() < COLLECTOR_LUCK then
     local missing = {}
-    for _, c in ipairs(CARDS) do if c.kind ~= 4 and c.tier ~= 7 and owned(a, c.id) == 0 then missing[#missing + 1] = c end end
+    for _, c in ipairs(CARDS) do if c.kind ~= 4 and c.tier ~= 7 and not c.dun and owned(a, c.id) == 0 then missing[#missing + 1] = c end end
     if #missing > 0 then return missing[math.random(#missing)] end
   end
   local x = math.random() * tierWeight
@@ -304,6 +331,7 @@ end
 -- Sets, daily goals, free pack
 -- ---------------------------------------------------------------------------
 local function setOf(c)
+  if c.dun then return c.dun end   -- a dungeon's own card: that dungeon's set
   if c.tier == 7 then return "Mythic"
   elseif c.kind == 3 then
     local z = c.text:match("^Found in (.+)$")
@@ -325,30 +353,70 @@ local function getSets()
   local by, list = {}, {}
   for _, c in ipairs(CARDS) do
     local n = setOf(c)
-    if not by[n] then by[n] = { name = n, cards = {} }; list[#list + 1] = by[n] end
+    if not by[n] then by[n] = { name = n, cards = {}, isDun = c.dun and true or nil }; list[#list + 1] = by[n] end
     table.insert(by[n].cards, c)
   end
   local out = {}
-  for _, s in ipairs(list) do if #s.cards >= 3 then s.reward = math.min(100, 10 + 2 * #s.cards); out[#out + 1] = s end end
+  for _, s in ipairs(list) do if #s.cards >= 3 and not by[s.name].isDun then s.reward = math.min(100, 10 + 2 * #s.cards); out[#out + 1] = s end end
   table.sort(out, function(x, y) return x.name < y.name end)
+  -- each dungeon is a set of every card in its pack (easiest dungeon first, before the others)
+  local duns = {}
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
+    local cs = {}
+    for _, n in ipairs(d[5]) do if byKey[n] then cs[#cs + 1] = byKey[n] end end
+    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, lo = d[3], hi = d[4], reward = math.min(100, 10 + 2 * #cs) } end
+  end
+  for i = #duns, 1, -1 do table.insert(out, 1, duns[i]) end
   setCache, setCount = out, #CARDS
   return out
 end
-local function setProgress(a, s)
-  local n = 0
-  for _, c in ipairs(s.cards) do if owned(a, c.id) > 0 then n = n + 1 end end
+local function setProgress(a, s, stage)
+  local n, need = 0, (stage or 1)
+  for _, c in ipairs(s.cards) do
+    local f = bestFinish(a, c.id)
+    if f and f >= need then n = n + 1 end
+  end
   return n
+end
+-- the three stages of a set: every card (bronze), every card rare or better (silver), every card holo or better
+-- (gold). Rewards: coins, plus a jumbo for silver and a super jumbo for gold; a dungeon's bronze adds two of its packs.
+RG.ARCADE_STAGES = {
+  { "Bronze", "every card", { 0.8, 0.55, 0.32 } },
+  { "Silver", "every card rare or better", { 0.78, 0.82, 0.9 } },
+  { "Gold", "every card holo or full art", { 1, 0.82, 0.3 } },
+}
+function RG.ArcadeStageReward(s, stage)
+  local coins = stage == 1 and s.reward or (stage == 2 and math.floor(s.reward * 1.5) or s.reward * 3)
+  local packs = stage == 2 and { jumbo = 1 } or (stage == 3 and { super = 1 } or nil)
+  local dpk = (stage == 1 and s.dungeon) and 2 or nil
+  return coins, packs, dpk
+end
+function RG.ArcadeStageText(s, stage)
+  local coins, packs, dpk = RG.ArcadeStageReward(s, stage)
+  local t = "+" .. coins .. " coins"
+  if packs and packs.jumbo then t = t .. ", a jumbo pack" end
+  if packs and packs.super then t = t .. ", a super jumbo pack" end
+  if dpk then t = t .. ", " .. dpk .. " " .. s.name .. " packs" end
+  return t
 end
 -- pay out every finished set once; returns the names
 local function claimSets(a)
-  a.setsDone = a.setsDone or {}
+  a.setsDone = a.setsDone or {}    -- bronze (the first stage: what sets paid before stages)
+  a.setStage = a.setStage or {}    -- [set] = highest stage paid
   local done = {}
   for _, s in ipairs(getSets()) do
-    if not a.setsDone[s.name] and setProgress(a, s) >= #s.cards then
-      a.setsDone[s.name] = true
-      a.coins = (a.coins or 0) + s.reward
-      a.stats = a.stats or {}; a.stats.sets = (a.stats.sets or 0) + s.reward
-      done[#done + 1] = s.name .. " (+" .. s.reward .. ")"
+    local paid = a.setStage[s.name] or (a.setsDone[s.name] and 1 or 0)
+    for stage = paid + 1, 3 do
+      if setProgress(a, s, stage) < #s.cards then break end
+      local coins, packs, dpk = RG.ArcadeStageReward(s, stage)
+      a.setStage[s.name] = stage
+      if stage == 1 then a.setsDone[s.name] = true end
+      a.coins = (a.coins or 0) + coins
+      a.stats = a.stats or {}; a.stats.sets = (a.stats.sets or 0) + coins
+      local t = tok(a)
+      for k, n in pairs(packs or {}) do t[k] = (t[k] or 0) + n end
+      if dpk then a.dpk = a.dpk or {}; a.dpk[s.name] = (a.dpk[s.name] or 0) + dpk end
+      done[#done + 1] = s.name .. " " .. RG.ARCADE_STAGES[stage][1]:lower() .. " (" .. RG.ArcadeStageText(s, stage) .. ")"
     end
   end
   return done
@@ -454,16 +522,28 @@ function RG.ArcadePackOdds(kind)
   return { mythic = math.floor(1 / (TIER[7].rate * (def.weight or 1)) + 0.5), holo = anyOf(3), full = anyOf(4), size = def.size, rares = def.rares, pity = PITY }
 end
 -- one seal: pays for it, rolls the five cards, returns got, notes, meta
-local function openOne(a, kind)
+local function openOne(a, kind, dn)
   kind = PACKS[kind or "normal"] and (kind or "normal") or "normal"
+  if kind == "dungeon" and not (dn and RG.ArcadeDunPools and RG.ArcadeDunPools[dn]) then
+    if not byTier then buildPools() end
+    if not (dn and RG.ArcadeDunPools[dn]) then return nil, "No cards for that dungeon." end
+  end
+  if kind ~= "dungeon" then dn = nil end
   local def = PACKS[kind]
   local bonus, free = false, false
-  if kind == "jumbo" and (a.bonus or 0) > 0 then bonus = true; a.bonus = a.bonus - 1   -- a reward pack is a jumbo
+  if kind == "dungeon" then
+    -- a dungeon pack: one you earned there, else coins once you've cleared it
+    a.dpk = a.dpk or {}
+    if (a.dpk[dn] or 0) > 0 then free = true; a.dpk[dn] = a.dpk[dn] - 1
+    elseif not ((a.dunClear and a.dunClear[dn]) or (a.dun and a.dun[dn])) then return nil, "Clear " .. dn .. " once (three of its bosses) to buy its packs."
+    elseif (a.coins or 0) < packPrice(kind) then return nil, "A " .. dn .. " pack costs " .. packPrice(kind) .. " coins."
+    else a.coins = a.coins - packPrice(kind) end
+  elseif kind == "jumbo" and (a.bonus or 0) > 0 then bonus = true; a.bonus = a.bonus - 1   -- a reward pack is a jumbo
   elseif kind == "normal" and (a.free or 0) > 0 then free = true; a.free = a.free - 1
   elseif (tok(a)[kind] or 0) > 0 then free = true; tok(a)[kind] = tok(a)[kind] - 1
   elseif (a.coins or 0) < packPrice(kind) then return nil, "A " .. def.name:lower() .. " costs " .. packPrice(kind) .. " coins."
   else a.coins = a.coins - packPrice(kind) end
-  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0, kind = kind, size = def.size }
+  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0, kind = kind, size = def.size, dungeon = dn }
   -- first seal of the day: the day's streak
   if a.packDay ~= today() then
     local n = (a.packDay == yesterdayStr()) and ((a.packStreak or 0) + 1) or 1
@@ -488,7 +568,7 @@ local function openOne(a, kind)
     if #pool > 0 then mythic = pool[math.random(#pool)] end
   end
   for i = 1, size do
-    local c = rollCard(a)
+    local c = rollCard(a, dn)
     if i == size and mythic then c = mythic end
     local least = c.tier == 6 and 3 or (c.tier == 7 and 4 or 1)
     if i > size - def.rares then least = math.max(least, 2) end   -- the last cards: rare or better (one in a pack, two in a jumbo, three in a super jumbo)
@@ -515,12 +595,12 @@ local function openOne(a, kind)
   note(goalProgress(a, "packs2", 1)); note(goalProgress(a, "packs3", 1))
   if shiny then note(goalProgress(a, "shiny", 1)) end
   if newCount > 0 then note(goalProgress(a, "new5", newCount)) end
-  for _, s in ipairs(claimSets(a)) do notes[#notes + 1] = "Set complete: " .. s end
+  for _, s in ipairs(claimSets(a)) do notes[#notes + 1] = "Set reward: " .. s end
   if meta.streakReward then notes[#notes + 1] = STREAK_BONUS .. " days in a row: a reward pack is waiting" end
   -- set progress for the sets these cards belong to
   local touched, order = {}, {}
   for _, g in ipairs(got) do
-    local sn = setOf(g.card)
+    local sn = (dn and g.card.tier ~= 7) and dn or setOf(g.card)
     if not touched[sn] then touched[sn] = { gained = 0 }; order[#order + 1] = sn end
     if g.new then touched[sn].gained = touched[sn].gained + 1 end
   end
@@ -536,10 +616,10 @@ end
 
 local function pullScore(g) return g.finish * 10 + g.card.tier + (g.new and 0.5 or 0) end
 
-function RG.ArcadeOpenPack(kind)
+function RG.ArcadeOpenPack(kind, dn)
   local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
   dailyCheck()
-  local got, notes, meta = openOne(a, kind)
+  local got, notes, meta = openOne(a, kind, dn)
   if not got then return nil, notes end
   -- the best card comes last, as it does when you turn them one by one
   table.sort(got, function(x, y) return pullScore(x) < pullScore(y) end)
@@ -619,12 +699,37 @@ function RG.ArcadeGrant(label, coins, packs)
   return msg
 end
 
+-- a dungeon's name on its pack: without "The", in capitals, on two lines when long
+function RG.ArcadePackLabel(dn)
+  local t = dn:gsub("^The ", ""):upper()
+  if #t > 13 then
+    local cut = t:find(" ", math.floor(#t / 2) - 2) or t:find(" ")
+    if cut then t = t:sub(1, cut - 1) .. "\n" .. t:sub(cut + 1) end
+  end
+  return t
+end
+-- a dungeon's packs (from clearing it, or a set reward); clearing it also lets you buy them
+function RG.ArcadeGrantDungeon(dn, n, label)
+  local a = store(); if not a or not dn then return end
+  a.dpk = a.dpk or {}; a.dunClear = a.dunClear or {}
+  a.dunClear[dn] = true
+  if (n or 0) > 0 then a.dpk[dn] = (a.dpk[dn] or 0) + n end
+  if label and (n or 0) > 0 then
+    local msg = "|cffffd36bWaypath Cards:|r " .. label .. "  (" .. n .. " " .. dn .. " pack" .. (n > 1 and "s" or "") .. ": open " .. (n > 1 and "them" or "it") .. " from the Album)"
+    if RG.Notify then RG.Notify(msg) elseif RG.Print then RG.Print(msg) end
+  end
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+end
+function RG.ArcadeDungeonPacks(dn)
+  local a = store(); if not a then return 0, false end
+  return (a.dpk and a.dpk[dn]) or 0, ((a.dunClear and a.dunClear[dn]) or (a.dun and a.dun[dn])) and true or false   -- (a.dun: clears from before dungeon packs)
+end
 -- the level 60 present: three cards rated 105 or higher (new ones first) and five packs of every size
 function RG.ArcadeGiftCards()
   local a = store(); if not a or #CARDS == 0 then return nil end
   local fresh, any = {}, {}
   for _, c in ipairs(CARDS) do
-    if c.kind ~= 4 and c.tier ~= 7 then
+    if c.kind ~= 4 and c.tier ~= 7 and not c.dun then
       for f = 1, #FINISH do
         if (c.tier == 6 and 5.5 or c.tier) * 18 + FINISH[f][3] + (c.id % 7) >= 105 then
           local e = { c, f }
@@ -788,7 +893,7 @@ function RG.ArcadeMaster()
   local a = store(); if not a then return 0, 0 end
   local have, total = 0, 0
   for _, c in ipairs(CARDS) do
-    if c.kind ~= 4 then total = total + 1; if owned(a, c.id) > 0 then have = have + 1 end end
+    if c.kind ~= 4 and not c.dun then total = total + 1; if owned(a, c.id) > 0 then have = have + 1 end end   -- (dungeon cards have their own sets)
   end
   return have, total
 end
@@ -2468,6 +2573,9 @@ local function showReveal(got, notes, meta)
   elseif meta.many then
     col, title = { 1, 0.85, 0.45 }, meta.many.count .. " packs"
     info[#info + 1] = { "Packs", GOLDHEX .. meta.many.count .. " packs at once|r   ·   the five best cards are shown" }
+  elseif meta.dungeon then
+    title = meta.dungeon .. " Pack"
+    info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from " .. meta.dungeon .. " only   ·   " .. def.rares .. " rare or better" }
   else
     info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from the whole collection   ·   " .. def.rares .. " rare or better" }
     if meta.daily then title = "Daily " .. def.name; info[#info + 1] = { "Daily", "|cff7be08aDay " .. (meta.streak or 1) .. " in a row|r" } end
@@ -2482,7 +2590,7 @@ local function showReveal(got, notes, meta)
   end
   -- a plain pack, jumbo or super jumbo has its own wrapper (picture and colour); gifts, reward packs and several packs
   -- at once keep the tinted foil
-  local artN = (not meta.gift and not meta.bonus and not meta.many) and (kind == "normal" and 1 or (kind == "jumbo" and 2 or 3)) or nil
+  local artN = (not meta.gift and not meta.bonus and not meta.many and kind ~= "dungeon") and (kind == "normal" and 1 or (kind == "jumbo" and 2 or 3)) or nil
   reveal.artPack = artN
   if artN then col = ({ { 0.62, 0.52, 1 }, { 1, 0.62, 0.28 }, { 0.3, 0.92, 0.82 } })[artN] end
   reveal.sealCol = col
@@ -2496,7 +2604,7 @@ local function showReveal(got, notes, meta)
   reveal.emb:Hide(); reveal.sealCount:SetText(""); reveal.ribbon:Hide(); reveal.ribbonText:SetText("")
   for _, bt in ipairs(reveal.packBack) do bt:SetVertexColor(col[1] * 0.7, col[2] * 0.7, col[3] * 0.7, 1); bt:SetShown(meta.many and true or false) end
   reveal.packKind:SetText(meta.many and ("x" .. meta.many.count) or (meta.gift and "GIFT" or (def.size .. " CARDS")))
-  reveal.packName:SetText(kind == "normal" and "WAYPATH" or (kind == "jumbo" and "JUMBO" or "SUPER JUMBO"))
+  reveal.packName:SetText(meta.dungeon and RG.ArcadePackLabel(meta.dungeon) or (kind == "normal" and "WAYPATH" or (kind == "jumbo" and "JUMBO" or "SUPER JUMBO")))
   if meta.many then reveal.sealCount:SetText("x" .. meta.many.count)
   else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(math.min(1, col[1] + 0.3), math.min(1, col[2] + 0.3), math.min(1, col[3] + 0.3), 0.95); reveal.emb:Show() end
   if artN then reveal.emb:Hide() end   -- (the picture is on the wrapper)
@@ -2671,7 +2779,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Main window
 -- ---------------------------------------------------------------------------
-local MODES = { { "cards", "Collection" }, { "sets", "Sets" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Ledger" } }
+local MODES = { { "cards", "Collection" }, { "album", "Album" }, { "sets", "Sets" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Ledger" } }
 
 local function cell_click(self, btn)
   local c = self.card
@@ -2755,10 +2863,10 @@ local function build()
 
   -- tabs
   frame.modes = {}
-  local tw = 112
+  local tw = 104
   for i, m in ipairs(MODES) do
     local t = gtab(frame, m[2]:upper(), tw, function() view.mode = m[1]; view.set = (m[1] == "cards") and view.set or nil; RG.ArcadeRefresh(true) end)
-    t:SetPoint("TOP", frame, "TOP", (i - 3) * (tw + 6), -128)
+    t:SetPoint("TOP", frame, "TOP", (i - (#MODES + 1) / 2) * (tw + 6), -128)
     frame.modes[m[1]] = t
   end
   -- filters
@@ -2782,6 +2890,36 @@ local function build()
   frame.searchBox:SetScript("OnTextChanged", function(self) local t = self:GetText() or ""; if t ~= view.search then view.search = t; view.page = 1; RG.ArcadeRefresh(true) end end)
   frame.searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
   frame.searchHint = fs(frame.searchBox, "body", 14); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.84, 0.75, 0.57)
+  -- the Album's top row: the set (< name >) and, for a dungeon, its pack
+  local function albumStep(d)
+    local sets = getSets()
+    local at = 1
+    for i, st in ipairs(sets) do if st.name == view.album then at = i end end
+    view.album = sets[(at - 1 + d) % #sets + 1].name; view.albumPage = 1
+    RG.ArcadeRefresh(true)
+  end
+  frame.albPrev = gbtn(frame, "<", 30, 24, function() albumStep(-1) end); frame.albPrev:SetPoint("TOPLEFT", 34, -160)
+  frame.albTitle = fs(frame, "head", 15); frame.albTitle:SetPoint("LEFT", frame.albPrev, "RIGHT", 10, 0); frame.albTitle:SetWidth(330); frame.albTitle:SetJustifyH("LEFT")
+  frame.albTitle:SetTextColor(1, 0.933, 0.709); if frame.albTitle.SetWordWrap then frame.albTitle:SetWordWrap(false) end
+  frame.albNext = gbtn(frame, ">", 30, 24, function() albumStep(1) end); frame.albNext:SetPoint("LEFT", frame.albPrev, "RIGHT", 350, 0)
+  frame.albOpen = gbtn(frame, "Open pack", 210, 24, function()
+    local dn = view.album
+    if not (dn and RG.ArcadeDunPools and RG.ArcadeDunPools[dn]) then return end
+    if frame.buyNow then frame.buyNow("dungeon", dn) end
+  end)
+  frame.albOpen:SetPoint("TOPRIGHT", -34, -160)
+  frame.albOpen:HookScript("OnEnter", function(self)
+    local dn = view.album
+    if not (dn and RG.ArcadeDunPools and RG.ArcadeDunPools[dn]) then return end
+    local have, cleared = RG.ArcadeDungeonPacks(dn)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine(dn .. " pack")
+    GameTooltip:AddLine("5 cards from " .. dn .. " only: the place, its bosses, their drops and its elites. " .. ((RG.ArcadePackOdds and ("Mythic 1 in " .. RG.ArcadePackOdds("dungeon").mythic .. " packs.")) or ""), 1, 1, 1, true)
+    GameTooltip:AddLine("Clearing it (three of its bosses) gives two the first time and one more each time after (twice a day). " ..
+      (cleared and ("Since you've cleared it, you can also buy them for " .. PACKS.dungeon.price .. " coins.") or "Once you've cleared it, you can also buy them with coins."), 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  frame.albOpen:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
   -- the binder
   cells = {}
@@ -2792,6 +2930,20 @@ local function build()
     c:SetPoint("TOPLEFT", frame, "TOPLEFT", gx0 + ((i - 1) % COLS) * GRIDX, -196 - math.floor((i - 1) / COLS) * GRIDY)
     c.onCard = cell_click
     c.noTip = true     -- the card is shown at full size beside the window instead of a text tooltip
+    -- the Album: a card you don't have yet says where it comes from
+    c:HookScript("OnEnter", function(self)
+      if view.mode ~= "album" or not self.card or self.known then return end
+      local cd = self.card
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:AddLine(cd.name, 1, 0.93, 0.74)
+      GameTooltip:AddLine("Not in your collection yet", 0.8, 0.8, 0.8)
+      if cd.dun then GameTooltip:AddLine("From " .. cd.dun .. " packs: clear it to earn them", 0.55, 0.8, 1, true)
+      elseif cd.tier == 7 then GameTooltip:AddLine("A Mythic: any pack can hold one", 1, 0.9, 0.55, true)
+      else GameTooltip:AddLine("From any pack" .. ((RG.ARCADE_DUNGEON_OF and RG.ARCADE_DUNGEON_OF[cd.name]) and (" or a " .. RG.ARCADE_DUNGEON_OF[cd.name] .. " pack") or ""), 0.55, 0.8, 1, true) end
+      GameTooltip:AddLine("Click to see it (and craft it from extras)", 0.6, 0.6, 0.6)
+      GameTooltip:Show()
+    end)
+    c:HookScript("OnLeave", function() if view.mode == "album" then GameTooltip:Hide() end end)
     c:HookScript("OnEnter", function(self)
       if not self.card or not self.known or not frame.insp then return end
       local ins = frame.insp
@@ -2828,14 +2980,14 @@ local function build()
 
   -- footer
   frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
-  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
+  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "album" then view.albumPage = math.max(1, (view.albumPage or 1) - 1) elseif view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
   frame.prev:SetPoint("BOTTOM", 230, 58)
-  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
+  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "album" then view.albumPage = (view.albumPage or 1) + 1 elseif view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
   frame.next:SetPoint("BOTTOM", 330, 58)
   frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(1, 0.933, 0.709)
-  frame.buyNow = function(many)
+  frame.buyNow = function(many, dn)
     local got, free, notes, meta
-    if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack(type(many) == "string" and many or nil) end
+    if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack(type(many) == "string" and many or nil, dn) end
     if not got then say(free or "") return end
     if meta and meta.bonus then playSound(nil, nil, "reward") end
     showReveal(got, notes, meta); RG.ArcadeRefresh(true)
@@ -3005,7 +3157,9 @@ function RG.ArcadeRefresh(keepMsg)
   frame.sub:SetText(GOLDHEX .. own .. "|r of " .. total .. " cards   ·   " .. GOLDHEX .. prints .. "|r prints   ·   " .. GOLDHEX .. (a.wins or 0) .. "|r duel wins\n|cffa89bc9" .. categoryLine(a) .. "|r")
   if keepMsg ~= true then frame.msg:SetText("") end
   local cards = view.mode == "cards"
-  for _, cell in ipairs(cells) do if not cards then cell:Hide() end end
+  local album = view.mode == "album"
+  for _, cell in ipairs(cells) do if not (cards or album) then cell:Hide() end end
+  for _, w in ipairs({ frame.albPrev, frame.albNext, frame.albTitle, frame.albOpen }) do w:SetShown(album) end
   frame.panel:SetText("")
   pgReset()
   frame.searchBox:SetShown(cards); frame.searchHint:SetShown(cards and (view.search or "") == "")
@@ -3021,8 +3175,48 @@ function RG.ArcadeRefresh(keepMsg)
     local t = frame.modes.today
     if t and t.label then t.label:SetText((a.free or 0) > 0 and "TODAY  |cff7be08a•|r" or (n < #g.pick and ("TODAY  " .. n .. "/" .. #g.pick) or "TODAY")) end
   end
-  frame.prev:SetShown(cards); frame.next:SetShown(cards); frame.pageText:SetShown(cards)
+  frame.prev:SetShown(cards or album); frame.next:SetShown(cards or album); frame.pageText:SetShown(cards or album)
   showRows(0)
+
+  if album then
+    -- one set at a time, like a binder page: the cards you have in their best print, empty slots for the rest
+    claimSets(a)   -- (a stage finished by a trade or craft pays here too)
+    local sets = getSets()
+    local st
+    for _, x in ipairs(sets) do if x.name == view.album then st = x end end
+    if not st then st = sets[1]; view.album = st and st.name end
+    if st then
+      local n = #st.cards
+      local pages = math.max(1, math.ceil(n / #cells))
+      view.albumPage = math.max(1, math.min(view.albumPage or 1, pages))
+      for i, cell in ipairs(cells) do
+        local c = st.cards[(view.albumPage - 1) * #cells + i]
+        paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
+      end
+      frame.pageText:SetText(view.albumPage .. " / " .. pages)
+      frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
+      frame.albTitle:SetText(st.name .. (st.dungeon and ("|cffa89bc9   ·   levels " .. st.lo .. "-" .. st.hi .. "|r") or "") .. "|cffa89bc9   ·   " .. n .. " cards|r")
+      -- the stages (under the title, where the collection's totals usually are)
+      a.setStage = a.setStage or {}
+      local paid = a.setStage[st.name] or ((a.setsDone or {})[st.name] and 1 or 0)
+      local parts = {}
+      for k, sg in ipairs(RG.ARCADE_STAGES) do
+        local have = setProgress(a, st, k)
+        local hex = string.format("|cff%02x%02x%02x", math.floor(sg[3][1] * 255), math.floor(sg[3][2] * 255), math.floor(sg[3][3] * 255))
+        parts[#parts + 1] = hex .. sg[1] .. "|r " .. (paid >= k and "|cff7be08adone|r" or (have .. "/" .. n))
+      end
+      local nextStage = RG.ARCADE_STAGES[paid + 1]
+      frame.sub:SetText(table.concat(parts, "     ") .. "\n|cffa89bc9" .. (nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or "Every stage finished: a gold set") .. "|r")
+      -- a dungeon's pack
+      if st.dungeon and RG.ArcadeDunPools and RG.ArcadeDunPools[st.name] then
+        local have, cleared = RG.ArcadeDungeonPacks(st.name)
+        if have > 0 then frame.albOpen:SetText("Open " .. st.name:gsub("^The ", "") .. " pack (" .. have .. ")"); frame.albOpen:SetEnabled(true)
+        elseif cleared then frame.albOpen:SetText("Buy a pack: " .. PACKS.dungeon.price .. " coins"); frame.albOpen:SetEnabled((a.coins or 0) >= PACKS.dungeon.price)
+        else frame.albOpen:SetText("Clear it to earn its packs"); frame.albOpen:SetEnabled(false) end
+        frame.albOpen:Show()
+      else frame.albOpen:Hide() end
+    end
+  end
 
   if cards then
     local list = collectionList(a)
@@ -3041,20 +3235,27 @@ function RG.ArcadeRefresh(keepMsg)
     local pages = math.max(1, math.ceil(#sets / per))
     local pg = math.max(0, math.min(view.setPage or 0, pages - 1)); view.setPage = pg
     local first = pg * per
-    pgHead(1, 196, "Sets", "Complete a set for a coin reward   ·   click one to browse it   ·   " .. #sets .. " sets")
+    pgHead(1, 196, "Sets", "Bronze, silver and gold rewards   ·   click one to open it in the Album   ·   " .. #sets .. " sets")
     showRows(math.max(0, math.min(per, #sets - first)))
     for i = 1, per do
       local s = sets[first + i]
       local b = frame.rows[i]
       b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -228 - (i - 1) * 28)
       if s then
-        local have = setProgress(a, s)
-        local done = have >= #s.cards
-        b.left:SetText((done and "|cff7be08a" or "|cfff4ecd8") .. s.name .. "|r")
-        b.right:SetText(have .. "/" .. #s.cards .. (done and ("   |cff7be08acomplete|r") or ("   |cffa89bc9+" .. s.reward .. " coins|r")))
+        -- the stage you're working on: its progress, and the medal of the last one finished
+        a.setStage = a.setStage or {}
+        local paid = a.setStage[s.name] or ((a.setsDone or {})[s.name] and 1 or 0)
+        local stage = math.min(3, paid + 1)
+        local have = setProgress(a, s, stage)
+        local sg = RG.ARCADE_STAGES[stage]
+        local medal = paid > 0 and RG.ARCADE_STAGES[paid] or nil
+        local function hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255)) end
+        b.left:SetText((paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name .. "|r" .. (s.dungeon and "|cffa89bc9  (dungeon)|r" or "") .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
+        b.right:SetText(paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
         b.fill:Show(); b.fillBg:Show()
-        b.fill:SetColorTexture(done and 0.48 or GOLDC[1], done and 0.88 or GOLDC[2], done and 0.54 or GOLDC[3], 0.95); b.fill:SetWidth(math.max(1, (PGW - 2) * have / math.max(1, #s.cards)))
-        b.act = function() view.set = s.name; view.mode = "cards"; view.kind = 0; view.page = 1; view.show = 1; RG.ArcadeRefresh(true) end
+        local fc = paid >= 3 and { 0.48, 0.88, 0.54 } or sg[3]
+        b.fill:SetColorTexture(fc[1], fc[2], fc[3], 0.95); b.fill:SetWidth(math.max(1, (PGW - 2) * (paid >= 3 and 1 or have / math.max(1, #s.cards))))
+        b.act = function() view.album = s.name; view.albumPage = 1; view.mode = "album"; RG.ArcadeRefresh(true) end
       end
     end
     frame.prev:Show(); frame.next:Show(); frame.pageText:Show()
