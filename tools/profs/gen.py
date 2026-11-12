@@ -539,6 +539,23 @@ for tid in sorted(teaches):
         for sk in teaches[tid]: WEAPON_MASTERS[sk].append(spot)
         break
 print("weapon masters: %d trainers, %d skills" % (len(teaches), len(WEAPON_MASTERS)), file=sys.stderr)
+# Ammo vendors: everyone who sells the standard arrows or bullets (both factions; the add-on picks yours
+# and the nearest on your map). Arrows: Rough, Sharp, Razor, Jagged. Bullets: Light Shot, Heavy Shot, Solid Shot, Accurate Slugs.
+AMMO_IDS = [2512, 2515, 3030, 11285, 2516, 2519, 3033, 11284]
+ammo_sold = defaultdict(set)
+for iid in AMMO_IDS:
+    for vid in vendors_of.get(iid, []): ammo_sold[vid].add(iid)
+AMMO_VENDORS = []
+for vid in sorted(ammo_sold):
+    sp = npc_spawns.get(vid)
+    if not sp or vid not in npc_name: continue
+    fac = "AH" if sp[1] in ("AH", "") else sp[1]
+    for z, pts in sp[0].items():
+        if z not in ui or z in DUNGEON_AREAS: continue
+        label = "%s%s (%s)" % (npc_name[vid], (" <" + sp[2] + ">") if sp[2] else "", AREA.get(z, "?"))
+        AMMO_VENDORS.append((ui[z], pts[0], label, fac, sorted(ammo_sold[vid])))
+        break
+print("ammo vendors: %d" % len(AMMO_VENDORS), file=sys.stderr)
 print("recipe sources: %d of %d recipes are learned from an item" % (len(RECIPE_SRC), sum(1 for r in RECIPES.values() if r["s"] and r["s"] not in trainer_taught and recipe_items.get(r["s"]))), file=sys.stderr)
 
 # ---------------------------------------------------------------------------
@@ -595,6 +612,9 @@ for nm in sorted(RECIPE_SRC):
 L.append("}"); L.append("RG.WEAPON_MASTERS = {")
 for sk in sorted(WEAPON_MASTERS):
     L.append("  [%s] = { %s }," % (lua_str(sk), ", ".join(wp(o[0], o[1], o[2], ", %s" % lua_str(o[3])) for o in WEAPON_MASTERS[sk])))
+L.append("}"); L.append("-- { map, x, y, label, faction, { ammo item ids it sells } }"); L.append("RG.AMMO_VENDORS = {")
+for o in AMMO_VENDORS:
+    L.append("  %s," % wp(o[0], o[1], o[2], ", %s, { %s }" % (lua_str(o[3]), ", ".join(str(i) for i in o[4]))))
 L.append("}"); L.append("RG.ZONE_MAPS = {")
 for a in sorted(AREA, key=lambda a: AREA[a]):
     if a in ui and a not in DUNGEON_AREAS: L.append("  [%s] = %d," % (lua_str(AREA[a]), ui[a]))
