@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.33.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.33.0
 
 - **More accurate Auction House prices, learned from how TradeSkillMaster prices things.** What an item in your bags "sells for" is now what you'd really get:

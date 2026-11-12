@@ -1355,6 +1355,9 @@ RG.GEN_DUNGEONS = {
     { id = 914, n = "Leaders of the Fang", g = "Nara Wildmane", at = "Thunder Bluff", w = { 1456, 75.7, 31.6, "Nara Wildmane" }, l = 22, r = 11 },
     { id = 6981, n = "The Glowing Shard", g = "", at = "starts from an item", w = nil, l = 26, r = 15 },
   },
+  ["The Hall of Thanes"] = {
+    { id = 96395, n = "An Ancient Grudge", g = "", at = "starts from an item", w = nil, l = 15, r = 1 },
+  },
   ["Shadowfang Keep"] = {
     { id = 1098, n = "Deathstalkers in Shadowfang", g = "High Executor Hadrec", at = "Silverpine Forest", w = { 1421, 43.4, 40.9, "High Executor Hadrec" }, l = 25, r = 18 },
     { id = 1740, n = "The Orb of Soran'ruk", g = "Doan Karhan", at = "The Barrens", w = { 1413, 49.3, 57.2, "Doan Karhan" }, l = 25, r = 20, cl = "L" },
@@ -1778,6 +1781,7 @@ RG.GEN_DUNGEONS_A = {
   },
   ["The Hall of Thanes"] = {
     { id = 96394, n = "The Restless Dead", g = "Afadra Dunwall", at = "Ironforge", w = { 1455, 33.2, 48.0, "Afadra Dunwall" }, l = 15, r = 10 },
+    { id = 96395, n = "An Ancient Grudge", g = "", at = "starts from an item", w = nil, l = 15, r = 1 },
     { id = 96403, n = "Important Heirlooms", g = "Thom Filch", at = "Ironforge", w = { 1455, 32.2, 44.5, "Thom Filch" }, l = 15, r = 10 },
     { id = 96393, n = "Old Ironforge Incursion", g = "Earthseer Farsen", at = "Dun Morogh", w = { 1426, 64.9, 58.5, "Earthseer Farsen" }, l = 16, r = 9 },
   },

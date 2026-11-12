@@ -3863,7 +3863,7 @@ RG.QDATA = {
 [96381]={e={1445,63.5,42.3,"Sully McCleary"},s={1445,63.5,42.3,"Sully McCleary"},n="A Bit of Wet Work",r=48,l=53,ra="HDNGA"},
 [96383]={e={1413,62.0,39.4,"Innkeeper Wiley"},s={1413,62.0,39.4,"Innkeeper Wiley"},n="Legacy Reward: Spectral Bear Cub",r=1,l=60},
 [96391]={e={1426,64.9,58.5,"Earthseer Farsen"},n="Underground Map",r=9,l=15,ra="HDNGA"},
-[96395]={n="An Ancient Grudge",r=1,l=15,ra="HDNGA"},
+[96395]={n="An Ancient Grudge",r=1,l=15,o={{"k","Faldrim Anvilmar",{"Faldrim Anvilmar"},{}}}},
 [96403]={e={1455,32.2,44.5,"Thom Filch"},s={1455,32.2,44.5,"Thom Filch"},n="Important Heirlooms",r=10,l=15,ra="HDNGA"},
 [96449]={n="Aeonas's Secret Refuge",r=35,l=40,ra="HDNGA",cl="P",cq=true},
 [96476]={n="In Search of Aeonas",r=45,l=53,ra="HDNGA",cl="P",cq=true},
