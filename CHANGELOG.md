@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.33.0
+
+- **More accurate Auction House prices, learned from how TradeSkillMaster prices things.** What an item in your bags "sells for" is now what you'd really get:
+  - **The cheapest listing now caps it.** To sell you have to be the cheapest, so when someone lists it for less than the usual market value, that lower price is used (if it was seen in the last two days).
+  - **Your own sales count most.** Waypath+ reads your "Auction successful" mail and uses what you actually sold an item for in the last 30 days.
+  - **Items that keep coming back unsold** (two "Auction expired" mails in two weeks) aren't suggested for the AH any more unless they're worth three times the vendor price.
+  - **Random-enchant gear is priced per variant.** "Bandit Cloak of the Monkey" no longer borrows the price of "... of the Eagle": each variant gets its own price from your scans, and one that hasn't been seen yet shows as "not priced yet" instead of a guess.
+  The tooltip says how the price was worked out, e.g. "52s to sell · cheapest now 52s · market 1g 10s".
+
 ## v1.32.0
 
 - **Shen'dralas is on the route.** WoW Forever's quest data now has the zone's quests, and the route notes say how to get in for both factions: no flight point inside, so fly to Shadowprey Village (Horde) or Nijel's Point (Alliance); Uthek the Wise in Gelkis Village gives Valley of Bones (Alliance can also start with Warug in Magram Village). The notes name the Gelkis givers (Nerlokh, Rokren) and the Magram ones (Orgrul, Hagiak) with coordinates, and warn that the two clans are rivals, with which profession recipes each sells at Honored. A travel tip at 38 sends you there.
