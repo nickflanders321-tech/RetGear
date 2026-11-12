@@ -177,7 +177,7 @@ local function makePanel()
   panel.title = panel:CreateFontString(nil, "OVERLAY"); RG.Font(panel.title, "semibold", 13); panel.title:SetPoint("TOPLEFT", 12, -10)
   panel.title:SetText((RG.LOGO_INLINE or "") .. GOLD .. "Waypath+ gear|r")
   panel.close = CreateFrame("Button", nil, panel, "UIPanelCloseButton"); panel.close:SetSize(22, 22); panel.close:SetPoint("TOPRIGHT", -2, -4)
-  panel.close:SetScript("OnClick", function() RG.db.gearPanel = false; panel:Hide(); RG.Print("Gear panel off. Turn it back on in Settings, or /wp gearpanel.") end)
+  panel.close:SetScript("OnClick", function() panel:Hide() end) -- closes it until the window opens again (Settings or /wp gearpanel turns it off for good)
   panel.sub = panel:CreateFontString(nil, "OVERLAY"); RG.Font(panel.sub, "regular", 11); panel.sub:SetPoint("TOPLEFT", panel.title, "BOTTOMLEFT", 0, -6)
   panel.barBg = panel:CreateTexture(nil, "ARTWORK"); panel.barBg:SetPoint("TOPLEFT", panel.sub, "BOTTOMLEFT", 0, -5); panel.barBg:SetSize(224, 8); panel.barBg:SetColorTexture(0.2, 0.18, 0.14, 1)
   panel.bar = panel:CreateTexture(nil, "OVERLAY"); panel.bar:SetPoint("LEFT", panel.barBg, "LEFT"); panel.bar:SetHeight(8); panel.bar:SetColorTexture(0.31, 0.68, 0.48, 1)
@@ -441,6 +441,11 @@ local function soon()
 end
 ev:SetScript("OnEvent", function(_, event, a1)
   if event == "PLAYER_LOGIN" then
+    -- 1.34.0's close button turned the panel off for good without meaning to: turn it back on once
+    if RG.db and not RG.db.gearPanelReset then
+      RG.db.gearPanelReset = true
+      if RG.db.gearPanel == false then RG.db.gearPanel = nil end
+    end
     -- show with the gear tab: when the Character window opens, and when you switch back to its gear
     -- tab from reputation or skills; once more a moment later, after the window and its side tabs settle
     local function opened()
@@ -451,6 +456,8 @@ ev:SetScript("OnEvent", function(_, event, a1)
       CharacterFrame:HookScript("OnShow", opened)
       CharacterFrame:HookScript("OnHide", function() if panel then panel:Hide() end end)
     end
+    -- the game's own "open the Character window" call too (C key, the micro button), in case OnShow is missed
+    if hooksecurefunc and ToggleCharacter then pcall(hooksecurefunc, "ToggleCharacter", function() if C_Timer then C_Timer.After(0, refresh) else refresh() end end) end
     -- switching tabs inside the open window: hide on reputation, skills, honor or currency, show again after
     for _, name in ipairs(OTHER_TABS_LIST) do
       local f = _G[name]
