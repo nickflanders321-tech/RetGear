@@ -1402,7 +1402,12 @@ end
 
 -- an NPC card shows that creature's own model; a place card a piece of its zone's own world map
 local function hasArt(c)
-  if c.kind == 2 then return RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] and true or false end
+  if c.kind == 2 then
+    if RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] then return true end
+    local cid = RG.ARCADE_DUNGEON_CREATURE and RG.ARCADE_DUNGEON_CREATURE[c.name]
+    local nd = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.npcDisp
+    return (cid and nd and nd[cid] == -1) and true or false
+  end
   if c.kind == 3 then return RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name] and true or false end
   return false
 end
@@ -1437,7 +1442,11 @@ end
 RG.ArcadeSharedModel = sharedModel
 local function dressCreature(w, c)
   local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
-  if not id then return false end
+  -- (a creature the game draws by its id but won't give a display id for: RG.ArcadeResolveCreatures)
+  local cid = not id and RG.ARCADE_DUNGEON_CREATURE and RG.ARCADE_DUNGEON_CREATURE[c.name]
+  local npcDisp = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.npcDisp
+  if cid and not (npcDisp and npcDisp[cid] == -1) then cid = nil end
+  if not id and not cid then return false end
   local mem = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.badModel
   if mem and mem[id] then return false end     -- the art check found that this client cannot draw it: scenery instead
   local m = ensureModel(w)
@@ -1445,8 +1454,9 @@ local function dressCreature(w, c)
   m.creature = true
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
-  if not m.SetDisplayInfo then m:Hide() return false end
-  local ok = pcall(m.SetDisplayInfo, m, id)
+  local ok
+  if id then ok = m.SetDisplayInfo and pcall(m.SetDisplayInfo, m, id)
+  else ok = m.SetCreature and pcall(m.SetCreature, m, cid) end
   if not ok then m:Hide() return false end
   m.zoom = RG.ArcadeModelZoom(c)
   if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
@@ -3510,10 +3520,61 @@ local function scanModels()
   step()
 end
 RG.ArcadeScanModels = scanModels
+-- Creatures with no display id in the data (WoW Forever's own bosses: ArcadeDungeons.lua RG.ARCADE_DUNGEON_CREATURE):
+-- shortly after login the game is asked for each one's model by its creature id, in a hidden model frame, and the
+-- display id it reports is remembered (WaypathDB.arcade.npcDisp), so from then on the card shows its 3D model like
+-- every other creature card. One the game draws but won't name is drawn by its creature id (-1); one it couldn't
+-- load yet is asked again next session.
+function RG.ArcadeResolveCreatures()
+  local a = WaypathDB and WaypathDB.arcade
+  local list = RG.ARCADE_DUNGEON_CREATURE
+  if not a or not list or not (CreateFrame and C_Timer and C_Timer.After) or RG.ArcadeResolving then return end
+  RG.ARCADE_NPC = RG.ARCADE_NPC or {}
+  a.npcDisp = a.npcDisp or {}
+  for name, cid in pairs(list) do
+    local d = a.npcDisp[cid]
+    if d and d > 0 and not RG.ARCADE_NPC[name] then RG.ARCADE_NPC[name] = d end
+  end
+  local todo = {}
+  for name, cid in pairs(list) do if not RG.ARCADE_NPC[name] and not a.npcDisp[cid] then todo[#todo + 1] = { name, cid } end end
+  table.sort(todo, function(x, y) return x[2] < y[2] end)
+  if #todo == 0 then return end
+  local ok, m = pcall(CreateFrame, "DressUpModel", nil, UIParent)
+  if not ok or not m or not m.SetCreature then return end
+  RG.ArcadeResolving = true
+  m:SetSize(32, 32); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -200, 200); m:Show()
+  local i, tries, learned = 0, 0, 0
+  local function step()
+    if InCombatLockdown and InCombatLockdown() then C_Timer.After(10, step) return end
+    local cur = todo[i]
+    if cur then
+      local okD, disp = false, nil
+      if m.GetDisplayInfo then okD, disp = pcall(m.GetDisplayInfo, m) end
+      local okF, fid = false, nil
+      if m.GetModelFileID then okF, fid = pcall(m.GetModelFileID, m) end
+      disp = (okD and type(disp) == "number" and disp > 0) and disp or nil
+      fid = (okF and type(fid) == "number" and fid > 0) and fid or nil
+      -- not loaded yet (the game is still asking the server about it): look again, three times at most
+      if not disp and not fid and tries < 3 then tries = tries + 1; pcall(m.SetCreature, m, cur[2]); C_Timer.After(1, step) return end
+      if disp then a.npcDisp[cur[2]] = disp; RG.ARCADE_NPC[cur[1]] = disp; learned = learned + 1
+      elseif fid then a.npcDisp[cur[2]] = -1; learned = learned + 1 end
+    end
+    tries = 0; i = i + 1
+    cur = todo[i]
+    if not cur then
+      RG.ArcadeResolving = nil; m:Hide()
+      if learned > 0 and RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+      return
+    end
+    pcall(m.SetCreature, m, cur[2])
+    C_Timer.After(0.5, step)
+  end
+  step()
+end
 do
   local f = CreateFrame("Frame")
   f:RegisterEvent("PLAYER_ENTERING_WORLD")
-  f:SetScript("OnEvent", function(self) self:UnregisterAllEvents(); C_Timer.After(45, function() pcall(scanModels) end) end)
+  f:SetScript("OnEvent", function(self) self:UnregisterAllEvents(); C_Timer.After(20, function() pcall(RG.ArcadeResolveCreatures) end); C_Timer.After(45, function() pcall(scanModels) end) end)
 end
 
 local base = SlashCmdList.WAYPATH

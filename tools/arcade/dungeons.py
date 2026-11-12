@@ -110,6 +110,7 @@ def card(kind, name, tier, ref, text, pool):
     if k in seen: return
     seen.add(k); out_rows.append((kind, name, tier, ref, text)); pool.append(name)
 displays = {}
+creatures = {}   # NPC cards with no display id in the data: their creature id (the game looks the model up)
 for d in DUNS:
     bosses = boss_items.get(d, {})
     if not bosses: print("no bosses found for", d, file=sys.stderr); continue
@@ -125,6 +126,7 @@ for d in DUNS:
         ty = TYPE.get(ctype.get(x, 7), "humanoid")
         card(2, nm, 4 if i == 0 else 3, ctype.get(x, 7), "Dungeon boss, level %d %s" % (n.get("maxLevel") or 0, ty), pool)
         if cdisp.get(x): displays[nm] = cdisp[x]
+        else: creatures[nm] = x
     # the loot: every purple, and the best blues
     loot = sorted({i for s in bosses.values() for i in s}, key=lambda i: (-quality.get(i, 0), -ilevel.get(i, 0), iname.get(i, "")))
     blues = 0
@@ -147,6 +149,7 @@ for d in DUNS:
         if len(pool) > before:
             nreg += 1
             if cdisp.get(x): displays[nm] = cdisp[x]
+            else: creatures[nm] = x
     pools.append((d, IID[d], max(1, lo - 2), hi, pool))
 
 # ---------------------------------------------------------------------------
@@ -208,7 +211,10 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
         order = [last] + sorted((n for n in bosses if n != last), key=lambda n: min(own(n)))
         for n in order:
             nm = clean(FN[str(n)]["name"])
-            if ok(nm) and nm.lower() not in taken: card(2, nm, 4 if n == last else 3, 7, "Dungeon boss, level %d humanoid" % hi, pool)
+            if ok(nm) and nm.lower() not in taken:
+                card(2, nm, 4 if n == last else 3, 7, "Dungeon boss, level %d humanoid" % hi, pool)
+                if cdisp.get(n): displays[nm] = cdisp[n]
+                else: creatures[nm] = n
         shown = 0
         for i in sorted(items):
             nm = clean((FI.get(str(i)) or {}).get("name") or iname.get(i) or "")
@@ -224,7 +230,10 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
             if nreg >= 8 or not ok(nm) or nm.lower() in taken: continue
             before = len(pool)
             card(2, nm, 1, 7, "Dungeon elite, level %d humanoid" % max(lo, hi - 1), pool)
-            if len(pool) > before: nreg += 1
+            if len(pool) > before:
+                nreg += 1
+                if cdisp.get(n): displays[nm] = cdisp[n]
+                else: creatures[nm] = n
         pools.append((d, iid, lo, hi, pool))
         IID[d] = iid
         print("  %s: instance %d, levels %d-%d, %d bosses, %d cards" % (d, iid, lo, hi, len(bosses), len(pool)), file=sys.stderr)
@@ -269,6 +278,12 @@ L_.append("-- boss and elite models (shown from the player's own game files), ad
 L_.append("RG.ARCADE_DUNGEON_NPC = {")
 for nm in sorted(displays):
     L_.append("  [%s] = %d," % (q(nm), displays[nm]))
+L_.append("}")
+L_.append("-- NPC cards with no display id in the data: their creature id. The game is asked for the model in the background")
+L_.append("-- (Arcade.lua), and the display id it reports is remembered, so these cards show their 3D model like the others")
+L_.append("RG.ARCADE_DUNGEON_CREATURE = {")
+for nm in sorted(creatures):
+    if nm not in displays: L_.append("  [%s] = %d," % (q(nm), creatures[nm]))
 L_.append("}")
 L_ += ["-- join the card list: each new card after every other card, marked with its dungeon (it is only in that",
        "-- dungeon's packs); reused cards stay where they are and are in the dungeon's set as well",
