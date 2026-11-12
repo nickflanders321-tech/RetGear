@@ -65,7 +65,11 @@ local function dungeonDone(name, iid)
   if not a.dun[name] then
     a.dun[name] = true
     RG.ArcadeGrant(name .. " cleared for the first time", 15 + math.floor(lvl / 3), { jumbo = 1 })
-    if dn and RG.ArcadeGrantDungeon then RG.ArcadeGrantDungeon(dn, 2, dn .. " cleared") end
+    -- (two the first time; one if its Legacy challenge already counted this clear)
+    if dn and RG.ArcadeGrantDungeon then
+      local before = a.dunClear and a.dunClear[dn]
+      RG.ArcadeGrantDungeon(dn, before and 1 or 2, dn .. " cleared")
+    end
   elseif a.dunDay.day == today() and (a.dunDay.n or 0) >= 2 then
     if dn and RG.ArcadeGrantDungeon then RG.ArcadeGrantDungeon(dn, 0) end
     return
@@ -188,16 +192,78 @@ local function gearChanged(slot)
   end
 end
 
+-- ---------------------------------------------------------------------------
+-- Dungeons you've already cleared: WoW Forever's Legacy challenges (Novice, Experienced and Master Spelunker)
+-- tick off each dungeon. Every one ticked, and every one the card game saw you clear before dungeon packs,
+-- unlocks that dungeon's packs and gives the two a first clear gives, once.
+-- ---------------------------------------------------------------------------
+local function criterionDone(ach, crit)
+  if GetAchievementCriteriaInfoByID then
+    local ok, _, _, done = pcall(GetAchievementCriteriaInfoByID, ach, crit)
+    if ok and done == true then return true end
+  end
+  if GetAchievementNumCriteria and GetAchievementCriteriaInfo then
+    local ok, n = pcall(GetAchievementNumCriteria, ach)
+    if ok and type(n) == "number" then
+      for i = 1, n do
+        local ok2, _, _, done, _, _, _, _, _, _, id = pcall(GetAchievementCriteriaInfo, ach, i)
+        if ok2 and id == crit and done == true then return true end
+      end
+    end
+  end
+  -- the whole challenge finished: every dungeon in it is done
+  if GetAchievementInfo then
+    local ok, _, _, _, done = pcall(GetAchievementInfo, ach)
+    if ok and done == true then return true end
+  end
+  return false
+end
+function RG.ArcadeLegacyCleared(dn)
+  for _, e in ipairs((RG.ARCADE_DUNGEON_LEGACY or {})[dn] or {}) do
+    if criterionDone(e[1], e[2]) then return true end
+  end
+  return false
+end
+local function legacyCheck(quiet)
+  local a = A(); if not a or not RG.ArcadeGrantDungeon then return end
+  a.dunRetro = a.dunRetro or {}
+  local got = {}
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
+    local dn = d[1]
+    if not a.dunRetro[dn] and (RG.ArcadeLegacyCleared(dn) or (a.dun and a.dun[dn]) or (a.dunClear and a.dunClear[dn])) then
+      a.dunRetro[dn] = true
+      -- (a clear the card game already paid packs for doesn't pay twice)
+      local paid = a.dunClear and a.dunClear[dn]
+      RG.ArcadeGrantDungeon(dn, paid and 0 or 2)
+      if not paid then got[#got + 1] = dn end
+    end
+  end
+  if #got > 0 and not quiet then
+    local msg = "|cffffd36bWaypath Cards:|r dungeons you've cleared unlocked their card packs: " .. table.concat(got, ", ") ..
+      " (2 packs each, " .. (#got * 2) .. " in all). Open them from the Album; you can also buy more of those."
+    if RG.Notify then RG.Notify(msg) elseif RG.Print then RG.Print(msg) end
+  end
+  return got
+end
+RG.ArcadeLegacyCheck = legacyCheck
+
 local ev = CreateFrame("Frame")
 -- (Boss kills come from the game's encounter events. Add-ons may no longer listen to the combat log: just asking
 -- for it is what the game answered with "Waypath has been blocked from an action only available to the Blizzard UI".)
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_LEVEL_UP", "QUEST_TURNED_IN", "PLAYER_EQUIPMENT_CHANGED" }) do pcall(ev.RegisterEvent, ev, e) end
-for _, e in ipairs({ "ENCOUNTER_END", "BOSS_KILL" }) do pcall(ev.RegisterEvent, ev, e) end
+for _, e in ipairs({ "ENCOUNTER_END", "BOSS_KILL", "ACHIEVEMENT_EARNED", "CRITERIA_EARNED" }) do pcall(ev.RegisterEvent, ev, e) end
+local legacyPending = false
 ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4, arg5)
   if event == "ENCOUNTER_END" then
     if arg5 == 1 or arg5 == true then onDeath(arg2) end   -- encounterID, encounterName, difficulty, size, success
   elseif event == "BOSS_KILL" then
     onDeath(arg2)                                            -- encounterID, encounterName
+  elseif event == "ACHIEVEMENT_EARNED" or event == "CRITERIA_EARNED" then
+    -- a Legacy challenge ticked off a dungeon: look again in a moment (once, however many fire)
+    if not legacyPending and C_Timer and C_Timer.After then
+      legacyPending = true
+      C_Timer.After(2, function() legacyPending = false; pcall(legacyCheck) end)
+    end
   elseif event == "PLAYER_LEVEL_UP" then
     milestones(tonumber(arg1) or level())
   elseif event == "QUEST_TURNED_IN" then
@@ -208,7 +274,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4, arg5)
       if C_Timer and C_Timer.After then C_Timer.After(0.5, function() pcall(gearChanged, arg1) end) else pcall(gearChanged, arg1) end
     end
   elseif event == "PLAYER_LOGIN" then
-    local function start() milestones(level()); gearBest() end
+    local function start() milestones(level()); gearBest(); pcall(legacyCheck) end
     if C_Timer and C_Timer.After then C_Timer.After(6, start) else start() end
   end
 end)

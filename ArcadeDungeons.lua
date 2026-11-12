@@ -599,6 +599,27 @@ RG.ARCADE_DUNGEONS = {
   { "Stratholme", 329, 55, 62, { "Stratholme", "Baron Rivendare", "Balnazzar", "Ramstein the Gorger", "Maleki the Pallid", "Cannon Master Willey", "Postmaster Malown", "Archivist Galford", "Nerub'enkan", "Balzaphon", "Stonespine", "Baroness Anastari", "Magistrate Barthilas", "Timmy the Cruel", "Skul", "Hearthsinger Forresten", "The Unforgiven", "Book of the Dead", "Runeblade of Baron Rivendare", "Idol of Brutality", "Cape of the Black Baron", "Crown of Tyranny", "Demonshear", "Dracorian Gauntlets", "Fire Striders", "Gauntlets of Deftness", "Gift of the Elven Magi", "Grand Crusader's Helm", "Hammer of the Grand Crusader", "Helm of the Executioner", "Ritssyn's Wand of Bad Mojo", "Robes of the Exalted", "Scepter of the Unholy", "Seal of Rivendare", "Shroud of the Nathrezim", "Black Guard Swordsmith", "Grand Crusader Dathrohan", "Ezra Grimm", "Thuzadin Necromancer", "Venom Belcher", "Ash'ari Crystal", "Bile Spewer", "Crimson Battle Mage" } },
   { "Scholomance", 289, 56, 62, { "Scholomance", "Death Knight Darkreaver", "Ras Frostwhisper", "Darkmaster Gandling", "Jandice Barov", "Rattlegore", "Kirtonos the Herald", "Lord Blackwood", "Vectus", "Doctor Theolen Krastinov", "Lorekeeper Polkelt", "Scholomance Adept", "Scholomance Necromancer", "Marduk Blackpool", "Alanna's Embrace", "Headmaster's Charge", "Don Mauricio's Band of Domination", "Beaststalker's Cap", "Blackwood's Thigh", "Bone Golem Shoulders", "Bone Ring Helm", "Bonecreeper Stylus", "Boots of the Shrieker", "Coif of Elements", "Corpselight Greaves", "Darkshade Gloves", "Deadwalker Mantle", "Devout Crown", "Dreadmist Mask", "Ghostloom Leggings", "Gravestone War Axe", "Helm of Valor", "Blood Steward of Kirtonos", "Risen Construct", "Risen Warrior", "Spectral Teacher", "Aspect of Banality", "Aspect of Corruption", "Aspect of Malice", "Aspect of Shadow" } },
 }
+-- Legacy challenge criteria for each dungeon: { achievement id, criteria id } (any one done = cleared)
+RG.ARCADE_DUNGEON_LEGACY = {
+  ["Blackfathom Deeps"] = { { 62032, 18526 }, { 64017, 117737 } },
+  ["Blackrock Depths"] = { { 62033, 3266 }, { 64018, 117751 } },
+  ["Blackrock Spire"] = { { 62033, 3268 }, { 62033, 18534 }, { 64018, 117752 }, { 64018, 117753 } },
+  ["Dire Maul"] = { { 62033, 545 }, { 62033, 546 }, { 62033, 18535 }, { 64018, 117757 }, { 64018, 117758 }, { 64018, 117759 } },
+  ["Gnomeregan"] = { { 62032, 18529 }, { 64017, 117738 } },
+  ["Maraudon"] = { { 62033, 18532 }, { 64018, 117748 } },
+  ["Ragefire Chasm"] = { { 62031, 19213 }, { 64016, 117733 } },
+  ["Razorfen Downs"] = { { 62033, 18530 }, { 64018, 117745 } },
+  ["Razorfen Kraul"] = { { 62032, 18528 }, { 64017, 117739 } },
+  ["Scarlet Monastery"] = { { 62032, 3264 }, { 62032, 116058 }, { 62032, 116059 }, { 62032, 116060 }, { 64017, 117740 }, { 64017, 117741 }, { 64017, 117742 }, { 64017, 117743 } },
+  ["Scholomance"] = { { 62033, 19263 }, { 64018, 117754 } },
+  ["Shadowfang Keep"] = { { 62031, 3263 }, { 64016, 117734 } },
+  ["Stratholme"] = { { 62033, 550 }, { 62033, 18471 }, { 64018, 117755 }, { 64018, 117756 } },
+  ["The Deadmines"] = { { 62031, 3262 }, { 64016, 117731 } },
+  ["The Temple of Atal'Hakkar"] = { { 62033, 18533 }, { 64018, 117750 } },
+  ["Uldaman"] = { { 62033, 18531 }, { 64018, 117746 } },
+  ["Wailing Caverns"] = { { 62031, 18524 }, { 64016, 117732 } },
+  ["Zul'Farrak"] = { { 62033, 3265 }, { 64018, 117747 } },
+}
 -- boss and elite models (shown from the player's own game files), added to ArcadeArt.lua's list
 RG.ARCADE_DUNGEON_NPC = {
   ["Agathelos the Raging"] = 2450,
