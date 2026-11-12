@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.34.0
 
 - Gear panel: now shows every time the gear tab of the Character window opens, including when you switch back to it from reputation or skills, and hides on those other tabs.
 - **Ore and herb alerts: one per node.** You're told about each vein or herb patch once, not again every ten minutes while you work the area, and spawn points close together count as the same node. This lasts three hours and survives a /reload. The tracker line for the nearest node still shows while you're near it.
