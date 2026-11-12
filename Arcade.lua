@@ -396,7 +396,7 @@ function RG.ArcadeStageText(s, stage)
   local t = "+" .. coins .. " coins"
   if packs and packs.jumbo then t = t .. ", a jumbo pack" end
   if packs and packs.super then t = t .. ", a super jumbo pack" end
-  if dpk then t = t .. ", " .. dpk .. " " .. s.name .. " packs" end
+  if dpk then t = t .. ", " .. dpk .. " " .. s.name:gsub("^The ", "") .. " packs" end
   return t
 end
 -- pay out every finished set once; returns the names
@@ -700,13 +700,14 @@ function RG.ArcadeGrant(label, coins, packs)
 end
 
 -- a dungeon's name on its pack: without "The", in capitals, on two lines when long
+-- (and the font size that keeps it inside the pack's name banner: one line while it fits, smaller, then two)
 function RG.ArcadePackLabel(dn)
   local t = dn:gsub("^The ", ""):upper()
-  if #t > 13 then
-    local cut = t:find(" ", math.floor(#t / 2) - 2) or t:find(" ")
-    if cut then t = t:sub(1, cut - 1) .. "\n" .. t:sub(cut + 1) end
-  end
-  return t
+  if #t <= 12 then return t, 14 end
+  if #t <= 16 then return t, 11 end
+  local cut = t:find(" ", math.floor(#t / 2) - 2) or t:find(" ")
+  if cut then t = t:sub(1, cut - 1) .. "\n" .. t:sub(cut + 1) end
+  return t, 10
 end
 -- a dungeon's packs (from clearing it, or a set reward); clearing it also lets you buy them
 function RG.ArcadeGrantDungeon(dn, n, label)
@@ -715,7 +716,7 @@ function RG.ArcadeGrantDungeon(dn, n, label)
   a.dunClear[dn] = true
   if (n or 0) > 0 then a.dpk[dn] = (a.dpk[dn] or 0) + n end
   if label and (n or 0) > 0 then
-    local msg = "|cffffd36bWaypath Cards:|r " .. label .. "  (" .. n .. " " .. dn .. " pack" .. (n > 1 and "s" or "") .. ": open " .. (n > 1 and "them" or "it") .. " from the Album)"
+    local msg = "|cffffd36bWaypath Cards:|r " .. label .. "  (" .. n .. " " .. dn:gsub("^The ", "") .. " pack" .. (n > 1 and "s" or "") .. ": open " .. (n > 1 and "them" or "it") .. " from the Album)"
     if RG.Notify then RG.Notify(msg) elseif RG.Print then RG.Print(msg) end
   end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
@@ -2614,7 +2615,14 @@ local function showReveal(got, notes, meta)
   reveal.emb:Hide(); reveal.sealCount:SetText(""); reveal.ribbon:Hide(); reveal.ribbonText:SetText("")
   for _, bt in ipairs(reveal.packBack) do bt:SetVertexColor(col[1] * 0.7, col[2] * 0.7, col[3] * 0.7, 1); bt:SetShown(meta.many and true or false) end
   reveal.packKind:SetText(meta.many and ("x" .. meta.many.count) or (meta.gift and "GIFT" or (def.size .. " CARDS")))
-  reveal.packName:SetText(meta.dungeon and RG.ArcadePackLabel(meta.dungeon) or (kind == "normal" and "WAYPATH" or (kind == "jumbo" and "JUMBO" or "SUPER JUMBO")))
+  do
+    local label, size = "WAYPATH", 14
+    if meta.dungeon then label, size = RG.ArcadePackLabel(meta.dungeon)
+    elseif kind ~= "normal" then label = kind == "jumbo" and "JUMBO" or "SUPER JUMBO" end
+    local font, _, flags = reveal.packName:GetFont()
+    if font then reveal.packName:SetFont(font, size, flags) end
+    reveal.packName:SetText(label)
+  end
   if meta.many then reveal.sealCount:SetText("x" .. meta.many.count)
   else reveal.emb:SetTexture(MEDIA .. "Rune"); reveal.emb:SetTexCoord(0, 1, 0, 1); reveal.emb:SetVertexColor(math.min(1, col[1] + 0.3), math.min(1, col[2] + 0.3), math.min(1, col[3] + 0.3), 0.95); reveal.emb:Show() end
   if artN then reveal.emb:Hide() end   -- (the picture is on the wrapper)
@@ -2909,7 +2917,7 @@ local function build()
     RG.ArcadeRefresh(true)
   end
   frame.albPrev = gbtn(frame, "<", 30, 24, function() albumStep(-1) end); frame.albPrev:SetPoint("TOPLEFT", 34, -160)
-  frame.albTitle = fs(frame, "head", 15); frame.albTitle:SetPoint("LEFT", frame.albPrev, "RIGHT", 10, 0); frame.albTitle:SetWidth(330); frame.albTitle:SetJustifyH("LEFT")
+  frame.albTitle = fs(frame, "head", 15); frame.albTitle:SetPoint("LEFT", frame.albPrev, "RIGHT", 10, 0); frame.albTitle:SetWidth(400); frame.albTitle:SetJustifyH("LEFT")
   frame.albTitle:SetTextColor(1, 0.933, 0.709); if frame.albTitle.SetWordWrap then frame.albTitle:SetWordWrap(false) end
   frame.albNext = gbtn(frame, ">", 30, 24, function() albumStep(1) end); frame.albNext:SetPoint("LEFT", frame.albPrev, "RIGHT", 350, 0)
   frame.albOpen = gbtn(frame, "Open pack", 210, 24, function()
@@ -3168,7 +3176,10 @@ function RG.ArcadeRefresh(keepMsg)
   if keepMsg ~= true then frame.msg:SetText("") end
   local cards = view.mode == "cards"
   local album = view.mode == "album"
-  for _, cell in ipairs(cells) do if not (cards or album) then cell:Hide() end end
+  for _, cell in ipairs(cells) do
+    if not (cards or album) then cell:Hide() end
+    if rawget(cell, "albName") then cell.albName:Hide(); cell.albKind:Hide() end   -- (the Album's names for empty slots)
+  end
   for _, w in ipairs({ frame.albPrev, frame.albNext, frame.albTitle, frame.albOpen }) do w:SetShown(album) end
   frame.panel:SetText("")
   pgReset()
@@ -3202,11 +3213,26 @@ function RG.ArcadeRefresh(keepMsg)
       for i, cell in ipairs(cells) do
         local c = st.cards[(view.albumPage - 1) * #cells + i]
         paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
+        if c and owned(a, c.id) == 0 then
+          if not rawget(cell, "albName") then
+            cell.albName = fs(cell, "head", 12); cell.albName:SetPoint("CENTER", cell, "CENTER", 0, -8)
+            cell.albName:SetWidth(cell:GetWidth() - 14); cell.albName:SetJustifyH("CENTER")
+            if cell.albName.SetWordWrap then cell.albName:SetWordWrap(true) end
+            cell.albKind = fs(cell, "body", 10); cell.albKind:SetPoint("TOP", cell.albName, "BOTTOM", 0, -4); cell.albKind:SetTextColor(0.6, 0.55, 0.45)
+          end
+          local tc = TIER[c.tier][3]
+          cell.albName:SetText(c.name); cell.albName:SetTextColor(tc[1] * 0.75, tc[2] * 0.75, tc[3] * 0.75)
+          local kind = c.kind == 1 and "Item" or (c.kind == 3 and "Place" or (c.kind == 2 and ((c.text or ""):find("[Bb]oss") and "Boss" or ((c.text or ""):find("^Dungeon elite") and "Elite" or "Creature")) or ""))
+          cell.albKind:SetText(kind)
+          cell.albName:Show(); cell.albKind:Show()
+        end
       end
       frame.pageText:SetText(view.albumPage .. " / " .. pages)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
       local clearedHere = st.dungeon and select(2, RG.ArcadeDungeonPacks(st.name))
-      frame.albTitle:SetText(st.name .. (st.dungeon and ("|cffa89bc9   ·   " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. "|cffa89bc9   ·   " .. n .. " cards|r" .. (clearedHere and "   |cff7be08acleared|r" or ""))
+      frame.albTitle:SetText(st.name .. (st.dungeon and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
+      frame.albNext:ClearAllPoints()
+      frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)
       a.setStage = a.setStage or {}
       local paid = a.setStage[st.name] or ((a.setsDone or {})[st.name] and 1 or 0)
@@ -3217,7 +3243,7 @@ function RG.ArcadeRefresh(keepMsg)
         parts[#parts + 1] = hex .. sg[1] .. "|r " .. (paid >= k and "|cff7be08adone|r" or (have .. "/" .. n))
       end
       local nextStage = RG.ARCADE_STAGES[paid + 1]
-      frame.sub:SetText(table.concat(parts, "     ") .. "\n|cffa89bc9" .. (nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or "Every stage finished: a gold set") .. "|r")
+      frame.sub:SetText(n .. " cards     " .. table.concat(parts, "     ") .. "\n|cffa89bc9" .. (nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or "Every stage finished: a gold set") .. "|r")
       -- a dungeon's pack
       if st.dungeon and RG.ArcadeDunPools and RG.ArcadeDunPools[st.name] then
         local have, cleared = RG.ArcadeDungeonPacks(st.name)
