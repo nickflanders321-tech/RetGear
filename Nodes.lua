@@ -19,7 +19,8 @@ local KINDS = {
 }
 
 local RANGE = 90       -- yards: close enough to see it on the minimap and walk over
-local SPOT_COOLDOWN = 600
+local SPOT_COOLDOWN = 3 * 3600 -- a node you were told about stays quiet this long (longer than a play session)
+local SAME_NODE = 40   -- yards: spawn points this close are the same vein or patch
 local GLOBAL_COOLDOWN = 20
 
 -- Parse a map's spots once: { {x, y, mask}, ... }
@@ -82,7 +83,7 @@ local function direction(dx, dy)
   if rel < 30 or rel > 330 then return "ahead" elseif rel < 150 then return "to your left" elseif rel < 210 then return "behind you" else return "to your right" end
 end
 
-local lastSpot, lastAlert, nearest = {}, 0, nil
+local lastAlert, nearest = 0, nil
 RG.OreNearby = function() return nearest end
 
 local function check()
@@ -124,11 +125,22 @@ local function check()
   for i = #types, 1, -1 do if bestNames[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = bestNames[i]; break end end
   local key = bestKind.key .. map .. ":" .. best[1] .. ":" .. best[2]
   nearest = { ore = ore, dist = bestD, kind = bestKind, wp = { map, best[1], best[2], ore or "Node" }, dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2]) }
-  local now = GetTime()
-  if lastSpot[key] and now - lastSpot[key] < SPOT_COOLDOWN then return end
+  -- one alert per node: a spot you were told about (or any spawn point within SAME_NODE yards of it,
+  -- which is the same vein or patch) never alerts again, for SPOT_COOLDOWN, even across a /reload
+  local now, wall = GetTime(), time()
+  RG.db.nodeAlerted = RG.db.nodeAlerted or {}
+  local told = RG.db.nodeAlerted
+  for k, t in pairs(told) do if wall - t > SPOT_COOLDOWN then told[k] = nil end end
+  if told[key] then return end
   if now - lastAlert < GLOBAL_COOLDOWN then return end
-  lastSpot[key], lastAlert = now, now
-  local msg = string.format("%s %s %d yd %s: check your minimap", ore or "Node", bestKind.word, bestD, nearest.dir)
+  lastAlert = now
+  local kindSpots = spotsFor(bestKind, map)
+  for _, s in ipairs(kindSpots or {}) do
+    local dx, dy = (s[1] - best[1]) / 100 * size[1], (s[2] - best[2]) / 100 * size[2]
+    if dx * dx + dy * dy <= SAME_NODE * SAME_NODE then told[bestKind.key .. map .. ":" .. s[1] .. ":" .. s[2]] = wall end
+  end
+  told[key] = wall
+  local msg = string.format("%s %s %d yd %s: check your minimap", ore or "Node", bestKind.word, math.floor(bestD + 0.5), nearest.dir)
   if UIErrorsFrame then UIErrorsFrame:AddMessage(msg, 0.95, 0.75, 0.3) end
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
   if RG.QueueTracker then RG.QueueTracker() end
@@ -145,7 +157,7 @@ function RG.Reminders()
   local n = nearest
   if n then
     local wp = n.wp
-    out[#out + 1] = { "|T" .. n.kind.icon .. ":14:14|t " .. GOLD .. (n.ore or "Node") .. "|r" .. GREY .. string.format(" %s %d yd %s (click to pin)|r", n.kind.word, n.dist, n.dir), function() RG.PinWaypoint(wp) end, 3, wp }
+    out[#out + 1] = { "|T" .. n.kind.icon .. ":14:14|t " .. GOLD .. (n.ore or "Node") .. "|r" .. GREY .. string.format(" %s %d yd %s (click to pin)|r", n.kind.word, math.floor(n.dist + 0.5), n.dir), function() RG.PinWaypoint(wp) end, 3, wp }
   end
   return out
 end
@@ -210,7 +222,7 @@ function RG.PinNextNode()
   if not RG.Opt("arrow") then RG.db.arrow = true end
   RG.db.arrowPaused = nil
   RG.PinWaypoint({ map, best[1], best[2], (ore or "Node") .. " " .. bestKind.word }, true)
-  RG.Notify(string.format("Next %s: %s, %d yd %s", bestKind.word, ore or "node", bestD, dir))
+  RG.Notify(string.format("Next %s: %s, %d yd %s", bestKind.word, ore or "node", math.floor(bestD + 0.5), dir))
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
 local nodeBase = SlashCmdList.WAYPATH
