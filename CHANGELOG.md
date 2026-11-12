@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Gear guide: Hit counts for more for physical damage dealers.** Checked every spec's stat priorities again against the November 10-11 hotfixes and the newest WoW Forever stat guides, which put Hit (up to 9%) first or second for physical damage. Arms and Fury Warriors, all three Hunter specs, Combat Rogues and Feral Druids now value Hit above crit, and Shadow Priests value spell hit a little more, so pieces with Hit move up in their gear lists and upgrade scores. The 2nd Spec tab's stat lines say so too. (Enhancement Shaman's Strength-first change from the November 10 hotfix was already in.)
+
 ## v1.33.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

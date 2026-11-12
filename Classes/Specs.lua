@@ -5,7 +5,8 @@
 -- WoW Forever; learn it at your class trainer in a capital city).
 --
 -- Builds, stat priorities, tips and Forever changes follow the newest WoW
--- Forever spec guides (mobalytics.gg verified, October 2026): stats, how to play
+-- Forever spec guides (mobalytics.gg verified, October 2026; checked again November 12, 2026 against the November
+-- 10-11 hotfixes and newer stat guides, which put Hit first for physical damage dealers): stats, how to play
 -- each spec and what's new in Forever. No talent builds: Waypath+ gives no
 -- talent advice.
 --
@@ -39,7 +40,7 @@ end
 -- ---------------------------------------------------------------------------
 S("WARRIOR", {
   { key = "arms", name = "Arms", role = "Melee DPS", kind = "melee", tab = 1, main = true, icon = "Interface\\Icons\\Ability_Warrior_SavageBlow",
-    stats = "Strength and Agility, then Stamina",
+    stats = "Hit up to 9%, then Strength, crit and Agility, then Stamina",
     tips = { "Charge between packs for Rage, open with Rend, then Heroic Strike or Cleave by mob count.",
       "Use Spearing Strike before Heroic Strike when it's off cooldown, and Overpower every dodge.",
       "Sweeping Strikes on every pack of two or more, especially in dungeons.",
@@ -47,9 +48,9 @@ S("WARRIOR", {
     forever = { "Spearing Strike is new in Arms.", "Weaponmaster lets you train weapon types without changing spec." },
     source = "https://mobalytics.gg/wow-forever/classes/arms-warrior-guide" },
   { key = "fury", name = "Fury", role = "Melee DPS", kind = "melee", tab = 2, icon = "Interface\\Icons\\Ability_Warrior_InnerRage",
-    weights = { STR = 2.0, AGI = 1.0, AP = 1.0, CRIT = 22, HIT = 20, STA = 0.3, SPI = 0.1, WEAPON_DPS = 12, SLOW_BONUS = 2, RANGED_DPS = 0.5 },
+    weights = { STR = 2.0, AGI = 1.0, AP = 1.0, CRIT = 22, HIT = 24, STA = 0.3, SPI = 0.1, WEAPON_DPS = 12, SLOW_BONUS = 2, RANGED_DPS = 0.5 },
     model = "DW", hitCap = 9,
-    stats = "Strength (about 2 Attack Power each), Agility for crit, then Stamina",
+    stats = "Hit up to 9% (two weapons miss a lot), then Strength (about 2 Attack Power each), crit, then Stamina",
     tips = { "Keep Battle Shout up; Demoralizing Shout or Thunder Clap on packs.",
       "Open with Charge and Rend, then Heroic Strike on one target or Cleave on several.",
       "Overpower whenever a mob dodges.",
@@ -100,23 +101,23 @@ S("PALADIN", {
 
 S("HUNTER", {
   { key = "bm", name = "Beast Mastery", role = "Ranged DPS", kind = "ranged", tab = 1, main = true, icon = "Interface\\Icons\\Ability_Hunter_BeastTaming",
-    stats = "Agility, then Strength, then Intellect",
+    stats = "Agility, then Hit up to 9%, then Strength, then Intellect",
     tips = { "Recast Summon Hawk when its 6 sec cooldown is up to keep two hawks out.", "Rapid Fire on hard fights; it pulls a lot of threat." },
     forever = { "Summon Hawk is a new talent.", "Since the November 10 hotfix pets have 115% of normal health (a bug had given them 150%), and the hawk's melee hits harder." },
     source = "https://mobalytics.gg/wow-forever/classes/beast-mastery-hunter-guide" },
   { key = "mm", name = "Marksmanship", role = "Ranged DPS", kind = "ranged", tab = 2, icon = "Interface\\Icons\\Ability_Marksmanship",
-    weights = { AGI = 2.0, RAP = 1.0, AP = 0.2, CRIT = 22, HIT = 20, STA = 0.2, INT = 0.6, SPI = 0.1, WEAPON_DPS = 0.5, RANGED_DPS = 16 },
+    weights = { AGI = 2.0, RAP = 1.0, AP = 0.2, CRIT = 22, HIT = 23, STA = 0.2, INT = 0.6, SPI = 0.1, WEAPON_DPS = 0.5, RANGED_DPS = 16 },
     model = "ranged", hitCap = 9,
-    stats = "Agility, then Intellect (mana, and Careful Aim turns it into damage)",
+    stats = "Agility, then Hit up to 9%, then Intellect (mana, and Careful Aim turns it into damage)",
     tips = { "Pet in, Hunter's Mark, open from max range with Aimed Shot.",
       "Keep Serpent Sting up: Rapid Killing's proc boosts the next mob.",
       "Multi-Shot from 18; save Rapid Fire for groups, where a tank holds the threat." },
     forever = { "Lone Wolf lets hunters play without a pet." },
     source = "https://mobalytics.gg/wow-forever/classes/marksmanship-hunter-guide" },
   { key = "sv", name = "Survival", role = "Melee DPS", kind = "melee", tab = 3, icon = "Interface\\Icons\\Ability_Hunter_SwiftStrike",
-    weights = { AGI = 2.0, STR = 1.0, AP = 1.0, CRIT = 20, HIT = 18, STA = 0.3, INT = 0.3, WEAPON_DPS = 14, SLOW_BONUS = 3, RANGED_DPS = 3 },
+    weights = { AGI = 2.0, STR = 1.0, AP = 1.0, CRIT = 20, HIT = 21, STA = 0.3, INT = 0.3, WEAPON_DPS = 14, SLOW_BONUS = 3, RANGED_DPS = 3 },
     model = "2H", hitCap = 9,
-    stats = "Agility, then Strength, then Intellect",
+    stats = "Agility, then Hit up to 9%, then Strength, then Intellect",
     tips = { "Open at range, then pull the mob off your pet and finish in melee with Raptor Strike, Strider Kick and Mongoose Bite.",
       "Deterrence (5 min cooldown) is for emergencies and Counterattack procs.",
       "Frost Trap to slow packs, Explosive Trap for area damage in groups: since launch all traps share one 30 sec cooldown, so pick one per pull." },
@@ -135,7 +136,7 @@ S("ROGUE", {
     forever = { "Assassination focuses on poison damage: Deadly and Instant Poison scale twice as hard with Attack Power since launch.", "Mutilate moved to the end of the tree (31 points) in the launch build, so until then build combo points with Sinister Strike (Blizzard's November 2 notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/assassination-rogue-guide" },
   { key = "combat", name = "Combat", role = "Melee DPS", kind = "melee", tab = 2, main = true, icon = "Interface\\Icons\\Ability_BackStab",
-    stats = "Agility, then Strength, then Stamina",
+    stats = "Agility, then Hit up to 9%, then Strength, then Stamina",
     tips = { "Chain Cheap Shot into a 5-point Kidney Shot on elites, then Gouge to get energy back." },
     forever = { "Combat keeps its up-front style." },
     source = "https://mobalytics.gg/wow-forever/classes/combat-rogue-guide" },
@@ -170,7 +171,7 @@ S("PRIEST", {
     forever = { "Fear Ward is baseline for every priest." },
     source = "https://mobalytics.gg/wow-forever/classes/holy-priest-guide" },
   { key = "shadow", name = "Shadow", role = "Ranged DPS", kind = "caster", tab = 3, main = true, icon = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
-    stats = "Intellect and Spirit, then Stamina",
+    stats = "Shadow damage and spell hit, then Intellect and Spirit, then Stamina",
     tips = { "Mind Blast, Shadow Word: Pain, Mind Flay until the mob reaches you, then wand." },
     forever = { "Troll priests get Hex of Weakness and Shadowguard.", "Shadow Word: Death hits you back for 30% of your maximum health (was 10%) when the target survives: save it for the kill. Cure Disease and Abolish Disease work in Shadowform (confirmed in Blizzard's November 2 launch notes)." },
     source = "https://mobalytics.gg/wow-forever/classes/shadow-priest-guide" },
@@ -266,7 +267,7 @@ S("DRUID", {
     forever = { "Faerie Fire and Nature's Grasp are baseline." },
     source = "https://mobalytics.gg/wow-forever/classes/balance-druid-guide" },
   { key = "feral", name = "Feral (Cat)", role = "Melee DPS", kind = "melee", tab = 2, main = true, icon = "Interface\\Icons\\Ability_Druid_CatForm",
-    stats = "Strength, then Agility and Stamina, then Intellect",
+    stats = "Hit up to 9%, then Strength, then Agility and Stamina, then Intellect",
     tips = { "Rake on anything that lives 6+ seconds; Ferocious Bite at 5 combo points." },
     forever = { "Cat and Bear Form now scale with your weapon's damage.", "Cat Form no longer lowers your maximum health, and mana potions work in Cat and Bear Form (October 2026)." },
     source = "https://mobalytics.gg/wow-forever/classes/feral-druid-guide" },

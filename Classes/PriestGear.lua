@@ -175,7 +175,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 11634, slot = "Hands", lvl = 49, how = "Dungeon", src = "Hedrum the Creeper", zone = "Blackrock Depths", score = 17, bl = 53, gen = true },  -- Silkweb Gloves
   { id = 10751, slot = "Head", lvl = 49, how = "Quest", src = "The God Hakkar (Yeh'kinya)", zone = "The Temple of Atal'Hakkar", score = 23, q = 3528, gen = true },  -- Gemburst Circlet
   { id = 11824, slot = "Ring", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 19, bl = 53, gen = true },  -- Cyclopean Band
-  { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 29, bl = 53, gen = true },  -- Ban'thok Sash
+  { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 31, bl = 53, gen = true },  -- Ban'thok Sash
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, also = { { how = "BoE", src = "World drop", zone = "Auction House" } }, gen = true },  -- Coldstone Slippers
   { id = 254109, slot = "Feet", lvl = 50, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Jim'bek (The Barrens) · 90 favor at Honored", score = 30, prof = "Tailoring", sk = 235, gen = true },  -- Frothing Sandals
   { id = 226958, slot = "Hands", lvl = 50, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 40, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Hands
@@ -201,7 +201,7 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 226957, slot = "Head", lvl = 55, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 58, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Cowl
   { id = 13170, slot = "Legs", lvl = 55, how = "Dungeon", src = "Highlord Omokk", zone = "Blackrock Spire", score = 46, bl = 59, gen = true },  -- Skyshroud Leggings
   { id = 22657, slot = "Neck", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 29, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Amulet of the Dawn
-  { id = 234016, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 36, gen = true },  -- Signet Ring of the Bronze Dragonflight
+  { id = 234016, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 38, gen = true },  -- Signet Ring of the Bronze Dragonflight
   { id = 12930, slot = "Trinket", lvl = 55, how = "Dungeon", src = "Jed Runewatcher", zone = "Blackrock Spire", score = 33, bl = 59, gen = true },  -- Briarwood Reed
   { id = 272393, slot = "Waist", lvl = 55, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 39, gen = true },  -- Magician's Cord
   { id = 22667, slot = "Wrist", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 25, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Bracers of Hope
@@ -223,11 +223,11 @@ RG.CLASS_GEAR.PRIEST = {
   { id = 13965, slot = "Trinket", lvl = 58, how = "Quest", src = "For The Horde! (Thrall)", zone = "Blackrock Spire", score = 12, q = 4974, gen = true },  -- Blackhand's Breadth
   { id = 22631, slot = "2H", lvl = 60, how = "Quest", src = "Atiesh, Greatstaff of the Guardian (Anachronos)", zone = "", score = 206, q = 9257, gen = true },  -- Atiesh, Greatstaff of the Guardian
   { id = 19101, slot = "2H", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 103, bl = 58, gen = true },  -- Whiteout Staff
-  { id = 272411, slot = "Back", lvl = 60, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 28, gen = true },  -- Arcanoweave Cloak
+  { id = 272411, slot = "Back", lvl = 60, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 30, gen = true },  -- Arcanoweave Cloak
   { id = 19426, slot = "Neck", lvl = 60, how = "Quest", src = "1200 Tickets - Orb of the Darkmoon (Gelvas Grimegate)", zone = "", score = 34, q = 7940, gen = true },  -- Orb of the Darkmoon
   { id = 19311, slot = "Off Hand", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 40, bl = 58, gen = true },  -- Tome of Fiery Arcana
   { id = 21210, slot = "Ring", lvl = 60, how = "Quest", src = "The Grand Invoker (Anachronos)", zone = "Tanaris", score = 47, q = 8761, also = { { how = "Quest", src = "The Changing of Paths - Protector No More (Anachronos)", zone = "Tanaris", q = 8764 }, { how = "Quest", src = "The Changing of Paths - Conqueror No More (Anachronos)", zone = "Tanaris", q = 8766 } }, gen = true },  -- Signet Ring of the Bronze Dragonflight
-  { id = 226955, slot = "Shoulder", lvl = 60, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 38, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Epaulets
+  { id = 226955, slot = "Shoulder", lvl = 60, how = "Vendor", src = "Mokvar", zone = "Orgrimmar", score = 40, also = { { how = "Vendor", src = "Kor'kron Elite", zone = "Orgrimmar" } }, gen = true },  -- Virtuous Epaulets
   { id = 22082, slot = "Shoulder", lvl = 60, how = "Quest", src = "Anthion's Parting Words (Anthion Harmon)", zone = "Orgrimmar", score = 32, q = 9019, gen = true },  -- Virtuous Mantle
 }
 RG.CLASS_GEAR_A = RG.CLASS_GEAR_A or {}
@@ -402,7 +402,7 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 11634, slot = "Hands", lvl = 49, how = "Dungeon", src = "Hedrum the Creeper", zone = "Blackrock Depths", score = 17, bl = 53, gen = true },  -- Silkweb Gloves
   { id = 10751, slot = "Head", lvl = 49, how = "Quest", src = "The God Hakkar (Yeh'kinya)", zone = "The Temple of Atal'Hakkar", score = 23, q = 3528, gen = true },  -- Gemburst Circlet
   { id = 11824, slot = "Ring", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 19, bl = 53, gen = true },  -- Cyclopean Band
-  { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 29, bl = 53, gen = true },  -- Ban'thok Sash
+  { id = 11662, slot = "Waist", lvl = 49, how = "Dungeon", src = "Ok'thor the Breaker", zone = "Blackrock Depths", score = 31, bl = 53, gen = true },  -- Ban'thok Sash
   { id = 10806, slot = "Chest", lvl = 50, how = "Dungeon", src = "Jammal'an the Prophet", zone = "The Temple of Atal'Hakkar", score = 22, bl = 54, gen = true },  -- Vestments of the Atal'ai Prophet
   { id = 18697, slot = "Feet", lvl = 50, how = "Chest", src = "Old Treasure Chest", zone = "Scholomance", score = 17, also = { { how = "BoE", src = "World drop", zone = "Auction House" } }, gen = true },  -- Coldstone Slippers
   { id = 254109, slot = "Feet", lvl = 50, how = "Crafted", src = "Tailoring", zone = "Bind on Pickup · Merchant's Favor: Mivin Shadowweave (Redridge Mountains) · 90 favor at Honored", score = 30, prof = "Tailoring", sk = 235, gen = true },  -- Frothing Sandals
@@ -428,7 +428,7 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 226957, slot = "Head", lvl = 55, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 58, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Cowl
   { id = 13170, slot = "Legs", lvl = 55, how = "Dungeon", src = "Highlord Omokk", zone = "Blackrock Spire", score = 46, bl = 59, gen = true },  -- Skyshroud Leggings
   { id = 22657, slot = "Neck", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 29, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Amulet of the Dawn
-  { id = 234016, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 36, gen = true },  -- Signet Ring of the Bronze Dragonflight
+  { id = 234016, slot = "Ring", lvl = 55, how = "Vendor", src = "Anachronos", zone = "Tanaris", score = 38, gen = true },  -- Signet Ring of the Bronze Dragonflight
   { id = 12930, slot = "Trinket", lvl = 55, how = "Dungeon", src = "Jed Runewatcher", zone = "Blackrock Spire", score = 33, bl = 59, gen = true },  -- Briarwood Reed
   { id = 272393, slot = "Waist", lvl = 55, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 39, gen = true },  -- Magician's Cord
   { id = 22667, slot = "Wrist", lvl = 55, how = "Quest", src = "Epic Armaments of Battle - Friend of the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", score = 25, q = 9222, also = { { how = "Quest", src = "Epic Armaments of Battle - Honored Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9224 }, { how = "Quest", src = "Epic Armaments of Battle - Revered Amongst the Dawn (Quartermaster Miranda Breechlock)", zone = "Eastern Plaguelands", q = 9225 } }, gen = true },  -- Bracers of Hope
@@ -450,10 +450,10 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 13965, slot = "Trinket", lvl = 58, how = "Quest", src = "General Drakkisath's Demise (Marshal Maxwell)", zone = "Blackrock Spire", score = 12, q = 5102, gen = true },  -- Blackhand's Breadth
   { id = 22631, slot = "2H", lvl = 60, how = "Quest", src = "Atiesh, Greatstaff of the Guardian (Anachronos)", zone = "", score = 206, q = 9257, gen = true },  -- Atiesh, Greatstaff of the Guardian
   { id = 19101, slot = "2H", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 103, bl = 58, gen = true },  -- Whiteout Staff
-  { id = 272411, slot = "Back", lvl = 60, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 28, gen = true },  -- Arcanoweave Cloak
+  { id = 272411, slot = "Back", lvl = 60, how = "Vendor", src = "Pix Xizzix", zone = "Stranglethorn Vale", score = 30, gen = true },  -- Arcanoweave Cloak
   { id = 19426, slot = "Neck", lvl = 60, how = "Quest", src = "1200 Tickets - Orb of the Darkmoon (Gelvas Grimegate)", zone = "", score = 34, q = 7940, gen = true },  -- Orb of the Darkmoon
   { id = 19311, slot = "Off Hand", lvl = 60, how = "Dungeon", src = "Grunnda Wolfheart", zone = "Alterac Valley", score = 40, bl = 58, gen = true },  -- Tome of Fiery Arcana
   { id = 21210, slot = "Ring", lvl = 60, how = "Quest", src = "The Grand Invoker (Anachronos)", zone = "Tanaris", score = 47, q = 8761, also = { { how = "Quest", src = "The Changing of Paths - Protector No More (Anachronos)", zone = "Tanaris", q = 8764 }, { how = "Quest", src = "The Changing of Paths - Conqueror No More (Anachronos)", zone = "Tanaris", q = 8766 } }, gen = true },  -- Signet Ring of the Bronze Dragonflight
-  { id = 226955, slot = "Shoulder", lvl = 60, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 38, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Epaulets
+  { id = 226955, slot = "Shoulder", lvl = 60, how = "Vendor", src = "Deliana", zone = "Ironforge", score = 40, also = { { how = "Vendor", src = "Ironforge Guard", zone = "Ironforge" } }, gen = true },  -- Virtuous Epaulets
   { id = 22082, slot = "Shoulder", lvl = 60, how = "Quest", src = "Anthion's Parting Words (Anthion Harmon)", zone = "Ironforge", score = 32, q = 8955, gen = true },  -- Virtuous Mantle
 }
