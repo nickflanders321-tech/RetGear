@@ -1561,7 +1561,7 @@ local function renderAH()
         local name, link, quality = itemName(e.id)
         setItem(getRow(n), e.id, link or e.link, name .. (e.count > 1 and (GREY .. "  x" .. e.count .. "|r") or ""),
           GREY .. "You keep |r" .. RG.Money(e.p.net) .. GREY .. " each after the AH cut  ·  vendor pays |r" .. RG.Money(e.p.vendor),
-          GREEN .. "+" .. RG.Money(e.total) .. "|r", RG.PriceText(e.id) or "", "gold", quality)
+          GREEN .. "+" .. RG.Money(e.total) .. "|r", RG.PriceText(e.id, e.link) or "", "gold", quality)
       end
     end
     if #unpriced > 0 then

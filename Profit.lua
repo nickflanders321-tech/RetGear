@@ -36,20 +36,25 @@ local function neverAuctioned(id)
   return bind == 1 or bind == 4
 end
 RG.NeverAuctioned = neverAuctioned
-function RG.ProfitInfo(id)
+-- What it brings at the AH against a vendor. The AH side is what it really sells for (RG.SellPrice: the cheapest
+-- listing now when that's lower than the market value, your own sales, its own random-enchant variant), less the cut.
+function RG.ProfitInfo(id, link)
   if not id then return nil end
   local vendor = select(11, RG.ItemInfo(id)) or 0
   if neverAuctioned(id) then return { vendor = vendor, bound = true } end
-  local ah, src, rec = RG.Price(id)
-  if not ah or (rec and rec.none) then return { vendor = vendor, unpriced = true } end
+  local _, src, rec = RG.Price(id)
+  local ah, why = RG.SellPrice(id, link)
+  if not ah or (rec and rec.none and not (why and why.variant)) then return { vendor = vendor, unpriced = true } end
   local net = math.floor(ah * (1 - AH_CUT))
-  return { ah = ah, net = net, vendor = vendor, gain = net - vendor, src = src, age = rec and rec.t }
+  return { ah = ah, net = net, vendor = vendor, gain = net - vendor, src = src, age = rec and rec.t, why = why, slow = why and why.slow }
 end
 
 -- Is this stack worth taking to the AH instead of a vendor?
 local function worthIt(p, count)
   if not p or p.unpriced or p.bound then return false end
   if p.gain <= 0 then return false end
+  -- it came back unsold twice lately: only worth another try for three times the vendor price
+  if p.slow and p.net < math.max(1, p.vendor) * 3 then return false end
   if p.vendor > 0 and p.net < p.vendor * 1.25 then return false end -- tiny margins aren't worth the trip
   return p.gain * (count or 1) >= RG.ProfitMin()
 end
@@ -110,8 +115,10 @@ function RG.ProfitList()
         local info = slotInfo(bag, slot)
         local id = info and info.itemID
         if id and not bound(bag, slot, info) and not pdb().profitIgnore[id] and classOf(id) ~= 12 and not (RG.IsHealKeeper and RG.IsHealKeeper(id)) then
-          local e = byID[id]
-          if not e then e = { id = id, link = info.hyperlink, count = 0, quality = info.quality, slots = {} }; byID[id] = e end
+          -- (a random-enchant piece is its own entry: "of the Monkey" and "of the Whale" sell for different prices)
+          local key = RG.PriceKey and RG.PriceKey(id, info.hyperlink) or id
+          local e = byID[key]
+          if not e then e = { id = id, link = info.hyperlink, count = 0, quality = info.quality, slots = {} }; byID[key] = e end
           e.count = e.count + (info.stackCount or 1)
           e.slots[#e.slots + 1] = { bag, slot }
         end
@@ -120,7 +127,7 @@ function RG.ProfitList()
   end
   local items, unpriced, total = {}, {}, 0
   for id, e in pairs(byID) do
-    e.p = RG.ProfitInfo(id)
+    e.p = RG.ProfitInfo(e.id, e.link)
     if worthIt(e.p, e.count) then
       e.total = e.p.gain * e.count
       total = total + e.total
@@ -160,9 +167,10 @@ local function OnTooltip(tooltip, data)
   if RG.CardsOnly and RG.CardsOnly() then return end
   if not on() or tooltip ~= GameTooltip and tooltip ~= ItemRefTooltip then return end
   local id = data and data.id
-  if not id and tooltip.GetItem then local _, link = tooltip:GetItem(); id = link and tonumber(link:match("item:(%d+)")) end
+  local link = tooltip.GetItem and select(2, tooltip:GetItem())
+  if not id then id = link and tonumber(link:match("item:(%d+)")) end
   if not id or pdb().profitIgnore[id] then return end
-  local p = RG.ProfitInfo(id)
+  local p = RG.ProfitInfo(id, link)
   if not p or p.unpriced or p.bound then return end
   if worthIt(p, 1) or (p.gain > 0 and RG.BagSellSet()[id] and worthIt(p, RG.BagSellSet()[id])) then
     tooltip:AddLine(COIN .. " " .. GOLD .. "Sell this on the Auction House|r", 1, 1, 1)

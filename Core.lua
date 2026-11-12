@@ -621,7 +621,7 @@ local function OnTooltip(tooltip)
   if id then
     local guide = RG.GuideByID and RG.GuideByID[id]
     if guide then tooltip:AddLine(GREY .. "Leveling pick: " .. guide.src .. ", " .. guide.zone .. "|r", 1, 1, 1, true) end
-    local price = RG.PriceText and RG.PriceText(id)
+    local price = RG.PriceText and RG.PriceText(id, link)
     if price then tooltip:AddLine(GREY .. "Auction House: |r" .. price) end
   end
   tooltip:Show()

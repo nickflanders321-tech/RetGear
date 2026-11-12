@@ -141,12 +141,108 @@ function RG.Price(id)
   if rec then return rec.price, "scan", rec end
 end
 
+-- ---------------------------------------------------------------------------
+-- What an item really sells for. Learned from TradeSkillMaster's way of looking at it (its own pricing guides; no
+-- code borrowed):
+--   * a random-enchant piece ("... of the Monkey") is its own item: TSM prices each variant separately, so a weak
+--     variant doesn't borrow the price of a good one. Waypath+ now records variants apart and won't guess.
+--   * the market value is what things are listed for. To sell you have to be the cheapest, so when the cheapest
+--     listing right now is lower than the market value, that's what you'll get.
+--   * your own sales count most (TSM's Accounting): what you actually sold an item for in the last 30 days.
+--   * an item whose auctions keep coming back unsold isn't worth taking to the AH, whatever the listings say.
+-- ---------------------------------------------------------------------------
+-- the random-enchant variant in a link (the suffix field of item:id:enchant:gem1:gem2:gem3:gem4:suffix), or nil
+local function suffixOf(link)
+  if type(link) ~= "string" then return nil end
+  local sfx = link:match("item:%-?%d+:%-?%d*:%-?%d*:%-?%d*:%-?%d*:%-?%d*:(%-?%d+)")
+  sfx = tonumber(sfx)
+  return (sfx and sfx ~= 0) and sfx or nil
+end
+RG.ItemSuffix = suffixOf
+local function variantKey(id, sfx) return sfx and (id .. ":" .. sfx) or id end
+RG.PriceKey = function(id, link) return variantKey(id, suffixOf(link)) end
+
+local function hist()
+  RG.db.ahHistory = RG.db.ahHistory or { sold = {}, expired = {}, mail = {} }
+  return RG.db.ahHistory
+end
+local DAY = 86400
+-- your sales of an item in the last 30 days: median price each, how many, the last one
+local function mySales(id)
+  local h = RG.db and RG.db.ahHistory
+  local L = h and h.sold[id]
+  if not L then return nil end
+  local now, ps, last = time(), {}, 0
+  for _, e in ipairs(L) do if now - e[2] <= 30 * DAY then ps[#ps + 1] = e[1]; last = math.max(last, e[2]) end end
+  if #ps == 0 then return nil end
+  table.sort(ps)
+  return ps[math.floor((#ps + 1) / 2)], #ps, last
+end
+RG.MySales = mySales
+-- your auctions of it that came back unsold in the last 14 days, after your last sale
+local function myExpired(id, lastSale)
+  local h = RG.db and RG.db.ahHistory
+  local L = h and h.expired[id]
+  if not L then return 0 end
+  local now, n = time(), 0
+  for _, t in ipairs(L) do if now - t <= 14 * DAY and t > (lastSale or 0) then n = n + 1 end end
+  return n
+end
+
+-- The price you can expect each, and how it was worked out: { market, cheapest, mine, mineN, slow, variant }
+function RG.SellPrice(id, link)
+  if not id or (RG.NeverAuctioned and RG.NeverAuctioned(id)) then return nil end
+  local sfx = suffixOf(link)
+  local why = { variant = sfx }
+  local base, src, rec
+  if sfx then
+    -- a random-enchant piece: only its own variant's price counts
+    rec = RG.db.prices[variantKey(id, sfx)]
+    if not rec then return nil, why end
+    base, src = marketOf(rec) or rec.price, marketOf(rec) and "market" or "scan"
+  else
+    base, src, rec = RG.Price(id)
+  end
+  if not base then return nil, why end
+  why.market, why.src = base, src
+  local p = base
+  -- you have to undercut the cheapest one listed now (a price checked within the last two days)
+  if rec and rec.price and not rec.none and time() - (rec.t or 0) < 2 * DAY and rec.price < p then
+    p = rec.price; why.cheapest = rec.price
+  end
+  -- what you sold it for yourself lately
+  local med, n, last = mySales(id)
+  if med and not sfx then
+    why.mine, why.mineN = med, n
+    p = why.cheapest and math.min(med, why.cheapest) or med
+  end
+  local exp = myExpired(id, last)
+  if exp >= 2 then why.slow = exp end
+  return math.floor(p + 0.5), why
+end
+
 -- Whether the Auction House has been looked at at all on this realm (lists show one "open the AH" line until then).
 function RG.HasPrices() return RG.db and RG.db.prices and next(RG.db.prices) ~= nil or false end
-function RG.PriceText(id)
+function RG.PriceText(id, link)
+  if suffixOf(link) then
+    -- a random-enchant piece: its own variant, or nothing
+    local sp, why = RG.SellPrice(id, link)
+    if not sp then return nil end
+    return money(sp) .. GREY .. "  this variant" .. (why.cheapest and " · cheapest now" or "") .. "|r"
+  end
   if not isTracked(id) and not RG.db.prices[id] then return nil end
   local p, src, rec = RG.Price(id)
   if not p then return nil end   -- (no price yet: lists show nothing rather than the same reminder on every row)
+  -- what you'd really get, when that's less than the market value: the cheapest listing now, or your own sales
+  local sp, why = RG.SellPrice(id)
+  if sp and why and (sp < p or why.mine or why.slow) then
+    local bits = {}
+    if why.mine then bits[#bits + 1] = "you sold " .. why.mineN .. " for ~" .. money(why.mine) end
+    if why.cheapest then bits[#bits + 1] = "cheapest now " .. money(why.cheapest) end
+    bits[#bits + 1] = "market " .. money(p)
+    if why.slow then bits[#bits + 1] = "|cffff7f50came back unsold " .. why.slow .. "x|r" .. GREY end
+    return money(sp) .. GREY .. "  to sell · " .. table.concat(bits, " · ") .. "|r"
+  end
   if src == "market" then
     -- the steady value first, then what the cheapest one costs right now
     local now = rec.none and "none listed now" or (rec.price and ("cheapest " .. money(rec.price) .. (rec.n and rec.n > 1 and (", " .. rec.n .. " listed") or "")) or nil)
@@ -162,10 +258,11 @@ end
 
 -- Any other item seen on the AH: its lowest price, when, and how many (no daily history, so it stays small).
 -- Kept for good, so a tooltip or list can show the last price you saw for anything.
-local function remember(id, price, count)
+local function remember(id, price, count, variant)
   local db = RG.db
   local prev = db.prices[id]
-  if prev and prev.d then return end   -- (a watched item: its full record is kept by record())
+  if prev and prev.d and not variant then return end   -- (a watched item: its full record is kept by record())
+  if variant and prev and prev.d then prev.price, prev.t, prev.seen, prev.n, prev.last, prev.none = price, time(), time(), count, price, nil return end
   db.prices[id] = { price = price, t = time(), seen = time(), n = count, last = price }
 end
 -- Remember a price and fire a price alert if one is set.
@@ -283,8 +380,9 @@ local function staleIDs()
 end
 
 -- Reading a full scan: lowest buyout per item, a chunk of auctions per frame.
-local function readFull(total, getInfo, isModern)
+local function readFull(total, getInfo, isModern, getLink)
   local best, count, all = {}, {}, {}
+  local vBest, vAll, vCount = {}, {}, {}   -- random-enchant variants of watched gear, by "id:suffix"
   local unknown = 0   -- auctions whose item the game hadn't loaded (no id): their items can't be called "none listed"
   local i = isModern and 0 or 1
   local last = isModern and total - 1 or total
@@ -303,6 +401,20 @@ local function readFull(total, getInfo, isModern)
         if watched(id) then
           local L = all[id]; if not L then L = {}; all[id] = L end
           for _ = 1, math.min(stack or 1, 400 - #L) do L[#L + 1] = per end
+          -- gear can come in random-enchant variants: each one priced on its own
+          if getLink and (stack or 1) == 1 then
+            local _, _, _, _, _, classID = GetItemInfoInstant(id)
+            if classID == 2 or classID == 4 then
+              local sfx = suffixOf(getLink(k))
+              if sfx then
+                local key = variantKey(id, sfx)
+                if not vBest[key] or per < vBest[key] then vBest[key] = per end
+                vCount[key] = (vCount[key] or 0) + 1
+                local V = vAll[key]; if not V then V = {}; vAll[key] = V end
+                if #V < 100 then V[#V + 1] = per end
+              end
+            end
+          end
         end
       end
     end
@@ -318,6 +430,10 @@ local function readFull(total, getInfo, isModern)
           local v = scanValue(all[id] or {})
           record(id, math.floor(best[id]), count[id], v and math.floor(v + 0.5)); n = n + 1
         elseif complete then record(id, nil, 0) end
+      end
+      for key, p in pairs(vBest) do
+        local v = scanValue(vAll[key] or {})
+        record(key, math.floor(p), vCount[key], v and math.floor(v + 0.5))
       end
       -- and every other item on the AH, so its last price is there next time
       local others = 0
@@ -451,6 +567,9 @@ local function readBrowse()
     local id = r.itemKey and r.itemKey.itemID
     if id and r.minPrice and r.minPrice > 0 then
       if not found[id] or r.minPrice < found[id].p then found[id] = { p = r.minPrice, n = r.totalQuantity } end
+      -- each random-enchant variant also gets its own price
+      local sfx = r.itemKey.itemSuffix
+      if sfx and sfx ~= 0 then remember(variantKey(id, sfx), r.minPrice, r.totalQuantity, true) end
     end
   end
   for id, x in pairs(found) do
@@ -473,7 +592,7 @@ local function readLegacy()
     readFull(total or GetNumAuctionItems("list"), function(i)
       local _, _, stack, _, _, _, _, _, _, buyout, _, _, _, _, _, _, itemID = GetAuctionItemInfo("list", i)
       return itemID, stack, buyout
-    end, false)
+    end, false, GetAuctionItemLink and function(i) return GetAuctionItemLink("list", i) end)
     return
   end
   local best, count = {}, {}
@@ -503,7 +622,7 @@ local function readReplicate()
       itemID = link and tonumber(link:match("item:(%d+)"))
     end
     return itemID, stack, buyout
-  end, true)
+  end, true, C_AuctionHouse.GetReplicateItemLink)
 end
 
 -- You searched yourself: Waypath+ stops its searches for this visit.
@@ -617,7 +736,59 @@ RG.ShowAHProgress = showProgress
 -- Events
 -- ---------------------------------------------------------------------------
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE", "REPLICATE_ITEM_LIST_UPDATE" }) do
+-- Your sales and the auctions that came back, read from the mailbox (TSM's Accounting does the same): an "Auction
+-- successful" mail says what one sold for, an "Auction expired" one that it didn't sell. Each mail counts once.
+local function idByName(name)
+  if not name or name == "" then return nil end
+  local _, link = RG.ItemInfo(name)
+  return link and tonumber(link:match("item:(%d+)"))
+end
+-- "Auction expired: %s" in the game's own language, as a pattern
+local function expiredPattern()
+  local f = AUCTION_EXPIRED_MAIL_SUBJECT
+  if type(f) ~= "string" then return nil end
+  local esc = f:gsub("([%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%%%s", "(.+)"):gsub("%%s", "(.+)")
+  return "^" .. esc .. "$"
+end
+local function readMail()
+  if not (GetInboxNumItems and GetInboxHeaderInfo) then return end
+  local expiredPat = expiredPattern()
+  local h, now = hist(), time()
+  for i = 1, GetInboxNumItems() do
+    local _, _, sender, subject, mailMoney, _, daysLeft = GetInboxHeaderInfo(i)
+    if subject and daysLeft then
+      -- the same mail always has the same subject, money and expiry day (rounded: the clock moves while you look)
+      local key = subject .. "|" .. tostring(mailMoney) .. "|" .. math.floor(now / DAY + daysLeft + 0.5)
+      if not h.mail[key] then
+        local invoiceType, itemName, _, bid, _, _, _, _, _, _, count
+        if GetInboxInvoiceInfo then invoiceType, itemName, _, bid, _, _, _, _, _, _, count = GetInboxInvoiceInfo(i) end
+        if invoiceType == "seller" and itemName and bid and bid > 0 then
+          local id = idByName(itemName)
+          if id then
+            h.mail[key] = now
+            local L = h.sold[id] or {}; h.sold[id] = L
+            L[#L + 1] = { math.floor(bid / math.max(1, count or 1)), now }
+            while #L > 20 do table.remove(L, 1) end
+          end
+        elseif expiredPat and subject:match(expiredPat) then
+          local id = idByName(subject:match(expiredPat))
+          if id then
+            h.mail[key] = now
+            local L = h.expired[id] or {}; h.expired[id] = L
+            L[#L + 1] = now
+            while #L > 20 do table.remove(L, 1) end
+          end
+        end
+      end
+    end
+  end
+  -- forget mails long gone
+  for k, t in pairs(h.mail) do if now - t > 40 * DAY then h.mail[k] = nil end end
+  if RG.ProfitInvalidate then RG.ProfitInvalidate() end
+end
+RG.__readAHMail = readMail   -- (tests)
+
+for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE", "REPLICATE_ITEM_LIST_UPDATE", "MAIL_INBOX_UPDATE" }) do
   pcall(f.RegisterEvent, f, e)
 end
 f:SetScript("OnEvent", function(_, event)
@@ -634,6 +805,8 @@ f:SetScript("OnEvent", function(_, event)
     readLegacy()
   elseif event == "REPLICATE_ITEM_LIST_UPDATE" then
     if mode == "full" then readReplicate() end
+  elseif event == "MAIL_INBOX_UPDATE" then
+    pcall(readMail)
   end
 end)
 
