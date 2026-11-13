@@ -4,6 +4,7 @@
 Checks, cheaply and without Claude:
   * the live WoW Forever game build (Blizzard's patch server, BlizzTrack as a fallback),
   * QuestieDB's WoW Forever data folder (its git tree hash),
+  * the game client's own tables (the data/wago branch the fetch-wago workflow exports),
   * new GitHub issues (bug reports) since the last one seen.
 Prints GitHub Actions outputs (build_changed, new_build, interface, data_changed, new_tree,
 new_issues) and writes the new values to watch.json.new for the workflow to commit once the
@@ -85,6 +86,20 @@ if tree and tree != state.get('questiedb_forever_tree'):
     out['new_tree'] = tree
     print('QuestieDB Forever data changed: %s -> %s' % (state.get('questiedb_forever_tree'), tree), file=sys.stderr)
     state['questiedb_forever_tree'] = tree
+
+# --- 2b. the game client's own tables (data/wago, from .github/workflows/fetch-wago.yml) -----------------------
+# New raids, bosses, encounters, loading screens and item icons arrive there with a patch: a new export rebuilds too.
+try:
+    head = subprocess.run(['git', 'ls-remote', 'https://github.com/%s.git' % REPO, 'refs/heads/data/wago'],
+                          capture_output=True, text=True, check=True).stdout.split()
+    wago = head[0] if head else None
+except Exception as e:
+    wago = None
+    print('warning: could not read the data/wago branch: %s' % e, file=sys.stderr)
+if wago and wago != state.get('wago_export'):
+    print('Game client tables changed: %s -> %s' % (state.get('wago_export'), wago), file=sys.stderr)
+    state['wago_export'] = wago
+    out['data_changed'] = 'true'
 
 # --- 3. new bug reports ------------------------------------------------------
 new = []

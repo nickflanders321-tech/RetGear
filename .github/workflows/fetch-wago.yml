@@ -1,11 +1,11 @@
 name: Fetch wago DB2
 
-# On demand / weekly: download the WoW Forever client's own crafting tables from wago.tools (DB2 exports of the
+# On demand, daily, and when the watcher sees a new game build: download the WoW Forever client's own crafting tables from wago.tools (DB2 exports of the
 # game client) and commit them to the data/wago branch. tools/gear/gen.py reads them to link WoW Forever's new
 # recipes to the gear they make and the skill they need (the cMaNGOS database only has the original Classic ones).
 on:
   schedule:
-    - cron: '53 6 * * 1'
+    - cron: '53 6 * * *'
   workflow_dispatch:
     inputs:
       build:
@@ -53,7 +53,7 @@ jobs:
             echo "$t: $(wc -l < $t.csv) rows; $(head -c 300 $t.csv | head -1)"
           done
           printf 'build=%s\nproduct=%s\n' "$BUILD" "$PRODUCT" > BUILD.txt
-          gzip -9 *.csv
+          gzip -9 -n *.csv   # (-n: no timestamp, so the same tables give the same files)
           du -sh .
       - name: Commit to data/wago
         run: |
@@ -63,4 +63,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -qm "wago.tools DB2 export, build $BUILD ($PRODUCT)"
+          # (nothing new since the last export: leave the branch alone, so the watcher doesn't rebuild for nothing)
+          if git fetch -q --depth 1 "https://github.com/${{ github.repository }}.git" data/wago 2>/dev/null && \
+             [ "$(git rev-parse FETCH_HEAD^{tree})" = "$(git rev-parse HEAD^{tree})" ]; then echo "Same tables as last time."; exit 0; fi
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data/wago

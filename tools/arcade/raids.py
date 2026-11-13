@@ -118,7 +118,7 @@ for name, size, where, title, opens, key, art, alias in RAIDS:
         if kn:
             if card(1, kn, 4, item, "Key to %s: earned by being attuned" % name, pool): world_only.add(kn)
             keys[name] = (item, quests, kn)
-    mid = maps.get(name) or 0
+    mid = maps.get(name) or next((maps[x] for x in alias if x in maps), 0)   # (the client may name it without "The")
     encs = [e for e in enc.get(mid, [])] if mid else []
     raids.append((name, mid, 60, 60, pool, size, opens, art, [b[0] for b in bosses], encs, where))
     legacy[name] = crits

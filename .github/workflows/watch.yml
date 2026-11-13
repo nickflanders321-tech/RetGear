@@ -66,6 +66,8 @@ jobs:
             body=$(printf 'The hourly watcher rebuilt the data from new WoW Forever quest data, but a check failed, so nothing was released.\n\nLast lines of the log:\n```\n%s\n```\n\nRun `sh tools/watch/regenerate.sh`, fix what the audit or cross-check reports (tools/sources/UPDATE.md), release, and close this issue.' "$(tail -40 "$RUNNER_TEMP/regen.log")")
             gh api repos/${{ github.repository }}/labels -f name=needs-claude -f color=d4b46a >/dev/null 2>&1 || true
             gh api repos/${{ github.repository }}/issues -f title="$title" -f body="$body" -f "labels[]=needs-claude" >/dev/null
+          # the patch's own tables (new raids, encounters, loading screens, icons): export them now, not tomorrow
+          gh workflow run fetch-wago.yml --ref main || true
           fi
           # keep the old tree in watch.json so the next run tries again only after QuestieDB changes again
           python3 - <<'PY'
@@ -105,6 +107,12 @@ jobs:
           release=false; notes=""
           if [ "${{ steps.regen.outcome }}" = "success" ] && ! git diff --quiet -- $gen; then
             release=true; notes="- Quest, gear, map and profession data updated from WoW Forever's latest game data."
+          fi
+          # the card packs: new bosses, loot, rares, holiday cards, models, icons and pictures from the same data
+          cards="ArcadeCards.lua ArcadeGear.lua ArcadeDungeons.lua ArcadeField.lua ArcadeRaids.lua ArcadeHolidays.lua ArcadeFirst.lua ArcadeArtFix.lua"
+          if [ "${{ steps.regen.outcome }}" = "success" ] && ! git diff --quiet -- $cards; then
+            release=true; notes="$notes
+          - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures)."
           fi
           if [ "${{ steps.community.outcome }}" = "success" ] && ! git diff --quiet -- CommunityQuests.lua; then
             release=true; notes="$notes

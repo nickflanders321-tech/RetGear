@@ -60,7 +60,8 @@ for kind, name, ref in cards:
         if near: icons[ref] = max(near)[1]; guessed.append(name)
 
 # loading screens for the dungeon and raid place cards (a screen several maps share isn't any one place's)
-ALIAS = {"Stormwind Stockade": "The Stockade", "Deadmines": "The Deadmines", "Sunken Temple": "The Temple of Atal'Hakkar"}
+ALIAS = {"Stormwind Stockade": "The Stockade", "Deadmines": "The Deadmines", "Sunken Temple": "The Temple of Atal'Hakkar",
+         "Barrow Deeps": "The Barrow Deeps", "The Hyjal Summit": "Hyjal Summit"}
 screens = {r["ID"]: r for r in tab("LoadingScreens")}
 use = {}
 maps = [r for r in tab("Map") if r["InstanceType"] in ("1", "2")]

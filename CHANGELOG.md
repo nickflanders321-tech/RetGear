@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Cards keep themselves up to date.**
+  - New loot, bosses, encounters, dungeon pictures and item icons from WoW Forever's game files are now picked up every day (was once a week), and straight away when a new game patch comes out. When anything for the cards changes, Waypath+ rebuilds the packs and releases an update by itself. So the raid loot, the raid bosses' encounters and The Shaper's Terrace's cards arrive on their own once the game data has them.
+  - In game, a WoW Forever creature card still waiting for its 3D model asks for it a few seconds after you see that creature (it used to wait for your next login).
 - **Cards: art check and fixes.** A full scan of all 2,306 cards against the game client's own tables:
   - **62 WoW Forever item cards** (loot from The Drowned City, Ruins of Lordaeron, City of Dalaran, Blackmaw Hold, Krol'dok Stronghold, Alcaz Prison and Excavation Site: Wetlands) could show a question mark: their icon only lives on the item's appearance. They now show their real icon.
   - **Glaive of the Defender** isn't in this game client at all; its card now shows a polearm icon from the game instead of a question mark.

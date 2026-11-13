@@ -81,7 +81,29 @@ local function npcOf(unit)
   if kind ~= "Creature" and kind ~= "Vehicle" then return nil end
   return tonumber(id)
 end
-local function look(unit) local id = npcOf(unit); if id and byCreature[id] then discover(byCreature[id]) end end
+-- a creature card still waiting for its model: once the game has seen the creature it can say which model it is, so
+-- ask again a few seconds later (at most every two minutes) instead of waiting for the next login
+local modelCids, lastAsk = nil, -999
+local function wantModel(id)
+  if not modelCids then
+    modelCids = {}
+    for _, cid in pairs(RG.ARCADE_DUNGEON_CREATURE or {}) do modelCids[cid] = true end
+  end
+  if not modelCids[id] then return end
+  local a = store()
+  local nd = a and a.npcDisp
+  if nd and nd[id] then return end
+  local t = GetTime and GetTime() or 0
+  if t - lastAsk < 120 or not (C_Timer and C_Timer.After and RG.ArcadeResolveCreatures) then return end
+  lastAsk = t
+  C_Timer.After(3, function() pcall(RG.ArcadeResolveCreatures) end)
+end
+local function look(unit)
+  local id = npcOf(unit)
+  if not id then return end
+  if byCreature[id] then discover(byCreature[id]) end
+  wantModel(id)
+end
 local function looted()
   if not (GetNumLootItems and GetLootSlotLink) then return end
   for i = 1, (safe(GetNumLootItems) or 0) do
