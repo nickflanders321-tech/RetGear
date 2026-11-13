@@ -88,7 +88,7 @@ local MASTER_GOAL = 0.75
 
 local CARDS = {}
 for i, d in ipairs(RG.ARCADE_DATA or {}) do
-  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6] }
+  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6], field = d[7] }
   local my = d[3] == 7 and RG.ARCADE_MYTHIC and RG.ARCADE_MYTHIC[d[2]]
   if my then CARDS[i].mythic = my; if my.icon then CARDS[i].icon = "Interface\\Icons\\" .. my.icon end end
 end
@@ -368,6 +368,12 @@ local function getSets()
   end
   -- WoW Forever dungeons the game data has no bosses or loot for yet: shown, empty, as coming soon (no rewards)
   for _, dn in ipairs(RG.ARCADE_DUNGEONS_SOON or {}) do duns[#duns + 1] = { name = dn, cards = {}, dungeon = true, soon = true, reward = 0 } end
+  -- the Field Guide: a page per zone of its rares, then the world bosses (ArcadeField.lua)
+  for _, p in ipairs(RG.ARCADE_FIELD_PAGES or {}) do
+    local cs = {}
+    for _, n in ipairs(p[3]) do if byKey[n] then cs[#cs + 1] = byKey[n] end end
+    if #cs >= 1 then duns[#duns + 1] = { name = p[1], zone = p[2], cards = cs, field = true, reward = math.min(100, 10 + 3 * #cs) } end
+  end
   for i = #duns, 1, -1 do table.insert(out, 1, duns[i]) end
   setCache, setCount = out, #CARDS
   return out
@@ -391,6 +397,7 @@ function RG.ArcadeStageReward(s, stage)
   local coins = stage == 1 and s.reward or (stage == 2 and math.floor(s.reward * 1.5) or s.reward * 3)
   local packs = stage == 2 and { jumbo = 1 } or (stage == 3 and { super = 1 } or nil)
   local dpk = (stage == 1 and s.dungeon) and 2 or nil
+  if s.field and stage == 1 then packs = { jumbo = 1 } end   -- (a Field Guide page: its Explorer badge and a jumbo pack)
   return coins, packs, dpk
 end
 function RG.ArcadeStageText(s, stage)
@@ -399,6 +406,7 @@ function RG.ArcadeStageText(s, stage)
   if packs and packs.jumbo then t = t .. ", a jumbo pack" end
   if packs and packs.super then t = t .. ", a super jumbo pack" end
   if dpk then t = t .. ", " .. dpk .. " " .. s.name:gsub("^The ", "") .. " packs" end
+  if s.field and stage == 1 then t = t .. " and an Explorer badge" end
   return t
 end
 -- pay out every finished set once; returns the names
@@ -777,7 +785,7 @@ end
 local CRAFT_BASE = { 40, 80, 160, 320, 640 }
 local CRAFT_FINISH = { 1, 2, 5, 12 }
 function RG.ArcadeCraftCost(c, f)
-  if not c or c.kind == 4 or (c.tier or 6) > 5 then return nil end
+  if not c or c.kind == 4 or c.field or (c.tier or 6) > 5 then return nil end   -- (Field Guide cards come only from the world)
   return (CRAFT_BASE[c.tier] or 640) * (CRAFT_FINISH[f or 1] or 1)
 end
 function RG.ArcadeCraft(c, f)
@@ -924,7 +932,7 @@ RG.ArcadeTrade = trade
 local function countOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) or 0 end
 local function extraOf(a, c, f) return countOf(a, c, f) >= 2 end
 local function ownsOf(a, c, f) return countOf(a, c, f) >= 1 end
-local function tradable(c) return c and c.kind ~= 4 and c.tier ~= 7 end   -- (Raiders and Mythics stay with whoever opened them)
+local function tradable(c) return c and c.kind ~= 4 and c.tier ~= 7 and not c.field end   -- (Raiders, Mythics and Field Guide cards stay with whoever earned them)
 local function sendAddon(msg, channel, target)
   if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, target) end
 end
@@ -963,6 +971,14 @@ function RG.ArcadeApplyTrade(giveKey, giveF, getKey, getF)
   if not (gc and tc and tradable(gc) and tradable(tc) and FINISH[giveF] and FINISH[getF]) then return false end
   if not ownsOf(a, gc, giveF) then return false end
   addCard(a, giveKey, giveF, -1); addCard(a, getKey, getF, 1)
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  return true
+end
+-- a card earned in the world (the Field Guide): one copy in that print
+function RG.ArcadeGiveCard(key, f)
+  local a = store(); local c = byKey[key]
+  if not (a and c and FINISH[f]) then return false end
+  addCard(a, key, f, 1)
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
   return true
 end
@@ -1643,6 +1659,7 @@ end
 local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
   anim[w] = nil
+  if RG.ArcadeCardExtra then RG.ArcadeCardExtra(w, nil) end
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
@@ -1786,6 +1803,7 @@ local function paint(w, card, finish, copies)
   w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
   if a and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then w.pin:Show() end end end
   if fx.foil > 0 or fx.aura > 0 or fx.spin then anim[w] = cardAnim end
+  if RG.ArcadeCardExtra then RG.ArcadeCardExtra(w, card, finish) end   -- (Field Guide stamps)
 end
 
 -- ---------------------------------------------------------------------------
@@ -2977,6 +2995,7 @@ local function build()
   frame.albNext = gbtn(frame, ">", 30, 24, function() albumStep(1) end); frame.albNext:SetPoint("LEFT", frame.albPrev, "RIGHT", 350, 0)
   frame.albOpen = gbtn(frame, "Open pack", 210, 24, function()
     local dn = view.album
+    if RG.ArcadeFieldClick and RG.ArcadeFieldClick(dn) then return end   -- (a Field Guide page: show the next one on the map)
     if not (dn and RG.ArcadeDunPools and RG.ArcadeDunPools[dn]) then return end
     if frame.buyNow then frame.buyNow("dungeon", dn) end
   end)
@@ -2990,6 +3009,7 @@ local function build()
   frame.tradeSwitch:SetPoint("TOPRIGHT", -34, -160)
   frame.albOpen:HookScript("OnEnter", function(self)
     local dn = view.album
+    if RG.ArcadeFieldClick and RG.ArcadeFieldClick(dn) then return end   -- (a Field Guide page: show the next one on the map)
     if not (dn and RG.ArcadeDunPools and RG.ArcadeDunPools[dn]) then return end
     local have, cleared = RG.ArcadeDungeonPacks(dn)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
@@ -3029,7 +3049,8 @@ local function build()
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
       GameTooltip:AddLine(cd.name, 1, 0.93, 0.74)
       GameTooltip:AddLine("Not in your collection yet", 0.8, 0.8, 0.8)
-      if cd.dun then GameTooltip:AddLine("From " .. cd.dun .. " packs: clear it to earn them", 0.55, 0.8, 1, true)
+      if RG.ArcadeFieldTip and RG.ArcadeFieldTip(cd, view.album) then -- (a Field Guide card: where it lives, and whether you've seen it)
+      elseif cd.dun then GameTooltip:AddLine("From " .. cd.dun .. " packs: clear it to earn them", 0.55, 0.8, 1, true)
       elseif cd.tier == 7 then GameTooltip:AddLine("A Mythic: any pack can hold one", 1, 0.9, 0.55, true)
       else GameTooltip:AddLine("From any pack" .. ((RG.ARCADE_DUNGEON_OF and RG.ARCADE_DUNGEON_OF[cd.name]) and (" or a " .. RG.ARCADE_DUNGEON_OF[cd.name] .. " pack") or ""), 0.55, 0.8, 1, true) end
       GameTooltip:AddLine("Click to see it (and craft it from extras)", 0.6, 0.6, 0.6)
@@ -3307,6 +3328,7 @@ function RG.ArcadeRefresh(keepMsg)
           cell.albName:SetText(""); cell.albName:SetTextColor(tc[1] * 0.75, tc[2] * 0.75, tc[3] * 0.75)   -- (the faint card shows its name)
           local kind = c.kind == 1 and "Item" or (c.kind == 3 and "Place" or (c.kind == 2 and ((c.text or ""):find("[Bb]oss") and "Boss" or ((c.text or ""):find("^Dungeon elite") and "Elite" or "Creature")) or ""))
           cell.albKind:SetText("MISSING\n" .. kind:upper()); cell.albKind:SetTextColor(1, 0.93, 0.74)
+          if st.field and RG.ArcadeFieldLabel then local t, col = RG.ArcadeFieldLabel(c); cell.albKind:SetText(t); cell.albKind:SetTextColor(col[1], col[2], col[3]) end
           cell.albTag:Show(); cell.albKind:Show()
         end
       end
@@ -3326,7 +3348,9 @@ function RG.ArcadeRefresh(keepMsg)
         parts[#parts + 1] = hex .. sg[1] .. "|r " .. (paid >= k and "|cff7be08adone|r" or (have .. "/" .. n))
       end
       local nextStage = RG.ARCADE_STAGES[paid + 1]
-      if st.soon then
+      if st.field and RG.ArcadeFieldAlbum then
+        RG.ArcadeFieldAlbum(st, frame, parts, nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or nil)
+      elseif st.soon then
         frame.albTitle:SetText(st.name .. "  |cffa89bc9·  coming soon|r")
         frame.sub:SetText("|cffa89bc9This dungeon's cards arrive once WoW Forever's game data has its bosses and loot.\nWaypath+ adds them by itself in an update: nothing to do but wait.|r")
       else
@@ -3339,7 +3363,7 @@ function RG.ArcadeRefresh(keepMsg)
         elseif cleared then frame.albOpen:SetText("Buy a pack: " .. PACKS.dungeon.price .. " coins"); frame.albOpen:SetEnabled((a.coins or 0) >= PACKS.dungeon.price)
         else frame.albOpen:SetText("Clear it to earn its packs"); frame.albOpen:SetEnabled(false) end
         frame.albOpen:Show()
-      else frame.albOpen:Hide() end
+      elseif not st.field then frame.albOpen:Hide() end
     end
   end
 
@@ -3522,6 +3546,13 @@ RG.ArcadeUI = { scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale 
 
 RG.ArcadePackPrice = PACK_PRICE
 RG.ArcadePacks = PACKS
+-- open the card window on one set's Album page (a Field Guide toast's "See it" button)
+function RG.ArcadeOpenAlbum(name)
+  RG.ShowArcade()
+  view.album = name; view.albumPage = 1; view.mode = "album"
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+end
+function RG.ArcadeSound(role) pcall(playSound, nil, 1, role) end
 -- the Cards tab opens a pack straight away
 function RG.ArcadeBuyNow(many)
   RG.ShowArcade()

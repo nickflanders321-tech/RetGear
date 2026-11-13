@@ -47,6 +47,8 @@ python3 tools/arcade/gear.py "$T/classic.sql" .
 # dungeon packs: each levelling dungeon's own cards (WoW Forever's item names and qualities when the client tables are there)
 WG=""; [ -s "$T/wago/ItemSparse.csv.gz" ] && WG="--wago $T/wago"
 python3 tools/arcade/dungeons.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" . $WG
+# the Field Guide: every rare out in the world, by zone, and the world bosses
+python3 tools/arcade/field.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" "$T/npcs.tsv" .
 # players' /wp share reports (GitHub issues labelled "quests"): quests the published data doesn't have yet
 python3 tools/community/import.py "${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}" Objectives.lua || true
 # quest tags and notes from Polestar's forever-db (CC BY 4.0 layer); a failed download keeps the last QuestNotes.lua

@@ -61,7 +61,8 @@ local function summary()
   end
   local spares = mySparesAndMissing()
   local _, sig = tradeList()
-  return table.concat({ sig, own, total, g, s, b, n, #spares }, "|")
+  local badges = RG.ArcadeExplorerBadges and RG.ArcadeExplorerBadges() or 0
+  return table.concat({ sig, own, total, g, s, b, n, #spares, badges }, "|")
 end
 
 -- long lists go out in pieces
@@ -186,8 +187,8 @@ handlers.Q = function(sender)
   local s = summary(); if s then send("S|" .. s, "WHISPER", sender) end
 end
 handlers.S = function(sender, rest)
-  local sig, own, total, g, s, b, n, sp = strsplit("|", rest)
-  S.peers[sender] = { sig = sig, own = tonumber(own) or 0, total = tonumber(total) or 0, g = tonumber(g) or 0, s = tonumber(s) or 0, b = tonumber(b) or 0, n = tonumber(n) or 0, spares = tonumber(sp) or 0, t = now() }
+  local sig, own, total, g, s, b, n, sp, ex = strsplit("|", rest)
+  S.peers[sender] = { sig = sig, own = tonumber(own) or 0, total = tonumber(total) or 0, g = tonumber(g) or 0, s = tonumber(s) or 0, b = tonumber(b) or 0, n = tonumber(n) or 0, spares = tonumber(sp) or 0, badges = tonumber(ex) or 0, t = now() }
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
 end
 -- someone's spares came in: answer with the ones you want and your own spares
@@ -303,7 +304,7 @@ function RG.ArcadeSocialView(ctx)
   if sel then
     local p, m = S.peers[sel], S.matches[sel]
     ctx.pgHead(1, y, short(sel) .. "'s album", "|cff9a96b0click to go back|r")
-    rows[#rows + 1] = { left = string.format("%d of %d cards   ·   %s%d gold|r  %s%d silver|r  %s%d bronze|r sets", p.own, p.total, GOLD, p.g, SIL, p.s, BRZ, p.b),
+    rows[#rows + 1] = { left = string.format("%d of %d cards   ·   %s%d gold|r  %s%d silver|r  %s%d bronze|r sets   ·   %d Explorer badges", p.own, p.total, GOLD, p.g, SIL, p.s, BRZ, p.b, p.badges or 0),
       right = "Back", act = function() view.socialSel = nil; RG.ArcadeRefresh(true) end, frac = p.total > 0 and p.own / p.total or 0 }
     if not m then
       rows[#rows + 1] = { left = "Find swaps with " .. short(sel), right = "Compare", act = function()
@@ -328,7 +329,7 @@ function RG.ArcadeSocialView(ctx)
     for _, name in ipairs(names) do
       if #rows >= 10 then break end
       local p = S.peers[name]
-      rows[#rows + 1] = { left = short(name) .. "   |cff9a96b0" .. p.own .. " / " .. p.total .. " cards   ·   " .. p.g .. " gold sets   ·   " .. p.spares .. " spares|r",
+      rows[#rows + 1] = { left = short(name) .. "   |cff9a96b0" .. p.own .. " / " .. p.total .. " cards   ·   " .. p.g .. " gold sets   ·   " .. p.spares .. " spares" .. ((p.badges or 0) > 0 and ("   ·   |cffffd24a★|r " .. p.badges .. " explorer") or "") .. "|r",
         right = "Open", frac = p.total > 0 and p.own / p.total or 0, act = function() view.socialSel = name; RG.ArcadeRefresh(true) end }
     end
     if #names == 0 then rows[#rows + 1] = { left = "|cff9a96b0Nobody yet. Guildmates, group members and online friends with Waypath+ answer within a few seconds.|r", right = "" } end
