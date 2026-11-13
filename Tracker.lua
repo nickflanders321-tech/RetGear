@@ -584,10 +584,12 @@ local function item(n, y, text, opts)
   -- the same line as last refresh (most lines, most of the time): keep its text and layout, only place it. Setting text
   -- and measuring it is the costly part of a tracker refresh, and this skips it.
   local sig = tostring(text) .. "\1" .. tostring(opts.right) .. "\1" .. indent .. "\1" .. W .. "\1" .. fontSize(13) .. "\1" ..
-    (opts.single and "s" or "") .. tostring(opts.box) .. (RG.trInterBad and "a" or "") .. (RG.Opt("trackerInter") and "i" or "")
+    (opts.single and "s" or "") .. tostring(opts.box) .. (RG.trInterBad and "a" or "") .. (RG.Opt("trackerInter") and "i" or "") ..
+    "\1" .. tostring(opts.progress and math.floor(opts.progress * 40)) .. (RG.Opt("trackerRoomy") and "r" or "")
+  local spacing = RG.Opt("trackerRoomy") and 8 or 4
   if b._sig == sig and b._h then
     b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:Show()
-    return y + b._h + 4
+    return y + b._h + spacing + (b._prog and 2 or 0)
   end
   tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
@@ -620,9 +622,21 @@ local function item(n, y, text, opts)
   else b.box:Hide(); b.check:Hide() end
   local rowH = fontSize(13) + 3
   local h = opts.single and math.max(16, rowH) or (multi and math.max(16, (b.text:GetStringHeight() or 14) + 2) or math.max(16, rows * rowH))
+  -- a quest's progress: a thin bar under the line (gold while under way, green when done)
+  if opts.progress then
+    if not rawget(b, "pbg") then
+      b.pbg = b:CreateTexture(nil, "BACKGROUND"); b.pbg:SetHeight(2); b.pbg:SetColorTexture(1, 1, 1, 0.08)
+      b.pbar = b:CreateTexture(nil, "BORDER"); b.pbar:SetHeight(2)
+    end
+    local bw = math.max(20, avail - 4)
+    b.pbg:ClearAllPoints(); b.pbg:SetPoint("BOTTOMLEFT", indent, -2); b.pbg:SetWidth(bw)
+    b.pbar:ClearAllPoints(); b.pbar:SetPoint("BOTTOMLEFT", indent, -2); b.pbar:SetWidth(math.max(1, bw * opts.progress))
+    if opts.progress >= 1 then b.pbar:SetColorTexture(0.35, 0.85, 0.45, 0.9) else b.pbar:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.8) end
+    b.pbg:Show(); b.pbar:Show()
+  elseif rawget(b, "pbg") then b.pbg:Hide(); b.pbar:Hide() end
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(h); b:Show()
-  b._sig, b._h = sig, h
-  return y + h + 4
+  b._sig, b._h, b._prog = sig, h, opts.progress ~= nil
+  return y + h + spacing + (opts.progress and 2 or 0)
 end
 
 -- Right-click on a tracker line: point the arrow at it (turning the arrow on if it was off).
@@ -874,6 +888,15 @@ function RG.RefreshTracker()
           if not zf then
             -- one quest line (level, name, progress, distance)
             local function questLine(q)
+                local frac
+                if not q.complete and q.prog then
+                  local sum, k = 0, 0
+                  for a, b in tostring(q.prog):gmatch("(%d+)%s*/%s*(%d+)") do
+                    a, b = tonumber(a), tonumber(b)
+                    if b and b > 0 then sum = sum + math.min(1, a / b); k = k + 1 end
+                  end
+                  if k > 0 then frac = sum / k end
+                end
                 local status
                 if q.complete then status = GREEN .. "turn in|r"
                 elseif q.failed then status = "|cffff3333failed|r"
@@ -882,7 +905,7 @@ function RG.RefreshTracker()
                 n = n + 1
                 local qn = RG.QuestNote(q.id, q.group)
                 y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. upFront(q.id) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
-                  { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp,
+                  { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp, progress = frac,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
                     onClick = function()
                       if q.complete and q.wp and not (IsShiftKeyDown and IsShiftKeyDown()) then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end
@@ -917,7 +940,7 @@ function RG.RefreshTracker()
                 for _, q in ipairs(readyL) do shownQ = shownQ + 1; questLine(q) end
               end
               for k, q in ipairs(active) do
-                if k > 15 then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
+                if k > (compact and 8 or 15) then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
               end
             else
               for _, q in ipairs(g.list) do

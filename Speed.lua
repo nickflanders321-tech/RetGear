@@ -16,6 +16,7 @@ for _, o in ipairs({
   { key = "smartStepOrder", label = "Within a zone, do the step with quests I already have, or the one I'm standing at, first (otherwise the guide's order)", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
   { key = "compactTracker", label = "Keep the tracker short (fewer lines: quests near you first, a one-line fishing readout)", default = true },
+  { key = "trackerRoomy", label = "Roomier tracker (more space between lines)", default = false },
   { key = "mapClicks",     label = "Let map clicks drive the arrow (quests picked on the map, minimap Ctrl-click, Questie and TomTom pins)", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
