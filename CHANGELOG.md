@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Cards: art check and fixes.** A full scan of all 2,306 cards against the game client's own tables:
+  - **62 WoW Forever item cards** (loot from The Drowned City, Ruins of Lordaeron, City of Dalaran, Blackmaw Hold, Krol'dok Stronghold, Alcaz Prison and Excavation Site: Wetlands) could show a question mark: their icon only lives on the item's appearance. They now show their real icon.
+  - **Glaive of the Defender** isn't in this game client at all; its card now shows a polearm icon from the game instead of a question mark.
+  - **20 dungeon cards** (the dungeon itself, in each dungeon pack) had only a drawn landscape; they now show the dungeon's own loading screen from your game files, including WoW Forever's new dungeons.
+  - Every creature card's model number exists in the game client. 113 WoW Forever creatures have no model number in any data yet: their cards show a drawn landscape until you've seen the creature in game, then their real 3D model (as before).
+  - **/wp cardcheck** now knows about these: it no longer lists WoW Forever creatures and dungeon pictures as problems, and says how many creatures are waiting to be seen.
 - **Cards: a Shop tab, and a tidier Album.**
   - **The Shop** shows every pack in one place: the regular packs, then each dungeon's, raid's and holiday's pack, with what's inside, its odds (hover) and what it costs. Packs you've earned and haven't opened come first, with a count on the pack, and the tab itself says how many are waiting ("SHOP 4"). Open or buy straight from a tile, or click the tile to see its cards in the Album. Chips at the top pick one kind: To open, Regular, Dungeons, Raids, Holidays. Locked packs say how to unlock them (clear the dungeon, defeat a raid boss, wait for the holiday).
   - **Sets are sorted into sections:** Dungeons, Raids, Holidays, Field Guide and Collection. The Sets tab shows one section at a time (chips at the top), each set marked with a coloured tag, and the Album's < > now step through the section of the page you're on instead of all 80-odd sets.

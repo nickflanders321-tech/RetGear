@@ -56,6 +56,8 @@ $LUA tools/arcade/holiday_dump.lua "$C/foreverQuestDB.lua" "$T/holiday.tsv"
 python3 tools/arcade/holidays.py "$T/classic.sql" "$T/forever_gear.json" "$T/holiday.tsv" "$T/wago" .
 # First Edition: the day each WoW Forever original card arrived (kept in tools/arcade/firstseen.json)
 python3 tools/arcade/firstseen.py .
+# card art the game can't find by itself: item icons on appearances, dungeons' loading screens
+[ -s "$T/wago/ItemAppearance.csv.gz" ] && python3 tools/arcade/artfix.py "$T/classic.sql" "$T/wago" .
 # players' /wp share reports (GitHub issues labelled "quests"): quests the published data doesn't have yet
 python3 tools/community/import.py "${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}" Objectives.lua || true
 # quest tags and notes from Polestar's forever-db (CC BY 4.0 layer); a failed download keeps the last QuestNotes.lua

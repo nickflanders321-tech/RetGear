@@ -1030,6 +1030,9 @@ end
 local function iconFor(c)
   if c.icon then return c.icon end
   if c.kind == 1 then
+    -- (ArcadeArtFix.lua: an icon the game keeps on the item's appearance, or a like item's for one this client lacks)
+    local fix = RG.ARCADE_ITEM_ICON and RG.ARCADE_ITEM_ICON[c.ref]
+    if fix then return fix end
     local ic
     if C_Item and C_Item.GetItemIconByID then ic = C_Item.GetItemIconByID(c.ref) end
     if not ic and GetItemIcon then ic = GetItemIcon(c.ref) end
@@ -1450,7 +1453,7 @@ local function hasArt(c)
     local nd = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.npcDisp
     return (cid and nd and nd[cid] == -1) and true or false
   end
-  if c.kind == 3 then return RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name] and true or false end
+  if c.kind == 3 then return ((RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]) or (RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[c.name])) and true or false end
   return false
 end
 -- how close the camera sits: upright creatures are framed head and chest, long low ones whole, so each is centred
@@ -1512,11 +1515,18 @@ end
 -- a place card shows its own painting (Media/Arcade/PlacesN.tga, drawn by tools/arcade/art_places.py) in a gold frame
 local function placeArt(w, c, full)
   local e = RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]
-  if not e then return false end
+  local scr = not e and RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[c.name]
+  if not e and not scr then return false end
   local u = w.u
-  local col, row = e[2] % 8, math.floor(e[2] / 8)
-  w.art:SetTexture(MEDIA .. "Places" .. e[1])
-  w.art:SetTexCoord(col * 120 / 1024, (col + 1) * 120 / 1024, row * 84 / 1024, (row + 1) * 84 / 1024)
+  if e then
+    local col, row = e[2] % 8, math.floor(e[2] / 8)
+    w.art:SetTexture(MEDIA .. "Places" .. e[1])
+    w.art:SetTexCoord(col * 120 / 1024, (col + 1) * 120 / 1024, row * 84 / 1024, (row + 1) * 84 / 1024)
+  else
+    -- a dungeon or raid: its own loading screen from the game's files, cut to the painting's shape
+    w.art:SetTexture(scr[1])
+    if scr[2] == 1 then w.art:SetTexCoord(0.125, 0.875, 0, 1) else w.art:SetTexCoord(0, 1, 0.035, 0.965) end
+  end
   local pw = (full and 248 or 186) * u; local ph = pw * 84 / 120   -- (Full art: the painting runs to the card's edge)
   w.art:ClearAllPoints(); w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(pw, ph)
   w.iconBack:ClearAllPoints(); w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize(pw + 7 * u, ph + 7 * u)
@@ -3614,7 +3624,7 @@ local function cardCheck()
   if not ok or not m then RG.Print("This game cannot show models, so there is nothing to check.") return end
   m:SetSize(64, 64); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -200, 200); m:Show()
   checking = true
-  local list, bad, i, n = {}, {}, 0, 0
+  local list, bad, i, n, pending = {}, {}, 0, 0, 0
   for _, c in ipairs(CARDS) do if c.kind == 1 or c.kind == 2 or c.kind == 3 then list[#list + 1] = c end end
   RG.Print("Checking " .. #list .. " cards... about a minute.")
   local step
@@ -3622,21 +3632,26 @@ local function cardCheck()
     n = n + 1
     if c.kind == 2 then
       local id = RG.ARCADE_NPC and RG.ARCADE_NPC[c.name]
-      if not id then bad[#bad + 1] = "NPC with no model id: " .. c.name
+      local cid = RG.ARCADE_DUNGEON_CREATURE and RG.ARCADE_DUNGEON_CREATURE[c.name]
+      local nd = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.npcDisp
+      if not id and cid then
+        if not (nd and nd[cid]) then pending = pending + 1 end   -- (a WoW Forever creature: its model arrives once the game has seen it)
+      elseif not id then bad[#bad + 1] = "NPC with no model (drawn scenery): " .. c.name
       else
         local fid = m.GetModelFileID and m:GetModelFileID()
         if not fid or fid == 0 then bad[#bad + 1] = "NPC model will not load: " .. c.name .. " (display " .. id .. ")" end
       end
     elseif c.kind == 1 then
-      local ic = C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(c.ref) or GetItemIcon and GetItemIcon(c.ref)
-      if not ic then bad[#bad + 1] = "Item with no icon: " .. c.name .. " (" .. tostring(c.ref) .. ")" end
+      local ic = (RG.ARCADE_ITEM_ICON and RG.ARCADE_ITEM_ICON[c.ref]) or (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(c.ref)) or (GetItemIcon and GetItemIcon(c.ref))
+      if not ic or ic == 134400 then bad[#bad + 1] = "Item with no icon: " .. c.name .. " (" .. tostring(c.ref) .. ")" end
     elseif c.kind == 3 then
-      if not (RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]) then bad[#bad + 1] = "Place with no painting: " .. c.name end
+      if not ((RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]) or (RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[c.name])) then bad[#bad + 1] = "Place with no painting (drawn scenery): " .. c.name end
     end
   end
   local function finish()
     checking = false; m:Hide()
     local out = { "Waypath+ card check: " .. n .. " cards looked at, " .. #bad .. " problem(s)", "" }
+    if pending > 0 then out[#out + 1] = pending .. " WoW Forever creature(s) show their model once you've seen them in game (until then, drawn scenery)."; out[#out + 1] = "" end
     for _, l in ipairs(bad) do out[#out + 1] = l end
     if #bad == 0 then out[#out + 1] = "Every picture loads." end
     RG.ShowErrors(table.concat(out, "\n"), "Waypath+ card check  ·  Ctrl+A, Ctrl+C to copy")

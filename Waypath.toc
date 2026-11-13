@@ -95,6 +95,7 @@ ArcadeField.lua
 ArcadeRaids.lua
 ArcadeHolidays.lua
 ArcadeFirst.lua
+ArcadeArtFix.lua
 ArcadePlaces.lua
 ArcadeGear.lua
 ArcadeClasses.lua
