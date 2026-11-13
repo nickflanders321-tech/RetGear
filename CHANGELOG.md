@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## v1.38.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
 - **New fishing HUD.** One button in the middle with your fishing buttons around it, each with the game's own icon, a coloured edge for its state (green ready, orange the main action, red can't right now, grey not in your bags) and its count or time left printed on it.
   - **The middle button** casts Fishing, or puts your pole on when it isn't in your hands. Your Fishing skill shows under it, and a ring of light around it counts down your cast.

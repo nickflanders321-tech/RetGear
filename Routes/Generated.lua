@@ -8,6 +8,7 @@ RG.GEN_STEPS = {
     ["Zephras Isle|1"] = {
       { t = "At the starting grove (levels 1-3): Coming of Age, Falling With Style, The Anchors of Zephras, Elemental Unrest, Agitators, Harmony in Balance, Infestation Investigation, The Cirrusfly Queen. From Ailee Farheart, Myriaal Mistwake, Halaan Hawk-Eye and others.", q = { 92460, 92474, 94414, 92464, 92465, 92461, 92462, 92463 }, w = { 2521, 42.0, 23.5, "the starting grove" } },
       { t = "At the starting grove (level 4): Reading the Leylines, Harvesting Windstones. From Falorne Fallwind, Dalia the Collector.", q = { 92597, 93552 }, w = { 2521, 42.0, 23.5, "the starting grove" } },
+      { t = "At Valanaar (level 1): Eluvi'ana. From Ealaane Nimbuswalker.", q = { 97029 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
       { t = "At the starting grove (levels 4-5): Aetheen of the Gales, Return to Rorian, Al'Aketh Thugs, Aggressive Encroachment, Foul Matriarch, The Next Step. From Rorian the Dayseeker, Yala Windwatcher, Hanaa Nightwind and others.", q = { 92471, 92469, 92544, 92473, 92470, 92472 }, w = { 2521, 42.0, 23.5, "the starting grove" } },
       { t = "At Shen'dar Village (levels 6-7): The High Order, Welcome to Shen'dar Village, The Problem With Prideclaws, Restocking the Larders, A Magical Affront, Hippogryph Harassment, The Criminal Element, Pilfered Windstones. From Rathiril Sunlance, Constable Aonda, Indari Sunseam and others.", q = { 92596, 93461, 92515, 92553, 94413, 92516, 92517, 93319 }, w = { 2521, 45.7, 45.5, "Shen'dar Village" } },
       { t = "At Shen'dar Village (levels 7-8): A Little Beauty, Infiltrating the Cult, Falaath Village. From Taleen Shimmerthread, Constable Aonda, Sania Silverstream.", q = { 93951, 93036, 92529 }, w = { 2521, 45.7, 45.5, "Shen'dar Village" } },
@@ -30,7 +31,7 @@ RG.GEN_STEPS = {
       { t = "At Falaath Village (level 11): Unfortunate News. From Dead Cultist.", q = { 92644 }, w = { 2521, 46.9, 56.2, "Falaath Village" } },
       { t = "Strange Hermit (level 13): The Strange Hermit, The Forest's Bounty, Free the Hollows.", q = { 93159, 93160, 93172 }, w = { 2521, 54.0, 38.9, "Strange Hermit" } },
       { t = "At Valanaar (levels 11-12): The Cult's True Plans, Desperate Times, Prepare for Battle, Making Our Move. From Talaanis Shadowsong, Valennia Stormfist.", q = { 94568, 92640, 93065, 92947 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
-      { t = "Hyusaa Quickbreeze (level 12): The Inner Sanctum.", q = { 93958 }, w = { 2521, 63.2, 50.0, "Hyusaa Quickbreeze" } },
+      { t = "Hyusaa Quickbreeze (level 12): The Inner Sanctum.", q = { 93958 }, w = { 2521, 63.8, 50.5, "Hyusaa Quickbreeze" } },
       { t = "Valennia Stormfist (level 12): Confront Lorthuna.", q = { 93835 }, w = { 2521, 65.2, 50.4, "Valennia Stormfist" } },
       { t = "At Valanaar (levels 12-13): The Fate of Zephras, What Comes Next, The Magical City of Dalaran. From Elaadrin Evengale, Talaanis Shadowsong.", q = { 94369, 93089, 94946 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
     },
@@ -811,6 +812,7 @@ RG.GEN_STEPS = {
     ["Zephras Isle|1"] = {
       { t = "At the starting grove (levels 1-4): Coming of Age, Falling With Style, The Anchors of Zephras, Elemental Unrest, Agitators, The Gift of Skysight, Harmony in Balance, Infestation Investigation. From Ailee Farheart, Myriaal Mistwake, Halaan Hawk-Eye and others.", q = { 92460, 92474, 94414, 92464, 92465, 92598, 92461, 92462 }, w = { 2521, 42.0, 23.5, "the starting grove" } },
       { t = "At the starting grove (levels 3-4): The Cirrusfly Queen, Harvesting Windstones. From Elatrell Featherlight, Dalia the Collector.", q = { 92463, 93552 }, w = { 2521, 42.0, 23.5, "the starting grove" } },
+      { t = "At Valanaar (level 1): Eluvi'ana. From Ealaane Nimbuswalker.", q = { 97029 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
       { t = "At the starting grove (levels 4-5): Aetheen of the Gales, Return to Rorian, Al'Aketh Thugs, Aggressive Encroachment, Foul Matriarch, The Next Step. From Rorian the Dayseeker, Yala Windwatcher, Hanaa Nightwind and others.", q = { 92471, 92469, 92544, 92473, 92470, 92472 }, w = { 2521, 42.0, 23.5, "the starting grove" } },
       { t = "At Shen'dar Village (levels 6-7): Welcome to Shen'dar Village, The Windshapers, The Problem With Prideclaws, Restocking the Larders, Meddlesome Mages, Hippogryph Harassment, The Criminal Element, Pilfered Windstones. From Constable Aonda, Illaya Amberwind, Indari Sunseam and others.", q = { 92514, 92595, 92515, 92553, 94411, 92516, 92517, 93319 }, w = { 2521, 45.7, 45.5, "Shen'dar Village" } },
       { t = "At Shen'dar Village (levels 7-8): A Little Beauty, Infiltrating the Cult, Falaath Village. From Taleen Shimmerthread, Constable Aonda, Sania Silverstream.", q = { 93951, 93036, 92529 }, w = { 2521, 45.7, 45.5, "Shen'dar Village" } },
@@ -832,7 +834,7 @@ RG.GEN_STEPS = {
       { t = "At Valanaar (level 11): The High Elder's Request, The Turncoat. From Valennia Stormfist, Talaanis Shadowsong.", q = { 92881, 92643 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
       { t = "At Falaath Village (level 11): Unfortunate News. From Dead Cultist.", q = { 92644 }, w = { 2521, 46.9, 56.2, "Falaath Village" } },
       { t = "At Valanaar (levels 11-12): The Cult's True Plans, Desperate Times, Prepare for Battle, Making Our Move. From Talaanis Shadowsong, Valennia Stormfist.", q = { 94568, 92640, 93065, 92947 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
-      { t = "Hyusaa Quickbreeze (level 12): The Inner Sanctum.", q = { 93958 }, w = { 2521, 63.2, 50.0, "Hyusaa Quickbreeze" } },
+      { t = "Hyusaa Quickbreeze (level 12): The Inner Sanctum.", q = { 93958 }, w = { 2521, 63.8, 50.5, "Hyusaa Quickbreeze" } },
       { t = "Valennia Stormfist (level 12): Confront Lorthuna.", q = { 92646 }, w = { 2521, 65.2, 50.4, "Valennia Stormfist" } },
       { t = "At Valanaar (levels 12-13): The Fate of Zephras, What Comes Next, The Earthen Ring. From Ayessa Dawnsinger, Talaanis Shadowsong.", q = { 93836, 93090, 95349 }, w = { 2521, 66.1, 76.6, "Valanaar" } },
     },
