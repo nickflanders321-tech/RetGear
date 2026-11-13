@@ -710,7 +710,8 @@ local function renderGear()
       local nm = RG.ItemInfo(nextUp.g.id) or nextUp.g.name or ("item " .. nextUp.g.id)
       sub = sub .. GREY .. "  ·  next: |r" .. nm .. ((nextUp.g.zone and nextUp.g.zone ~= "") and (GREY .. " · " .. nextUp.g.zone .. "|r") or "")
     end
-    setItem(r, id, link, link or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
+    -- (the item's name in its quality colour, without the chat link's brackets, like every other list)
+    setItem(r, id, link, link and (link:gsub("|h%[(.-)%]|h", "|h%1|h")) or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
     local slotName = RG.SLOT_NAMES[slot]
     -- click: the best piece from each kind of source for this slot
     r.onClick = function() state.gearSlot = state.gearSlot ~= slot and slot or nil; RG.RefreshUI() end
@@ -1659,7 +1660,7 @@ local function renderAH()
         n = n + 1
         local name, link, quality = itemName(e.id)
         setItem(getRow(n), e.id, link or e.link, name .. (e.count > 1 and (GREY .. "  x" .. e.count .. "|r") or ""),
-          GREY .. "You keep |r" .. RG.Money(e.p.net) .. GREY .. " each after the AH cut  ·  vendor pays |r" .. RG.Money(e.p.vendor),
+          GREY .. "Keep |r" .. RG.Money(e.p.net) .. GREY .. " each after the AH cut  ·  vendor |r" .. RG.Money(e.p.vendor),
           GREEN .. "+" .. RG.Money(e.total) .. "|r", RG.PriceText(e.id, e.link) or "", "gold", quality)
       end
     end
@@ -2888,7 +2889,7 @@ local FOOTERS = {
   ah    = "Opening the AH refreshes old prices  ·  your own searches pause the scan  ·  /wp alert [item] 25",
   settings = "Settings are saved per character (prices and window positions are shared)",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
-  plan = "Click a stop for the arrow  ·  right-click skips it for 10 minutes  ·  /wp next does it from the keyboard  ·  /wp goto adds your own goal",
+  plan = "Click a stop for the arrow  ·  right-click skips it for 10 minutes  ·  /wp next  ·  /wp goto adds a goal",
   flights = "Click a flight path for the arrow  ·  fly there once to learn it  ·  /wp fp points at the nearest one you haven't learned",
   fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",

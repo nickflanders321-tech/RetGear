@@ -210,12 +210,13 @@ function RG.ArcadeFieldAlbum(st, frame, parts, nextText)
   end
   local paid = ((a and a.setStage) or {})[st.name] or 0
   local world = st.zone == "World bosses"
-  frame.albTitle:SetText("|cff9fd8a0FIELD GUIDE|r  " .. (st.zone or st.name) .. "  |cffa89bc9·  " .. slain .. " of " .. #st.cards .. (world and " witnessed" or " slain") .. "|r" .. (paid >= 1 and "  |cffffd24a★ Explorer|r" or ""))
+  frame.albTitle:SetText("|cff9fd8a0FIELD GUIDE|r  " .. (st.zone or st.name) .. "  |cffa89bc9·  " .. slain .. " of " .. #st.cards .. (world and " witnessed" or " slain") .. "|r" .. (paid >= 1 and "  |cffffd24aExplorer|r" or ""))
   frame.albNext:ClearAllPoints()
-  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
+  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 430) + 10, 0)
+  -- (two short lines: a longer one wraps into the tabs below it)
   frame.sub:SetText(#st.cards .. " cards   ·   " .. seen .. " sighted     " .. table.concat(parts, "     ") .. "\n|cffa89bc9" ..
-    (world and "Earned by being in the fight when one dies. " or "Earned by killing them: the new cards here are never in packs. ") .. (nextText or "Every stage finished: a gold page") .. "|r")
-  frame.albOpen:SetText(world and "Show a world boss on the map" or "Show the next rare on the map"); frame.albOpen:SetEnabled(true); frame.albOpen:Show()
+    (world and "Be in the fight when one dies" or "Kill them to earn them: never in packs") .. "|r")
+  frame.albOpen:SetText(world and "World boss on the map" or "Next rare on the map"); frame.albOpen:SetEnabled(true); frame.albOpen:Show()
 end
 
 -- the kill stamp, across the foot of the card's picture

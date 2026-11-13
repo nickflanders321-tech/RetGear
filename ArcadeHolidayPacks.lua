@@ -301,7 +301,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   end
   frame.albTitle:SetText("|cffff9fb0HOLIDAY|r  " .. st.name .. "  |cffa89bc9·  " .. when .. "|r")
   frame.albNext:ClearAllPoints()
-  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
+  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 430) + 10, 0)
   local have = select(1, RG.ArcadeDungeonPacks(st.name))
   if have <= 0 then
     frame.albOpen:SetText(d.holiday.key == "lunar" and "Visit the Elders to earn packs" or "Do its quests while it's on")

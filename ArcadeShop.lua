@@ -127,6 +127,9 @@ local function makeTile(parent, u)
   t.pack = CreateFrame("Frame", nil, t); t.pack:SetSize(58, 88); t.pack:SetPoint("LEFT", 12, 0)
   t.body = t.pack:CreateTexture(nil, "ARTWORK", nil, 0); t.body:SetAllPoints(); t.body:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
   t.trim = t.pack:CreateTexture(nil, "ARTWORK", nil, 1); t.trim:SetAllPoints(); t.trim:SetTexture(MEDIA .. "PackTrim"); t.trim:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
+  -- the pack's medallion shows its dungeon, raid or holiday: the place's own picture, cut round
+  t.emb = t.pack:CreateTexture(nil, "ARTWORK", nil, 2); t.emb:SetSize(27, 27); t.emb:SetPoint("CENTER", t.pack, "TOPLEFT", 29, -36.5)
+  pcall(t.emb.SetMask, t.emb, "Interface\\AddOns\\Waypath\\Media\\Disc")
   t.packName = u.fs(t.pack, "head", 7.5); t.packName:SetPoint("CENTER", 0, -4); t.packName:SetWidth(52); t.packName:SetJustifyH("CENTER")
   t.packName:SetTextColor(1, 0.96, 0.85); t.packName:SetShadowColor(0, 0, 0, 1); t.packName:SetShadowOffset(1, -1)
   t.badge = CreateFrame("Frame", nil, t, "BackdropTemplate"); t.badge:SetSize(24, 18); t.badge:SetPoint("TOPRIGHT", t.pack, "TOPRIGHT", 8, 6)
@@ -159,13 +162,38 @@ end
 local function paintTile(t, e)
   t.entry = e
   if e.art then
-    t.body:SetTexture(MEDIA .. "PackArt" .. e.art); t.body:SetVertexColor(1, 1, 1, 1); t.trim:Hide(); t.packName:SetText("")
+    t.body:SetTexture(MEDIA .. "PackArt" .. e.art); t.body:SetVertexColor(1, 1, 1, 1); t.trim:Hide(); t.packName:SetText(""); t.emb:Hide()
     local c = ({ { 0.62, 0.52, 1 }, { 1, 0.62, 0.28 }, { 0.3, 0.92, 0.82 } })[e.art]
     t.glow:SetVertexColor(c[1], c[2], c[3])
   else
     local c = e.col or COL.dungeon
     t.body:SetTexture(MEDIA .. "PackBody"); t.body:SetVertexColor(c[1], c[2], c[3], 1); t.trim:Show()
     t.packName:SetText("")   -- (the tint says which kind; the name is beside it)
+    -- the medallion: the place's painting or loading screen, else its top card's icon
+    local shown = false
+    local pl = RG.ARCADE_PLACE and RG.ARCADE_PLACE[e.title]
+    local scr = RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[e.title]
+    if pl then
+      local col, row = pl[2] % 8, math.floor(pl[2] / 8)
+      t.emb:SetTexture(MEDIA .. "Places" .. pl[1])
+      -- (the middle of the painting, square)
+      local x0, y0 = col * 120 / 1024, row * 84 / 1024
+      t.emb:SetTexCoord(x0 + 18 / 1024, x0 + 102 / 1024, y0, y0 + 84 / 1024); shown = true
+    elseif scr then
+      t.emb:SetTexture(scr[1])
+      if scr[2] == 1 then t.emb:SetTexCoord(0.3, 0.7, 0.14, 0.86) else t.emb:SetTexCoord(0.15, 0.85, 0.1, 0.9) end
+      shown = true
+    else
+      local u = U()
+      for _, st in ipairs(u.getSets()) do
+        if st.name == e.title and st.cards[1] then
+          local ic = u.iconFor(st.cards[1])
+          if ic then t.emb:SetTexture(ic); t.emb:SetTexCoord(0.08, 0.92, 0.08, 0.92); shown = true end
+          break
+        end
+      end
+    end
+    t.emb:SetShown(shown)
     t.glow:SetVertexColor(c[1], c[2], c[3])
   end
   t.badge:SetShown((e.count or 0) > 0); t.badgeText:SetText(tostring(e.count or 0))
@@ -182,7 +210,7 @@ local function chipRow(u, frame, list, onPick)
   local row = {}
   local x = 34
   for _, c in ipairs(list) do
-    local w = math.max(56, 24 + #c[2] * 7.5)
+    local w = math.max(60, 32 + #c[2] * 8.5)   -- (the chips use capitals: room for the widest letters)
     local b = u.gbtn(frame, c[2], w, 24, function() onPick(c[1]) end)
     b:SetPoint("TOPLEFT", x, -160); x = x + w + 6
     b.key = c[1]

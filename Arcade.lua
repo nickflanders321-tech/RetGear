@@ -2017,7 +2017,7 @@ local function summarize()
   local rows = {}
   if meta.many then
     local m = meta.many
-    rows[#rows + 1] = { "Best of the haul", GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g) }
+    rows[#rows + 1] = { "Best pull", GOLDHEX .. g.card.name .. "|r  (" .. FNAME[g.finish] .. ")" .. oddsText(g) }
     rows[#rows + 1] = { m.count .. " packs", m.total .. " cards   ·   " .. m.new .. " new" .. (m.newPrint > 0 and (", " .. m.newPrint .. " new prints") or "") .. "   ·   duplicates worth " .. m.value .. " coins" }
   else
     local new, extra, worth = 0, 0, 0
@@ -2779,7 +2779,15 @@ end
 -- Card detail view
 -- ---------------------------------------------------------------------------
 local function say(text)
-  if frame and frame:IsShown() and frame.msg then frame.msg:SetText(text or "") elseif RG.Print then RG.Print(text) end
+  if frame and frame:IsShown() and frame.msg then
+    frame.msg:SetText(text or "")
+    -- (a note clears itself after a while, so it doesn't follow you to other tabs)
+    RG.__sayToken = (RG.__sayToken or 0) + 1   -- (an RG field: this file has no room for another top-level local)
+    local mine = RG.__sayToken
+    if text and text ~= "" and C_Timer and C_Timer.After then
+      C_Timer.After(8, function() if RG.__sayToken == mine and frame and frame.msg then frame.msg:SetText("") end end)
+    end
+  elseif RG.Print then RG.Print(text) end
 end
 RG.ArcadeMsg = say
 
@@ -3014,7 +3022,7 @@ local function build()
     RG.ArcadeRefresh(true)
   end
   frame.albPrev = gbtn(frame, "<", 30, 24, function() albumStep(-1) end); frame.albPrev:SetPoint("TOPLEFT", 34, -160)
-  frame.albTitle = fs(frame, "head", 15); frame.albTitle:SetPoint("LEFT", frame.albPrev, "RIGHT", 10, 0); frame.albTitle:SetWidth(400); frame.albTitle:SetJustifyH("LEFT")
+  frame.albTitle = fs(frame, "head", 14); frame.albTitle:SetPoint("LEFT", frame.albPrev, "RIGHT", 10, 0); frame.albTitle:SetWidth(430); frame.albTitle:SetJustifyH("LEFT")
   frame.albTitle:SetTextColor(1, 0.933, 0.709); if frame.albTitle.SetWordWrap then frame.albTitle:SetWordWrap(false) end
   frame.albNext = gbtn(frame, ">", 30, 24, function() albumStep(1) end); frame.albNext:SetPoint("LEFT", frame.albPrev, "RIGHT", 350, 0)
   frame.albOpen = gbtn(frame, "Open pack", 210, 24, function()
@@ -3372,7 +3380,7 @@ function RG.ArcadeRefresh(keepMsg)
       local clearedHere = st.dungeon and not st.soon and select(2, RG.ArcadeDungeonPacks(st.name))
       frame.albTitle:SetText((RG.ArcadeSetTag and RG.ArcadeSetTag(st) or "") .. st.name .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
       frame.albNext:ClearAllPoints()
-      frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
+      frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 430) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)
       a.setStage = a.setStage or {}
       local paid = a.setStage[st.name] or ((a.setsDone or {})[st.name] and 1 or 0)
@@ -3440,7 +3448,7 @@ function RG.ArcadeRefresh(keepMsg)
         local sg = RG.ARCADE_STAGES[stage]
         local medal = paid > 0 and RG.ARCADE_STAGES[paid] or nil
         local function hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255)) end
-        local tag = RG.ArcadeSetTag and RG.ArcadeSetTag(s) or ""
+        local tag = ((not view.setSection or view.setSection == "all") and RG.ArcadeSetTag) and RG.ArcadeSetTag(s) or ""   -- (one section shown: no need to tag each row)
         b.left:SetText(tag .. (paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name:gsub("^Field Guide: ", "") .. "|r" .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
         b.right:SetText(s.soon and "|cffa89bc9coming soon|r" or paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
         b.fill:Show(); b.fillBg:Show()
@@ -3457,9 +3465,9 @@ function RG.ArcadeRefresh(keepMsg)
     local tw = (PGW - 2 * 16) / 3
     local streak = ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0)
     local lw = time and time() >= LAUNCH and time() < LAUNCH + 7 * 86400
-    pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", lw and "launch week: two a day, 5 saved at most" or "one new every day, 3 saved at most", { 0.5, 0.88, 0.6 })
-    pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "a jumbo with two rares and a holo", { 0.85, 0.6, 1 })
-    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day gives a reward pack", GOLDC)
+    pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", lw and "launch week: 2 a day, 5 saved" or "1 a day, up to 3 saved", { 0.5, 0.88, 0.6 })
+    pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "jumbo: 2 rares and a holo", { 0.85, 0.6, 1 })
+    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day: a reward pack", GOLDC)
     pgHead(1, 298, "Limits and guarantees")
     pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
     local dc = (a.day == today()) and (a.dayCoins or 0) or 0
@@ -3502,7 +3510,7 @@ function RG.ArcadeRefresh(keepMsg)
     elseif trade.out then status = { "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer.", GOLDC }
     elseif trade.pending then status = { "Answer sent. Waiting for " .. trade.pending.from .. ".", GOLDC } end
     if status then pgBox(2, y, 40, nil, status[1], status[2]); y = y + 54 end
-    local per = status and 6 or 8
+    local per = status and 7 or 9   -- (fills the page down to the arrows)
     local pages = math.max(1, math.ceil(#list / per))
     local pg = math.max(0, math.min(view.tradePage or 0, pages - 1)); view.tradePage = pg
     pgHead(1, y, "Your cards", #list > 0 and (#list .. " you can trade") or "")

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Visual fixes from the latest video.**
+  - Card window: notes at the bottom ("Asking your guild, group and online friends") now fade after a few seconds instead of following you to every tab.
+  - Friends' albums: the explanation no longer spills out of its box, "1 gold sets" reads "1 gold set", and the Explorer badge count no longer shows an empty square (a symbol the game's font doesn't have).
+  - Field Guide pages: the line under the title no longer wraps into the tabs, and the map button fits its text ("Next rare on the map").
+  - Album titles have more room ("The Hall of Thanes · level 13 cleared" no longer ends in "cle...").
+  - Sets tab: with one section picked, rows no longer repeat its tag ("FIELD GUIDE" on every line).
+  - Shop: the filter buttons fit their words, and each dungeon, raid and holiday pack shows its place's picture in the medallion instead of an empty circle.
+  - Today tab: the three boxes' notes fit without being cut off. After opening many packs, "Best of the haul" is now "Best pull" (one line). The party trade list shows nine cards a page instead of eight.
+  - Main window: "My gear" shows item names without the chat-link brackets, like every other list; the sell-on-the-AH lines no longer wrap; the Quest plan's hint line fits on one line.
 - **Quest data: 437 hand-checked fixes.** Polestar's open WoW Forever quest database keeps fixes checked against players' in-game recordings, the live game's quest data and in-game checks. Waypath+ now applies them on top of its quest data, and picks up new ones by itself with every data update. Among them:
   - Skyborne Druids (Alliance) get their whole Aquatic Form and Cure Poison chains (they used to stop halfway).
   - Every Horde Warlock gets the voidwalker quests and every Horde Mage the level 26 robe quests (they were shown to only some races).

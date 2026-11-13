@@ -293,7 +293,7 @@ end)
 -- the Friends' albums page in the Trade tab
 function RG.ArcadeSocialView(ctx)
   local frame, view, PGW = ctx.frame, ctx.view, ctx.PGW
-  ctx.pgBox(1, 196, 86, "Friends' and guildmates' albums", "Everyone in your guild, your group and your online friends who uses Waypath+ shows up here. Pick someone to see which of your spare cards they're missing and which of theirs you're missing, then swap one for one.\n|cff9a96b0Raiders and Mythics stay with whoever opened them.|r")
+  ctx.pgBox(1, 196, 86, "Friends' and guildmates' albums", "Guildmates, group members and online friends with Waypath+. Open one to see which of your spares they're missing and which of theirs you're missing, then swap one for one.\n|cff9a96b0Raiders, Mythics, Field Guide and holiday cards can't be traded.|r")
   local names = {}
   for name in pairs(S.peers) do names[#names + 1] = name end
   table.sort(names, function(x, y) return (S.peers[x].own or 0) > (S.peers[y].own or 0) end)
@@ -326,11 +326,11 @@ function RG.ArcadeSocialView(ctx)
     if S.out and S.out.name == sel then rows[#rows + 1] = { left = "|cffffd24aWaiting for " .. short(sel) .. " to answer your swap.|r", right = "" } end
   else
     ctx.pgHead(1, y, "Who's collecting", #names > 0 and (#names .. " found") or "")
-    rows[#rows + 1] = { left = "Ask again", right = S.asked and "asked " .. math.floor(now() - S.asked) .. "s ago" or "", act = function() RG.ArcadeSocialAsk(); ctx.say("Asking your guild, group and online friends..."); RG.ArcadeRefresh(true) end }
+    rows[#rows + 1] = { left = "Ask again", right = S.asked and "asked " .. math.floor(now() - S.asked) .. "s ago" or "", act = function() RG.ArcadeSocialAsk(); ctx.say("Asking your guild, group and online friends"); RG.ArcadeRefresh(true) end }
     for _, name in ipairs(names) do
       if #rows >= 10 then break end
       local p = S.peers[name]
-      rows[#rows + 1] = { left = short(name) .. "   |cff9a96b0" .. p.own .. " / " .. p.total .. " cards   ·   " .. p.g .. " gold sets   ·   " .. p.spares .. " spares" .. ((p.badges or 0) > 0 and ("   ·   |cffffd24a★|r " .. p.badges .. " explorer") or "") .. "|r",
+      rows[#rows + 1] = { left = short(name) .. "   |cff9a96b0" .. p.own .. " / " .. p.total .. " cards   ·   " .. p.g .. " gold set" .. (p.g == 1 and "" or "s") .. "   ·   " .. p.spares .. " spare" .. (p.spares == 1 and "" or "s") .. ((p.badges or 0) > 0 and ("   ·   " .. p.badges .. " Explorer badge" .. (p.badges == 1 and "" or "s")) or "") .. "|r",
         right = "Open", frac = p.total > 0 and p.own / p.total or 0, act = function() view.socialSel = name; RG.ArcadeRefresh(true) end }
     end
     if #names == 0 then rows[#rows + 1] = { left = "|cff9a96b0Nobody yet. Guildmates, group members and online friends with Waypath+ answer within a few seconds.|r", right = "" } end
