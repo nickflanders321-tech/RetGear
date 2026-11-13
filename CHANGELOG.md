@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Cards: raid packs** for WoW Forever's three raids, The Barrow Deeps, Hyjal Summit and Onyxia's Lair (they open on 9 December). Every boss has its card already, with its 3D model; each raid's loot cards fill in by themselves once the game data has them.
+  - **Earned by raiding:** each boss you defeat gives one of its raid's packs once a week (per lockout), two the first time. After your first boss there, you can also buy that raid's packs. Bosses you'd already beaten (the raid's Conqueror achievement) count the first time you log in.
+  - **Each raid has its own card frame**, drawn for Waypath+: barrow stone and roots for The Barrow Deeps, Hyjal's moonlit silver vine, Onyxia's black dragon scales with embers between them. On a Holo or Full art print the frame glows.
+  - **The boss roars:** pulling a raid boss from a pack makes it roar, the card shakes and the boss rears up.
+  - **Raid photos:** the first time your group kills a boss, Waypath+ takes a raid photo: the boss in its raid's frame, the date, your guild and everyone who was there in their class colours. Open them from the raid's Album page.
+  - **Key cards:** being attuned to Onyxia's Lair (the Drakefire Amulet) gives you its key card, a Holo you can't get any other way.
+  - **Shared pulls:** when someone in your raid opens a raid pack, everyone with Waypath+ sees their best pull.
 - **Cards: the Field Guide.** Every rare and rare elite out in the world now has a page in the Album, one page per zone (41 zones and a world-boss page, 365 rares, WoW Forever's own Zephras Isle, Riverglades and Mount Hyjal included). 181 of them are new cards that never come from a pack: you earn them only by killing the rare (you or your group get the tag). Rares that were already cards are on their zone's page too, and killing one gives you a copy.
   - **Sighted:** when a rare shows up (your target, your mouse or its nameplate) its page marks it "sighted", and a note tells you it's nearby (once a session per rare; turn it off in Settings, Group play).
   - **Kill stamps:** your card carries who killed it, where and when, across the foot of its picture.

@@ -92,6 +92,7 @@ ArcadeMythic.lua
 ArcadeArt.lua
 ArcadeDungeons.lua
 ArcadeField.lua
+ArcadeRaids.lua
 ArcadePlaces.lua
 ArcadeGear.lua
 ArcadeClasses.lua
@@ -102,6 +103,7 @@ Arcade.lua
 ArcadeRewards.lua
 ArcadeSocial.lua
 ArcadeFieldGuide.lua
+ArcadeRaidPacks.lua
 ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua

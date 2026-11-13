@@ -166,7 +166,7 @@ function RG.ArcadeFieldLabel(c)
   if r and r.seen then return "SIGHTED\nHUNT IT", { 1, 0.82, 0.45 } end
   return "NOT SEEN\nRARE", { 0.75, 0.72, 0.68 }
 end
-function RG.ArcadeFieldTip(cd, page)
+local function fieldTip(cd, page)
   local fp = OF[cd.name]
   if not fp and not (page and page:find("^Field Guide")) then return false end
   local r = rec(cd.name)
@@ -182,6 +182,8 @@ function RG.ArcadeFieldTip(cd, page)
   if not cd.field then GameTooltip:AddLine("Also in regular packs", 0.6, 0.6, 0.6) end
   return true
 end
+RG.ArcadeTipHooks = RG.ArcadeTipHooks or {}
+table.insert(RG.ArcadeTipHooks, fieldTip)
 local pinCursor = {}
 function RG.ArcadeFieldClick(name)
   if not (name and name:find("^Field Guide")) then return false end
@@ -218,7 +220,7 @@ end
 
 -- the kill stamp, across the foot of the card's picture
 local stamps = setmetatable({}, { __mode = "k" })
-function RG.ArcadeCardExtra(w, card, finish)
+local function stamp(w, card, finish)
   local s = stamps[w]
   if not card or not finish then if s then s:Hide() end return end
   local r = (OF[card.name] or card.field) and rec(card.name)
@@ -247,6 +249,9 @@ function RG.ArcadeCardExtra(w, card, finish)
   s.t:SetText(big and (line1 .. "\n" .. line2) or line1)
   s:Show()
 end
+
+RG.ArcadeCardHooks = RG.ArcadeCardHooks or {}
+table.insert(RG.ArcadeCardHooks, stamp)
 
 -- Explorer badges: Field Guide pages with every card (bronze)
 function RG.ArcadeExplorerBadges()

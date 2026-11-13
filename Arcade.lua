@@ -285,7 +285,7 @@ local function buildPools()   -- (the Raiders pool only counts once there is one
     local p = { list = {}, byTier = {}, weight = 0, name = d[1], iid = d[2], lo = d[3], hi = d[4] }
     for _, n in ipairs(d[5]) do
       local c = byKey[n]
-      if c and c.tier < 6 then p.list[#p.list + 1] = c; p.byTier[c.tier] = p.byTier[c.tier] or {}; table.insert(p.byTier[c.tier], c) end
+      if c and c.tier < 6 and not c.field then p.list[#p.list + 1] = c; p.byTier[c.tier] = p.byTier[c.tier] or {}; table.insert(p.byTier[c.tier], c) end
     end
     for t = 1, 5 do if p.byTier[t] then p.weight = p.weight + (TIER[t].dw or 0) end end
     if #p.list > 0 then RG.ArcadeDunPools[d[1]] = p end
@@ -364,7 +364,7 @@ local function getSets()
   for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
     local cs = {}
     for _, n in ipairs(d[5]) do if byKey[n] then cs[#cs + 1] = byKey[n] end end
-    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, lo = d[3], hi = d[4], reward = math.min(100, 10 + 2 * #cs) } end
+    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, raid = d.raid, lo = d[3], hi = d[4], reward = math.min(d.raid and 150 or 100, (d.raid and 30 or 10) + 2 * #cs) } end
   end
   -- WoW Forever dungeons the game data has no bosses or loot for yet: shown, empty, as coming soon (no rewards)
   for _, dn in ipairs(RG.ARCADE_DUNGEONS_SOON or {}) do duns[#duns + 1] = { name = dn, cards = {}, dungeon = true, soon = true, reward = 0 } end
@@ -546,7 +546,7 @@ local function openOne(a, kind, dn)
     -- a dungeon pack: one you earned there, else coins once you've cleared it
     a.dpk = a.dpk or {}
     if (a.dpk[dn] or 0) > 0 then free = true; a.dpk[dn] = a.dpk[dn] - 1
-    elseif not ((a.dunClear and a.dunClear[dn]) or (a.dun and a.dun[dn])) then return nil, "Clear " .. dn .. " once (three of its bosses) to buy its packs."
+    elseif not ((a.dunClear and a.dunClear[dn]) or (a.dun and a.dun[dn])) then return nil, (RG.ArcadeIsRaid and RG.ArcadeIsRaid(dn)) and ("Defeat one of " .. dn .. "'s bosses to buy its packs.") or ("Clear " .. dn .. " once (three of its bosses) to buy its packs.")
     elseif (a.coins or 0) < packPrice(kind) then return nil, "A " .. dn .. " pack costs " .. packPrice(kind) .. " coins."
     else a.coins = a.coins - packPrice(kind) end
   elseif kind == "jumbo" and (a.bonus or 0) > 0 then bonus = true; a.bonus = a.bonus - 1   -- a reward pack is a jumbo
@@ -1659,7 +1659,7 @@ end
 local function paint(w, card, finish, copies)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
   anim[w] = nil
-  if RG.ArcadeCardExtra then RG.ArcadeCardExtra(w, nil) end
+  for _, fn in ipairs(RG.ArcadeCardHooks or {}) do pcall(fn, w, nil) end
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
@@ -1803,7 +1803,7 @@ local function paint(w, card, finish, copies)
   w.count:SetText(copies and copies > 1 and ("x" .. copies) or "")
   if a and a.showcase then for _, k in ipairs(a.showcase) do if k == (card.key or card.name) then w.pin:Show() end end end
   if fx.foil > 0 or fx.aura > 0 or fx.spin then anim[w] = cardAnim end
-  if RG.ArcadeCardExtra then RG.ArcadeCardExtra(w, card, finish) end   -- (Field Guide stamps)
+  for _, fn in ipairs(RG.ArcadeCardHooks or {}) do pcall(fn, w, card, finish) end   -- (Field Guide stamps, raid frames)
 end
 
 -- ---------------------------------------------------------------------------
@@ -2086,6 +2086,7 @@ local function flip(i)
       if big >= 2 then reveal.shakeT, reveal.shakeK = 0.35, big end
       if g.record then reveal.record = true; reveal.title:SetText("Your rarest pull yet!"); playSound(nil, nil, "best") end
       if g.card.tier == 7 then RG.ArcadeMythicMoment(g) end
+      for _, fn in ipairs(RG.ArcadeRevealHooks or {}) do pcall(fn, card, g, reveal) end   -- (a raid boss roars)
       if reveal.flipped >= #reveal.got then
         reveal.all:Hide(); reveal.ok:SetText("Done")
         if not reveal.record then reveal.title:SetText("Pack opened") end
@@ -3049,7 +3050,9 @@ local function build()
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
       GameTooltip:AddLine(cd.name, 1, 0.93, 0.74)
       GameTooltip:AddLine("Not in your collection yet", 0.8, 0.8, 0.8)
-      if RG.ArcadeFieldTip and RG.ArcadeFieldTip(cd, view.album) then -- (a Field Guide card: where it lives, and whether you've seen it)
+      local hooked
+      for _, fn in ipairs(RG.ArcadeTipHooks or {}) do if not hooked then local ok, r = pcall(fn, cd, view.album); hooked = ok and r end end
+      if hooked then -- (a Field Guide or raid card: where it comes from)
       elseif cd.dun then GameTooltip:AddLine("From " .. cd.dun .. " packs: clear it to earn them", 0.55, 0.8, 1, true)
       elseif cd.tier == 7 then GameTooltip:AddLine("A Mythic: any pack can hold one", 1, 0.9, 0.55, true)
       else GameTooltip:AddLine("From any pack" .. ((RG.ARCADE_DUNGEON_OF and RG.ARCADE_DUNGEON_OF[cd.name]) and (" or a " .. RG.ARCADE_DUNGEON_OF[cd.name] .. " pack") or ""), 0.55, 0.8, 1, true) end
@@ -3361,9 +3364,10 @@ function RG.ArcadeRefresh(keepMsg)
         local have, cleared = RG.ArcadeDungeonPacks(st.name)
         if have > 0 then frame.albOpen:SetText("Open " .. st.name:gsub("^The ", "") .. " pack (" .. have .. ")"); frame.albOpen:SetEnabled(true)
         elseif cleared then frame.albOpen:SetText("Buy a pack: " .. PACKS.dungeon.price .. " coins"); frame.albOpen:SetEnabled((a.coins or 0) >= PACKS.dungeon.price)
-        else frame.albOpen:SetText("Clear it to earn its packs"); frame.albOpen:SetEnabled(false) end
+        else frame.albOpen:SetText(st.raid and "Defeat one of its bosses to earn its packs" or "Clear it to earn its packs"); frame.albOpen:SetEnabled(false) end
         frame.albOpen:Show()
       elseif not st.field then frame.albOpen:Hide() end
+      for _, fn in ipairs(RG.ArcadeAlbumHooks or {}) do pcall(fn, st, frame) end   -- (a raid page: its size, opening day and photos)
     end
   end
 

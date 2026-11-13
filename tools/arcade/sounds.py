@@ -2,7 +2,7 @@
 Output: Media/Sounds/*.ogg (mono, 44.1 kHz).  Needs numpy, scipy and ffmpeg.
 Run: python3 tools/arcade/sounds.py
 """
-import os, subprocess, tempfile, wave
+import os, subprocess, sys, tempfile, wave
 import numpy as np
 from scipy.signal import butter, sosfilt
 
@@ -78,7 +78,23 @@ SOUNDS = {
                          (0.25, arp([C6, E6, G6, C7], 0.1, 1.1, 0.45, 0.5)), (0.3, shimmer(1.2, 0.35))),
     "reward": lambda: mix((0, arp([G5, C6, E6, G6], 0.09, 0.8, 0.5, 0.4)), (0.1, shimmer(0.8, 0.3)), (0.4, sine(196, 0.8, 0.35, 0.5, 0.05, vib=1.5))),
     "toast": lambda: mix((0, bell(G6, 0.6, 0.55, 0.3)), (0.11, bell(C7, 0.8, 0.5, 0.35))),
+    # a raid boss's card: a deep roar (growling partials with a wobble, a rumble of low noise, a swell and a fall)
+    "roar": lambda: roar(),
+    # a raid photo is taken: a camera shutter and a little sparkle
+    "shutter": lambda: mix((0, noise(0.03, 1.0, 0.01, 0.0005, band=[1500, 7000])), (0.07, noise(0.05, 0.8, 0.015, 0.0005, band=[1000, 5000])),
+                           (0.12, shimmer(0.6, 0.25))),
 }
+
+def roar(d=1.7):
+    t = t_(d)
+    swell = np.clip(t / 0.25, 0, 1) * np.exp(-np.clip(t - 0.6, 0, None) * 2.6)
+    f = 62 + 30 * np.exp(-((t - 0.45) / 0.35) ** 2) + 4 * np.sin(2 * np.pi * 7.5 * t)
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    tone = sum(np.sin(ph * k + k) / k ** 0.8 for k in range(1, 9))
+    growl = tone * (1 + 0.6 * np.sin(2 * np.pi * 23 * t))          # the rasp
+    rumble = noise(d, 1.0, d, 0.08, band=[60, 400])
+    breath = noise(d, 0.5, d * 0.6, 0.15, band=[600, 2500])
+    return norm(growl, 0.8) * swell + rumble * swell * 0.55 + breath * swell * 0.25
 
 def write(name, x):
     x = fade(norm(x))
@@ -93,5 +109,6 @@ def write(name, x):
     print(f"{name:12s} {len(x)/SR:4.2f}s  {os.path.getsize(dst)//1024} KB")
 
 if __name__ == "__main__":
+    only = sys.argv[1:]
     for name, fn in SOUNDS.items():
-        write(name, fn())
+        if not only or name in only: write(name, fn())
