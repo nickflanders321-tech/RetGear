@@ -9,7 +9,7 @@
   - **Cook:** your raw fish go around the middle button, coloured by how much Cooking skill they still give. Click one to pick it, and the middle button opens Cooking and then cooks one per click. The fire button is right there, and Cook again takes you back to fishing.
   - **Idle:** only the middle button. Casting, holding your pole or hovering over it opens the rest. Right-click the Fishing HUD line on the Fishing tab to hide the middle button when you're not fishing.
   - **Three layouts:** a ring (the default, on a water ring we drew ourselves), a bar or a column. Click the Fishing HUD line on the Fishing tab to switch, or /wp fishhud ring, bar or column. /wp fishhud size 120 changes its size. Move it in Edit Mode or with /wp move.
-  - **Compact:** the buttons sit close around the middle one, like an action bar bent into a ring. The water ring only rises while your line is in the water, and the middle button counts down the seconds of your cast.
+  - **Opens with a swirl:** the buttons spin out from the middle one to a wide ring on a rising whirlpool (drawn by us), and spin back in when you stop. The middle button counts down the seconds of your cast, and while your line is in the water it waits for the splash instead of casting again.
   - Every tooltip says what a click does. The middle button can have its own key (Key Bindings, Waypath+).
   - **Shift-drag** any of its buttons to move the HUD (outside a fight). It keeps the same place Edit Mode does, and a Shift-click never casts.
   - **Pick your lure:** right-click the lure button to choose which lure it puts on, or go back to the best one you carry.
@@ -22,6 +22,10 @@
   - It doesn't count toward the set's bronze, silver and gold, so it's a chase card, never a wall. The dungeon's Album page shows "Mythic: found" or "not found yet"; click it to see your copy.
   - In the Arena it's its boss made stronger, one per deck like every Mythic. Like every Mythic it can't be traded, crafted or sold.
   - Dungeon packs now hold their own Mythic instead of the six general ones, which stay in every other pack. Raids and holidays get theirs later.
+- **Fishing fixes.**
+  - Your fishing key cast again at the splash instead of hooking the fish: a mistake in the new double-right-click code stopped the key from switching to "hook" when your line went in. Fixed.
+  - Fishing poles the add-on had no data for (WoW Forever's own) now count: the HUD, the outfit and the lure button see them in your hands and in your bags.
+  - Lures, food, wood and fish in your bags read as none on this client, which greyed out most fishing buttons and lines. They're counted properly now.
 
 ## v1.38.0
 

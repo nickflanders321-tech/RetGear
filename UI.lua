@@ -2496,7 +2496,7 @@ local function renderFish()
     if c.cook <= csk + 75 or c.ret then
       n = n + 1
       local name, link, quality = itemName(c.id)
-      local have = GetItemCount and GetItemCount(c.id) or 0
+      local have = RG.ItemCount(c.id)
       local cst = RG.CookState(c.dish)
       local pill
       if c.time == "night" and not night then pill = GREY .. "Night only|r"
@@ -2521,7 +2521,7 @@ local function renderFish()
   n = n + 1; setHeader(getRow(n), "Poles, lures and fishing gear")
   local useful, other = {}, {}
   for _, g in ipairs(RG.FISH_GEAR) do
-    local have = GetItemCount and GetItemCount(g.id, true) or 0
+    local have = RG.ItemCount(g.id, true)
     if have > 0 or (not g.skill or g.skill <= math.max(fsk, 1) + 25) and not tostring(g.how):find("Extravaganza") then useful[#useful + 1] = g else other[#other + 1] = g end
   end
   local gearList = useful
@@ -2529,7 +2529,7 @@ local function renderFish()
   for _, g in ipairs(gearList) do
     n = n + 1
     local name, link, quality = itemName(g.id)
-    local have = GetItemCount and GetItemCount(g.id, true) or 0
+    local have = RG.ItemCount(g.id, true)
     local pill
     if have > 0 then pill = GREEN .. (g.kind == "lure" and ("You have " .. have) or "You have it") .. "|r"
     elseif g.skill and fsk < g.skill then pill = GREY .. "Fishing " .. g.skill .. "|r"

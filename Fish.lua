@@ -149,9 +149,19 @@ function RG.FishCatchesPerPoint(skill)
   return math.floor((skill - 75) / 25) + 1
 end
 
+-- a fishing pole by what the game says it is (weapon, Fishing Poles), so a pole we have no data on still counts
+local function isPoleItem(id)
+  if not id then return false end
+  local f = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
+  if not f then return false end
+  local ok, _, _, _, _, _, classID, subID = pcall(f, id)
+  return ok and classID == 2 and subID == 20
+end
+RG.IsFishingPole = function(id) return POLE[id] ~= nil or isPoleItem(id) end
 local function poleBonus()
   local id = GetInventoryItemID and GetInventoryItemID("player", 16)
   if id and POLE[id] then return POLE[id], id end
+  if isPoleItem(id) then return 0, id end
   return nil, id
 end
 function RG.HasPole() return poleBonus() ~= nil end
@@ -179,7 +189,7 @@ function RG.FishBuffs()
   if RG.HasPole() then
     local left, bonus = RG.FishLure()
     if left then
-      local icon = lastLure and GetItemIcon and GetItemIcon(lastLure) or "Interface\\Icons\\INV_Misc_Food_26"
+      local icon = lastLure and RG.ItemIcon(lastLure) or "Interface\\Icons\\INV_Misc_Food_26"
       out[#out + 1] = { key = "lure", icon = icon, label = "Lure" .. (bonus and (" +" .. bonus) or ""), left = left, warn = left < 60,
         tip = "Lure on your pole" .. (bonus and (": +" .. bonus .. " Fishing skill") or "") .. ". It runs out in " .. fmtLeft(left) .. "." }
     else
@@ -216,7 +226,7 @@ end
 
 -- The lure and food worth offering a button for: the best you carry, only when that boost is missing
 -- or nearly gone. { lure = {macro, icon, label, title, tip}, food = {...} }
-local function countItem(id) return (GetItemCount and GetItemCount(id)) or 0 end
+local function countItem(id) return RG.ItemCount(id) end
 function RG.FishBoostChoice()
   local out = {}
   if not RG.HasPole() then return out end
@@ -232,7 +242,7 @@ function RG.FishBoostChoice()
     if pick and LURE[pick] and countItem(pick) > 0 then bestId, best = pick, LURE[pick] end
     if bestId then
       local name = RG.ItemInfo(bestId) or ("item:" .. bestId)
-      out.lure = { macro = "/use item:" .. bestId .. "\n/use 16", icon = GetItemIcon and GetItemIcon(bestId) or "Interface\\Icons\\INV_Misc_Food_26", label = "Lure",
+      out.lure = { macro = "/use item:" .. bestId .. "\n/use 16", icon = RG.ItemIcon(bestId) or "Interface\\Icons\\INV_Misc_Food_26", label = "Lure",
         title = "Apply " .. name, tip = "+" .. best.bonus .. " Fishing skill for " .. best.mins .. " minutes. You have " .. countItem(bestId) .. "." }
     end
   end
@@ -345,7 +355,7 @@ function RG.CookState(dish)
   if not r then return nil end
   return r[dish:lower()] or "missing"
 end
-local function countItem(id) return (GetItemCount and GetItemCount(id)) or 0 end
+local function countItem(id) return RG.ItemCount(id) end
 -- Raw fish in your bags that still give Cooking skill.
 function RG.CookNow()
   local list, total = {}, 0
@@ -607,7 +617,7 @@ function RG.FishPagle()
   if not skill or (max or 0) >= 300 or skill < 150 then return nil end
   local out, done = {}, 0
   for _, f in ipairs(RG.FISH_PAGLE) do
-    local have = (GetItemCount and GetItemCount(f.id)) or 0
+    local have = RG.ItemCount(f.id)
     if have > 0 then done = done + 1 end
     out[#out + 1] = { id = f.id, have = have, wp = poolSpot(f.pool), where = f.where }
   end
@@ -648,7 +658,7 @@ end
 -- Speckled Tastyfish for the Extravaganza: how many you carry, and where the schools are
 RG.TASTYFISH = 19807
 function RG.FishTastyfish()
-  return (GetItemCount and GetItemCount(RG.TASTYFISH)) or 0, poolSpot("School of Tastyfish")
+  return RG.ItemCount(RG.TASTYFISH), poolSpot("School of Tastyfish")
 end
 -- Your Fishing Rack or Fishing Hut (Camp.lua): uncommon or rare fish for an hour. Offered once per session.
 function RG.FishCampTip()

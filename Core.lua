@@ -309,6 +309,21 @@ local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemI
 local GetItemStats = (C_Item and C_Item.GetItemStats) or _G.GetItemStats
 
 function RG.ItemInfo(item) return GetItemInfo(item) end
+-- how many you carry (bank too with bank = true); this client has the count under C_Item only
+function RG.ItemCount(item, bank)
+  local f = (C_Item and C_Item.GetItemCount) or _G.GetItemCount
+  if not (f and item) then return 0 end
+  local ok, n = pcall(f, item, bank and true or false)
+  return (ok and type(n) == "number") and n or 0
+end
+-- an item's icon, known right away (no need for its info to have loaded)
+function RG.ItemIcon(item)
+  if not item then return nil end
+  if C_Item and C_Item.GetItemIconByID then local ok, ic = pcall(C_Item.GetItemIconByID, item); if ok and ic then return ic end end
+  if _G.GetItemIcon then local ok, ic = pcall(_G.GetItemIcon, item); if ok and ic then return ic end end
+  local _, _, _, _, ic = GetItemInfoInstant(item)
+  return ic
+end
 function RG.EquipLoc(item)
   local _, _, _, equipLoc = GetItemInfoInstant(item)
   return equipLoc
@@ -521,7 +536,7 @@ local function wornLink(slot)
   if mh and not isPole(mh) then return l end
   local lw = RG.db and RG.db.lastWeapons
   local keep = lw and lw[slot]
-  if keep and GetItemCount and (GetItemCount(keep) or 0) > 0 then return keep end
+  if keep and RG.ItemCount(keep) > 0 then return keep end
   if slot == 16 and isPole(mh) then return RG.BestBagWeapon and RG.BestBagWeapon() or nil end
   return l
 end

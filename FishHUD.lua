@@ -18,7 +18,8 @@ table.insert(RG.OPTIONS, { key = "fishHudIdle", label = "Keep the fishing HUD's 
 
 local MEDIA = "Interface\\AddOns\\Waypath\\Media\\"
 local EDGE = { ready = { 0.32, 0.78, 0.36 }, main = { 0.96, 0.56, 0.17 }, bad = { 0.92, 0.22, 0.22 }, off = { 0.42, 0.42, 0.38 } }
-local HUB, SLOT, MAXS = 32, 28, 9   -- (tight: the buttons almost touch, like an action bar bent round)
+local HUB, SLOT, MAXS = 44, 42, 9   -- (all about one size; the ring sits well clear of the middle button)
+local OPEN_TIME, TWIST = 0.38, 1.5    -- opening: how long, and how far round the buttons spin on their way out
 local LAYOUTS = { "ring", "bar", "column" }
 
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
@@ -293,6 +294,13 @@ local function hubDef(list)
       tip = { "No fishing pole", "Buy one from any fishing vendor (the Fishing tab has where). The middle button casts once it's in your hands." } }
   end
   local ic, n = known(RG.FishSpellName and RG.FishSpellName() or "Fishing")
+  -- your line is in the water: a click here would only throw it again, so it waits for the splash
+  local info = RG.FishModeInfo and RG.FishModeInfo()
+  if info and info.castEnd then
+    local k = RG.FishKey and RG.FishKey()
+    return { key = "hub", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main",
+      tip = { "Watch your bobber", "At the splash, " .. (k and ("press " .. k .. " or ") or "") .. "right-click the bobber to hook the fish. Clicking here now would only cast again, so it waits." } }
+  end
   return { key = "hub", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main", secure = { type = "spell", spell = n or "Fishing" },
     keytext = RG.FishKey and RG.FishKey() or nil, tip = "cast" }
 end
@@ -384,15 +392,17 @@ local function makeButton(name, size)
   local b = CreateFrame("Button", name, root, "SecureActionButtonTemplate")
   b:SetSize(size, size)
   b:RegisterForClicks("AnyUp", "AnyDown")
-  b.black = b:CreateTexture(nil, "BACKGROUND"); b.black:SetPoint("TOPLEFT", -2, 2); b.black:SetPoint("BOTTOMRIGHT", 2, -2); b.black:SetColorTexture(0, 0, 0, 0.85)
-  b.edge = b:CreateTexture(nil, "BORDER"); b.edge:SetPoint("TOPLEFT", -1.5, 1.5); b.edge:SetPoint("BOTTOMRIGHT", 1.5, -1.5)
+  -- a black rim, the coloured edge, then the icon: the edge reads clearly at any size
+  b.black = b:CreateTexture(nil, "BACKGROUND"); b.black:SetPoint("TOPLEFT", -3, 3); b.black:SetPoint("BOTTOMRIGHT", 3, -3); b.black:SetColorTexture(0, 0, 0, 0.9)
+  b.edge = b:CreateTexture(nil, "BORDER"); b.edge:SetPoint("TOPLEFT", -2, 2); b.edge:SetPoint("BOTTOMRIGHT", 2, -2)
+  b.inner = b:CreateTexture(nil, "BORDER", nil, 1); b.inner:SetAllPoints(); b.inner:SetColorTexture(0, 0, 0, 1)
   b.glow = b:CreateTexture(nil, "BACKGROUND", nil, -1); b.glow:SetTexture(MEDIA .. "Arcade\\Glow"); b.glow:SetBlendMode("ADD")
-  b.glow:SetPoint("CENTER"); b.glow:SetSize(size * 2.1, size * 2.1); b.glow:Hide()
-  b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetAllPoints(); b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  b.glow:SetPoint("CENTER"); b.glow:SetSize(size * 1.9, size * 1.9); b.glow:Hide()
+  b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetPoint("TOPLEFT", 1, -1); b.icon:SetPoint("BOTTOMRIGHT", -1, 1); b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.16)
-  b.big = b:CreateFontString(nil, "OVERLAY"); font(b.big, size >= HUB and 15 or 13); b.big:SetPoint("CENTER", 0, 0)
-  b.cnt = b:CreateFontString(nil, "OVERLAY"); font(b.cnt, 10); b.cnt:SetPoint("BOTTOMRIGHT", 0, 1); b.cnt:SetJustifyH("RIGHT")
-  b.keyt = b:CreateFontString(nil, "OVERLAY"); font(b.keyt, 9); b.keyt:SetPoint("TOPRIGHT", 0, -1); b.keyt:SetJustifyH("RIGHT")
+  b.big = b:CreateFontString(nil, "OVERLAY"); font(b.big, 16); b.big:SetPoint("CENTER", 0, 0)
+  b.cnt = b:CreateFontString(nil, "OVERLAY"); font(b.cnt, 12); b.cnt:SetPoint("BOTTOMRIGHT", -1, 2); b.cnt:SetJustifyH("RIGHT")
+  b.keyt = b:CreateFontString(nil, "OVERLAY"); font(b.keyt, 11); b.keyt:SetPoint("TOPRIGHT", -2, -2); b.keyt:SetJustifyH("RIGHT")
   -- Shift + drag moves the whole HUD (out of a fight); a Shift-click does nothing, so a drag never casts
   b:SetAttribute("shift-type1", "macro"); b:SetAttribute("shift-macrotext1", "")
   b:RegisterForDrag("LeftButton")
@@ -435,11 +445,13 @@ local function paint(b, d)
   b.edge:SetColorTexture(c[1], c[2], c[3], 1)
   b.icon:SetTexture(d.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
   b.icon:SetDesaturated((d.state == "off" or d.desat) and true or false)
-  b.icon:SetVertexColor(1, 1, 1, (d.state == "off") and 0.75 or 1)
+  b.icon:SetVertexColor(1, 1, 1, (d.state == "off") and 0.8 or 1)
   b.big:SetText(d.big or "")
   b.cnt:SetText(d.count and d.count > 0 and tostring(d.count) or "")
-  b.keyt:SetText(d.keytext and (#d.keytext > 4 and d.keytext:sub(-3) or d.keytext) or "")
-  if d.state == "main" or d.state == "bad" then b.glow:SetVertexColor(c[1], c[2], c[3], 1); b.glow:SetAlpha(0.45); b.glow:Show() else b.glow:Hide() end
+  -- (a key letter only when it's short, like R or F5: long names stay in the tooltip)
+  b.keyt:SetText((d.keytext and #d.keytext <= 2) and d.keytext or "")
+  b.glow:SetVertexColor(c[1], c[2], c[3], 1)
+  b.glow:SetAlpha((d.state == "main" or d.state == "bad") and 0.55 or (d.state == "off" and 0 or 0.22)); b.glow:Show()
 end
 -- (a button with a right-click of its own: the right button does nothing secure, an empty macro, and PostClick runs it)
 local function sameSecure(b, s, right)
@@ -498,16 +510,17 @@ end
 local function positions(n)
   local out, l = {}, layout()
   if l == "ring" then
-    local R = math.max(42, (SLOT + 5) * n / (2 * math.pi))
+    -- (clear of the middle button: about two and a half buttons out, more when there are many)
+    local R = math.max(SLOT * 2.3, (SLOT + 14) * n / (2 * math.pi))
     for i = 1, n do
       local a = math.pi / 2 - (i - 1) / n * 2 * math.pi
       out[i] = { math.cos(a) * R, math.sin(a) * R }
     end
     return out, R
   elseif l == "bar" then
-    for i = 1, n do out[i] = { HUB / 2 + 8 + SLOT / 2 + (i - 1) * (SLOT + 5), 0 } end
+    for i = 1, n do out[i] = { HUB / 2 + 12 + SLOT / 2 + (i - 1) * (SLOT + 8), 0 } end
   else
-    for i = 1, n do out[i] = { 0, -(HUB / 2 + 22 + SLOT / 2 + (i - 1) * (SLOT + 5)) } end
+    for i = 1, n do out[i] = { 0, -(HUB / 2 + 26 + SLOT / 2 + (i - 1) * (SLOT + 8)) } end
   end
   return out, 0
 end
@@ -517,11 +530,30 @@ local function scale()
   return k * (cfg().scale or 1)
 end
 
-local laid, lastN, lastLayout, dirty = false, 0, nil, false
 local function wanted()
   if not RG.db or not RG.Opt("fishHud") or (RG.CardsOnly and RG.CardsOnly()) then return false end
   if RG.__fishHudPlace then return true end
   return RG.FishSkill and RG.FishSkill() ~= nil
+end
+
+-- Opening and closing: the buttons spin out from the middle one to their places on a rising swirl of water, and
+-- spin back in when it closes. open = 0 (closed) .. 1 (open); target is where it's heading.
+local open, target, finalPos, ringR = 0, 0, {}, 0
+local ringBurst, ringAlpha, ringFull, ringAngle = 0, 0, 200, 0
+local function ease(p) local q = 1 - p; return 1 - q * q * q end
+local function place()
+  local e = ease(open)
+  local twist = (layout() == "ring") and (1 - e) * TWIST or 0
+  for i, b in ipairs(slots) do
+    local fp = rawget(b, "def") and finalPos[i]
+    if fp and open > 0 then
+      local x, y = fp[1], fp[2]
+      local r, a = math.sqrt(x * x + y * y) * e, math.atan2(y, x) + twist
+      b:ClearAllPoints(); b:SetPoint("CENTER", root, "CENTER", math.cos(a) * r, math.sin(a) * r)
+      b:SetAlpha(math.min(1, open * 1.6)); b:SetScale(0.55 + 0.45 * e)
+      if not b:IsShown() then b:Show() end
+    elseif b:IsShown() then b:Hide() end
+  end
 end
 
 function RG.FishHUDRefresh(force)
@@ -531,8 +563,8 @@ function RG.FishHUDRefresh(force)
   local info = RG.FishModeInfo and RG.FishModeInfo() or {}
   local now = GetTime()
   local holding = RG.HasPole and RG.HasPole()
-  local open = RG.__fishHudPlace or cookMode or info.engaged or holding or now < hoverUntil
-  local show = wanted() and (open or RG.Opt("fishHudIdle"))
+  local isOpen = RG.__fishHudPlace or cookMode or info.engaged or holding or now < hoverUntil
+  local show = wanted() and (isOpen or RG.Opt("fishHudIdle") or open > 0)
   if not combat then
     if show and not root:IsShown() then root:Show() elseif not show and root:IsShown() then root:Hide() end
     local sc = scale(); if math.abs((root:GetScale() or 1) - sc) > 0.001 then root:SetScale(sc) end
@@ -542,33 +574,28 @@ function RG.FishHUDRefresh(force)
   root:SetAlpha((UIParent and not UIParent:IsShown()) and 0 or 1)
 
   local defs, list = slotDefs()
-  local structural = not combat
-  apply(hub, hubDef(list), structural)
+  apply(hub, hubDef(list), not combat)
   local skill = RG.FishSkill and RG.FishSkill()
   skillText:SetText(cookMode and ((cookRank() and ("|cffffb060" .. cookRank() .. "|r")) or "") or (skill and tostring(skill) or ""))
-  local n = open and #defs or 0
-  if structural then
+  if not combat then
     local pos, R = positions(#defs)
+    finalPos, ringR = pos, R
     for i, b in ipairs(slots) do
       local d = defs[i]
-      if d and i <= n then
-        apply(b, d, true)
-        if not laid or lastN ~= #defs or lastLayout ~= layout() or force then b:ClearAllPoints(); b:SetPoint("CENTER", root, "CENTER", pos[i][1], pos[i][2]) end
-        b:Show()
-      else b:Hide(); b.def, b.dkey = nil, nil end
+      if d then apply(b, d, true) else b.def, b.dkey = nil, nil end
     end
-    laid, lastN, lastLayout = true, #defs, layout()
-    -- the water ring: the ring layout, while your line is in the water (it fades in and out, below)
-    ring.want = layout() == "ring" and n > 0
-    if ring.want then local s = (R + SLOT / 2 + 18) * 2; ring:SetSize(s, s) end
-    -- floaters and the status line sit above the top button
-    local top = (layout() == "ring" and n > 0) and (R + SLOT / 2 + 8) or (HUB / 2 + 8)
+    target = isOpen and 1 or 0
+    if force then place() end
+    -- the water: as big as the ring
+    local sz = ((layout() == "ring") and (R + SLOT / 2 + 30) or (HUB / 2 + 46)) * 2
+    ringFull = sz
+    -- floaters and the status line sit above the ring (or the middle button)
+    local top = (layout() == "ring" and isOpen) and (R + SLOT / 2 + 10) or (HUB / 2 + 10)
     statusText:ClearAllPoints(); statusText:SetPoint("BOTTOM", root, "CENTER", 0, top)
     for i, f in ipairs(floaters) do f:ClearAllPoints(); f:SetPoint("BOTTOM", statusText, "TOP", 0, 2 + (i - 1) * 16) end
-    dirty = false
   else
+    -- (in a fight the buttons keep what they do; their pictures and numbers still update)
     for i, b in ipairs(slots) do if b:IsShown() and defs[i] then apply(b, defs[i], false) end end
-    dirty = true
   end
   -- what's happening: a whisper, "got away", then your last catches rising and fading
   if info.whisper then statusText:SetText("|cffff80ffWhisper from " .. info.whisper .. "|r" .. GREY .. ": press Enter|r")
@@ -586,37 +613,50 @@ function RG.FishHUDRefresh(force)
   for i = fi + 1, 3 do floaters[i]:Hide() end
 end
 
--- every frame: the cast timer and the turning water; four times a second: everything else
+-- every frame: opening and closing, the water, the cast timer; four times a second: everything else
 local driver = CreateFrame("Frame")
-local acc, refreshFailed = 0, false
-driver:SetScript("OnUpdate", function(_, dt)
+local acc, refreshFailed, counting = 0, false, false
+local function step(_, dt)
   acc = acc + dt
   if root and root:IsShown() then
+    -- open or close a little more (buttons can only move outside a fight)
+    if open ~= target and not inCombat() then
+      local was = open
+      open = target > open and math.min(1, open + dt / OPEN_TIME) or math.max(0, open - dt / (OPEN_TIME * 0.8))
+      ringBurst = 1   -- (the swirl rises with every opening and closing)
+      if was ~= open then place() end
+    end
     local info = RG.FishModeInfo and RG.FishModeInfo()
-    local lit = 0
-    if info and info.castStart and info.castEnd and info.castEnd > info.castStart then
-      lit = math.ceil(ARCN * math.max(0, info.castEnd - GetTime()) / (info.castEnd - info.castStart))
-    end
+    local left, total = 0, 1
+    if info and info.castStart and info.castEnd and info.castEnd > info.castStart then left, total = math.max(0, info.castEnd - GetTime()), info.castEnd - info.castStart end
+    local lit = math.ceil(ARCN * left / total)
     for i = 1, ARCN do if i <= lit then arc[i]:Show() else arc[i]:Hide() end end
-    -- the water: in while the line is in the water, out after
-    local target = (lit > 0 and ring.want) and 0.9 or 0
-    local cur = ring.alpha or 0
-    if cur ~= target then
-      cur = target > cur and math.min(target, cur + dt * 2.5) or math.max(target, cur - dt * 1.5)
-      ring.alpha = cur; ring:SetAlpha(cur)
-      if cur > 0 then ring:Show() else ring:Hide() end
-    end
-    if cur > 0 and ring.SetRotation then ring.__a = ((ring.__a or 0) + dt * 0.35) % (2 * math.pi); ring:SetRotation(ring.__a) end
+    -- the swirl: strong while opening or closing, then it settles; faint while your line is in the water
+    local burst = ringBurst
+    if open == target then burst = math.max(0, burst - dt * 1.6) end
+    ringBurst = burst
+    local want = math.max(burst * 0.95, (left > 0 and open > 0.5) and 0.28 or 0)
+    local cur = ringAlpha
+    cur = want > cur and math.min(want, cur + dt * 4) or math.max(want, cur - dt * 1.2)
+    ringAlpha = cur
+    if cur > 0.01 then
+      local e = ease(open)
+      local sz = ringFull * (0.35 + 0.75 * e)
+      ring:SetSize(sz, sz); ring:SetAlpha(cur); ring:Show()
+      if ring.SetRotation then ringAngle = (ringAngle - dt * (1.2 + 2.5 * burst)) % (2 * math.pi); ring:SetRotation(ringAngle) end
+    elseif ring:IsShown() then ring:Hide() end
     -- the seconds left on the middle button
-    if lit > 0 and not cookMode then hub.big:SetText(tostring(math.ceil(info.castEnd - GetTime()))); hub.icon:SetAlpha(0.45); hub.__counting = true
-    elseif hub.__counting then hub.__counting = nil; hub.big:SetText(""); hub.icon:SetAlpha(1) end
+    if left > 0 and not cookMode then hub.big:SetText(tostring(math.ceil(left))); hub.icon:SetAlpha(0.5); counting = true
+    elseif counting then counting = false; hub.big:SetText(""); hub.icon:SetAlpha(1) end
   end
   if acc < 0.25 then return end
   acc = 0
   if RG.FishModeRefresh then pcall(RG.FishModeRefresh) end
   local ok, err = pcall(RG.FishHUDRefresh)
   if not ok and not refreshFailed then refreshFailed = true; if RG.RecordError then RG.RecordError(err) end end
-end)
+end
+driver:SetScript("OnUpdate", step)
+RG.__fishHudStep = step   -- (tests)
 
 -- cook mode on and off
 function RG.FishHUDCook(on)

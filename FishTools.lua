@@ -173,14 +173,28 @@ end
 local INVTYPE_SLOT = { INVTYPE_HEAD = 1, INVTYPE_FEET = 8, INVTYPE_HAND = 10 }
 local function equipped(slot) return GetInventoryItemID and GetInventoryItemID("player", slot) end
 local function equippedLink(slot) return GetInventoryItemLink and GetInventoryItemLink("player", slot) end
-local function count(id) return (GetItemCount and GetItemCount(id)) or 0 end
+local function count(id) return RG.ItemCount(id) end
 -- the best pole you carry (bags or hands)
 local function bestPole()
   local best, bb
   for id, bonus in pairs(POLES) do
     if count(id) > 0 and (not bb or bonus > bb) then best, bb = id, bonus end
   end
-  return best
+  if best then return best end
+  -- a pole we have no data on: the one in your hands, else the first in your bags
+  local held = equipped(16)
+  if held and RG.IsFishingPole and RG.IsFishingPole(held) then return held end
+  local C = C_Container
+  local slotsOf = (C and C.GetContainerNumSlots) or _G.GetContainerNumSlots
+  local idOf = (C and C.GetContainerItemID) or _G.GetContainerItemID
+  if slotsOf and idOf and RG.IsFishingPole then
+    for bag = 0, 4 do
+      for slot = 1, (slotsOf(bag) or 0) do
+        local id = idOf(bag, slot)
+        if id and RG.IsFishingPole(id) then return id end
+      end
+    end
+  end
 end
 -- what goes on: the pole, fishing gear with a skill bonus, and what you told us is part of your outfit
 local function outfit()
@@ -202,7 +216,7 @@ RG.FishOutfit = outfit
 local function remember()
   local d = db()
   d.normal = d.normal or {}
-  local pole = equipped(16) and POLES[equipped(16)]
+  local pole = equipped(16) and RG.IsFishingPole and RG.IsFishingPole(equipped(16))
   for _, slot in ipairs(SLOTS) do
     local id = equipped(slot)
     -- not the fishing pieces themselves
@@ -218,7 +232,7 @@ function RG.FishGearOn()
   if inCombat() then RG.Print("You can't change gear in a fight.") return false end
   local want = outfit()
   if not want[16] then RG.Print("No fishing pole in your bags. Buy one from a fishing vendor (Fishing tab).") return false end
-  if not (equipped(16) and POLES[equipped(16)]) then remember() end
+  if not (equipped(16) and RG.IsFishingPole and RG.IsFishingPole(equipped(16))) then remember() end
   for slot, id in pairs(want) do
     if equipped(slot) ~= id and EquipItemByName then pcall(EquipItemByName, id, slot) end
   end
@@ -249,6 +263,30 @@ end
 function RG.FishOutfitState()
   local holding = RG.HasPole and RG.HasPole()
   return holding and "on" or "off", bestPole(), db().normal ~= nil
+end
+
+-- ---------------------------------------------------------------------------
+-- Double-right-click to cast (off unless you turn it on): the first right-click on the world, with your pole in
+-- your hands and your line out of the water, makes the right mouse button cast for a moment, so a second click right
+-- after casts. Your right button is yours again 0.4 seconds later, the moment you cast, and in any fight.
+-- ---------------------------------------------------------------------------
+local rcOwner = CreateFrame and CreateFrame("Frame")
+local rcArmed = false
+local function rcDisarm()
+  if rcArmed and rcOwner and not inCombat() and ClearOverrideBindings then ClearOverrideBindings(rcOwner) end
+  rcArmed = false
+end
+RG.FishDoubleRightDisarm = rcDisarm
+if WorldFrame and WorldFrame.HookScript and rcOwner then
+  WorldFrame:HookScript("OnMouseDown", function(_, mouse)
+    if mouse ~= "RightButton" or rcArmed or not RG.db or not RG.Opt("fishDoubleRight") then return end
+    if inCombat() or channeling or not (RG.HasPole and RG.HasPole()) or not SetOverrideBindingClick then return end
+    prepare()
+    if not button() then return end
+    SetOverrideBindingClick(rcOwner, true, "BUTTON2", "WaypathFishEasy")
+    rcArmed = true
+    if C_Timer then C_Timer.After(0.4, rcDisarm) end
+  end)
 end
 
 -- ---------------------------------------------------------------------------
@@ -290,30 +328,6 @@ if ev then
       if lootSaved and lastCast and GetTime() - lastCast > 30 and not channeling and not inCombat() then lootOff() end
     end)
   end
-end
-
--- ---------------------------------------------------------------------------
--- Double-right-click to cast (off unless you turn it on): the first right-click on the world, with your pole in
--- your hands and your line out of the water, makes the right mouse button cast for a moment, so a second click right
--- after casts. Your right button is yours again 0.4 seconds later, the moment you cast, and in any fight.
--- ---------------------------------------------------------------------------
-local rcOwner = CreateFrame and CreateFrame("Frame")
-local rcArmed = false
-local function rcDisarm()
-  if rcArmed and rcOwner and not inCombat() and ClearOverrideBindings then ClearOverrideBindings(rcOwner) end
-  rcArmed = false
-end
-RG.FishDoubleRightDisarm = rcDisarm
-if WorldFrame and WorldFrame.HookScript and rcOwner then
-  WorldFrame:HookScript("OnMouseDown", function(_, mouse)
-    if mouse ~= "RightButton" or rcArmed or not RG.db or not RG.Opt("fishDoubleRight") then return end
-    if inCombat() or channeling or not (RG.HasPole and RG.HasPole()) or not SetOverrideBindingClick then return end
-    prepare()
-    if not button() then return end
-    SetOverrideBindingClick(rcOwner, true, "BUTTON2", "WaypathFishEasy")
-    rcArmed = true
-    if C_Timer then C_Timer.After(0.4, rcDisarm) end
-  end)
 end
 
 -- /wp fishcheck: what the tools see, to tell why a cast didn't happen
