@@ -910,7 +910,7 @@ function RG.RefreshTracker()
                 for _, q in ipairs(readyL) do names[#names + 1] = q.title end
                 n = n + 1
                 y = item(n, y, GREEN .. #readyL .. " ready to turn in|r" .. GREY .. ": " .. table.concat(names, ", ") .. "|r",
-                  { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. "\n\n" .. GOLD .. "Click:|r the arrow takes you to each, nearest first",
+                  { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. ((RG.TurnInPlanText and ("\n\n" .. GOLD .. "Plan:|r " .. RG.TurnInPlanText())) or "") .. "\n\n" .. GOLD .. "Click:|r the turn-in run: this zone first, then the others by how quickly you get there",
                     onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
                 shownQ = shownQ + 1
               else

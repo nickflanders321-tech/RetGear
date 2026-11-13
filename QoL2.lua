@@ -247,18 +247,65 @@ local function readyQuests()
 end
 RG.ReadyQuests = readyQuests
 function RG.TurnInRunActive() return run ~= nil end
+-- the zone a turn-in spot is in
+local function zoneOf(wp)
+  if not (wp and wp[1] and C_Map and C_Map.GetMapInfo) then return nil end
+  local ok, info = pcall(C_Map.GetMapInfo, wp[1])
+  return ok and info and info.name or nil
+end
+-- the plan: your zone first (nearest first), then the other zones in order of how quickly you get there (your
+-- hearthstone, flight paths, zeppelins and boats: Travel.lua), each with how to get there
+-- { { zone, quests = {...}, travel = "Hearthstone to ... > Fly ...", cost = minutes }, ... }
+function RG.TurnInPlan()
+  local here = RG.ZoneName and RG.ZoneName() or ""
+  local byZone, order = {}, {}
+  for _, q in ipairs(readyQuests()) do
+    local z = zoneOf(q.wp) or q.zone or "?"
+    if not byZone[z] then byZone[z] = { zone = z, quests = {} }; order[#order + 1] = byZone[z] end
+    table.insert(byZone[z].quests, q)
+  end
+  for _, g in ipairs(order) do
+    if g.zone == here then g.cost = -1
+    else
+      local okT, summary, _, _, cost = pcall(RG.TravelSummary or function() end, g.zone)
+      g.travel = okT and summary or nil
+      g.cost = (okT and cost) or 999
+    end
+  end
+  table.sort(order, function(a, b) if a.cost ~= b.cost then return a.cost < b.cost end return #a.quests > #b.quests end)
+  return order
+end
+-- "3 here, then 2 in The Barrens (Hearthstone to Orgrimmar > Fly to Crossroads), then ..."
+function RG.TurnInPlanText(plan)
+  plan = plan or RG.TurnInPlan()
+  local parts = {}
+  for i, g in ipairs(plan) do
+    if g.cost == -1 then parts[#parts + 1] = #g.quests .. " here"
+    else parts[#parts + 1] = (i > 1 and "then " or "") .. #g.quests .. " in " .. g.zone .. (g.travel and (GREY .. " (" .. g.travel:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. ")|r") or "") end
+  end
+  return table.concat(parts, ", ")
+end
 local function runNext()
   if not run then return end
-  local list = readyQuests()
-  if #list == 0 then
+  local plan = RG.TurnInPlan()
+  if #plan == 0 then
     run = nil
     notify("Turn-in run done: " .. GREEN .. "every ready quest handed in|r")
     if RG.ClearWaypoint then RG.ClearWaypoint() end
   else
-    local q = list[1]
+    local g = plan[1]
+    local q = g.quests[1]
     run.current = q.id
+    local left = 0
+    for _, x in ipairs(plan) do left = left + #x.quests end
     if not (RG.ArrowPaused and RG.ArrowPaused()) then RG.PinWaypoint(q.wp, true) end
-    notify("Turn in " .. GOLD .. q.title .. "|r" .. (#list > 1 and (GREY .. "  (" .. (#list - 1) .. " more after this)|r") or ""))
+    -- a new zone: say how to get there
+    if g.cost ~= -1 and run.zone ~= g.zone then
+      notify("Next: " .. GOLD .. g.zone .. "|r (" .. #g.quests .. " to turn in)" .. (g.travel and (GREY .. ": " .. g.travel:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r") or ""))
+    else
+      notify("Turn in " .. GOLD .. q.title .. "|r" .. (left > 1 and (GREY .. "  (" .. (left - 1) .. " more after this)|r") or ""))
+    end
+    run.zone = g.zone
   end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
@@ -273,7 +320,9 @@ function RG.TurnInRun()
   if #list == 0 then notify("No ready quests with a known turn-in spot"); return end
   run = { started = GetTime() }
   if RG.db then RG.db.arrowPaused = nil end   -- you asked for the turn-in run
-  RG.Print(GOLD .. "Turn-in run:|r " .. #list .. " quest" .. (#list > 1 and "s" or "") .. " ready. The arrow takes you to each one, nearest first.")
+  local plan = RG.TurnInPlan()
+  run.zone = plan[1] and plan[1].cost == -1 and plan[1].zone or nil
+  RG.Print(GOLD .. "Turn-in run:|r " .. #list .. " quest" .. (#list > 1 and "s" or "") .. " ready: " .. RG.TurnInPlanText(plan) .. ".")
   runNext()
 end
 
