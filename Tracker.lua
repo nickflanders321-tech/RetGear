@@ -791,6 +791,36 @@ function RG.RefreshTracker()
       y = gap(y)
     end
   end
+  -- 0c. in a dungeon: your upgrades from it, by boss (GearPlus.lua); only upgrades are listed
+  if RG.DungeonUpgradesHere and RG.Opt("dungeonHelper") then
+    local okD, dn, ups = pcall(RG.DungeonUpgradesHere)
+    if okD and dn and ups then
+      local isFolded
+      n = n + 1; y, isFolded = section(n, y, "Upgrades in " .. dn, "dunUp", #ups > 0 and (GREEN .. #ups .. "|r") or nil)
+      if not isFolded then
+        if #ups == 0 then
+          n = n + 1; y = item(n, y, GREY .. "Nothing here beats what you wear.|r", { single = true })
+        else
+          local shown = compact and 4 or 8
+          for i, u in ipairs(ups) do
+            if i > shown then break end
+            local nm, link = RG.ItemInfo(u.id)
+            local slotName = RG.SLOT_NAMES and RG.SLOT_NAMES[u.slot] or ""
+            local later = u.lvl and u.lvl > (UnitLevel("player") or 1)
+            n = n + 1
+            y = item(n, y, (u.boss and (GOLD .. u.boss .. ":|r ") or "") .. (link or nm or (u.g and u.g.name) or ("item " .. u.id)),
+              { single = true, indent = 12,
+                right = GREEN .. "+" .. string.format("%.0f", u.d) .. "|r" .. (later and (GREY .. " L" .. u.lvl .. "|r") or ""),
+                tip = (link or nm or "") .. "\n" .. GREEN .. string.format("+%.0f", u.d) .. "|r" .. GREY .. " for your " .. (slotName ~= "" and slotName or "gear") ..
+                  (u.boss and (", from " .. u.boss) or ", a drop here") .. (later and (" (you can wear it at level " .. u.lvl .. ")") or "") .. "|r",
+                onClick = u.g and function() RG.ShowItemSource(u.g) end or nil })
+          end
+          if #ups > shown then n = n + 1; y = item(n, y, GREY .. "+" .. (#ups - shown) .. " more on the Gear tab|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("gear") end end }) end
+        end
+      end
+      y = gap(y)
+    end
+  end
   -- 1. your quests: level, name, progress, distance
   local quests = RG.MyQuests and RG.MyQuests() or {}
   local new = RG.NearbyNewQuests and RG.NearbyNewQuests(8) or {}

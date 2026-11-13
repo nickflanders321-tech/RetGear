@@ -615,3 +615,62 @@ qlEv:SetScript("OnEvent", function()
     hooksecurefunc("QuestLog_Update", function() local ok, err = pcall(markQuestLog); if not ok and RG.RecordError then RG.RecordError(err) end end)
   end
 end)
+
+-- ---------------------------------------------------------------------------
+-- Dungeon helper: inside a dungeon, the tracker lists your upgrades from it, by boss. Upgrades come from the gear
+-- lists (best per level window, and the best from each source) and from every blue or purple drop in the dungeon's
+-- card pack (ArcadeDungeons.lua), each scored against what you wear. Only upgrades are listed.
+-- ---------------------------------------------------------------------------
+local cardByName
+local function dungeonHere()
+  if not (IsInInstance and select(2, IsInInstance()) == "party") then return nil end
+  local iid = GetInstanceInfo and select(8, GetInstanceInfo())
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do if d[2] == iid then return d[1], d end end
+  return RG.ZoneName and RG.ZoneName() or nil
+end
+RG.DungeonHere = dungeonHere
+local upCache, upAt, upFor = nil, 0, nil
+function RG.DungeonUpgradesHere()
+  local dn, d = dungeonHere()
+  if not dn then return nil end
+  if upFor == dn and upCache and GetTime() - upAt < 5 then return dn, upCache end
+  local lvl = UnitLevel("player") or 1
+  local seen, out = {}, {}
+  local function add(id, d, slot, boss, g, lvlNeed)
+    if seen[id] or not d or d <= 0.5 then return end
+    seen[id] = true
+    out[#out + 1] = { id = id, d = d, slot = slot, boss = boss, g = g, lvl = lvlNeed }
+  end
+  -- the gear lists
+  for _, list in ipairs({ RG.GUIDE or {}, RG.GUIDE_ALT or {} }) do
+    for _, g in ipairs(list) do
+      if g.id and (g.how == "Dungeon" or g.how == "Chest") and g.zone and g.zone ~= "" and not RG.OwnState(g.id)
+        and (dn:find(g.zone, 1, true) or g.zone:find(dn, 1, true) or (g.zone:find("Blackrock Spire", 1, true) and dn:find("Blackrock Spire", 1, true))) then
+        local delta, slot = RG.GuideDelta(g)
+        add(g.id, delta, slot, g.src, g, g.lvl)
+      end
+    end
+  end
+  -- every blue or purple drop of the dungeon's card pack
+  if d and RG.ARCADE_CARDS then
+    if not cardByName then cardByName = {}; for _, c in ipairs(RG.ARCADE_CARDS) do cardByName[c.name] = c end end
+    for _, nm in ipairs(d[5]) do
+      local c = cardByName[nm]
+      if c and c.kind == 1 and c.ref and c.ref > 0 and not seen[c.ref] and not RG.OwnState(c.ref) then
+        local _, link, _, _, minLvl = RG.ItemInfo(c.ref)
+        if not link then RG.RequestItem(c.ref)
+        elseif RG.CanUse(link) then
+          local delta, slot = RG.Compare(link)
+          add(c.ref, delta, slot, nil, nil, minLvl)
+        end
+      end
+    end
+  end
+  table.sort(out, function(a, b)
+    if (a.boss or "~") ~= (b.boss or "~") then return (a.boss or "~") < (b.boss or "~") end
+    return a.d > b.d
+  end)
+  upCache, upAt, upFor = out, GetTime(), dn
+  return dn, out
+end
+table.insert(RG.OPTIONS, { key = "dungeonHelper", label = "In a dungeon, list my upgrades from it on the tracker", default = true })
