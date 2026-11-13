@@ -171,6 +171,8 @@ for _, g in ipairs(RG.FISH_GEAR or {}) do
   if g.kind == "pole" then POLES[g.id] = g.bonus end
 end
 local INVTYPE_SLOT = { INVTYPE_HEAD = 1, INVTYPE_FEET = 8, INVTYPE_HAND = 10 }
+-- (this client keeps it under C_Item only)
+local EquipItemByName = (C_Item and C_Item.EquipItemByName) or _G.EquipItemByName
 local function equipped(slot) return GetInventoryItemID and GetInventoryItemID("player", slot) end
 local function equippedLink(slot) return GetInventoryItemLink and GetInventoryItemLink("player", slot) end
 local function count(id) return RG.ItemCount(id) end
@@ -240,7 +242,13 @@ function RG.FishGearOn()
 end
 function RG.FishGearOff(quiet)
   local d = db()
-  if not d.normal then if not quiet then RG.Print("Waypath+ doesn't know what you wore before fishing.") end return false end
+  if not d.normal then
+    if not quiet then
+      RG.Print("Waypath+ doesn't know what you wore before fishing yet: put your weapons on yourself once, then use Go fishing, and this button puts them back after.")
+      if UIErrorsFrame then UIErrorsFrame:AddMessage("Put your weapons on once yourself first", 1, 0.8, 0.2) end
+    end
+    return false
+  end
   local fight = inCombat()
   for _, slot in ipairs(SLOTS) do
     local id = d.normal[slot]

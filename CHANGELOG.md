@@ -26,6 +26,9 @@
   - Your fishing key cast again at the splash instead of hooking the fish: a mistake in the new double-right-click code stopped the key from switching to "hook" when your line went in. Fixed.
   - Fishing poles the add-on had no data for (WoW Forever's own) now count: the HUD, the outfit and the lure button see them in your hands and in your bags.
   - Lures, food, wood and fish in your bags read as none on this client, which greyed out most fishing buttons and lines. They're counted properly now.
+  - The weapons button and Go fishing did nothing: the game function that swaps gear lives somewhere else on this client. They swap your pole and weapons again.
+  - The campfire and camp object buttons use what you carry: a campfire in your bags lights from the fire button, and the camp button places your best fishing object (Fishing Hut, Fishing Rack or Fish Bowl) instead of suggesting another profession's (it said Lodestone). Right-click it to pick any camp object you carry.
+  - The Cook button shows a cooked meal, not the gem this client gives the Cooking spell.
 
 ## v1.38.0
 

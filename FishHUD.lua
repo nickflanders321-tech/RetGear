@@ -158,39 +158,95 @@ local function outfitDef()
   return d
 end
 
+-- What's in your bags, by name: { id, name, icon, count } for the first item whose name passes test(lowercase name).
+-- (WoW Forever's campfires and camp objects are items you carry and use)
+local function bagFind(test)
+  local C = C_Container
+  local slotsOf = (C and C.GetContainerNumSlots) or _G.GetContainerNumSlots
+  local infoOf = C and C.GetContainerItemInfo
+  if not (slotsOf and infoOf) then return nil end
+  for bag = 0, 4 do
+    for slot = 1, (slotsOf(bag) or 0) do
+      local info = infoOf(bag, slot)
+      local id = info and info.itemID
+      if id then
+        local name = info.itemName or (info.hyperlink and info.hyperlink:match("%[(.-)%]")) or (RG.ItemInfo and RG.ItemInfo(id))
+        if type(name) == "string" and test(name:lower()) then
+          return { id = id, name = name, icon = info.iconFileID or itemIcon(id), count = count(id) }
+        end
+      end
+    end
+  end
+end
+-- the best of several names: the first one found in your bags, then the first you know as a spell
+local function bestOf(names)
+  for _, n in ipairs(names) do
+    local low = n:lower()
+    local it = bagFind(function(x) return x == low or x:find(low, 1, true) ~= nil end)
+    if it then return it end
+  end
+  for _, n in ipairs(names) do
+    local ic, nm = known(n)
+    if nm then return { spell = nm, name = nm, icon = ic } end
+  end
+end
+local function useOf(it) return it.id and { type = "item", item = "item:" .. it.id } or { type = "spell", spell = it.spell } end
+
 local function fireDef()
   local d = { key = "fire", icon = "Interface\\Icons\\Spell_Fire_Fire" }
-  local best
-  for _, f in ipairs(RG.CAMPFIRES or {}) do
-    local ic, n = known(f.name)
-    if n then best = { f = f, icon = ic, name = n } end
-  end
+  local names, woodOf = {}, {}
+  for i = #(RG.CAMPFIRES or {}), 1, -1 do local f = RG.CAMPFIRES[i]; names[#names + 1] = f.name; woodOf[f.name:lower()] = f.wood end
+  names[#names + 1] = "Campfire"
+  local it = bestOf(names)
   local st, left = RG.CampState and RG.CampState()
-  if not best then
-    d.state = "off"; d.tip = { "Campfire", "Learn Cooking to make a campfire (Basic Campfire)." }
+  if not it then
+    d.state = "off"; d.tip = { "Campfire", "No campfire in your bags and none learned yet. Basic Campfire comes with Cooking (Camping on the Professions tab)." }
     return d
   end
-  d.icon, d.count = best.icon, count(best.f.wood)
-  d.secure = { type = "spell", spell = best.name }
+  d.icon, d.secure = it.icon or d.icon, useOf(it)
+  local wood
+  for n, w in pairs(woodOf) do if it.name:lower():find(n, 1, true) then wood = w end end
+  local woodN = wood and count(wood) or nil
+  d.count = it.id and it.count or woodN
   if st == "active" and left then d.state, d.big = "ready", mmss(left)
-  elseif d.count == 0 then d.state = "bad"
   else d.state = (cookMode and st ~= "near" and st ~= "sitting") and "main" or "ready" end
-  d.tip = { best.name, (st == "active" and ("Camp Benefits: " .. RG.FmtLeft(left) .. " left.\n") or (st == "near" and "A fire is close by.\n" or "")) ..
-    "Needs " .. best.f.wood .. " (you have " .. d.count .. ") and Flint and Tinder. Sit by it a minute for Camp Benefits." }
+  d.tip = { it.name, (st == "active" and ("Camp Benefits: " .. RG.FmtLeft(left) .. " left.\n") or (st == "near" and "A fire is close by.\n" or "")) ..
+    (wood and ("Needs " .. wood .. " (you have " .. (woodN or 0) .. "). ") or "") .. "Sit by it a minute for Camp Benefits." }
   return d
 end
 
+-- the camp object for fishing: the best you carry (Fishing Hut, Fishing Rack, Fish Bowl), or the one you picked
+local FISH_OBJECTS = { "Fishing Hut", "Fishing Rack", "Fish Bowl", "Fishing Bowl" }
+local function campMenu()
+  if RG.FishModeActive and RG.FishModeActive() and RG.FishModeExit then RG.FishModeExit() end
+  local entries = { { (cfg().campPick and "" or (GREEN .. "> |r")) .. "The best fishing one I carry, each time", function() cfg().campPick = nil; RG.FishHUDRefresh(true) end } }
+  local seen = {}
+  for _, o in ipairs(RG.CAMP_OBJECTS or {}) do
+    local low = o.name:lower()
+    local it = bagFind(function(x) return x:find(low, 1, true) ~= nil end)
+    if it and not seen[it.id] then
+      seen[it.id] = true
+      local pick = it.name
+      entries[#entries + 1] = { (cfg().campPick == pick and (GREEN .. "> |r") or "") .. (it.icon and ("|T" .. it.icon .. ":14:14|t ") or "") .. it.name .. GREY .. "  " .. (o.buff or "") .. "|r",
+        function() cfg().campPick = pick; RG.FishHUDRefresh(true) end }
+    end
+  end
+  if #entries == 1 then entries[#entries + 1] = { GREY .. "No camp objects in your bags|r", function() end } end
+  if RG.ShowMenu then RG.ShowMenu(entries, "Camp object to place") end
+end
 local function campDef()
-  local d = { key = "camp", icon = "Interface\\Icons\\INV_Misc_Bowl_01" }
-  local pick = RG.CampPick and RG.CampPick()
-  local name = pick and pick.name or "Fish Bowl"
-  local ic, n = known(name)
-  if n then
-    d.icon, d.state, d.secure = ic, "ready", { type = "spell", spell = n }
-    d.tip = { "Place " .. n, (pick and pick.why and (pick.why .. ". ") or "") .. "One camp object an hour, next to your campfire." }
+  local d = { key = "camp", icon = "Interface\\Icons\\INV_Misc_Bowl_01", rfn = campMenu, rclick = "choose which camp object" }
+  local names = FISH_OBJECTS
+  if cfg().campPick then names = { cfg().campPick, "Fishing Hut", "Fishing Rack", "Fish Bowl", "Fishing Bowl" } end
+  local it = bestOf(names)
+  if it then
+    d.icon, d.state, d.secure, d.count = it.icon or d.icon, "ready", useOf(it), it.id and it.count or nil
+    local buff
+    for _, o in ipairs(RG.CAMP_OBJECTS or {}) do if it.name:lower():find(o.name:lower(), 1, true) then buff = o.buff end end
+    d.tip = { "Place " .. it.name, (buff and (buff .. ". ") or "") .. "One camp object an hour, next to your campfire." }
   else
     d.state = "off"
-    d.tip = { name, "Your best camp object" .. (pick and pick.why and (" (" .. pick.why .. ")") or "") .. ". You haven't learned it yet: see Camping on the Professions tab." }
+    d.tip = { "Fish Bowl", "No fishing camp object in your bags. Fish Bowl comes at Fishing 20, the Fishing Rack at 140 (see Camping on the Professions tab)." }
   end
   return d
 end
@@ -230,7 +286,7 @@ local function picked(list)
 end
 local function cookDef(total)
   local ic = known("Cooking")
-  local d = { key = "cook", icon = ic or "Interface\\Icons\\INV_Misc_Food_15" }
+  local d = { key = "cook", icon = "Interface\\Icons\\INV_Misc_Food_15" }   -- (a cooked meal: the spell's own icon on this client is a gem)
   if cookMode then
     d.state, d.fn = "main", function() RG.FishHUDCook(false) end
     d.tip = { "Back to fishing", "Puts your fishing buttons back." }
@@ -268,7 +324,7 @@ end
 local function hubDef(list)
   if cookMode then
     local e = picked(list)
-    local d = { key = "hub", state = "main", icon = known("Cooking") or "Interface\\Icons\\INV_Misc_Food_15" }
+    local d = { key = "hub", state = "main", icon = "Interface\\Icons\\INV_Misc_Food_15" }
     if not e then
       d.state = "off"; d.tip = { "Nothing to cook", "None of your raw fish cook into something you know yet." }
       return d
@@ -455,16 +511,17 @@ local function paint(b, d)
 end
 -- (a button with a right-click of its own: the right button does nothing secure, an empty macro, and PostClick runs it)
 local function sameSecure(b, s, right)
-  return (b.__type or false) == ((s and s.type) or false) and (b.__val or false) == ((s and (s.spell or s.macrotext)) or false) and (b.__right or false) == (right and true or false)
+  return (b.__type or false) == ((s and s.type) or false) and (b.__val or false) == ((s and (s.spell or s.macrotext or s.item)) or false) and (b.__right or false) == (right and true or false)
 end
 local function setSecure(b, s, right)
   if sameSecure(b, s, right) then return end
   b:SetAttribute("type", s and s.type or nil)
   b:SetAttribute("spell", s and s.spell or nil)
   b:SetAttribute("macrotext", s and s.macrotext or nil)
+  b:SetAttribute("item", s and s.item or nil)
   b:SetAttribute("type2", right and "macro" or nil)
   b:SetAttribute("macrotext2", right and "" or nil)
-  b.__type, b.__val, b.__right = (s and s.type) or false, (s and (s.spell or s.macrotext)) or false, right and true or false
+  b.__type, b.__val, b.__right = (s and s.type) or false, (s and (s.spell or s.macrotext or s.item)) or false, right and true or false
 end
 -- (in a fight a button can only keep what it does; its picture and numbers still update)
 local function apply(b, d, structural)
