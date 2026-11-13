@@ -5,4 +5,6 @@
   <Binding name="WAYPATH_TRACKER" category="ADDONS">Waypath_Bind("tracker")</Binding>
   <Binding name="WAYPATH_UNDO" category="ADDONS">Waypath_Bind("undo")</Binding>
   <Binding name="WAYPATH_SORT" category="ADDONS">Waypath_Bind("sort")</Binding>
+  <Binding name="CLICK WaypathFishHUDHub:LeftButton" category="ADDONS">
+  </Binding>
 </Bindings>

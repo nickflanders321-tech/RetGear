@@ -18,7 +18,7 @@ table.insert(RG.OPTIONS, { key = "fishHudIdle", label = "Keep the fishing HUD's 
 
 local MEDIA = "Interface\\AddOns\\Waypath\\Media\\"
 local EDGE = { ready = { 0.32, 0.78, 0.36 }, main = { 0.96, 0.56, 0.17 }, bad = { 0.92, 0.22, 0.22 }, off = { 0.42, 0.42, 0.38 } }
-local HUB, SLOT, MAXS = 46, 36, 9
+local HUB, SLOT, MAXS = 32, 28, 9   -- (tight: the buttons almost touch, like an action bar bent round)
 local LAYOUTS = { "ring", "bar", "column" }
 
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
@@ -275,6 +275,16 @@ local function hubDef(list)
     keytext = RG.FishKey and RG.FishKey() or nil, tip = "cast" }
 end
 
+-- what a click does, for the tooltip's last line
+local CLICK = { lure = "put it on your pole", food = "eat it", fire = "light the fire", camp = "place it by your fire", guide = "open the Fishing tab",
+  find = "show fishing pools on the minimap" }
+local function clickText(d)
+  if not (d.secure or d.fn) then return nil end
+  if d.key == "outfit" then return d.tip and d.tip[1] == "Weapons back" and "put your weapons back" or "put your pole and fishing gear on" end
+  if d.key == "cook" then return cookMode and "back to your fishing buttons" or "your raw fish around the middle button" end
+  if d.key and d.key:find("^fish%d") then return "cook this one with the middle button" end
+  return CLICK[d.key]
+end
 local function slotDefs()
   local list = cookList()
   local total = 0
@@ -291,7 +301,7 @@ local function slotDefs()
       local dish = e.c.dish
       out[#out + 1] = { key = "fish" .. e.c.id, icon = itemIcon(e.c.id), state = st, count = e.have, desat = not e.can,
         fn = function() if e.can then cfg().cookPick = dish; RG.FishHUDRefresh(true) end end,
-        tip = { dish, e.have .. " raw  ·  " .. skillTxt .. (e.c.note and ("\n" .. e.c.note) or "") .. (e.can and "\nClick to cook this one with the middle button." or "") } }
+        tip = { dish, e.have .. " raw  ·  " .. skillTxt .. (e.c.note and ("\n" .. e.c.note) or "") } }
     end
     out[#out + 1] = cookDef(total)
     return out, list
@@ -334,9 +344,12 @@ local function setTip(self)
     end
     local k = RG.FishKey and RG.FishKey()
     GameTooltip:AddLine(k and ("Click or press " .. k .. " to cast; " .. k .. " again at the splash hooks it.") or "Click to cast. Pick a one-key fishing key on the Fishing tab.", 0.6, 0.6, 0.6, true)
+    local bk = GetBindingKey and GetBindingKey("CLICK WaypathFishHUDHub:LeftButton")
+    GameTooltip:AddLine("Key for this button: " .. (bk or "none (Key Bindings, Waypath+)"), 0.6, 0.6, 0.6)
   else
     GameTooltip:AddLine(d.tip and d.tip[1] or "", 1, 0.93, 0.74)
     if d.tip and d.tip[2] then GameTooltip:AddLine(d.tip[2], 0.9, 0.9, 0.9, true) end
+    if d.click then GameTooltip:AddLine("Click: " .. d.click, 0.6, 0.6, 0.6, true) end
   end
   GameTooltip:Show()
 end
@@ -346,15 +359,15 @@ local function makeButton(name, size)
   local b = CreateFrame("Button", name, root, "SecureActionButtonTemplate")
   b:SetSize(size, size)
   b:RegisterForClicks("AnyUp", "AnyDown")
-  b.black = b:CreateTexture(nil, "BACKGROUND"); b.black:SetPoint("TOPLEFT", -3, 3); b.black:SetPoint("BOTTOMRIGHT", 3, -3); b.black:SetColorTexture(0, 0, 0, 0.85)
-  b.edge = b:CreateTexture(nil, "BORDER"); b.edge:SetPoint("TOPLEFT", -2, 2); b.edge:SetPoint("BOTTOMRIGHT", 2, -2)
+  b.black = b:CreateTexture(nil, "BACKGROUND"); b.black:SetPoint("TOPLEFT", -2, 2); b.black:SetPoint("BOTTOMRIGHT", 2, -2); b.black:SetColorTexture(0, 0, 0, 0.85)
+  b.edge = b:CreateTexture(nil, "BORDER"); b.edge:SetPoint("TOPLEFT", -1.5, 1.5); b.edge:SetPoint("BOTTOMRIGHT", 1.5, -1.5)
   b.glow = b:CreateTexture(nil, "BACKGROUND", nil, -1); b.glow:SetTexture(MEDIA .. "Arcade\\Glow"); b.glow:SetBlendMode("ADD")
   b.glow:SetPoint("CENTER"); b.glow:SetSize(size * 2.1, size * 2.1); b.glow:Hide()
   b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetAllPoints(); b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.16)
-  b.big = b:CreateFontString(nil, "OVERLAY"); font(b.big, size >= HUB and 18 or 15); b.big:SetPoint("CENTER", 0, 0)
-  b.cnt = b:CreateFontString(nil, "OVERLAY"); font(b.cnt, 11); b.cnt:SetPoint("BOTTOMRIGHT", -1, 2); b.cnt:SetJustifyH("RIGHT")
-  b.keyt = b:CreateFontString(nil, "OVERLAY"); font(b.keyt, 10); b.keyt:SetPoint("TOPRIGHT", -1, -2); b.keyt:SetJustifyH("RIGHT")
+  b.big = b:CreateFontString(nil, "OVERLAY"); font(b.big, size >= HUB and 15 or 13); b.big:SetPoint("CENTER", 0, 0)
+  b.cnt = b:CreateFontString(nil, "OVERLAY"); font(b.cnt, 10); b.cnt:SetPoint("BOTTOMRIGHT", 0, 1); b.cnt:SetJustifyH("RIGHT")
+  b.keyt = b:CreateFontString(nil, "OVERLAY"); font(b.keyt, 9); b.keyt:SetPoint("TOPRIGHT", 0, -1); b.keyt:SetJustifyH("RIGHT")
   b:SetScript("PostClick", function(self, _, down)
     if down then return end
     local d = self.def
@@ -392,6 +405,7 @@ local function setSecure(b, s)
 end
 -- (in a fight a button can only keep what it does; its picture and numbers still update)
 local function apply(b, d, structural)
+  if d.click == nil and d.key ~= "hub" then d.click = clickText(d) or false end
   if structural then setSecure(b, d.secure); b.def, b.dkey = d, d.key
   elseif b.dkey == d.key and sameSecure(b, d.secure) then b.def = d
   else return end
@@ -406,22 +420,22 @@ local function build()
   root:SetSize(HUB, HUB); root:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 200)
   root:SetFrameStrata("MEDIUM"); root:Hide()
   -- the water behind the ring
-  ring = root:CreateTexture(nil, "BACKGROUND", nil, -8); ring:SetTexture(MEDIA .. "FishRing"); ring:SetPoint("CENTER"); ring:SetAlpha(0.9); ring:Hide()
+  ring = root:CreateTexture(nil, "BACKGROUND", nil, -8); ring:SetTexture(MEDIA .. "FishRing"); ring:SetPoint("CENTER"); ring:SetAlpha(0); ring:Hide()
   -- the cast timer: a ring of dots around the middle button
   arc = {}
   for i = 1, ARCN do
-    local t = root:CreateTexture(nil, "ARTWORK", nil, 1); t:SetSize(4, 4); t:SetColorTexture(0.45, 0.8, 1, 0.95)
+    local t = root:CreateTexture(nil, "ARTWORK", nil, 1); t:SetSize(3, 3); t:SetColorTexture(0.45, 0.8, 1, 0.95)
     local a = math.pi / 2 - (i - 1) / ARCN * 2 * math.pi
-    t:SetPoint("CENTER", root, "CENTER", math.cos(a) * (HUB / 2 + 8), math.sin(a) * (HUB / 2 + 8)); t:Hide()
+    t:SetPoint("CENTER", root, "CENTER", math.cos(a) * (HUB / 2 + 5), math.sin(a) * (HUB / 2 + 5)); t:Hide()
     arc[i] = t
   end
   hub = makeButton("WaypathFishHUDHub", HUB); hub:SetPoint("CENTER")
-  skillText = root:CreateFontString(nil, "OVERLAY"); font(skillText, 14); skillText:SetPoint("TOP", hub, "BOTTOM", 0, -6); skillText:SetTextColor(0.44, 0.88, 0.66)
+  skillText = root:CreateFontString(nil, "OVERLAY"); font(skillText, 12); skillText:SetPoint("TOP", hub, "BOTTOM", 0, -3); skillText:SetTextColor(0.44, 0.88, 0.66)
   slots = {}
   for i = 1, MAXS do slots[i] = makeButton("WaypathFishHUDSlot" .. i, SLOT); slots[i]:Hide() end
-  statusText = root:CreateFontString(nil, "OVERLAY"); font(statusText, 12)
+  statusText = root:CreateFontString(nil, "OVERLAY"); font(statusText, 11)
   floaters = {}
-  for i = 1, 3 do floaters[i] = root:CreateFontString(nil, "OVERLAY"); font(floaters[i], 12); floaters[i]:Hide() end
+  for i = 1, 3 do floaters[i] = root:CreateFontString(nil, "OVERLAY"); font(floaters[i], 11); floaters[i]:Hide() end
   if RG.RegisterMover then
     RG.RegisterMover(root, "fishHUD", "Fishing HUD", { "BOTTOM", "BOTTOM", 0, 200 }, function() RG.__fishHudPlace = true; RG.FishHUDRefresh(true) end,
       { done = function() RG.__fishHudPlace = nil; RG.FishHUDRefresh(true) end })
@@ -433,16 +447,16 @@ end
 local function positions(n)
   local out, l = {}, layout()
   if l == "ring" then
-    local R = math.max(66, (SLOT + 14) * n / (2 * math.pi))
+    local R = math.max(42, (SLOT + 5) * n / (2 * math.pi))
     for i = 1, n do
       local a = math.pi / 2 - (i - 1) / n * 2 * math.pi
       out[i] = { math.cos(a) * R, math.sin(a) * R }
     end
     return out, R
   elseif l == "bar" then
-    for i = 1, n do out[i] = { HUB / 2 + 14 + SLOT / 2 + (i - 1) * (SLOT + 7), 0 } end
+    for i = 1, n do out[i] = { HUB / 2 + 8 + SLOT / 2 + (i - 1) * (SLOT + 5), 0 } end
   else
-    for i = 1, n do out[i] = { 0, -(HUB / 2 + 30 + SLOT / 2 + (i - 1) * (SLOT + 7)) } end
+    for i = 1, n do out[i] = { 0, -(HUB / 2 + 22 + SLOT / 2 + (i - 1) * (SLOT + 5)) } end
   end
   return out, 0
 end
@@ -493,8 +507,9 @@ function RG.FishHUDRefresh(force)
       else b:Hide(); b.def, b.dkey = nil, nil end
     end
     laid, lastN, lastLayout = true, #defs, layout()
-    -- the water ring: only for the ring layout, and only open
-    if layout() == "ring" and n > 0 then local s = (R + SLOT / 2 + 26) * 2; ring:SetSize(s, s); ring:Show() else ring:Hide() end
+    -- the water ring: the ring layout, while your line is in the water (it fades in and out, below)
+    ring.want = layout() == "ring" and n > 0
+    if ring.want then local s = (R + SLOT / 2 + 18) * 2; ring:SetSize(s, s) end
     -- floaters and the status line sit above the top button
     local top = (layout() == "ring" and n > 0) and (R + SLOT / 2 + 8) or (HUB / 2 + 8)
     statusText:ClearAllPoints(); statusText:SetPoint("BOTTOM", root, "CENTER", 0, top)
@@ -532,7 +547,18 @@ driver:SetScript("OnUpdate", function(_, dt)
       lit = math.ceil(ARCN * math.max(0, info.castEnd - GetTime()) / (info.castEnd - info.castStart))
     end
     for i = 1, ARCN do if i <= lit then arc[i]:Show() else arc[i]:Hide() end end
-    if ring:IsShown() and ring.SetRotation then ring.__a = ((ring.__a or 0) + dt * 0.12) % (2 * math.pi); ring:SetRotation(ring.__a) end
+    -- the water: in while the line is in the water, out after
+    local target = (lit > 0 and ring.want) and 0.9 or 0
+    local cur = ring.alpha or 0
+    if cur ~= target then
+      cur = target > cur and math.min(target, cur + dt * 2.5) or math.max(target, cur - dt * 1.5)
+      ring.alpha = cur; ring:SetAlpha(cur)
+      if cur > 0 then ring:Show() else ring:Hide() end
+    end
+    if cur > 0 and ring.SetRotation then ring.__a = ((ring.__a or 0) + dt * 0.35) % (2 * math.pi); ring:SetRotation(ring.__a) end
+    -- the seconds left on the middle button
+    if lit > 0 and not cookMode then hub.big:SetText(tostring(math.ceil(info.castEnd - GetTime()))); hub.icon:SetAlpha(0.45); hub.__counting = true
+    elseif hub.__counting then hub.__counting = nil; hub.big:SetText(""); hub.icon:SetAlpha(1) end
   end
   if acc < 0.25 then return end
   acc = 0

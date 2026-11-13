@@ -8,6 +8,8 @@
   - **Cook:** your raw fish go around the middle button, coloured by how much Cooking skill they still give. Click one to pick it, and the middle button opens Cooking and then cooks one per click. The fire button is right there, and Cook again takes you back to fishing.
   - **Idle:** only the middle button. Casting, holding your pole or hovering over it opens the rest. Right-click the Fishing HUD line on the Fishing tab to hide the middle button when you're not fishing.
   - **Three layouts:** a ring (the default, on a water ring we drew ourselves), a bar or a column. Click the Fishing HUD line on the Fishing tab to switch, or /wp fishhud ring, bar or column. /wp fishhud size 120 changes its size. Move it in Edit Mode or with /wp move.
+  - **Compact:** the buttons sit close around the middle one, like an action bar bent into a ring. The water ring only rises while your line is in the water, and the middle button counts down the seconds of your cast.
+  - Every tooltip says what a click does. The middle button can have its own key (Key Bindings, Waypath+).
   - It replaces the old fishing display. The interface still fades while you fish, and what you catch rises above the buttons and fades.
   - Everything waits for your click, and the buttons only change outside a fight, as the game requires.
 
