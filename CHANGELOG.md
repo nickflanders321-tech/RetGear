@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.37.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.37.0
 
 - **Tracker: every quest in the zone you're in is listed.** Quests ready to turn in no longer push the ones you're still doing out of the tracker: three or more turn-ins fold into one "N ready to turn in" line (click it for the turn-in run, hover for the list), and every active quest in your zone shows. Other zones share the space that's left, as before.
