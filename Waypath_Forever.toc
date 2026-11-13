@@ -99,6 +99,7 @@ ArcadeChanges.lua
 Battle.lua
 Arcade.lua
 ArcadeRewards.lua
+ArcadeSocial.lua
 ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua

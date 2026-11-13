@@ -956,6 +956,18 @@ local function addCard(a, key, f, n)
     for i = #a.showcase, 1, -1 do if a.showcase[i] == key then table.remove(a.showcase, i) end end
   end
 end
+-- a trade agreed with a friend (ArcadeSocial.lua): you give one card and get one, if you still have yours
+function RG.ArcadeApplyTrade(giveKey, giveF, getKey, getF)
+  local a = store(); if not a then return false end
+  local gc, tc = byKey[giveKey], byKey[getKey]
+  if not (gc and tc and tradable(gc) and tradable(tc) and FINISH[giveF] and FINISH[getF]) then return false end
+  if not ownsOf(a, gc, giveF) then return false end
+  addCard(a, giveKey, giveF, -1); addCard(a, getKey, getF, 1)
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  return true
+end
+function RG.ArcadeOwnsPrint(key, f) local a = store(); local c = byKey[key]; return (a and c and ownsOf(a, c, f)) and true or false end
+function RG.ArcadeTradable(key) return tradable(byKey[key]) end
 local function onAddon(prefix, text, channel, sender)
   if prefix ~= PREFIX or type(text) ~= "string" then return end
   local a = store(); if not a then return end
@@ -2969,6 +2981,13 @@ local function build()
     if frame.buyNow then frame.buyNow("dungeon", dn) end
   end)
   frame.albOpen:SetPoint("TOPRIGHT", -34, -160)
+  -- the Trade tab: your party, or friends' and guildmates' albums
+  frame.tradeSwitch = gbtn(frame, "Friends' albums", 190, 24, function()
+    view.tradeSub = view.tradeSub == "friends" and nil or "friends"
+    if view.tradeSub == "friends" and RG.ArcadeSocialAsk then RG.ArcadeSocialAsk() end
+    RG.ArcadeRefresh(true)
+  end)
+  frame.tradeSwitch:SetPoint("TOPRIGHT", -34, -160)
   frame.albOpen:HookScript("OnEnter", function(self)
     local dn = view.album
     if not (dn and RG.ArcadeDunPools and RG.ArcadeDunPools[dn]) then return end
@@ -3237,6 +3256,8 @@ function RG.ArcadeRefresh(keepMsg)
     cell:SetAlpha(1)   -- (the Album draws missing cards faint)
   end
   for _, w in ipairs({ frame.albPrev, frame.albNext, frame.albTitle, frame.albOpen }) do w:SetShown(album) end
+  frame.tradeSwitch:SetShown(view.mode == "trade")
+  if view.mode == "trade" then frame.tradeSwitch:SetText(view.tradeSub == "friends" and "Trade with your party" or "Friends' albums") end
   frame.panel:SetText("")
   pgReset()
   frame.searchBox:SetShown(cards); frame.searchHint:SetShown(cards and (view.search or "") == "")
@@ -3390,6 +3411,9 @@ function RG.ArcadeRefresh(keepMsg)
         end
       end
     end
+  elseif view.mode == "trade" and view.tradeSub == "friends" and RG.ArcadeSocialView then
+    -- friends' and guildmates' albums, and trades of your spare cards for their spare ones (ArcadeSocial.lua)
+    RG.ArcadeSocialView({ pgHead = pgHead, pgBox = pgBox, showRows = showRows, frame = frame, say = say, view = view, a = a, PGW = PGW, PGX = PGX, GOLDC = GOLDC })
   elseif view.mode == "trade" then
     -- every card you own can be traded (not Raiders): extra copies first, then your only copies
     local list = {}
@@ -3494,7 +3518,7 @@ end
 
 RG.ArcadeUI = { scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
-  owned = owned, power = power, iconFor = iconFor, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
+  owned = owned, power = power, iconFor = iconFor, getSets = getSets, setProgress = setProgress, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
 
 RG.ArcadePackPrice = PACK_PRICE
 RG.ArcadePacks = PACKS
