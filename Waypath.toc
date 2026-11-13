@@ -93,6 +93,8 @@ ArcadeArt.lua
 ArcadeDungeons.lua
 ArcadeField.lua
 ArcadeRaids.lua
+ArcadeHolidays.lua
+ArcadeFirst.lua
 ArcadePlaces.lua
 ArcadeGear.lua
 ArcadeClasses.lua
@@ -104,6 +106,8 @@ ArcadeRewards.lua
 ArcadeSocial.lua
 ArcadeFieldGuide.lua
 ArcadeRaidPacks.lua
+ArcadeHolidayPacks.lua
+ArcadeFirstEdition.lua
 ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua

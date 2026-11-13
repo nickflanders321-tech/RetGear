@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Cards: holiday packs.** Six holidays have their own set, built from their quests: the people who give them (with their own 3D models), the creatures they send you to and what they reward. Feast of Winter Veil, Hallow's End, Love is in the Air, Midsummer Fire Festival, Children's Week and the Lunar Festival (139 new cards).
+  - **Earned by celebrating:** every holiday quest you turn in while it's on gives one of its packs (once a year per quest). Holiday packs can't be bought, and holiday cards can't be traded or crafted.
+  - **The year is printed on the card:** each holiday card carries the year it was earned, along the top of its picture ("WINTER VEIL 2026"). Next year's are a new print; this year's can't be had again once the holiday ends.
+  - **The Lunar Festival's Elders** (50 of them) are cards of their own: visit an Elder (turn in its quest) and its card is yours. Every ten Elders in a year also give a Lunar Festival pack.
+  - **A Winter Veil present:** log in during the Feast of Winter Veil and a wrapped present waits on its Album page. It opens on Winter Veil morning (25 December): 3 packs and 50 coins.
+  - **Gifts:** while a holiday is on, Friends' albums lets you send a friend one of your extra copies of its cards, wrapped (three a day).
+  - A holiday's Album page says whether it's on now and when it comes back.
+- **Cards: WoW Forever originals.** The cards of WoW Forever's own dungeons, raids and rares (232 of them) are special:
+  - **First Edition:** one you get in the first four weeks after it arrived is a First Edition print, with a gold "1st" seal on its picture. Raid cards count from the day the raids open; cards Waypath+ gains from new WoW Forever content later get their own four weeks.
+  - **Discovery:** until you or someone in your guild finds one (meets the creature, loots the item, walks into the dungeon, or gets the card), its Album slot shows only "???". Finds are shared with your guild, with the finder's name on the card's tooltip.
 - **Cards: raid packs** for WoW Forever's three raids, The Barrow Deeps, Hyjal Summit and Onyxia's Lair (they open on 9 December). Every boss has its card already, with its 3D model; each raid's loot cards fill in by themselves once the game data has them.
   - **Earned by raiding:** each boss you defeat gives one of its raid's packs once a week (per lockout), two the first time. After your first boss there, you can also buy that raid's packs. Bosses you'd already beaten (the raid's Conqueror achievement) count the first time you log in.
   - **Each raid has its own card frame**, drawn for Waypath+: barrow stone and roots for The Barrow Deeps, Hyjal's moonlit silver vine, Onyxia's black dragon scales with embers between them. On a Holo or Full art print the frame glows.

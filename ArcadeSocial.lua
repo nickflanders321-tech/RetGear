@@ -322,6 +322,7 @@ function RG.ArcadeSocialView(ctx)
           act = function() local ok, msg = RG.ArcadeSocialPropose(sel, pr.give.i, pr.give.f, pr.get.i, pr.get.f); ctx.say(msg); RG.ArcadeRefresh(true) end }
       end
     end
+    if RG.ArcadeHolidayGiftRow then local g = RG.ArcadeHolidayGiftRow(sel); if g then table.insert(rows, 2, g) end end
     if S.out and S.out.name == sel then rows[#rows + 1] = { left = "|cffffd24aWaiting for " .. short(sel) .. " to answer your swap.|r", right = "" } end
   else
     ctx.pgHead(1, y, "Who's collecting", #names > 0 and (#names .. " found") or "")

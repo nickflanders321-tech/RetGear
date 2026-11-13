@@ -88,7 +88,7 @@ local MASTER_GOAL = 0.75
 
 local CARDS = {}
 for i, d in ipairs(RG.ARCADE_DATA or {}) do
-  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6], field = d[7] }
+  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6], field = d[7], bound = d[8] }
   local my = d[3] == 7 and RG.ARCADE_MYTHIC and RG.ARCADE_MYTHIC[d[2]]
   if my then CARDS[i].mythic = my; if my.icon then CARDS[i].icon = "Interface\\Icons\\" .. my.icon end end
 end
@@ -364,7 +364,7 @@ local function getSets()
   for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
     local cs = {}
     for _, n in ipairs(d[5]) do if byKey[n] then cs[#cs + 1] = byKey[n] end end
-    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, raid = d.raid, lo = d[3], hi = d[4], reward = math.min(d.raid and 150 or 100, (d.raid and 30 or 10) + 2 * #cs) } end
+    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, raid = d.raid, holiday = d.holiday, lo = d[3], hi = d[4], reward = math.min(d.raid and 150 or 100, (d.raid and 30 or 10) + 2 * #cs) } end
   end
   -- WoW Forever dungeons the game data has no bosses or loot for yet: shown, empty, as coming soon (no rewards)
   for _, dn in ipairs(RG.ARCADE_DUNGEONS_SOON or {}) do duns[#duns + 1] = { name = dn, cards = {}, dungeon = true, soon = true, reward = 0 } end
@@ -396,7 +396,7 @@ RG.ARCADE_STAGES = {
 function RG.ArcadeStageReward(s, stage)
   local coins = stage == 1 and s.reward or (stage == 2 and math.floor(s.reward * 1.5) or s.reward * 3)
   local packs = stage == 2 and { jumbo = 1 } or (stage == 3 and { super = 1 } or nil)
-  local dpk = (stage == 1 and s.dungeon) and 2 or nil
+  local dpk = (stage == 1 and s.dungeon and not s.holiday) and 2 or nil
   if s.field and stage == 1 then packs = { jumbo = 1 } end   -- (a Field Guide page: its Explorer badge and a jumbo pack)
   return coins, packs, dpk
 end
@@ -785,7 +785,7 @@ end
 local CRAFT_BASE = { 40, 80, 160, 320, 640 }
 local CRAFT_FINISH = { 1, 2, 5, 12 }
 function RG.ArcadeCraftCost(c, f)
-  if not c or c.kind == 4 or c.field or (c.tier or 6) > 5 then return nil end   -- (Field Guide cards come only from the world)
+  if not c or c.kind == 4 or c.field or c.bound or (c.tier or 6) > 5 then return nil end   -- (Field Guide and holiday cards come only from the world)
   return (CRAFT_BASE[c.tier] or 640) * (CRAFT_FINISH[f or 1] or 1)
 end
 function RG.ArcadeCraft(c, f)
@@ -932,7 +932,7 @@ RG.ArcadeTrade = trade
 local function countOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) or 0 end
 local function extraOf(a, c, f) return countOf(a, c, f) >= 2 end
 local function ownsOf(a, c, f) return countOf(a, c, f) >= 1 end
-local function tradable(c) return c and c.kind ~= 4 and c.tier ~= 7 and not c.field end   -- (Raiders, Mythics and Field Guide cards stay with whoever earned them)
+local function tradable(c) return c and c.kind ~= 4 and c.tier ~= 7 and not c.field and not c.bound end   -- (Raiders, Mythics, Field Guide and holiday cards stay with whoever earned them)
 local function sendAddon(msg, channel, target)
   if C_ChatInfo and C_ChatInfo.SendAddonMessage then pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel, target) end
 end
@@ -979,6 +979,14 @@ function RG.ArcadeGiveCard(key, f)
   local a = store(); local c = byKey[key]
   if not (a and c and FINISH[f]) then return false end
   addCard(a, key, f, 1)
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  return true
+end
+-- a card given away (a holiday gift to a friend): one copy of that print, if you have it
+function RG.ArcadeTakeCard(key, f)
+  local a = store(); local c = byKey[key]
+  if not (a and c and FINISH[f] and ownsOf(a, c, f)) then return false end
+  addCard(a, key, f, -1)
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
   return true
 end
@@ -3314,8 +3322,11 @@ function RG.ArcadeRefresh(keepMsg)
       for i, cell in ipairs(cells) do
         local c = st.cards[(view.albumPage - 1) * #cells + i]
         local missing = c and owned(a, c.id) == 0
+        -- (a WoW Forever original nobody in your guild has found yet: only its outline, ArcadeFirstEdition.lua)
+        local hidden = missing and RG.ArcadeUndiscovered and RG.ArcadeUndiscovered(c)
         -- a card you don't have: the card itself, faint, so you can see what you're looking for
-        if missing then paint(cell, c, 1, 0); rawset(cell, "known", false); cell:SetAlpha(0.33)
+        if hidden then paint(cell, c, nil); rawset(cell, "known", false); cell:SetAlpha(0.85)
+        elseif missing then paint(cell, c, 1, 0); rawset(cell, "known", false); cell:SetAlpha(0.33)
         else paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id)) end
         if missing then
           if not rawget(cell, "albName") then
@@ -3332,6 +3343,7 @@ function RG.ArcadeRefresh(keepMsg)
           local kind = c.kind == 1 and "Item" or (c.kind == 3 and "Place" or (c.kind == 2 and ((c.text or ""):find("[Bb]oss") and "Boss" or ((c.text or ""):find("^Dungeon elite") and "Elite" or "Creature")) or ""))
           cell.albKind:SetText("MISSING\n" .. kind:upper()); cell.albKind:SetTextColor(1, 0.93, 0.74)
           if st.field and RG.ArcadeFieldLabel then local t, col = RG.ArcadeFieldLabel(c); cell.albKind:SetText(t); cell.albKind:SetTextColor(col[1], col[2], col[3]) end
+          if hidden then cell.albKind:SetText("? ? ?\nUNDISCOVERED"); cell.albKind:SetTextColor(0.75, 0.7, 0.95) end
           cell.albTag:Show(); cell.albKind:Show()
         end
       end
