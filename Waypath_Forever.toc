@@ -119,6 +119,7 @@ ArcadeBoard.lua
 GateOn.lua
 FishMode.lua
 FishTools.lua
+FishHUD.lua
 Path.lua
 Paths.lua
 Speed.lua

@@ -36,6 +36,7 @@ local function fishSpell()
   end
   return spellName or "Fishing"
 end
+RG.FishSpellName = fishSpell
 local FISH_IDS = {}
 for _, id in ipairs(FISH_SPELLS) do FISH_IDS[id] = true end
 local function isFishing(id)

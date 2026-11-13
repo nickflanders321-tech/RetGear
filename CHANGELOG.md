@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **New fishing HUD.** One button in the middle with your fishing buttons around it, each with the game's own icon, a coloured edge for its state (green ready, orange the main action, red can't right now, grey not in your bags) and its count or time left printed on it.
+  - **The middle button** casts Fishing, or puts your pole on when it isn't in your hands. Your Fishing skill shows under it, and a ring of light around it counts down your cast.
+  - **Around it:** your best lure (time left on it), your fishing outfit or weapons back, food for Well Fed, your best camp object, the Fishing guide, Find Fish when the game has it, the campfire (with your wood count) and Cook.
+  - **Cook:** your raw fish go around the middle button, coloured by how much Cooking skill they still give. Click one to pick it, and the middle button opens Cooking and then cooks one per click. The fire button is right there, and Cook again takes you back to fishing.
+  - **Idle:** only the middle button. Casting, holding your pole or hovering over it opens the rest. Right-click the Fishing HUD line on the Fishing tab to hide the middle button when you're not fishing.
+  - **Three layouts:** a ring (the default, on a water ring we drew ourselves), a bar or a column. Click the Fishing HUD line on the Fishing tab to switch, or /wp fishhud ring, bar or column. /wp fishhud size 120 changes its size. Move it in Edit Mode or with /wp move.
+  - It replaces the old fishing display. The interface still fades while you fish, and what you catch rises above the buttons and fades.
+  - Everything waits for your click, and the buttons only change outside a fight, as the game requires.
+
 ## v1.38.0
 
 - **Card Shop fixed.** Only the first tile was filled in, the rest stayed empty, and the Dungeons, Raids and Holidays chips kept showing the regular packs under the wrong heading. The round picture on dungeon, raid and holiday packs was cut out in a way this client doesn't allow, which stopped the Shop part-way through every time. It now uses the game's mask textures. A tile that can't be drawn is hidden and noted in /wp errors instead of stopping the rest, and the heading always matches the chip you picked.

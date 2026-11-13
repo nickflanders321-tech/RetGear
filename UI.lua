@@ -2333,6 +2333,17 @@ local function renderFish()
     rows[n].onRightClick = function() RG.FishSaveOutfit() end
     rows[n].tip = "Click to " .. (st == "on" and "put your weapons back" or "put your fishing outfit on") .. ". Right-click while wearing your fishing hat, boots or gloves to make them part of the outfit.  /wp gofish  ·  /wp weapons"
   end
+  if RG.FishHUDLayout then
+    local l = RG.FishHUDLayout()
+    local NAME = { ring = "Ring", bar = "Bar", column = "Column" }
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffFishing HUD|r", "Cast, lure, food, your pole, camp, cooking and this guide on one set of buttons. Move it in Edit Mode or with /wp move; size with /wp fishhud size 120.",
+      l and (GOLD .. NAME[l] .. "|r") or (GREY .. "Off|r"), "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\Trade_Fishing")
+    rows[n].onClick = function() RG.FishHUDNextLayout(); RG.RefreshUI() end
+    rows[n].onRightClick = function() RG.db.fishHudIdle = not RG.Opt("fishHudIdle"); RG.FishHUDRefresh(true); RG.RefreshUI() end
+    rows[n].tip = "Click: Ring, Bar, Column or Off.  Right-click: " .. (RG.Opt("fishHudIdle") and "hide" or "show") .. " the middle button when you're not fishing."
+  end
   -- goals: Artisan, the Extravaganza, your camp
   local pg = RG.FishPagle and RG.FishPagle()
   local dst, dmin
@@ -2618,7 +2629,7 @@ local SETTING_GROUPS = {
   { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "tooltipBest", "upgradeToast", "paperdoll", "gearPanel", "questUpgradeMarks", "dungeonHelper", "exorcism", "stoneReminder", "ammoReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts", "fieldGuideToasts" } },
-  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
+  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
   { "Interface", { "minimap", "sounds", "quietErrors", "sharePrompt" } },
 }
 local function renderGroup()
