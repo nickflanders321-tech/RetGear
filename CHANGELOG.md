@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Card Shop fixed.** Only the first tile was filled in, the rest stayed empty, and the Dungeons, Raids and Holidays chips kept showing the regular packs under the wrong heading. The round picture on dungeon, raid and holiday packs was cut out in a way this client doesn't allow, which stopped the Shop part-way through every time. It now uses the game's mask textures. A tile that can't be drawn is hidden and noted in /wp errors instead of stopping the rest, and the heading always matches the chip you picked.
 - **Auction House prices fixed.** An item listed for 1g 39s and up could show "35s market · none listed now".
   - **Full scans stopped at the first piece of gear:** they used a game function this client doesn't have, so the scan never finished and its prices were never saved. Fixed.
   - **Gear read as "none listed":** weapons and armour are listed under their item level, and the quick price check searched without it, so it came back empty. It now searches with the item level, and gear whose item level hasn't loaded yet is never called "none listed".

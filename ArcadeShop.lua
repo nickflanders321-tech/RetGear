@@ -129,7 +129,13 @@ local function makeTile(parent, u)
   t.trim = t.pack:CreateTexture(nil, "ARTWORK", nil, 1); t.trim:SetAllPoints(); t.trim:SetTexture(MEDIA .. "PackTrim"); t.trim:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
   -- the pack's medallion shows its dungeon, raid or holiday: the place's own picture, cut round
   t.emb = t.pack:CreateTexture(nil, "ARTWORK", nil, 2); t.emb:SetSize(27, 27); t.emb:SetPoint("CENTER", t.pack, "TOPLEFT", 29, -36.5)
-  pcall(t.emb.SetMask, t.emb, "Interface\\AddOns\\Waypath\\Media\\Disc")
+  -- (cut round with a mask texture: the older SetMask made every later SetTexCoord on it fail in this client, which
+  -- stopped the Shop part-way through painting its tiles)
+  pcall(function()
+    local mk = t.pack:CreateMaskTexture(); mk:SetAllPoints(t.emb)
+    mk:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    t.emb:AddMaskTexture(mk)
+  end)
   t.packName = u.fs(t.pack, "head", 7.5); t.packName:SetPoint("CENTER", 0, -4); t.packName:SetWidth(52); t.packName:SetJustifyH("CENTER")
   t.packName:SetTextColor(1, 0.96, 0.85); t.packName:SetShadowColor(0, 0, 0, 1); t.packName:SetShadowOffset(1, -1)
   t.badge = CreateFrame("Frame", nil, t, "BackdropTemplate"); t.badge:SetSize(24, 18); t.badge:SetPoint("TOPRIGHT", t.pack, "TOPRIGHT", 8, 6)
@@ -178,17 +184,17 @@ local function paintTile(t, e)
       t.emb:SetTexture(MEDIA .. "Places" .. pl[1])
       -- (the middle of the painting, square)
       local x0, y0 = col * 120 / 1024, row * 84 / 1024
-      t.emb:SetTexCoord(x0 + 18 / 1024, x0 + 102 / 1024, y0, y0 + 84 / 1024); shown = true
+      pcall(t.emb.SetTexCoord, t.emb, x0 + 18 / 1024, x0 + 102 / 1024, y0, y0 + 84 / 1024); shown = true
     elseif scr then
       t.emb:SetTexture(scr[1])
-      if scr[2] == 1 then t.emb:SetTexCoord(0.3, 0.7, 0.14, 0.86) else t.emb:SetTexCoord(0.15, 0.85, 0.1, 0.9) end
+      if scr[2] == 1 then pcall(t.emb.SetTexCoord, t.emb, 0.3, 0.7, 0.14, 0.86) else pcall(t.emb.SetTexCoord, t.emb, 0.15, 0.85, 0.1, 0.9) end
       shown = true
     else
       local u = U()
       for _, st in ipairs(u.getSets()) do
         if st.name == e.title and st.cards[1] then
           local ic = u.iconFor(st.cards[1])
-          if ic then t.emb:SetTexture(ic); t.emb:SetTexCoord(0.08, 0.92, 0.08, 0.92); shown = true end
+          if ic then t.emb:SetTexture(ic); pcall(t.emb.SetTexCoord, t.emb, 0.08, 0.92, 0.08, 0.92); shown = true end
           break
         end
       end
@@ -261,18 +267,22 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   for _, b in ipairs(chips) do b:SetShown(on); b:SetActive(b.key == (view.shopSection or "all")) end
   if not on then return end
 
+  local n = waitingCount(ctx)
+  local secName = ({ all = "Every pack", waiting = "Packs to open", regular = "Regular packs", dungeon = "Dungeon packs", raid = "Raid packs", holiday = "Holiday packs" })[view.shopSection or "all"]
+  shop.head:SetText(string.upper(secName))
+  shop.right:SetText((n > 0 and ("|cff7be08a" .. n .. " pack" .. (n == 1 and "" or "s") .. " to open|r   ·   ") or "") .. (ctx.a.coins or 0) .. " coins")
   local list = filtered(ctx, view)
   local per = COLS * ROWS
   local pages = math.max(1, math.ceil(#list / per))
   local pg = math.max(0, math.min(view.shopPage or 0, pages - 1)); view.shopPage = pg
   for i, tl in ipairs(shop.tiles) do
     local e = list[pg * per + i]
-    if e then paintTile(tl, e) else tl:Hide(); tl.entry = nil end
+    -- (one tile that can't be painted is hidden and logged; it never stops the rest)
+    if e then
+      local ok, err = pcall(paintTile, tl, e)
+      if not ok then tl:Hide(); tl.entry = nil; if RG.RecordError then RG.RecordError(err) elseif RG.Debug then RG.Debug(err) end end
+    else tl:Hide(); tl.entry = nil end
   end
-  local n = waitingCount(ctx)
-  local secName = ({ all = "Every pack", waiting = "Packs to open", regular = "Regular packs", dungeon = "Dungeon packs", raid = "Raid packs", holiday = "Holiday packs" })[view.shopSection or "all"]
-  shop.head:SetText(string.upper(secName))
-  shop.right:SetText((n > 0 and ("|cff7be08a" .. n .. " pack" .. (n == 1 and "" or "s") .. " to open|r   ·   ") or "") .. (ctx.a.coins or 0) .. " coins")
   shop.empty:SetText(#list == 0 and ((view.shopSection == "waiting") and "No packs waiting. Earn them by playing, or buy one." or "Nothing here yet.") or "")
   frame.prev:SetShown(pages > 1); frame.next:SetShown(pages > 1); frame.pageText:SetShown(pages > 1)
   if pages > 1 then

@@ -3347,7 +3347,7 @@ function RG.ArcadeRefresh(keepMsg)
   for _, fn in ipairs(RG.ArcadeViewHooks or {}) do
     local ok, err = pcall(fn, view, { frame = frame, a = a, PGW = PGW, PGX = PGX, say = say, pgHead = pgHead, pgBox = pgBox, PACKS = PACKS, PACK_ORDER = PACK_ORDER,
       tokens = function(kind) return tokenCount(a, kind) end, price = packPrice })
-    if not ok and RG.Debug then RG.Debug(err) end
+    if not ok then if RG.RecordError then pcall(RG.RecordError, err) elseif RG.Debug then RG.Debug(err) end end
   end
 
   if album then
