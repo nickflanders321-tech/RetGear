@@ -10,6 +10,7 @@
   - **Three layouts:** a ring (the default, on a water ring we drew ourselves), a bar or a column. Click the Fishing HUD line on the Fishing tab to switch, or /wp fishhud ring, bar or column. /wp fishhud size 120 changes its size. Move it in Edit Mode or with /wp move.
   - **Compact:** the buttons sit close around the middle one, like an action bar bent into a ring. The water ring only rises while your line is in the water, and the middle button counts down the seconds of your cast.
   - Every tooltip says what a click does. The middle button can have its own key (Key Bindings, Waypath+).
+  - **Shift-drag** any of its buttons to move the HUD (outside a fight). It keeps the same place Edit Mode does, and a Shift-click never casts.
   - **Pick your lure:** right-click the lure button to choose which lure it puts on, or go back to the best one you carry.
   - It replaces the old fishing display. The interface still fades while you fish, and what you catch rises above the buttons and fades.
   - Everything waits for your click, and the buttons only change outside a fight, as the game requires.

@@ -368,11 +368,13 @@ local function setTip(self)
     GameTooltip:AddLine(k and ("Click or press " .. k .. " to cast; " .. k .. " again at the splash hooks it.") or "Click to cast. Pick a one-key fishing key on the Fishing tab.", 0.6, 0.6, 0.6, true)
     local bk = GetBindingKey and GetBindingKey("CLICK WaypathFishHUDHub:LeftButton")
     GameTooltip:AddLine("Key for this button: " .. (bk or "none (Key Bindings, Waypath+)"), 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("Shift-drag: move the HUD", 0.5, 0.5, 0.5)
   else
     GameTooltip:AddLine(d.tip and d.tip[1] or "", 1, 0.93, 0.74)
     if d.tip and d.tip[2] then GameTooltip:AddLine(d.tip[2], 0.9, 0.9, 0.9, true) end
     if d.click then GameTooltip:AddLine("Click: " .. d.click, 0.6, 0.6, 0.6, true) end
     if d.rclick then GameTooltip:AddLine("Right-click: " .. d.rclick, 0.6, 0.6, 0.6, true) end
+    GameTooltip:AddLine("Shift-drag: move the HUD", 0.5, 0.5, 0.5)
   end
   GameTooltip:Show()
 end
@@ -391,8 +393,30 @@ local function makeButton(name, size)
   b.big = b:CreateFontString(nil, "OVERLAY"); font(b.big, size >= HUB and 15 or 13); b.big:SetPoint("CENTER", 0, 0)
   b.cnt = b:CreateFontString(nil, "OVERLAY"); font(b.cnt, 10); b.cnt:SetPoint("BOTTOMRIGHT", 0, 1); b.cnt:SetJustifyH("RIGHT")
   b.keyt = b:CreateFontString(nil, "OVERLAY"); font(b.keyt, 9); b.keyt:SetPoint("TOPRIGHT", 0, -1); b.keyt:SetJustifyH("RIGHT")
+  -- Shift + drag moves the whole HUD (out of a fight); a Shift-click does nothing, so a drag never casts
+  b:SetAttribute("shift-type1", "macro"); b:SetAttribute("shift-macrotext1", "")
+  b:RegisterForDrag("LeftButton")
+  b:SetScript("OnDragStart", function()
+    if not (IsShiftKeyDown and IsShiftKeyDown()) or inCombat() then return end
+    root:SetMovable(true); root:SetClampedToScreen(true); root:StartMoving(); root.__dragging = true
+  end)
+  b:SetScript("OnDragStop", function()
+    if not root.__dragging then return end
+    root.__dragging = nil
+    root:StopMovingOrSizing()
+    -- kept like Edit Mode keeps it: by its middle, from the middle of the screen, in its own units
+    local cx, cy = root:GetCenter()
+    local ux, uy = UIParent:GetCenter()
+    local sc, us = root:GetEffectiveScale(), UIParent:GetEffectiveScale()
+    if cx and ux and not inCombat() then
+      local x, y = math.floor(cx - ux * us / sc + 0.5), math.floor(cy - uy * us / sc + 0.5)
+      RG.db.movers = RG.db.movers or {}
+      RG.db.movers.fishHUD = { "CENTER", "CENTER", x, y }
+      root:ClearAllPoints(); root:SetPoint("CENTER", UIParent, "CENTER", x, y)
+    end
+  end)
   b:SetScript("PostClick", function(self, mouse, down)
-    if down then return end
+    if down or (IsShiftKeyDown and IsShiftKeyDown()) then return end
     local d = self.def
     local fn = d and ((mouse == "RightButton" and d.rfn) or (mouse ~= "RightButton" and not d.secure and d.fn) or (mouse == "RightButton" and not d.secure and d.fn))
     if fn then
