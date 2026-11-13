@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Card window polish:** cards in the Collection and the Album lift a little off the page with a soft glow when you hover them; the Album shows the cards you're missing faintly (marked "Missing" with what kind of card it is), so you can see what you're looking for; and finishing a set stage plays a celebration: a banner in the medal's colour (bronze, silver or gold) rises over the pack with its reward.
 - **Tracker readability:** each quest has a thin progress bar under it (gold while under way, green when done), a new "Roomier tracker" setting adds space between lines, and in compact mode a busy zone lists up to 8 quests.
 - **Smarter turn-in run.** It now plans the trip: your zone first, then the other zones in order of how quickly you get there with your hearthstone, flight paths, zeppelins and boats, and tells you how ("2 here, then 2 in The Barrens (Hearthstone to Orgrimmar > Fly to Crossroads), then 1 in Ashenvale"). When a zone is done it says how to get to the next one. Hover the "ready to turn in" line on the tracker to see the plan.
 - **Dungeon helper.** Inside a dungeon, the tracker lists your upgrades from it, grouped by boss, with how much each adds (and the level you can wear it at, if it's above yours). It checks the gear lists and every blue and purple drop of the dungeon, and lists only upgrades. Click one for where it drops. Turn it off in Settings (Gear and combat).

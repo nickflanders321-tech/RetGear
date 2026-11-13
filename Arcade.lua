@@ -405,7 +405,7 @@ end
 local function claimSets(a)
   a.setsDone = a.setsDone or {}    -- bronze (the first stage: what sets paid before stages)
   a.setStage = a.setStage or {}    -- [set] = highest stage paid
-  local done = {}
+  local done, won = {}, {}   -- (won: for the celebration when the pack is open)
   for _, s in ipairs(getSets()) do
     local paid = a.setStage[s.name] or (a.setsDone[s.name] and 1 or 0)
     for stage = paid + 1, (#s.cards > 0 and 3 or 0) do
@@ -419,9 +419,10 @@ local function claimSets(a)
       for k, n in pairs(packs or {}) do t[k] = (t[k] or 0) + n end
       if dpk then a.dpk = a.dpk or {}; a.dpk[s.name] = (a.dpk[s.name] or 0) + dpk end
       done[#done + 1] = s.name .. " " .. RG.ARCADE_STAGES[stage][1]:lower() .. " (" .. RG.ArcadeStageText(s, stage) .. ")"
+      won[#won + 1] = { name = s.name, stage = stage, text = RG.ArcadeStageText(s, stage) }
     end
   end
-  return done
+  return done, won
 end
 
 local GOALS = {
@@ -597,7 +598,9 @@ local function openOne(a, kind, dn)
   note(goalProgress(a, "packs2", 1)); note(goalProgress(a, "packs3", 1))
   if shiny then note(goalProgress(a, "shiny", 1)) end
   if newCount > 0 then note(goalProgress(a, "new5", newCount)) end
-  for _, s in ipairs(claimSets(a)) do notes[#notes + 1] = "Set reward: " .. s end
+  local doneSets, won = claimSets(a)
+  for _, s in ipairs(doneSets) do notes[#notes + 1] = "Set reward: " .. s end
+  if #won > 0 then meta.stagesWon = won end
   if meta.streakReward then notes[#notes + 1] = STREAK_BONUS .. " days in a row: a reward pack is waiting" end
   -- set progress for the sets these cards belong to
   local touched, order = {}, {}
@@ -2057,6 +2060,7 @@ local function flip(i)
         reveal.all:Hide(); reveal.ok:SetText("Done")
         if not reveal.record then reveal.title:SetText("Pack opened") end
         reveal.share:Show(); summarize()
+        if reveal.meta and reveal.meta.stagesWon and RG.ArcadeStageCelebrate then RG.ArcadeStageCelebrate(reveal.meta.stagesWon) end
       end
     end
   end)
@@ -2673,6 +2677,43 @@ local function showReveal(got, notes, meta)
   end
 end
 
+-- A set stage finished by this pack: a banner in the medal's colour rises over the pack, rays turn behind it
+function RG.ArcadeStageCelebrate(list)
+  if not (reveal and reveal:IsShown() and list and list[1]) then return end
+  local w = list[#list]   -- the highest one this pack reached
+  local sg = RG.ARCADE_STAGES[w.stage]
+  local c = sg[3]
+  local b = rawget(reveal, "stageBanner")
+  if not b then
+    b = CreateFrame("Button", nil, reveal); b:SetSize(460, 120); b:SetFrameLevel(reveal:GetFrameLevel() + 40)
+    b.rays = b:CreateTexture(nil, "BACKGROUND"); b.rays:SetTexture(MEDIA .. "Rays"); b.rays:SetBlendMode("ADD"); b.rays:SetSize(420, 420); b.rays:SetPoint("CENTER")
+    b.glow = b:CreateTexture(nil, "BORDER"); b.glow:SetTexture(MEDIA .. "Soft"); b.glow:SetBlendMode("ADD"); b.glow:SetSize(520, 200); b.glow:SetPoint("CENTER")
+    b.plate = b:CreateTexture(nil, "ARTWORK"); b.plate:SetColorTexture(0.06, 0.05, 0.04, 0.88); b.plate:SetSize(440, 92); b.plate:SetPoint("CENTER")
+    b.edge1 = b:CreateTexture(nil, "ARTWORK", nil, 2); b.edge1:SetHeight(2); b.edge1:SetPoint("TOPLEFT", b.plate, "TOPLEFT"); b.edge1:SetPoint("TOPRIGHT", b.plate, "TOPRIGHT")
+    b.edge2 = b:CreateTexture(nil, "ARTWORK", nil, 2); b.edge2:SetHeight(2); b.edge2:SetPoint("BOTTOMLEFT", b.plate, "BOTTOMLEFT"); b.edge2:SetPoint("BOTTOMRIGHT", b.plate, "BOTTOMRIGHT")
+    b.head = fs(b, "head", 12); b.head:SetPoint("TOP", b.plate, "TOP", 0, -12)
+    b.title = fs(b, "title", 22); b.title:SetPoint("CENTER", b.plate, "CENTER", 0, 0)
+    b.sub = fs(b, "body", 12); b.sub:SetPoint("BOTTOM", b.plate, "BOTTOM", 0, 11); b.sub:SetTextColor(0.9, 0.86, 0.74)
+    b:SetScript("OnClick", function(self) self:Hide() end)
+    b:SetScript("OnUpdate", function(self, dt)
+      self.age = self.age + dt
+      if self.rays.SetRotation then self.rays:SetRotation(self.age * 0.4) end
+      local rise = math.min(1, self.age / 0.35)
+      self:ClearAllPoints(); self:SetPoint("CENTER", reveal, "CENTER", 0, 40 + 30 * rise)
+      self:SetAlpha(self.age < 0.35 and rise or (self.age > 5 and math.max(0, 6 - self.age) or 1))
+      if self.age > 6 then self:Hide() end
+    end)
+    reveal.stageBanner = b
+  end
+  b.rays:SetVertexColor(c[1], c[2], c[3], 0.55); b.glow:SetVertexColor(c[1], c[2], c[3], 0.4)
+  b.edge1:SetColorTexture(c[1], c[2], c[3], 0.9); b.edge2:SetColorTexture(c[1], c[2], c[3], 0.9)
+  b.head:SetText(w.name:upper()); b.head:SetTextColor(c[1], c[2], c[3])
+  b.title:SetText(sg[1]:upper() .. " SET"); b.title:SetTextColor(c[1], c[2], c[3])
+  b.sub:SetText(w.text .. (#list > 1 and ("   ·   and " .. (#list - 1) .. " more") or ""))
+  b.age = 0; b:SetAlpha(0); b:Show()
+  playSound(nil, nil, "reward")
+end
+
 -- the present for reaching level 60 (shown when you are out of combat, or the next time you open the cards)
 function RG.ArcadeClaimGift()
   local a = store(); if not a or a.giftDone then return end
@@ -2947,7 +2988,19 @@ local function build()
   for i = 1, COLS * ROWS do
     local c = makeCard(frame, CELLW)
     c:SetFrameLevel(lv(frame) + 3)
-    c:SetPoint("TOPLEFT", frame, "TOPLEFT", gx0 + ((i - 1) % COLS) * GRIDX, -196 - math.floor((i - 1) / COLS) * GRIDY)
+    c.homeX, c.homeY = gx0 + ((i - 1) % COLS) * GRIDX, -196 - math.floor((i - 1) / COLS) * GRIDY
+    c:SetPoint("TOPLEFT", frame, "TOPLEFT", c.homeX, c.homeY)
+    -- under your mouse a card lifts a little off the page, with a soft glow beneath it
+    c.lift = c:CreateTexture(nil, "BACKGROUND", nil, -7); c.lift:SetTexture(MEDIA .. "Soft"); c.lift:SetBlendMode("ADD")
+    c.lift:SetPoint("TOPLEFT", -14, 10); c.lift:SetPoint("BOTTOMRIGHT", 14, -18); c.lift:SetVertexColor(1, 0.85, 0.5, 0.35); c.lift:Hide()
+    c:HookScript("OnEnter", function(self)
+      self:ClearAllPoints(); self:SetPoint("TOPLEFT", frame, "TOPLEFT", self.homeX, self.homeY + 5)
+      self:SetFrameLevel(lv(frame) + 6); self.lift:Show()
+    end)
+    c:HookScript("OnLeave", function(self)
+      self:ClearAllPoints(); self:SetPoint("TOPLEFT", frame, "TOPLEFT", self.homeX, self.homeY)
+      self:SetFrameLevel(lv(frame) + 3); self.lift:Hide()
+    end)
     c.onCard = cell_click
     c.noTip = true     -- the card is shown at full size beside the window instead of a text tooltip
     -- the Album: a card you don't have yet says where it comes from
@@ -3180,7 +3233,8 @@ function RG.ArcadeRefresh(keepMsg)
   local album = view.mode == "album"
   for _, cell in ipairs(cells) do
     if not (cards or album) then cell:Hide() end
-    if rawget(cell, "albName") then cell.albName:Hide(); cell.albKind:Hide() end   -- (the Album's names for empty slots)
+    if rawget(cell, "albName") then cell.albName:Hide(); cell.albKind:Hide(); cell.albTag:Hide() end   -- (the Album's labels for missing cards)
+    cell:SetAlpha(1)   -- (the Album draws missing cards faint)
   end
   for _, w in ipairs({ frame.albPrev, frame.albNext, frame.albTitle, frame.albOpen }) do w:SetShown(album) end
   frame.panel:SetText("")
@@ -3214,19 +3268,25 @@ function RG.ArcadeRefresh(keepMsg)
       view.albumPage = math.max(1, math.min(view.albumPage or 1, pages))
       for i, cell in ipairs(cells) do
         local c = st.cards[(view.albumPage - 1) * #cells + i]
-        paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
-        if c and owned(a, c.id) == 0 then
+        local missing = c and owned(a, c.id) == 0
+        -- a card you don't have: the card itself, faint, so you can see what you're looking for
+        if missing then paint(cell, c, 1, 0); rawset(cell, "known", false); cell:SetAlpha(0.33)
+        else paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id)) end
+        if missing then
           if not rawget(cell, "albName") then
             cell.albName = fs(cell, "head", 12); cell.albName:SetPoint("CENTER", cell, "CENTER", 0, -8)
             cell.albName:SetWidth(cell:GetWidth() - 14); cell.albName:SetJustifyH("CENTER")
             if cell.albName.SetWordWrap then cell.albName:SetWordWrap(true) end
-            cell.albKind = fs(cell, "body", 10); cell.albKind:SetPoint("TOP", cell.albName, "BOTTOM", 0, -4); cell.albKind:SetTextColor(0.6, 0.55, 0.45)
+            -- (on its own frame above the card, so the card's faintness doesn't fade it)
+            cell.albTag = CreateFrame("Frame", nil, frame); cell.albTag:SetAllPoints(cell); cell.albTag:SetFrameLevel(lv(frame) + 8)
+            cell.albKind = fs(cell.albTag, "head", 11); cell.albKind:SetPoint("CENTER", cell.albTag, "CENTER", 0, -4); cell.albKind:SetJustifyH("CENTER")
+            cell.albKind:SetShadowColor(0, 0, 0, 1); cell.albKind:SetShadowOffset(1, -1)
           end
           local tc = TIER[c.tier][3]
-          cell.albName:SetText(c.name); cell.albName:SetTextColor(tc[1] * 0.75, tc[2] * 0.75, tc[3] * 0.75)
+          cell.albName:SetText(""); cell.albName:SetTextColor(tc[1] * 0.75, tc[2] * 0.75, tc[3] * 0.75)   -- (the faint card shows its name)
           local kind = c.kind == 1 and "Item" or (c.kind == 3 and "Place" or (c.kind == 2 and ((c.text or ""):find("[Bb]oss") and "Boss" or ((c.text or ""):find("^Dungeon elite") and "Elite" or "Creature")) or ""))
-          cell.albKind:SetText(kind)
-          cell.albName:Show(); cell.albKind:Show()
+          cell.albKind:SetText("MISSING\n" .. kind:upper()); cell.albKind:SetTextColor(1, 0.93, 0.74)
+          cell.albTag:Show(); cell.albKind:Show()
         end
       end
       frame.pageText:SetText(view.albumPage .. " / " .. pages)
