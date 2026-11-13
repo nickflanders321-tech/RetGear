@@ -309,6 +309,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   end
   -- the Winter Veil present
   if d.holiday.key == "winterveil" then
+    pcall(giftCheck)   -- (in case Winter Veil began while you were logged in)
     local yr, ready = wrappedState()
     if not btn then
       local u = U()
