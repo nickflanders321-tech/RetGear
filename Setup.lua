@@ -155,7 +155,7 @@ local function buildPages()
   -- 2. Character and professions
   local p2 = newPage("Your character")
   local mainText = text(p2, "GameFontHighlight", "", W - 70); mainText:SetPoint("TOPLEFT", 0, -38)
-  local mainBtn = CreateFrame("Button", nil, p2, "UIPanelButtonTemplate"); mainBtn:SetSize(170, 22); mainBtn:SetPoint("TOPLEFT", 0, -78); mainBtn:SetText("Make this my main")
+  local mainBtn = RG.ThemeButton(p2); mainBtn:SetSize(170, 22); mainBtn:SetPoint("TOPLEFT", 0, -78); mainBtn:SetText("Make this my main")
   mainBtn:SetScript("OnClick", function() RG.db.main = RG.PlayerKey(); p2.refreshers[1]() end)
   table.insert(p2.refreshers, function()
     local isMain = RG.db.main == RG.PlayerKey()
@@ -207,7 +207,7 @@ local function buildPages()
     local bs, x = {}, 0
     local function pickIt(v) RG.db[key] = v; for k, b in pairs(bs) do if k == v then b:LockHighlight() else b:UnlockHighlight() end end end
     for _, o in ipairs(opts) do
-      local b = CreateFrame("Button", nil, pp, "UIPanelButtonTemplate")
+      local b = RG.ThemeButton(pp)
       b:SetSize(math.max(96, #o[2] * 7 + 20), 22); b:SetPoint("TOPLEFT", x, sy - 20); b:SetText(o[2])
       b:SetScript("OnClick", function() pickIt(o[1]) end)
       bs[o[1]] = b; x = x + b:GetWidth() + 6
@@ -272,7 +272,7 @@ local function buildPages()
   local specBtns, x = {}, 80
   for _, sp in ipairs(RG.SpecList and RG.SpecList() or {}) do
     do
-      local b = CreateFrame("Button", nil, p5, "UIPanelButtonTemplate")
+      local b = RG.ThemeButton(p5)
       b:SetSize(math.max(84, (#sp.name * 7) + 20), 22); b:SetPoint("TOPLEFT", x, -yEnd - 42); b:SetText(sp.name)
       b:SetScript("OnClick", function() if RG.IsMainSpec(sp) then RG.Print(sp.name .. " is your main spec. Pick a different one here.") return end; RG.SetSecondSpec(sp.key); RG.db.healSet = true; for _, r in ipairs(p5.refreshers) do r() end end)
       b.key = sp.key
@@ -351,14 +351,14 @@ function RG.ShowSetup()
     tinsert(UISpecialFrames, "WaypathSetup")
     RG.DialogBackdrop(wiz)
     RG.DialogHeader(wiz, "Waypath+ Setup", 300)
-    local close = CreateFrame("Button", nil, wiz, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", -4, -4)
+    local close = RG.ThemeClose(wiz)
     close:SetScript("OnClick", function()
       if page == 1 then wiz:Hide(); RG.Print("No choice made yet: Waypath+ asks again next time you log in (/wp setup asks now).") return end
       finish(false)
     end)
-    wiz.back = CreateFrame("Button", nil, wiz, "UIPanelButtonTemplate"); wiz.back:SetSize(100, 24); wiz.back:SetPoint("BOTTOMLEFT", 22, 20); wiz.back:SetText("Back")
-    wiz.next = CreateFrame("Button", nil, wiz, "UIPanelButtonTemplate"); wiz.next:SetSize(130, 24); wiz.next:SetPoint("BOTTOMRIGHT", -22, 20)
-    wiz.skip = CreateFrame("Button", nil, wiz, "UIPanelButtonTemplate"); wiz.skip:SetSize(110, 24); wiz.skip:SetPoint("RIGHT", wiz.next, "LEFT", -8, 0); wiz.skip:SetText("Skip setup")
+    wiz.back = RG.ThemeButton(wiz); wiz.back:SetSize(100, 24); wiz.back:SetPoint("BOTTOMLEFT", 22, 20); wiz.back:SetText("Back")
+    wiz.next = RG.ThemeButton(wiz); wiz.next:SetSize(130, 24); wiz.next:SetPoint("BOTTOMRIGHT", -22, 20)
+    wiz.skip = RG.ThemeButton(wiz); wiz.skip:SetSize(110, 24); wiz.skip:SetPoint("RIGHT", wiz.next, "LEFT", -8, 0); wiz.skip:SetText("Skip setup")
     wiz.back:SetScript("OnClick", function() if page > 1 then show(page - 1) end end)
     wiz.next:SetScript("OnClick", function() if page < #pages then show(page + 1) else finish(true) end end)
     wiz.skip:SetScript("OnClick", function() finish(false) end)

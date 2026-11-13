@@ -72,6 +72,44 @@ function RG.DialogHeader(f, text)
 end
 RG.Backdrop = backdrop
 
+-- One look for every Waypath+ window: the palette, a button and a close "×" (the main window, the gear panel, setup,
+-- the tour, the source window, the error log, trail import and the stat weights all use these).
+RG.THEME = {
+  bg = { 0.063, 0.11, 0.153, 0.97 }, raised = { 0.106, 0.165, 0.212, 1 }, edge = { 0.169, 0.227, 0.278, 1 },
+  text = { 0.937, 0.902, 0.824 }, dim = { 0.663, 0.624, 0.541 }, gold = RG.ACCENT,
+}
+local TH = RG.THEME
+function RG.ThemeButton(parent, text, w, h, onClick)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  b:SetSize(w or 110, h or 24)
+  RG.Round(b, TH.raised[1], TH.raised[2], TH.raised[3], 1, 7)
+  local l = b:CreateFontString(nil, "OVERLAY"); RG.Font(l, "medium", 12); l:SetPoint("CENTER", 0, 0); l:SetTextColor(TH.text[1], TH.text[2], TH.text[3])
+  b:SetFontString(l); b.label = l
+  local function paint(self, hover)
+    local on = self:IsEnabled()
+    local c = (hover and on) and TH.edge or TH.raised
+    self:SetBackdropColor(c[1], c[2], c[3], on and 1 or 0.55)
+    local t = not on and TH.dim or (hover and TH.gold or TH.text)
+    l:SetTextColor(t[1], t[2], t[3])
+  end
+  b:SetScript("OnEnter", function(self) paint(self, true) end)
+  b:SetScript("OnLeave", function(self) paint(self, false) end)
+  b:SetScript("OnEnable", function(self) paint(self, false) end)
+  b:SetScript("OnDisable", function(self) paint(self, false) end)
+  if onClick then b:SetScript("OnClick", onClick) end
+  if text then b:SetText(text) end
+  return b
+end
+function RG.ThemeClose(parent, onClick)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetSize(24, 24); b:SetPoint("TOPRIGHT", -8, -8)
+  b.x = b:CreateFontString(nil, "OVERLAY"); RG.Font(b.x, "medium", 19); b.x:SetPoint("CENTER", 0, 1); b.x:SetText("\195\151"); b.x:SetTextColor(TH.dim[1], TH.dim[2], TH.dim[3])
+  b:SetScript("OnEnter", function(self) self.x:SetTextColor(TH.gold[1], TH.gold[2], TH.gold[3]) end)
+  b:SetScript("OnLeave", function(self) self.x:SetTextColor(TH.dim[1], TH.dim[2], TH.dim[3]) end)
+  b:SetScript("OnClick", onClick or function() parent:Hide() end)
+  return b
+end
+
 -- ---------------------------------------------------------------------------
 -- Toasts: a golden card near the top of the screen. Stacks up to three.
 -- ---------------------------------------------------------------------------
@@ -87,14 +125,14 @@ function RG.Toast(title, text, icon, button, onButton, seconds)
   local ring = t:CreateTexture(nil, "OVERLAY"); ring:SetSize(68, 68); ring:SetPoint("CENTER", ic, "CENTER"); ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
   local h = RG.NewText(t, "GameFontNormalLarge"); h:SetPoint("TOPLEFT", ic, "TOPRIGHT", 14, 2); h:SetText(title)
   local b = RG.NewText(t, "GameFontHighlight"); b:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -5); b:SetWidth(button and 210 or 290); b:SetJustifyH("LEFT"); b:SetText(text or "")
-  local x = CreateFrame("Button", nil, t, "UIPanelCloseButton"); x:SetPoint("TOPRIGHT", -2, -2)
+  local x = RG.ThemeClose(t)
   local function close()
     for i, v in ipairs(toasts) do if v == t then table.remove(toasts, i) break end end
     t:Hide(); layoutToasts()
   end
   x:SetScript("OnClick", close)
   if button then
-    local btn = CreateFrame("Button", nil, t, "UIPanelButtonTemplate")
+    local btn = RG.ThemeButton(t)
     btn:SetSize(96, 24); btn:SetPoint("BOTTOMRIGHT", -18, 16); btn:SetText(button)
     btn:SetScript("OnClick", function() if onButton then onButton() end; close() end)
   end
@@ -298,7 +336,7 @@ function RG.ShowWelcome()
     .. GOLD .. "•|r Items worth more on the AH get a " .. GOLD .. "gold coin|r and are never vendored.\n"
     .. GOLD .. "•|r Everything else lives in " .. GOLD .. "/wp|r or the minimap button. Settings turns any of it off.")
   local function btn(label, x, fn, primary)
-    local o = CreateFrame("Button", nil, f, "UIPanelButtonTemplate"); o:SetSize(150, 24); o:SetPoint("BOTTOM", x, 22); o:SetText(label)
+    local o = RG.ThemeButton(f); o:SetSize(150, 24); o:SetPoint("BOTTOM", x, 22); o:SetText(label)
     o:SetScript("OnClick", function() RG.db.welcomed = true; f:Hide(); if fn then fn() end end)
   end
   btn("Open the guide", -80, function() if RG.ToggleUI then RG.ToggleUI() end end, true)
@@ -341,7 +379,7 @@ function RG.ShowTour(page)
     f.title = RG.NewText(f, "GameFontNormalLarge"); f.title:SetPoint("TOPLEFT", 22, -40)
     f.body = RG.NewText(f, "GameFontHighlight"); f.body:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -14); f.body:SetWidth(416); f.body:SetJustifyH("LEFT"); f.body:SetSpacing(3)
     local function btn(label, x, fn)
-      local o = CreateFrame("Button", nil, f, "UIPanelButtonTemplate"); o:SetSize(110, 24); o:SetPoint("BOTTOM", x, 20); o:SetText(label); o:SetScript("OnClick", fn); return o
+      local o = RG.ThemeButton(f); o:SetSize(110, 24); o:SetPoint("BOTTOM", x, 20); o:SetText(label); o:SetScript("OnClick", fn); return o
     end
     f.back = btn("Back", -130, function() RG.ShowTour(f.page - 1) end)
     f.next = btn("Next", 0, function() if f.page >= #TOUR then RG.db.tourSeen = true; f:Hide() else RG.ShowTour(f.page + 1) end end)

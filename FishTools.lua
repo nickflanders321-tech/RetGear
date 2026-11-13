@@ -126,8 +126,8 @@ function RG.FishPickKey(done)
     picker = CreateFrame("Frame", "WaypathFishKeyPicker", UIParent, "BackdropTemplate")
     picker:SetSize(340, 96); picker:SetPoint("CENTER", 0, 120); picker:SetFrameStrata("FULLSCREEN_DIALOG")
     if RG.DialogBackdrop then RG.DialogBackdrop(picker) end
-    picker.t = picker:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); picker.t:SetPoint("TOP", 0, -18); picker.t:SetText("Press the key you want to fish with")
-    picker.s = picker:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"); picker.s:SetPoint("TOP", picker.t, "BOTTOM", 0, -10)
+    picker.t = picker:CreateFontString(nil, "OVERLAY"); RG.Font(picker.t, "display", 16); picker.t:SetTextColor(0.937, 0.902, 0.824); picker.t:SetPoint("TOP", 0, -18); picker.t:SetText("Press the key you want to fish with")
+    picker.s = picker:CreateFontString(nil, "OVERLAY"); RG.Font(picker.s, "regular", 12); picker.s:SetPoint("TOP", picker.t, "BOTTOM", 0, -10)
     picker.s:SetText("It casts, then hooks the fish at the splash.\nEsc cancels  ·  Backspace removes the key"); picker.s:SetTextColor(0.75, 0.75, 0.75)
     picker:EnableKeyboard(true)
     if picker.SetPropagateKeyboardInput then picker:SetPropagateKeyboardInput(false) end
