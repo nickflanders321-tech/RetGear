@@ -366,6 +366,8 @@ local function getSets()
     for _, n in ipairs(d[5]) do if byKey[n] then cs[#cs + 1] = byKey[n] end end
     if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, lo = d[3], hi = d[4], reward = math.min(100, 10 + 2 * #cs) } end
   end
+  -- WoW Forever dungeons the game data has no bosses or loot for yet: shown, empty, as coming soon (no rewards)
+  for _, dn in ipairs(RG.ARCADE_DUNGEONS_SOON or {}) do duns[#duns + 1] = { name = dn, cards = {}, dungeon = true, soon = true, reward = 0 } end
   for i = #duns, 1, -1 do table.insert(out, 1, duns[i]) end
   setCache, setCount = out, #CARDS
   return out
@@ -406,7 +408,7 @@ local function claimSets(a)
   local done = {}
   for _, s in ipairs(getSets()) do
     local paid = a.setStage[s.name] or (a.setsDone[s.name] and 1 or 0)
-    for stage = paid + 1, 3 do
+    for stage = paid + 1, (#s.cards > 0 and 3 or 0) do
       if setProgress(a, s, stage) < #s.cards then break end
       local coins, packs, dpk = RG.ArcadeStageReward(s, stage)
       a.setStage[s.name] = stage
@@ -3229,8 +3231,8 @@ function RG.ArcadeRefresh(keepMsg)
       end
       frame.pageText:SetText(view.albumPage .. " / " .. pages)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
-      local clearedHere = st.dungeon and select(2, RG.ArcadeDungeonPacks(st.name))
-      frame.albTitle:SetText(st.name .. (st.dungeon and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
+      local clearedHere = st.dungeon and not st.soon and select(2, RG.ArcadeDungeonPacks(st.name))
+      frame.albTitle:SetText(st.name .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
       frame.albNext:ClearAllPoints()
       frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)
@@ -3243,7 +3245,12 @@ function RG.ArcadeRefresh(keepMsg)
         parts[#parts + 1] = hex .. sg[1] .. "|r " .. (paid >= k and "|cff7be08adone|r" or (have .. "/" .. n))
       end
       local nextStage = RG.ARCADE_STAGES[paid + 1]
+      if st.soon then
+        frame.albTitle:SetText(st.name .. "  |cffa89bc9·  coming soon|r")
+        frame.sub:SetText("|cffa89bc9This dungeon's cards arrive once WoW Forever's game data has its bosses and loot.\nWaypath+ adds them by itself in an update: nothing to do but wait.|r")
+      else
       frame.sub:SetText(n .. " cards     " .. table.concat(parts, "     ") .. "\n|cffa89bc9" .. (nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or "Every stage finished: a gold set") .. "|r")
+      end
       -- a dungeon's pack
       if st.dungeon and RG.ArcadeDunPools and RG.ArcadeDunPools[st.name] then
         local have, cleared = RG.ArcadeDungeonPacks(st.name)
@@ -3288,7 +3295,7 @@ function RG.ArcadeRefresh(keepMsg)
         local medal = paid > 0 and RG.ARCADE_STAGES[paid] or nil
         local function hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255)) end
         b.left:SetText((paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name .. "|r" .. (s.dungeon and "|cffa89bc9  (dungeon)|r" or "") .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
-        b.right:SetText(paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
+        b.right:SetText(s.soon and "|cffa89bc9coming soon|r" or paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
         b.fill:Show(); b.fillBg:Show()
         local fc = paid >= 3 and { 0.48, 0.88, 0.54 } or sg[3]
         b.fill:SetColorTexture(fc[1], fc[2], fc[3], 0.95); b.fill:SetWidth(math.max(1, (PGW - 2) * (paid >= 3 and 1 or have / math.max(1, #s.cards))))

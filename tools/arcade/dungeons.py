@@ -159,6 +159,7 @@ for d in DUNS:
 # drop neighbouring runs (and have neighbouring creature numbers). Dungeons with no loot in the data yet are left
 # out until it arrives.
 # ---------------------------------------------------------------------------
+soon = []   # WoW Forever dungeons whose bosses and loot aren't in the data yet (the Album shows them as coming soon)
 NEW_DUNS = ["The Hall of Thanes", "Ruins of Lordaeron", "Excavation Site: Wetlands", "City of Dalaran", "The Drowned City",
             "Krol'dok Stronghold", "Alcaz Prison", "Blackmaw Hold", "The Shaper's Terrace"]
 if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
@@ -186,7 +187,7 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
         seeds = {int(n) for n in seeds}
         fb = final_of.get(d)
         if fb and own(fb): seeds.add(fb)
-        if not iid or not seeds: print("no loot data yet for", d, file=sys.stderr); continue
+        if not iid or not seeds: print("no loot data yet for", d, file=sys.stderr); soon.append(d); continue
         anchor = fb or min(seeds)
         allowed = zones | {None, 0} | ({FN[str(fb)].get("zone")} if fb and str(fb) in FN else set())
         bosses = set(seeds)
@@ -200,7 +201,7 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
                 mine = own(n)
                 if mine and any(abs(i - j) <= 6 for i in mine for j in items):
                     bosses.add(n); items |= set(mine); grew = True
-        if len(bosses) < 2: print("too few bosses for", d, file=sys.stderr); continue
+        if len(bosses) < 2: print("too few bosses for", d, file=sys.stderr); soon.append(d); continue
         # the last boss: its Legacy criterion's, else the one with the highest item numbers
         last = fb if fb in bosses else max(bosses, key=lambda n: max(own(n)))
         req = [int((FI.get(str(i)) or {}).get("reqLevel") or 0) for i in items]
@@ -269,6 +270,8 @@ L_.append("RG.ARCADE_DUNGEONS = {")
 for d, iid, lo, hi, pool in pools:
     L_.append("  { %s, %d, %d, %d, { %s } }," % (q(d), iid, lo, hi, ", ".join(q(n) for n in pool)))
 L_.append("}")
+L_.append("-- WoW Forever dungeons with no bosses or loot in the game data yet: the Album shows them as coming soon")
+L_.append("RG.ARCADE_DUNGEONS_SOON = { %s }" % ", ".join(q(d) for d in soon))
 L_.append("-- Legacy challenge criteria for each dungeon: { achievement id, criteria id } (any one done = cleared)")
 L_.append("RG.ARCADE_DUNGEON_LEGACY = {")
 for n in sorted(legacy):

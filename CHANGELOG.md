@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Cards: dungeons still waiting for their data show as "coming soon"** in the Album and the Sets tab (now only The Shaper's Terrace; Alcaz Prison and Blackmaw Hold got their packs with the latest game data). They fill in by themselves once the data has their bosses and loot.
 - Systems check fixes:
   - The ammo "Buy" button and the profession materials shopping list read vendor prices the newer way when the client has dropped the old one.
   - The "sell or vendor" list could error right after a failed bag read; it no longer does.
