@@ -977,7 +977,27 @@ local function buildArrow()
     if hint == "" and math.abs(rel) > 2.6 then hint = "It's behind you" end
     self.hint:SetText(hint)
   end)
+  -- Edit Mode / /wp move shows it with the other pop-ups (it keeps its own saved place)
+  if RG.RegisterMover then
+    RG.RegisterMover(arrow, "arrow", "Waypoint arrow", nil, function(f, was)
+      if was then return end
+      f.__mvUpd = f:GetScript("OnUpdate"); f:SetScript("OnUpdate", nil)
+      f.check:Hide(); f.tex:Show(); f.label:SetText("Next stop"); f.dist:SetText("120 yd"); f.hint:SetText("")
+    end, {
+      done = function(f) if f.__mvUpd then f:SetScript("OnUpdate", f.__mvUpd); f.__mvUpd = nil end end,
+      own = {
+        apply = function(f)
+          local p = RG.db.arrowPos
+          f:ClearAllPoints()
+          if p then f:SetPoint(p[1], UIParent, p[1], p[2], p[3]) else f:SetPoint("TOP", UIParent, "TOP", 0, -150) end
+        end,
+        save = function(f) local p, _, _, x, y = f:GetPoint(); RG.db.arrowPos = { p, x, y } end,
+        reset = function() RG.db.arrowPos = nil end,
+      } })
+  end
 end
+-- (Edit Mode / /wp move: made, hidden, so it can be placed before the first waypoint)
+if RG.RegisterMoverMaker then RG.RegisterMoverMaker(function() if RG.db and not arrow then buildArrow(); arrow:Hide() end end) end
 -- Shortest Path Forever (a separate add-on with a baked walking map of the whole world) plans routes
 -- around mountains, walls and cave mouths. When it is installed it takes over the directions for the
 -- pin Waypath+ places, and its arrow is shown instead of ours.

@@ -430,6 +430,18 @@ local function build()
     RG.RefreshTracker()
   end)
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); RG.TrackerSavePos() end)
+  -- Edit Mode / /wp move shows it with the other pop-ups (it keeps its own saved place, by its top-right corner)
+  if RG.RegisterMover then
+    RG.RegisterMover(tr, "tracker", "Tracker", nil, nil, { own = {
+      apply = function(f)
+        local p = RG.db.trackerPos
+        f:ClearAllPoints()
+        if p then f:SetPoint(p[1], UIParent, p[2], p[3], p[4]) else f:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
+      end,
+      save = function() RG.TrackerSavePos() end,
+      reset = function() RG.db.trackerPos = nil end,
+    } })
+  end
 
   -- the compass: points where the arrow points
   local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 12, -12); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)

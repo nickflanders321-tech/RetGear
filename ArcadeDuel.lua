@@ -369,17 +369,7 @@ local function realEnv()
     if RG.MatchExpects and RG.MatchExpects(from) then env.print("Match found: " .. tostring(from) .. ". Starting the duel.") onYes() return end
     local U = RG.ArcadeUI
     if not U then onNo() return end
-    local f = RG.__duelInvite
-    if not f then
-      f = CreateFrame("Frame", "WaypathDuelInvite", UIParent, "BackdropTemplate")
-      U.darkPanel(f, 380, 120)
-      f:SetPoint("TOP", UIParent, "TOP", 0, -120); f:SetFrameStrata("DIALOG")
-      f.t = U.fs(f, "title", 15); f.t:SetPoint("TOP", 0, -16); f.t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f.t:SetText("CARD DUEL")
-      f.b = U.fs(f, "body", 13); f.b:SetPoint("TOP", 0, -44); f.b:SetWidth(340)
-      f.yes = U.gbtn(f, "Accept", 120, 28, function() end, true); f.yes:SetPoint("BOTTOMLEFT", 40, 16)
-      f.no = U.gbtn(f, "Decline", 120, 28, function() end); f.no:SetPoint("BOTTOMRIGHT", -40, 16)
-      RG.__duelInvite = f
-    end
+    local f = RG.DuelInviteFrame()
     f.b:SetText("|cfff5d273" .. from .. "|r challenges you to a friendly card duel. Your selected Arena deck will be used, and you pick your hero next. No coins are won or lost.")
     f.yes:SetScript("OnClick", function()
       f:Hide()
@@ -395,6 +385,30 @@ local function realEnv()
   function env.closeInvite() if RG.__duelInvite then RG.__duelInvite:Hide() end end
   return env
 end
+
+-- the duel invitation box (made on first use, or when Edit Mode / /wp move shows where it will appear)
+function RG.DuelInviteFrame()
+  local f = RG.__duelInvite
+  if f then return f end
+  local U = RG.ArcadeUI
+  if not U then return nil end
+  f = CreateFrame("Frame", "WaypathDuelInvite", UIParent, "BackdropTemplate")
+  U.darkPanel(f, 380, 120)
+  f:SetPoint("TOP", UIParent, "TOP", 0, -120); f:SetFrameStrata("DIALOG")
+  f.t = U.fs(f, "title", 15); f.t:SetPoint("TOP", 0, -16); f.t:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f.t:SetText("CARD DUEL")
+  f.b = U.fs(f, "body", 13); f.b:SetPoint("TOP", 0, -44); f.b:SetWidth(340)
+  f.yes = U.gbtn(f, "Accept", 120, 28, function() end, true); f.yes:SetPoint("BOTTOMLEFT", 40, 16)
+  f.no = U.gbtn(f, "Decline", 120, 28, function() end); f.no:SetPoint("BOTTOMRIGHT", -40, 16)
+  f:Hide()
+  RG.__duelInvite = f
+  if RG.RegisterMover then
+    RG.RegisterMover(f, "duelInvite", "Card duel invitation", { "TOP", "TOP", 0, -120 }, function(fr, was)
+      if not was then fr.b:SetText("|cfff5d273A friend|r challenges you to a friendly card duel.") end
+    end)
+  end
+  return f
+end
+if RG.RegisterMoverMaker then RG.RegisterMoverMaker(function() RG.DuelInviteFrame() end) end
 
 RG.__duelEnv = realEnv   -- for tests
 local D

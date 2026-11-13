@@ -91,7 +91,19 @@ local function build()
       if not ok and not refreshFailed then refreshFailed = true; if RG.RecordError then RG.RecordError(err) end end
     end
   end)
+  -- Edit Mode / /wp move: where the fishing display sits
+  if RG.RegisterMover then
+    RG.RegisterMover(hud, "fishHUD", "Fishing display", { "BOTTOM", "BOTTOM", 0, 120 }, function(f, was)
+      if was then return end
+      f.__mvUpd = f:GetScript("OnUpdate"); f:SetScript("OnUpdate", nil)
+      f.title:SetText("Fishing"); f.status:SetText("Waiting for a bite"); f.stats:SetText("Shows while you fish")
+    end, { done = function(f, was)
+      if f.__mvUpd then f:SetScript("OnUpdate", f.__mvUpd); f.__mvUpd = nil end
+      if not was then f:SetAlpha(0) end
+    end })
+  end
 end
+if RG.RegisterMoverMaker then RG.RegisterMoverMaker(function() build() end) end
 
 -- The Cast button: your action bars fade with the rest of the interface, so
 -- the display brings its own. It's a secure spell button (a real click casts

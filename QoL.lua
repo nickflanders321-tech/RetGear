@@ -114,8 +114,33 @@ end
 -- Toasts: a golden card near the top of the screen. Stacks up to three.
 -- ---------------------------------------------------------------------------
 local toasts = {}
+-- where the stack starts: an invisible box you can place in Edit Mode or with /wp move (Movers.lua)
+local toastAnchor
+function RG.ToastAnchor()
+  if toastAnchor then return toastAnchor end
+  toastAnchor = CreateFrame("Frame", "WaypathToastAnchor", UIParent, "BackdropTemplate")
+  toastAnchor:SetSize(400, 96); toastAnchor:SetFrameStrata("DIALOG"); toastAnchor:SetPoint("TOP", UIParent, "TOP", 0, -120); toastAnchor:Hide()
+  if RG.RegisterMover then
+    RG.RegisterMover(toastAnchor, "toasts", "Level-up and news cards", { "TOP", "TOP", 0, -120 }, function(f)
+      if not f.sample then
+        RG.DialogBackdrop(f)
+        f.sample = RG.NewText(f, "GameFontNormalLarge"); f.sample:SetPoint("CENTER", 0, 8); f.sample:SetText("Level up!")
+        f.sample2 = RG.NewText(f, "GameFontHighlight"); f.sample2:SetPoint("TOP", f.sample, "BOTTOM", 0, -5); f.sample2:SetText("Waypath+ cards appear here")
+      end
+    end)
+  end
+  return toastAnchor
+end
 local function layoutToasts()
-  for i, t in ipairs(toasts) do t:ClearAllPoints(); t:SetPoint("TOP", UIParent, "TOP", 0, -120 - (i - 1) * 96) end
+  local a = RG.ToastAnchor()
+  -- (placed in the lower half of the screen: the cards stack upwards, so they stay on screen)
+  local _, ay = a:GetCenter()
+  local _, uy = UIParent:GetCenter()
+  local up = ay and uy and ay < uy
+  for i, t in ipairs(toasts) do
+    t:ClearAllPoints()
+    if up then t:SetPoint("BOTTOM", a, "BOTTOM", 0, (i - 1) * 96) else t:SetPoint("TOP", a, "TOP", 0, -(i - 1) * 96) end
+  end
 end
 function RG.Toast(title, text, icon, button, onButton, seconds)
   local t = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")

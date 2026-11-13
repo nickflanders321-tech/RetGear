@@ -1,13 +1,16 @@
 -- Waypath+ movers: our pop-up alerts can be placed wherever you like.
---   Open the game's Edit Mode (or type /wp move) and each alert shows a sample with a green outline and its name:
---   drag it where you want it, right-click it to put it back. Leave Edit Mode (or /wp move again) to finish.
+--   Open the game's Edit Mode (or type /wp move) and each of our pop-ups and on-screen pieces shows a sample with a
+--   green outline and its name: drag it where you want it, right-click it to put it back. Leave Edit Mode (or /wp move
+--   again) to finish. Windows that already drag by their title (the guide, the card album...) keep doing that.
 --   Only our own frames are moved; Blizzard's Edit Mode is only watched (HookScript), never changed.
 local _, RG = ...
 
 local movers, on = {}, false
+RG.__movers = movers   -- (for tests)
 local function pos() RG.db.movers = RG.db.movers or {}; return RG.db.movers end
 
 local function place(m)
+  if m.own then pcall(m.own.apply, m.frame) return end   -- (the tracker and the arrow keep their own saved places)
   local p = RG.db and pos()[m.key] or m.default
   m.frame:ClearAllPoints()
   m.frame:SetPoint(p[1], UIParent, p[2], p[3], p[4])
@@ -32,17 +35,18 @@ local function overlay(m)
   ov:SetScript("OnDragStart", function() f:SetMovable(true); f:StartMoving() end)
   ov:SetScript("OnDragStop", function()
     f:StopMovingOrSizing()
+    if m.own then pcall(m.own.save, f); place(m) return end
     -- (kept by its centre, relative to the middle of the screen: the same spot at any screen size)
     local cx, cy = f:GetCenter()
     local ux, uy = UIParent:GetCenter()
     local s, us = f:GetEffectiveScale(), UIParent:GetEffectiveScale()
     if cx and ux then
-      local x, y = cx * s / us - ux, cy * s / us - uy
+      local x, y = cx - ux * us / s, cy - uy * us / s   -- (in the frame's own units: SetPoint offsets use its scale)
       pos()[m.key] = { "CENTER", "CENTER", math.floor(x + 0.5), math.floor(y + 0.5) }
       place(m)
     end
   end)
-  ov:SetScript("OnClick", function() pos()[m.key] = nil; place(m) end)
+  ov:SetScript("OnClick", function() if m.own then pcall(m.own.reset, f) else pos()[m.key] = nil end; place(m) end)
   ov:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Waypath+: " .. m.label, 1, 0.93, 0.74)
@@ -55,20 +59,26 @@ local function overlay(m)
 end
 
 local function show(m)
+  if m.ov and m.ov:IsShown() then return end
   m.wasShown = m.frame:IsShown()
-  if m.preview then pcall(m.preview, m.frame) end
+  if m.preview then pcall(m.preview, m.frame, m.wasShown) end
   m.frame:SetAlpha(1); m.frame:Show()
   overlay(m):Show()
 end
 local function hide(m)
   if m.ov then m.ov:Hide() end
+  if m.done then pcall(m.done, m.frame, m.wasShown) end
   if not m.wasShown then m.frame:Hide() end
 end
 
 -- frame: ours; key: where its place is saved; label: its name while placing; default: { point, relativePoint, x, y }
--- preview(frame): fill it with a sample while it's being placed
-function RG.RegisterMover(frame, key, label, default, preview)
-  local m = { frame = frame, key = key, label = label, default = default, preview = preview }
+-- preview(frame, wasShown): fill it with a sample while it's being placed
+-- opts (optional): done(frame, wasShown) once placing ends; own = { apply(f), save(f), reset(f) } for a frame that keeps
+--   its own saved place
+function RG.RegisterMover(frame, key, label, default, preview, opts)
+  for _, o in ipairs(movers) do if o.key == key then return o end end
+  opts = opts or {}
+  local m = { frame = frame, key = key, label = label, default = default, preview = preview, own = opts.own, done = opts.done }
   movers[#movers + 1] = m
   place(m)
   if on then show(m) end
@@ -84,17 +94,18 @@ function RG.MoveMode(state)
   if state == nil then state = not on end
   if state == on then return end
   if state and InCombatLockdown and InCombatLockdown() then RG.Print("Not during a fight: try again once it's over.") return end
+  if state then for _, fn in ipairs(makers) do pcall(fn) end end   -- (made first, while still hidden: then shown as samples)
   on = state
-  if on then for _, fn in ipairs(makers) do pcall(fn) end end
   for _, m in ipairs(movers) do if on then show(m) else hide(m) end end
   if on and not RG.__moveHint then
     RG.__moveHint = true
-    RG.Print("Placing Waypath+ alerts: drag the green boxes, right-click one to put it back. " .. (RG.__editMode and "Close Edit Mode" or "Type /wp move again") .. " when you're done.")
+    RG.Print("Placing Waypath+ pop-ups: drag the green boxes, right-click one to put it back. " .. (RG.__editMode and "Close Edit Mode" or "Type /wp move again") .. " when you're done.")
   end
 end
 
--- the alerts that exist: the Exorcism alert (Extras.lua)
-RG.RegisterMoverMaker(function() if RG.ExorcismFrame then RG.ExorcismFrame() end end)
+-- the ones from files loaded before this one (the later files register their own)
+RG.RegisterMoverMaker(function() if RG.ExorcismFrame then RG.ExorcismFrame() end end)   -- Extras.lua
+RG.RegisterMoverMaker(function() if RG.ToastAnchor then RG.ToastAnchor() end end)       -- QoL.lua: level-up and news cards
 
 -- the game's Edit Mode, when this client has it: follow it in and out
 local function hookEdit()
@@ -118,7 +129,9 @@ SlashCmdList.WAYPATH = function(msg)
   if cmd and cmd:lower() == "move" then
     local rest = (msg or ""):match("^%s*%S+%s+(%S+)")
     if rest and rest:lower() == "reset" then
-      RG.db.movers = nil; for _, m in ipairs(movers) do place(m) end; RG.Print("Waypath+ alerts are back in their usual places.")
+      RG.db.movers = nil
+      for _, m in ipairs(movers) do if m.own then pcall(m.own.reset, m.frame) end; place(m) end
+      RG.Print("Waypath+ pop-ups are back in their usual places.")
     else RG.MoveMode() end
     return
   end

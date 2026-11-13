@@ -2218,6 +2218,35 @@ RG.ArcadeEmblem = emblemFor
 
 -- a card a friend showed off (sent through ArcadeDuel's add-on channel)
 local toast
+-- (made on its first use, or when Edit Mode / /wp move shows where it will appear)
+function RG.ArcadeToastFrame()
+  if toast then return toast end
+  toast = CreateFrame("Button", "WaypathArcadeToast", UIParent, "BackdropTemplate")
+  toast:SetFrameStrata("DIALOG"); toast:SetPoint("TOP", UIParent, "TOP", 0, -170)
+  darkPanel(toast, 340, 200)
+  toast.card = makeCard(toast, 112); toast.card:SetPoint("LEFT", 22, 0); toast.card.noTip = true
+  toast.head = fs(toast, "head", 12); toast.head:SetPoint("TOPLEFT", toast.card, "TOPRIGHT", 14, -2); toast.head:SetWidth(170); toast.head:SetJustifyH("LEFT"); toast.head:SetTextColor(0.911, 0.813, 0.618)
+  toast.name = fs(toast, "title", 14); toast.name:SetPoint("TOPLEFT", toast.head, "BOTTOMLEFT", 0, -8); toast.name:SetWidth(170); toast.name:SetJustifyH("LEFT")
+  toast.kind = fs(toast, "body", 12); toast.kind:SetPoint("TOPLEFT", toast.name, "BOTTOMLEFT", 0, -8); toast.kind:SetWidth(170); toast.kind:SetJustifyH("LEFT"); toast.kind:SetTextColor(0.9, 0.86, 0.74)
+  toast.hint = fs(toast, "body", 11); toast.hint:SetPoint("BOTTOMRIGHT", -14, 10); toast.hint:SetTextColor(0.709, 0.633, 0.481); toast.hint:SetText("click to close")
+  toast.age = 0
+  toast:SetScript("OnClick", function(self) self:Hide() end)
+  toast:SetScript("OnUpdate", function(self, dt)
+    self.age = self.age + dt
+    if self.age > 9 then self:Hide() elseif self.age > 8 then self:SetAlpha(math.max(0, 9 - self.age)) end
+  end)
+  toast:Hide()
+  if RG.RegisterMover then
+    RG.RegisterMover(toast, "arcadeToast", "Friend's card pull", { "TOP", "TOP", 0, -170 }, function(f, was)
+      if was then return end
+      local c = CARDS[1]
+      if c then paint(f.card, c, 1, 1); f.name:SetText(c.name) end
+      f.head:SetText("A friend pulled"); f.kind:SetText("Where friends' best pulls show"); f.age = -1e9
+    end)
+  end
+  return toast
+end
+if RG.RegisterMoverMaker then RG.RegisterMoverMaker(function() RG.ArcadeToastFrame() end) end
 function RG.ArcadeShowPull(sender, card, finish)
   if not (card and finish and FNAME[finish]) then return end
   if InCombatLockdown and InCombatLockdown() then return end
@@ -2226,22 +2255,7 @@ function RG.ArcadeShowPull(sender, card, finish)
   RG.__pullAt = RG.__pullAt or {}
   if RG.__pullAt[sender or "?"] and now - RG.__pullAt[sender or "?"] < 20 then return end   -- one card per friend every 20 seconds
   RG.__pullAt[sender or "?"] = now
-  if not toast then
-    toast = CreateFrame("Button", "WaypathArcadeToast", UIParent, "BackdropTemplate")
-    toast:SetFrameStrata("DIALOG"); toast:SetPoint("TOP", UIParent, "TOP", 0, -170)
-    darkPanel(toast, 340, 200)
-    toast.card = makeCard(toast, 112); toast.card:SetPoint("LEFT", 22, 0); toast.card.noTip = true
-    toast.head = fs(toast, "head", 12); toast.head:SetPoint("TOPLEFT", toast.card, "TOPRIGHT", 14, -2); toast.head:SetWidth(170); toast.head:SetJustifyH("LEFT"); toast.head:SetTextColor(0.911, 0.813, 0.618)
-    toast.name = fs(toast, "title", 14); toast.name:SetPoint("TOPLEFT", toast.head, "BOTTOMLEFT", 0, -8); toast.name:SetWidth(170); toast.name:SetJustifyH("LEFT")
-    toast.kind = fs(toast, "body", 12); toast.kind:SetPoint("TOPLEFT", toast.name, "BOTTOMLEFT", 0, -8); toast.kind:SetWidth(170); toast.kind:SetJustifyH("LEFT"); toast.kind:SetTextColor(0.9, 0.86, 0.74)
-    toast.hint = fs(toast, "body", 11); toast.hint:SetPoint("BOTTOMRIGHT", -14, 10); toast.hint:SetTextColor(0.709, 0.633, 0.481); toast.hint:SetText("click to close")
-    toast.age = 0
-    toast:SetScript("OnClick", function(self) self:Hide() end)
-    toast:SetScript("OnUpdate", function(self, dt)
-      self.age = self.age + dt
-      if self.age > 9 then self:Hide() elseif self.age > 8 then self:SetAlpha(math.max(0, 9 - self.age)) end
-    end)
-  end
+  RG.ArcadeToastFrame()
   paint(toast.card, card, finish, 1)
   local t = TIER[card.tier][3]
   toast.head:SetText((sender or "Someone") .. " pulled")

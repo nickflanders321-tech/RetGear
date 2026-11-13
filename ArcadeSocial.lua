@@ -141,19 +141,31 @@ end
 
 -- our own yes / no box for an incoming swap
 local prompt
+-- (made on first use, or when Edit Mode / /wp move shows where it will appear)
+local function makePrompt(u)
+  if prompt or not u then return prompt end
+  prompt = CreateFrame("Frame", "WaypathCardSwapPrompt", UIParent, "BackdropTemplate")
+  prompt:SetSize(380, 132); prompt:SetPoint("TOP", 0, -160); prompt:SetFrameStrata("DIALOG")
+  prompt:SetBackdrop({ bgFile = u.WHITE, edgeFile = u.WHITE, edgeSize = 1 })
+  prompt:SetBackdropColor(0.06, 0.053, 0.041, 0.97); prompt:SetBackdropBorderColor(u.GOLDC[1], u.GOLDC[2], u.GOLDC[3], 0.9)
+  prompt.title = u.fs(prompt, "head", 14); prompt.title:SetPoint("TOP", 0, -12); prompt.title:SetTextColor(u.GOLDC[1], u.GOLDC[2], u.GOLDC[3])
+  prompt.text = u.fs(prompt, "body", 13); prompt.text:SetPoint("TOP", 0, -36); prompt.text:SetWidth(350); prompt.text:SetSpacing(4)
+  prompt.yes = u.gbtn(prompt, "Swap", 110, 26, function() RG.ArcadeSocialAnswer(true) end); prompt.yes:SetPoint("BOTTOMRIGHT", prompt, "BOTTOM", -6, 12)
+  prompt.no = u.gbtn(prompt, "No thanks", 110, 26, function() RG.ArcadeSocialAnswer(false) end); prompt.no:SetPoint("BOTTOMLEFT", prompt, "BOTTOM", 6, 12)
+  prompt:Hide()
+  if RG.RegisterMover then
+    RG.RegisterMover(prompt, "cardSwap", "Card swap from a friend", { "TOP", "TOP", 0, -160 }, function(f, was)
+      if was then return end
+      f.title:SetText("CARD SWAP FROM A FRIEND"); f.text:SetText("You give one of your spare cards\nYou get one of theirs")
+    end)
+  end
+  return prompt
+end
+if RG.RegisterMoverMaker then RG.RegisterMoverMaker(function() makePrompt(U()) end) end
 local function showPrompt()
   local u = U(); local inc = S.incoming
   if not (u and inc) then if prompt then prompt:Hide() end return end
-  if not prompt then
-    prompt = CreateFrame("Frame", "WaypathCardSwapPrompt", UIParent, "BackdropTemplate")
-    prompt:SetSize(380, 132); prompt:SetPoint("TOP", 0, -160); prompt:SetFrameStrata("DIALOG")
-    prompt:SetBackdrop({ bgFile = u.WHITE, edgeFile = u.WHITE, edgeSize = 1 })
-    prompt:SetBackdropColor(0.06, 0.053, 0.041, 0.97); prompt:SetBackdropBorderColor(u.GOLDC[1], u.GOLDC[2], u.GOLDC[3], 0.9)
-    prompt.title = u.fs(prompt, "head", 14); prompt.title:SetPoint("TOP", 0, -12); prompt.title:SetTextColor(u.GOLDC[1], u.GOLDC[2], u.GOLDC[3])
-    prompt.text = u.fs(prompt, "body", 13); prompt.text:SetPoint("TOP", 0, -36); prompt.text:SetWidth(350); prompt.text:SetSpacing(4)
-    prompt.yes = u.gbtn(prompt, "Swap", 110, 26, function() RG.ArcadeSocialAnswer(true) end); prompt.yes:SetPoint("BOTTOMRIGHT", prompt, "BOTTOM", -6, 12)
-    prompt.no = u.gbtn(prompt, "No thanks", 110, 26, function() RG.ArcadeSocialAnswer(false) end); prompt.no:SetPoint("BOTTOMLEFT", prompt, "BOTTOM", 6, 12)
-  end
+  makePrompt(u)
   local list = tradeList()
   prompt.title:SetText("CARD SWAP FROM " .. string.upper(short(inc.name)))
   -- from your side: you give what they asked for (ti), you get what they offer (gi)
