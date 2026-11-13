@@ -7,6 +7,7 @@
   - The "sell or vendor" list could error right after a failed bag read; it no longer does.
   - Two fishing settings (weapons back on in combat, the camp tip) now sit with the other fishing settings instead of a stray "Other" group.
   - Auction House prices nobody has needed for 60 days (not a material, not on any list of yours) are let go, so your saved file stops growing with every full scan.
+
 ## v1.37.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
