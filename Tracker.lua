@@ -413,6 +413,8 @@ local function build()
   RG.Round(tr, 0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85, 8)   -- deep ink, dense enough to read over snow and sand
   local pos = RG.db.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
+  -- (a place saved by its middle or bottom made the tracker grow upwards, over whatever sits above it: pin its top)
+  if pos and not tostring(pos[1]):find("^TOP") and C_Timer and C_Timer.After then C_Timer.After(0, function() pcall(RG.TrackerSavePos) end) end
   tr:RegisterForDrag("LeftButton")
   tr:SetScript("OnDragStart", function(self) if not RG.Opt("trackerLocked") then self:StartMoving() end end)
   -- Ctrl + mouse wheel: size  ·  Shift + mouse wheel: width
@@ -427,7 +429,7 @@ local function build()
     else return end
     RG.RefreshTracker()
   end)
-  tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
+  tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); RG.TrackerSavePos() end)
 
   -- the compass: points where the arrow points
   local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 12, -12); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
@@ -462,7 +464,7 @@ local function build()
   head:SetScript("OnLeave", function() GameTooltip:Hide() end)
   head:RegisterForDrag("LeftButton")
   head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") then tr:StartMoving() end end)
-  head:SetScript("OnDragStop", function() tr:StopMovingOrSizing(); local p, _, rp, x, y = tr:GetPoint(); RG.db.trackerPos = { p, rp, x, y } end)
+  head:SetScript("OnDragStop", function() tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
   -- hover the header for the tracker's controls
   local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(1, 1); hint:Hide()
   hint:SetScript("OnEnter", function(self)
@@ -1302,6 +1304,36 @@ function RG.RefreshTracker()
   tr.body:SetHeight(math.max(10, y))
   tr:SetHeight(60 + y + 14)
 end
+
+-- Where the tracker is: always by its top-right corner, so folding and unfolding grows and shrinks it downwards
+-- (the game's own drag can leave it anchored by its middle or bottom).
+function RG.TrackerSavePos()
+  if not tr then return end
+  local top, right = tr:GetTop(), tr:GetRight()
+  if not (top and right) then return end
+  tr:ClearAllPoints(); tr:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", right, top)
+  RG.db.trackerPos = { "TOPRIGHT", "BOTTOMLEFT", right, top }
+end
+
+-- Right after a /reload the game can draw some text in our own font blank until it's set again (the font file is
+-- still loading): lay every line out afresh a moment later, and once more after that.
+function RG.TrackerRepaint()
+  if not tr then return end
+  for _, b in pairs(lines) do b._sig = nil; if b.text then b.text:SetText("") end end
+  if tr.title then
+    local t = tr.title:GetText()
+    if not tr.title:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(tr.title, 14) end
+    tr.title:SetText(""); tr.title:SetText(t or "")
+  end
+  if tr.goal then local g = tr.goal:GetText(); tr.goal:SetText(""); tr.goal:SetText(g or "") end
+  RG.RefreshTracker()
+end
+local repaint = CreateFrame("Frame")
+repaint:RegisterEvent("PLAYER_ENTERING_WORLD")
+repaint:SetScript("OnEvent", function()
+  if not (C_Timer and C_Timer.After) then return end
+  for _, d in ipairs({ 0.5, 2, 5 }) do C_Timer.After(d, function() pcall(RG.TrackerRepaint) end) end
+end)
 
 -- Fade the tracker during fights so it doesn't cover the action.
 table.insert(RG.OPTIONS, { key = "trackerLocked", label = "Lock the tracker in place", default = false })
