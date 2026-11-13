@@ -1,7 +1,8 @@
 {
   "game_build": "1.60.1.70938",
   "game_build_source": "https://blizztrack.com/view/wowf?type=versions",
-  "questiedb_forever_tree": "1fac1c02c6ecbd67eb7abf67e815f7ad84b8195f",
-  "last_issue_seen": 7,
-  "checked": "2026-11-12T02:36:39Z"
+  "questiedb_forever_tree": "331d0f62ac1990e935ea4f83bcf75299f2e6958f",
+  "last_issue_seen": 9,
+  "checked": "2026-11-12T02:36:39Z",
+  "wago_export": "19eea1e6d808256d1ae3840994512f78ca8008af"
 }
