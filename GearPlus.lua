@@ -188,7 +188,9 @@ local function makePanel()
   for i = 1, ROWS do
     local r = CreateFrame("Button", nil, panel)
     r:SetSize(228, 30); r:SetPoint("TOPLEFT", panel.barBg, "BOTTOMLEFT", -2, -8 - (i - 1) * 32)
-    r.icon = r:CreateTexture(nil, "ARTWORK"); r.icon:SetSize(26, 26); r.icon:SetPoint("LEFT", 2, 0); r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    -- the icon in a border of its quality's colour
+    r.edge = r:CreateTexture(nil, "BORDER"); r.edge:SetSize(30, 30); r.edge:SetPoint("LEFT", 0, 0); r.edge:SetColorTexture(0.4, 0.4, 0.4, 1)
+    r.icon = r:CreateTexture(nil, "ARTWORK"); r.icon:SetSize(26, 26); r.icon:SetPoint("CENTER", r.edge, "CENTER"); r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     r.name = r:CreateFontString(nil, "OVERLAY"); RG.Font(r.name, "medium", 11); r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 6, -1); r.name:SetPoint("RIGHT", -44, 0); r.name:SetJustifyH("LEFT"); r.name:SetWordWrap(false)
     r.src = r:CreateFontString(nil, "OVERLAY"); RG.Font(r.src, "regular", 10); r.src:SetPoint("BOTTOMLEFT", r.icon, "BOTTOMRIGHT", 6, 1); r.src:SetPoint("RIGHT", -4, 0); r.src:SetJustifyH("LEFT"); r.src:SetWordWrap(false)
     r.d = r:CreateFontString(nil, "OVERLAY"); RG.Font(r.d, "semibold", 11); r.d:SetPoint("TOPRIGHT", -4, -2)
@@ -229,7 +231,11 @@ function RG.UpdateGearPanel()
   RG.GearStatusInvalidate()
   local st = RG.GearStatus()
   panel.sub:SetText(WHITE .. st.atBest .. " of " .. st.total .. "|r" .. GREY .. " slots at their best for your level|r")
-  panel.bar:SetWidth(math.max(1, 224 * st.atBest / math.max(1, st.total)))
+  -- the bar: gold while slots are missing their best, turning green as they reach it
+  local frac = st.atBest / math.max(1, st.total)
+  panel.bar:SetWidth(math.max(1, 224 * frac))
+  panel.bar:SetColorTexture(0.85 + (0.31 - 0.85) * frac, 0.65 + (0.72 - 0.65) * frac, 0.25 + (0.48 - 0.25) * frac, 1)
+  if st.atBest >= st.total and st.total > 0 then panel.sub:SetText(GREEN .. "Every slot is at its best for your level|r") end
   local list = {}
   for _, e in ipairs(st.slots) do if e.next then list[#list + 1] = e end end
   table.sort(list, function(a, b)
@@ -242,6 +248,7 @@ function RG.UpdateGearPanel()
       local g = e.next.g
       local name, _, quality, _, _, _, _, _, _, tex = RG.ItemInfo(g.id)
       local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
+      if c and c.r then r.edge:SetColorTexture(c.r, c.g, c.b, 0.9) else r.edge:SetColorTexture(0.4, 0.4, 0.4, 0.9) end
       r.icon:SetTexture(tex or (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(g.id)) or (GetItemIcon and GetItemIcon(g.id)) or 134400)
       r.name:SetText((c and c.hex or WHITE) .. (name or g.name or ("Item " .. g.id)) .. "|r")
       r.src:SetText(GREY .. (RG.SLOT_NAMES[e.slot] or "") .. " · " .. (g.src or "") .. ((g.zone and g.zone ~= "") and (", " .. g.zone) or "") .. "|r")

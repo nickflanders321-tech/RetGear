@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Gear panel:** each upgrade's icon has a border in its quality's colour, and the progress bar turns from gold to green as your slots reach their best ("Every slot is at its best for your level" when they all are).
 - **Cards: dungeons still waiting for their data show as "coming soon"** in the Album and the Sets tab (now only The Shaper's Terrace; Alcaz Prison and Blackmaw Hold got their packs with the latest game data). They fill in by themselves once the data has their bosses and loot.
 - Systems check fixes:
   - The ammo "Buy" button and the profession materials shopping list read vendor prices the newer way when the client has dropped the old one.
