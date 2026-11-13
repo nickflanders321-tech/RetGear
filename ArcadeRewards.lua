@@ -218,11 +218,25 @@ local function criterionDone(ach, crit)
   end
   return false
 end
+-- the game's own kill statistic for a dungeon's last boss: how many times (its wings and versions: the highest)
+local function statKills(id)
+  if not GetStatistic then return 0 end
+  local ok, v = pcall(GetStatistic, id)
+  if not ok or v == nil or secret(v) then return 0 end
+  return tonumber((tostring(v):gsub("[^%d]", ""))) or 0
+end
+function RG.ArcadeDungeonKills(dn)
+  local best = 0
+  for _, id in ipairs((RG.ARCADE_DUNGEON_STATS or {})[dn] or {}) do best = math.max(best, statKills(id)) end
+  return best
+end
+RG.ArcadeStatKills = statKills
 function RG.ArcadeLegacyCleared(dn)
   for _, e in ipairs((RG.ARCADE_DUNGEON_LEGACY or {})[dn] or {}) do
     if criterionDone(e[1], e[2]) then return true end
   end
-  return false
+  -- (or its last boss's kill statistic: The Stockade isn't in the Legacy challenges)
+  return RG.ArcadeDungeonKills(dn) > 0
 end
 local function legacyCheck(quiet)
   local a = A(); if not a or not RG.ArcadeGrantDungeon then return end
@@ -237,6 +251,25 @@ local function legacyCheck(quiet)
       RG.ArcadeGrantDungeon(dn, paid and 0 or 2)
       if not paid then got[#got + 1] = dn end
     end
+  end
+  -- veterans: runs from before dungeon packs existed count too, one pack for every five times the last boss fell
+  -- (beyond the first), three at most per dungeon, paid once
+  a.dunVet = a.dunVet or {}
+  local vet = 0
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
+    local dn = d[1]
+    if not a.dunVet[dn] and RG.ARCADE_DUNGEON_STATS and RG.ARCADE_DUNGEON_STATS[dn] then
+      local k = RG.ArcadeDungeonKills(dn)
+      if k > 0 then
+        a.dunVet[dn] = k
+        local n = math.min(3, math.floor((k - 1) / 5))
+        if n > 0 then RG.ArcadeGrantDungeon(dn, n); vet = vet + n end
+      end
+    end
+  end
+  if vet > 0 and not quiet then
+    local msg = "|cffffd36bWaypath Cards:|r your earlier dungeon runs count: " .. vet .. " more dungeon pack" .. (vet > 1 and "s" or "") .. " (one for every five clears, from the game's own kill counts). Open them from the Shop."
+    if RG.Notify then RG.Notify(msg) elseif RG.Print then RG.Print(msg) end
   end
   if #got > 0 and not quiet then
     local msg = "|cffffd36bWaypath Cards:|r dungeons you've cleared unlocked their card packs: " .. table.concat(got, ", ") ..

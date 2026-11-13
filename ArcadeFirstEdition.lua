@@ -191,6 +191,42 @@ table.insert(RG.ArcadeTipHooks, 1, function(cd)
   return false   -- (the card's own source line follows)
 end)
 
+-- ---------------------------------------------------------------------------
+-- What you did before this update counts
+-- ---------------------------------------------------------------------------
+-- cards you already have: they could only be had since their day, so every copy you hold of one still in its four
+-- weeks is a First Edition; dungeons and raids you've already cleared: you've met their bosses and walked their halls
+local function retro()
+  local a = store(); local u = U(); if not (a and u) then return end
+  if not a.firstRetro then
+    a.firstRetro = true
+    a.first = a.first or {}
+    for name in pairs(FIRST) do
+      local s = a.cards and a.cards[name]
+      if s and inWindow(name) then
+        local n = (s[1] or 0) + (s[2] or 0) + (s[3] or 0) + (s[4] or 0)
+        if n > (a.first[name] or 0) then a.first[name] = n end
+      end
+    end
+  end
+  local me = safe(UnitName, "player") or "you"
+  for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
+    local dn = d[1]
+    local cleared = (a.dunClear and a.dunClear[dn]) or (a.dun and a.dun[dn])
+    if d.raid then
+      cleared = false
+      for k in pairs(a.raidFirst or {}) do if k:find(dn .. ":", 1, true) == 1 then cleared = true end end
+    end
+    if cleared and not d.holiday then
+      for _, n in ipairs(d[5]) do
+        local c = u.byKey[n]
+        if FIRST[n] and c and (c.kind == 3 or (c.kind == 2 and (c.text or ""):find("boss"))) then discover(n, me, true) end
+      end
+    end
+  end
+end
+RG.ArcadeFirstRetro = retro
+
 local ev = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT", "NAME_PLATE_UNIT_ADDED", "LOOT_OPENED", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "CHAT_MSG_ADDON" }) do pcall(ev.RegisterEvent, ev, e) end
 ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
@@ -218,6 +254,9 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
   elseif event == "PLAYER_LOGIN" then
     pcall(index)
     if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX) end
-    if C_Timer and C_Timer.After then C_Timer.After(15, function() outbox[#outbox + 1] = { "S", "GUILD" }; flush() end) end
+    if C_Timer and C_Timer.After then
+      C_Timer.After(15, function() outbox[#outbox + 1] = { "S", "GUILD" }; flush() end)
+      C_Timer.After(12, function() pcall(retro) end)   -- (after the Legacy and raid checks have counted your clears)
+    end
   end
 end)

@@ -785,6 +785,27 @@ RG.ARCADE_DUNGEONS = {
 -- WoW Forever dungeons with no bosses or loot in the game data yet: the Album shows them as coming soon
 RG.ARCADE_DUNGEONS_SOON = { "The Shaper's Terrace" }
 -- Legacy challenge criteria for each dungeon: { achievement id, criteria id } (any one done = cleared)
+-- the game's kill statistics for each dungeon's last boss (any above zero = cleared; the count = how often)
+RG.ARCADE_DUNGEON_STATS = {
+  ["Blackfathom Deeps"] = { 6137 },
+  ["Blackrock Depths"] = { 1095 },
+  ["Blackrock Spire"] = { 1096, 6145 },
+  ["Dire Maul"] = { 6146 },
+  ["Gnomeregan"] = { 6140 },
+  ["Maraudon"] = { 6143 },
+  ["Ragefire Chasm"] = { 15027 },
+  ["Razorfen Downs"] = { 6141 },
+  ["Razorfen Kraul"] = { 6139 },
+  ["Scarlet Monastery"] = { 1093, 6786 },
+  ["Scholomance"] = { 15030 },
+  ["Shadowfang Keep"] = { 1092 },
+  ["Stratholme"] = { 1097, 15031 },
+  ["The Stockade"] = { 15029 },
+  ["The Temple of Atal'Hakkar"] = { 6144 },
+  ["Uldaman"] = { 6142 },
+  ["Wailing Caverns"] = { 15028 },
+  ["Zul'Farrak"] = { 1094 },
+}
 RG.ARCADE_DUNGEON_LEGACY = {
   ["Alcaz Prison"] = { { 62033, 116057 }, { 64018, 117749 } },
   ["Blackfathom Deeps"] = { { 62032, 18526 }, { 64017, 117737 } },

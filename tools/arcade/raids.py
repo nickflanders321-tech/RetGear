@@ -66,6 +66,7 @@ for f in ("ArcadeCards.lua", "ArcadeDungeons.lua", "ArcadeField.lua"):
         existing[name.replace('\\"', '"').lower()] = name.replace('\\"', '"')
 
 out_rows, raids, displays, creatures, legacy, keys, world_only = [], [], {}, {}, {}, {}, set()
+raid_stats = {}
 seen = set(existing)
 def card(kind, name, tier, ref, text, pool):
     k = name.lower()
@@ -122,6 +123,11 @@ for name, size, where, title, opens, key, art, alias in RAIDS:
     encs = [e for e in enc.get(mid, [])] if mid else []
     raids.append((name, mid, 60, 60, pool, size, opens, art, [b[0] for b in bosses], encs, where))
     legacy[name] = crits
+    # the game's kill statistics for its bosses ("Onyxia kills (Onyxia's Lair)")
+    for a in ach:
+        m = re.match(r"^(.+) kills \((.+)\)$", a["Title_lang"])
+        if m and (m.group(2) == name or m.group(2) in alias) and m.group(1) in [b[0] for b in bosses]:
+            raid_stats.setdefault(name, {})[m.group(1)] = int(a["ID"])
     print("  %s: %d bosses, %d loot, %d cards" % (name, len(bosses), len(loot), len(pool)), file=sys.stderr)
 
 def q(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
@@ -145,6 +151,10 @@ L.append("}")
 L.append("-- each boss's Conqueror criterion: { achievement id, criteria id } (a boss already beaten counts, even from before)")
 L.append("RG.ARCADE_RAID_LEGACY = {")
 for n, cs in legacy.items(): L.append("  [%s] = { %s }," % (q(n), ", ".join("{ %d, %d }" % c for c in cs)))
+L.append("}")
+L.append("-- the game's kill statistics for its bosses: [raid] = { [boss] = statistic id }")
+L.append("RG.ARCADE_RAID_STATS = {")
+for n, st in sorted(raid_stats.items()): L.append("  [%s] = { %s }," % (q(n), ", ".join("[%s] = %d" % (q(b), i) for b, i in sorted(st.items()))))
 L.append("}")
 L.append("-- the attunement: { key item, { quests that give it }, card }")
 L.append("RG.ARCADE_RAID_KEYS = {")

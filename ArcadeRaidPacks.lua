@@ -205,6 +205,16 @@ local function legacyCheck()
       end
     end
   end
+  -- (and the game's kill statistics: Onyxia, the Wild King)
+  for raid, st in pairs(RG.ARCADE_RAID_STATS or {}) do
+    for boss, id in pairs(st) do
+      if not a.raidFirst[raid .. ":" .. boss] and RG.ArcadeStatKills and RG.ArcadeStatKills(id) > 0 then
+        a.raidFirst[raid .. ":" .. boss] = "before"
+        RG.ArcadeGrantDungeon(raid, 2)
+        got[#got + 1] = boss
+      end
+    end
+  end
   if #got > 0 and RG.Notify then
     RG.Notify("|cffffd36bWaypath Cards:|r raid bosses you've already beaten count: " .. table.concat(got, ", ") .. " (2 packs each, open them from the Album).")
   end

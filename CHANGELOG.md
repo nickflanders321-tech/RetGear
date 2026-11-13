@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Cards: what you did before counts.** Waypath+ reads the game's own records when you log in:
+  - **Dungeons:** besides WoW Forever's Legacy challenges, the game's kill count for each dungeon's last boss now counts as a clear. That unlocks The Stockade's packs (it isn't in the Legacy challenges) with its two first-clear packs. **Veterans:** one more pack for every five times a dungeon's last boss fell (beyond the first), up to three per dungeon, paid once.
+  - **Raids:** Onyxia's and the Wild King's kill counts count as well as the raid achievements (two packs per boss already beaten).
+  - **First Edition:** WoW Forever original cards you already own become First Edition prints if they're still in their first four weeks (they couldn't have been had any earlier).
+  - **Discovery:** the WoW Forever dungeons and raids you've cleared, and their bosses, are marked as found by you.
+  - Already counted before: dungeon clears from the Legacy challenges, raid bosses from the raid achievements, and the Onyxia key if you're attuned.
 - **Cards keep themselves up to date.**
   - New loot, bosses, encounters, dungeon pictures and item icons from WoW Forever's game files are now picked up every day (was once a week), and straight away when a new game patch comes out. When anything for the cards changes, Waypath+ rebuilds the packs and releases an update by itself. So the raid loot, the raid bosses' encounters and The Shaper's Terrace's cards arrive on their own once the game data has them.
   - In game, a WoW Forever creature card still waiting for its 3D model asks for it a few seconds after you see that creature (it used to wait for your next login).
