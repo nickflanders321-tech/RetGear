@@ -227,6 +227,9 @@ function RG.FishBoostChoice()
     for id, g in pairs(LURE) do
       if countItem(id) > 0 and (not g.skill or skill >= g.skill) and (not best or g.bonus > best.bonus) then bestId, best = id, g end
     end
+    -- the lure you picked (right-click the HUD's lure button), while you still carry it
+    local pick = RG.db and RG.db.fishLurePick
+    if pick and LURE[pick] and countItem(pick) > 0 then bestId, best = pick, LURE[pick] end
     if bestId then
       local name = RG.ItemInfo(bestId) or ("item:" .. bestId)
       out.lure = { macro = "/use item:" .. bestId .. "\n/use 16", icon = GetItemIcon and GetItemIcon(bestId) or "Interface\\Icons\\INV_Misc_Food_26", label = "Lure",
@@ -441,6 +444,36 @@ end
 -- ---------------------------------------------------------------------------
 local session = { start = nil, last = nil, catches = 0, skillStart = nil, items = {}, value = 0 }
 RG.FishSessionData = session
+-- Your fishing trips: a session ends after 20 minutes without a catch (or when you log out), and is kept with what
+-- it brought: { t (when it started), mins, catches, value, gained, zone, top = item id }. The last 30 are kept.
+local function tripOf(s)
+  if not (s.start and s.catches and s.catches > 0) then return nil end
+  local top, topN = nil, 0
+  for id, c in pairs(s.items or {}) do if c > topN then top, topN = id, c end end
+  local zone, zN = nil, 0
+  for z, c in pairs(s.zones or {}) do if c > zN then zone, zN = z, c end end
+  local skill = RG.FishSkill()
+  return { t = s.wall or time(), mins = math.max(1, math.floor((s.last - s.start) / 60 + 0.5)), catches = s.catches, value = math.floor(s.value or 0),
+    gained = (skill and s.skillStart) and math.max(0, skill - s.skillStart) or 0, zone = zone, top = top }
+end
+local function saveTrip()
+  local t = tripOf(session)
+  if not (t and RG.db) then return end
+  local d = RG.db.fish or {}
+  RG.db.fish = d
+  d.trips = d.trips or {}
+  if d.trips[1] and d.trips[1].t == t.t then d.trips[1] = t else table.insert(d.trips, 1, t) end
+  d.trips[31] = nil
+end
+RG.FishSaveTrip = saveTrip
+-- the trips, newest first; the one going on now first of all (live = true)
+function RG.FishTrips()
+  local out = {}
+  local now = tripOf(session)
+  if now and session.last and GetTime() - session.last <= 20 * 60 then now.live = true; out[1] = now end
+  for _, t in ipairs(RG.db and RG.db.fish and RG.db.fish.trips or {}) do if not (now and now.live and t.t == now.t) then out[#out + 1] = t end end
+  return out
+end
 -- Learning from your own catches: the loot tables we ship come from the classic database, and Forever
 -- drops some things (chests, crates, clams) in places that database does not list. Whatever you actually
 -- catch is added to that zone, so the Fishing page, the "Here:" line and the route all know about it.
@@ -472,12 +505,15 @@ function RG.FishSeenList()
 end
 local seenFrame = CreateFrame("Frame")
 seenFrame:RegisterEvent("PLAYER_LOGIN")
-seenFrame:SetScript("OnEvent", function() RG.FishApplySeen() end)
+seenFrame:RegisterEvent("PLAYER_LOGOUT")
+seenFrame:SetScript("OnEvent", function(_, event) if event == "PLAYER_LOGOUT" then pcall(saveTrip) else RG.FishApplySeen() end end)
 local function onCatch()
   if not (IsFishingLoot and IsFishingLoot()) then return end
   local now = GetTime()
   if not session.last or now - session.last > 20 * 60 then
+    saveTrip()
     session.start, session.catches, session.items, session.value = now, 0, {}, 0
+    session.wall, session.zones = time(), {}
     session.skillStart = RG.FishSkill()
   end
   session.last = now
@@ -493,6 +529,7 @@ local function onCatch()
       d.caught[id] = (d.caught[id] or 0) + qty
       local zn = RG.ZoneName()
       if zn ~= "" then
+        session.zones = session.zones or {}; session.zones[zn] = (session.zones[zn] or 0) + qty
         d.seen = d.seen or {}; d.seen[zn] = d.seen[zn] or {}
         d.seen[zn][id] = (d.seen[zn][id] or 0) + qty
         pcall(applySeen, zn, id)
@@ -575,6 +612,38 @@ function RG.FishPagle()
     out[#out + 1] = { id = f.id, have = have, wp = poolSpot(f.pool), where = f.where }
   end
   return { list = out, done = done }
+end
+-- Fishing milestones: your ranks, the camp objects Fishing gives you, and how many fish you've caught.
+-- Each: { name, done, detail, need (what's left) }
+local function knowsSpell(name)
+  local ok, n = pcall(function()
+    if C_Spell and C_Spell.GetSpellInfo then local i = C_Spell.GetSpellInfo(name); return i and i.name end
+    return GetSpellInfo and (GetSpellInfo(name))
+  end)
+  return ok and n ~= nil
+end
+function RG.FishMilestones()
+  local skill, max = RG.FishSkill()
+  skill, max = skill or 0, max or 0
+  local out = {}
+  for _, r in ipairs(RG.FISH_RANKS) do
+    local done = max >= r.max
+    out[#out + 1] = { kind = "rank", name = r.name .. " Fishing", done = done, detail = done and ("Up to " .. r.max .. " skill") or r.how,
+      need = not done and (skill < r.at and ("Fishing " .. r.at) or ("level " .. r.lvl)) or nil, wp = r.wp }
+  end
+  for _, o in ipairs(RG.CAMP_OBJECTS or {}) do
+    if o.prof == "Fishing" then
+      local has = knowsSpell(o.name)
+      out[#out + 1] = { kind = "camp", name = o.name, done = has, detail = o.buff .. ". " .. o.how .. ".", need = not has and (skill < o.skill and ("Fishing " .. o.skill) or "learn it") or nil }
+    end
+  end
+  local total = RG.db and RG.db.fish and RG.db.fish.total or 0
+  for _, n in ipairs({ 100, 500, 1000, 5000 }) do
+    out[#out + 1] = { kind = "catch", name = n .. " fish caught", done = total >= n, detail = "You've caught " .. total .. " in all.", need = total < n and (total .. " / " .. n) or nil }
+  end
+  local done = 0
+  for _, m in ipairs(out) do if m.done then done = done + 1 end end
+  return out, done
 end
 -- Speckled Tastyfish for the Extravaganza: how many you carry, and where the schools are
 RG.TASTYFISH = 19807

@@ -71,9 +71,31 @@ local function bestLure()
   return have, haveG, buy
 end
 
+-- right-click the lure button: which lure to use (or the best one each time)
+local function lureMenu()
+  if RG.FishModeActive and RG.FishModeActive() and RG.FishModeExit then RG.FishModeExit() end   -- (the menu is on the interface)
+  local skill = RG.FishSkill and RG.FishSkill() or 0
+  local pick = RG.db.fishLurePick
+  local entries = { { (pick and "" or (GREEN .. "> |r")) .. "The best one I carry, each time", function() RG.db.fishLurePick = nil; RG.FishHUDRefresh(true) end } }
+  local list = {}
+  for _, g in ipairs(RG.FISH_GEAR or {}) do if g.kind == "lure" and count(g.id) > 0 then list[#list + 1] = g end end
+  table.sort(list, function(a, b) return a.bonus > b.bonus end)
+  for _, g in ipairs(list) do
+    local id = g.id
+    local low = g.skill and skill < g.skill
+    local ic = itemIcon(id)
+    entries[#entries + 1] = { (pick == id and (GREEN .. "> |r") or "") .. (ic and ("|T" .. ic .. ":14:14|t ") or "") .. itemName(id) .. GREY .. "  +" .. g.bonus .. ", " .. g.mins .. " min, x" .. count(id) .. (low and ("  (needs Fishing " .. g.skill .. ")") or "") .. "|r",
+      function() if low then RG.Print("That lure needs Fishing " .. g.skill .. ".") return end; RG.db.fishLurePick = id; RG.FishHUDRefresh(true) end }
+  end
+  if #list == 0 then entries[#entries + 1] = { GREY .. "No lures in your bags|r", function() end } end
+  if RG.ShowMenu then RG.ShowMenu(entries, "Lure to use") end
+end
+
 local function lureDef()
-  local d = { key = "lure", icon = "Interface\\Icons\\INV_Misc_Food_26" }
+  local d = { key = "lure", icon = "Interface\\Icons\\INV_Misc_Food_26", rfn = lureMenu, rclick = "choose which lure" }
   local id, g, buy = bestLure()
+  local pick = RG.db and RG.db.fishLurePick
+  if pick and count(pick) > 0 then id = pick end
   if id then d.icon = itemIcon(id) or d.icon; d.count = count(id) end
   if not (RG.HasPole and RG.HasPole()) then
     d.state = "off"; d.tip = { "Lure", "Put your fishing pole on first: a lure goes on the pole." }
@@ -350,6 +372,7 @@ local function setTip(self)
     GameTooltip:AddLine(d.tip and d.tip[1] or "", 1, 0.93, 0.74)
     if d.tip and d.tip[2] then GameTooltip:AddLine(d.tip[2], 0.9, 0.9, 0.9, true) end
     if d.click then GameTooltip:AddLine("Click: " .. d.click, 0.6, 0.6, 0.6, true) end
+    if d.rclick then GameTooltip:AddLine("Right-click: " .. d.rclick, 0.6, 0.6, 0.6, true) end
   end
   GameTooltip:Show()
 end
@@ -368,11 +391,12 @@ local function makeButton(name, size)
   b.big = b:CreateFontString(nil, "OVERLAY"); font(b.big, size >= HUB and 15 or 13); b.big:SetPoint("CENTER", 0, 0)
   b.cnt = b:CreateFontString(nil, "OVERLAY"); font(b.cnt, 10); b.cnt:SetPoint("BOTTOMRIGHT", 0, 1); b.cnt:SetJustifyH("RIGHT")
   b.keyt = b:CreateFontString(nil, "OVERLAY"); font(b.keyt, 9); b.keyt:SetPoint("TOPRIGHT", 0, -1); b.keyt:SetJustifyH("RIGHT")
-  b:SetScript("PostClick", function(self, _, down)
+  b:SetScript("PostClick", function(self, mouse, down)
     if down then return end
     local d = self.def
-    if d and d.fn and not d.secure then
-      local ok, err = pcall(d.fn)
+    local fn = d and ((mouse == "RightButton" and d.rfn) or (mouse ~= "RightButton" and not d.secure and d.fn) or (mouse == "RightButton" and not d.secure and d.fn))
+    if fn then
+      local ok, err = pcall(fn)
       if not ok and RG.RecordError then RG.RecordError(err) end
       if C_Timer then C_Timer.After(0.3, function() RG.FishHUDRefresh(true) end) end
     end
@@ -393,21 +417,24 @@ local function paint(b, d)
   b.keyt:SetText(d.keytext and (#d.keytext > 4 and d.keytext:sub(-3) or d.keytext) or "")
   if d.state == "main" or d.state == "bad" then b.glow:SetVertexColor(c[1], c[2], c[3], 1); b.glow:SetAlpha(0.45); b.glow:Show() else b.glow:Hide() end
 end
-local function sameSecure(b, s)
-  return (b.__type or false) == ((s and s.type) or false) and (b.__val or false) == ((s and (s.spell or s.macrotext)) or false)
+-- (a button with a right-click of its own: the right button does nothing secure, an empty macro, and PostClick runs it)
+local function sameSecure(b, s, right)
+  return (b.__type or false) == ((s and s.type) or false) and (b.__val or false) == ((s and (s.spell or s.macrotext)) or false) and (b.__right or false) == (right and true or false)
 end
-local function setSecure(b, s)
-  if sameSecure(b, s) then return end
+local function setSecure(b, s, right)
+  if sameSecure(b, s, right) then return end
   b:SetAttribute("type", s and s.type or nil)
   b:SetAttribute("spell", s and s.spell or nil)
   b:SetAttribute("macrotext", s and s.macrotext or nil)
-  b.__type, b.__val = (s and s.type) or false, (s and (s.spell or s.macrotext)) or false
+  b:SetAttribute("type2", right and "macro" or nil)
+  b:SetAttribute("macrotext2", right and "" or nil)
+  b.__type, b.__val, b.__right = (s and s.type) or false, (s and (s.spell or s.macrotext)) or false, right and true or false
 end
 -- (in a fight a button can only keep what it does; its picture and numbers still update)
 local function apply(b, d, structural)
   if d.click == nil and d.key ~= "hub" then d.click = clickText(d) or false end
-  if structural then setSecure(b, d.secure); b.def, b.dkey = d, d.key
-  elseif b.dkey == d.key and sameSecure(b, d.secure) then b.def = d
+  if structural then setSecure(b, d.secure, d.rfn); b.def, b.dkey = d, d.key
+  elseif b.dkey == d.key and sameSecure(b, d.secure, d.rfn) then b.def = d
   else return end
   paint(b, d)
 end

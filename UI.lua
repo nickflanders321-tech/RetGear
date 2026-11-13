@@ -2333,6 +2333,10 @@ local function renderFish()
     rows[n].onRightClick = function() RG.FishSaveOutfit() end
     rows[n].tip = "Click to " .. (st == "on" and "put your weapons back" or "put your fishing outfit on") .. ". Right-click while wearing your fishing hat, boots or gloves to make them part of the outfit.  /wp gofish  ·  /wp weapons"
   end
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffDouble-right-click to cast|r", "With your pole in your hands, two quick right-clicks on the world cast Fishing. Your right button is back to normal a moment later, and in any fight.", onOff(RG.Opt("fishDoubleRight")), "", nil, nil, true)
+  rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_09"); rows[n].onClick = function() toggle("fishDoubleRight"); if RG.FishDoubleRightDisarm then RG.FishDoubleRightDisarm() end end
+  rows[n].tip = "Click to turn it " .. (RG.Opt("fishDoubleRight") and "off" or "on") .. "."
   if RG.FishHUDLayout then
     local l = RG.FishHUDLayout()
     local NAME = { ring = "Ring", bar = "Bar", column = "Column" }
@@ -2390,6 +2394,25 @@ local function renderFish()
     rows[n].onClick = function() if RG.ShowTab then RG.ShowTab("camp") end end
     rows[n].tip = "Click for the Camp tab: blueprints, materials and where to get them."
   end
+  -- milestones: ranks, camp objects, fish caught
+  if RG.FishMilestones then
+    local ms, msDone = RG.FishMilestones()
+    n = n + 1; setHeader(getRow(n), "Fishing milestones  ·  " .. msDone .. " of " .. #ms)
+    local shownMs = 0
+    for _, m in ipairs(ms) do
+      -- (all of them when opened; otherwise what's done in the last rank reached, and the next few still to do)
+      if state.fishMsAll or (not m.done and shownMs < 4) then
+        do
+          shownMs = shownMs + 1
+          n = n + 1
+          setItem(getRow(n), nil, nil, (m.done and GREY or "|cffffffff") .. m.name .. "|r", GREY .. (m.detail or "") .. "|r", m.done and (GREEN .. "Done|r") or (GOLD .. (m.need or "") .. "|r"), "", (not m.done and shownMs == 1) and "gold" or nil)
+          rows[n].icon:SetTexture(m.done and "Interface\\RaidFrame\\ReadyCheck-Ready" or (m.kind == "rank" and "Interface\\Icons\\Trade_Fishing" or (m.kind == "camp" and "Interface\\Icons\\Spell_Fire_Fire" or "Interface\\Icons\\INV_Misc_Fish_02")))
+          if m.wp then local wp = m.wp; rows[n].onClick = function() RG.PinWaypoint(wp) end; rows[n].tip = "Click to show " .. wp[4] .. " on the map." end
+        end
+      end
+    end
+    foldLine(state.fishMsAll, "+ every milestone, done ones too", "fishMsAll")
+  end
   -- what this zone can bring up, and what is worth your time
   local best = RG.FishBest and RG.FishBest()
   if best then
@@ -2406,6 +2429,24 @@ local function renderFish()
       local pill = (e == best.bestEv and e.ev > 0) and (GREEN .. "Worth the most|r") or (e == best.bestValue and e.value > 0 and (GOLD .. "Priciest fish|r")) or ""
       setItem(getRow(n), e.id, link, name .. GREY .. string.format("   %.1f%% of catches", e.chance) .. (mine and string.format("  (you: %d%%)", math.floor((mine[e.id] or 0) + 0.5)) or "") .. "|r", e.value > 0 and ("Worth " .. RG.FishMoney(e.value) .. GREY .. " each (" .. (e.src == "AH" and "auction house" or "vendor") .. ")  ·  about " .. RG.FishMoney(e.ev) .. " per catch|r") or (GREY .. "No price yet: scan the auction house|r"), pill, "", pill ~= "" and "gold" or nil, quality, true)
     end
+  end
+  -- your fishing trips
+  local trips = RG.FishTrips and RG.FishTrips() or {}
+  if #trips > 0 then
+    n = n + 1; setHeader(getRow(n), "Your fishing trips  ·  " .. #trips .. " kept")
+    local shownT = state.fishTripsAll and #trips or math.min(3, #trips)
+    for i = 1, shownT do
+      local t = trips[i]
+      n = n + 1
+      local ago = time() - (t.t or 0)
+      local when = t.live and "now" or (ago < 3600 and (math.floor(ago / 60) .. " min ago") or (ago < 86400 and (math.floor(ago / 3600) .. " h ago") or (math.floor(ago / 86400) .. " days ago")))
+      local topName = t.top and itemName(t.top)
+      setItem(getRow(n), nil, nil, (t.live and GOLD or "|cffffffff") .. (t.zone or "Fishing") .. "|r" .. GREY .. "   " .. when .. "  ·  " .. t.mins .. " min|r",
+        t.catches .. " fish" .. (topName and (GREY .. ", most of all " .. topName .. "|r") or "") .. (t.gained > 0 and (GREEN .. "  ·  +" .. t.gained .. " skill|r") or ""),
+        (t.value or 0) > 0 and (GOLD .. RG.FishMoney(t.value) .. "|r") or "", t.live and (GREEN .. "On now|r") or "", t.live and "gold" or nil, nil, true)
+      rows[n].icon:SetTexture(t.top and (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(t.top)) or "Interface\\Icons\\INV_Misc_Fish_14")
+    end
+    if #trips > 3 then foldLine(state.fishTripsAll, "+ " .. (#trips - 3) .. " more trips", "fishTripsAll") end
   end
   -- catch log
   local flog = RG.db.fish and RG.db.fish.log

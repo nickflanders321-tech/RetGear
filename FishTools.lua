@@ -13,6 +13,7 @@ local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 
 table.insert(RG.OPTIONS, { key = "fishAutoLoot", label = "Auto-loot while I fish", default = true })
+table.insert(RG.OPTIONS, { key = "fishDoubleRight", label = "Double-right-click the world to cast Fishing while I hold my pole", default = false })
 table.insert(RG.OPTIONS, { key = "fishCombatSwap", label = "Weapons back on when a fight starts while I hold my fishing pole", default = true })
 
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
@@ -264,12 +265,14 @@ if ev then
     if event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
       if a1 ~= "player" or not isFishing(a3) then return end
       channeling = event == "UNIT_SPELLCAST_CHANNEL_START"
+      if channeling then rcDisarm() end
       if channeling then lastCast = GetTime(); lootOn() end
       applyKey()
     elseif event == "PLAYER_REGEN_DISABLED" then
       -- the last moment bindings can change: give your keys back for the fight
       if keyOwner and ClearOverrideBindings then ClearOverrideBindings(keyOwner) end
       keyMode = nil; softOff(); lootOff()
+      if rcOwner and rcArmed and ClearOverrideBindings then ClearOverrideBindings(rcOwner) end; rcArmed = false
       if RG.Opt("fishCombatSwap") and RG.HasPole and RG.HasPole() then
         RG.FishGearOff(true)
         if UIErrorsFrame then UIErrorsFrame:AddMessage("Fight! Weapons back on", 1, 0.3, 0.2) end
@@ -287,6 +290,30 @@ if ev then
       if lootSaved and lastCast and GetTime() - lastCast > 30 and not channeling and not inCombat() then lootOff() end
     end)
   end
+end
+
+-- ---------------------------------------------------------------------------
+-- Double-right-click to cast (off unless you turn it on): the first right-click on the world, with your pole in
+-- your hands and your line out of the water, makes the right mouse button cast for a moment, so a second click right
+-- after casts. Your right button is yours again 0.4 seconds later, the moment you cast, and in any fight.
+-- ---------------------------------------------------------------------------
+local rcOwner = CreateFrame and CreateFrame("Frame")
+local rcArmed = false
+local function rcDisarm()
+  if rcArmed and rcOwner and not inCombat() and ClearOverrideBindings then ClearOverrideBindings(rcOwner) end
+  rcArmed = false
+end
+RG.FishDoubleRightDisarm = rcDisarm
+if WorldFrame and WorldFrame.HookScript and rcOwner then
+  WorldFrame:HookScript("OnMouseDown", function(_, mouse)
+    if mouse ~= "RightButton" or rcArmed or not RG.db or not RG.Opt("fishDoubleRight") then return end
+    if inCombat() or channeling or not (RG.HasPole and RG.HasPole()) or not SetOverrideBindingClick then return end
+    prepare()
+    if not button() then return end
+    SetOverrideBindingClick(rcOwner, true, "BUTTON2", "WaypathFishEasy")
+    rcArmed = true
+    if C_Timer then C_Timer.After(0.4, rcDisarm) end
+  end)
 end
 
 -- /wp fishcheck: what the tools see, to tell why a cast didn't happen

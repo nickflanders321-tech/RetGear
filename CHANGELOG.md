@@ -10,8 +10,12 @@
   - **Three layouts:** a ring (the default, on a water ring we drew ourselves), a bar or a column. Click the Fishing HUD line on the Fishing tab to switch, or /wp fishhud ring, bar or column. /wp fishhud size 120 changes its size. Move it in Edit Mode or with /wp move.
   - **Compact:** the buttons sit close around the middle one, like an action bar bent into a ring. The water ring only rises while your line is in the water, and the middle button counts down the seconds of your cast.
   - Every tooltip says what a click does. The middle button can have its own key (Key Bindings, Waypath+).
+  - **Pick your lure:** right-click the lure button to choose which lure it puts on, or go back to the best one you carry.
   - It replaces the old fishing display. The interface still fades while you fish, and what you catch rises above the buttons and fades.
   - Everything waits for your click, and the buttons only change outside a fight, as the game requires.
+- **Double-right-click to cast** (off until you turn it on, on the Fishing tab): with your pole in your hands, two quick right-clicks on the world cast Fishing. Your right mouse button is back to normal a moment later, when you cast, and in any fight.
+- **Your fishing trips** on the Fishing tab: each trip (until 20 minutes without a catch, or logging out) is kept with where, how long, how many fish, what you caught most, the gold it's worth and the skill you gained. The last 30 trips are kept.
+- **Fishing milestones** on the Fishing tab: your fishing ranks, the camp objects Fishing gives you (Fish Bowl, Fishing Rack, Fishing Hut) and 100 to 5,000 fish caught, each with a check when it's done and what's left when it isn't.
 
 ## v1.38.0
 
