@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.38.0
 
 - **Card Shop fixed.** Only the first tile was filled in, the rest stayed empty, and the Dungeons, Raids and Holidays chips kept showing the regular packs under the wrong heading. The round picture on dungeon, raid and holiday packs was cut out in a way this client doesn't allow, which stopped the Shop part-way through every time. It now uses the game's mask textures. A tile that can't be drawn is hidden and noted in /wp errors instead of stopping the rest, and the heading always matches the chip you picked.
 - **Auction House prices fixed.** An item listed for 1g 39s and up could show "35s market · none listed now".
