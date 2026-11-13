@@ -368,11 +368,11 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   local extra = isOpen(d) and (beaten .. " of " .. total .. " bosses defeated") or ("opens " .. niceDay(d.raid.opens))
   frame.albTitle:SetText("|cffd9a5ffRAID|r  " .. st.name .. "  |cffa89bc9·  " .. d.raid.size .. " players  ·  " .. extra .. "|r")
   frame.albNext:ClearAllPoints()
-  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 440) + 10, 0)
+  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
   if not btn then
     local u = U()
     btn = u.gbtn(frame.albOpen, "Raid photos", 150, 24, function() RG.ArcadeShowPhotos(frame.albOpen.photoRaid) end)
-    btn:SetPoint("RIGHT", frame.albOpen, "LEFT", -8, 0)
+    btn:SetPoint("RIGHT", frame.prev, "LEFT", -14, 0)   -- (beside the page arrows, clear of the title row)
     frame.albOpen.photoBtn = btn
   end
   local n = #photosOf(st.name)

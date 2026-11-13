@@ -301,7 +301,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   end
   frame.albTitle:SetText("|cffff9fb0HOLIDAY|r  " .. st.name .. "  |cffa89bc9·  " .. when .. "|r")
   frame.albNext:ClearAllPoints()
-  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 440) + 10, 0)
+  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
   local have = select(1, RG.ArcadeDungeonPacks(st.name))
   if have <= 0 then
     frame.albOpen:SetText(d.holiday.key == "lunar" and "Visit the Elders to earn packs" or "Do its quests while it's on")
@@ -314,7 +314,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
     if not btn then
       local u = U()
       btn = u.gbtn(frame.albOpen, "Unwrap your present", 170, 24, function() if unwrap() and RG.ArcadeRefresh then RG.ArcadeRefresh(true) end end)
-      btn:SetPoint("RIGHT", frame.albOpen, "LEFT", -8, 0)
+      btn:SetPoint("RIGHT", frame.prev, "LEFT", -14, 0)   -- (beside the page arrows, clear of the title row)
       frame.albOpen.giftBtn = btn
     end
     btn:SetShown(yr ~= nil)

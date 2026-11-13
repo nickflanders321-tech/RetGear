@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Cards: a Shop tab, and a tidier Album.**
+  - **The Shop** shows every pack in one place: the regular packs, then each dungeon's, raid's and holiday's pack, with what's inside, its odds (hover) and what it costs. Packs you've earned and haven't opened come first, with a count on the pack, and the tab itself says how many are waiting ("SHOP 4"). Open or buy straight from a tile, or click the tile to see its cards in the Album. Chips at the top pick one kind: To open, Regular, Dungeons, Raids, Holidays. Locked packs say how to unlock them (clear the dungeon, defeat a raid boss, wait for the holiday).
+  - **Sets are sorted into sections:** Dungeons, Raids, Holidays, Field Guide and Collection. The Sets tab shows one section at a time (chips at the top), each set marked with a coloured tag, and the Album's < > now step through the section of the page you're on instead of all 80-odd sets.
+  - A raid's "Raid photos" and the Winter Veil present button sit beside the page arrows, so they no longer crowd the Album's title row.
 - **Cards: holiday packs.** Six holidays have their own set, built from their quests: the people who give them (with their own 3D models), the creatures they send you to and what they reward. Feast of Winter Veil, Hallow's End, Love is in the Air, Midsummer Fire Festival, Children's Week and the Lunar Festival (139 new cards).
   - **Earned by celebrating:** every holiday quest you turn in while it's on gives one of its packs (once a year per quest). Holiday packs can't be bought, and holiday cards can't be traded or crafted.
   - **The year is printed on the card:** each holiday card carries the year it was earned, along the top of its picture ("WINTER VEIL 2026"). Next year's are a new print; this year's can't be had again once the holiday ends.

@@ -108,6 +108,7 @@ ArcadeFieldGuide.lua
 ArcadeRaidPacks.lua
 ArcadeHolidayPacks.lua
 ArcadeFirstEdition.lua
+ArcadeShop.lua
 ArcadeRank.lua
 ArcadeBattle.lua
 ArcadeDuel.lua

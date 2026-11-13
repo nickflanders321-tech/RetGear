@@ -2879,7 +2879,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Main window
 -- ---------------------------------------------------------------------------
-local MODES = { { "cards", "Collection" }, { "album", "Album" }, { "sets", "Sets" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Ledger" } }
+local MODES = { { "cards", "Collection" }, { "album", "Album" }, { "sets", "Sets" }, { "shop", "Shop" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Ledger" } }
 
 local function cell_click(self, btn)
   local c = self.card
@@ -2963,7 +2963,7 @@ local function build()
 
   -- tabs
   frame.modes = {}
-  local tw = 104
+  local tw = 98
   for i, m in ipairs(MODES) do
     local t = gtab(frame, m[2]:upper(), tw, function() view.mode = m[1]; view.set = (m[1] == "cards") and view.set or nil; RG.ArcadeRefresh(true) end)
     t:SetPoint("TOP", frame, "TOP", (i - (#MODES + 1) / 2) * (tw + 6), -128)
@@ -2992,7 +2992,12 @@ local function build()
   frame.searchHint = fs(frame.searchBox, "body", 14); frame.searchHint:SetPoint("LEFT", 8, 0); frame.searchHint:SetText("Search"); frame.searchHint:SetTextColor(0.84, 0.75, 0.57)
   -- the Album's top row: the set (< name >) and, for a dungeon, its pack
   local function albumStep(d)
-    local sets = getSets()
+    local all = getSets()
+    local cur
+    for _, st in ipairs(all) do if st.name == view.album then cur = st end end
+    local sec = cur and RG.ArcadeSetSection and RG.ArcadeSetSection(cur)
+    local sets = {}
+    for _, st in ipairs(all) do if not sec or RG.ArcadeSetSection(st) == sec then sets[#sets + 1] = st end end
     local at = 1
     for i, st in ipairs(sets) do if st.name == view.album then at = i end end
     view.album = sets[(at - 1 + d) % #sets + 1].name; view.albumPage = 1
@@ -3104,9 +3109,9 @@ local function build()
 
   -- footer
   frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
-  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "album" then view.albumPage = math.max(1, (view.albumPage or 1) - 1) elseif view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
+  frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "album" then view.albumPage = math.max(1, (view.albumPage or 1) - 1) elseif view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) elseif view.mode == "shop" then view.shopPage = math.max(0, (view.shopPage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
   frame.prev:SetPoint("BOTTOM", 230, 58)
-  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "album" then view.albumPage = (view.albumPage or 1) + 1 elseif view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
+  frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "album" then view.albumPage = (view.albumPage or 1) + 1 elseif view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 elseif view.mode == "shop" then view.shopPage = (view.shopPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
   frame.next:SetPoint("BOTTOM", 330, 58)
   frame.pageText = fs(frame, "head", 14); frame.pageText:SetPoint("BOTTOM", 280, 62); frame.pageText:SetTextColor(1, 0.933, 0.709)
   frame.buyNow = function(many, dn)
@@ -3307,6 +3312,11 @@ function RG.ArcadeRefresh(keepMsg)
   end
   frame.prev:SetShown(cards or album); frame.next:SetShown(cards or album); frame.pageText:SetShown(cards or album)
   showRows(0)
+  for _, fn in ipairs(RG.ArcadeViewHooks or {}) do
+    local ok, err = pcall(fn, view, { frame = frame, a = a, PGW = PGW, PGX = PGX, say = say, pgHead = pgHead, pgBox = pgBox, PACKS = PACKS, PACK_ORDER = PACK_ORDER,
+      tokens = function(kind) return tokenCount(a, kind) end, price = packPrice })
+    if not ok and RG.Debug then RG.Debug(err) end
+  end
 
   if album then
     -- one set at a time, like a binder page: the cards you have in their best print, empty slots for the rest
@@ -3350,7 +3360,7 @@ function RG.ArcadeRefresh(keepMsg)
       frame.pageText:SetText(view.albumPage .. " / " .. pages)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
       local clearedHere = st.dungeon and not st.soon and select(2, RG.ArcadeDungeonPacks(st.name))
-      frame.albTitle:SetText(st.name .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
+      frame.albTitle:SetText((RG.ArcadeSetTag and RG.ArcadeSetTag(st) or "") .. st.name .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
       frame.albNext:ClearAllPoints()
       frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)
@@ -3396,16 +3406,21 @@ function RG.ArcadeRefresh(keepMsg)
     if #list == 0 then frame.panel:ClearAllPoints(); frame.panel:SetPoint("TOPLEFT", 40, -260); frame.panel:SetText(view.showcase and "|cff9a96b0Your showcase is empty. Open a card you own and choose Showcase to pin it here.|r" or "|cff9a96b0Nothing matches. Change the search or the filters.|r") end
   elseif view.mode == "sets" then
     local sets = getSets()
+    if view.setSection and view.setSection ~= "all" and RG.ArcadeSetSection then
+      local only = {}
+      for _, x in ipairs(sets) do if RG.ArcadeSetSection(x) == view.setSection then only[#only + 1] = x end end
+      sets = only
+    end
     local per = 14
     local pages = math.max(1, math.ceil(#sets / per))
     local pg = math.max(0, math.min(view.setPage or 0, pages - 1)); view.setPage = pg
     local first = pg * per
-    pgHead(1, 196, "Sets", "Bronze, silver and gold rewards   ·   click one to open it in the Album   ·   " .. #sets .. " sets")
+    pgHead(1, 196, (RG.ArcadeSectionName and RG.ArcadeSectionName(view.setSection)) or "Sets", "Bronze, silver and gold rewards   ·   click one to open it in the Album   ·   " .. #sets .. " sets")
     showRows(math.max(0, math.min(per, #sets - first)))
     for i = 1, per do
       local s = sets[first + i]
       local b = frame.rows[i]
-      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -228 - (i - 1) * 28)
+      b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -228 - (i - 1) * 28)   -- (the section chips sit above the heading)
       if s then
         -- the stage you're working on: its progress, and the medal of the last one finished
         a.setStage = a.setStage or {}
@@ -3415,7 +3430,8 @@ function RG.ArcadeRefresh(keepMsg)
         local sg = RG.ARCADE_STAGES[stage]
         local medal = paid > 0 and RG.ARCADE_STAGES[paid] or nil
         local function hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255)) end
-        b.left:SetText((paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name .. "|r" .. (s.dungeon and "|cffa89bc9  (dungeon)|r" or "") .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
+        local tag = RG.ArcadeSetTag and RG.ArcadeSetTag(s) or ""
+        b.left:SetText(tag .. (paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name:gsub("^Field Guide: ", "") .. "|r" .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
         b.right:SetText(s.soon and "|cffa89bc9coming soon|r" or paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
         b.fill:Show(); b.fillBg:Show()
         local fc = paid >= 3 and { 0.48, 0.88, 0.54 } or sg[3]

@@ -212,7 +212,7 @@ function RG.ArcadeFieldAlbum(st, frame, parts, nextText)
   local world = st.zone == "World bosses"
   frame.albTitle:SetText("|cff9fd8a0FIELD GUIDE|r  " .. (st.zone or st.name) .. "  |cffa89bc9·  " .. slain .. " of " .. #st.cards .. (world and " witnessed" or " slain") .. "|r" .. (paid >= 1 and "  |cffffd24a★ Explorer|r" or ""))
   frame.albNext:ClearAllPoints()
-  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 440) + 10, 0)
+  frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 400) + 10, 0)
   frame.sub:SetText(#st.cards .. " cards   ·   " .. seen .. " sighted     " .. table.concat(parts, "     ") .. "\n|cffa89bc9" ..
     (world and "Earned by being in the fight when one dies. " or "Earned by killing them: the new cards here are never in packs. ") .. (nextText or "Every stage finished: a gold page") .. "|r")
   frame.albOpen:SetText(world and "Show a world boss on the map" or "Show the next rare on the map"); frame.albOpen:SetEnabled(true); frame.albOpen:Show()
