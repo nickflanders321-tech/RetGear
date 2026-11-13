@@ -5,9 +5,15 @@ ra = race letters and cl = class letters; the add-on filters them for your chara
 Objective spots: each mob's real spawns are grouped into a few hunting areas per zone (nearest area wins in game),
 and for "collect an item" objectives the mobs that drop it most often come first (drop chances from the cMaNGOS
 loot tables when --sql is given).
-Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql]"""
+Hand-checked fixes from Polestar's forever-db (its corrections layer, CC BY 4.0, each fix backed by players' recordings,
+live client data or an in-game check) go on top of QuestieDB's data when --fixes <forever-db folder> is given: who can
+take a quest (races, classes), what comes first, levels, givers, turn-ins, objectives, and quests not in the game.
+Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql] [--fixes forever-db]"""
 import json, re, sys, os
 SQL = None
+FIXES = None
+if '--fixes' in sys.argv:
+    i = sys.argv.index('--fixes'); FIXES = sys.argv[i + 1]; del sys.argv[i:i + 2]
 if '--sql' in sys.argv:
     i = sys.argv.index('--sql'); SQL = sys.argv[i + 1]; del sys.argv[i:i + 2]
 QDB = sys.argv[1].rstrip('/') + '/'
@@ -46,7 +52,7 @@ def rep_points(sp, prefer_zone, maxzones=3):
         pts = [p for p in pts if p and p[0] is not None and p[0] >= 0]
         if not pts: continue
         cx = sum(p[0] for p in pts) / len(pts); cy = sum(p[1] for p in pts) / len(pts)
-        x, y = min(pts, key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2)
+        x, y = min(pts, key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2)[:2]   # (a spawn can carry a phase after x, y)
         out.append((ui[z], round(x, 1), round(y, 1)))
         if len(out) >= maxzones: break
     return out
@@ -132,6 +138,64 @@ def L(o):  # objective entry as a 1-based list
     if isinstance(o, dict): return [o.get(str(i)) for i in range(1, 5)]
     return list(o) + [None] * 4
 def lstr(s): return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+# ---------------------------------------------------------------------------
+# Polestar forever-db's hand-checked quest fixes (CC BY 4.0), on top of QuestieDB's data
+# (fields of the dumped quest: 1 name, 2 givers, 3 turn-ins, 4 required level, 5 level, 6 races, 7 objectives,
+# 10 classes, 11 all-of prerequisites, 12 any-of prerequisites, 13 exclusive with, 17 next, 19 breadcrumb for)
+# ---------------------------------------------------------------------------
+FIXED = 0
+if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
+    corr = json.load(open(os.path.join(FIXES, 'corrections', 'quests.json'), encoding='utf-8'))
+    Q = D['quests']
+    def qlist(q):
+        if isinstance(q, dict): return [q.get(str(i)) for i in range(1, 25)]
+        return list(q) + [None] * (24 - len(q))
+    gone = {k for k, v in corr.items() if v.get('remove')}
+    for k in gone: Q.pop(k, None)
+    for k, v in corr.items():
+        st = v.get('set')
+        if not st or k not in Q: continue
+        q = qlist(Q[k])
+        def put(i, val): q[i - 1] = val
+        if 'title' in st: put(1, st['title'])
+        if 'minLevel' in st: put(4, st['minLevel'])
+        if 'level' in st: put(5, st['level'])
+        if 'races' in st: put(6, st['races'])
+        if 'classes' in st: put(10, st['classes'])
+        if 'preAll' in st or 'preAny' in st:
+            if 'preAll' in st: put(11, st['preAll'] or None)
+            if 'preAny' in st: put(12, st['preAny'] or None)
+        elif 'pre' in st: put(11, None); put(12, st['pre'] or None)
+        if 'excl' in st: put(13, st['excl'] or None)
+        if 'next' in st: put(17, st['next'])
+        if 'breadcrumbFor' in st: put(19, st['breadcrumbFor'])
+        if 'start' in st:
+            s_ = st['start']; put(2, [s_.get('npc') or [], s_.get('object') or [], s_.get('item') or []])
+        if 'end' in st:
+            e_ = st['end']; put(3, [e_.get('npc') or [], e_.get('object') or []])
+        if 'objectives' in st:
+            objs = st['objectives']
+            have = [o for o in objs if o.get('type') in ('kill', 'object', 'item')]
+            # (talking to someone or an event has no spot to show: those fixes keep the objectives the map can show)
+            if have or not objs:
+                old = qlist(q[6]) if q[6] else [None] * 24
+                kills = [[o['id'], o.get('text')] for o in objs if o.get('type') == 'kill']
+                obs = [[o['id'], o.get('text')] for o in objs if o.get('type') == 'object']
+                its = [[o['id'], o.get('text')] for o in objs if o.get('type') == 'item']
+                put(7, [kills or None, obs or None, its or None, old[3], None])
+        Q[k] = q
+        FIXED += 1
+    # quests not in the game: nothing else waits for them
+    for k, q in Q.items():
+        ql = qlist(q)
+        for i in (11, 12):
+            pre = ql[i - 1]
+            if isinstance(pre, (list, dict)):
+                vals = list(pre.values()) if isinstance(pre, dict) else pre
+                keep = [x for x in vals if str(x) not in gone]
+                if len(keep) != len(vals): ql[i - 1] = keep or None; Q[k] = ql
+    print('forever-db fixes: %d quests changed, %d taken out (not in the game)' % (FIXED, len(gone)), file=sys.stderr)
 
 out, nq, nobj, npts = [], 0, 0, 0
 for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
@@ -236,7 +300,8 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         parts.append('o={' + ','.join(os_) + '}')
     out.append('[%s]={%s}' % (qid, ','.join(parts)))
 head = ['-- Waypath+ quest objectives: where to finish each quest and where its objectives are.',
-        "-- Generated from QuestieDB's WoW Forever data (coordinates already converted to Forever's maps):",
+        "-- Generated from QuestieDB's WoW Forever data (coordinates already converted to Forever's maps), with the hand-checked",
+        "-- fixes of Polestar's forever-db (corrections layer, CC BY 4.0, by the Polestar authors) on top:",
         '-- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.',
         '-- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,',
         '--   pg = {all of these first}, ps = {any of these first}, x = {done one of these: this one is gone},',

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Quest data: 437 hand-checked fixes.** Polestar's open WoW Forever quest database keeps fixes checked against players' in-game recordings, the live game's quest data and in-game checks. Waypath+ now applies them on top of its quest data, and picks up new ones by itself with every data update. Among them:
+  - Skyborne Druids (Alliance) get their whole Aquatic Form and Cure Poison chains (they used to stop halfway).
+  - Every Horde Warlock gets the voidwalker quests and every Horde Mage the level 26 robe quests (they were shown to only some races).
+  - Class quests shown to everyone are now only for their class (Dragonslayer's Helm, Shield and Lance for Warriors; Boughs in the Wind for Mages).
+  - Many quests now wait for the right quest first (the centaur "Buying Friendship" quests, the "The Great Outdoors" camping quests, The Hermit Tanner...), and four quests that aren't in the live game (Hearts of the Lost and others) are gone from the guide.
 - **Cards: what you did before counts.** Waypath+ reads the game's own records when you log in:
   - **Dungeons:** besides WoW Forever's Legacy challenges, the game's kill count for each dungeon's last boss now counts as a clear. That unlocks The Stockade's packs (it isn't in the Legacy challenges) with its two first-clear packs. **Veterans:** one more pack for every five times a dungeon's last boss fell (beyond the first), up to three per dungeon, paid once.
   - **Raids:** Onyxia's and the Wild King's kill counts count as well as the raid achievements (two packs per boss already beaten).
