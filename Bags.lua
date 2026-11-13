@@ -8,6 +8,19 @@ local C = C_Container or {}
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
 table.insert(RG.OPTIONS, { key = "sortButton", label = "Sort button on my bags and bank", default = true })
 
+-- a vendor's item: price, how many one purchase gives, how many it has left (-1: no limit). Newer clients
+-- replace GetMerchantItemInfo with C_MerchantFrame.GetItemInfo, which returns a table.
+function RG.MerchantItemInfo(i)
+  if C_MerchantFrame and C_MerchantFrame.GetItemInfo then
+    local ok, info = pcall(C_MerchantFrame.GetItemInfo, i)
+    if ok and type(info) == "table" then return info.price, info.stackCount, info.numAvailable end
+  end
+  if GetMerchantItemInfo then
+    local _, _, price, qty, avail = GetMerchantItemInfo(i)
+    return price, qty, avail
+  end
+end
+
 local BAGS = { 0, 1, 2, 3, 4 }
 local BANK = { -1, 5, 6, 7, 8, 9, 10 }
 local HEARTHSTONE = 6948

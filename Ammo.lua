@@ -183,7 +183,7 @@ local function updateBuy()
     local fill = target()
     local want = fill - have
     if a and idx and want > 0 then
-      local _, _, price, perBuy = GetMerchantItemInfo(idx)
+      local price, perBuy = RG.MerchantItemInfo(idx)
       perBuy = (perBuy and perBuy > 0) and perBuy or 1
       price = price or 0
       local unit = price / perBuy

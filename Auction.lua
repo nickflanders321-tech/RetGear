@@ -791,9 +791,24 @@ RG.__readAHMail = readMail   -- (tests)
 for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE", "REPLICATE_ITEM_LIST_UPDATE", "MAIL_INBOX_UPDATE" }) do
   pcall(f.RegisterEvent, f, e)
 end
+-- prices nobody has needed for 60 days (seen in a full scan once, not on any list of yours) are let go, once a session,
+-- so the saved file doesn't keep every item the Auction House ever listed
+local pruned = false
+local function prunePrices()
+  if pruned or not (RG.db and RG.db.prices) then return end
+  pruned = true
+  local now, gone = time(), 0
+  for k, rec in pairs(RG.db.prices) do
+    local id = tonumber(k) or tonumber(tostring(k):match("^(%d+)"))
+    if type(rec) == "table" and rec.t and now - rec.t > 60 * DAY and not (id and isTracked(id)) then RG.db.prices[k] = nil; gone = gone + 1 end
+  end
+  return gone
+end
+RG.__prunePrices = prunePrices   -- (tests)
 f:SetScript("OnEvent", function(_, event)
   if event == "AUCTION_HOUSE_SHOW" then
     yielded = false
+    pcall(prunePrices)
     if RG.Opt("autoScan") then C_Timer.After(0.5, function() if ahOpen() and not yielded then RG.ScanAH() end; showProgress() end) end
   elseif event == "AUCTION_HOUSE_CLOSED" then
     -- a full scan that's already being read keeps going; searches stop

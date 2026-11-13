@@ -106,7 +106,7 @@ end
 -- Unpriced tradeable greens and better are returned separately so you know to check them.
 local listCache, listStamp = nil, nil
 function RG.ProfitList()
-  if listStamp and GetTime() - listStamp < 1 then return listCache.items, listCache.unpriced, listCache.total end
+  if listStamp and listCache and GetTime() - listStamp < 1 then return listCache.items, listCache.unpriced, listCache.total end
   listStamp = GetTime()
   local byID = {}
   if on() then

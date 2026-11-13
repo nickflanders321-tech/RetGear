@@ -439,13 +439,13 @@ local function vendorNeeds()
       if e.short > 0 and e.kind == "vendor" then want[e.id] = (want[e.id] or 0) + e.short end
     end
   end
-  if not (GetMerchantNumItems and GetMerchantItemInfo and GetMerchantItemLink) then return {} end
+  if not (GetMerchantNumItems and RG.MerchantItemInfo and GetMerchantItemLink) then return {} end
   local out = {}
   for i = 1, (GetMerchantNumItems() or 0) do
     local link = GetMerchantItemLink(i)
     local id = link and tonumber(link:match("item:(%d+)"))
     if id and want[id] then
-      local _, _, price, qty, avail = GetMerchantItemInfo(i)
+      local price, qty, avail = RG.MerchantItemInfo(i)
       qty = math.max(1, qty or 1)
       local bundles = math.ceil(want[id] / qty)
       if avail and avail >= 0 then bundles = math.min(bundles, avail) end
