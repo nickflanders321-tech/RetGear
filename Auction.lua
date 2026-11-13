@@ -5,6 +5,8 @@
 -- so you still see a number away from the AH.
 local _, RG = ...
 local GREEN, GREY, GOLD = RG.COLORS.GREEN, RG.COLORS.GREY, RG.COLORS.GOLD
+-- (this client has no global GetItemInfoInstant: a full scan that called it stopped at the first piece of gear)
+local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant or function() end
 
 local function money(c)
   if not c then return "?" end
@@ -120,9 +122,13 @@ local function dayIndex() return math.floor(time() / 86400) end
 local function marketOf(rec)
   if not (rec and rec.d) then return nil end
   local today, num, den = dayIndex(), 0, 0
+  -- a day that only knows the cheapest listing (a quick search) says less than one that saw every listing (a full scan,
+  -- or the item's own listings on the Sell or Buy tab): when there are any of those, they decide the value
+  local full = false
+  for day, v in pairs(rec.d) do if v[3] and today - day >= 0 and today - day <= 14 then full = true break end end
   for day, v in pairs(rec.d) do
     local age = today - day
-    if age >= 0 and age <= 14 and v[2] > 0 then local w = 0.75 ^ age; num = num + w * (v[1] / v[2]); den = den + w end
+    if age >= 0 and age <= 14 and v[2] > 0 and (v[3] or not full) then local w = 0.75 ^ age; num = num + w * (v[1] / v[2]); den = den + w end
   end
   return den > 0 and math.floor(num / den + 0.5) or nil
 end
@@ -456,7 +462,18 @@ RG.AHStats = stats
 
 -- Modern AH: up to BATCH items in one request, by item id (no name matching, so nothing is missed for a spelling or a
 -- similar name), answered as one Browse list. Items that aren't on the list once it's complete are "none listed".
+local gearLevel
 local BATCH = 40
+-- a weapon's or armour's item level (nil for anything else, or not loaded yet)
+gearLevel = function(id)
+  local _, _, _, _, _, classID = GetItemInfoInstant(id)
+  if classID ~= 2 and classID ~= 4 then return nil end
+  local lvl = C_Item and C_Item.GetDetailedItemLevelInfo and C_Item.GetDetailedItemLevelInfo(id)
+  if not lvl and GetDetailedItemLevelInfo then lvl = GetDetailedItemLevelInfo(id) end
+  if not lvl then lvl = select(4, RG.ItemInfo(id)) end
+  if not lvl then RG.RequestItem(id) end
+  return (lvl and lvl > 0) and lvl or nil
+end
 local batchAt, batchTries = 0, 0
 local announce = false   -- chat lines only when you asked for the scan
 local function sendBatch()
@@ -466,6 +483,9 @@ local function sendBatch()
   while #queue > 0 and #ids < BATCH do
     local id = table.remove(queue, 1)
     ids[#ids + 1] = id; keys[#keys + 1] = C_AuctionHouse.MakeItemKey(id)
+    -- gear is listed under its item level: a key without one can come back empty, which read as "none listed"
+    local lvl = gearLevel(id)
+    if lvl then keys[#keys + 1] = C_AuctionHouse.MakeItemKey(id, lvl) end
   end
   batch, batchAt, batchTries = ids, GetTime(), 0
   local sorts = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
@@ -578,14 +598,55 @@ local function readBrowse()
   stats.events = stats.events + 1
   if batch and (not C_AuctionHouse.HasFullBrowseResults or C_AuctionHouse.HasFullBrowseResults()) then
     -- our batch is answered in full: what isn't on the list has no auctions right now
-    local inList = {}
+    local inList, ours_ = {}, false
     for _, r in ipairs(results) do local id = r.itemKey and r.itemKey.itemID; if id then inList[id] = true end end
-    for _, id in ipairs(batch) do if not inList[id] then record(id, nil, 0); stats.none = stats.none + 1 end end
-    batch = nil
+    for _, id in ipairs(batch) do if inList[id] then ours_ = true break end end
+    -- (a list with things on it but none of ours is the answer to some other search: it says nothing about ours)
+    if ours_ or #results == 0 then
+      for _, id in ipairs(batch) do
+        -- gear whose item level isn't known yet: its search may have missed it, so it isn't called "none listed"
+        local cls = select(6, GetItemInfoInstant(id))
+        if not inList[id] and not ((cls == 2 or cls == 4) and not gearLevel(id)) then
+          record(id, nil, 0); stats.none = stats.none + 1
+        end
+      end
+      batch = nil
+    end
   elseif batch and C_AuctionHouse.RequestMoreBrowseResults then
     pcall(C_AuctionHouse.RequestMoreBrowseResults)
   end
 end
+-- The listings of one item: the Sell tab looks them up for whatever you're posting, and so does clicking an item on
+-- the Buy tab. Every listing is there, so it's the item's whole market for today, like a full scan.
+local function readListings(id, sfx, prices, n)
+  if not id or #prices == 0 then return end
+  table.sort(prices)
+  local v = scanValue({ unpack(prices) })
+  local cheapest = math.floor(prices[1])
+  record(id, cheapest, n, v and math.floor(v + 0.5))
+  if sfx and sfx ~= 0 then record(variantKey(id, sfx), cheapest, n, v and math.floor(v + 0.5)) end
+  stats.found = stats.found + 1
+end
+local function readItemSearch(itemKey)
+  if not (itemKey and itemKey.itemID and C_AuctionHouse.GetNumItemSearchResults) then return end
+  local prices, n = {}, C_AuctionHouse.GetNumItemSearchResults(itemKey) or 0
+  for i = 1, math.min(n, 400) do
+    local r = C_AuctionHouse.GetItemSearchResultInfo(itemKey, i)
+    local each = r and r.buyoutAmount and r.buyoutAmount > 0 and r.buyoutAmount / math.max(1, r.quantity or 1)
+    if each then for _ = 1, math.min(r.quantity or 1, 400 - #prices) do prices[#prices + 1] = each end end
+  end
+  readListings(itemKey.itemID, itemKey.itemSuffix, prices, n)
+end
+local function readCommoditySearch(id)
+  if not (id and C_AuctionHouse.GetNumCommoditySearchResults) then return end
+  local prices, n = {}, C_AuctionHouse.GetNumCommoditySearchResults(id) or 0
+  for i = 1, math.min(n, 400) do
+    local r = C_AuctionHouse.GetCommoditySearchResultInfo(id, i)
+    if r and r.unitPrice and r.unitPrice > 0 then for _ = 1, math.min(r.quantity or 1, 400 - #prices) do prices[#prices + 1] = r.unitPrice end end
+  end
+  readListings(id, nil, prices, n)
+end
+RG.__readItemSearch, RG.__readCommoditySearch = readItemSearch, readCommoditySearch   -- (tests)
 local function readLegacy()
   if mode == "full" and not runner:GetScript("OnUpdate") then
     local _, total = GetNumAuctionItems("list")
@@ -606,8 +667,10 @@ local function readLegacy()
   end
   for id, p in pairs(best) do if watched(id) then record(id, math.floor(p), count[id]) else remember(id, math.floor(p), count[id]) end end
   if pending then
-    if not best[pending] then record(pending, nil, 0) end
-    pending = nil
+    -- our search is by exact name: a list with other items on it isn't its answer (another add-on's search, or a late
+    -- answer to an earlier one), so only an empty list means "none listed"
+    if best[pending] then pending = nil
+    elseif not next(best) and (GetNumAuctionItems("list") or 0) == 0 then record(pending, nil, 0); pending = nil end
   end
 end
 local function readReplicate()
@@ -788,7 +851,8 @@ local function readMail()
 end
 RG.__readAHMail = readMail   -- (tests)
 
-for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE", "REPLICATE_ITEM_LIST_UPDATE", "MAIL_INBOX_UPDATE" }) do
+for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_ITEM_LIST_UPDATE", "REPLICATE_ITEM_LIST_UPDATE", "MAIL_INBOX_UPDATE",
+  "ITEM_SEARCH_RESULTS_UPDATED", "COMMODITY_SEARCH_RESULTS_UPDATED" }) do
   pcall(f.RegisterEvent, f, e)
 end
 -- prices nobody has needed for 60 days (seen in a full scan once, not on any list of yours) are let go, once a session,
@@ -805,8 +869,10 @@ local function prunePrices()
   return gone
 end
 RG.__prunePrices = prunePrices   -- (tests)
-f:SetScript("OnEvent", function(_, event)
-  if event == "AUCTION_HOUSE_SHOW" then
+f:SetScript("OnEvent", function(_, event, a1)
+  if event == "ITEM_SEARCH_RESULTS_UPDATED" then pcall(readItemSearch, a1)
+  elseif event == "COMMODITY_SEARCH_RESULTS_UPDATED" then pcall(readCommoditySearch, a1)
+  elseif event == "AUCTION_HOUSE_SHOW" then
     yielded = false
     pcall(prunePrices)
     if RG.Opt("autoScan") then C_Timer.After(0.5, function() if ahOpen() and not yielded then RG.ScanAH() end; showProgress() end) end

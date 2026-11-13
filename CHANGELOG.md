@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Auction House prices fixed.** An item listed for 1g 39s and up could show "35s market · none listed now".
+  - **Full scans stopped at the first piece of gear:** they used a game function this client doesn't have, so the scan never finished and its prices were never saved. Fixed.
+  - **Gear read as "none listed":** weapons and armour are listed under their item level, and the quick price check searched without it, so it came back empty. It now searches with the item level, and gear whose item level hasn't loaded yet is never called "none listed".
+  - **Another add-on's search no longer counts as ours:** when Auctionator (or anything else) searched at the same moment, its results could be read as the answer to Waypath+'s check and mark items "none listed". Only an empty answer, or one with our items on it, counts now.
+  - **The Sell and Buy tabs update prices:** when you pick an item to post, or click one to buy, all its listings are read, so its price is right away what's on the Auction House now.
+  - **Market value:** days when the scan saw every listing now decide the value over days that only knew the cheapest one, so one old cheap listing doesn't hold the price down.
 - **Move Waypath+'s pop-ups in Edit Mode.** Open the game's Edit Mode (or type /wp move) and every Waypath+ pop-up and on-screen piece shows a sample in a green box with its name: drag it where you want it, right-click it to put it back. Close Edit Mode (or type /wp move again) when you're done, and /wp move reset puts them all back.
   - Covered: the Exorcism alert, the level-up and news cards (placed low on the screen they stack upwards), a friend's card pull, the card swap box, the card duel invitation, the fishing display, the waypoint arrow and the tracker. The arrow and the tracker still drag on their own as before, and keep the same saved place.
   - Windows that already drag by their title (the guide, the card album, the battle window...) and buttons that sit next to the game's own windows (the price scan bar, the profession materials button) aren't part of it.
