@@ -8,7 +8,7 @@ local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
 -- New options (shown in the Settings tab)
 for _, o in ipairs({
   { key = "rewardPicker", label = "Highlight the best quest reward", default = true },
-  { key = "exorcism",     label = "Alert me to use Exorcism on Undead and Demons", default = true },
+  { key = "exorcism",     label = "Alert me to use Exorcism on Undead and Demons (move it in Edit Mode or with /wp move)", default = true },
   { key = "stoneReminder", label = "Remind me to sharpen my weapon", default = true },
   { key = "paperdoll",    label = "Show upgrade scores on my character screen", default = true },
   { key = "talentReminder", label = "Remind me to spend talent points", default = true },
@@ -121,7 +121,26 @@ local function knows(name)
   if C_Spell and C_Spell.GetSpellInfo then local i = C_Spell.GetSpellInfo(name); return i and (not IsPlayerSpell or IsPlayerSpell(i.spellID)) end
   return GetSpellInfo and GetSpellInfo(name) ~= nil
 end
+-- the alert itself (made once); where it shows is yours to choose: drag it in Edit Mode or with /wp move (Movers.lua)
+function RG.ExorcismFrame()
+  if exo then return exo end
+  exo = CreateFrame("Frame", "WaypathExorcismAlert", UIParent, "BackdropTemplate")
+  exo:SetSize(250, 40); exo:SetPoint("CENTER", 0, -170); exo:SetFrameStrata("HIGH")
+  RG.Backdrop(exo, { 0.04, 0.035, 0.03, 0.85 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.7 })
+  local ic = exo:CreateTexture(nil, "OVERLAY"); ic:SetSize(28, 28); ic:SetPoint("LEFT", 6, 0); ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo("Exorcism")
+  ic:SetTexture(info and info.iconID or "Interface\\Icons\\Spell_Holy_Excorcism_02")
+  exo.text = exo:CreateFontString(nil, "OVERLAY"); RG.Font(exo.text, "medium", 12); exo.text:SetPoint("LEFT", ic, "RIGHT", 8, 0); exo.text:SetJustifyH("LEFT")
+  exo:EnableMouse(false)
+  if RG.RegisterMover then
+    RG.RegisterMover(exo, "exorcism", "Exorcism alert", { "CENTER", "CENTER", 0, -170 }, function(f)
+      f.text:SetText(GOLD .. "Undead!|r  Use " .. GOLD .. "Exorcism|r"); f:SetScript("OnUpdate", nil); f:SetAlpha(1)
+    end)
+  end
+  return exo
+end
 local function exorcismAlert()
+  if RG.MoversOn and RG.MoversOn() then return end   -- (being placed: leave the sample up)
   if exo then exo:Hide() end
   local S = RG.SafeCall
   if not RG.Opt("exorcism") or not S(UnitExists, "target") or S(UnitIsDead, "target") or not S(UnitCanAttack, "player", "target") then return end
@@ -129,16 +148,7 @@ local function exorcismAlert()
   local ctype = S(UnitCreatureType, "target")
   if ctype ~= "Undead" and ctype ~= "Demon" then return end
   if not knows("Exorcism") then return end
-  if not exo then
-    exo = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    exo:SetSize(250, 40); exo:SetPoint("CENTER", 0, -170); exo:SetFrameStrata("HIGH")
-    RG.Backdrop(exo, { 0.04, 0.035, 0.03, 0.85 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.7 })
-    local ic = exo:CreateTexture(nil, "OVERLAY"); ic:SetSize(28, 28); ic:SetPoint("LEFT", 6, 0); ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo("Exorcism")
-    ic:SetTexture(info and info.iconID or "Interface\\Icons\\Spell_Holy_Excorcism_02")
-    exo.text = exo:CreateFontString(nil, "OVERLAY"); RG.Font(exo.text, "medium", 12); exo.text:SetPoint("LEFT", ic, "RIGHT", 8, 0); exo.text:SetJustifyH("LEFT")
-    exo:EnableMouse(false)
-  end
+  RG.ExorcismFrame()
   exo.text:SetText(GOLD .. ctype .. "!|r  Use " .. GOLD .. "Exorcism|r" .. (knows("Holy Wrath") and " and Holy Wrath" or ""))
   exo:SetAlpha(1); exo:Show()
   local t = 0

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Move the Exorcism alert.** Open the game's Edit Mode (or type /wp move) and the alert shows a sample in a green box: drag it where you want it, right-click it to put it back. Close Edit Mode (or /wp move again) when you're done; /wp move reset puts it back. It stays put across sessions and screen sizes.
 - **Tracker after a /reload.**
   - **Blank text:** the game can draw text in Waypath+'s own font blank right after a reload, while the font is still loading. The tracker's quest names and its title were blank, with only the numbers on the right showing. It now lays itself out again half a second, two and five seconds after loading.
   - **Growing upwards:** the tracker could be pinned by its middle (where the game's drag left it), so unfolding it grew it upwards over whatever sits above it. It now always keeps its top edge where you put it and grows downwards. Your current position is converted by itself.

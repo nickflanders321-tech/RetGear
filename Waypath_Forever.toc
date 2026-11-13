@@ -75,6 +75,7 @@ QoL2.lua
 Smart.lua
 Tracker.lua
 Extras.lua
+Movers.lua
 Auction.lua
 Profit.lua
 Gold.lua
