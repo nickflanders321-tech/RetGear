@@ -88,7 +88,7 @@ local MASTER_GOAL = 0.75
 
 local CARDS = {}
 for i, d in ipairs(RG.ARCADE_DATA or {}) do
-  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6], field = d[7], bound = d[8] }
+  CARDS[i] = { id = i, kind = d[1], name = d[2], tier = d[3], ref = d[4], text = d[5], dun = d[6], field = d[7], bound = d[8], key = d[9] }
   local my = d[3] == 7 and RG.ARCADE_MYTHIC and RG.ARCADE_MYTHIC[d[2]]
   if my then CARDS[i].mythic = my; if my.icon then CARDS[i].icon = "Interface\\Icons\\" .. my.icon end end
 end
@@ -99,7 +99,7 @@ RG.ARCADE_CARDS = CARDS
 local RACE_DIR = { Human = "Human", Dwarf = "Dwarf", NightElf = "NightElf", Gnome = "Gnome", Orc = "Orc", Scourge = "Scourge", Undead = "Scourge", Tauren = "Tauren", Troll = "Troll", BloodElf = "BloodElf", Draenei = "Draenei" }
 local MAX_RAIDERS = 400
 local byKey = {}
-for _, c in ipairs(CARDS) do byKey[c.name] = c end
+for _, c in ipairs(CARDS) do byKey[c.key or c.name] = c end   -- (a dungeon's Mythic shares its boss's name: its own key)
 local function addRaider(name, class, race, sex)
   if not name or not class or byKey["@" .. name] then return end
   if #CARDS >= #(RG.ARCADE_DATA or {}) + MAX_RAIDERS then return end
@@ -364,7 +364,7 @@ local function getSets()
   for _, d in ipairs(RG.ARCADE_DUNGEONS or {}) do
     local cs = {}
     for _, n in ipairs(d[5]) do if byKey[n] then cs[#cs + 1] = byKey[n] end end
-    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, raid = d.raid, holiday = d.holiday, lo = d[3], hi = d[4], reward = math.min(d.raid and 150 or 100, (d.raid and 30 or 10) + 2 * #cs) } end
+    if #cs >= 3 then duns[#duns + 1] = { name = d[1], cards = cs, dungeon = true, raid = d.raid, holiday = d.holiday, lo = d[3], hi = d[4], mythic = RG.ARCADE_SET_MYTHIC and byKey[RG.ARCADE_SET_MYTHIC[d[1]] or ""], reward = math.min(d.raid and 150 or 100, (d.raid and 30 or 10) + 2 * #cs) } end
   end
   -- WoW Forever dungeons the game data has no bosses or loot for yet: shown, empty, as coming soon (no rewards)
   for _, dn in ipairs(RG.ARCADE_DUNGEONS_SOON or {}) do duns[#duns + 1] = { name = dn, cards = {}, dungeon = true, soon = true, reward = 0 } end
@@ -573,6 +573,8 @@ local function openOne(a, kind, dn)
   if not a.ring and byKey["The 1 Ring"] and mroll < TIER[7].ring * mw then
     mythic = byKey["The 1 Ring"]
     a.ring = { by = (UnitName and UnitName("player")) or "?", date = today() }
+  elseif mroll < TIER[7].rate * mw and dn and RG.ARCADE_SET_MYTHIC and byKey[RG.ARCADE_SET_MYTHIC[dn] or ""] then
+    mythic = byKey[RG.ARCADE_SET_MYTHIC[dn]]   -- a dungeon's pack: that dungeon's own Mythic (ArcadeSetMythics.lua)
   elseif mroll < TIER[7].rate * mw and byTier[7] then
     local pool = {}
     for _, c in ipairs(byTier[7]) do if not (c.mythic and c.mythic.one) then pool[#pool + 1] = c end end
@@ -591,7 +593,7 @@ local function openOne(a, kind, dn)
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
     got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
-    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or (TIER[7].rate / 5)) + 0.5); meta.mythic = c.name end
+    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or (c.dun and TIER[7].rate or (TIER[7].rate / 5))) + 0.5); meta.mythic = c.name end
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
     local r = a.rarest
@@ -3099,7 +3101,7 @@ local function build()
       for _, fn in ipairs(RG.ArcadeTipHooks or {}) do if not hooked then local ok, r = pcall(fn, cd, view.album); hooked = ok and r end end
       if hooked then -- (a Field Guide or raid card: where it comes from)
       elseif cd.dun then GameTooltip:AddLine("From " .. cd.dun .. " packs: clear it to earn them", 0.55, 0.8, 1, true)
-      elseif cd.tier == 7 then GameTooltip:AddLine("A Mythic: any pack can hold one", 1, 0.9, 0.55, true)
+      elseif cd.tier == 7 then GameTooltip:AddLine("A Mythic: any pack but a dungeon's can hold one (dungeon packs hold their own)", 1, 0.9, 0.55, true)
       else GameTooltip:AddLine("From any pack" .. ((RG.ARCADE_DUNGEON_OF and RG.ARCADE_DUNGEON_OF[cd.name]) and (" or a " .. RG.ARCADE_DUNGEON_OF[cd.name] .. " pack") or ""), 0.55, 0.8, 1, true) end
       GameTooltip:AddLine("Click to see it (and craft it from extras)", 0.6, 0.6, 0.6)
       GameTooltip:Show()
@@ -3609,6 +3611,7 @@ RG.ArcadeUI = { scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale 
   owned = owned, power = power, iconFor = iconFor, getSets = getSets, setProgress = setProgress, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
 
 RG.ArcadePackPrice = PACK_PRICE
+RG.ArcadeOpenDetail = openDetail
 RG.ArcadePacks = PACKS
 -- open the card window on one set's Album page (a Field Guide toast's "See it" button)
 function RG.ArcadeOpenAlbum(name)

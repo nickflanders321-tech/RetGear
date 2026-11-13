@@ -102,6 +102,7 @@ ArcadeGear.lua
 ArcadeClasses.lua
 ArcadeBalance.lua
 ArcadeChanges.lua
+ArcadeSetMythics.lua
 Battle.lua
 Arcade.lua
 ArcadeRewards.lua

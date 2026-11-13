@@ -650,7 +650,8 @@ B.MYTHIC = MYTHIC
 -- build the playable form of a collection card: { kind, name, tier, text, key }
 function B.derive(c)
   local key = c.key or c.name
-  local r = seeded(hash(key .. "#" .. (c.kind or 0)))
+  local seedKey = (c.tier == 7 and c.dun) and c.name or key   -- (a dungeon's Mythic is its boss, upgraded: the same card at heart)
+  local r = seeded(hash(seedKey .. "#" .. (c.kind or 0)))
   local d
   local kind, tier = c.kind, c.tier or 1
   if tier == 7 and MYTHIC[c.name] then
@@ -663,7 +664,7 @@ function B.derive(c)
     d = genMinion(c, r, cost, tribe, nil, tier >= 5)
     -- a minion with no text: most of them get a synergy instead (something to build a deck around)
     if not (next(d.kw) or d.bc or d.dr or d.eot) and SYNERGY[tribe] then
-      local r2 = seeded(hash(key .. "#syn"))
+      local r2 = seeded(hash(seedKey .. "#syn"))
       if r2(100) <= 60 then
         local tot, ok = 0, {}
         for _, e in ipairs(SYNERGY[tribe]) do local f = FEATURES[e[1]]; if cost >= f.min and cost <= f.max then ok[#ok + 1] = e; tot = tot + e[2] end end
@@ -699,6 +700,11 @@ function B.derive(c)
     if arch == nil or r(100) <= 20 then local p = poolFor(cost); arch = p[r(#p)] end
     d = genSpell(c, r, cost, arch)
   end
+  -- a dungeon's Mythic (ArcadeSetMythics.lua): its boss, a little stronger, one per deck like every Mythic
+  if tier == 7 and not d.mythic then
+    d.mythic = true
+    if d.type == "minion" then d.atk = d.atk + 1; d.hp = d.hp + 1 end
+  end
   d.key, d.name, d.kind, d.tier, d.lore = key, c.name, kind, tier, c.text
   d.cost = max(0, min(10, d.cost))
   -- balance pass: per-card nudges found by simulating thousands of duels (tools/balance, data in ArcadeBalance.lua)
@@ -713,7 +719,7 @@ function B.derive(c)
       d.ops = { { op = "weapon", a = d.atk, d = d.dur } }
     end
   end
-  d.text = (d.mythic and MYTHIC[c.name][2]) or B.describe(d)
+  d.text = (d.mythic and MYTHIC[c.name] and MYTHIC[c.name][2]) or B.describe(d)
   B.defs[key] = d
   return d
 end

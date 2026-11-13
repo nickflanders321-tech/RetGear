@@ -17,6 +17,10 @@
 - **Double-right-click to cast** (off until you turn it on, on the Fishing tab): with your pole in your hands, two quick right-clicks on the world cast Fishing. Your right mouse button is back to normal a moment later, when you cast, and in any fight.
 - **Your fishing trips** on the Fishing tab: each trip (until 20 minutes without a catch, or logging out) is kept with where, how long, how many fish, what you caught most, the gold it's worth and the skill you gained. The last 30 trips are kept.
 - **Fishing milestones** on the Fishing tab: your fishing ranks, the camp objects Fishing gives you (Fish Bowl, Fishing Rack, Fishing Hut) and 100 to 5,000 fish caught, each with a check when it's done and what's left when it isn't.
+- **A Mythic for every dungeon.** Each of the 27 dungeons now has its own Mythic: its last boss (Edwin VanCleef, Archmage Arugal, Baron Rivendare, Darkmaster Gandling...) upgraded to a Mythic print, standing in the dungeon's own picture inside an edge and glow that run through every colour. It comes only from that dungeon's packs, in the Mythic slot (about as often as any Mythic), and opens with the Mythic moment.
+  - It doesn't count toward the set's bronze, silver and gold, so it's a chase card, never a wall. The dungeon's Album page shows "Mythic: found" or "not found yet"; click it to see your copy.
+  - In the Arena it's its boss made stronger, one per deck like every Mythic. Like every Mythic it can't be traded, crafted or sold.
+  - Dungeon packs now hold their own Mythic instead of the six general ones, which stay in every other pack. Raids and holidays get theirs later.
 
 ## v1.38.0
 
