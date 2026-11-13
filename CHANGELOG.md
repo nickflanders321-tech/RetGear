@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Cards: the Field Guide.** Every rare and rare elite out in the world now has a page in the Album, one page per zone (42 pages, 370 rares, WoW Forever's own Zephras Isle, Riverglades and Mount Hyjal included). 181 of them are new cards that never come from a pack: you earn them only by killing the rare (you or your group get the tag). Rares that were already cards are on their zone's page too, and killing one gives you a copy.
+- **Cards: the Field Guide.** Every rare and rare elite out in the world now has a page in the Album, one page per zone (41 zones and a world-boss page, 365 rares, WoW Forever's own Zephras Isle, Riverglades and Mount Hyjal included). 181 of them are new cards that never come from a pack: you earn them only by killing the rare (you or your group get the tag). Rares that were already cards are on their zone's page too, and killing one gives you a copy.
   - **Sighted:** when a rare shows up (your target, your mouse or its nameplate) its page marks it "sighted", and a note tells you it's nearby (once a session per rare; turn it off in Settings, Group play).
   - **Kill stamps:** your card carries who killed it, where and when, across the foot of its picture.
   - **Better prints from more kills:** the second kill gives a Rare print, the fourth a Holo, the eighth a Full art.
