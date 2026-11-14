@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Waylaid Crates: the cheapest way to fill one.** Hover a Waylaid Crate and its tooltip lists its bundles, cheapest first: what you still need after what you carry (bags and bank), what it costs at the Auction House and the price each. Any one bundle fills a crate. The materials of crates you carry are added to the price scan, so their prices are there after your next visit to the Auction House. Crate contents are checked against the game's own data.
 - **No Auction House price on soulbound items.** Tooltips and lists showed an AH price for items that can't be sold there. Items that are soulbound, bind when picked up, quest items or account bound now show no price, and no "Sell this on the Auction House" either.
 
 ## v1.39.0

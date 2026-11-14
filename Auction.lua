@@ -43,6 +43,7 @@ local function isTracked(id)
   if g and g.ah then return true end
   if RG.BagSellSet and RG.Opt("profitWatch") and RG.BagSellSet()[id] then return true end
   if RG.GoldIDs and select(2, RG.GoldIDs())[id] then return true end
+  if RG.WaylaidMatWatched and RG.WaylaidMatWatched(id) then return true end   -- (materials of a Waylaid Crate you carry)
   if RG.MAIL_QUESTS then for _, q in ipairs(RG.MAIL_QUESTS) do for _, it in ipairs(q.items) do if it[1] == id then return true end end end end
   return false
 end
