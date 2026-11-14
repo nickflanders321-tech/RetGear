@@ -616,7 +616,30 @@ end
 -- ---------------------------------------------------------------------------
 -- Tooltip line
 -- ---------------------------------------------------------------------------
-local function OnTooltip(tooltip)
+-- Is the item in this tooltip bound to you (Soulbound, Binds when picked up, a quest item, account bound)? It says so
+-- in one of its first lines. Such an item can't go on the Auction House, so it gets no AH price.
+local BOUND_LINES = {}
+for _, k in ipairs({ "ITEM_SOULBOUND", "ITEM_BIND_ON_PICKUP", "ITEM_BIND_QUEST", "ITEM_ACCOUNTBOUND", "ITEM_BNETACCOUNTBOUND", "ITEM_BIND_TO_ACCOUNT", "ITEM_BIND_TO_BNETACCOUNT", "ITEM_ACCOUNTBOUND_UNTIL_EQUIP" }) do
+  if type(_G[k]) == "string" then BOUND_LINES[_G[k]] = true end
+end
+BOUND_LINES["Soulbound"], BOUND_LINES["Binds when picked up"], BOUND_LINES["Quest Item"] = true, true, true
+function RG.TooltipBound(tooltip, data)
+  for _, ln in ipairs(data and data.lines or {}) do
+    local t = ln.leftText
+    if type(t) == "string" and not (RG.IsSecret and RG.IsSecret(t)) and BOUND_LINES[t] then return true end
+  end
+  local name = tooltip and tooltip.GetName and tooltip:GetName()
+  if name then
+    for i = 2, math.min(8, (tooltip.NumLines and tooltip:NumLines()) or 0) do
+      local fs = _G[name .. "TextLeft" .. i]
+      local ok, t = pcall(function() return fs and fs:GetText() end)
+      if ok and type(t) == "string" and not (RG.IsSecret and RG.IsSecret(t)) and BOUND_LINES[t] then return true end
+    end
+  end
+  return false
+end
+
+local function OnTooltip(tooltip, data)
   if not RG.db or RG.CardsOnly() or not RG.Opt("tooltip") or not tooltip.GetItem then return end
   local _, link = tooltip:GetItem()
   if not link then return end
@@ -636,7 +659,7 @@ local function OnTooltip(tooltip)
   if id then
     local guide = RG.GuideByID and RG.GuideByID[id]
     if guide then tooltip:AddLine(GREY .. "Leveling pick: " .. guide.src .. ", " .. guide.zone .. "|r", 1, 1, 1, true) end
-    local price = RG.PriceText and RG.PriceText(id, link)
+    local price = RG.PriceText and not RG.TooltipBound(tooltip, data) and RG.PriceText(id, link)
     if price then tooltip:AddLine(GREY .. "Auction House: |r" .. price) end
   end
   tooltip:Show()

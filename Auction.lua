@@ -230,6 +230,8 @@ end
 -- Whether the Auction House has been looked at at all on this realm (lists show one "open the AH" line until then).
 function RG.HasPrices() return RG.db and RG.db.prices and next(RG.db.prices) ~= nil or false end
 function RG.PriceText(id, link)
+  -- Bind on Pickup and quest items never go on the Auction House: no price for them anywhere
+  if RG.NeverAuctioned and RG.NeverAuctioned(id) then return nil end
   if suffixOf(link) then
     -- a random-enchant piece: its own variant, or nothing
     local sp, why = RG.SellPrice(id, link)

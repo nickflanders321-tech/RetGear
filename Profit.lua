@@ -170,6 +170,7 @@ local function OnTooltip(tooltip, data)
   local link = tooltip.GetItem and select(2, tooltip:GetItem())
   if not id then id = link and tonumber(link:match("item:(%d+)")) end
   if not id or pdb().profitIgnore[id] then return end
+  if RG.TooltipBound and RG.TooltipBound(tooltip, data) then return end   -- (soulbound: it can't be sold there)
   local p = RG.ProfitInfo(id, link)
   if not p or p.unpriced or p.bound then return end
   if worthIt(p, 1) or (p.gain > 0 and RG.BagSellSet()[id] and worthIt(p, RG.BagSellSet()[id])) then

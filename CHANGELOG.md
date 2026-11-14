@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **No Auction House price on soulbound items.** Tooltips and lists showed an AH price for items that can't be sold there. Items that are soulbound, bind when picked up, quest items or account bound now show no price, and no "Sell this on the Auction House" either.
+
 ## v1.39.0
 - **The fishing HUD, reworked.**
   - **Starts folded:** only the middle button shows when you log in. Click it to spin your fishing buttons out into a wide ring on a rising whirlpool, and click it again to fold them away.
