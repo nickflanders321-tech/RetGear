@@ -389,8 +389,19 @@ local function staleIDs()
 end
 
 -- Reading a full scan: lowest buyout per item, a chunk of auctions per frame.
+-- an item link's quality (0 poor .. 5 legendary) from its colour, or the game's item info
+local LINK_Q = { ["9d9d9d"] = 0, ffffff = 1, ["1eff00"] = 2, ["0070dd"] = 3, a335ee = 4, ff8000 = 5 }
+local function linkQuality(link, id)
+  local q = tonumber(link:match("|cnIQ(%d)"))
+  if q then return q end
+  local hex = link:match("|c%x%x(%x%x%x%x%x%x)")
+  if hex and LINK_Q[hex:lower()] then return LINK_Q[hex:lower()] end
+  if C_Item and C_Item.GetItemQualityByID then local ok, v = pcall(C_Item.GetItemQualityByID, id); if ok and type(v) == "number" then return v end end
+  return nil
+end
 local function readFull(total, getInfo, isModern, getLink)
   local best, count, all = {}, {}, {}
+  local gear = {}   -- every uncommon-or-better piece of gear listed, by item string (the gear lists' Auction House source)
   local vBest, vAll, vCount = {}, {}, {}   -- random-enchant variants of watched gear, by "id:suffix"
   local unknown = 0   -- auctions whose item the game hadn't loaded (no id): their items can't be called "none listed"
   local i = isModern and 0 or 1
@@ -406,6 +417,19 @@ local function readFull(total, getInfo, isModern, getLink)
         local per = buyout / math.max(1, stack or 1)
         if not best[id] or per < best[id] then best[id] = per end
         count[id] = (count[id] or 0) + 1
+        -- gear: remember each listed piece (random enchant and all), for the gear upgrade lists
+        if getLink and (stack or 1) == 1 and RG.LOC_GUIDE and RG.GearItemString then
+          local _, _, _, loc, _, classID = GetItemInfoInstant(id)
+          if (classID == 2 or classID == 4) and RG.LOC_GUIDE[loc] then
+            local okL, l = pcall(getLink, k)
+            local s = okL and type(l) == "string" and RG.GearItemString(l)
+            if s and (linkQuality(l, id) or 2) >= 2 then
+              local e = gear[s]
+              if not e then gear[s] = { l = s, p = math.floor(buyout), n = 1 }
+              else e.n = e.n + 1; if buyout < e.p then e.p = math.floor(buyout) end end
+            end
+          end
+        end
         -- watched items: every item counts once in the market value (a stack of 20 is 20 items), up to 400 per item
         if watched(id) then
           local L = all[id]; if not L then L = {}; all[id] = L end
@@ -444,6 +468,8 @@ local function readFull(total, getInfo, isModern, getLink)
         local v = scanValue(vAll[key] or {})
         record(key, math.floor(p), vCount[key], v and math.floor(v + 0.5))
       end
+      -- the gear lists' Auction House source: every piece of gear listed now
+      if RG.NoteAHGear then pcall(RG.NoteAHGear, gear, complete) end
       -- and every other item on the AH, so its last price is there next time
       local others = 0
       for id, p in pairs(best) do if not w[id] and not isTracked(id) then remember(id, math.floor(p), count[id]); others = others + 1 end end

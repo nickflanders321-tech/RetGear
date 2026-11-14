@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Gear upgrades now look everywhere an upgrade can come from.** The Gear tab, the gear guide and the panel beside the Character window share one list of sources, so they always agree:
+  - **Your bags and bank.** A better piece you're already carrying shows first, and the slot no longer counts as "at its best".
+  - **The Auction House.** Every piece of gear seen in the last full scan is checked, random enchants ("of the Bear") included, with its price and how long ago it was seen.
+  - **Crafts.** The recipes you know (read when you open a profession window), and what your other characters can make for you if it can be traded, with the cost of the materials. A crafted piece whose recipe you don't have yet says "Learn the recipe".
+  - **More drops and vendors.** Green Bind on Equip drops are now in the gear lists as Auction House finds, along with neutral reputation vendors like the Timbermaw.
+- **More accurate picks.** Quest rewards from quests you've already turned in are gone. A crafted piece that needs more skill than you have no longer counts as available now. Each ring and trinket slot is compared on its own, and the two never suggest the same piece.
+- **The Gear tab shows more.** The upgrade list shows how to get each piece (in your bags, buy for a price, you can make it) and can show up to 30 upgrades. Each slot's "best from every source" view now also covers your bags, vendors and reputation.
 - **The leveling route is off for now (work in progress).** The step-by-step zone route isn't up to standard yet, so it starts switched off: no step list on the Route tab, no "Route" section in the tracker, and the arrow no longer follows route steps. Your quest tracker, the arrow for quests and pins you click, and the zones suggested for your level all stay. To try it anyway, turn on "Leveling route (WIP)" in Settings, or click "Turn it on" at the top of the Route tab.
 
 ## v1.41.2

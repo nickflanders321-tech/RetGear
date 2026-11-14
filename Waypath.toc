@@ -147,6 +147,7 @@ WeaponSkill.lua
 Levels.lua
 UI.lua
 GearPlus.lua
+GearSources.lua
 Compat.lua
 GateOff.lua
 ModeEnd.lua

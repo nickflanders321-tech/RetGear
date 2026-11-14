@@ -6,7 +6,12 @@ Builds `Classes/<Class>Gear.lua` for every class: leveling upgrades for every sl
 
 - **Quest rewards** from quests open to that class (Horde quest givers), not raid quests.
 - **Dungeon boss drops** from 5-player dungeons (no raids, no Stockade).
-- **Horde vendors** (no PvP quartermasters) and a few named rare mobs.
+- **Horde vendors** (no PvP quartermasters), reputation quartermasters (neutral ones like the Timbermaw too) and a few named rare mobs.
+- **Bind on Equip drops**, green or better and not random-enchant: listed as an Auction House source (a world drop, or named after the few mobs that drop it).
+
+In game, GearSources.lua adds what the generator can't know: gear in your bags and bank, every piece of gear the
+last full Auction House scan saw (random enchants included, with prices), and what your own and your other
+characters' recipes make.
 
 Each class's stat weights, weapon model (`2H`, `DW` dual wield, `ranged`, `caster`, `feral`),
 weapon skills and armor types come from `Classes/<Class>.lua`, the same table the add-on scores

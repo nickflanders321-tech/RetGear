@@ -421,17 +421,27 @@ def sources(iid, ally=False):
             elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in other:
                 out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
     d = items.get(int(iid)) or {}
-    # a blue or purple Bind on Equip piece many mobs drop: not something to farm, but anyone can sell it on the
-    # Auction House (not raid trash: everything that drops it must be outside the raids)
-    if len(drops) > 4 and str(d.get("bonding")) == "2" and int(d.get("Quality") or 0) >= 3:
+    # a Bind on Equip piece that drops (green or better): anyone can sell it, so it's on the Auction House too.
+    # Many mobs: a world drop. A few: named after them (and still an Auction House find). Not raid loot, and not
+    # random-enchant pieces ("of the Bear"): those are many items in one, and the add-on finds them on the
+    # Auction House itself.
+    if drops and str(d.get("bonding")) == "2" and int(d.get("Quality") or 0) >= 2 and int(d.get("RandomProperty") or 0) == 0:
         zs = [FN.get(str(n), {}).get("zone") for n in drops]
         if not any(z in RAID_ZONES or DUNGEON.get(z) in RAIDS for z in zs):
-            out.append({"how": "BoE", "lvl": 0, "src": "World drop", "zone": "Auction House"})
+            if len(drops) > 4: out.append({"how": "BoE", "lvl": 0, "src": "World drop", "zone": "Auction House"})
+            else:
+                n0 = FN.get(str(drops[0])) or {}
+                zn = DUNGEON.get(n0.get("zone")) or zone_name(n0.get("zone")) or ""
+                if zn not in other:
+                    out.append({"how": "BoE", "lvl": 0, "src": "Drops from " + (n0.get("name") or "a mob") + (" and others" if len(drops) > 1 else ""),
+                                "zone": "Auction House" + (" · " + zn if zn else "")})
     rep_rank = int(d.get("RequiredReputationRank") or 0) if int(d.get("RequiredReputationFaction") or 0) else 0
     for vid in sorted(set(int(v) for v in L(f.get("vendors"))) | VEND.get(int(iid), set())):
         n = FN.get(str(vid))
         sub = (n.get("sub") or "") if n else ""
-        if not (n and ("A" if ally else "H") in (n.get("faction") or "") and (zone_name(n.get("zone")) or "") not in other): continue
+        # (a neutral reputation's quartermaster, like the Timbermaw's, has no faction in the data: open to both)
+        fac = (n.get("faction") or ("AH" if (rep_rank and not n.get("sub")) else "")) if n else ""
+        if not (n and ("A" if ally else "H") in fac and (zone_name(n.get("zone")) or "") not in other): continue
         # PvP: ranks and battleground reputations are not leveling gear
         if re.search(r"Legionnaire|Battlemaster|Supply Officer|Frostwolf|Warsong|Defilers|League of Arathor|Stormpike|Silverwing", sub): continue
         if rep_rank or re.search(r"Quartermaster", sub):
@@ -613,7 +623,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         if lvl < max(5, lvl_from - 2): continue
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
-                            "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"),
+                            "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"), "onah": any(x["how"] == "BoE" for x in src),
                             "also": [x for x in src[1:3] if x["how"] != "Crafted"]})
     picked = []
     start = (lvl_from // 5) * 5
@@ -668,7 +678,7 @@ def entry(c):
     if c.get("prof"):
         extra += ", prof = %s, sk = %d" % (lua_str(c["prof"]), c["sk"] or 0)
         if c.get("boe"): extra += ", boe = true, ah = true"
-    elif c["how"] == "BoE": extra += ", ah = true"
+    elif c["how"] == "BoE" or c.get("onah"): extra += ", ah = true"
     # other places it comes from (a second quest, a dungeon boss, a vendor)
     also = []
     for x in c.get("also") or []:

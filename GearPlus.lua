@@ -23,31 +23,55 @@ local function emptyOK(slot)
 end
 
 -- { slot, link, score, best = true when nothing usable now beats it, next = { g, d, soon } }
+-- Every source counts (GearSources.lua): the gear lists, your bags and bank, the Auction House and crafts.
+-- A ring or trinket slot is compared on its own, and the two slots of a pair never suggest the same piece.
 local statusCache, statusT
+local PAIR = { [11] = 12, [12] = 11, [13] = 14, [14] = 13 }
+local function pickFor(slot, gs, cands, lvl, skip)
+  local nowBest, nextUp
+  for _, g in ipairs(cands) do
+    if g.slot == gs and (g.lvl or 0) <= lvl + 6 and not (skip and skip[g.link or g.id]) then
+      local own = not g.live and RG.OwnState(g.id)
+      if not own then
+        local d = RG.GuideDelta(g, PAIR[slot] and slot or nil)
+        if d and d > 0.5 then
+          local soon = RG.GearNow(g, lvl)
+          -- something you already have wins over something to buy or fetch when it's nearly as good
+          local eff = (g.live == "bags" or g.live == "bank") and d * 1.1 or d
+          if soon and (not nowBest or eff > nowBest.eff) then nowBest = { g = g, d = d, eff = eff, soon = true } end
+          if not soon and (not nextUp or (g.lvl < nextUp.g.lvl) or (g.lvl == nextUp.g.lvl and d > nextUp.d)) then nextUp = { g = g, d = d, soon = false } end
+        end
+      end
+    end
+  end
+  return nowBest, nextUp
+end
 function RG.GearStatus()
   local now = GetTime and GetTime() or 0
   if statusCache and statusT and now - statusT < 2 then return statusCache end
   local lvl = UnitLevel("player") or 1
+  local cands = RG.GearCandidates and RG.GearCandidates() or {}
   local out, atBest, counted = {}, 0, 0
+  local picked = {}
   for _, slot in ipairs(SLOTS) do
     local gs = guideSlot(slot)
     if gs then
       local link = GetInventoryItemLink("player", slot)
       local e = { slot = slot, link = link, score = link and RG.Score(link) or 0 }
-      local nowBest, nextUp
-      for _, list in ipairs({ RG.GUIDE or {}, RG.GUIDE_ALT or {} }) do
-        for _, g in ipairs(list) do
-          if g.id and g.slot == gs and (g.lvl or 0) <= lvl + 6 and not RG.OwnState(g.id) and RG.GearShown(g) then
-            local d = RG.GuideDelta(g)
-            if d and d > 0.5 then
-              local soon = (g.lvl or 0) <= lvl
-              if soon and (not nowBest or d > nowBest.d) then nowBest = { g = g, d = d, soon = true } end
-              if not nextUp or (soon and (not nextUp.soon or d > nextUp.d)) or (not soon and not nextUp.soon and g.lvl < nextUp.g.lvl) then nextUp = { g = g, d = d, soon = soon } end
-            end
-          end
+      local skip
+      if PAIR[slot] and picked[PAIR[slot]] then skip = { [picked[PAIR[slot]]] = true } end
+      local nowBest, nextUp = pickFor(slot, gs, cands, lvl, skip)
+      -- a pair: if the other slot would gain more from this piece, let it have it (decided once, for the first of the two)
+      if PAIR[slot] and not picked[PAIR[slot]] and nowBest then
+        local o = PAIR[slot]
+        local od = RG.GuideDelta(nowBest.g, o)
+        if od and od > nowBest.d + 0.5 then
+          local alt = pickFor(slot, gs, cands, lvl, { [nowBest.g.link or nowBest.g.id] = true })
+          nowBest = alt
         end
       end
       e.next = nowBest or nextUp
+      if e.next then picked[slot] = e.next.g.link or e.next.g.id end
       e.best = not nowBest and (link ~= nil or emptyOK(slot))
       out[#out + 1] = e
       counted = counted + 1
@@ -62,22 +86,21 @@ function RG.GearStatusInvalidate() statusCache = nil end
 -- ---------------------------------------------------------------------------
 -- The best piece from each kind of source for a slot, around your level
 -- ---------------------------------------------------------------------------
-local GROUP = { Quest = "Quest", Dungeon = "Dungeon", Chest = "Dungeon", Crafted = "Crafted", BoE = "Auction House" }
-RG.SOURCE_GROUPS = { "Quest", "Dungeon", "Crafted", "Auction House", "Other" }
--- { [group] = { g, d } } for guide slot gs: pieces usable within 5 levels, best upgrade first (or the best there is)
-function RG.GearBySource(gs)
+-- { [group] = { g, d, own } } for guide slot gs: pieces usable within 5 levels, best upgrade first (or the best there is)
+function RG.GearBySource(gs, slot)
   local lvl = UnitLevel("player") or 1
   local best = {}
-  for _, list in ipairs({ RG.GUIDE or {}, RG.GUIDE_ALT or {} }) do
-    for _, g in ipairs(list) do
-      if g.id and g.slot == gs and (g.lvl or 0) <= lvl + 5 and (g.lvl or 0) >= lvl - 12 and RG.GearShown(g) then
-        local grp = GROUP[g.how] or "Other"
-        local d = RG.GuideDelta(g)
-        if d then
-          local cur = best[grp]
-          local own = RG.OwnState(g.id)
-          if not cur or d > cur.d then best[grp] = { g = g, d = d, own = own } end
-        end
+  for _, g in ipairs(RG.GearCandidates and RG.GearCandidates() or {}) do
+    if g.slot == gs and (g.lvl or 0) <= lvl + 5 and ((g.lvl or 0) >= lvl - 12 or g.live) then
+      local grp = RG.GearGroupOf and RG.GearGroupOf(g) or "Other"
+      local d = RG.GuideDelta(g, PAIR[slot or 0] and slot or nil)
+      if d then
+        local cur = best[grp]
+        local own = not g.live and RG.OwnState(g.id) or nil
+        local now = RG.GearNow(g, lvl)
+        -- what you can get now beats what comes later; then the bigger gain
+        local better = not cur or (now and not cur.now) or (now == cur.now and d > cur.d)
+        if better then best[grp] = { g = g, d = d, own = own, now = now } end
       end
     end
   end
@@ -246,12 +269,19 @@ function RG.UpdateGearPanel()
     local e = list[i]
     if e then
       local g = e.next.g
-      local name, _, quality, _, _, _, _, _, _, tex = RG.ItemInfo(g.id)
+      local name, _, quality, _, _, _, _, _, _, tex = RG.ItemInfo(g.link or g.id)
       local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
       if c and c.r then r.edge:SetColorTexture(c.r, c.g, c.b, 0.9) else r.edge:SetColorTexture(0.4, 0.4, 0.4, 0.9) end
       r.icon:SetTexture(tex or (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(g.id)) or (GetItemIcon and GetItemIcon(g.id)) or 134400)
       r.name:SetText((c and c.hex or WHITE) .. (name or g.name or ("Item " .. g.id)) .. "|r")
-      r.src:SetText(GREY .. (RG.SLOT_NAMES[e.slot] or "") .. " · " .. (g.src or "") .. ((g.zone and g.zone ~= "") and (", " .. g.zone) or "") .. "|r")
+      -- where from, and what it costs when it's bought
+      local how = RG.GearHowPill and g.live and RG.GearHowPill(g, true)
+      local price = not g.live and RG.GearPriceText and RG.GearPriceText(g)
+      local parts = { GREY .. (RG.SLOT_NAMES[e.slot] or "") .. "|r" }
+      if how then parts[#parts + 1] = how end
+      if g.live ~= "bags" and g.live ~= "bank" and g.live ~= "ah" then parts[#parts + 1] = GREY .. RG.GearSourceText(g) .. "|r" end
+      if price then parts[#parts + 1] = price end
+      r.src:SetText(table.concat(parts, GREY .. " · |r"))
       r.d:SetText((e.next.soon and GREEN or GOLD) .. "+" .. string.format("%.0f", e.next.d) .. "|r" .. (e.next.soon and "" or (GREY .. " L" .. g.lvl .. "|r")))
       r.g, r.note = g, GREEN .. string.format("+%.0f", e.next.d) .. "|r" .. GREY .. " for your " .. (RG.SLOT_NAMES[e.slot] or "slot") .. "|r"
       r:Show()

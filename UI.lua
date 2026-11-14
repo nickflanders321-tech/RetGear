@@ -432,8 +432,8 @@ local function guideRows()
 end
 
 local function fillGuideItem(r, g, lvl)
-      local name, link, quality = itemName(g.id)
-      local own = RG.OwnState(g.id)
+      local name, link, quality = itemName(g.link or g.id)
+      local own = not g.live and RG.OwnState(g.id) or nil
       local d = link and RG.GuideDelta(g)
       local right, accent
       if own == "equipped" then right = GREEN .. "Equipped|r"; accent = "green"
@@ -449,9 +449,10 @@ local function fillGuideItem(r, g, lvl)
         if d > 0.5 then right = GREEN .. "Upgrade " .. string.format("+%.0f", d) .. "|r"; accent = "gold"
         else right = GREY .. "Not an upgrade|r" end
       else right = GREY .. "Loading|r" end
-      local right2 = g.ah and RG.PriceText(g.id) or (GREY .. g.how .. "|r")
+      local right2 = g.live and RG.GearHowPill(g, true) or (g.ah and RG.PriceText(g.id)) or (GREY .. g.how .. "|r")
       if g.bs and (RG.Skill("Blacksmithing") or 0) >= g.bs and not own then right2 = GREEN .. "You can make this|r" end
       if g.prof and RG.CraftState(g) == "make" and not own then right2 = GREEN .. "You can make this|r" end
+      if g.prof and RG.CraftState(g) == "learn" and not own then right2 = GOLD .. "Learn the recipe first|r" end
       local qsrc = g.how == "Quest" and g.src and g.src:gsub("%s*%(.-%)$", "")
       local qIn = qsrc and RG.InLog and RG.InLog(qsrc)
       if qIn and not own then right2 = GOLD .. "Quest in your log|r" end
@@ -473,11 +474,12 @@ local function renderGuide()
   if #list == 0 then list = { { header = "Nothing near your level · untick Near my level" } } end
   -- the best pieces you could go and get right now
   do
-    local best = {}
-    for _, g in ipairs(RG.GUIDE) do
-      if g.id and not g.tip and g.lvl <= lvl and (not state.src or g.how == state.src) and not RG.OwnState(g.id) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) and RG.GearGettable(g) then
-        local _, link = GetItemInfo(g.id)
-        local d = link and RG.GuideDelta(g)
+    -- (every source: the guide, your bags and bank, the Auction House, crafts)
+    local best, seenB = {}, {}
+    for _, g in ipairs(RG.GearCandidates and RG.GearCandidates() or RG.GUIDE) do
+      if g.id and not g.tip and g.lvl <= lvl and (not state.src or g.how == state.src) and not (not g.live and RG.OwnState(g.id)) and not (g.bs and (RG.Skill("Blacksmithing") or 0) < g.bs) and RG.GearNow(g, lvl) and not seenB[g.link or g.id] then
+        seenB[g.link or g.id] = true
+        local d = RG.GuideDelta(g)
         if d and d > 0.5 then best[#best + 1] = { g = g, d = d + ((g.how == "Quest" and g.src and RG.InLog and RG.InLog((g.src:gsub("%s*%(.-%)$", "")))) and 3 or 0) } end
       end
     end
@@ -568,6 +570,22 @@ local function guideSlotFor(slot)
   return SLOT_GUIDE[slot]
 end
 RG.GuideSlotFor = guideSlotFor
+-- how you get a gear entry, short: for the right-hand pill of a row
+local function gearHowPill(g, now)
+  if g.live == "bags" then return GREEN .. "In your bags|r" end
+  if g.live == "bank" then return GOLD .. "In your bank|r" end
+  local price = RG.GearPriceText and RG.GearPriceText(g)
+  if g.live == "ah" then return GOLD .. "Buy|r " .. (price or "") end
+  if g.live == "craft" then return GREEN .. "You can make it|r" end
+  if g.live == "altcraft" then return GOLD .. (g.crafter or "Your alt") .. " can make it|r" end
+  local st = g.prof and RG.CraftState(g)
+  if st == "make" then return GREEN .. "You can make it|r" end
+  if st == "learn" then return GOLD .. "Learn the recipe|r" end
+  if price then return GOLD .. "AH|r " .. price end
+  if not now then return GREY .. "Level " .. g.lvl .. "|r" end
+  return GREEN .. "Usable now|r"
+end
+RG.GearHowPill = gearHowPill
 local function renderGear()
   local n, total = 0, 0
   local hit, cap = RG.CurrentHit(), RG.db.hitCap
@@ -617,25 +635,51 @@ local function renderGear()
       rows[n].tip = "Click to edit. Right-click to switch profile: " .. table.concat(names, ", ") .. ", then Waypath+'s own."
     else rows[n].tip = "Click to edit your weights, save them as a profile, or paste a Pawn scale to import it." end
   end
-  -- gear check: every guide item compared with what you wear right now
+  -- gear check: every source (the gear lists, your bags and bank, the Auction House, crafts) against what you wear
   local lvl = UnitLevel("player")
   local ups, loading = {}, 0
-  for _, g in ipairs(RG.GUIDE) do
-    if g.id and g.lvl <= lvl + 8 and g.lvl >= lvl - 15 and not RG.OwnState(g.id) then
+  local cands, stillLoading = {}, 0
+  if RG.GearCandidates then cands, stillLoading = RG.GearCandidates() end
+  loading = stillLoading or 0
+  local seenUp = {}
+  for _, g in ipairs(cands) do
+    if g.id and g.lvl <= lvl + 8 and (g.lvl >= lvl - 15 or g.live) and not (not g.live and RG.OwnState(g.id)) then
       local d, slot, new, old = RG.GuideDelta(g)
       if d == nil then loading = loading + 1
-      elseif d > 0.5 then ups[#ups + 1] = { g = g, d = d, slot = slot, now = g.lvl <= lvl, pct = (old and old > 0) and (d / old * 100) or nil } end
+      elseif d > 0.5 then
+        local key = g.link or g.id
+        if not seenUp[key] then
+          seenUp[key] = true
+          ups[#ups + 1] = { g = g, d = d, slot = slot, now = RG.GearNow(g, lvl), pct = (old and old > 0) and (d / old * 100) or nil }
+        end
+      end
     end
   end
   table.sort(ups, function(a, b) if a.now ~= b.now then return a.now end return a.d > b.d end)
-  n = n + 1; setHeader(getRow(n), "Gear check  ·  your best upgrades from the guide" .. (loading > 0 and (GREY .. "   (" .. loading .. " items still loading)|r") or ""))
-  if #ups == 0 then
-    n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Nothing in the guide beats your gear for the next 8 levels.|r", "Keep an eye on quest rewards: the Equip pop-up tells you when one is better.", "", "", "green", nil, true)
+  -- (the biggest gains first; one row per slot first, then the runners-up, so one slot can't fill the list)
+  do
+    local slotSeen = {}
+    for _, u in ipairs(ups) do
+      local k = (u.slot or 0) .. (u.now and "n" or "l")
+      if not slotSeen[k] then slotSeen[k] = true; u.first = true end
+    end
+    table.sort(ups, function(a, b) if a.now ~= b.now then return a.now end if (a.first or false) ~= (b.first or false) then return a.first or false end return a.d > b.d end)
   end
-  for i = 1, math.min(8, #ups) do
+  local hasAH = RG.db.ahGear and next(RG.db.ahGear)
+  n = n + 1; setHeader(getRow(n), "Gear check  ·  your best upgrades from every source" .. (loading > 0 and (GREY .. "   (" .. loading .. " items still loading)|r") or ""))
+  if #ups == 0 then
+    n = n + 1; setItem(getRow(n), nil, nil, GREEN .. "Nothing beats your gear for the next 8 levels.|r", "Quest rewards, dungeon drops, crafts, your bags" .. (hasAH and " and the Auction House" or "") .. " were all checked.", "", "", "green", nil, true)
+  end
+  if not hasAH then
+    n = n + 1
+    setItem(getRow(n), nil, nil, GREY .. "Auction House gear not checked yet|r", GREY .. "Open the Auction House and let Waypath+ run a full scan: every piece of gear listed (random enchants too) joins this list with its price.|r", "", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+  end
+  local SHOWN = state.gearAll and 30 or 10
+  for i = 1, math.min(SHOWN, #ups) do
     local u = ups[i]
     n = n + 1
-    local name, link2, quality = itemName(u.g.id)
+    local name, link2, quality = itemName(u.g.link or u.g.id)
     local worn = u.slot and ((RG.WornLink and RG.WornLink(u.slot)) or GetInventoryItemLink("player", u.slot))
     local mhNow = GetInventoryItemLink("player", 16)
     local wornName = worn and (RG.ItemInfo(worn) or "your item")
@@ -643,8 +687,13 @@ local function renderGear()
     setItem(getRow(n), u.g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[u.g.slot] or u.g.slot) .. "|r",
       GREY .. "Replaces " .. wornName .. "  ·  " .. u.g.src .. (u.g.zone ~= "" and (", " .. u.g.zone) or "") .. "|r",
       (u.now and GREEN or GOLD) .. "+" .. string.format("%.0f", u.d) .. (u.pct and string.format(" (%d%%)", math.floor(u.pct + 0.5)) or "") .. "|r",
-      u.now and (GREEN .. "Usable now|r") or (GREY .. "Level " .. u.g.lvl .. "|r"), u.now and "gold" or nil, quality, true)
+      u.now and gearHowPill(u.g, true) or (GREY .. "Level " .. u.g.lvl .. "|r"), u.now and "gold" or nil, quality, true)
     rows[n].onClick = function() RG.ShowItemSource(u.g, { note = GREEN .. string.format("+%.0f", u.d) .. "|r" .. GREY .. " over " .. wornName .. "|r" }) end
+  end
+  if #ups > 10 then
+    n = n + 1
+    setStep(getRow(n), "", GREY .. (state.gearAll and "Show fewer" or ("Show " .. (math.min(30, #ups) - 10) .. " more upgrades")) .. "|r", false, function() state.gearAll = not state.gearAll; RG.RefreshUI() end)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
   -- which dungeons are worth running for you
   local dung = {}
@@ -700,51 +749,47 @@ local function renderGear()
     end
   end
   n = n + 1; setHeader(getRow(n), "Equipped")
+  -- each slot's next upgrade: the same pick as the panel beside the Character window
+  local nextOf = {}
+  if RG.GearStatus then
+    local okS, st = pcall(RG.GearStatus)
+    for _, e in ipairs(okS and st and st.slots or {}) do nextOf[e.slot] = e.next end
+  end
   for _, slot in ipairs(RG.SLOT_ORDER) do
     local link = GetInventoryItemLink("player", slot)
     n = n + 1
     local r = getRow(n)
     local score = link and RG.Score(link) or 0
     total = total + score
-    local nextUp
-    for _, g in ipairs(RG.GUIDE) do
-      if g.id and guideSlotFor(slot) == g.slot and g.lvl <= lvl + 6 and not RG.OwnState(g.id) then
-        local d = RG.GuideDelta(g)
-        -- prefer the biggest upgrade you can use within 3 levels, else the soonest one
-        if d and d > 0.5 then
-          local soon = g.lvl <= lvl + 3
-          if not nextUp or (soon and (not nextUp.soon or d > nextUp.d)) or (not soon and not nextUp.soon and g.lvl < nextUp.g.lvl) then nextUp = { g = g, d = d, soon = soon } end
-        end
-      end
-    end
+    local nextUp = nextOf[slot]
     local id = link and tonumber(link:match("item:(%d+)"))
     local quality = link and select(3, RG.ItemInfo(link))
     local sub = RG.SLOT_NAMES[slot]
     if nextUp then
-      local nm = RG.ItemInfo(nextUp.g.id) or nextUp.g.name or ("item " .. nextUp.g.id)
-      sub = sub .. GREY .. "  ·  next: |r" .. nm .. ((nextUp.g.zone and nextUp.g.zone ~= "") and (GREY .. " · " .. nextUp.g.zone .. "|r") or "")
+      local nm = RG.ItemInfo(nextUp.g.link or nextUp.g.id) or nextUp.g.name or ("item " .. nextUp.g.id)
+      sub = sub .. GREY .. "  ·  next: |r" .. nm .. GREY .. " · " .. RG.GearSourceText(nextUp.g) .. "|r"
     end
     -- (the item's name in its quality colour, without the chat link's brackets, like every other list)
-    setItem(r, id, link, link and (link:gsub("|h%[(.-)%]|h", "|h%1|h")) or (GREY .. "Empty slot|r"), sub, nextUp and (GREEN .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r") or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
+    setItem(r, id, link, link and (link:gsub("|h%[(.-)%]|h", "|h%1|h")) or (GREY .. "Empty slot|r"), sub, nextUp and ((nextUp.soon and GREEN or GOLD) .. "Upgrade +" .. string.format("%.0f", nextUp.d) .. "|r" .. (nextUp.soon and "" or (GREY .. " L" .. nextUp.g.lvl .. "|r"))) or "", string.format("%s%.0f|r", GOLD, score), nil, quality)
     local slotName = RG.SLOT_NAMES[slot]
     -- click: the best piece from each kind of source for this slot
     r.onClick = function() state.gearSlot = state.gearSlot ~= slot and slot or nil; RG.RefreshUI() end
     r.onRightClick = nextUp and function() RG.ShowItemSource(nextUp.g, { note = GOLD .. "Next upgrade for your " .. slotName .. ":|r " .. GREEN .. string.format("+%.0f", nextUp.d) .. "|r" }) end or nil
-    r.tip = "Click for the best quest reward, dungeon drop, crafted piece and Auction House find for this slot" .. (nextUp and "; right-click for the next upgrade." or ".")
+    r.tip = "Click for the best piece from every source for this slot: your bags, quests, dungeons, crafts, the Auction House, vendors and reputation" .. (nextUp and ".\nRight-click for the next upgrade." or ".")
     if not link then r.icon:SetTexture(136516); r.icon:SetDesaturated(true) else r.icon:SetDesaturated(false) end
     if state.gearSlot == slot and RG.GearBySource then
-      local by = RG.GearBySource(guideSlotFor(slot))
+      local by = RG.GearBySource(guideSlotFor(slot), slot)
       local any = false
       for _, grp in ipairs(RG.SOURCE_GROUPS) do
         local b = by[grp]
         if b then
           any = true
           n = n + 1
-          local nm, l2, q2 = itemName(b.g.id)
+          local nm, l2, q2 = itemName(b.g.link or b.g.id)
           local pill = b.own == "equipped" and (GREEN .. "Wearing it|r") or (b.own and (GOLD .. "In your bags|r"))
-            or (b.d > 0.5 and (GREEN .. string.format("+%.0f", b.d) .. "|r") or (GREY .. "no better|r"))
-          setItem(getRow(n), b.g.id, l2, GOLD .. grp .. "|r  " .. nm, GREY .. (b.g.src or "") .. ((b.g.zone and b.g.zone ~= "") and (", " .. b.g.zone) or "") .. "|r",
-            pill, b.g.lvl > lvl and (GREY .. "Level " .. b.g.lvl .. "|r") or "", nil, q2, true)
+            or (b.d > 0.5 and ((b.now and GREEN or GOLD) .. string.format("+%.0f", b.d) .. "|r") or (GREY .. "no better|r"))
+          setItem(getRow(n), b.g.id, l2, GOLD .. grp .. "|r  " .. nm, GREY .. RG.GearSourceText(b.g) .. "|r",
+            pill, b.g.lvl > lvl and (GREY .. "Level " .. b.g.lvl .. "|r") or gearHowPill(b.g, true), nil, q2, true)
           local gg = b.g
           rows[n].onClick = function() RG.ShowItemSource(gg) end
         end

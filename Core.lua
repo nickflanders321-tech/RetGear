@@ -100,7 +100,7 @@ end
 -- WaypathDB.chars[character] = "profile" (full guide) or "alt" (bank alt).
 -- ---------------------------------------------------------------------------
 local SHARED = {
-  prices = true, tracked = true, alerts = true, lastFullScan = true, recipes = true,
+  prices = true, tracked = true, alerts = true, lastFullScan = true, recipes = true, ahGear = true,
   main = true, mainHave = true, mainLevel = true, mainBS = true, mailDone = true,
   errors = true, chars = true, profiles = true, profilesMigrated = true, migratedFrom = true, altGuide = true,
   trackerPos = true, trackerScale = true, trackerWidth = true, windowPos = true, arrowPos = true, arrowScale = true,
@@ -576,10 +576,17 @@ do
   f:SetScript("OnEvent", function() pcall(rememberWeapons) end)
 end
 
-function RG.Compare(link)
+-- onlySlot: compare against that one slot (the gear lists use it to suggest a different ring or trinket for each slot)
+function RG.Compare(link, onlySlot)
   local loc = RG.EquipLoc(link)
   local slots = loc and RG.EQUIP_SLOTS[loc]
   if not slots then return nil end
+  if onlySlot then
+    local fits = false
+    for _, s in ipairs(slots) do if s == onlySlot then fits = true end end
+    if not fits then return nil end
+    slots = { onlySlot }
+  end
   if not RG.CanUse(link) then return nil end   -- wrong armor type or weapon skill
   local cap = RG.db.hitCap
   local curHit = RG.CurrentHit()
@@ -680,10 +687,15 @@ for _, g in ipairs(RG.GUIDE) do if g.id then RG.GuideByID[g.id] = g end end
 
 -- Is this guide item an upgrade for you right now? Returns delta or nil if
 -- the item data hasn't loaded yet.
-function RG.GuideDelta(g)
-  local _, link = GetItemInfo(g.id)
-  if not link then RG.RequestItem(g.id); return nil end
-  return RG.Compare(link)   -- delta, slot, new score, old score
+-- (g.link: a piece seen in your bags, on the Auction House or made by a recipe you know, with its own random enchant)
+function RG.GuideDelta(g, onlySlot)
+  local link = g.link
+  if not link then
+    local _, l = GetItemInfo(g.id)
+    if not l then RG.RequestItem(g.id); return nil end
+    link = l
+  elseif not GetItemInfo(link) then RG.RequestItem(g.id); return nil end
+  return RG.Compare(link, onlySlot)   -- delta, slot, new score, old score
 end
 
 -- The best upgrades for you that drop in a dungeon (from your class's gear guide).
@@ -834,7 +846,12 @@ function RG.CraftState(g)
   local prof = g.prof or (g.bs and "Blacksmithing")
   if not prof then return nil end
   local need, have = g.sk or g.bs or 0, RG.Skill(prof)
-  if have and have >= need then return "make", prof, need, have end
+  if have and have >= need then
+    -- your skill is high enough; once you've opened the profession window we know whether you have the recipe
+    local known = RG.KnowsCraft and RG.KnowsCraft(prof, g.id)
+    if known == false then return "learn", prof, need, have end
+    return "make", prof, need, have
+  end
   if g.boe or not g.prof then return "buy", prof, need, have end
   if have then return "skill", prof, need, have end
   return "no", prof, need, have
@@ -868,6 +885,11 @@ end
 
 function RG.GearShown(g)
   if RG.CraftState(g) == "no" then return false end
+  -- a quest reward from a quest you've already turned in (you took another reward, or sold it): it's gone
+  if g.how == "Quest" and g.q and not g.live and C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted then
+    local ok, done = pcall(C_QuestLog.IsQuestFlaggedCompleted, g.q)
+    if ok and done == true and not RG.OwnState(g.id) then return false end
+  end
   -- a quest reward from a quest your race or class can't take (another race's starting quests, say)
   if g.how == "Quest" and g.q and RG.QDATA and RG.QuestForMe then
     local d = RG.QDATA[g.q]
@@ -876,7 +898,7 @@ function RG.GearShown(g)
   return true
 end
 -- something you can go and get now (for "best upgrades now", the tracker and the level-up count)
-function RG.GearGettable(g) local st = RG.CraftState(g); return st == nil or st == "make" or st == "buy" end
+function RG.GearGettable(g) local st = RG.CraftState(g); return st == nil or st == "make" or st == "buy" or st == "learn" end
 
 -- ---------------------------------------------------------------------------
 -- Events

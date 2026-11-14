@@ -163,6 +163,24 @@ local function describe(src, lvl)
     line("Where", GREY .. (src.zone or "") .. "|r")
     local w = RG.WAYPOINTS and RG.WAYPOINTS.gear and RG.WAYPOINTS.gear[(src.src or "") .. "|" .. (src.zone or "")]
     if w then line("Stands at", GREY .. at(w) .. "|r"); out.wp = w; out.wpText = "Show " .. src.src .. " on my map" end
+  elseif how == "Bags" then
+    out.title = src.live == "bank" and "In your bank" or "In your bags"
+    out.icon = 133633
+    line("You have it", GREEN .. (src.live == "bank" and "fetch it from the bank and put it on" or "put it on") .. "|r")
+  elseif how == "AH" then
+    out.title = "On the Auction House"
+    out.icon = 133784
+    local money = RG.Money or function(c) return math.floor(c / 10000) .. "g" end
+    if src.price then line("Cheapest", WHITE .. money(src.price) .. "|r" .. ((src.zone or "") ~= "" and (GREY .. "  ·  " .. src.zone .. "|r") or "")) end
+    if src.seenAt then
+      local h = math.floor((time() - src.seenAt) / 3600)
+      line("Seen", GREY .. (h < 1 and "in the last hour" or (h .. " hour" .. (h > 1 and "s" or "") .. " ago")) .. " (the last full scan); it may have sold since|r")
+    end
+  elseif how == "Craft" then
+    out.title = src.live == "altcraft" and ((src.crafter or "Your other character") .. " can make it") or "You can make it"
+    out.icon = 136241
+    line("Recipe", WHITE .. (src.src or ""):gsub("^.-  ·  ", "") .. "|r" .. GREY .. (src.live == "altcraft" and "  ·  a recipe your " .. (src.crafter or "alt") .. " knows" or "  ·  a recipe you know") .. "|r")
+    if src.price then line("Materials", GREY .. "about |r" .. (RG.Money and RG.Money(src.price) or "") .. GREY .. " on the Auction House|r") end
   elseif how == "Crafted" then
     out.title = "Crafted"
     out.icon = 136241
@@ -170,6 +188,7 @@ local function describe(src, lvl)
     if src.prof then
       local st, prof, need, have = RG.CraftState(src)
       line("Your skill", ((have or 0) >= need and GREEN or GOLD) .. (have and (have .. " / " .. need) or (prof .. " " .. need .. " needed")) .. "|r")
+      if st == "learn" then line("Recipe known", GOLD .. "not yet: learn it first|r") elseif st == "make" and RG.KnowsCraft and RG.KnowsCraft(prof, src.id) then line("Recipe known", GREEN .. "yes|r") end
       local how, recipe = (src.zone or ""):match("^(.-) · (.+)$")
       if recipe then line("Recipe", GREY .. (recipe == "Trainer" and ("from a " .. prof .. " trainer") or recipe:gsub("^(%a+): ", "%1 · ")) .. "|r") end
       if src.boe then
@@ -241,7 +260,7 @@ function RG.ShowItemSource(g, opts)
   if not g or not g.id then return end
   opts = opts or {}
   -- Shift-click links, Ctrl-click previews, like everywhere else
-  local _, link = RG.ItemInfo(g.id)
+  local _, link = RG.ItemInfo(g.link or g.id)
   if link and IsModifiedClick then
     local insert = ChatEdit_InsertLink or (ChatFrameUtil and ChatFrameUtil.InsertLink)
     if IsModifiedClick("CHATLINK") and insert then insert(link); return end
@@ -249,7 +268,7 @@ function RG.ShowItemSource(g, opts)
   end
   if not win then makeWin() end
   for _, f in pairs(pool) do f:Hide() end
-  local name, _, quality, _, minLevel, _, _, _, _, tex = RG.ItemInfo(g.id)
+  local name, _, quality, _, minLevel, _, _, _, _, tex = RG.ItemInfo(g.link or g.id)
   if not name then RG.RequestItem(g.id) end
   local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
   win.link = link
