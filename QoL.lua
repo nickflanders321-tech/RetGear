@@ -578,7 +578,7 @@ BINDING_NAME_WAYPATH_ARROW = "Arrow on or off"
 BINDING_NAME_WAYPATH_TRACKER = "Show or hide the tracker"
 BINDING_NAME_WAYPATH_UNDO = "Undo my last ticked task"
 BINDING_NAME_WAYPATH_SORT = "Sort my bags"
-_G["BINDING_NAME_CLICK WaypathFishHUDHub:LeftButton"] = "Fishing HUD: the middle button (cast, or cook in cook mode)"
+_G["BINDING_NAME_CLICK WaypathFishEasy:LeftButton"] = "Cast Fishing (a lure first when yours ran out)"
 function Waypath_Bind(action)
   if action == "toggle" then if RG.ToggleUI then RG.ToggleUI() end
   elseif action == "next" then SlashCmdList.WAYPATH("next")

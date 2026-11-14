@@ -324,6 +324,7 @@ if ev then
         if UIErrorsFrame then UIErrorsFrame:AddMessage("Fight! Weapons back on", 1, 0.3, 0.2) end
       end
     elseif event == "PLAYER_LOGOUT" then softOff(); lootOff()
+    elseif event == "PLAYER_LOGIN" then if not inCombat() then prepare() end; applyKey()   -- (made now, so its key binding works from the start)
     else
       if lureNext and event == "BAG_UPDATE_DELAYED" then lureNext = false end
       -- a pole in your hands for the first time: remember the weapons it replaced

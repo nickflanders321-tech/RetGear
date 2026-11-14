@@ -1,8 +1,9 @@
 -- Waypath+ fishing HUD: one button in the middle (cast, or put your pole on) with your fishing buttons around it,
 -- each showing the game's own icon, a coloured edge for its state and its count or time left on it.
 --   Layouts: a ring (the default), a bar or a column (/wp fishhud ring | bar | column, or the Fishing tab).
---   Idle it's only the middle button; casting, holding your pole or hovering opens the rest.
---   Cook mode: the Cook button puts your raw fish around the middle; pick one and the middle button cooks it,
+--   The middle button opens the ring and folds it away again; it starts folded every time you log in.
+--   Cast is the first button on the ring (and your fishing key or double-right-click cast too).
+--   Cook mode: the Cook button puts your raw fish around the ring; pick one and the Cook button at the top cooks it,
 --   one per click, at a fire (the fire button is there too).
 -- Edges: green ready, orange the main action or your pick, red can't right now, grey not in your bags or not known.
 -- Every action is a secure button or a plain button under your own click: nothing casts, cooks or buys by itself.
@@ -59,6 +60,7 @@ local function cookRank() local p = RG.Professions and RG.Professions().Cooking;
 -- ---------------------------------------------------------------------------
 local cookMode = false
 local cookOpen = false   -- the Cooking window is open
+local hubCounting = false   -- the middle button shows your cast's seconds (the timer owns its number and dimming)
 
 local function bestLure()
   local skill = RG.FishSkill and RG.FishSkill() or 0
@@ -295,7 +297,7 @@ local function cookDef(total)
   else
     d.state, d.count = "ready", total > 0 and total or nil
     d.fn = function() RG.FishHUDCook(true) end
-    d.tip = { "Cook your catch", total > 0 and (total .. " raw fish in your bags cook into something. Click to put them around the middle button.") or "No raw fish in your bags yet." }
+    d.tip = { "Cook your catch", total > 0 and (total .. " raw fish in your bags cook into something. Click to put them around the ring.") or "No raw fish in your bags yet." }
   end
   return d
 end
@@ -321,10 +323,11 @@ local function craft(dish)
   return false
 end
 
-local function hubDef(list)
+-- the action button at the top of the ring: Cast (or put your pole on), or in cook mode Cook
+local function actionDef(list)
   if cookMode then
     local e = picked(list)
-    local d = { key = "hub", state = "main", icon = "Interface\\Icons\\INV_Misc_Food_15" }
+    local d = { key = "cookdo", state = "main", icon = "Interface\\Icons\\INV_Misc_Food_15" }
     if not e then
       d.state = "off"; d.tip = { "Nothing to cook", "None of your raw fish cook into something you know yet." }
       return d
@@ -336,29 +339,44 @@ local function hubDef(list)
     else
       local _, n = known("Cooking")
       d.secure = { type = "spell", spell = n or "Cooking" }
-      d.tip = { "Cook " .. e.c.dish, "Click to open Cooking, then click again to cook one at a time. You need a fire close by." }
+      d.tip = { "Cook " .. e.c.dish, "Click to open Cooking, then click again to cook one at a time (pick the fish around the ring). You need a fire close by." }
     end
     return d
   end
   if not (RG.HasPole and RG.HasPole()) then
     local pole; if RG.FishOutfitState then pole = select(2, RG.FishOutfitState()) end
     if pole then
-      return { key = "hub", icon = itemIcon(pole) or "Interface\\Icons\\INV_Fishingpole_02", state = "main", fn = function() RG.FishGearOn() end,
+      return { key = "cast", icon = itemIcon(pole) or "Interface\\Icons\\INV_Fishingpole_02", state = "main", fn = function() RG.FishGearOn() end,
         tip = { "Go fishing", "Puts on " .. itemName(pole) .. " and your fishing gear. Click again to cast." } }
     end
-    return { key = "hub", icon = "Interface\\RaidFrame\\ReadyCheck-NotReady", state = "bad",
-      tip = { "No fishing pole", "Buy one from any fishing vendor (the Fishing tab has where). The middle button casts once it's in your hands." } }
+    return { key = "cast", icon = "Interface\\RaidFrame\\ReadyCheck-NotReady", state = "bad",
+      tip = { "No fishing pole", "Buy one from any fishing vendor (the Fishing tab has where). This button casts once it's in your hands." } }
   end
   local ic, n = known(RG.FishSpellName and RG.FishSpellName() or "Fishing")
   -- your line is in the water: a click here would only throw it again, so it waits for the splash
   local info = RG.FishModeInfo and RG.FishModeInfo()
   if info and info.castEnd then
     local k = RG.FishKey and RG.FishKey()
-    return { key = "hub", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main",
+    return { key = "cast", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main",
       tip = { "Watch your bobber", "At the splash, " .. (k and ("press " .. k .. " or ") or "") .. "right-click the bobber to hook the fish. Clicking here now would only cast again, so it waits." } }
   end
-  return { key = "hub", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main", secure = { type = "spell", spell = n or "Fishing" },
+  return { key = "cast", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main", secure = { type = "spell", spell = n or "Fishing" },
     keytext = RG.FishKey and RG.FishKey() or nil, tip = "cast" }
+end
+
+
+-- the middle button: opens and folds away the ring. It starts folded every time you log in.
+local userOpen = false
+local function toggle()
+  if inCombat() then if UIErrorsFrame then UIErrorsFrame:AddMessage("The fishing HUD opens and closes outside a fight", 1, 0.8, 0.2) end return end
+  userOpen = not userOpen
+  if not userOpen then cookMode = false end
+  RG.FishHUDRefresh(true)
+end
+RG.FishHUDToggle = toggle
+local function hubDef()
+  local ic = cookMode and "Interface\\Icons\\INV_Misc_Food_15" or (known(RG.FishSpellName and RG.FishSpellName() or "Fishing")) or "Interface\\Icons\\Trade_Fishing"
+  return { key = "hub", icon = ic, state = "main", fn = toggle, tip = "hub" }
 end
 
 -- what a click does, for the tooltip's last line
@@ -367,8 +385,9 @@ local CLICK = { lure = "put it on your pole", food = "eat it", fire = "light the
 local function clickText(d)
   if not (d.secure or d.fn) then return nil end
   if d.key == "outfit" then return d.tip and d.tip[1] == "Weapons back" and "put your weapons back" or "put your pole and fishing gear on" end
-  if d.key == "cook" then return cookMode and "back to your fishing buttons" or "your raw fish around the middle button" end
-  if d.key and d.key:find("^fish%d") then return "cook this one with the middle button" end
+  if d.key == "cook" then return cookMode and "back to your fishing buttons" or "your raw fish around the ring" end
+  if d.key and d.key:find("^fish%d") then return "pick it: the Cook button at the top cooks it" end
+  if d.key == "cookdo" then return "cook one" end
   return CLICK[d.key]
 end
 local function slotDefs()
@@ -377,6 +396,7 @@ local function slotDefs()
   for _, e in ipairs(list) do if e.can then total = total + e.have end end
   local out = {}
   if cookMode then
+    out[#out + 1] = actionDef(list)
     out[#out + 1] = fireDef()
     local e0 = picked(list)
     for _, e in ipairs(list) do
@@ -392,6 +412,7 @@ local function slotDefs()
     out[#out + 1] = cookDef(total)
     return out, list
   end
+  out[#out + 1] = actionDef(list)
   out[#out + 1] = lureDef()
   out[#out + 1] = outfitDef()
   out[#out + 1] = foodDef()
@@ -413,7 +434,15 @@ local function setTip(self)
   local d = self.def
   if not (d and GameTooltip) then return end
   GameTooltip:SetOwner(self, "ANCHOR_TOP")
-  if d.tip == "cast" then
+  if d.tip == "hub" then
+    local skill, max = RG.FishSkill()
+    GameTooltip:AddLine("Waypath+ fishing", 1, 0.93, 0.74)
+    if skill then GameTooltip:AddLine("Fishing " .. skill .. (max and max > 0 and (" / " .. max) or ""), 1, 1, 1) end
+    local s2 = RG.FishSession and RG.FishSession()
+    if s2 and s2.catches > 0 then GameTooltip:AddLine("This session: " .. s2.catches .. " fish" .. ((s2.value or 0) > 0 and (", " .. RG.FishMoney(s2.value)) or "") .. (s2.gained > 0 and (", +" .. s2.gained .. " skill") or ""), 0.85, 0.85, 0.85) end
+    GameTooltip:AddLine("Click: " .. (userOpen and "fold the buttons away" or "open your fishing buttons"), 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("Shift-drag: move the HUD", 0.5, 0.5, 0.5)
+  elseif d.tip == "cast" then
     local skill, max = RG.FishSkill()
     GameTooltip:AddLine("Cast Fishing", 1, 0.93, 0.74)
     if skill then GameTooltip:AddLine("Fishing " .. skill .. (max and max > 0 and (" / " .. max) or ""), 1, 1, 1) end
@@ -430,7 +459,7 @@ local function setTip(self)
     end
     local k = RG.FishKey and RG.FishKey()
     GameTooltip:AddLine(k and ("Click or press " .. k .. " to cast; " .. k .. " again at the splash hooks it.") or "Click to cast. Pick a one-key fishing key on the Fishing tab.", 0.6, 0.6, 0.6, true)
-    local bk = GetBindingKey and GetBindingKey("CLICK WaypathFishHUDHub:LeftButton")
+    local bk = GetBindingKey and GetBindingKey("CLICK WaypathFishEasy:LeftButton")
     GameTooltip:AddLine("Key for this button: " .. (bk or "none (Key Bindings, Waypath+)"), 0.6, 0.6, 0.6)
     GameTooltip:AddLine("Shift-drag: move the HUD", 0.5, 0.5, 0.5)
   else
@@ -497,7 +526,7 @@ local function makeButton(name, size)
       if C_Timer then C_Timer.After(0.3, function() RG.FishHUDRefresh(true) end) end
     end
   end)
-  b:SetScript("OnEnter", function(self) hoverUntil = GetTime() + 4; setTip(self); if self == hub then RG.FishHUDRefresh(true) end end)
+  b:SetScript("OnEnter", function(self) hoverUntil = GetTime() + 4; setTip(self) end)
   b:SetScript("OnLeave", function() hoverUntil = GetTime() + 3; if GameTooltip then GameTooltip:Hide() end end)
   return b
 end
@@ -508,7 +537,7 @@ local function paint(b, d)
   b.icon:SetTexture(d.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
   b.icon:SetDesaturated((d.state == "off" or d.desat) and true or false)
   b.icon:SetVertexColor(1, 1, 1, (d.state == "off") and 0.8 or 1)
-  b.big:SetText(d.big or "")
+  if not (b == hub and hubCounting) then b.big:SetText(d.big or "") end
   b.cnt:SetText(d.count and d.count > 0 and tostring(d.count) or "")
   -- (a key letter only when it's short, like R or F5: long names stay in the tooltip)
   b.keyt:SetText((d.keytext and #d.keytext <= 2) and d.keytext or "")
@@ -626,7 +655,7 @@ function RG.FishHUDRefresh(force)
   local info = RG.FishModeInfo and RG.FishModeInfo() or {}
   local now = GetTime()
   local holding = RG.HasPole and RG.HasPole()
-  local isOpen = RG.__fishHudPlace or cookMode or info.engaged or holding or now < hoverUntil
+  local isOpen = RG.__fishHudPlace or userOpen
   local show = wanted() and (isOpen or RG.Opt("fishHudIdle") or open > 0)
   if not combat then
     if show and not root:IsShown() then root:Show() elseif not show and root:IsShown() then root:Hide() end
@@ -637,7 +666,7 @@ function RG.FishHUDRefresh(force)
   root:SetAlpha((UIParent and not UIParent:IsShown()) and 0 or 1)
 
   local defs, list = slotDefs()
-  apply(hub, hubDef(list), not combat)
+  apply(hub, hubDef(), not combat)
   local skill = RG.FishSkill and RG.FishSkill()
   skillText:SetText(cookMode and ((cookRank() and ("|cffffb060" .. cookRank() .. "|r")) or "") or (skill and tostring(skill) or ""))
   if not combat then
@@ -678,7 +707,7 @@ end
 
 -- every frame: opening and closing, the water, the cast timer; four times a second: everything else
 local driver = CreateFrame("Frame")
-local acc, refreshFailed, counting = 0, false, false
+local acc, refreshFailed = 0, false
 local function step(_, dt)
   acc = acc + dt
   if root and root:IsShown() then
@@ -709,8 +738,11 @@ local function step(_, dt)
       if ring.SetRotation then ringAngle = (ringAngle - dt * (1.2 + 2.5 * burst)) % (2 * math.pi); ring:SetRotation(ringAngle) end
     elseif ring:IsShown() then ring:Hide() end
     -- the seconds left on the middle button
-    if left > 0 and not cookMode then hub.big:SetText(tostring(math.ceil(left))); hub.icon:SetAlpha(0.5); counting = true
-    elseif counting then counting = false; hub.big:SetText(""); hub.icon:SetAlpha(1) end
+    if left > 0 then
+      local t = tostring(math.ceil(left))
+      if hub.big:GetText() ~= t then hub.big:SetText(t) end
+      if not hubCounting then hub.icon:SetAlpha(0.5); hubCounting = true end
+    elseif hubCounting then hubCounting = false; hub.big:SetText(""); hub.icon:SetAlpha(1) end
   end
   if acc < 0.25 then return end
   acc = 0
