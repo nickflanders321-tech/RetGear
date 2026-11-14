@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.39.0
+- **The fishing HUD, reworked.**
+  - **Starts folded:** only the middle button shows when you log in. Click it to spin your fishing buttons out into a wide ring on a rising whirlpool, and click it again to fold them away.
+  - **Sleek buttons:** each icon is cut to a rounded square with a glassy sheen, in a thin bevelled rim in its state's colour (green ready, orange the main action, red can't right now, grey not in your bags), with a soft glow and shadow behind. All our own drawing.
+  - **Cast is the top button of the ring.** Your fishing key, double-right-click and the new Cast Fishing key binding (Key Bindings, Waypath+) cast too, without opening the ring. While your line is in the water, the middle button counts down your cast without flickering, and Cast waits for the splash instead of casting again.
+  - **Cook mode:** the Cook button at the top cooks the fish you pick around the ring.
+- **Fishing fixes.**
+  - Your fishing key cast again at the splash instead of hooking the fish: a mistake in the new double-right-click code stopped the key from switching to "hook" when your line went in. Fixed.
+  - Fishing poles the add-on had no data for (WoW Forever's own) now count: the HUD, the outfit and the lure button see them in your hands and in your bags.
+  - Lures, food, wood and fish in your bags read as none on this client, which greyed out most fishing buttons and lines. They're counted properly now.
+  - The weapons button and Go fishing did nothing: the game function that swaps gear lives somewhere else on this client. They swap your pole and weapons again.
+  - The campfire and camp object buttons use what you carry: a campfire in your bags lights from the fire button, and the camp button places your best fishing object (Fishing Hut, Fishing Rack or Fish Bowl) instead of suggesting another profession's (it said Lodestone). Right-click it to pick any camp object you carry.
+  - The Cook button shows a cooked meal, not the gem this client gives the Cooking spell.
+
 ## v1.38.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
@@ -23,13 +37,6 @@
   - It doesn't count toward the set's bronze, silver and gold, so it's a chase card, never a wall. The dungeon's Album page shows "Mythic: found" or "not found yet"; click it to see your copy.
   - In the Arena it's its boss made stronger, one per deck like every Mythic. Like every Mythic it can't be traded, crafted or sold.
   - Dungeon packs now hold their own Mythic instead of the six general ones, which stay in every other pack. Raids and holidays get theirs later.
-- **Fishing fixes.**
-  - Your fishing key cast again at the splash instead of hooking the fish: a mistake in the new double-right-click code stopped the key from switching to "hook" when your line went in. Fixed.
-  - Fishing poles the add-on had no data for (WoW Forever's own) now count: the HUD, the outfit and the lure button see them in your hands and in your bags.
-  - Lures, food, wood and fish in your bags read as none on this client, which greyed out most fishing buttons and lines. They're counted properly now.
-  - The weapons button and Go fishing did nothing: the game function that swaps gear lives somewhere else on this client. They swap your pole and weapons again.
-  - The campfire and camp object buttons use what you carry: a campfire in your bags lights from the fire button, and the camp button places your best fishing object (Fishing Hut, Fishing Rack or Fish Bowl) instead of suggesting another profession's (it said Lodestone). Right-click it to pick any camp object you carry.
-  - The Cook button shows a cooked meal, not the gem this client gives the Cooking spell.
 
 ## v1.38.0
 
