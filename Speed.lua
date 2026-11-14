@@ -12,6 +12,7 @@ for _, o in ipairs({
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
   { key = "arrow",         label = "Arrow to my map pin (/wp way 45 60)", default = true },
   { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
+  { key = "routeGuide",    label = "Leveling route |cffff9933(WIP)|r: step-by-step zone route on the Route tab and in the tracker, and the arrow follows its steps", default = false },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
   { key = "smartStepOrder", label = "Within a zone, do the step with quests I already have, or the one I'm standing at, first (otherwise the guide's order)", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
@@ -1212,7 +1213,7 @@ end
 function RG.AutoPin(key, wp)
   if RG.CardsOnly and RG.CardsOnly() then return end
   if corpse.active then return end    -- the way back to your body comes first
-  if not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
+  if not RG.Opt("routeGuide") or not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
   if RG.db and RG.db.arrowPaused then return end   -- you switched it off: the route moving on doesn't bring it back
   if IsInInstance and IsInInstance() then return end
   local cur = currentPin()

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **The leveling route is off for now (work in progress).** The step-by-step zone route isn't up to standard yet, so it starts switched off: no step list on the Route tab, no "Route" section in the tracker, and the arrow no longer follows route steps. Your quest tracker, the arrow for quests and pins you click, and the zones suggested for your level all stay. To try it anyway, turn on "Leveling route (WIP)" in Settings, or click "Turn it on" at the top of the Route tab.
+
 ## v1.41.2
 
 - **The Gear guide and the gear pop-up now agree.** The pop-up beside the Character window could name an upgrade the Gear guide didn't list, such as Truesilver Gauntlets (a Blacksmithing Bind on Equip piece) for a level 40 Paladin's hands. Whatever upgrade the pop-up shows for a slot is now in the Gear guide too, ranked with the rest by how big an upgrade it is.

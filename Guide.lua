@@ -214,7 +214,7 @@ local function buildTasks()
     end
   end
   -- the route's next pick-ups, so a giver on your way gets bundled with the rest
-  local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+  local r = opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   if r and RG.STEPS and RG.StepQuestLines then
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
     for i = 1, #steps do
@@ -442,7 +442,7 @@ local function buildObjective()
     return obj, plan
   end
   -- nothing in the log to plan: the route's hub for this step
-  local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+  local r = opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   if r and RG.STEPS then
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
     local nx = RG.NextStep and RG.NextStep(r)

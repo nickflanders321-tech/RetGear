@@ -1236,6 +1236,16 @@ local function renderRoute()
       end
     end
   end
+  -- the step-by-step route is a work in progress: off unless turned on (the zones for your level still show)
+  local routeOn = RG.Opt("routeGuide")
+  if not routeOn and (state.search or "") == "" then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "Leveling route  |cffff9933WIP|r", "Work in progress: the step-by-step route is off while we improve it. Your quests, the tracker and the arrow work as usual, and the zones for your level are below.", "", GOLD .. "Turn it on|r", "gold", nil, nil)
+    local wr = getRow(n)
+    wr.icon:SetTexture(134269); wr.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    wr.onClick = function() RG.db.routeGuide = true; RG.Print("Leveling route |cffff9933(WIP)|r on. Settings turns it off again."); RG.RefreshUI() end
+    wr.tip = "Click to turn on the leveling route (work in progress): the steps here, a Route section in the tracker, and the arrow follows the next step.\nSettings turns it off again."
+  end
   local KIND = { zone = GREY .. "Questing|r", dungeon = "|cffA58BD8Dungeon|r", pala = GOLD .. "Paladin|r", travel = "|cff6FA8DCTravel|r" }
   local ICON = { zone = 134269, dungeon = 136058, pala = 135920, travel = "Interface\\Icons\\Ability_Mount_Wyvern_01" }
   RG.db.stepsDone = RG.db.stepsDone or {}
@@ -1320,19 +1330,19 @@ local function renderRoute()
       sub = sub .. GREY .. "  ·  " .. RG.DUNGEON_XP_TIP .. "|r"
     end
     local titleText = r.kind == "travel" and ("|cff6FA8DC" .. "Travel" .. "|r" .. GREY .. "   level " .. r.from .. "|r") or (col .. r.zone .. "|r" .. GREY .. (r.kind == "pala" and "" or ("   " .. r.hub)) .. "|r")
-    local open = e.steps and not e.done and ((state.open[e.key] == nil and openDefault) or state.open[e.key] == true)
+    local open = routeOn and e.steps and not e.done and ((state.open[e.key] == nil and openDefault) or state.open[e.key] == true)
     local left = e.steps and (#e.steps - e.doneN) or 0
-    local meta = (KIND[r.kind] or "") .. (e.steps and (GREY .. "   ·   " .. (e.done and ("all " .. #e.steps .. " done") or (left .. " to do")) .. "|r") or "")
-    if e.pending and not e.done then
+    local meta = (KIND[r.kind] or "") .. ((routeOn and e.steps) and (GREY .. "   ·   " .. (e.done and ("all " .. #e.steps .. " done") or (left .. " to do")) .. "|r") or "")
+    if routeOn and e.pending and not e.done then
       meta = (KIND[r.kind] or "") .. GOLD .. "   ·   steps coming|r"
       if now then sub = sub .. GREY .. "  ·  Until the steps arrive, take the quests you find here: the tracker follows them.|r" end
     end
     local accent = e.done and nil or (now and "gold" or (r.kind == "pala" and "gold" or (r.kind == "dungeon" and "purple" or (r.kind == "travel" and "blue" or nil))))
     setItem(row, nil, nil, titleText, e.done and "" or sub, status, meta, accent, nil, e.done)
-    if e.steps and not e.done then row.onClick = function() state.open[e.key] = not open; RG.RefreshUI() end end
-    if e.steps and not e.done then row.tip = open and "Click to fold the steps." or "Click to open the steps." end
+    if routeOn and e.steps and not e.done then row.onClick = function() state.open[e.key] = not open; RG.RefreshUI() end end
+    if routeOn and e.steps and not e.done then row.tip = open and "Click to fold the steps." or "Click to open the steps." end
     local ew = RG.WAYPOINTS and (RG.WAYPOINTS.dungeons[r.zone] or (RG.StepWaypoint and RG.StepWaypoint(r, 1)))
-    if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = (row.tip and (row.tip .. "\n") or "") .. "Right-click: show " .. ew[4] .. " on the map." end
+    if ew then row.onRightClick = function() RG.PinWaypoint(ew) end; row.tip = (type(row.tip) == "string" and (row.tip .. "\n") or "") .. "Right-click: show " .. ew[4] .. " on the map." end
     row.icon:SetTexture(ICON[r.kind] or 134269)
     if e.done then return end
     -- how to get there from where you are
@@ -1559,7 +1569,7 @@ local function renderRoute()
     local others = 0
     for _, e in ipairs(entries) do if e.where == "now" and e ~= focus then others = others + 1 end end
     if focus and others > 0 then
-      n = n + 1; setStep(getRow(n), "", GREY .. "Also at your level  ·  click one to open its steps|r", false, nil)
+      n = n + 1; setStep(getRow(n), "", GREY .. (routeOn and "Also at your level  ·  click one to open its steps|r" or "Also at your level|r"), false, nil)
       rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
     end
     for _, e in ipairs(entries) do if e.where == "now" and e ~= focus then card(e, false); any = true end end
@@ -2681,7 +2691,7 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "routeGuide", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "tooltipBest", "upgradeToast", "paperdoll", "gearPanel", "questUpgradeMarks", "dungeonHelper", "exorcism", "stoneReminder", "ammoReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts", "fieldGuideToasts" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },

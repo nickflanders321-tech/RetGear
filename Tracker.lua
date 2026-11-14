@@ -1007,8 +1007,8 @@ function RG.RefreshTracker()
     end
     y = gap(y)
   end
-  -- 3. route: the zone you're in and its next tasks
-  local r = currentEntry()
+  -- 3. route: the zone you're in and its next tasks (the leveling route is a work in progress: off unless turned on)
+  local r = RG.Opt("routeGuide") and currentEntry()
   if r then
     local key = r.zone .. "|" .. r.from
     local steps = RG.STEPS[key] or {}
