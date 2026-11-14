@@ -192,7 +192,11 @@ local function bestOf(names)
     if nm then return { spell = nm, name = nm, icon = ic } end
   end
 end
-local function useOf(it) return it.id and { type = "item", item = "item:" .. it.id } or { type = "spell", spell = it.spell } end
+-- (an item you carry is used the way a macro would, by its name: the surest way for kits like Basic Campfire Kit)
+local function useOf(it)
+  if it.id then return { type = "macro", macrotext = "/use " .. (it.name or ("item:" .. it.id)) } end
+  return { type = "spell", spell = it.spell }
+end
 
 local function fireDef()
   local d = { key = "fire", icon = "Interface\\Icons\\Spell_Fire_Fire" }
@@ -207,7 +211,8 @@ local function fireDef()
   end
   d.icon, d.secure = it.icon or d.icon, useOf(it)
   local wood
-  for n, w in pairs(woodOf) do if it.name:lower():find(n, 1, true) then wood = w end end
+  -- (a kit carries its own wood; a learned campfire needs yours)
+  if not it.name:lower():find("kit", 1, true) then for n, w in pairs(woodOf) do if it.name:lower():find(n, 1, true) then wood = w end end end
   local woodN = wood and count(wood) or nil
   d.count = it.id and it.count or woodN
   if st == "active" and left then d.state, d.big = "ready", mmss(left)
