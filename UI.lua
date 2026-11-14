@@ -350,8 +350,8 @@ end
 -- Tabs
 -- ---------------------------------------------------------------------------
 -- Gear guide order: the two-hander first (your biggest upgrade), then head to toe.
-local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
-local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand" }
+local GUIDE_SLOTS = { "2H", "Main Hand", "Off Hand", "Ranged", "Relic", "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring", "Trinket" }
+local GUIDE_SLOT_LABEL = { ["2H"] = "Two-handed weapon", ["Main Hand"] = "One-handed weapon", ["Off Hand"] = "Off hand", ["Ranged"] = "Ranged / wand", Relic = "Relic (libram, idol or totem)" }
 -- "Upgrades only": hide pieces you already beat; keep tips, things you cannot use yet, and ones still loading
 local SRC_CYCLE = { false, "Dungeon", "Quest", "Vendor", "Crafted", "Rare mob", "Chest", "Reputation", "BoE", "Drop" }
 local function guideKeep(g, lvl)
@@ -406,7 +406,14 @@ local function guideRows()
       table.sort(items, function(a, b) if rank[a] ~= rank[b] then return rank[a] > rank[b] end return a.lvl < b.lvl end)
       if #items > 0 then
         list[#list + 1] = { header = (GUIDE_SLOT_LABEL[slot] or slot) }   -- (the level window is the same for every slot)
-        for i = 1, math.min(4, #items) do list[#list + 1] = { g = items[i] } end
+        -- the best 5; the rest behind a "show more" line
+        state.guideSlotAll = state.guideSlotAll or {}
+        local all = state.guideSlotAll[slot]
+        for i = 1, (all and #items or math.min(5, #items)) do list[#list + 1] = { g = items[i] } end
+        if #items > 5 then
+          list[#list + 1] = { more = function() state.guideSlotAll[slot] = not all; RG.RefreshUI() end,
+            text = all and "Show fewer" or ("Show " .. (#items - 5) .. " more") }
+        end
       end
     end
   else
@@ -487,7 +494,12 @@ local function renderGuide()
     if #best > 0 then
       local top = { { header = "Best upgrades you can get now", top = true } }
       local inTop = {}
-      for i = 1, math.min(4, #best) do top[#top + 1] = { g = best[i].g }; inTop[best[i].g] = true end
+      local allB = state.guideBestAll
+      for i = 1, (allB and #best or math.min(5, #best)) do top[#top + 1] = { g = best[i].g }; inTop[best[i].g] = true end
+      if #best > 5 then
+        top[#top + 1] = { more = function() state.guideBestAll = not allB; scroll:SetVerticalScroll(0); RG.RefreshUI() end,
+          text = allB and "Show fewer" or ("Show " .. (#best - 5) .. " more upgrades you can get now") }
+      end
       top[#top + 1] = { header = state.near and "Coming up near your level" or "The whole guide", top = true }
       -- (a piece already in the list above isn't listed twice)
       for _, e in ipairs(list) do if not (e.g and inTop[e.g]) then top[#top + 1] = e end end
@@ -504,9 +516,12 @@ local function renderGuide()
   -- your 2nd spec: a link to its gear list
   -- slot by slot: what you wear and the best piece you could swap in
   if state.bySlot then
-    local SLOTNUM = { Head = 1, Neck = 2, Shoulder = 3, Back = 15, Chest = 5, Wrist = 9, Hands = 10, Waist = 6, Legs = 7, Feet = 8, Ring = 11, Trinket = 13, ["2H"] = 16, ["Main Hand"] = 16, ["Off Hand"] = 17, Ranged = 18 }
+    local SLOTNUM = { Head = 1, Neck = 2, Shoulder = 3, Back = 15, Chest = 5, Wrist = 9, Hands = 10, Waist = 6, Legs = 7, Feet = 8, Ring = 11, Trinket = 13, ["2H"] = 16, ["Main Hand"] = 16, ["Off Hand"] = 17, Ranged = 18, Relic = 18 }
     list = {}
-    for _, slot in ipairs(GUIDE_SLOTS) do
+    local mySlots = {}
+    local relic = RG.ActiveClass and RG.ActiveClass.relic
+    for _, sl in ipairs(GUIDE_SLOTS) do if sl ~= "Relic" or relic then mySlots[#mySlots + 1] = sl end end
+    for _, slot in ipairs(mySlots) do
       local items = {}
       for _, g in ipairs(RG.GUIDE) do
         if g.id and not g.tip and g.slot == slot and g.lvl <= lvl and RG.OwnState(g.id) ~= "equipped" and guideKeep(g, lvl) then items[#items + 1] = g end
@@ -540,6 +555,9 @@ local function renderGuide()
         state.src = SRC_CYCLE[cur % #SRC_CYCLE + 1] or nil
         scroll:SetVerticalScroll(0); RG.RefreshUINow()
       end
+    elseif e.more then
+      setStep(r, "", GREY .. e.text .. "|r", false, e.more)
+      r.iconBorder:Hide(); r.icon:Hide(); r.tip = nil
     elseif e.note then
       setItem(r, nil, nil, GREY .. e.note .. "|r", "", "", "", nil, nil, true)
       r.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
@@ -567,6 +585,7 @@ local function guideSlotFor(slot)
     return "2H"
   end
   if slot == 17 and RG.WEAPON_MODEL == "DW" then return "Main Hand" end   -- any one-hander fits the off hand
+  if slot == 18 and RG.ActiveClass and RG.ActiveClass.relic then return "Relic" end   -- librams, idols and totems
   return SLOT_GUIDE[slot]
 end
 RG.GuideSlotFor = guideSlotFor
@@ -675,7 +694,7 @@ local function renderGear()
     setItem(getRow(n), nil, nil, GREY .. "Auction House gear not checked yet|r", GREY .. "Open the Auction House and let Waypath+ run a full scan: every piece of gear listed (random enchants too) joins this list with its price.|r", "", "", nil, nil, true)
     rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
   end
-  local SHOWN = state.gearAll and 30 or 10
+  local SHOWN = state.gearAll and #ups or 5
   for i = 1, math.min(SHOWN, #ups) do
     local u = ups[i]
     n = n + 1
@@ -690,9 +709,9 @@ local function renderGear()
       u.now and gearHowPill(u.g, true) or (GREY .. "Level " .. u.g.lvl .. "|r"), u.now and "gold" or nil, quality, true)
     rows[n].onClick = function() RG.ShowItemSource(u.g, { note = GREEN .. string.format("+%.0f", u.d) .. "|r" .. GREY .. " over " .. wornName .. "|r" }) end
   end
-  if #ups > 10 then
+  if #ups > 5 then
     n = n + 1
-    setStep(getRow(n), "", GREY .. (state.gearAll and "Show fewer" or ("Show " .. (math.min(30, #ups) - 10) .. " more upgrades")) .. "|r", false, function() state.gearAll = not state.gearAll; RG.RefreshUI() end)
+    setStep(getRow(n), "", GREY .. (state.gearAll and "Show fewer" or ("Show " .. (#ups - 5) .. " more upgrades")) .. "|r", false, function() state.gearAll = not state.gearAll; RG.RefreshUI() end)
     rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
   end
   -- which dungeons are worth running for you
@@ -710,7 +729,7 @@ local function renderGear()
   table.sort(dl, function(a, b) return a.total > b.total end)
   if #dl > 0 then
     n = n + 1; setHeader(getRow(n), "Dungeons with upgrades for you")
-    for i = 1, math.min(5, #dl) do
+    for i = 1, (state.gearDungAll and #dl or math.min(5, #dl)) do
       local e = dl[i]
       table.sort(e.items, function(a, b) return a.d > b.d end)
       local parts = {}
@@ -747,6 +766,11 @@ local function renderGear()
         end
       end
     end
+    if #dl > 5 then
+      n = n + 1
+      setStep(getRow(n), "", GREY .. (state.gearDungAll and "Show fewer" or ("Show " .. (#dl - 5) .. " more dungeons")) .. "|r", false, function() state.gearDungAll = not state.gearDungAll; RG.RefreshUI() end)
+      rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+    end
   end
   n = n + 1; setHeader(getRow(n), "Equipped")
   -- each slot's next upgrade: the same pick as the panel beside the Character window
@@ -780,8 +804,19 @@ local function renderGear()
     if state.gearSlot == slot and RG.GearBySource then
       local by = RG.GearBySource(guideSlotFor(slot), slot)
       local any = false
-      for _, grp in ipairs(RG.SOURCE_GROUPS) do
-        local b = by[grp]
+      -- the 5 best sources first (what you can get now, then the biggest gain); the rest behind "show more"
+      local groups = {}
+      for _, grp in ipairs(RG.SOURCE_GROUPS) do if by[grp] then groups[#groups + 1] = grp end end
+      table.sort(groups, function(a, b)
+        local x, y = by[a], by[b]
+        if (x.now or false) ~= (y.now or false) then return x.now or false end
+        return x.d > y.d
+      end)
+      local allS = state.gearSrcAll
+      local shownG = {}
+      for i, grp in ipairs(groups) do if allS or i <= 5 then shownG[grp] = true end end
+      for _, grp in ipairs(groups) do
+        local b = shownG[grp] and by[grp]
         if b then
           any = true
           n = n + 1
@@ -794,7 +829,12 @@ local function renderGear()
           rows[n].onClick = function() RG.ShowItemSource(gg) end
         end
       end
-      if not any then n = n + 1; setStep(getRow(n), "", GREY .. "Nothing in the guide for this slot near your level yet.|r", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
+      if #groups > 5 then
+        n = n + 1
+        setStep(getRow(n), "", GREY .. (allS and "Show fewer" or ("Show " .. (#groups - 5) .. " more sources")) .. "|r", false, function() state.gearSrcAll = not allS; RG.RefreshUI() end)
+        rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+      end
+      if not any then n = n + 1; setStep(getRow(n), "", GREY .. "Nothing for this slot near your level yet.|r", false, nil); rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil end
     end
   end
   setBar(scoreRow, (RG.SCORE_NAME or "Upgrade score"):gsub(" score$", "") .. " gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))

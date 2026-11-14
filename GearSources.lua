@@ -19,7 +19,7 @@ local LOC_GUIDE = {
   INVTYPE_WRIST = "Wrist", INVTYPE_HAND = "Hands", INVTYPE_WAIST = "Waist", INVTYPE_LEGS = "Legs", INVTYPE_FEET = "Feet", INVTYPE_FINGER = "Ring",
   INVTYPE_TRINKET = "Trinket", INVTYPE_2HWEAPON = "2H", INVTYPE_WEAPON = "Main Hand", INVTYPE_WEAPONMAINHAND = "Main Hand",
   INVTYPE_WEAPONOFFHAND = "Off Hand", INVTYPE_SHIELD = "Off Hand", INVTYPE_HOLDABLE = "Off Hand", INVTYPE_RANGED = "Ranged",
-  INVTYPE_RANGEDRIGHT = "Ranged", INVTYPE_THROWN = "Ranged", INVTYPE_RELIC = "Ranged",
+  INVTYPE_RANGEDRIGHT = "Ranged", INVTYPE_THROWN = "Ranged", INVTYPE_RELIC = "Relic",
 }
 function RG.GuideSlotOfLink(link)
   local _, _, _, loc = GetItemInfoInstant(link)

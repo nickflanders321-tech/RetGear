@@ -497,6 +497,12 @@ function RG.Score(link, hitRoom, slot, w, model)
       if model == "DW" and not twoH and slot ~= 17 and s.SPEED > 2.6 then score = score + (s.SPEED - 2.6) * 10 * (w.SLOW_BONUS or 0) end
     end
   end
+  -- a libram, idol or totem changes one of your spells, which no stat weight measures: rank it by item level
+  -- (the gear generator does the same, so the lists and this agree)
+  if score <= 0 and RG.EquipLoc(link) == "INVTYPE_RELIC" then
+    local ilvl = select(4, GetItemInfo(link))
+    if type(ilvl) == "number" then score = ilvl * 0.5 end
+  end
   return score
 end
 

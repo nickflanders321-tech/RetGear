@@ -230,7 +230,8 @@ def read_class(path):
     weapons = {int(x) for x in re.findall(r'\d+', lua_table(src, 'weapons'))}
     armor = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', lua_table(src, 'armor'))}
     bit = int(re.search(r'\w\.classBit = (\d+)', src).group(1))
-    return dict(tok=tok, name=name, spec=spec, w=w, model=model, weapons=weapons, armor=armor, bit=bit)
+    rel = re.search(r'\w\.relic = (\d+)', src)   # librams (7), idols (8), totems (9)
+    return dict(tok=tok, name=name, spec=spec, w=w, model=model, weapons=weapons, armor=armor, bit=bit, relic=int(rel.group(1)) if rel else None)
 
 STAT = {3: "AGI", 4: "STR", 5: "INT", 6: "SPI", 7: "STA"}
 SCHOOL = {2: "SP_HOLY", 4: "SP_FIRE", 8: "SP_NATURE", 16: "SP_FROST", 32: "SP_SHADOW", 64: "SP_ARCANE"}
@@ -287,6 +288,11 @@ def score(d, slot, C):
     # what the item gives beyond its armor value (and, except for tanks, beyond Stamina)
     stat_only = v - W.get("ARMOR", 0) * s.get("ARMOR", 0)
     if C.get("kind") != "tank": stat_only -= W.get("STA", 0) * s.get("STA", 0)
+    # a relic's effect changes one of your spells, which no stat weight measures: rank relics by item level
+    # (RG.Score in Core.lua does the same for the relic slot)
+    if slot == "Relic" and v <= 0:
+        v = int(d.get("ItemLevel") or 0) * 0.5
+        stat_only = v
     dps, speed = weapon(d)
     if dps > 0:
         if slot == "Ranged": v += dps * W.get("RANGED_DPS", 0)
@@ -318,6 +324,9 @@ def eligible(d, C):
         elif inv in (15, 25, 26): slot = "Ranged"
         else: return None
         if slot not in slots: return None
+    elif cls == 4 and inv == 28:   # a relic: the class's own kind (librams, idols, totems)
+        if not C.get("relic") or sub != C["relic"]: return None
+        slot = "Relic"
     elif cls == 4:
         if inv == 23:   # held in off-hand
             if "Off Hand" not in slots or C["model"] != "caster": return None
@@ -569,11 +578,13 @@ def craft_source(iid, ally=False):
         cand = dict(c, rec=rec)
         if not best or (cand["rec"] == "Trainer") > (best["rec"] == "Trainer") or cand["sk"] < best["sk"]: best = cand
     if not best: return None
+    # taught by a recipe from the Waylaid Crate vendors (Merchant's Favor)?
+    mf = any(c.get("rid") and (recipe_source(c["rid"], ally, c["prof"], c["sk"]) or "").startswith("Merchant's Favor") for c in CRAFT.get(iid, []))
     d = items[iid]
     boe = int(d["bonding"]) != 1
     return {"how": "Crafted", "lvl": 0, "src": best["prof"] + (" (" + best["spec"] + ")" if best["spec"] else ""),
             "zone": ("Bind on Equip" if boe else "Bind on Pickup") + " · " + best["rec"],
-            "prof": best["prof"], "sk": best["sk"], "boe": boe}
+            "prof": best["prof"], "sk": best["sk"], "boe": boe, "mf": mf}
 
 # ---------------------------------------------------------------------------
 # Pick the upgrades, class by class
@@ -624,6 +635,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
                             "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"), "onah": any(x["how"] == "BoE" for x in src),
+                            "mf": s0.get("mf"),
                             "also": [x for x in src[1:3] if x["how"] != "Crafted"]})
     picked = []
     start = (lvl_from // 5) * 5
@@ -668,6 +680,12 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
                     if top["id"] not in by_id and top["id"] not in extra and top["lvl"] >= lvl_from - 2:
                         extra[top["id"]] = dict(top, alt=True)
             picked += list(extra.values())
+            # 5) every piece a Waylaid Crate recipe makes (bought with Merchant's Favor): the game shows the ones that are
+            #    upgrades to players of that profession, so none of them is cut here
+            for c in all_c:
+                if c["how"] == "Crafted" and c.get("mf") and c["id"] not in by_id and c["id"] not in extra and c["lvl"] >= lvl_from - 2:
+                    extra[c["id"]] = dict(c, alt=True)
+                    picked.append(extra[c["id"]])
     picked.sort(key=lambda c: (c["lvl"], c["slot"]))
     return picked
 

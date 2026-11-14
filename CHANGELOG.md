@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Every Waylaid Crate recipe is on the gear lists.** All the gear made by recipes bought with Merchant's Favor (at the Crossroads and in Redridge) is now listed for players of that profession, with its favor cost and the standing it needs. Before, most were cut unless they beat everything else by a wide margin. Waypath+ shows the ones that are real upgrades for you.
+- **Relics are on the gear lists.** Librams for paladins, idols for druids and totems for shamans now have their own slot in the Gear tab, the gear guide and the Character window panel. A relic's effect changes one of your spells, which stat weights can't measure, so relics are ranked by item level.
+- **Shorter lists: the best 5, then "Show more".** The Gear tab's upgrades, dungeons and per-slot sources, the gear guide's "best upgrades now" and each slot's list, and the panel beside the Character window all show their best 5 first. A "Show N more" line opens the rest.
 - **Gear upgrades now look everywhere an upgrade can come from.** The Gear tab, the gear guide and the panel beside the Character window share one list of sources, so they always agree:
   - **Your bags and bank.** A better piece you're already carrying shows first, and the slot no longer counts as "at its best".
   - **The Auction House.** Every piece of gear seen in the last full scan is checked, random enchants ("of the Bear") included, with its price and how long ago it was seen.

@@ -136,7 +136,7 @@ local LOC_GUIDE = {
   INVTYPE_WRIST = "Wrist", INVTYPE_HAND = "Hands", INVTYPE_WAIST = "Waist", INVTYPE_LEGS = "Legs", INVTYPE_FEET = "Feet", INVTYPE_FINGER = "Ring",
   INVTYPE_TRINKET = "Trinket", INVTYPE_2HWEAPON = "2H", INVTYPE_WEAPON = "Main Hand", INVTYPE_WEAPONMAINHAND = "Main Hand",
   INVTYPE_WEAPONOFFHAND = "Off Hand", INVTYPE_SHIELD = "Off Hand", INVTYPE_HOLDABLE = "Off Hand", INVTYPE_RANGED = "Ranged",
-  INVTYPE_RANGEDRIGHT = "Ranged", INVTYPE_THROWN = "Ranged",
+  INVTYPE_RANGEDRIGHT = "Ranged", INVTYPE_THROWN = "Ranged", INVTYPE_RELIC = "Relic",
 }
 -- percent of the best for your level, and that best piece (nil when the guide has nothing for the slot yet)
 function RG.PercentOfBest(link)
@@ -170,7 +170,9 @@ end
 -- Beside the Character window: your slots, which are at their best, and the next upgrades
 -- ---------------------------------------------------------------------------
 local panel
-local ROWS = 9
+local ROWS = 5          -- the best 5 upgrades; "Show more" opens the panel to every slot
+local MAXROWS = 17
+local expanded = false
 -- the Character window has side tabs (character, reputation, skills...) sticking out of its right edge:
 -- sit to the right of whatever sticks out, so nothing of Blizzard's is covered
 function RG.PlaceGearPanel()
@@ -208,7 +210,7 @@ local function makePanel()
   panel.barBg = panel:CreateTexture(nil, "ARTWORK"); panel.barBg:SetPoint("TOPLEFT", panel.sub, "BOTTOMLEFT", 0, -5); panel.barBg:SetSize(224, 8); panel.barBg:SetColorTexture(0.169, 0.227, 0.278, 1)
   panel.bar = panel:CreateTexture(nil, "OVERLAY"); panel.bar:SetPoint("LEFT", panel.barBg, "LEFT"); panel.bar:SetHeight(8); panel.bar:SetColorTexture(0.31, 0.68, 0.48, 1)
   panel.rows = {}
-  for i = 1, ROWS do
+  for i = 1, MAXROWS do
     local r = CreateFrame("Button", nil, panel)
     r:SetSize(228, 30); r:SetPoint("TOPLEFT", panel.barBg, "BOTTOMLEFT", -2, -8 - (i - 1) * 32)
     -- the icon in a border of its quality's colour
@@ -221,7 +223,11 @@ local function makePanel()
     r:SetScript("OnClick", function(self) if self.g then RG.ShowItemSource(self.g, { note = self.note }) end end)
     panel.rows[i] = r
   end
-  panel.more = panel:CreateFontString(nil, "OVERLAY"); RG.Font(panel.more, "regular", 11); panel.more:SetPoint("BOTTOMLEFT", 12, 12); panel.more:SetTextColor(0.6, 0.6, 0.6)
+  -- "Show N more" / "Show fewer": a button, so the rest of the list opens right here
+  panel.moreBtn = CreateFrame("Button", nil, panel)
+  panel.moreBtn:SetSize(130, 18); panel.moreBtn:SetPoint("BOTTOMLEFT", 10, 9)
+  panel.more = panel.moreBtn:CreateFontString(nil, "OVERLAY"); RG.Font(panel.more, "regular", 11); panel.more:SetPoint("LEFT", 2, 0); panel.more:SetTextColor(0.6, 0.6, 0.6)
+  panel.moreBtn:SetScript("OnClick", function() if panel.canExpand then expanded = not expanded; pcall(RG.UpdateGearPanel) end end)
   panel.open = CreateFrame("Button", nil, panel)
   panel.open:SetSize(110, 18); panel.open:SetPoint("BOTTOMRIGHT", -10, 9)
   panel.open.t = panel.open:CreateFontString(nil, "OVERLAY"); RG.Font(panel.open.t, "semibold", 11); panel.open.t:SetPoint("RIGHT"); panel.open.t:SetText(GOLD .. "Gear tab »|r")
@@ -265,8 +271,9 @@ function RG.UpdateGearPanel()
     if (a.next.soon and true or false) ~= (b.next.soon and true or false) then return a.next.soon and true or false end
     return a.next.d > b.next.d
   end)
+  local show = expanded and MAXROWS or ROWS
   for i, r in ipairs(panel.rows) do
-    local e = list[i]
+    local e = i <= show and list[i]
     if e then
       local g = e.next.g
       local name, _, quality, _, _, _, _, _, _, tex = RG.ItemInfo(g.link or g.id)
@@ -287,10 +294,11 @@ function RG.UpdateGearPanel()
       r:Show()
     else r:Hide() end
   end
+  panel.canExpand = #list > ROWS
   if #list == 0 then panel.more:SetText(GREEN .. "Every slot is at its best for now.|r")
-  elseif #list > ROWS then panel.more:SetText("+" .. (#list - ROWS) .. " more on the Gear tab")
+  elseif #list > ROWS then panel.more:SetText(GOLD .. (expanded and "Show fewer" or ("Show " .. (#list - ROWS) .. " more")) .. "|r")
   else panel.more:SetText("") end
-  panel:SetHeight(64 + math.min(ROWS, math.max(1, #list)) * 32 + 30)
+  panel:SetHeight(64 + math.min(show, math.max(1, #list)) * 32 + 30)
   panel:Show()
 end
 
