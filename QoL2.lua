@@ -104,7 +104,16 @@ function RG.ReportEnv()
     L[#L + 1] = "Questie does: " .. (#q > 0 and table.concat(q, ", ") or "none of ours") .. (RG.QuestieDataWorks and (RG.QuestieDataWorks() and "  ·  database answers" or "  ·  database not reachable") or "")
   end
   L[#L + 1] = "Arrow: " .. ((RG.Opt and RG.Opt("arrow")) and "on" or "off") .. ((RG.ArrowPaused and RG.ArrowPaused()) and " (paused)" or "")
-    .. "  ·  " .. string.format("%.1f MB", (collectgarbage("count") or 0) / 1024) .. " Lua memory"
+    .. "  ·  " .. (function()
+      -- Waypath+'s own share first: collectgarbage("count") is every add-on together (Questie alone can be hundreds of MB)
+      local total = (collectgarbage("count") or 0) / 1024
+      local own
+      if UpdateAddOnMemoryUsage and GetAddOnMemoryUsage then
+        pcall(UpdateAddOnMemoryUsage); local ok, kb = pcall(GetAddOnMemoryUsage, "Waypath"); if ok and type(kb) == "number" then own = kb / 1024 end
+      end
+      if own then return string.format("Waypath+ %.1f MB of %.1f MB Lua memory (all add-ons)", own, total) end
+      return string.format("%.1f MB Lua memory (all add-ons)", total)
+    end)()
   local b = RG.BLOCKED or {}
   if #b > 0 then
     L[#L + 1] = "Blocked by the game this session: " .. #b .. "  (last: " .. tostring(b[#b].func) .. ", " .. tostring(b[#b].event) .. ")"

@@ -3,6 +3,7 @@
 -- Weapon masters come from the game data (Professions/Generated.lua RG.WEAPON_MASTERS). Classic-style clients only:
 -- clients without weapon skills (GetSkillLineInfo has none) simply never say anything.
 local _, RG = ...
+local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
 
 -- the item's weapon type (GetItemInfoInstant's subclass, the same in every language) -> the skill's English name
 local SUB = { [0] = "Axes", [1] = "Two-Handed Axes", [2] = "Bows", [3] = "Guns", [4] = "Maces", [5] = "Two-Handed Maces",

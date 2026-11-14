@@ -805,6 +805,7 @@ local function buildArrow()
   -- a quick pulse whenever the target changes
   arrow.pulse = 0
   local shown, lastKey, arrivedAt = 0, nil, nil
+  local doneKey   -- the pin you already arrived at: standing there again is not a new arrival
   local acc = 0
   -- The game knows the next leg of a quest's way (a door, a cave mouth, a stair). When we are blocked and
   -- have no learned path, lead to that point first.
@@ -933,8 +934,16 @@ local function buildArrow()
       self.dist:SetText(GREEN .. "In the area|r"); self.hint:SetText(GREY .. (label or "") .. "|r")
       return
     elseif not arrivedAt then self.check:Hide(); self.tex:Show() end
+    if doneKey and (doneKey ~= key or d > 25) then doneKey = nil end
+    if d < 10 and doneKey == key then
+      -- still at the pin you reached (the guide put it back because the hand-in or pickup isn't done yet):
+      -- a steady check, no new "arrive", no sound, no clearing and re-placing the pin every few seconds
+      self.wang = nil; self.tex:Hide(); self.check:Show()
+      self.dist:SetText(GREEN .. "You're here|r"); self.hint:SetText(GREY .. (label or "") .. "|r")
+      return
+    end
     if d < 10 then
-      arrivedAt = GetTime()
+      arrivedAt = GetTime(); doneKey = key
       if RG.OnArrive then pcall(RG.OnArrive, label) end
       self.tex:Hide(); self.check:Show()
       self.dist:SetText(GREEN .. "Arrived|r"); self.hint:SetText("")

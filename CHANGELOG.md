@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## v1.40.0
 
+- **The arrow no longer "arrives" over and over.** Standing at a quest giver whose hand-in wasn't done yet, the arrow showed "Arrived", vanished, came back a few seconds later and arrived again, and every time counted as a new arrival in the play-test log. It now shows a steady "You're here" check until you hand in or walk away.
+- **Bag sorter fixed.** It stopped with "attempt to call a nil value" on this client (an old item function it used is gone). The weapon skill reminder, which used the same function, works again too.
+- **Clearer memory line in bug reports.** The report box said "912 MB Lua memory", which is every add-on together (Questie is most of it). It now shows Waypath+'s own share next to the total.
 - **Waylaid Crates: the cheapest way to fill one.** Hover a Waylaid Crate and its tooltip lists its bundles, cheapest first: what you still need after what you carry (bags and bank), what it costs at the Auction House and the price each. Any one bundle fills a crate. The materials of crates you carry are added to the price scan, so their prices are there after your next visit to the Auction House. Crate contents are checked against the game's own data.
 - **No Auction House price on soulbound items.** Tooltips and lists showed an AH price for items that can't be sold there. Items that are soulbound, bind when picked up, quest items or account bound now show no price, and no "Sell this on the Auction House" either.
 

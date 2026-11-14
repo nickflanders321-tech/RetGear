@@ -6,6 +6,8 @@ local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local C = C_Container or {}
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
+-- (this client has no global GetItemInfoInstant: the sorter stopped with "attempt to call a nil value")
+local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant or function() end
 table.insert(RG.OPTIONS, { key = "sortButton", label = "Sort button on my bags and bank", default = true })
 
 -- a vendor's item: price, how many one purchase gives, how many it has left (-1: no limit). Newer clients

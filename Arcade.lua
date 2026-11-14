@@ -1089,6 +1089,7 @@ local SLOT_WORDS = { { "helm", 0 }, { "crown", 0 }, { "circlet", 0 }, { "mask", 
   { "trinket", 15 }, { "blade", 11 }, { "sword", 11 }, { "axe", 11 }, { "mace", 11 }, { "hammer", 11 }, { "dagger", 11 }, { "scythe", 12 } }
 local function slotOf(card)
   local loc
+  local GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
   if GetItemInfoInstant and card.ref then
     local ok, _, _, _, el = pcall(GetItemInfoInstant, card.ref)
     if ok and type(el) == "string" then loc = el end
