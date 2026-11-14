@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Fishing HUD: no more blank white middle button.** When working out one of its buttons hit a problem, the whole HUD stopped drawing and the middle button showed as a plain white square. Now the middle button always draws first, a button that can't be worked out shows a question mark, and the problem is noted in /wp errors.
+
 ## v1.40.0
 
 - **The arrow no longer "arrives" over and over.** Standing at a quest giver whose hand-in wasn't done yet, the arrow showed "Arrived", vanished, came back a few seconds later and arrived again, and every time counted as a new arrival in the play-test log. It now shows a steady "You're here" check until you hand in or walk away.

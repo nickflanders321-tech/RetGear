@@ -390,14 +390,26 @@ local function clickText(d)
   if d.key == "cookdo" then return "cook one" end
   return CLICK[d.key]
 end
+-- (one button that can't be worked out shows a question mark and logs why; it never stops the others)
+local reported = {}
+local function safe(key, fn, ...)
+  local ok, d = pcall(fn, ...)
+  if ok then return d end
+  if not reported[key] then reported[key] = true; if RG.RecordError then RG.RecordError("Fishing HUD " .. key .. ": " .. tostring(d)) end end
+  return { key = key, icon = "Interface\\Icons\\INV_Misc_QuestionMark", state = "off", tip = { "Couldn't read this button", "Waypath+ hit a problem here: /wp errors shows it." } }
+end
 local function slotDefs()
-  local list = cookList()
+  local okL, list = pcall(cookList)
+  if not okL then
+    if not reported.cooklist and RG.RecordError then reported.cooklist = true; RG.RecordError("Fishing HUD cook list: " .. tostring(list)) end
+    list = {}
+  end
   local total = 0
   for _, e in ipairs(list) do if e.can then total = total + e.have end end
   local out = {}
   if cookMode then
-    out[#out + 1] = actionDef(list)
-    out[#out + 1] = fireDef()
+    out[#out + 1] = safe("cookdo", actionDef, list)
+    out[#out + 1] = safe("fire", fireDef)
     local e0 = picked(list)
     for _, e in ipairs(list) do
       if #out >= MAXS - 1 then break end
@@ -409,18 +421,18 @@ local function slotDefs()
         fn = function() if e.can then cfg().cookPick = dish; RG.FishHUDRefresh(true) end end,
         tip = { dish, e.have .. " raw  ·  " .. skillTxt .. (e.c.note and ("\n" .. e.c.note) or "") } }
     end
-    out[#out + 1] = cookDef(total)
+    out[#out + 1] = safe("cook", cookDef, total)
     return out, list
   end
-  out[#out + 1] = actionDef(list)
-  out[#out + 1] = lureDef()
-  out[#out + 1] = outfitDef()
-  out[#out + 1] = foodDef()
-  out[#out + 1] = campDef()
-  out[#out + 1] = guideDef()
-  local f = findDef(); if f then out[#out + 1] = f end
-  out[#out + 1] = fireDef()
-  out[#out + 1] = cookDef(total)
+  out[#out + 1] = safe("cast", actionDef, list)
+  out[#out + 1] = safe("lure", lureDef)
+  out[#out + 1] = safe("outfit", outfitDef)
+  out[#out + 1] = safe("food", foodDef)
+  out[#out + 1] = safe("camp", campDef)
+  out[#out + 1] = safe("guide", guideDef)
+  local okF, f = pcall(findDef); if okF and f then out[#out + 1] = f end
+  out[#out + 1] = safe("fire", fireDef)
+  out[#out + 1] = safe("cook", cookDef, total)
   return out, list
 end
 
@@ -559,7 +571,15 @@ local function setSecure(b, s, right)
   b.__type, b.__val, b.__right = (s and s.type) or false, (s and (s.spell or s.macrotext or s.item)) or false, right and true or false
 end
 -- (in a fight a button can only keep what it does; its picture and numbers still update)
+local applyRaw
 local function apply(b, d, structural)
+  local ok, err = pcall(applyRaw, b, d, structural)
+  if not ok and not reported["apply" .. tostring(d and d.key)] then
+    reported["apply" .. tostring(d and d.key)] = true
+    if RG.RecordError then RG.RecordError("Fishing HUD paint " .. tostring(d and d.key) .. ": " .. tostring(err)) end
+  end
+end
+applyRaw = function(b, d, structural)
   if d.click == nil and d.key ~= "hub" then d.click = clickText(d) or false end
   if structural then setSecure(b, d.secure, d.rfn); b.def, b.dkey = d, d.key
   elseif b.dkey == d.key and sameSecure(b, d.secure, d.rfn) then b.def = d
@@ -665,8 +685,8 @@ function RG.FishHUDRefresh(force)
   -- Alt-Z hides the interface: the HUD goes with it (it sits on the game world)
   root:SetAlpha((UIParent and not UIParent:IsShown()) and 0 or 1)
 
-  local defs, list = slotDefs()
-  apply(hub, hubDef(), not combat)
+  apply(hub, safe("hub", hubDef), not combat)
+  local defs = slotDefs()
   local skill = RG.FishSkill and RG.FishSkill()
   skillText:SetText(cookMode and ((cookRank() and ("|cffffb060" .. cookRank() .. "|r")) or "") or (skill and tostring(skill) or ""))
   if not combat then
