@@ -374,8 +374,22 @@ local function guideRank(g)   -- bigger = better: real gain first, then what you
   local d = g.lvl <= UnitLevel("player") and RG.GuideDelta(g) or nil
   return (d or -50) + (own == "owned" and 5 or 0)
 end
+-- The guide's own picks, plus the upgrade the gear pop-up beside the Character window names for a slot when that one
+-- comes from the by-source alternatives (RG.GUIDE_ALT, for example a crafted Bind on Equip piece): the guide must
+-- never be missing an upgrade the pop-up shows.
+local function guidePool()
+  local pool, seen = {}, {}
+  for _, g in ipairs(RG.GUIDE) do pool[#pool + 1] = g; if g.id then seen[g.id] = true end end
+  local ok, st = pcall(function() return RG.GearStatus and RG.GearStatus() end)
+  for _, e in ipairs(ok and st and st.slots or {}) do
+    local g = e.next and e.next.g
+    if g and g.id and not seen[g.id] then pool[#pool + 1] = g; seen[g.id] = true end
+  end
+  return pool
+end
 local function guideRows()
   local list, lvl = {}, UnitLevel("player")
+  local pool = guidePool()
   if state.near then
     -- near your level: per slot, what's coming in the next few levels (up to 4 each)
     local lo, hi = lvl - 3, lvl + 8
@@ -384,8 +398,8 @@ local function guideRows()
     if #tips > 0 then list[#list + 1] = { header = "Tips" }; for _, g in ipairs(tips) do list[#list + 1] = { g = g } end end
     for _, slot in ipairs(GUIDE_SLOTS) do
       local items = {}
-      for _, g in ipairs(RG.GUIDE) do
-        if g.id and g.slot == slot and g.lvl >= lo and g.lvl <= hi and RG.OwnState(g.id) ~= "equipped" and guideKeep(g, lvl) then items[#items + 1] = g end
+      for _, g in ipairs(pool) do
+        if g.id and g.slot == slot and g.lvl <= hi and (g.lvl >= lo or g.alt) and RG.OwnState(g.id) ~= "equipped" and guideKeep(g, lvl) then items[#items + 1] = g end
       end
       local rank = {}
       for _, g in ipairs(items) do rank[g] = guideRank(g) end
@@ -402,7 +416,7 @@ local function guideRows()
     for i, sl in ipairs(GUIDE_SLOTS) do order[sl] = i end
     for _, b in ipairs(brackets) do
       local items = {}
-      for _, g in ipairs(RG.GUIDE) do if g.lvl >= b[1] and g.lvl <= b[2] and guideKeep(g, lvl) then items[#items + 1] = g end end
+      for _, g in ipairs(pool) do if g.lvl >= b[1] and g.lvl <= b[2] and guideKeep(g, lvl) then items[#items + 1] = g end end
       table.sort(items, function(x, y)
         local ox, oy = x.tip and 0 or (order[x.slot] or 99), y.tip and 0 or (order[y.slot] or 99)
         if ox ~= oy then return ox < oy end

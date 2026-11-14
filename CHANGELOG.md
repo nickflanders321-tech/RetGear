@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.41.2
+
+- **The Gear guide and the gear pop-up now agree.** The pop-up beside the Character window could name an upgrade the Gear guide didn't list, such as Truesilver Gauntlets (a Blacksmithing Bind on Equip piece) for a level 40 Paladin's hands. Whatever upgrade the pop-up shows for a slot is now in the Gear guide too, ranked with the rest by how big an upgrade it is.
+
 ## v1.41.1
 
 - **The buff reminder from v1.41.0 is gone again.** It went out before it was ready and has been taken out. Its Options switches and /wp buffs go with it. The fishing HUD fix (a single Go fishing button) stays.
