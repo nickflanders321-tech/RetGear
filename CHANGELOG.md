@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.41.1
+
+- **The buff reminder from v1.41.0 is gone again.** It went out before it was ready and has been taken out. Its Options switches and /wp buffs go with it. The fishing HUD fix (a single Go fishing button) stays.
+
 ## v1.41.0
 
 - **New: buff reminder.** A small row of icons, WeakAuras-style, when one of your own buffs is missing or about to run out: Arcane Intellect and your mage armor, Power Word: Fortitude and Inner Fire, Mark of the Wild and Thorns, your warlock armor, Lightning Shield and your weapon imbue, a paladin blessing and aura, a hunter aspect and Trueshot Aura, and rogue poisons on a weapon with nothing on it. Only spells you know show, and where you have several of a kind the icon casts the one you used last. Click to cast it on yourself; right-click to hide that one until you log in again.

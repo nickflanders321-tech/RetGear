@@ -7,6 +7,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
+- Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
+  consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
+
 1. **Mount Hyjal still has no quests (Riverglades done in v1.31.0, Shen'dralas in v1.32.0):** QuestieDB's Forever data has only one
    Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship
    from Tanaris to Powderfuse Port (or the new fork off the Redridge road), Horde flight point
@@ -111,11 +114,8 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Done
 
-- v1.41.0: player report #10: buff and consumable reminder (Buffs.lua, class self-buffs, rogue poisons, shaman imbues, Well
-  Fed food out of town, elixirs/flasks/scrolls in dungeons; Edit Mode mover, /wp buffs) and the fishing HUD's duplicate
-  "Go fishing" button. Not done from the same report: working as a companion to the OpenXP leveling add-on (needs a look at
-  what OpenXP exposes before anything can be shared with it).
-
+- v1.41.0: player report #10: the fishing HUD's duplicate "Go fishing" button. (A buff reminder shipped in v1.41.0 too,
+  without the owner's go-ahead, and was removed in v1.41.1.)
 - v1.32.0: Shen'dralas route notes, givers and travel tips for both factions (item 1, Shen'dralas part); Blizzard's November 10
   hotfixes applied (Journeyman Campfire at Cooking 90, Coarse Grinding Stone skill-ups to 90, gold from level 48+ quests); the
   two cross-check warnings fixed (Vambraces of the Sadist 55, Jumanza Grips 43 in WoW Forever's item data). Item 13 done: the

@@ -133,7 +133,6 @@ Travel.lua
 NodeData.lua
 Nodes.lua
 Ammo.lua
-Buffs.lua
 GateOff.lua
 Setup.lua
 GateOn.lua
