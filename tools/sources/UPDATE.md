@@ -10,6 +10,10 @@ new bug report. Standing goal: **every update makes Waypath+ more accurate and m
 by compiling ALL available leveling and WoW Forever guides and data**, and keeps it working
 on the newest game build.
 
+**Never build or release a new feature, option or behaviour without the owner's go-ahead** (v1.41.0 shipped a buff
+reminder from a player request unasked and v1.41.1 had to take it out). Fix bugs, compatibility and data; put feature
+requests in BACKLOG.md "To do" marked as waiting on the owner, leave their issue open and tell the owner.
+
 Waypath+ deliberately gives **no talent advice** (the Talents tab was removed in v0.49.0):
 never add talent builds, talent orders, "goal" talents or rotations, and don't maintain the
 old talents/rotation/build/goal fields in Classes/*.lua or Classes/Specs.lua.
