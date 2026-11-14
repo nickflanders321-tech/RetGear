@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.41.0
+
+- **New: buff reminder.** A small row of icons, WeakAuras-style, when one of your own buffs is missing or about to run out: Arcane Intellect and your mage armor, Power Word: Fortitude and Inner Fire, Mark of the Wild and Thorns, your warlock armor, Lightning Shield and your weapon imbue, a paladin blessing and aura, a hunter aspect and Trueshot Aura, and rogue poisons on a weapon with nothing on it. Only spells you know show, and where you have several of a kind the icon casts the one you used last. Click to cast it on yourself; right-click to hide that one until you log in again.
+- **Consumables too:** food that makes you Well Fed when you're out of town, and elixirs, flasks and scrolls you carry once you're in a dungeon or raid. Quest items and recipes are never counted.
+- The row hides in a fight and never casts by itself. Move it in Edit Mode (or /wp move), turn the buffs or the consumables off in Options, or type /wp buffs to switch it all off and on.
+- **Fishing HUD: one Go fishing button.** With your pole in your bags, the ring showed Go fishing twice (the Cast button and the outfit button). The Cast button at the top puts your pole on; the outfit button now only shows while you hold your pole, to put your weapons back.
+
 ## v1.40.2
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).

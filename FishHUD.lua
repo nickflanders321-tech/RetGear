@@ -143,19 +143,16 @@ end
 
 local function outfitDef()
   local holding = RG.HasPole and RG.HasPole()
-  local pole; if RG.FishOutfitState then pole = select(2, RG.FishOutfitState()) end
   local d = { key = "outfit" }
   if holding then
     local main = RG.db and RG.db.fishTools and RG.db.fishTools.normal and RG.db.fishTools.normal[16]
     d.icon = (main and itemIcon(main)) or "Interface\\Icons\\INV_Sword_04"
     d.state, d.fn = "ready", function() RG.FishGearOff() end
     d.tip = { "Weapons back", "Puts your weapons and gear back on. A fight does it for you too.\n/wp weapons" }
-  elseif pole then
-    d.icon, d.state, d.fn = itemIcon(pole) or "Interface\\Icons\\INV_Fishingpole_02", "ready", function() RG.FishGearOn() end
-    d.tip = { "Go fishing", "Puts on " .. itemName(pole) .. " and any fishing gear in your bags.\n/wp gofish" }
   else
-    d.icon, d.state = "Interface\\Icons\\INV_Fishingpole_02", "off"
-    d.tip = { "Fishing pole", "No fishing pole in your bags. Any fishing vendor sells one (Fishing tab)." }
+    -- (without a pole in your hands the Cast button at the top already says Go fishing, or No fishing pole:
+    -- no second button saying the same)
+    return nil
   end
   return d
 end

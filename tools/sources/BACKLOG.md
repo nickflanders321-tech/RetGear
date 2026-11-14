@@ -111,6 +111,11 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Done
 
+- v1.41.0: player report #10: buff and consumable reminder (Buffs.lua, class self-buffs, rogue poisons, shaman imbues, Well
+  Fed food out of town, elixirs/flasks/scrolls in dungeons; Edit Mode mover, /wp buffs) and the fishing HUD's duplicate
+  "Go fishing" button. Not done from the same report: working as a companion to the OpenXP leveling add-on (needs a look at
+  what OpenXP exposes before anything can be shared with it).
+
 - v1.32.0: Shen'dralas route notes, givers and travel tips for both factions (item 1, Shen'dralas part); Blizzard's November 10
   hotfixes applied (Journeyman Campfire at Cooking 90, Coarse Grinding Stone skill-ups to 90, gold from level 48+ quests); the
   two cross-check warnings fixed (Vambraces of the Sadist 55, Jumanza Grips 43 in WoW Forever's item data). Item 13 done: the
