@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.40.2
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
 ## v1.40.1
 
 - **Fishing HUD: the campfire button lights your Basic Campfire Kit.** Items you carry (campfire kits, Fish Bowl, Fishing Rack) are now used the way a macro would, by name, which this client accepts where the earlier way did nothing. The campfire button could also stop on a bag slot the game wouldn't describe and show a question mark; it now skips that slot and keeps looking.
