@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Fishing HUD: the campfire button lights your Basic Campfire Kit.** Items you carry (campfire kits, Fish Bowl, Fishing Rack) are now used the way a macro would, by name, which this client accepts where the earlier way did nothing.
+- **Fishing HUD: the campfire button lights your Basic Campfire Kit.** Items you carry (campfire kits, Fish Bowl, Fishing Rack) are now used the way a macro would, by name, which this client accepts where the earlier way did nothing. The campfire button could also stop on a bag slot the game wouldn't describe and show a question mark; it now skips that slot and keeps looking.
 - **Fishing HUD: no more blank white middle button.** When working out one of its buttons hit a problem, the whole HUD stopped drawing and the middle button showed as a plain white square. Now the middle button always draws first, a button that can't be worked out shows a question mark, and the problem is noted in /wp errors.
 
 ## v1.40.0

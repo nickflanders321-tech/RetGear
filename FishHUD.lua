@@ -169,14 +169,16 @@ local function bagFind(test)
   if not (slotsOf and infoOf) then return nil end
   for bag = 0, 4 do
     for slot = 1, (slotsOf(bag) or 0) do
-      local info = infoOf(bag, slot)
-      local id = info and info.itemID
-      if id then
-        local name = info.itemName or (info.hyperlink and info.hyperlink:match("%[(.-)%]")) or (RG.ItemInfo and RG.ItemInfo(id))
-        if type(name) == "string" and test(name:lower()) then
-          return { id = id, name = name, icon = info.iconFileID or itemIcon(id), count = count(id) }
-        end
-      end
+      -- (one slot the client won't describe is skipped, never the whole search)
+      local ok, hit = pcall(function()
+        local info = infoOf(bag, slot)
+        local id = info and info.itemID
+        if not id or (RG.IsSecret and RG.IsSecret(id)) then return nil end
+        local name = info.itemName or (type(info.hyperlink) == "string" and info.hyperlink:match("%[(.-)%]")) or (RG.ItemInfo and RG.ItemInfo(id))
+        if type(name) ~= "string" or (RG.IsSecret and RG.IsSecret(name)) then return nil end
+        if test(name:lower()) then return { id = id, name = name, icon = itemIcon(id) or info.iconFileID, count = count(id) } end
+      end)
+      if ok and hit then return hit end
     end
   end
 end
@@ -204,7 +206,8 @@ local function fireDef()
   for i = #(RG.CAMPFIRES or {}), 1, -1 do local f = RG.CAMPFIRES[i]; names[#names + 1] = f.name; woodOf[f.name:lower()] = f.wood end
   names[#names + 1] = "Campfire"
   local it = bestOf(names)
-  local st, left = RG.CampState and RG.CampState()
+  local okS, st, left = pcall(function() if RG.CampState then return RG.CampState() end end)
+  if not okS then st, left = nil, nil end
   if not it then
     d.state = "off"; d.tip = { "Campfire", "No campfire in your bags and none learned yet. Basic Campfire comes with Cooking (Camping on the Professions tab)." }
     return d
