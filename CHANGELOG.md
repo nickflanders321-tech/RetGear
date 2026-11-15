@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.42.1
 
 - **Removed the Exorcism alert.** The "Use Exorcism" pop-up on Undead and Demon targets is gone, along with its setting and its spot in Edit Mode. It could show for characters that don't have the spell.
 
