@@ -4,7 +4,9 @@ SkillLineAbility, SpellReagents, SpellEffect and ItemSparse, exported to the dat
 
 For every craft step { from, to, craft, n, mats }:
   * the craft is a recipe of that profession in the game (each of "A, B or C" when a step lists choices)
-  * you can learn it by the step's start (its learn rank is at or below `from`)
+  * you can learn it by the step's start, when it's learned from a recipe item (the item's skill requirement; a
+    trainer's requirement isn't in the client tables, and SkillLineAbility's MinSkillLineRank is not it: WoW
+    Forever's guides, tested in game, use Patterned Bronze Bracers from 95 though that field says 120)
   * it still gives skill-ups at the step's end (`to` is below the point it turns grey)
   * `n`, the crafts the plan asks for, is close to what the game's skill-up chances need (orange always gives a point,
     yellow and green less often: chance = (grey - skill) / (grey - yellow))
@@ -36,7 +38,19 @@ SKILL = {'Alchemy': 171, 'Blacksmithing': 164, 'Enchanting': 333, 'Engineering':
 LINE_PROF = {v: k for k, v in SKILL.items()}
 
 spell_name = {int(r['ID']): r['Name_lang'] for r in table('SpellName')}
-item_name = {int(r['ID']): r['Display_lang'] for r in table('ItemSparse')}
+item_name, item_rank = {}, {}
+for r in table('ItemSparse'):
+    item_name[int(r['ID'])] = r['Display_lang']
+    if int(r.get('RequiredSkillRank') or 0) > 0: item_rank[int(r['ID'])] = int(r['RequiredSkillRank'])
+# the skill a recipe item needs to learn the craft it teaches: spell -> lowest such rank
+item_class = {int(r['ID']): int(r['ClassID'] or 0) for r in table('Item')}
+effect_spell = {int(r['ID']): int(r['SpellID'] or 0) for r in table('ItemEffect')}
+learn_rank = {}
+for r in table('ItemXItemEffect'):
+    it = int(r['ItemID'])
+    sp = effect_spell.get(int(r['ItemEffectID']), 0)
+    if item_class.get(it) == 9 and sp and it in item_rank:
+        learn_rank[sp] = min(learn_rank.get(sp, 999), item_rank[it])
 abil = {}    # (prof, lower-case name) -> [ {spell, learn, yellow, grey, ups, acquire} ]
 for r in table('SkillLineAbility'):
     prof = LINE_PROF.get(int(r['SkillLine']))
@@ -45,8 +59,10 @@ for r in table('SkillLineAbility'):
     nm = spell_name.get(sp)
     if not nm: continue
     abil.setdefault((prof, nm.lower()), []).append({
-        'spell': sp, 'learn': int(r['MinSkillLineRank'] or 0), 'yellow': int(r['TrivialSkillLineRankLow'] or 0),
+        'spell': sp, 'learn': 0, 'yellow': int(r['TrivialSkillLineRankLow'] or 0),
         'grey': int(r['TrivialSkillLineRankHigh'] or 0), 'ups': max(1, int(r['NumSkillUps'] or 1)), 'acquire': int(r['AcquireMethod'] or 0)})
+for rs in abil.values():
+    for x in rs: x['learn'] = learn_rank.get(x['spell'], 1)
 reagents = {}
 for r in table('SpellReagents'):
     rs = []

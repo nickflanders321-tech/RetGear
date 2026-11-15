@@ -4,10 +4,10 @@
 
 - **Profession guides checked against the game itself.** Waypath+ now compares every step of every profession guide with WoW Forever's own recipe tables, and the hourly data update repeats the check. If a game patch moves a recipe's skill range, the update is held back and flagged for a fix instead of going out wrong.
 - **Blacksmithing, Leatherworking and Tailoring past 225 are fixed.** WoW Forever moved most high-level recipes 20 to 45 points lower than in Classic, so the old steps had you making recipes that had already turned grey. The new steps follow Forever's ranges:
-  - Blacksmithing: Mithril Coif, Heavy Mithril Boots, then the Imperial Plate belt, bracers and boots.
+  - Blacksmithing: now follows wow-professions.com's updated WoW Forever route from 75 to 300 (tested on the beta up to 240): Silver Rods, Runed Copper Belts, Patterned Bronze Bracers, Golden Scale Bracers, Mithril Plate Pants, Heavy Mithril Breastplate and Boots, then Derotain Mudsipper's Imperial Plate belt, bracers, boots and leggings. Every step matches the game's own recipe ranges.
   - Leatherworking: Nightscape Pants and Boots, Wicked Leather Gauntlets, then Runic Leather Headband.
   - Tailoring: Runecloth Belt, Bag, Gloves, Boots and Headband, then Runecloth Shoulders or Mooncloth Robe.
-  Blacksmithing 67-125 also follows when each recipe can actually be learned. Two Engineering steps ask for more crafts, because the old counts weren't enough to level.
+  Two Engineering steps ask for more crafts, because the old counts weren't enough to level.
 - **WoW Forever's own reagents.** Shopping lists and material counts now use Forever's recipes. Many changed: early elixirs take an Empty Vial, several enchants need fewer dusts, and some items make more per craft. Patterns show the skill Forever actually needs to learn them.
 - **Recipe colours before you open the profession window.** The Professions tab now knows from the game's tables when each recipe turns yellow, green and grey, so it can tell you a step is done and estimate how many crafts are left. Once you open the window, the real colours it shows take over.
 
