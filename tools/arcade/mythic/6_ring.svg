@@ -7,35 +7,73 @@
           <linearGradient id="goldIn" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5c12"/><stop offset="0.5" stop-color="#e9b64a"/><stop offset="1" stop-color="#fff2c2"/></linearGradient>
           <radialGradient id="gem" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="#eaffd9"/><stop offset="0.25" stop-color="#8dff6a"/><stop offset="0.65" stop-color="#1f9e2c"/><stop offset="1" stop-color="#0b3d10"/></radialGradient>
           <radialGradient id="gemGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#d8ffc4" stop-opacity="0.95"/><stop offset="0.5" stop-color="#5cff3b" stop-opacity="0.35"/><stop offset="1" stop-color="#5cff3b" stop-opacity="0"/></radialGradient>
+          <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5"/></filter>
+          <filter id="softer" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+          <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d8ffc4" stop-opacity="0.9"/><stop offset="1" stop-color="#5cff3b" stop-opacity="0"/></linearGradient>
+          <linearGradient id="goldBack" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4a3008"/><stop offset="0.5" stop-color="#a8751c"/><stop offset="1" stop-color="#4a3008"/></linearGradient>
+          <symbol id="spark" viewBox="-10 -10 20 20"><path d="M0,-10 L1.6,-1.6 L10,0 L1.6,1.6 L0,10 L-1.6,1.6 L-10,0 L-1.6,-1.6 Z" fill="#ffffff"/></symbol>
+          <filter id="swirl" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.005 0.008" numOctaves="2" seed="11"/><feDisplacementMap in="SourceGraphic" scale="210" xChannelSelector="R" yChannelSelector="B"/><feGaussianBlur stdDeviation="4.5"/></filter>
+          <filter id="swirl2" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="40" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="0.8"/></filter>
+          <radialGradient id="vig" cx="0.5" cy="0.4" r="0.75"><stop offset="0.35" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.85"/></radialGradient>
+          <symbol id="star4" viewBox="-6 -6 12 12"><path d="M0,-6 L1.3,-1.3 L6,0 L1.3,1.3 L0,6 L-1.3,1.3 L-6,0 L-1.3,-1.3 Z"/></symbol>
         </defs>
-        <rect width="390" height="550" fill="url(#bg)"/>
-        <g fill="#eaffd9" opacity="0.14">
-          <polygon points="195,190 178,-220 212,-220"/><polygon points="195,190 178,-220 212,-220" transform="rotate(36 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(72 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(108 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(144 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(180 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(216 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(252 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(288 195 190)"/><polygon points="195,190 178,-220 212,-220" transform="rotate(324 195 190)"/>
+        <rect width="390" height="550" fill="#06120a"/>
+        <!-- swirling painted backdrop: rings of colour marbled by turbulence -->
+        <g filter="url(#swirl)"><ellipse cx="195" cy="205" rx="464" ry="419" fill="#082a3a"/><ellipse cx="195" cy="205" rx="450" ry="407" fill="#5fbf2a"/><ellipse cx="195" cy="205" rx="436" ry="395" fill="#0d4220"/><ellipse cx="195" cy="205" rx="423" ry="382" fill="#1a4f6a"/><ellipse cx="195" cy="205" rx="409" ry="370" fill="#06221a"/><ellipse cx="195" cy="205" rx="395" ry="358" fill="#a8781e"/><ellipse cx="195" cy="205" rx="382" ry="345" fill="#0b2c44"/><ellipse cx="195" cy="205" rx="368" ry="333" fill="#2f8f1f"/><ellipse cx="195" cy="205" rx="354" ry="321" fill="#145c1c"/><ellipse cx="195" cy="205" rx="341" ry="308" fill="#0a3a2e"/><ellipse cx="195" cy="205" rx="327" ry="296" fill="#04161c"/><ellipse cx="195" cy="205" rx="313" ry="284" fill="#c99a34"/><ellipse cx="195" cy="205" rx="300" ry="271" fill="#082a3a"/><ellipse cx="195" cy="205" rx="286" ry="259" fill="#5fbf2a"/><ellipse cx="195" cy="205" rx="273" ry="247" fill="#0d4220"/><ellipse cx="195" cy="205" rx="259" ry="234" fill="#1a4f6a"/><ellipse cx="195" cy="205" rx="245" ry="222" fill="#06221a"/><ellipse cx="195" cy="205" rx="232" ry="209" fill="#a8781e"/><ellipse cx="195" cy="205" rx="218" ry="197" fill="#0b2c44"/><ellipse cx="195" cy="205" rx="204" ry="185" fill="#2f8f1f"/><ellipse cx="195" cy="205" rx="191" ry="172" fill="#145c1c"/><ellipse cx="195" cy="205" rx="177" ry="160" fill="#0a3a2e"/><ellipse cx="195" cy="205" rx="163" ry="148" fill="#04161c"/><ellipse cx="195" cy="205" rx="150" ry="135" fill="#c99a34"/><ellipse cx="195" cy="205" rx="136" ry="123" fill="#082a3a"/><ellipse cx="195" cy="205" rx="122" ry="111" fill="#5fbf2a"/><ellipse cx="195" cy="205" rx="109" ry="98" fill="#0d4220"/><ellipse cx="195" cy="205" rx="95" ry="86" fill="#1a4f6a"/><ellipse cx="195" cy="205" rx="81" ry="74" fill="#06221a"/><ellipse cx="195" cy="205" rx="68" ry="61" fill="#bff79e"/><ellipse cx="195" cy="205" rx="54" ry="49" fill="#e0b450"/><ellipse cx="195" cy="205" rx="40" ry="37" fill="#ffe9a8"/><ellipse cx="195" cy="205" rx="27" ry="24" fill="#bff79e"/><ellipse cx="195" cy="205" rx="13" ry="12" fill="#e0b450"/></g>
+        <g filter="url(#swirl2)" fill="none" stroke-linecap="round" opacity="0.5">
+          <path d="M -20,120 C 60,40 140,180 220,90 S 360,40 420,110" stroke="#d8ffc4" stroke-width="3"/>
+          <path d="M -20,300 C 70,240 120,360 210,300 S 350,250 420,320" stroke="#ffd76a" stroke-width="3"/>
+          <path d="M 20,30 C 90,90 60,200 150,250" stroke="#7fd3ea" stroke-width="2"/>
+          <path d="M 370,40 C 300,120 360,220 260,270" stroke="#7fd3ea" stroke-width="2"/>
         </g>
-        <text x="195" y="330" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="400" fill="url(#one)">1</text>
-        <circle cx="195" cy="190" r="170" fill="url(#glow)"/>
-        <circle cx="195" cy="190" r="132" fill="none" stroke="#fff7d6" stroke-width="1.5" stroke-dasharray="2 9"/>
-        <!-- the Ring itself (original Waypath+ drawing): a gold band standing on edge, an emerald on top -->
-        <ellipse cx="195" cy="320" rx="80" ry="11" fill="#000" opacity="0.45"/>
-        <g transform="translate(195 214)">
-          <ellipse rx="72" ry="94" fill="none" stroke="#3a2608" stroke-width="26" opacity="0.55"/>
-          <ellipse rx="72" ry="94" fill="none" stroke="url(#gold)" stroke-width="22"/>
-          <ellipse rx="61" ry="83" fill="none" stroke="url(#goldIn)" stroke-width="3" opacity="0.9"/>
-          <ellipse rx="83" ry="105" fill="none" stroke="#fff3c9" stroke-width="1.4" opacity="0.8"/>
-          <path fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.75" d="M -70,-24 A 72,94 0 0 1 -34,-83"/>
-          <g fill="#5cff3b" stroke="#eaffd9" stroke-width="0.8"><circle cx="-72" cy="0" r="3.4"/><circle cx="-51" cy="66" r="3.4"/><circle cx="0" cy="94" r="3.4"/><circle cx="51" cy="66" r="3.4"/><circle cx="72" cy="0" r="3.4"/></g>
-          <circle cx="0" cy="-112" r="66" fill="url(#gemGlow)"/>
-          <path fill="url(#gold)" stroke="#fff3c9" stroke-width="1.2" d="M -30,-100 L 30,-100 L 22,-86 L -22,-86 Z"/>
-          <g transform="translate(0 -122)">
-            <polygon points="-30,0 -18,-20 18,-20 30,0 18,20 -18,20" fill="url(#gem)" stroke="#eaffd9" stroke-width="1.5"/>
-            <polygon points="-18,-20 0,-6 18,-20" fill="#ffffff" opacity="0.35"/>
-            <polygon points="-30,0 -10,0 -18,-20" fill="#ffffff" opacity="0.18"/>
-            <polygon points="30,0 10,0 18,20" fill="#062b09" opacity="0.4"/>
-            <polygon points="-10,0 10,0 0,-6" fill="#ffffff" opacity="0.25"/>
-            <polygon points="-10,0 10,0 18,20 -18,20" fill="#0b3d10" opacity="0.25"/>
-            <path d="M -16,-13 L -7,-17" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
-            <g fill="url(#gold)" stroke="#6e4a10" stroke-width="0.8"><polygon points="-33,-3 -26,-9 -24,3"/><polygon points="33,-3 26,-9 24,3"/><polygon points="-4,22 4,22 0,27"/></g>
+        <rect width="390" height="550" fill="url(#vig)"/>
+        <text x="195" y="330" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="400" fill="url(#one)" opacity="0.6">1</text>
+        <circle cx="195" cy="200" r="150" fill="url(#glow)" opacity="0.8"/>
+        <!-- the Ring itself (original Waypath+ drawing): a gold band tilted towards you, glowing script on the band, a cut
+             emerald on top shining a beam upward, and two orbits of light around it -->
+        <polygon points="183,0 207,0 214,112 176,112" fill="url(#beam)" opacity="0.55"/>
+        <ellipse cx="195" cy="336" rx="96" ry="11" fill="#000" opacity="0.5"/>
+        <ellipse cx="195" cy="336" rx="60" ry="5" fill="#5cff3b" opacity="0.35" filter="url(#soft)"/>
+        <g transform="translate(195 208) rotate(-14) scale(1.12)">
+          <!-- orbits behind -->
+          <ellipse rx="128" ry="34" transform="rotate(28)" fill="none" stroke="#8dff6a" stroke-width="1.6" opacity="0.45"/>
+          <ellipse rx="128" ry="34" transform="rotate(-38)" fill="none" stroke="#fff7d6" stroke-width="1.2" opacity="0.35"/>
+          <!-- the band: the inside face (seen through the opening), then the outer face -->
+          <ellipse cx="7" cy="2" rx="62" ry="86" fill="none" stroke="url(#goldBack)" stroke-width="10"/>
+          <ellipse rx="74" ry="96" fill="none" stroke="#2a1a04" stroke-width="27" opacity="0.6"/>
+          <ellipse rx="74" ry="96" fill="none" stroke="url(#gold)" stroke-width="23"/>
+          <ellipse rx="84" ry="106" fill="none" stroke="#fff3c9" stroke-width="1.2" opacity="0.9"/>
+          <ellipse rx="64" ry="86" fill="none" stroke="#6e4a10" stroke-width="1.2" opacity="0.9"/>
+          <!-- engraved waypoint stars round the band, softly lit green -->
+          <g fill="#5cff3b" opacity="0.7" filter="url(#soft)"><use href="#star4" x="67.0" y="13.6" width="11" height="11"/><use href="#star4" x="53.5" y="52.5" width="11" height="11"/><use href="#star4" x="28.2" y="80.0" width="11" height="11"/><use href="#star4" x="-3.7" y="90.5" width="11" height="11"/><use href="#star4" x="-36.0" y="82.0" width="11" height="11"/><use href="#star4" x="-62.2" y="56.2" width="11" height="11"/><use href="#star4" x="-77.2" y="18.1" width="11" height="11"/><use href="#star4" x="-78.0" y="-24.6" width="11" height="11"/><use href="#star4" x="-64.5" y="-63.5" width="11" height="11"/><use href="#star4" x="51.2" y="-67.2" width="11" height="11"/><use href="#star4" x="66.2" y="-29.1" width="11" height="11"/></g>
+          <g fill="#f4ffe9" stroke="#5a3a08" stroke-width="0.6"><use href="#star4" x="67.0" y="13.6" width="11" height="11"/><use href="#star4" x="53.5" y="52.5" width="11" height="11"/><use href="#star4" x="28.2" y="80.0" width="11" height="11"/><use href="#star4" x="-3.7" y="90.5" width="11" height="11"/><use href="#star4" x="-36.0" y="82.0" width="11" height="11"/><use href="#star4" x="-62.2" y="56.2" width="11" height="11"/><use href="#star4" x="-77.2" y="18.1" width="11" height="11"/><use href="#star4" x="-78.0" y="-24.6" width="11" height="11"/><use href="#star4" x="-64.5" y="-63.5" width="11" height="11"/><use href="#star4" x="51.2" y="-67.2" width="11" height="11"/><use href="#star4" x="66.2" y="-29.1" width="11" height="11"/></g>
+          <ellipse rx="74" ry="96" fill="none" stroke="#6e4a10" stroke-width="0.8" stroke-dasharray="1 5" opacity="0.7"/>
+          <path fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.8" d="M -72,-26 A 74,96 0 0 1 -36,-84"/>
+          <path fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.5" d="M 40,80 A 74,96 0 0 1 68,38"/>
+          <!-- orbits in front (their near halves) -->
+          <path d="M -112.9,-60.1 A 128,34 28 0 0 112.9,60.1" transform="rotate(0)" fill="none" stroke="#8dff6a" stroke-width="2.2" opacity="0.8"/>
+          <circle cx="104" cy="70" r="3.2" fill="#eaffd9"/><circle cx="-84" cy="-28" r="2.4" fill="#eaffd9" opacity="0.8"/>
+          <!-- the setting and the emerald -->
+          <circle cx="0" cy="-124" r="70" fill="url(#gemGlow)"/>
+          <path fill="url(#gold)" stroke="#fff3c9" stroke-width="1.2" d="M -32,-100 L 32,-100 L 23,-85 L -23,-85 Z"/>
+          <g transform="translate(0 -126)">
+            <polygon points="-36,0 -22,-24 22,-24 36,0 22,24 -22,24" fill="#5cff3b" opacity="0.55" filter="url(#softer)"/>
+            <polygon points="-34,0 -21,-23 21,-23 34,0 21,23 -21,23" fill="url(#gem)" stroke="#eaffd9" stroke-width="1.6"/>
+            <polygon points="-21,-23 0,-8 21,-23" fill="#ffffff" opacity="0.38"/>
+            <polygon points="-34,0 -12,0 -21,-23" fill="#ffffff" opacity="0.2"/>
+            <polygon points="34,0 12,0 21,23" fill="#062b09" opacity="0.45"/>
+            <polygon points="-12,0 12,0 0,-8" fill="#ffffff" opacity="0.3"/>
+            <polygon points="-12,0 12,0 21,23 -21,23" fill="#0b3d10" opacity="0.28"/>
+            <polygon points="-12,0 0,-8 12,0 0,9" fill="#d8ffc4" opacity="0.5"/>
+            <path d="M -19,-15 L -9,-19" stroke="#fff" stroke-width="2.8" stroke-linecap="round" opacity="0.95"/>
+            <g fill="url(#gold)" stroke="#6e4a10" stroke-width="0.8"><polygon points="-38,-3 -30,-10 -27,4"/><polygon points="38,-3 30,-10 27,4"/><polygon points="-5,25 5,25 0,31"/><polygon points="-5,-25 5,-25 0,-31"/></g>
+            <use href="#spark" x="-26" y="-34" width="26" height="26" opacity="0.95"/>
           </g>
         </g>
+        <!-- glints -->
+        <use href="#spark" x="96" y="230" width="18" height="18" opacity="0.85"/>
+        <use href="#spark" x="262" y="128" width="14" height="14" opacity="0.7"/>
+        <use href="#spark" x="268" y="268" width="10" height="10" opacity="0.6"/>
+        <g fill="#b9ffa6"><circle cx="72" cy="150" r="1.8" opacity="0.8"/><circle cx="318" cy="200" r="2.2" opacity="0.8"/><circle cx="292" cy="96" r="1.4"/><circle cx="104" cy="300" r="1.6" opacity="0.7"/><circle cx="160" cy="70" r="1.2"/><circle cx="240" cy="330" r="1.4" opacity="0.7"/></g>
         <g fill="#fff8dc"><circle cx="40" cy="52" r="1.6"/><circle cx="346" cy="60" r="1.8"/><circle cx="352" cy="300" r="1.2"/><circle cx="42" cy="296" r="1.3"/><circle cx="120" cy="34" r="1"/><circle cx="270" cy="30" r="1.2"/></g>
       </svg>

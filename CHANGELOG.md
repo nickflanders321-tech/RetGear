@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **The 1 Ring is full art.** Its card used to show the game's small ring icon in a framed square. Now a gold ring with an emerald fills the card, in a new Waypath+ drawing, with the five +1s beneath it.
+- **The 1 Ring is full art.** Its card used to show the game's small ring icon in a framed square. Now a big gold ring fills the card, in a new Waypath+ drawing: tilted towards you over a swirling painted backdrop of greens and gold, with engraved waypoint stars round the band, a cut emerald shining a beam upward, orbits of light, and the five +1s beneath it.
 
 ## v1.43.3
 
