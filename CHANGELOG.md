@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.43.2
 
 - **No more hitch when opening Waypath+.** The gear lists compared every piece of gear from your last Auction House scan, often thousands, with what you wear. They redid that every time the window or the Character panel refreshed, and the first look at each item made the game build its tooltip.
   - Now only the Auction House pieces that could be an upgrade are checked: wearable, for your level, and the 12 best per slot.
