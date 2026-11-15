@@ -6,6 +6,7 @@ name: Watch
 #   * new game build  -> add its interface number to the .toc files, release, and open a
 #                        "needs-claude" issue so the compatibility check gets done
 #   * new bug report  -> label it "needs-claude"
+#   * wow-professions.com changed a WoW Forever profession guide -> a "needs-claude" issue with the diff
 # Claude's scheduled task only wakes up for issues labeled "needs-claude".
 on:
   schedule:
@@ -78,6 +79,20 @@ jobs:
           new['questiedb_failed_tree'] = '${{ steps.check.outputs.new_tree }}'
           json.dump(new, open(p + '.new', 'w'), indent=2)
           PY
+
+      - name: "wow-professions.com updated a profession guide: an issue for Claude"
+        if: steps.check.outputs.guides_changed != ''
+        run: |
+          gh api repos/${{ github.repository }}/labels -f name=needs-claude -f color=d4b46a >/dev/null 2>&1 || true
+          for g in ${{ steps.check.outputs.guides_changed }}; do
+            title="wow-professions.com updated its WoW Forever $g guide"
+            diff=$(git diff -U1 -- "tools/sources/profguides/$g.txt" | tail -n +5 | head -120)
+            body=$(printf 'The hourly watcher saw the route on https://www.wow-professions.com/forever/%s-leveling-guide change. What changed (lines with skill ranges and craft counts, from tools/sources/profguides/%s.txt):\n```diff\n%s\n```\n\nRead the guide, update the plan in Professions/ to match (only steps that pass `python3 tools/profs/check.py <wago> .` against the game'"'"'s tables; see tools/profs/README.md), regenerate Professions/Generated.lua, release, and close this issue.' "$g" "$g" "$diff")
+            num=$(gh api "repos/${{ github.repository }}/issues?state=open&labels=needs-claude&per_page=100" --jq ".[] | select(.title == \"$title\") | .number" | head -1)
+            if [ -n "$num" ]; then gh api "repos/${{ github.repository }}/issues/$num/comments" -f body="$body" >/dev/null
+            else gh api repos/${{ github.repository }}/issues -f title="$title" -f body="$body" -f "labels[]=needs-claude" >/dev/null; fi
+            echo "reported: $title"
+          done
 
       - name: Players' quest reports (/wp share issues)
         id: community

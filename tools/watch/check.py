@@ -101,6 +101,46 @@ if wago and wago != state.get('wago_export'):
     state['wago_export'] = wago
     out['data_changed'] = 'true'
 
+# --- 2c. wow-professions.com's WoW Forever profession guides --------------------------------------------------
+# Our profession plans follow these guides. Each guide's route (its lines with a skill range or a craft count) is
+# kept in tools/sources/profguides/<guide>.txt; when it changes, the workflow opens a "needs-claude" issue with the
+# diff so the plan gets updated (and checked against the game's tables by tools/profs/check.py). The first time a
+# guide is seen, or when a page can't be read, nothing is reported.
+PG = 'https://www.wow-professions.com/forever/'
+GUIDES = ['alchemy', 'blacksmithing', 'enchanting', 'engineering', 'leatherworking', 'tailoring', 'cooking', 'first-aid',
+          'fishing', 'mining', 'herbalism', 'skinning']
+PG_DIR = os.path.join(ROOT, 'tools/sources/profguides')
+ROUTE_LINE = re.compile(r'\b\d{1,3}\s*(?:-|\u2013|\u2014|to)\s*\d{1,3}\b|\b\d+\s*x\s+[A-Z]|\bx\s*\d+\b|\(\d+\)')
+def page_text(html):
+    import html as _h
+    html = re.sub(r'(?is)<(script|style|noscript|svg|nav|footer|header|form|aside)\b.*?</\1>', ' ', html)
+    html = re.sub(r'(?i)<br\s*/?>|</(p|div|li|tr|h\d|td|th|table|ul|ol)>', '\n', html)
+    txt = _h.unescape(re.sub(r'<[^>]+>', ' ', html))
+    lines = [re.sub(r'\s+', ' ', l).strip() for l in txt.split('\n')]
+    return [l for l in lines if 3 <= len(l) <= 400 and ROUTE_LINE.search(l) and not re.search(r'(?i)cookie|copyright|\u00a9|comment|reply|ago\b', l)]
+changed_guides = []
+os.makedirs(PG_DIR, exist_ok=True)
+pg_state = state.get('profguides') or {}
+for g in GUIDES:
+    path = os.path.join(PG_DIR, g + '.txt')
+    try:
+        lines = page_text(fetch(PG + g + '-leveling-guide', timeout=30))
+    except Exception as e:
+        print('note: %s guide: %s' % (g, e), file=sys.stderr)
+        continue
+    if len(lines) < 5:
+        print('note: %s guide: no route found on the page' % g, file=sys.stderr)
+        continue
+    import hashlib
+    h = hashlib.sha1('\n'.join(lines).encode('utf-8')).hexdigest()
+    if pg_state.get(g) and pg_state[g] != h: changed_guides.append(g)
+    if pg_state.get(g) != h:
+        open(path, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
+        pg_state[g] = h
+state['profguides'] = pg_state
+out['guides_changed'] = ' '.join(changed_guides)
+if changed_guides: print('wow-professions.com guides changed: %s' % ', '.join(changed_guides), file=sys.stderr)
+
 # --- 3. new bug reports ------------------------------------------------------
 new = []
 try:

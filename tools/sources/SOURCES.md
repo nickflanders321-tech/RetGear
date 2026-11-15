@@ -78,7 +78,7 @@ Waypath+ gives no talent advice on purpose: talent builds are not collected.
 
 | Source | Feeds | Last checked |
 |---|---|---|
-| [wow-professions.com WoW Forever guides](https://www.wow-professions.com/forever) | 1-300 leveling plans, trainers, materials | 2026-11-02 |
+| [wow-professions.com WoW Forever guides](https://www.wow-professions.com/forever) | 1-300 leveling plans, trainers, materials. Watched hourly: tools/watch/check.py keeps each guide's route in tools/sources/profguides/ and opens a needs-claude issue with the diff when it changes. Blacksmithing, Leatherworking and Tailoring updated to their routes 2026-11-15 | 2026-11-15 |
 | [wowtbc.gg WoW Forever professions](https://wowtbc.gg/warcraftforever/professions) | Cross-check for plans, Forever-only recipes, camping | 2026-11-02 |
 | Warcraft Wiki ([warcraft.wiki.gg](https://warcraft.wiki.gg/)) | Recipe names, trainer names, fishing ranks | 2026-11-02 |
 | [wowforever.be fishing](https://wowforever.be/tradeskills/forever/fishing/), [wofwforever.com fishing](https://wofwforever.com/en/guides/wow-forever-fishing-guide/), [wowforeverguides.com fishing](https://wowforeverguides.com/professions/fishing) | Fishing zone skill table (Wowhead's WoW Forever beta table), poles, lures, Extravaganza items, camp objects | 2026-11-02 |
