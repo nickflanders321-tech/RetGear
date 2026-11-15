@@ -31,7 +31,7 @@ F.plan = {
   { from = 125, to = 125, train = "Expert: buy Expert First Aid - Under Wraps (Balai Lok'Wein, Dustwallow Marsh)" },
   { from = 150, to = 180, craft = "Silk Bandage", n = 42, mats = "1 Silk Cloth each" },
   { from = 180, to = 210, craft = "Heavy Silk Bandage", n = 46, mats = "2 Silk Cloth each" },
-  { from = 210, to = 225, craft = "Mageweave Bandage", n = 17, mats = "1 Mageweave Cloth each" },
+  { from = 210, to = 225, craft = "Mageweave Bandage", n = 19, mats = "1 Mageweave Cloth each" },
   { from = 225, to = 225, train = "Artisan: the Triage quest at Hammerfall (level 35)" },
   { from = 225, to = 240, craft = "Mageweave Bandage", n = 29, mats = "1 Mageweave Cloth each" },
   { from = 240, to = 260, craft = "Heavy Mageweave Bandage", n = 30, mats = "2 Mageweave Cloth each" },

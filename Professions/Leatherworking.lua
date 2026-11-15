@@ -21,7 +21,7 @@ L.trainA = {
 }
 L.supplies = "Salt, threads and dyes: the Leatherworking Supply vendor by each trainer (Brill: Abigail Shiel)."
 L.plan = {
-  { from = 1,   to = 30,  craft = "Light Leather", n = 33, mats = "3 Ruined Leather Scraps each (or Light Armor Kit from bought Light Leather)" },
+  { from = 1,   to = 30,  craft = "Light Leather", n = 35, mats = "3 Ruined Leather Scraps each (or Light Armor Kit from bought Light Leather)" },
   { from = 30,  to = 55,  craft = "Cured Light Hide", n = 27, mats = "1 Light Hide, 1 Salt each. Keep 24 for 100." },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 55,  to = 75,  craft = "Embossed Leather Gloves", n = 21, mats = "3 Light Leather, 2 Coarse Thread each" },
@@ -32,7 +32,8 @@ L.plan = {
   { from = 115, to = 125, craft = "Dark Leather Belt", n = 10, mats = "1 Fine Leather Belt, 1 Cured Medium Hide, 2 Fine Thread, 1 Gray Dye each" },
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
   { from = 125, to = 130, craft = "Heavy Leather", n = 7, mats = "5 Medium Leather each" },
-  { from = 130, to = 155, craft = "Hillman's Leather Gloves", n = 30, mats = "14 Medium Leather, 4 Fine Thread each" },
+  { from = 130, to = 143, craft = "Cured Heavy Hide", n = 30, mats = "1 Heavy Hide, 3 Salt each. Keep them for the shoulders and gloves." },
+  { from = 143, to = 155, craft = "Hillman's Leather Gloves", n = 17, mats = "14 Medium Leather, 4 Fine Thread each" },
   { from = 155, to = 170, craft = "Barbaric Shoulders", n = 15, mats = "8 Heavy Leather, 1 Cured Heavy Hide, 2 Fine Thread each" },
   { from = 170, to = 185, craft = "Guardian Gloves", n = 15, mats = "4 Heavy Leather, 1 Cured Heavy Hide, 1 Silken Thread each" },
   { from = 185, to = 195, craft = "Barbaric Harness", n = 16, mats = "14 Heavy Leather, 2 Fine Thread, 1 Iron Buckle each" },

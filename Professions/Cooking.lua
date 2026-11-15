@@ -27,13 +27,13 @@ K.plan = {
   { from = 1,   to = 50,  craft = "Brilliant Smallfish, Charred Wolf Meat or Roasted Boar Meat", n = 55, mats = "1 raw fish or meat each (use the raw fish and meat you loot while questing)" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50)" },
   { from = 50,  to = 100, craft = "Longjaw Mud Snapper, Rainbow Fin Albacore, Coyote Steak or Strider Stew", n = 55, mats = "1 raw fish or meat each (Strider Stew: plus 1 Shiny Red Apple)" },
-  { from = 100, to = 130, craft = "Bristle Whisker Catfish, Crab Cake or Dry Pork Ribs", n = 35, mats = "1 raw fish, or 1 meat and 1 Mild Spices each" },
+  { from = 100, to = 130, craft = "Bristle Whisker Catfish or Cooked Crab Claw", n = 35, mats = "1 raw fish each (buy about 55 Raw Bristle Whisker Catfish: 25 more are for 130-150), or 1 Crawler Claw and 1 Mild Spices each" },
   { from = 125, to = 125, train = "Expert: buy the Expert Cookbook from Wulan (Shadowprey Village, Desolace)" },
-  { from = 130, to = 175, craft = "Hot Lion Chops or Curiously Tasty Omelet", n = 50, mats = "1 Lion Meat or Raptor Egg, 1 Hot Spices each (recipes: Zargh in The Barrens, Keena in Arathi)" },
-  { from = 175, to = 225, craft = "Mithril Headed Trout, Roast Raptor or Soothing Turtle Bisque", n = 50, mats = "1 raw fish or meat (plus spices) each" },
-  { from = 225, to = 225, train = "Artisan: Clamlette Surprise for Dirge Quikcleave in Gadgetzan" },
-  { from = 225, to = 275, craft = "Spotted Yellowtail, Filet of Redgill or Tender Wolf Steak", n = 65, mats = "1 raw fish or meat each (recipes: Gikkix, Steamwheedle Port)" },
-  { from = 275, to = 300, craft = "Poached Sunscale Salmon or Nightfin Soup", n = 35, mats = "1 raw fish each (recipes: Gikkix, Tanaris)" },
+  { from = 130, to = 150, craft = "Bristle Whisker Catfish, Curiously Tasty Omelet, Goblin Deviled Clams or Hot Lion Chops", n = 25, mats = "1 raw fish, or 1 Raptor Egg, Tangy Clam Meat or Lion Meat and 1 Hot Spices each (recipes: Zargh in The Barrens, Keena in Arathi)" },
+  { from = 150, to = 175, craft = "Goblin Deviled Clams, Curiously Tasty Omelet or Hot Lion Chops", n = 30, mats = "1 Tangy Clam Meat, Raptor Egg or Lion Meat and 1 Hot Spices each" },
+  { from = 175, to = 225, craft = "Roast Raptor, Mithril Headed Trout or Soothing Turtle Bisque", n = 55, mats = "1 Raptor Flesh and 1 Hot Spices, 1 Raw Mithril Head Trout, or 1 Turtle Meat and 1 Soothing Spices each" },
+  { from = 225, to = 225, train = "Artisan: Clamlette Surprise for Dirge Quikcleave in Gadgetzan (bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss so you only go once)" },
+  { from = 225, to = 300, craft = "Spotted Yellowtail, Filet of Redgill or Poached Sunscale Salmon", n = 140, mats = "1 raw fish each (about 140 Spotted Yellowtail or Filet of Redgill, or 35 Poached Sunscale Salmon; recipes: Gikkix, Tanaris)" },
 }
 K.mats = {}
 RG.RegisterProfession("Cooking", K)

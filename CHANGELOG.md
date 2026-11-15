@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Profession guides now match wow-professions.com step by step.** A line-by-line comparison with their WoW Forever guides found smaller differences, now fixed:
+  - Alchemy starts with Elixir of Minor Force.
+  - Engineering 135-150 makes Heavy Blasting Powder, then Whirring Bronze Gizmos.
+  - Leatherworking makes Cured Heavy Hides at 130-143.
+  - Tailoring makes Gloves of Meditation at 120-140, with more silk and mageweave bolts.
+  - Cooking follows their recipe choices at 100-225, and 225-300 is one step.
+  - First Aid 210-225 asks for 19 Mageweave Bandages.
+  - Several craft counts now match theirs.
+
 ## v1.43.0
 
 - **Profession guides checked against the game itself.** Waypath+ now compares every step of every profession guide with WoW Forever's own recipe tables, and the hourly data update repeats the check. If a game patch moves a recipe's skill range, the update is held back and flagged for a fix instead of going out wrong.

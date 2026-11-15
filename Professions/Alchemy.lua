@@ -22,7 +22,7 @@ A.trainA = {
 }
 A.supplies = "Empty, Leaded and Crystal Vials: Alchemy and Trade Supply vendors (not in the shopping counts)."
 A.plan = {
-  { from = 1,   to = 10,  craft = "Minor Arcane Elixir", n = 9, mats = "1 Peacebloom, 1 Empty Vial each (or Elixir of Minor Force: 1 Silverleaf)" },
+  { from = 1,   to = 10,  craft = "Elixir of Minor Force", n = 9, mats = "1 Silverleaf, 1 Empty Vial each (or Minor Arcane Elixir: 1 Peacebloom, 1 Empty Vial)" },
   { from = 10,  to = 55,  craft = "Elixir of Minor Defense", n = 45, mats = "1 Silverleaf, 1 Peacebloom, 1 Empty Vial each" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 55,  to = 65,  craft = "Minor Mana Potion", n = 10, mats = "1 Mageroyal, 1 Peacebloom, 1 Empty Vial each" },

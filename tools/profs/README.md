@@ -30,7 +30,12 @@ client tables) every recipe takes Forever's reagents, item made and yield, recip
 requirement, and each recipe gets `c = { yellow, grey }`, the skill where it turns yellow and grey. In game the
 Professions tab uses those colours until your own profession window shows the real ones.
 
-## Keeping the plans right: `check.py`
+## Keeping the plans right: `compare.py` and `check.py`
+
+`python3 tools/profs/compare.py .` lists every step where a plan differs from wow-professions.com's WoW Forever
+guide (the routes the hourly watcher saves in tools/sources/profguides/). Run it after the watcher reports a
+changed guide, update the plan, then run `check.py`.
+
 
 ```sh
 python3 tools/profs/check.py /tmp/wago .            # report; exits 1 on an error
