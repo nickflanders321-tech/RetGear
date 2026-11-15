@@ -174,24 +174,37 @@ end
 
 -- Called by the arrow every update. Returns nil to keep pointing straight, or
 -- dx, dy (world offset to the point to head for) and a hint.
+-- Two ways to be stuck: far away and not getting closer (a mountain or wall in the way), or close on the map and
+-- going round in circles (the target is up on a cliff or tower, or down in a cave: add-ons can't see height).
+local UPDOWN = "Above or below you? Look for a ramp, stairs or a cave mouth nearby"
 local st = { key = nil, best = 1e9, since = 0, stuck = false, path = nil, idx = 1, moved = 0 }
 function RG.PathTick(c, px, py, tx, ty, d, speed, dt, targetKey)
-  if not (RG.db and RG.db.trail ~= false) then return nil end
-  if st.key ~= targetKey then st = { key = targetKey, best = d, since = 0, stuck = false, moved = 0 } end
-  if speed and speed > 3 then
+  if st.key ~= targetKey then st = { key = targetKey, best = d, since = 0, stuck = false, moved = 0, near = 0 } end
+  local moving = speed and speed > 3 and not (RG.IsSecret and RG.IsSecret(speed))
+  if moving then
     st.since = st.since + dt
-    if d < st.best - 8 then st.best = d; st.since = 0; if st.stuck and d < (st.stuckAt or 0) - 60 then st.stuck = false; st.path = nil end end
+    if d < st.best - 5 then
+      st.best = d; st.since = 0; st.near = 0
+      if st.stuck and d < (st.stuckAt or 0) - (st.updown and 8 or 60) then st.stuck, st.path, st.updown = false, nil, nil end
+    end
+    -- close on the map, not getting closer, but walking a lot: it's above or below
+    if d <= 45 then st.near = st.near + speed * dt end
   end
-  if not st.stuck and st.since > 7 and d > 40 then
+  if not st.stuck and moving and st.since > 3.5 and d > 40 then
     st.stuck, st.stuckAt = true, d
-    st.path = RG.TrailRoute(c, px, py, tx, ty)
+    st.path = RG.db and RG.db.trail ~= false and RG.TrailRoute(c, px, py, tx, ty) or nil
+    st.idx = 1
+  elseif not st.stuck and d <= 45 and st.near > 45 and st.since > 3 then
+    st.stuck, st.stuckAt, st.updown = true, d, true
+    st.path = RG.db and RG.db.trail ~= false and RG.TrailRoute(c, px, py, tx, ty) or nil
     st.idx = 1
   end
   if not st.stuck then return nil end
+  if st.updown and not st.path then return nil, nil, UPDOWN, true end
   if st.path then
     while st.path[st.idx] and dist(px, py, st.path[st.idx][1], st.path[st.idx][2]) < 18 do st.idx = st.idx + 1 end
     local p = st.path[st.idx]
-    if p then return p[1] - px, p[2] - py, "Not getting closer: following the way you walked before" end
+    if p then return p[1] - px, p[2] - py, st.updown and "Above or below you: following the way you walked before" or "Not getting closer: following the way you walked before" end
     st.stuck, st.path = false, nil; st.since = 0
     return nil
   end

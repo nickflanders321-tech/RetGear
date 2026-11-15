@@ -808,11 +808,10 @@ local function buildArrow()
   local shown, lastKey, arrivedAt = 0, nil, nil
   local doneKey   -- the pin you already arrived at: standing there again is not a new arrival
   local acc = 0
-  -- The game knows the next leg of a quest's way (a door, a cave mouth, a stair). When we are blocked and
-  -- have no learned path, lead to that point first.
+  -- The game knows the next leg of a quest's way (a door, a cave mouth, a stair). When it gives one that isn't the
+  -- pin itself, the arrow leads there first (straight away: it's the way in), then on to the pin.
   local legQuest = {}
-  local function gameLeg(wp, key, cont, px, py, d)
-    if not (C_QuestLog and C_QuestLog.GetNextWaypoint) then return end
+  local function questOf(wp, key)
     local qid = legQuest[key]
     if qid == nil then
       qid = false
@@ -821,14 +820,34 @@ local function buildArrow()
       end
       legQuest[key] = qid
     end
+    return qid or nil
+  end
+  local function gameLeg(wp, key, cont, px, py, d, tx, ty)
+    if not (C_QuestLog and C_QuestLog.GetNextWaypoint) then return end
+    local qid = questOf(wp, key)
     if not qid then return end
     local ok, m, x, y = pcall(C_QuestLog.GetNextWaypoint, qid)
-    if not (ok and m and x and y) then return end
+    if not (ok and m and x and y) or (RG.IsSecret and (RG.IsSecret(x) or RG.IsSecret(m))) then return end
     local c, lx, ly = worldPos(m, CreateVector2D and CreateVector2D(x, y) or { x = x, y = y })
     if not (c and c == cont) then return end
     local dl = math.sqrt((lx - px) ^ 2 + (ly - py) ^ 2)
-    if dl < 25 or dl > d + 150 then return end
-    return lx - px, ly - py, "Blocked: the game's own next leg of this quest"
+    if dl < 12 or dl > d + 150 then return end
+    -- (the leg is the pin itself, or you're already past it: no detour)
+    if tx and math.sqrt((lx - tx) ^ 2 + (ly - ty) ^ 2) < 20 then return end
+    -- on the way to the pin (nearer than it, roughly the same direction): take it straight away. Otherwise it may be
+    -- leading to another part of the quest, so only when you're blocked.
+    local onWay = false
+    if tx and d > 0 and dl < d then
+      local cos = ((lx - px) * (tx - px) + (ly - py) * (ty - py)) / (dl * d)
+      onWay = cos > 0.35
+    end
+    return lx - px, ly - py, "The way in: the game's next leg of this quest", onWay
+  end
+  -- a quest's note about where up or down it is ("at the top of the tower, up the ramp"; QuestNotes.lua)
+  local function whereNote(wp, key)
+    local qid = questOf(wp, key)
+    local n = qid and RG.QNOTE and RG.QNOTE[qid]
+    return n and n.w
   end
   local FR, COLS3, CELL3, SHEET3 = 64, 8, 256, 2048
   local function sync3d(self)
@@ -951,19 +970,27 @@ local function buildArrow()
       if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.READY_CHECK or 8960) end
       return
     end
-    -- learned paths: when you are not getting closer, lead the way you went before
+    -- the game's next leg of the quest (a door, a cave mouth, a stair) comes first; then learned paths when you
+    -- are not getting closer, or are going round in circles near a target above or below you
     local pathHint
-    if RG.PathTick then
+    local okg, gx, gy, gh, onWay = pcall(gameLeg, wp, key, c1, px, py, d, tx, ty)
+    if not okg then gx = nil end
+    if gx and onWay then dx, dy = gx, gy; pathHint = gh
+    elseif RG.PathTick then
       local ok, ox, oy, h, stuck = pcall(RG.PathTick, c1, px, py, tx, ty, d, GetUnitSpeed and GetUnitSpeed("player") or 0, step, key)
       if ok then
         if ox then dx, dy = ox, oy end
         pathHint = h
         if stuck and not ox then
-          local okg, gx, gy, gh = pcall(gameLeg, wp, key, c1, px, py, d)
-          if okg and gx then dx, dy = gx, gy; pathHint = gh
+          if gx then dx, dy = gx, gy; pathHint = gh
           elseif not RG.SPFInstalled() then pathHint = (h or "Blocked?") .. "  (Shortest Path Forever plans around this)" end
         end
       end
+    end
+    -- close by: the quest's own note on where up or down it is
+    if d < 150 and (not pathHint or pathHint:find("^Above or below")) then
+      local okw, w = pcall(whereNote, wp, key)
+      if okw and w then pathHint = (pathHint and (pathHint .. ". ") or "") .. w end
     end
     -- smooth turning
     self.wang = math.atan2(dy, dx)

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **The arrow copes better with cliffs, towers and caves.** Add-ons can't see height, so the arrow still points in a straight line, but now:
+  - **It notices when the target is above or below you.** If you're close on the map but walking in circles without getting closer, it says "Above or below you? Look for a ramp, stairs or a cave mouth nearby" and leads you along a way you've walked before, if there is one.
+  - **It reroutes sooner.** It switches to a path you've walked before after about 3 seconds of not getting closer, down from 7. When the game knows the next leg of a quest's way (a door, a cave mouth, a stair) and it's on your way, the arrow leads there first straight away, instead of only once you're stuck.
+  - **It shows quest notes about height.** Near the target, the arrow shows a quest's note on where up or down it is, like "at the top of the other tower farther up the ramp" or "at the back of the cave" (from Polestar's forever-db).
+
 ## v1.42.1
 
 - **Removed the Exorcism alert.** The "Use Exorcism" pop-up on Undead and Demon targets is gone, along with its setting and its spot in Edit Mode. It could show for characters that don't have the spell.
