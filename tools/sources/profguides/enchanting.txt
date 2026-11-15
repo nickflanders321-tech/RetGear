@@ -48,7 +48,7 @@ Journeyman Enchanting (70-150)
 109-110
 1x Runed Silver Rod - 1 Silver Rod, 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem
 110-150
-52x Enchant 2H Weapon - Lesser Intellect - 208 Lesser Magic Essence Formula: Enchant 2H Weapon - Lesser Intellect is sold by these vendors:
+52x Enchant 2H Weapon - Lesser Intellect - 208 Lesser Magic Essence
 110-130: 32x Enchant Cloak - Minor Protection - 64 Strange Dust
 130-150: 20x Enchant Boots - Minor Stamina - 80 Strange Dust
 70-100
@@ -56,11 +56,11 @@ Journeyman Enchanting (70-150)
 100-109
 9x Enchant Cloak - Minor Protection - 18 Strange Dust
 109-110
-1x Runed Silver Rod - 1 Silver Rod, 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem Silver Rod and every other rod in this guide (Golden, Truesilver, Arcanite) is made by Blacksmiths, you can buy them from the Auction House.
+1x Runed Silver Rod - 1 Silver Rod, 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem
 110-130
 32x Enchant Cloak - Minor Protection - 64 Strange Dust
 130-150
-20x Enchant Boots - Minor Stamina - 80 Strange Dust Alternative:
+20x Enchant Boots - Minor Stamina - 80 Strange Dust
 20x Enchant Bracer - Lesser Stamina - 20 Soul Dust.
 Expert Enchanting (150-225)
 150-151

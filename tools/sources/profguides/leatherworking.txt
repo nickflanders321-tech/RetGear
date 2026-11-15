@@ -58,4 +58,5 @@ Artisan Leatherworking (205-300)
 36x Blue Suede Shoes - 288 Rugged Leather, 36 Blue Dye, 36 Rune Thread.
 265-300
 53x Runic Leather Headband - 742 Rugged Leather, 530 Runecloth, 53 Rune Thread
-15x Blue Suede Hat - 240 Rugged Leather, 60 Blue Dye, 15 Rune Thread.
+27x Blue Suede Bracers - 270 Rugged Leather, 27 Blue Dye, 27 Rune Thread.
+20x Blue Suede Hat - 320 Rugged Leather, 80 Blue Dye, 20 Rune Thread.

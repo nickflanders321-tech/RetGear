@@ -18,7 +18,7 @@ Apprentice First Aid (1-75)
 1-40
 50x Linen Bandage - 50 Linen Cloth
 40-75
-40x Heavy Linen Bandage - 80 Linen Cloth The bandage is yellow from 50, so you might need a few extra.
+40x Heavy Linen Bandage - 80 Linen Cloth
 Journeyman First Aid (75-150)
 75-80
 12x Heavy Linen Bandage - 24 Linen Cloth

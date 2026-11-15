@@ -24,7 +24,7 @@ Apprentice Tailoring (1-55)
 28x Linen Belt - 28 Bolt of Linen Cloth, 28 Coarse Thread
 Journeyman Tailoring (55-140)
 55-80
-45x Bolt of Woolen Cloth - 135 Wool Cloth Keep the bolts, you will need them later. In total you will need 153 Bolt of Woolen Cloth (459 Wool Cloth ) until 140, so you can also make all of them now.
+45x Bolt of Woolen Cloth - 135 Wool Cloth
 80-95
 22x Woolen Cape - 22 Bolt of Woolen Cloth, 22 Fine Thread
 95-100
