@@ -201,17 +201,42 @@ local function build()
       end
     end
   end
-  -- 4. the Auction House: listings from the last full scan, cheapest first for each variant
+  -- 4. the Auction House: listings from the last full scan. A full scan holds thousands of pieces, and comparing each
+  -- one with your gear costs a tooltip read, so only the likely ones are kept: wearable, for your level (not more than
+  -- 5 levels ahead, not far below it), and per slot the 12 with the highest item level (the cheaper one on a tie).
   local now = time()
+  local perSlot, asked = {}, 0
   for key, a in pairs(RG.db and RG.db.ahGear or {}) do
     if type(a) == "table" and a.l and now - (a.t or 0) <= AH_FRESH then
       local id = idOf(a.l)
       local plain = id and not (RG.ItemSuffix and RG.ItemSuffix(a.l))
       -- (a plain piece already on the lists: the list entry shows the price; random-enchant ones are their own item)
       if id and not (plain and seen[id]) and wearable(a.l) then
-        local e = liveEntry(a.l, "AH", "Auction House", (a.n and a.n > 1) and (a.n .. " listed") or "1 listed", "ah", { price = a.p, seenAt = a.t })
-        if e and e.lvl <= lvl + 10 then out[#out + 1] = e end
+        local name, _, _, ilvl, minLevel = GetItemInfo(a.l)
+        if not name then
+          -- not loaded yet: ask for a few at a time, not thousands at once
+          -- (not counted as "loading": the list doesn't redraw for them, the next rebuild picks them up)
+          if asked < 60 then asked = asked + 1; RG.RequestItem(id) end
+        else
+          minLevel, ilvl = minLevel or 1, ilvl or 0
+          if minLevel <= lvl + 5 and (minLevel >= lvl - 10 or ilvl >= lvl) then
+            local gs = RG.GuideSlotOfLink(a.l)
+            if gs then
+              local t = perSlot[gs] or {}
+              perSlot[gs] = t
+              t[#t + 1] = { a = a, ilvl = ilvl }
+            end
+          end
+        end
       end
+    end
+  end
+  for _, t in pairs(perSlot) do
+    table.sort(t, function(x, y) if x.ilvl ~= y.ilvl then return x.ilvl > y.ilvl end return (x.a.p or 0) < (y.a.p or 0) end)
+    for k = 1, math.min(12, #t) do
+      local a = t[k].a
+      local e = liveEntry(a.l, "AH", "Auction House", (a.n and a.n > 1) and (a.n .. " listed") or "1 listed", "ah", { price = a.p, seenAt = a.t })
+      if e then out[#out + 1] = e end
     end
   end
   return out

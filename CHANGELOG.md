@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **No more hitch when opening Waypath+.** The gear lists compared every piece of gear from your last Auction House scan, often thousands, with what you wear. They redid that every time the window or the Character panel refreshed, and the first look at each item made the game build its tooltip.
+  - Now only the Auction House pieces that could be an upgrade are checked: wearable, for your level, and the 12 best per slot.
+  - Results are remembered until your gear, level, talents or stat weights change.
+  - Items still loading no longer make the window redraw again and again.
+
 ## v1.43.1
 
 - **Profession guides now match wow-professions.com step by step.** A line-by-line comparison with their WoW Forever guides found smaller differences, now fixed:

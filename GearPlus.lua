@@ -372,6 +372,7 @@ local function applyWeights(w, name)
   for k, v in pairs(w) do RG.db.weights[k] = v end
   RG.db.weightProfileByClass = RG.db.weightProfileByClass or {}
   RG.db.weightProfileByClass[RG.PLAYER_CLASS or "?"] = name
+  if RG.CompareReset then RG.CompareReset() end
   if RG.GearStatusInvalidate then RG.GearStatusInvalidate() end
   bestCache = {}
   if RG.HealInvalidate then pcall(RG.HealInvalidate) end

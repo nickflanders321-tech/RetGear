@@ -583,7 +583,7 @@ do
 end
 
 -- onlySlot: compare against that one slot (the gear lists use it to suggest a different ring or trinket for each slot)
-function RG.Compare(link, onlySlot)
+local function compareRaw(link, onlySlot)
   local loc = RG.EquipLoc(link)
   local slots = loc and RG.EQUIP_SLOTS[loc]
   if not slots then return nil end
@@ -617,6 +617,29 @@ function RG.Compare(link, onlySlot)
     if not best or delta > best.delta then best = { delta = delta, slot = slot, new = newScore, old = oldScore } end
   end
   return best.delta, best.slot, best.new, best.old
+end
+-- Remembered until your gear, level or talents change (or 30 seconds pass): the gear lists, the Character panel,
+-- tooltips and bag arrows ask about the same items over and over, and each answer costs a tooltip read the first time.
+local cmpMemo, cmpT = {}, 0
+function RG.CompareReset() cmpMemo = {} end
+function RG.Compare(link, onlySlot)
+  if type(link) ~= "string" then return compareRaw(link, onlySlot) end
+  local now = GetTime and GetTime() or 0
+  if now - cmpT > 30 then cmpMemo = {}; cmpT = now end
+  local key = onlySlot and (link .. "#" .. onlySlot) or link
+  local m = cmpMemo[key]
+  if m == nil then
+    local d, s, n, o = compareRaw(link, onlySlot)
+    m = d and { d, s, n, o } or false
+    cmpMemo[key] = m
+  end
+  if not m then return nil end
+  return m[1], m[2], m[3], m[4]
+end
+do
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "ACTIVE_TALENT_GROUP_CHANGED", "CHARACTER_POINTS_CHANGED", "PLAYER_TALENT_UPDATE", "SKILL_LINES_CHANGED" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function() cmpMemo = {} end)
 end
 
 function RG.FormatDelta(d)
@@ -1082,7 +1105,7 @@ SlashCmdList.WAYPATH = function(msg)
     local stat, val = rest:match("^(%S+)%s+([%d%.]+)$")
     stat = stat and stat:upper()
     if stat and RG.db.weights[stat] ~= nil then
-      RG.db.weights[stat] = tonumber(val); wipe(cache)
+      RG.db.weights[stat] = tonumber(val); wipe(cache); if RG.CompareReset then RG.CompareReset() end
       RG.Print(RG.STAT_LABELS[stat] .. " weight set to " .. val)
       if RG.RefreshUI then RG.RefreshUI() end
     else
