@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.44.0
 - **Pulling a Mythic is an event now.** When a Mythic is in your pack, its card takes longer to turn, shaking harder and harder as a sound rises under it. Then: a white flash, two shockwaves, the table shakes, a burst of sparks, and the card springs up to the middle while "MYTHIC" drops in letter by letter, coloured rays turn behind it and embers rise, to a new impact chord. **The 1 Ring** gets its own gold-and-blue version, a deeper sound, and then engraves your name round its band one letter at a time, each with a glint and a chime, before "One of one · Opened by you" appears. Click once to skip to the end, again to go on. (All the sounds and effects are new and made by us.)
 
 - **The 1 Ring is full art.** Its card used to show the game's small ring icon in a framed square. Now a big gold ring fills the card, in a new Waypath+ drawing: tilted towards you over a swirling painted backdrop of fiery reds and deep blue, with "Every step counts ✦ Waypath+" engraved round one side of the band and **the name of whoever opened it engraved round the other** (accented letters too; before anyone has opened it, that side reads "The road goes on"), a round-cut sapphire shining a beam upward, blue orbits of light, and the five +1s beneath it.
