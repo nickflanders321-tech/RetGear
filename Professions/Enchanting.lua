@@ -44,7 +44,7 @@ E.plan = {
   { from = 235, to = 250, craft = "Enchant Chest - Superior Stamina", n = 20, mats = "3 Vision Dust each" },
   { from = 250, to = 265, craft = "Lesser Mana Oil", n = 20, mats = "1 Dream Dust, 1 Purple Lotus, 1 Crystal Vial each (formula: Kania, Silithus)" },
   { from = 265, to = 294, craft = "Enchant Shield - Greater Stamina", n = 32, mats = "6 Dream Dust each (formula: an Enchanting supplier in a capital city; Daniel Bartlett in Undercity for the Horde)" },
-  { from = 294, to = 295, craft = "Runed Arcanite Rod", n = 1, mats = "Arcanite Rod, Golden Pearl, 10 Illusion Dust, 4 Greater Eternal Essence, 4 Small and 2 Large Brilliant Shard (Lorelae Wintersong, Moonglade)" },
+  { from = 294, to = 295, craft = "Runed Arcanite Rod", n = 1, mats = "1 Arcanite Rod, 1 Golden Pearl, 10 Illusion Dust, 4 Greater Eternal Essence, 4 Small Brilliant Shard, 2 Large Brilliant Shard (Lorelae Wintersong, Moonglade)" },
   { from = 295, to = 300, craft = "Enchant Cloak - Superior Defense", n = 5, mats = "8 Illusion Dust each (Lorelae Wintersong, Moonglade)" },
 }
 E.mats = { 10940, 10938, 10939, 11083, 11137, 11176, 16204 }

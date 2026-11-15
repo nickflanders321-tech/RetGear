@@ -2,7 +2,8 @@
 """Build Professions/Generated.lua: the data the Professions tab uses to count materials
 and to send you somewhere (double-click a place and the arrow takes you there).
 
-  RG.RECIPES[craft name]  = { s = spell, i = item made, y = how many per craft, r = { {itemID, count}, ... } }
+  RG.RECIPES[craft name]  = { s = spell, i = item made, y = how many per craft, r = { {itemID, count}, ... }, c = { yellow, grey } }
+                            (c: the skill where it turns yellow and grey, from WoW Forever's tables, with --wago)
   RG.RECIPE_SRC[craft name] = { item = recipe item, rank = skill to learn, price = vendor price, lim = limited stock,
                                v = { vendor spots, faction "A"/"H"/"AH" last }, d = { drop spots, chance last }, q = { quest ids } }
                             for every craft in Professions/*.lua plans, plus the recipes for crafted
@@ -31,6 +32,10 @@ Usage:
 import json, math, os, re, sys, glob
 from collections import defaultdict
 
+W_RANK, W_COL = {}, {}
+WAGO = None   # --wago <dir>: WoW Forever's own crafting tables (the data/wago branch): Forever's reagents win over Classic's
+if '--wago' in sys.argv:
+    k = sys.argv.index('--wago'); WAGO = sys.argv[k + 1].rstrip('/') + '/'; del sys.argv[k:k + 2]
 sql_path, gear_json, qdb, npcs_tsv, objs_tsv, addon = sys.argv[1:7]
 fitems_tsv = sys.argv[7] if len(sys.argv) > 7 else None   # Forever item names (tools/profs/items_dump.lua)
 qdb = qdb.rstrip('/') + '/'
@@ -216,6 +221,48 @@ while todo:
             rec = made_by[iid]
             nm = items[iid]["name"] if iid in items else rec["name"]
             if nm not in RECIPES: RECIPES[nm] = rec; todo.append(nm)
+# WoW Forever changed many recipes (an Empty Vial in every early elixir, new reagents, other counts): with the game's
+# own tables, every recipe takes Forever's reagents, item made and yield; guide-text recipes get the real ones too
+if WAGO:
+    import csv as _csv, gzip as _gz
+    def _w(name):
+        p = WAGO + name + '.csv.gz'
+        return _csv.DictReader(_gz.open(p, 'rt', encoding='utf-8') if os.path.exists(p) else open(WAGO + name + '.csv', encoding='utf-8'))
+    PROF_LINES = {171, 164, 333, 202, 165, 197, 185, 129, 186}
+    w_names = {int(r['ID']): r['Name_lang'] for r in _w('SpellName')}
+    w_reag = {}
+    for r in _w('SpellReagents'):
+        rs = [(int(r['Reagent_%d' % k]), int(r['ReagentCount_%d' % k])) for k in range(8) if int(r['Reagent_%d' % k] or 0) > 0 and int(r['ReagentCount_%d' % k] or 0) > 0]
+        if rs: w_reag[int(r['SpellID'])] = rs
+    w_made = {}
+    for r in _w('SpellEffect'):
+        if r['Effect'] == '24' and int(r['EffectItemType'] or 0):
+            pts = r.get('EffectBasePointsF') or r.get('EffectBasePoints') or '1'
+            try: y = max(1, int(round(float(pts))))
+            except ValueError: y = 1
+            w_made.setdefault(int(r['SpellID']), (int(r['EffectItemType']), y))
+    w_by_name = {}
+    W_COL = {}   # spell -> (skill where it turns yellow, skill where it turns grey)
+    # the skill a recipe item needs in WoW Forever (many high-end patterns need 20-45 points less than in Classic)
+    W_RANK = {int(r['ID']): int(r['RequiredSkillRank'] or 0) for r in _w('ItemSparse') if int(r.get('RequiredSkillRank') or 0) > 0}
+    for r in _w('SkillLineAbility'):
+        if int(r['SkillLine']) in PROF_LINES:
+            sp = int(r['Spell']); nm = w_names.get(sp)
+            if int(r['TrivialSkillLineRankHigh'] or 0) > 0: W_COL.setdefault(sp, (int(r['TrivialSkillLineRankLow'] or 0), int(r['TrivialSkillLineRankHigh'])))
+            if nm and sp in w_reag and int(r['TrivialSkillLineRankHigh'] or 0) > 0: w_by_name.setdefault(nm.lower(), sp)
+    changed = 0
+    for nm, rec in list(RECIPES.items()):
+        sp = rec["s"] if rec["s"] in w_reag else w_by_name.get(nm.lower()) or w_by_name.get(("smelt " + nm).lower())
+        if not sp: continue
+        new = {"s": sp, "i": w_made.get(sp, (rec["i"], 1))[0] or rec["i"], "y": w_made.get(sp, (0, rec["y"]))[1] if sp in w_made else rec["y"], "r": w_reag[sp], "name": nm}
+        if sorted(new["r"]) != sorted(rec["r"]) or new["s"] != rec["s"]: changed += 1
+        RECIPES[nm] = new
+    for c in list(missing):
+        sp = w_by_name.get(c.lower())
+        if sp:
+            RECIPES[c] = {"s": sp, "i": w_made.get(sp, (0, 1))[0], "y": w_made.get(sp, (0, 1))[1], "r": w_reag[sp], "name": c}
+            missing.remove(c); changed += 1
+    print("WoW Forever's tables: %d recipes take other reagents than Classic's" % changed, file=sys.stderr)
 print("recipes %d, not found: %s" % (len(RECIPES), ", ".join(missing)), file=sys.stderr)
 
 mats = set()
@@ -518,7 +565,7 @@ for nm in sorted(RECIPES):
         it = items[iid]
         v, d, q = recipe_vendor_spots(iid), recipe_drop_spots(iid), sorted(set(quest_rewards.get(iid, [])))[:3]
         if not (v or d or q): continue
-        RECIPE_SRC[nm] = {"item": iid, "rank": int(it.get("RequiredSkillRank") or 0), "price": int(it.get("BuyPrice") or 0) if v else 0,
+        RECIPE_SRC[nm] = {"item": iid, "rank": W_RANK.get(iid) or int(it.get("RequiredSkillRank") or 0), "price": int(it.get("BuyPrice") or 0) if v else 0,
                           "lim": any(o[5] for o in v), "v": v, "d": d, "q": q}
         break
 # Weapon masters: who teaches each weapon skill, and where (both factions; the add-on picks yours)
@@ -570,7 +617,9 @@ L = ["-- GENERATED by tools/profs/gen.py: do not edit by hand.",
      "local _, RG = ...", "RG.RECIPES = {"]
 for nm in sorted(RECIPES):
     r = RECIPES[nm]
-    L.append("  [%s] = { s = %d, i = %d, y = %d, r = { %s }%s }," % (lua_str(nm), r["s"], r["i"], r["y"], ", ".join("{ %d, %d }" % x for x in r["r"]), ", guide = true" if r.get("guide") else ""))
+    col = W_COL.get(r["s"]) if WAGO else None
+    L.append("  [%s] = { s = %d, i = %d, y = %d, r = { %s }%s%s }," % (lua_str(nm), r["s"], r["i"], r["y"], ", ".join("{ %d, %d }" % x for x in r["r"]),
+             ", guide = true" if r.get("guide") else "", (", c = { %d, %d }" % col) if col else ""))
 L.append("}"); L.append("RG.MAT_INFO = {")
 def buy_fields(iid):
     # vendor materials: what one costs at a vendor (p, copper) and how many come in one purchase (b)

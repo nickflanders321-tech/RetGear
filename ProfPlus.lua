@@ -270,15 +270,26 @@ end
 -- ---------------------------------------------------------------------------
 local CHANCE = { optimal = 1, medium = 0.75, easy = 0.3, trivial = 0 }
 RG.SKILL_CHANCE = CHANCE
--- The recipe's colour for you now, if your profession window showed it at your current skill (nil otherwise).
+-- The recipe's colour from WoW Forever's own tables (Professions/Generated.lua: c = { yellow, grey }), for a skill
+local function tableColour(recipe, skill)
+  local t = RG.RECIPES and RG.RECIPES[recipe] and RG.RECIPES[recipe].c
+  if not (t and skill and t[2] and t[2] > 0) then return nil end
+  local y, g = t[1], t[2]
+  if skill >= g then return "trivial" end
+  if skill < y then return "optimal" end
+  if skill < math.floor((y + g) / 2) then return "medium" end
+  return "easy"
+end
+-- The recipe's colour for you now: what your profession window showed at your current skill, else what the game's
+-- tables say for your skill (nil when neither is known).
 function RG.RecipeColour(recipe, prof)
   local c = RG.db and RG.db.recipeCol and RG.db.recipeCol[recipe]
-  if not c then return nil end
+  if not c then return tableColour(recipe, RG.Skill and RG.Skill(prof)) end
   local skill = RG.Skill and RG.Skill(prof or c.p)
   if c.at and skill and c.at ~= skill then
     -- read at another skill: grey stays grey, and orange is only trusted at the skill it was read at
     if c.c == "trivial" and skill > c.at then return "trivial" end
-    return nil
+    return tableColour(recipe, skill)
   end
   return c.c
 end
@@ -309,11 +320,16 @@ function RG.LearnColour(name, kind, rank)
     t[st] = b
   end
 end
--- The skill where it turns yellow / grey, if known to within 2 points (else nil)
+-- The skill where it turns yellow / grey: from your own window if known to within 2 points, else from WoW Forever's
+-- tables (green is halfway between yellow and grey)
 function RG.RecipeThreshold(name, stage)
   local t = RG.db and RG.db.recipeTh and RG.db.recipeTh[name]
   local b = t and t[stage]
   if b and b[2] < 999 and b[2] - b[1] <= 2 then return math.floor((b[1] + b[2]) / 2 + 0.5) end
+  local c = RG.RECIPES and RG.RECIPES[name] and RG.RECIPES[name].c
+  if c and c[2] and c[2] > 0 then
+    if stage == "medium" then return c[1] elseif stage == "trivial" then return c[2] elseif stage == "easy" then return math.floor((c[1] + c[2]) / 2) end
+  end
   return nil
 end
 -- Crafts expected to go from skill `from` to `to` with this recipe (the game's skill-up chance: every craft while

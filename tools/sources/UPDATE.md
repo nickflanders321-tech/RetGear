@@ -28,7 +28,8 @@ gear, levels 30-60), SecondSpec.lua (RG.SPEC_HAND hand-written 2nd-spec gear), S
 Races/<Race>.lua (route entries, travel tips, R.prefer), Routes/Horde.lua (H.route, H.steps,
 H.travel, H.dungeons), Routes/Generated.lua (GENERATED starting zones and dungeon quests),
 Professions/<Name>.lua (P.source, P.train, P.plan 1-300 steps {from, to, craft, n, mats} /
-{gather, also} / {skin, where} / {train}, P.mats, P.supplies), Professions/Generated.lua
+{gather, also} / {skin, where} / {train}, P.mats, P.supplies; checked against WoW Forever's own recipe
+tables by tools/profs/check.py, see tools/profs/README.md: plan from those ranges, not from Classic sites), Professions/Generated.lua
 (GENERATED recipes, material sources, gathering and skinning spots, fishing pools, trainer
 pins), ProfGuide.lua, NodeData.lua (GENERATED ore and herb spawns), Waypoints.lua (GENERATED
 pins), Objectives.lua (GENERATED quest data for every Horde quest), Compat.lua (the game

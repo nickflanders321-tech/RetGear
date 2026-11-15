@@ -42,7 +42,10 @@ $LUA tools/waypoints/dump.lua "$C/foreverNpcDB.lua" "$T/npcs.tsv"
 python3 tools/waypoints/gen.py "$T/qdb" "$T/npcs.tsv" .
 cp "$T/veins.tsv" "$T/objects.tsv"
 $LUA tools/profs/items_dump.lua "$C" "$T/items.tsv"
-python3 tools/profs/gen.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" "$T/npcs.tsv" "$T/objects.tsv" . "$T/items.tsv"
+WGP=""; [ -s "$T/wago/SpellReagents.csv.gz" ] && WGP="--wago $T/wago"
+python3 tools/profs/gen.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" "$T/npcs.tsv" "$T/objects.tsv" . "$T/items.tsv" $WGP
+# every profession plan against WoW Forever's own recipe ranges and reagents (an error stops the release and asks Claude)
+[ -s "$T/wago/SkillLineAbility.csv.gz" ] && python3 tools/profs/check.py "$T/wago" .
 $LUA tools/fishloot/dump.lua "$C" "$T/fl_obj.tsv" "$T/fl_items.tsv"
 python3 tools/fishloot/gen.py "$T/classic.sql" "$T/qdb" "$T/fl_obj.tsv" "$T/fl_items.tsv" .
 python3 tools/flights/gen.py "$T/classic.sql" "$T/qdb" "$T/npcs.tsv" .

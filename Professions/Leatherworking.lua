@@ -1,9 +1,9 @@
 -- Waypath+ profession data: Leatherworking. Horde route from the wow-professions.com
--- WoW Forever guide (beta data) to 225, then the Classic route (not yet tested on
--- Forever). Pairs with Skinning.
+-- WoW Forever guide (beta data) to 225, then WoW Forever's own skill ranges from the
+-- game's tables (tools/profs/check.py). Pairs with Skinning.
 local _, RG = ...
 local L = { name = "Leatherworking", kind = "craft", icon = "Interface\\Icons\\INV_Misc_ArmorKit_17" }
-L.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
+L.source = "wow-professions.com WoW Forever guide to 225; past that, WoW Forever's own recipe ranges"
 L.train = {
   start = { O = "Kamari in the Drag, Orgrimmar", R = "Kamari in the Drag, Orgrimmar", T = "Chaw Stronghide in Bloodhoof Village", U = "Shelene Rhobart at the road junction south-east of Brill", S = "Kamari in Orgrimmar or Chaw Stronghide in Bloodhoof Village" },
   apprentice = "Kamari (Orgrimmar), Dan Golthas (Undercity), Mak (Thunder Bluff)",
@@ -39,11 +39,11 @@ L.plan = {
   { from = 175, to = 195, craft = "Guardian Gloves", n = 26, mats = "4 Heavy Leather, 1 Cured Heavy Hide, 1 Silken Thread each" },
   { from = 195, to = 210, craft = "Nightscape Headband", n = 21, mats = "5 Thick Leather, 2 Silken Thread each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
-  { from = 210, to = 235, craft = "Nightscape Headband", n = 30, mats = "5 Thick Leather, 2 Silken Thread each" },
-  { from = 235, to = 250, craft = "Nightscape Pants", n = 15, mats = "14 Thick Leather, 4 Silken Thread each" },
-  { from = 250, to = 260, craft = "Nightscape Boots", n = 13, mats = "16 Thick Leather, 2 Heavy Silken Thread each" },
-  { from = 260, to = 290, craft = "Wicked Leather Gauntlets", n = 33, mats = "8 Rugged Leather, 1 Black Dye, 1 Rune Thread each (pattern: Werg Thickblade, Tirisfal)" },
-  { from = 290, to = 300, craft = "Wicked Leather Headband", n = 10, mats = "12 Rugged Leather, 1 Black Dye, 1 Rune Thread each (or Runic Leather Headband)" },
+  -- (from here: WoW Forever's own skill ranges, which run about 25 points lower than Classic's)
+  { from = 210, to = 225, craft = "Nightscape Pants", n = 17, mats = "14 Thick Leather, 4 Silken Thread each" },
+  { from = 225, to = 235, craft = "Nightscape Boots", n = 12, mats = "16 Thick Leather, 2 Heavy Silken Thread each" },
+  { from = 235, to = 265, craft = "Wicked Leather Gauntlets", n = 37, mats = "8 Rugged Leather, 1 Black Dye, 1 Rune Thread each (pattern: Werg Thickblade, Tirisfal; you can learn it at 235)" },
+  { from = 265, to = 300, craft = "Runic Leather Headband", n = 51, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel; you can learn it at 265)" },
 }
 L.mats = { 2318, 2319, 4234, 4304, 8170, 783, 4232, 4235, 8169, 8171 }
 RG.RegisterProfession("Leatherworking", L)

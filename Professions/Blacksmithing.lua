@@ -2,7 +2,7 @@
 -- plan, and bars whose Auction House prices are tracked.
 local _, RG = ...
 local B = { name = "Blacksmithing", kind = "craft", icon = "Interface\\Icons\\Trade_BlackSmithing" }
-B.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
+B.source = "wow-professions.com WoW Forever guide to 225; past that, WoW Forever's own recipe ranges"
 
 -- Weapon stones (Blacksmithing). Sharpening stones are for swords and axes,
 -- weightstones for maces. bs = Blacksmithing skill where you start making them.
@@ -31,12 +31,12 @@ B.plan = {
   { from = 25,  to = 50,  craft = "Rough Grinding Stone", n = 30, mats = "2 Rough Stone each. Keep 26 (16 for gauntlets, 10 for Silver Rods)." },
   { from = 50,  to = 67,  craft = "Coarse Grinding Stone", n = 36, mats = "2 Coarse Stone each. Keep all 36 (10 at 95, 26 at 112). Since the November 10 hotfix they give skill-ups up to 90 (was 75), so with spare Coarse Stone you can make extras instead of the copper gauntlets and belts." },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
-  { from = 67,  to = 75,  craft = "Runed Copper Gauntlets", n = 8, mats = "8 Copper Bar, 2 Rough Grinding Stone each" },
-  { from = 75,  to = 80,  craft = "Runed Copper Belt", n = 5, mats = "10 Copper Bar each (or Silver Rods: 1 Silver Bar, 2 Rough Grinding Stone)" },
-  { from = 80,  to = 95,  craft = "Rough Bronze Leggings", n = 15, mats = "6 Bronze Bar each" },
-  { from = 95,  to = 100, craft = "Patterned Bronze Bracers", n = 5, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each" },
+  { from = 67,  to = 80,  craft = "Runed Copper Gauntlets", n = 15, mats = "8 Copper Bar, 2 Rough Grinding Stone each" },
+  { from = 80,  to = 95,  craft = "Runed Copper Belt", n = 18, mats = "10 Copper Bar each (you can learn it at 80)" },
+  { from = 95,  to = 100, craft = "Rough Bronze Leggings", n = 6, mats = "6 Bronze Bar each (you can learn it at 95)" },
   { from = 100, to = 112, craft = "Heavy Grinding Stone", n = 20, mats = "3 Heavy Stone each. Keep them." },
-  { from = 112, to = 125, craft = "Patterned Bronze Bracers", n = 13, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each" },
+  { from = 112, to = 120, craft = "Rough Bronze Leggings", n = 9, mats = "6 Bronze Bar each" },
+  { from = 120, to = 125, craft = "Patterned Bronze Bracers", n = 6, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each (you can learn it at 120)" },
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
   { from = 125, to = 140, craft = "Bronze Shortsword", n = 24, mats = "5 Bronze Bar, 4 Weak Flux, 2 Medium Leather each" },
   { from = 140, to = 165, craft = "Bronze Warhammer", n = 29, mats = "8 Bronze Bar, 1 Strong Flux, 1 Medium Leather each" },
@@ -45,13 +45,12 @@ B.plan = {
   { from = 185, to = 215, craft = "Mithril Plate Pants", n = 36, mats = "12 Mithril Bar each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 215, to = 225, craft = "Steel Plate Helm", n = 21, mats = "14 Steel Bar, 1 Solid Grinding Stone each" },
-  { from = 225, to = 235, craft = "Steel Plate Helm", n = 10, mats = "14 Steel Bar, 1 Solid Grinding Stone each (Classic route from here)" },
-  { from = 235, to = 250, craft = "Mithril Coif", n = 15, mats = "10 Mithril Bar, 6 Mageweave Cloth each (or Mithril Spurs if you have the plans)" },
-  { from = 250, to = 260, craft = "Dense Sharpening Stone", n = 20, mats = "1 Dense Stone each" },
-  { from = 260, to = 265, craft = "Heavy Mithril Boots", n = 8, mats = "14 Mithril Bar, 4 Thick Leather each" },
-  { from = 265, to = 270, craft = "Imperial Plate Belt", n = 5, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine each (plans: Derotain Mudsipper, Tanaris, level 50 quest)" },
-  { from = 270, to = 295, craft = "Imperial Plate Bracers", n = 25, mats = "20 Thorium Bar, 1 Star Ruby each (Derotain Mudsipper)" },
-  { from = 295, to = 300, craft = "Imperial Plate Boots", n = 5, mats = "34 Thorium Bar, 1 Star Ruby, 1 Aquamarine each (Derotain Mudsipper)" },
+  -- (from here: WoW Forever's own skill ranges, which run about 25 points lower than Classic's)
+  { from = 225, to = 235, craft = "Mithril Coif", n = 15, mats = "10 Mithril Bar, 6 Mageweave Cloth each (or Mithril Spurs if you have the plans)" },
+  { from = 235, to = 245, craft = "Heavy Mithril Boots", n = 23, mats = "14 Mithril Bar, 4 Thick Leather each" },
+  { from = 245, to = 260, craft = "Imperial Plate Belt", n = 17, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine each (plans: Derotain Mudsipper, Tanaris, level 50 quest)" },
+  { from = 260, to = 270, craft = "Imperial Plate Bracers", n = 12, mats = "20 Thorium Bar, 1 Star Ruby each (Derotain Mudsipper)" },
+  { from = 270, to = 300, craft = "Imperial Plate Boots", n = 37, mats = "34 Thorium Bar, 1 Star Ruby, 1 Aquamarine each (Derotain Mudsipper)" },
 }
 B.train = {
   start = { O = "Dwukk at the Razor Hill forge", R = "Dwukk at the Razor Hill forge", T = "Thrag Stonehoof, lower rise of Thunder Bluff", U = "Angus Hammerhand at Bandarion Keep, Tirisfal", S = "a Zephras Isle trainer, or any capital" },
