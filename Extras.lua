@@ -1,4 +1,4 @@
--- Waypath+ extras: quest reward picker, Exorcism alerts, weapon stone reminder,
+-- Waypath+ extras: quest reward picker, weapon stone reminder,
 -- XP per hour and session summary, character-screen scores, talent points.
 local _, RG = ...
 local GOLD, GREEN, RED, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.RED, RG.COLORS.GREY
@@ -8,7 +8,6 @@ local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
 -- New options (shown in the Settings tab)
 for _, o in ipairs({
   { key = "rewardPicker", label = "Highlight the best quest reward", default = true },
-  { key = "exorcism",     label = "Alert me to use Exorcism on Undead and Demons (move it in Edit Mode or with /wp move)", default = true },
   { key = "stoneReminder", label = "Remind me to sharpen my weapon", default = true },
   { key = "paperdoll",    label = "Show upgrade scores on my character screen", default = true },
   { key = "talentReminder", label = "Remind me to spend talent points", default = true },
@@ -111,48 +110,6 @@ local function pickReward()
     RG.Print("No upgrades here. " .. (GetQuestItemLink("choice", bestGoldI) or "") .. " sells for the most (" .. RG.Money(bestGold) .. ").")
   end
   markOthers(n, { [bestUpI or 0] = true, [r.healI or 0] = true, [(not bestUpI) and bestGoldI or 0] = true })
-end
-
--- ===========================================================================
--- 2. Exorcism alert on Undead and Demon targets
--- ===========================================================================
-local exo
-local function knows(name)
-  if C_Spell and C_Spell.GetSpellInfo then local i = C_Spell.GetSpellInfo(name); return i and (not IsPlayerSpell or IsPlayerSpell(i.spellID)) end
-  return GetSpellInfo and GetSpellInfo(name) ~= nil
-end
--- the alert itself (made once); where it shows is yours to choose: drag it in Edit Mode or with /wp move (Movers.lua)
-function RG.ExorcismFrame()
-  if exo then return exo end
-  exo = CreateFrame("Frame", "WaypathExorcismAlert", UIParent, "BackdropTemplate")
-  exo:SetSize(250, 40); exo:SetPoint("CENTER", 0, -170); exo:SetFrameStrata("HIGH")
-  RG.Backdrop(exo, { 0.04, 0.035, 0.03, 0.85 }, { GOLDC[1], GOLDC[2], GOLDC[3], 0.7 })
-  local ic = exo:CreateTexture(nil, "OVERLAY"); ic:SetSize(28, 28); ic:SetPoint("LEFT", 6, 0); ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-  local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo("Exorcism")
-  ic:SetTexture(info and info.iconID or "Interface\\Icons\\Spell_Holy_Excorcism_02")
-  exo.text = exo:CreateFontString(nil, "OVERLAY"); RG.Font(exo.text, "medium", 12); exo.text:SetPoint("LEFT", ic, "RIGHT", 8, 0); exo.text:SetJustifyH("LEFT")
-  exo:EnableMouse(false)
-  if RG.RegisterMover then
-    RG.RegisterMover(exo, "exorcism", "Exorcism alert", { "CENTER", "CENTER", 0, -170 }, function(f)
-      f.text:SetText(GOLD .. "Undead!|r  Use " .. GOLD .. "Exorcism|r"); f:SetScript("OnUpdate", nil); f:SetAlpha(1)
-    end)
-  end
-  return exo
-end
-local function exorcismAlert()
-  if RG.MoversOn and RG.MoversOn() then return end   -- (being placed: leave the sample up)
-  if exo then exo:Hide() end
-  local S = RG.SafeCall
-  if not RG.Opt("exorcism") or not S(UnitExists, "target") or S(UnitIsDead, "target") or not S(UnitCanAttack, "player", "target") then return end
-  -- creature type can be hidden from addons: then there's simply no alert
-  local ctype = S(UnitCreatureType, "target")
-  if ctype ~= "Undead" and ctype ~= "Demon" then return end
-  if not knows("Exorcism") then return end
-  RG.ExorcismFrame()
-  exo.text:SetText(GOLD .. ctype .. "!|r  Use " .. GOLD .. "Exorcism|r" .. (knows("Holy Wrath") and " and Holy Wrath" or ""))
-  exo:SetAlpha(1); exo:Show()
-  local t = 0
-  exo:SetScript("OnUpdate", function(self, dt) t = t + dt; if t > 4 then self:SetAlpha(math.max(0, 1 - (t - 4))); if t > 5 then self:Hide(); self:SetScript("OnUpdate", nil) end end end)
 end
 
 -- ===========================================================================
@@ -385,7 +342,7 @@ end
 -- Events
 -- ===========================================================================
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "QUEST_COMPLETE", "QUEST_DETAIL", "QUEST_FINISHED", "PLAYER_TARGET_CHANGED", "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP",
+for _, e in ipairs({ "PLAYER_LOGIN", "QUEST_COMPLETE", "QUEST_DETAIL", "QUEST_FINISHED", "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP",
   "QUEST_TURNED_IN", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "UNIT_INVENTORY_CHANGED", "CHARACTER_POINTS_CHANGED", "PLAYER_TALENT_UPDATE" }) do pcall(f.RegisterEvent, f, e) end
 f:SetScript("OnEvent", function(_, event, a1)
   if RG.IsAlt and RG.IsAlt() then return end
@@ -396,8 +353,6 @@ f:SetScript("OnEvent", function(_, event, a1)
     C_Timer.After(0.1, pickReward)
   elseif event == "QUEST_FINISHED" then
     clearMarks()
-  elseif event == "PLAYER_TARGET_CHANGED" then
-    exorcismAlert()
   elseif event == "PLAYER_XP_UPDATE" or event == "PLAYER_LEVEL_UP" then
     onXP()
   elseif event == "QUEST_TURNED_IN" then

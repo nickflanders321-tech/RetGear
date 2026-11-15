@@ -104,7 +104,6 @@ function RG.MoveMode(state)
 end
 
 -- the ones from files loaded before this one (the later files register their own)
-RG.RegisterMoverMaker(function() if RG.ExorcismFrame then RG.ExorcismFrame() end end)   -- Extras.lua
 RG.RegisterMoverMaker(function() if RG.ToastAnchor then RG.ToastAnchor() end end)       -- QoL.lua: level-up and news cards
 
 -- the game's Edit Mode, when this client has it: follow it in and out
