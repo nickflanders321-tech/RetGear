@@ -4,5 +4,19 @@
   "questiedb_forever_tree": "0bc8d0df8dd693217e1b2a6b3eedb110c626529f",
   "last_issue_seen": 10,
   "checked": "2026-11-12T02:36:39Z",
-  "wago_export": "19eea1e6d808256d1ae3840994512f78ca8008af"
+  "wago_export": "19eea1e6d808256d1ae3840994512f78ca8008af",
+  "profguides": {
+    "alchemy": "052c6d5aa841a0236868d576b31972d115c43612",
+    "blacksmithing": "a558c4bebe7562b6e18d1deba1f2b8b046a2a121",
+    "enchanting": "cb4e9d73006b6c239a5865eb08c59264fb91780a",
+    "engineering": "984d3216ebf65776bdbc7a4f92107d486bd8a90c",
+    "leatherworking": "5a2ed96b02678ecfceaf1a4d4c997fdf3917e262",
+    "tailoring": "bd78fc84c295973c47786bc4cf5a6cf795507aaa",
+    "cooking": "421b2b95a253b67da0e1bf55c558561998c1b58a",
+    "first-aid": "728dd4ea4bca6ce99cb1f922b1111828581e6a49",
+    "fishing": "c24e3b78eb76e617f195e1972568722d972606ac",
+    "mining": "e58c46605a2ee2270d8988a8fafaab752f383c99",
+    "herbalism": "f80f1cb17163f260fd76cd63d77dd499c89a25df",
+    "skinning": "8006a0ceac9481429e93c9ab92801dd725a9879f"
+  }
 }
