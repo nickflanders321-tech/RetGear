@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Your Mythics come first in your collection.** Every Mythic you've pulled now opens the collection, whatever the sort. A dungeon's Mythic was saved properly, but it was sorted last among your owned cards and looked like that dungeon boss's regular card, so it was easy to miss.
+
 ## v1.43.2
 
 - **No more hitch when opening Waypath+.** The gear lists compared every piece of gear from your last Auction House scan, often thousands, with what you wear. They redid that every time the window or the Character panel refreshed, and the first look at each item made the game build its tooltip.

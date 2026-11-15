@@ -1865,7 +1865,13 @@ local function collectionList(a)
   elseif view.sort == 3 then table.sort(list, function(x, y) if x.tier ~= y.tier then return x.tier > y.tier end return x.name < y.name end)
   elseif view.sort == 4 then table.sort(list, function(x, y) return x.name < y.name end)
   elseif view.sort == 5 then table.sort(list, function(x, y) return power(x, bestFinish(a, x.id) or 1) > power(y, bestFinish(a, y.id) or 1) end) end
-  return list
+  -- the Mythics you've pulled come first, whatever the sort (in the order the sort put them)
+  local first, rest = {}, {}
+  for _, c in ipairs(list) do
+    if c.tier == 7 and owned(a, c.id) > 0 then first[#first + 1] = c else rest[#rest + 1] = c end
+  end
+  for _, c in ipairs(rest) do first[#first + 1] = c end
+  return first
 end
 
 local function kit(...)   -- the first SOUNDKIT id this client has
