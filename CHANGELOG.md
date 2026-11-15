@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.43.1
 
 - **Profession guides now match wow-professions.com step by step.** A line-by-line comparison with their WoW Forever guides found smaller differences, now fixed:
   - Alchemy starts with Elixir of Minor Force.
