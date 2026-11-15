@@ -83,7 +83,28 @@ SOUNDS = {
     # a raid photo is taken: a camera shutter and a little sparkle
     "shutter": lambda: mix((0, noise(0.03, 1.0, 0.01, 0.0005, band=[1500, 7000])), (0.07, noise(0.05, 0.8, 0.015, 0.0005, band=[1000, 5000])),
                            (0.12, shimmer(0.6, 0.25))),
+    # a Mythic is coming: the card trembles and a sound rises under it (noise sweeping up, a tone climbing, a swell)
+    "riser": lambda: riser(),
+    # a Mythic lands: a deep impact, a wide major chord that swells with vibrato, a rising run of bells, a long shimmer
+    "mythic": lambda: mix((0, noise(0.5, 1.0, 0.18, 0.001, band=[40, 500])), (0, sine(41, 2.2, 1.0, 0.9, 0.004)),
+                          *[(0.03, sine(f, 3.0, 0.2, 1.4, 0.25, vib=2.5, vf=5.2)) for f in (130.8, 196.0, 261.6, 329.6, 392.0, 523.25)],
+                          (0.2, arp([C6, E6, G6, C7, E6, G6, C7, E7], 0.07, 1.4, 0.42, 0.5)), (0.25, shimmer(2.6, 0.5)), (0.85, bell(C7, 1.8, 0.4, 0.8))),
+    # The 1 Ring lands: the same, lower and grander, with a slow bell
+    "ring": lambda: mix((0, noise(0.6, 1.0, 0.22, 0.001, band=[30, 400])), (0, sine(36.7, 2.6, 1.0, 1.0, 0.004)),
+                        *[(0.03, sine(f, 3.4, 0.2, 1.6, 0.3, vib=2.2, vf=4.8)) for f in (110.0, 164.8, 220.0, 277.2, 329.6, 440.0)],
+                        (0.2, arp([A5, Cs6, E6, A6, Cs7, E7], 0.09, 1.6, 0.42, 0.55)), (0.25, shimmer(3.0, 0.5)), (0.9, bell(A5, 2.6, 0.45, 1.0))),
+    # one letter of the name is engraved on The 1 Ring: a tiny metal tick and a high glint
+    "engrave": lambda: mix((0, noise(0.03, 0.8, 0.008, 0.0005, band=[3000, 9000])), (0.005, bell(E7, 0.35, 0.35, 0.12))),
 }
+
+A5, Cs6, E6b, A6, Cs7, E7 = 880.0, 1108.7, 1318.5, 1760.0, 2217.5, 2637.0
+def riser(d=1.3):
+    t = t_(d)
+    up = (t / d) ** 2
+    f = 110 * 2 ** (2.2 * t / d)
+    tone = np.sin(2 * np.pi * np.cumsum(f) / SR) * 0.35 + np.sin(2 * np.pi * np.cumsum(f * 1.5) / SR) * 0.2
+    hiss = sweep_noise(d, 500, 9000, 1.0, d * 2) * 0.5
+    return (tone + hiss[:len(t)]) * up
 
 def roar(d=1.7):
     t = t_(d)

@@ -136,7 +136,25 @@ def main():
         glyph_sheet(pg)
         b.close()
     save("Prism", conic(hexs("#ffe08a", "#ff9ecb", "#b58cff", "#6fd6ff", "#8affc9") * 2))
-    save("PrismRing", conic(hexs("#060805", "#fff7d6", "#5cff3b", "#060805", "#ffffff", "#d9a441") * 2))
+    save("PrismRing", conic(hexs("#2a0606", "#fff7d6", "#3d9bff", "#2a0606", "#ffffff", "#d9a441") * 2))
+    fx_textures()
+
+# the Mythic moment's pieces (white, tinted in game): a four-pointed spark with a soft core, and a thin shockwave ring
+def fx_textures():
+    import numpy as np
+    n = 64; y, x = np.mgrid[0:n, 0:n] / (n - 1) * 2 - 1
+    r = np.hypot(x, y)
+    star = np.maximum(np.exp(-(np.abs(x) * 9 + np.abs(y) * 1.4) ** 1.2), np.exp(-(np.abs(y) * 9 + np.abs(x) * 1.4) ** 1.2))
+    core = np.exp(-(r / 0.22) ** 2)
+    a = np.clip(np.maximum(star, core) * (1 - np.clip(r, 0, 1) ** 4), 0, 1)
+    im = Image.new("RGBA", (n, n), (255, 255, 255, 0)); im.putalpha(Image.fromarray((a * 255).astype("uint8")))
+    save("Spark", im)
+    n = 256; y, x = np.mgrid[0:n, 0:n] / (n - 1) * 2 - 1
+    r = np.hypot(x, y)
+    a = np.exp(-((r - 0.88) / 0.035) ** 2) + 0.35 * np.exp(-((r - 0.8) / 0.12) ** 2) * (r < 0.88)
+    a = np.clip(a, 0, 1)
+    im = Image.new("RGBA", (n, n), (255, 255, 255, 0)); im.putalpha(Image.fromarray((a * 255).astype("uint8")))
+    save("Shock", im)
 
 if __name__ == "__main__":
     main()

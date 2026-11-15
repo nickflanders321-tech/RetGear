@@ -2100,13 +2100,16 @@ local function flip(i)
   local g0 = reveal.got[i]
   local weight = g0.card.tier >= 6 and 3 or (g0.finish >= 3 and 2 or (g0.finish == 2 and 1 or 0))
   local span = weight >= 2 and 0.6 or (weight == 1 and 0.34 or 0.22)   -- the better the card, the longer the wait
+  local myth = g0.card.tier == 7
+  if myth then span = 1.3; playFx("riser") end                            -- a Mythic: the longest wait, and a sound rising
   local t = 0
   c:SetScript("OnUpdate", function(self, dt)
     t = t + dt
     local k = 1 - t / span
     if k > 0.02 then
       self:SetWidth(math.max(1, card.cw * k))
-      if weight >= 2 then self:ClearAllPoints(); self:SetPoint("CENTER", math.sin(t * 60) * 2.5 * (1 - k), 0) end   -- it trembles
+      if myth then self:ClearAllPoints(); self:SetPoint("CENTER", math.sin(t * 70) * 7 * (1 - k) ^ 1.5, math.cos(t * 53) * 3 * (1 - k) ^ 1.5)
+      elseif weight >= 2 then self:ClearAllPoints(); self:SetPoint("CENTER", math.sin(t * 60) * 2.5 * (1 - k), 0) end   -- it trembles
     else
       self:SetScript("OnUpdate", nil); self:Hide(); self.flipping = false
       local g = reveal.got[i]
@@ -2115,7 +2118,7 @@ local function flip(i)
       -- a plain duplicate steps back, so the new and the notable cards are what you see
       if not g.new and not g.newPrint and g.finish < 3 and g.card.tier < 5 and #reveal.got > 5 then card:SetAlpha(0.6) else card:SetAlpha(1) end
       local big = weight
-      playSound(g.finish, g.card.tier)
+      if g.card.tier ~= 7 then playSound(g.finish, g.card.tier) end   -- (a Mythic's moment has its own sound)
       if big > 0 then burstAt(card, big) end
       if big >= 2 then reveal.shakeT, reveal.shakeK = 0.35, big end
       if g.record then reveal.record = true; reveal.title:SetText("Your rarest pull yet!"); playSound(nil, nil, "best") end
@@ -2290,8 +2293,10 @@ local function stripSet(r, sc, dx, dy, rot, alpha)
   end
 end
 
--- A Mythic turns over: the table goes dark, rays in every colour turn behind it, and the card rises to the middle at
--- full size. Click anywhere to go on.
+-- A Mythic turns over. A white flash and two shockwaves, the table shakes, sparks fly out, and the card springs up to
+-- the middle at full size while the title drops in letter by letter, rays in every colour turn behind it and embers
+-- rise. The 1 Ring then engraves its opener's name round its band, a letter at a time, each with a glint and a chime.
+-- The first click skips to the end; the next one goes on.
 function RG.ArcadeMythicMoment(g)
   if not (reveal and g and g.card) then return end
   local m = rawget(reveal, "myth")
@@ -2301,27 +2306,165 @@ function RG.ArcadeMythicMoment(g)
     m.rays = m:CreateTexture(nil, "BORDER"); m.rays:SetTexture(MEDIA .. "Rays"); m.rays:SetBlendMode("ADD"); m.rays:SetSize(900, 900); m.rays:SetPoint("CENTER", 0, 0)
     m.rays2 = m:CreateTexture(nil, "BORDER"); m.rays2:SetTexture(MEDIA .. "Rays"); m.rays2:SetBlendMode("ADD"); m.rays2:SetSize(640, 640); m.rays2:SetPoint("CENTER", 0, 0)
     m.halo = m:CreateTexture(nil, "ARTWORK"); m.halo:SetTexture(MEDIA .. "Glow"); m.halo:SetBlendMode("ADD"); m.halo:SetSize(620, 620); m.halo:SetPoint("CENTER", 0, 0)
-    m.title = fs(m, "title", 30); m.title:SetPoint("TOP", 0, -34); m.title:SetTextColor(1, 0.95, 0.77); m.title:SetText("M Y T H I C")
+    -- embers rising behind the card
+    m.embers = {}
+    for i = 1, 26 do
+      local e = m:CreateTexture(nil, "ARTWORK", nil, 1); e:SetTexture(MEDIA .. "Spark"); e:SetBlendMode("ADD")
+      e.x0, e.ph, e.sp, e.sz, e.wob = math.random(-RW / 2 + 20, RW / 2 - 20), math.random(), 40 + math.random() * 70, 6 + math.random() * 10, math.random() * 6.28
+      m.embers[i] = e
+    end
     m.hint = fs(m, "head", 12); m.hint:SetPoint("BOTTOM", 0, 30); m.hint:SetTextColor(0.84, 0.82, 0.92)
     m.card = makeCard(m, 300); m.card:SetPoint("CENTER", 0, -6); m.card:SetFrameLevel(lv(m) + 2); m.card.noTip = true; m.card.hover = false; m.card:EnableMouse(false)
-    m:SetScript("OnClick", function(self) anim[self] = nil; self:Hide() end)
+    -- above the card: the shockwaves, the sparks, the glints on the Ring's letters, the title and the flash
+    m.top = CreateFrame("Frame", nil, m); m.top:SetAllPoints(m); m.top:SetFrameLevel(lv(m) + 12)
+    m.shock = {}
+    for i = 1, 3 do
+      local w = m.top:CreateTexture(nil, "ARTWORK"); w:SetTexture(MEDIA .. "Shock"); w:SetBlendMode("ADD"); w:SetPoint("CENTER", m, "CENTER", 0, -6); w:SetAlpha(0)
+      m.shock[i] = w
+    end
+    m.parts = {}
+    for i = 1, 56 do
+      local p = m.top:CreateTexture(nil, "ARTWORK", nil, 2); p:SetTexture(MEDIA .. "Spark"); p:SetBlendMode("ADD"); p:SetAlpha(0)
+      m.parts[i] = p
+    end
+    m.glints = {}
+    for i = 1, 4 do
+      local q = m.top:CreateTexture(nil, "OVERLAY"); q:SetTexture(MEDIA .. "Spark"); q:SetBlendMode("ADD"); q:SetAlpha(0)
+      m.glints[i] = q
+    end
+    m.letters = {}
+    for i = 1, 12 do
+      local l = fs(m.top, "title", 30); l:SetTextColor(1, 0.95, 0.77); l:SetAlpha(0); m.letters[i] = l
+    end
+    m.sub = fs(m.top, "head", 13); m.sub:SetPoint("TOP", 0, -74); m.sub:SetTextColor(1, 0.9, 0.66)
+    m.flash = m.top:CreateTexture(nil, "OVERLAY", nil, 7); m.flash:SetAllPoints(m); m.flash:SetColorTexture(1, 1, 1, 1); m.flash:SetAlpha(0)
+    m:SetScript("OnClick", function(self)
+      local st = rawget(self, "st")
+      if st and st.now and st.t0 and st.now - st.t0 < st.endAt then st.t0 = st.now - st.endAt; return end   -- skip to the end
+      anim[self] = nil; self:Hide()
+      for _, l in ipairs(rawget(self.card, "ringGl") or {}) do l:SetAlpha(1) end
+    end)
     reveal.myth = m
   end
   paint(m.card, g.card, g.finish, 1)
-  local one = g.card.mythic and g.card.mythic.one
+  local my = g.card.mythic or {}
+  local one = my.one
+  local a = store()
+  local col = my.glow or { 1, 0.9, 0.6 }
   m.hint:SetText((one and "The rarest card there is: one per account" or ("About 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5))) .. "   ·   click anywhere to go on")
-  m.t0 = nil
-  m.card:SetScale(0.7); m.title:SetAlpha(0)
+  -- the title, a letter at a time
+  local word = one and "THE 1 RING" or "MYTHIC"
+  local chars, widths, total = {}, {}, 0
+  for ch in word:gmatch(".") do chars[#chars + 1] = ch end
+  for i, l in ipairs(m.letters) do
+    local ch = chars[i]
+    l:SetText(ch or ""); l:SetAlpha(0)
+    local wd = ch and (ch == " " and 14 or ((type(l.GetStringWidth) == "function" and tonumber(l:GetStringWidth()) or 0) > 0 and l:GetStringWidth() or 22)) or 0
+    widths[i] = wd; if ch then total = total + wd + (i > 1 and 12 or 0) end
+  end
+  local x = -total / 2
+  for i, l in ipairs(m.letters) do
+    if chars[i] then l.cx = x + widths[i] / 2; x = x + widths[i] + 12 end
+  end
+  m.sub:SetText(one and ("O N E   O F   O N E" .. ((a and a.ring and a.ring.by) and ("   ·   Opened by " .. a.ring.by) or "")) or string.upper(g.card.name or ""))
+  m.sub:SetAlpha(0)
+  -- the sparks: each flies out on its own line, slows, falls a little and fades
+  for _, p in ipairs(m.parts) do
+    local ang, sp = math.random() * 6.2832, 260 + math.random() * 520
+    p.vx, p.vy, p.life, p.sz, p.spin = math.cos(ang) * sp, math.sin(ang) * sp, 0.9 + math.random() * 1.1, 8 + math.random() * 22, (math.random() - 0.5) * 8
+    local c = math.random() < 0.55 and col or (math.random() < 0.5 and { 1, 0.95, 0.8 } or { 1, 1, 1 })
+    if one then c = ({ { 1, 0.82, 0.42 }, { 0.42, 0.68, 1 }, { 1, 0.45, 0.25 }, { 1, 0.97, 0.88 } })[math.random(1, 4)] end
+    p:SetVertexColor(c[1], c[2], c[3]); p:SetSize(p.sz, p.sz); p:SetAlpha(0)
+  end
+  for _, e in ipairs(m.embers) do
+    local c = one and (math.random() < 0.5 and { 1, 0.6, 0.25 } or { 0.5, 0.75, 1 }) or col
+    e:SetVertexColor(c[1], c[2], c[3]); e:SetSize(e.sz, e.sz); e:SetAlpha(0)
+  end
+  for _, w in ipairs(m.shock) do w:SetVertexColor(col[1], col[2], col[3]); w:SetAlpha(0) end
+  for _, q in ipairs(m.glints) do q:SetAlpha(0) end
+  -- the Ring's letters start hidden, and are engraved one by one once the card has landed
+  local gl = one and rawget(m.card, "ringGl") or {}
+  local shownGl = {}
+  for _, l in ipairs(gl) do if l:IsShown() then shownGl[#shownGl + 1] = l; l:SetAlpha(0) end end
+  local ENGRAVE, STEP = 1.0, 0.11
+  local st = { endAt = one and (ENGRAVE + #shownGl * STEP + 0.6) or 1.6, engraved = 0, glintAt = {} }
+  m.st = st
+  m.card:SetScale(0.25)
   m:Show()
+  playFx(one and "ring" or "mythic")
+  reveal.shakeT, reveal.shakeK = 0.35, 4
+  local function clamp(v) return v < 0 and 0 or (v > 1 and 1 or v) end
+  local function back(v) local c1 = 1.70158; return 1 + (c1 + 1) * (v - 1) ^ 3 + c1 * (v - 1) ^ 2 end
   anim[m] = function(self, t)
-    self.t0 = self.t0 or t
-    local e = math.min(1, (t - self.t0) / 0.7)
-    local k = 1 - (1 - e) ^ 3
+    st.t0 = st.t0 or t; st.now = t
+    local e = t - st.t0
+    local k = clamp(e / 0.7)
+    local done = e >= st.endAt
+    -- flash, shockwaves (the third comes when the Ring's engraving is finished)
+    self.flash:SetAlpha(0.95 * (1 - clamp(e / 0.35)) ^ 2)
+    for i, w in ipairs(self.shock) do
+      local w0 = i == 3 and (one and st.endAt - 0.5 or 99) or (i - 1) * 0.14
+      local p = clamp((e - w0) / 0.85)
+      if p > 0 and p < 1 then
+        local sz = 80 + 1300 * (1 - (1 - p) ^ 3)
+        w:SetSize(sz, sz); w:SetAlpha(0.9 * (1 - p) ^ 1.5)
+      else w:SetAlpha(0) end
+    end
+    -- the card springs up with a little overshoot
+    self.card:SetScale(math.max(0.05, 0.25 + 0.75 * back(clamp(e / 0.75))))
+    -- sparks
+    for _, p in ipairs(self.parts) do
+      local q = e / p.life
+      if q < 1 then
+        local f = (1 - math.exp(-2.6 * e)) / 2.6
+        p:ClearAllPoints(); p:SetPoint("CENTER", self, "CENTER", p.vx * f, p.vy * f - 70 * e * e - 6)
+        p:SetAlpha((1 - q) ^ 1.3); local sz = p.sz * (1 - 0.5 * q); p:SetSize(sz, sz)
+        if p.SetRotation then p:SetRotation(p.spin * e) end
+      else p:SetAlpha(0) end
+    end
+    -- embers
+    for _, em in ipairs(self.embers) do
+      local fr = (em.ph + e * em.sp / RH) % 1
+      em:ClearAllPoints(); em:SetPoint("CENTER", self, "BOTTOM", em.x0 + 14 * math.sin(e * 1.3 + em.wob), fr * RH)
+      em:SetAlpha(0.7 * math.sin(fr * 3.1416) * clamp((e - 0.3) / 0.8))
+    end
+    -- rays, halo
     local r, gg, b = hsv((t * 0.07) % 1, 0.45, 1)
-    self.rays:SetVertexColor(r, gg, b, 0.5 * k); self.rays2:SetVertexColor(b, r, gg, 0.4 * k)
+    if one then r, gg, b = 1, 0.72 + 0.12 * math.sin(t * 0.8), 0.42 end
+    self.rays:SetVertexColor(r, gg, b, 0.5 * k); self.rays2:SetVertexColor(one and 0.45 or b, one and 0.66 or r, one and 1 or gg, 0.4 * k)
     if self.rays.SetRotation then self.rays:SetRotation((t * 0.1) % 6.2832); self.rays2:SetRotation((-t * 0.16) % 6.2832) end
     self.halo:SetVertexColor(1, 0.94, 0.78, (0.5 + 0.1 * math.sin(t * 2)) * k)
-    self.card:SetScale(0.7 + 0.3 * k); self.title:SetAlpha(k); self.hint:SetAlpha(k)
+    self.veil:SetAlpha(clamp(e / 0.2))
+    -- the title drops in
+    for i, l in ipairs(self.letters) do
+      if l.cx and chars[i] and chars[i] ~= " " then
+        local p = clamp((e - 0.35 - 0.06 * i) / 0.28)
+        l:ClearAllPoints(); l:SetPoint("TOP", self, "TOP", l.cx, -34 + 26 * (1 - back(p)))
+        l:SetAlpha(p)
+      end
+    end
+    -- the Ring: one letter after another, each with a glint and a chime
+    if one then
+      local n = done and #shownGl or math.max(0, math.min(#shownGl, math.floor((e - ENGRAVE) / STEP) + 1))
+      for i, l in ipairs(shownGl) do l:SetAlpha(i <= n and clamp((e - ENGRAVE - (i - 1) * STEP) / 0.14 + (done and 1 or 0)) or 0) end
+      while st.engraved < n do
+        st.engraved = st.engraved + 1
+        if not done then
+          local gi = (st.engraved - 1) % #self.glints + 1
+          local q = self.glints[gi]
+          q:ClearAllPoints(); q:SetPoint("CENTER", shownGl[st.engraved], "CENTER", 0, 0); st.glintAt[gi] = e
+          playFx("engrave")
+        end
+      end
+      for gi, q in ipairs(self.glints) do
+        local p = st.glintAt[gi] and clamp((e - st.glintAt[gi]) / 0.4) or 1
+        if p < 1 then local sz = 40 * (1 - p) + 8; q:SetSize(sz, sz); q:SetAlpha(1 - p); q:SetVertexColor(1, 0.95, 0.8)
+          if q.SetRotation then q:SetRotation(p * 1.6) end
+        else q:SetAlpha(0) end
+      end
+    end
+    local subAt = one and (st.endAt - 0.4) or 1.0
+    self.sub:SetAlpha(clamp((e - subAt) / 0.4)); self.hint:SetAlpha(clamp((e - st.endAt) / 0.5))
   end
 end
 

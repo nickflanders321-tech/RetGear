@@ -21,7 +21,7 @@ RG.ARCADE_MYTHIC = {
   ["The Last Campfire"]        = { art = "Mythic3", num = "M-03", type = "Camp  ·  Mythic",            icon = "Spell_Fire_Fire",            glow = { 1, 0.48, 0.24 } },
   ["Sixty"]                    = { art = "Mythic4", num = "M-04", type = "Spell  ·  Mythic",           icon = "Spell_Holy_HolyBolt",        glow = { 1, 0.86, 0.45 } },
   ["The Hourglass of Forever"] = { art = "Mythic5", num = "M-05", type = "Artifact  ·  Spell  ·  Mythic", icon = "INV_Misc_PocketWatch_01", glow = { 1, 0.9, 0.6 } },
-  ["The 1 Ring"]               = { art = "Mythic6", num = "M-00", type = "Item  ·  Spell  ·  Mythic",  one = true,                          glow = { 0.47, 1, 0.35 } },
+  ["The 1 Ring"]               = { art = "Mythic6", num = "M-00", type = "Item  ·  Spell  ·  Mythic",  one = true,                          glow = { 1, 0.8, 0.45 } },
 }
 RG.ARCADE_MYTHIC_ORDER = {}
 RG.ARCADE_DATA = RG.ARCADE_DATA or {}
@@ -121,7 +121,7 @@ function RG.ArcadeRingEngrave(w, text)
       local function tc(ax, ay) return cu + cs * ax + sn * ay, cv - sn * ax + cs * ay end
       local ulx, uly = tc(-h, -h); local llx, lly = tc(-h, h); local urx, ury = tc(h, -h); local lrx, lry = tc(h, h)
       tx:SetTexCoord(ulx, uly, llx, lly, urx, ury, lrx, lry)
-      tx:Show()
+      tx:SetAlpha(1); tx:Show()
     end
     d = d + adv + sp
   end
