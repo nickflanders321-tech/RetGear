@@ -1,9 +1,9 @@
--- Waypath+ profession data: Tailoring. Horde route from the wow-professions.com WoW
--- Forever guide (beta data) to 225, then WoW Forever's own skill ranges from the game's tables (tools/profs/check.py).
+-- Waypath+ profession data: Tailoring. Route from the wow-professions.com WoW
+-- Forever guide, checked against the game's own recipe tables (tools/profs/check.py).
 -- Cloth drops from humanoids while you quest.
 local _, RG = ...
 local T = { name = "Tailoring", kind = "craft", icon = "Interface\\Icons\\Trade_Tailoring" }
-T.source = "wow-professions.com WoW Forever guide to 225; past that, WoW Forever's own recipe ranges"
+T.source = "wow-professions.com WoW Forever guide (checked against the game's recipe tables)"
 T.train = {
   start = { O = "Snang in the Drag, Orgrimmar", R = "Snang in the Drag, Orgrimmar", T = "Vhan, middle rise of Thunder Bluff", U = "Bowen Brisboise at Cold Hearth Manor, south-west of Brill", S = "Vhan in Thunder Bluff or Snang in Orgrimmar" },
   apprentice = "Snang (Orgrimmar), Victor Ward (Undercity), Vhan (Thunder Bluff)",
@@ -18,7 +18,7 @@ T.trainA = {
   apprentice = "Eldrin (Elwynn Forest), Lawrence Schneider (Stormwind), Uthrar Threx (Ironforge), Trianna (Darnassus)",
   journeyman = "Lawrence Schneider (Stormwind), Uthrar Threx (Ironforge), Trianna (Darnassus)",
   expert = "Sellandus (Stormwind), Jormund Stonebrow (Ironforge), Me'lynn (Darnassus)",
-  artisan = "Georgio Bolero (Stormwind)",
+  artisan = "Timothy Worthington (Theramore Isle, Dustwallow Marsh)",
 }
 T.supplies = "Threads and dyes: the Tailoring Supply vendor by each trainer (Brill: Abigail Shiel)."
 T.plan = {
@@ -35,16 +35,15 @@ T.plan = {
   { from = 140, to = 150, craft = "Bolt of Mageweave", n = 17, mats = "5 Mageweave Cloth each. Keep them." },
   { from = 150, to = 170, craft = "Crimson Silk Vest", n = 20, mats = "4 Bolt of Silk Cloth, 2 Red Dye, 2 Fine Thread each" },
   { from = 170, to = 190, craft = "Crimson Silk Pantaloons", n = 24, mats = "4 Bolt of Silk Cloth, 2 Red Dye, 2 Silken Thread each" },
-  { from = 190, to = 205, craft = "Black Mageweave Gloves", n = 19, mats = "2 Bolt of Mageweave, 2 Heavy Silken Thread each" },
+  { from = 190, to = 200, craft = "Black Mageweave Leggings", n = 19, mats = "2 Bolt of Mageweave, 3 Silken Thread each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
-  -- (from here: WoW Forever's own skill ranges, which run 25 to 45 points lower than Classic's)
-  { from = 205, to = 215, craft = "Mageweave Bag", n = 14, mats = "4 Bolt of Mageweave, 2 Silken Thread each" },
-  { from = 215, to = 225, craft = "Runecloth Belt", n = 11, mats = "3 Bolt of Runecloth, 1 Rune Thread each (Bolt of Runecloth: 5 Runecloth; it gives skill-ups only to 215)" },
-  { from = 225, to = 230, craft = "Runecloth Bag", n = 6, mats = "5 Bolt of Runecloth, 2 Rugged Leather, 1 Rune Thread, 4 Magenta Dye, 2 Cerulean Dye each (pattern: Qia, Everlook)" },
-  { from = 230, to = 250, craft = "Runecloth Gloves", n = 23, mats = "4 Bolt of Runecloth, 4 Rugged Leather, 1 Rune Thread each (pattern: Qia, Everlook)" },
-  { from = 250, to = 265, craft = "Runecloth Boots", n = 23, mats = "4 Bolt of Runecloth, 2 Ironweb Spider Silk, 4 Rugged Leather, 1 Rune Thread each (pattern: Darnall, Moonglade)" },
-  { from = 265, to = 275, craft = "Runecloth Headband", n = 14, mats = "4 Bolt of Runecloth, 2 Ironweb Spider Silk, 1 Rune Thread each (the pattern drops from level 50-60 mobs: look on the Auction House)" },
-  { from = 275, to = 300, craft = "Runecloth Shoulders or Mooncloth Robe", n = 30, mats = "7 Bolt of Runecloth, 2 Ironweb Spider Silk, 4 Rugged Leather, 1 Rune Thread each (Runecloth Shoulders: the pattern drops from level 55-60 mobs, look on the Auction House; or Mooncloth Robe, pattern from Darnall, Moonglade: 6 Bolt of Runecloth, 4 Mooncloth, 2 Golden Pearl, 2 Rune Thread)" },
+  { from = 200, to = 205, craft = "Black Mageweave Shoulders", n = 5, mats = "3 Bolt of Mageweave, 2 Heavy Silken Thread each (only the Artisan trainers teach it)" },
+  { from = 205, to = 215, craft = "Bolt of Runecloth", n = 23, mats = "5 Runecloth each. Keep the bolts for the next steps." },
+  { from = 215, to = 225, craft = "Mageweave Bag or Runecloth Belt", n = 26, mats = "4 Bolt of Mageweave, 2 Silken Thread each (or Runecloth Belt: 3 Bolt of Runecloth, 1 Rune Thread; about 10 crafts)" },
+  { from = 225, to = 240, craft = "Runecloth Belt", n = 24, mats = "3 Bolt of Runecloth, 1 Rune Thread each" },
+  { from = 240, to = 250, craft = "Runecloth Gloves", n = 11, mats = "4 Bolt of Runecloth, 4 Rugged Leather, 1 Rune Thread each (pattern: Qia, Everlook)" },
+  { from = 250, to = 280, craft = "Runecloth Cuffs", n = 39, mats = "5 Bolt of Runecloth, 1 Ironweb Spider Silk, 1 Rune Thread each (pattern: Pexmit, Mount Hyjal; Bind on Pickup)" },
+  { from = 280, to = 300, craft = "Runecloth Shoulders or Wizardweave Turban", n = 58, mats = "7 Bolt of Runecloth, 2 Ironweb Spider Silk, 4 Rugged Leather, 1 Rune Thread each (pattern: world drop, look on the Auction House; or Wizardweave Turban: 6 Bolt of Runecloth, 4 Dream Dust, 1 Star Ruby, 1 Rune Thread. With Cenarion Circle reputation and a Loom nearby, Swarmtender's or Venomspew gloves, cord and footpads from 285)" },
 }
 T.mats = { 2589, 2592, 4306, 4338, 14047, 2996, 2997, 4305, 4339, 14048 }
 RG.RegisterProfession("Tailoring", T)

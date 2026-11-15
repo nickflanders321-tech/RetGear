@@ -1,9 +1,8 @@
--- Waypath+ profession data: Leatherworking. Horde route from the wow-professions.com
--- WoW Forever guide (beta data) to 225, then WoW Forever's own skill ranges from the
--- game's tables (tools/profs/check.py). Pairs with Skinning.
+-- Waypath+ profession data: Leatherworking. Route from the wow-professions.com
+-- WoW Forever guide, checked against the game's own recipe tables (tools/profs/check.py). Pairs with Skinning.
 local _, RG = ...
 local L = { name = "Leatherworking", kind = "craft", icon = "Interface\\Icons\\INV_Misc_ArmorKit_17" }
-L.source = "wow-professions.com WoW Forever guide to 225; past that, WoW Forever's own recipe ranges"
+L.source = "wow-professions.com WoW Forever guide (checked against the game's recipe tables)"
 L.train = {
   start = { O = "Kamari in the Drag, Orgrimmar", R = "Kamari in the Drag, Orgrimmar", T = "Chaw Stronghide in Bloodhoof Village", U = "Shelene Rhobart at the road junction south-east of Brill", S = "Kamari in Orgrimmar or Chaw Stronghide in Bloodhoof Village" },
   apprentice = "Kamari (Orgrimmar), Dan Golthas (Undercity), Mak (Thunder Bluff)",
@@ -18,7 +17,7 @@ L.trainA = {
   apprentice = "Randal Worth (Stormwind), Gretta Finespindle (Ironforge), Darianna (Darnassus), Adele Fielder (Elwynn Forest), Nadyia Maneweaver (Dolanaar)",
   journeyman = "Randal Worth (Stormwind), Gretta Finespindle (Ironforge), Darianna (Darnassus)",
   expert = "Simon Tanner (Stormwind), Fimble Finespindle (Ironforge), Faldron (Darnassus)",
-  artisan = "Telonis (Darnassus)",
+  artisan = "Drakk Stonehand (Aerie Peak, The Hinterlands)",
 }
 L.supplies = "Salt, threads and dyes: the Leatherworking Supply vendor by each trainer (Brill: Abigail Shiel)."
 L.plan = {
@@ -34,16 +33,14 @@ L.plan = {
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
   { from = 125, to = 130, craft = "Heavy Leather", n = 7, mats = "5 Medium Leather each" },
   { from = 130, to = 155, craft = "Hillman's Leather Gloves", n = 30, mats = "14 Medium Leather, 4 Fine Thread each" },
-  { from = 155, to = 170, craft = "Barbaric Leggings", n = 17, mats = "10 Heavy Leather, 2 Fine Thread, 1 Moss Agate each (pattern: Jandia, Thousand Needles)" },
-  { from = 170, to = 175, craft = "Barbaric Harness", n = 5, mats = "14 Heavy Leather, 2 Fine Thread, 1 Iron Buckle each" },
-  { from = 175, to = 195, craft = "Guardian Gloves", n = 26, mats = "4 Heavy Leather, 1 Cured Heavy Hide, 1 Silken Thread each" },
-  { from = 195, to = 210, craft = "Nightscape Headband", n = 21, mats = "5 Thick Leather, 2 Silken Thread each" },
+  { from = 155, to = 170, craft = "Barbaric Shoulders", n = 15, mats = "8 Heavy Leather, 1 Cured Heavy Hide, 2 Fine Thread each" },
+  { from = 170, to = 185, craft = "Guardian Gloves", n = 15, mats = "4 Heavy Leather, 1 Cured Heavy Hide, 1 Silken Thread each" },
+  { from = 185, to = 195, craft = "Barbaric Harness", n = 16, mats = "14 Heavy Leather, 2 Fine Thread, 1 Iron Buckle each" },
+  { from = 195, to = 205, craft = "Nightscape Headband", n = 12, mats = "5 Thick Leather, 2 Silken Thread each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
-  -- (from here: WoW Forever's own skill ranges, which run about 25 points lower than Classic's)
-  { from = 210, to = 225, craft = "Nightscape Pants", n = 17, mats = "14 Thick Leather, 4 Silken Thread each" },
-  { from = 225, to = 235, craft = "Nightscape Boots", n = 12, mats = "16 Thick Leather, 2 Heavy Silken Thread each" },
-  { from = 235, to = 265, craft = "Wicked Leather Gauntlets", n = 37, mats = "8 Rugged Leather, 1 Black Dye, 1 Rune Thread each (pattern: Werg Thickblade, Tirisfal; you can learn it at 235)" },
-  { from = 265, to = 300, craft = "Runic Leather Headband", n = 51, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel; you can learn it at 265)" },
+  { from = 205, to = 235, craft = "Nightscape Pants", n = 36, mats = "14 Thick Leather, 4 Silken Thread each (only the Artisan trainers teach it: they sell for more than the boots)" },
+  { from = 235, to = 265, craft = "Wicked Leather Gauntlets", n = 36, mats = "8 Rugged Leather, 1 Black Dye, 1 Rune Thread each (pattern: Werg Thickblade, Tirisfal Glades; Leonard Porter, Western Plaguelands. Or Blue Suede Shoes if the pattern costs more than about 13 gold)" },
+  { from = 265, to = 300, craft = "Runic Leather Headband", n = 53, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel)" },
 }
 L.mats = { 2318, 2319, 4234, 4304, 8170, 783, 4232, 4235, 8169, 8171 }
 RG.RegisterProfession("Leatherworking", L)
