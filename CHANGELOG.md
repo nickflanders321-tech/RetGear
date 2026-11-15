@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **The 1 Ring is full art.** Its card used to show the game's small ring icon in a framed square. Now a big gold ring fills the card, in a new Waypath+ drawing: tilted towards you over a swirling painted backdrop of fiery reds and deep blue, with engraved waypoint stars round the band, a round-cut sapphire shining a beam upward, blue orbits of light, and the five +1s beneath it.
+- **The 1 Ring is full art.** Its card used to show the game's small ring icon in a framed square. Now a big gold ring fills the card, in a new Waypath+ drawing: tilted towards you over a swirling painted backdrop of fiery reds and deep blue, with "Every step counts ✦ Waypath+ ✦ The road goes on" engraved round the band, a round-cut sapphire shining a beam upward, blue orbits of light, and the five +1s beneath it.
 
 ## v1.43.3
 
