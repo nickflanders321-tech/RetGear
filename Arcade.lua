@@ -1664,6 +1664,10 @@ function RG.ArcadePaintMythic(w, card, copies, a)
     setfont(w.engr, "head", math.max(6, 7 * u))
     w.engr:SetText(engraved or ""); w.engr:SetShown(engraved ~= nil)
   else w.mtext:Hide(); w.engr:Hide() end
+  -- the opener's name, engraved round the band (before anyone has opened it: the road goes on)
+  if RG.ArcadeRingEngrave then
+    RG.ArcadeRingEngrave(w, my.one and ((a and a.ring and a.ring.by and a.ring.by ~= "?" and a.ring.by) or "The road goes on") or nil)
+  end
   -- glow, light sweep, sparkles, the turning edge
   local fx = FX[5]
   w.fxset = fx
@@ -1685,7 +1689,10 @@ local function paint(w, card, finish, copies)
   w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
   -- (a widget that showed a Mythic before goes back to the ordinary pieces)
-  if rawget(w, "mart") then w.pclip:Hide(); w.mframe:Hide(); w.mtext:Hide(); w.engr:Hide(); w.text:Show() end
+  if rawget(w, "mart") then
+    w.pclip:Hide(); w.mframe:Hide(); w.mtext:Hide(); w.engr:Hide(); w.text:Show()
+    if RG.ArcadeRingEngrave then RG.ArcadeRingEngrave(w, nil) end
+  end
   -- the art window: a Full art print's picture runs to the card's edge
   local full = finish == 4 and card and not card.mythic
   do

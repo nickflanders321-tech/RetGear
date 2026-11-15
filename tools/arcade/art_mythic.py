@@ -80,6 +80,42 @@ def conic(stops, size=256):
 
 def hexs(*cols): return [tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)) for c in cols]
 
+# The letters The 1 Ring engraves its opener's name with, in game (Arcade.lua places them round the band): one 32 px
+# cell each on an 8x8 sheet, drawn like the line baked into the art (dark Cinzel, a light edge below), and each letter's
+# width (in ems) written into ArcadeMythic.lua between its "ring glyphs" markers.
+GLYPHS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ") + ["\u2726", "'", "-", " "] + list("\u00c0\u00c1\u00c2\u00c3\u00c4\u00c5\u00c6\u00c7\u00c8\u00c9\u00ca\u00cb\u00cc\u00cd\u00ce\u00cf\u00d0\u00d1\u00d2\u00d3\u00d4\u00d5\u00d6\u00d8\u00d9\u00da\u00db\u00dc\u00dd\u00de\u00df")
+GCELL, GEM = 32, 22
+
+def glyph_sheet(pg):
+    import base64, json
+    font64 = base64.b64encode(open(FONT, "rb").read()).decode()
+    pg.set_content("""<!doctype html><html><head><meta charset="utf-8"><style>@font-face{font-family:Cz;src:url(data:font/ttf;base64,%s)}
+html,body{margin:0;background:transparent}</style></head><body><canvas id="g" width="256" height="256"></canvas>
+<span style="font-family:Cz">x</span></body></html>""" % font64)
+    pg.wait_for_timeout(300)
+    out = pg.evaluate("""([chars, cell, em]) => document.fonts.load(em + 'px Cz').then(() => {
+      const c = document.getElementById('g'), x = c.getContext('2d'), w = [];
+      x.font = em + 'px Cz'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      chars.forEach((ch, i) => {
+        const cx = (i % 8) * cell + cell / 2, cy = Math.floor(i / 8) * cell + cell / 2 + 1;
+        x.fillStyle = 'rgba(255,246,216,0.7)'; x.fillText(ch, cx + 1.2, cy + 1.5);
+        x.fillStyle = '#4a2d05'; x.fillText(ch, cx, cy);
+        w.push(x.measureText(ch).width / em);
+      });
+      return [c.toDataURL('image/png'), w];
+    })""", [GLYPHS, GCELL, GEM])
+    import io
+    im = Image.open(io.BytesIO(base64.b64decode(out[0].split(",")[1]))).convert("RGBA")
+    save("RingGlyphs", im)
+    lua = os.path.join(HERE, "..", "..", "ArcadeMythic.lua")
+    src = open(lua, encoding="utf-8").read()
+    rows = ", ".join('["%s"] = { %d, %.3f }' % (ch.replace("\\", "\\\\").replace('"', '\\"'), i, wd) for i, (ch, wd) in enumerate(zip(GLYPHS, out[1])))
+    block = "-- ring glyphs (written by tools/arcade/art_mythic.py): letter -> { cell on RingGlyphs.tga, width in ems }\n" \
+            "RG.ARCADE_RING_GLYPHS = { cell = %d, em = %d, %s }\n-- ring glyphs end\n" % (GCELL, GEM, rows)
+    a, b = src.find("-- ring glyphs ("), src.find("-- ring glyphs end\n")
+    src = src[:a] + block + src[b + len("-- ring glyphs end\n"):] if a >= 0 and b > a else src.rstrip("\n") + "\n\n" + block
+    open(lua, "w", encoding="utf-8").write(src)
+
 def main():
     body = Image.open(os.path.join(OUT, "Body.tga")).convert("RGBA")
     alpha = body.split()[3].point(lambda v: 255 if v > 200 else (0 if v < 8 else v))   # the card's shape
@@ -97,6 +133,7 @@ def main():
             out = Image.new("RGBA", body.size, (0, 0, 0, 0)); out.paste(art, (0, 0))
             out.putalpha(alpha)
             save("Mythic%d" % i, out)
+        glyph_sheet(pg)
         b.close()
     save("Prism", conic(hexs("#ffe08a", "#ff9ecb", "#b58cff", "#6fd6ff", "#8affc9") * 2))
     save("PrismRing", conic(hexs("#060805", "#fff7d6", "#5cff3b", "#060805", "#ffffff", "#d9a441") * 2))
