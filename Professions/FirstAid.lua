@@ -3,7 +3,7 @@
 -- guide (beta data; 225-300 not yet tested on Forever).
 local _, RG = ...
 local F = { name = "First Aid", kind = "secondary", icon = "Interface\\Icons\\Spell_Holy_SealOfSacrifice" }
-F.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
+F.source = "wow-professions.com WoW Forever guide (checked against the game's recipe tables)"
 F.train = {
   start = { O = "Rawrk in the Razor Hill barracks", R = "Rawrk in the Razor Hill barracks", T = "Vira Younghoof in the Bloodhoof Village inn", U = "Nurse Neela in the Brill inn", S = "the Zephras Isle First Aid trainers" },
   apprentice = "Arnok (Orgrimmar), Mary Edras (Undercity), Pand Stonebinder (Thunder Bluff)",
@@ -33,7 +33,7 @@ F.plan = {
   { from = 180, to = 210, craft = "Heavy Silk Bandage", n = 46, mats = "2 Silk Cloth each" },
   { from = 210, to = 225, craft = "Mageweave Bandage", n = 17, mats = "1 Mageweave Cloth each" },
   { from = 225, to = 225, train = "Artisan: the Triage quest at Hammerfall (level 35)" },
-  { from = 225, to = 240, craft = "Superior Healing Potion", n = 16, mats = "1 Sungrass, 1 Soothing Spices, 1 Crystal Vial each" },
+  { from = 225, to = 240, craft = "Mageweave Bandage", n = 29, mats = "1 Mageweave Cloth each" },
   { from = 240, to = 260, craft = "Heavy Mageweave Bandage", n = 30, mats = "2 Mageweave Cloth each" },
   { from = 260, to = 275, craft = "Runecloth Bandage", n = 20, mats = "1 Runecloth each" },
   { from = 275, to = 300, craft = "Major Healing Potion", n = 30, mats = "1 Golden Sansam, 3 Soothing Spices, 1 Crystal Vial each" },

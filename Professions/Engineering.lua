@@ -2,7 +2,7 @@
 -- Forever guide (beta data; past 225 not yet tested on Forever). Pairs with Mining.
 local _, RG = ...
 local G = { name = "Engineering", kind = "craft", icon = "Interface\\Icons\\Trade_Engineering" }
-G.source = "wow-professions.com WoW Forever guide (Classic route past 225)"
+G.source = "wow-professions.com WoW Forever guide (checked against the game's recipe tables)"
 G.train = {
   start = { O = "Mukdrak in Razor Hill", R = "Mukdrak in Razor Hill", T = "Thund in Orgrimmar", U = "Graham Van Talen in Undercity", S = "Thund in Orgrimmar" },
   apprentice = "Thund (Orgrimmar), Graham Van Talen (Undercity)",
@@ -35,7 +35,7 @@ G.plan = {
   { from = 135, to = 150, craft = "Whirring Bronze Gizmo", n = 26, mats = "2 Bronze Bar, 1 Wool Cloth each (and 30 Heavy Blasting Powder from 30 Heavy Stone)" },
   { from = 150, to = 160, craft = "Bronze Framework", n = 15, mats = "2 Bronze Bar, 1 Medium Leather, 1 Wool Cloth each" },
   { from = 160, to = 175, craft = "Explosive Sheep", n = 15, mats = "2 Heavy Blasting Powder, 1 Whirring Bronze Gizmo, 1 Bronze Framework, 2 Wool Cloth each" },
-  { from = 175, to = 194, craft = "Iron Grenade", n = 28, mats = "1 Iron Bar, 1 Heavy Blasting Powder, 1 Silk Cloth each (and 10 Solid Blasting Powder)" },
+  { from = 175, to = 194, craft = "Solid Blasting Powder", n = 60, mats = "2 Solid Stone each. Keep them for the triggers and bombs." },
   { from = 194, to = 195, craft = "Gyromatic Micro-Adjustor", n = 1, mats = "4 Steel Bar (keep it)" },
   { from = 195, to = 200, craft = "Mithril Tube", n = 6, mats = "3 Mithril Bar each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
