@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **The 1 Ring is full art.** Its card used to show the game's small ring icon in a framed square. Now a gold ring with an emerald fills the card, in a new Waypath+ drawing, with the five +1s beneath it.
+
 ## v1.43.3
 
 - **Your Mythics come first in your collection.** Every Mythic you've pulled now opens the collection, whatever the sort. A dungeon's Mythic was saved properly, but it was sorted last among your owned cards and looked like that dungeon boss's regular card, so it was easy to miss.

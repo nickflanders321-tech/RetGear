@@ -3,6 +3,10 @@
           <radialGradient id="bg" cx="0.5" cy="0.35" r="0.78"><stop offset="0" stop-color="#3f7a2a"/><stop offset="0.38" stop-color="#173312"/><stop offset="1" stop-color="#040603"/></radialGradient>
           <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff7d6" stop-opacity="0.9"/><stop offset="0.45" stop-color="#8dff6a" stop-opacity="0.35"/><stop offset="1" stop-color="#8dff6a" stop-opacity="0"/></radialGradient>
           <linearGradient id="one" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.03"/></linearGradient>
+          <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffbe6"/><stop offset="0.28" stop-color="#ffd76a"/><stop offset="0.6" stop-color="#c98f22"/><stop offset="1" stop-color="#6e4a10"/></linearGradient>
+          <linearGradient id="goldIn" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5c12"/><stop offset="0.5" stop-color="#e9b64a"/><stop offset="1" stop-color="#fff2c2"/></linearGradient>
+          <radialGradient id="gem" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="#eaffd9"/><stop offset="0.25" stop-color="#8dff6a"/><stop offset="0.65" stop-color="#1f9e2c"/><stop offset="1" stop-color="#0b3d10"/></radialGradient>
+          <radialGradient id="gemGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#d8ffc4" stop-opacity="0.95"/><stop offset="0.5" stop-color="#5cff3b" stop-opacity="0.35"/><stop offset="1" stop-color="#5cff3b" stop-opacity="0"/></radialGradient>
         </defs>
         <rect width="390" height="550" fill="url(#bg)"/>
         <g fill="#eaffd9" opacity="0.14">
@@ -11,5 +15,27 @@
         <text x="195" y="330" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="400" fill="url(#one)">1</text>
         <circle cx="195" cy="190" r="170" fill="url(#glow)"/>
         <circle cx="195" cy="190" r="132" fill="none" stroke="#fff7d6" stroke-width="1.5" stroke-dasharray="2 9"/>
+        <!-- the Ring itself (original Waypath+ drawing): a gold band standing on edge, an emerald on top -->
+        <ellipse cx="195" cy="320" rx="80" ry="11" fill="#000" opacity="0.45"/>
+        <g transform="translate(195 214)">
+          <ellipse rx="72" ry="94" fill="none" stroke="#3a2608" stroke-width="26" opacity="0.55"/>
+          <ellipse rx="72" ry="94" fill="none" stroke="url(#gold)" stroke-width="22"/>
+          <ellipse rx="61" ry="83" fill="none" stroke="url(#goldIn)" stroke-width="3" opacity="0.9"/>
+          <ellipse rx="83" ry="105" fill="none" stroke="#fff3c9" stroke-width="1.4" opacity="0.8"/>
+          <path fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.75" d="M -70,-24 A 72,94 0 0 1 -34,-83"/>
+          <g fill="#5cff3b" stroke="#eaffd9" stroke-width="0.8"><circle cx="-72" cy="0" r="3.4"/><circle cx="-51" cy="66" r="3.4"/><circle cx="0" cy="94" r="3.4"/><circle cx="51" cy="66" r="3.4"/><circle cx="72" cy="0" r="3.4"/></g>
+          <circle cx="0" cy="-112" r="66" fill="url(#gemGlow)"/>
+          <path fill="url(#gold)" stroke="#fff3c9" stroke-width="1.2" d="M -30,-100 L 30,-100 L 22,-86 L -22,-86 Z"/>
+          <g transform="translate(0 -122)">
+            <polygon points="-30,0 -18,-20 18,-20 30,0 18,20 -18,20" fill="url(#gem)" stroke="#eaffd9" stroke-width="1.5"/>
+            <polygon points="-18,-20 0,-6 18,-20" fill="#ffffff" opacity="0.35"/>
+            <polygon points="-30,0 -10,0 -18,-20" fill="#ffffff" opacity="0.18"/>
+            <polygon points="30,0 10,0 18,20" fill="#062b09" opacity="0.4"/>
+            <polygon points="-10,0 10,0 0,-6" fill="#ffffff" opacity="0.25"/>
+            <polygon points="-10,0 10,0 18,20 -18,20" fill="#0b3d10" opacity="0.25"/>
+            <path d="M -16,-13 L -7,-17" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+            <g fill="url(#gold)" stroke="#6e4a10" stroke-width="0.8"><polygon points="-33,-3 -26,-9 -24,3"/><polygon points="33,-3 26,-9 24,3"/><polygon points="-4,22 4,22 0,27"/></g>
+          </g>
+        </g>
         <g fill="#fff8dc"><circle cx="40" cy="52" r="1.6"/><circle cx="346" cy="60" r="1.8"/><circle cx="352" cy="300" r="1.2"/><circle cx="42" cy="296" r="1.3"/><circle cx="120" cy="34" r="1"/><circle cx="270" cy="30" r="1.2"/></g>
       </svg>

@@ -3,8 +3,7 @@ and the card-shaped mask (CardMask.tga).
 
 Each card is drawn from an SVG scene in tools/arcade/mythic/ (original Waypath+ art), with the name plate, type line,
 rarity badge and collector number painted on, then cut to the card's shape. The rules text, the engraving and the
-numbers are drawn by the add-on on top (Arcade.lua). The 1 Ring's picture leaves a framed square in the middle: the
-add-on shows the item's own icon there, from the player's game files.
+numbers are drawn by the add-on on top (Arcade.lua). The 1 Ring is full art: the ring is painted in its SVG too.
 
 Needs Python Playwright with Chromium (to render the SVG and the lettering):  python3 tools/arcade/art_mythic.py
 """
@@ -33,15 +32,11 @@ CARDS = [
 def page_html(name, svg, size, typ, badge, num, dark, typecol, flavour, ring):
     slot = ""
     if ring:
-        # the framed square the item's icon goes in (card units: centre 128,118, 84 wide; the icon itself is 64)
-        slot = ('<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;box-sizing:border-box;border-radius:%dpx;'
-                'border:%dpx solid #fff7d6;background:linear-gradient(145deg,#1c2b16,#0a1208);'
-                'box-shadow:inset 0 0 0 %dpx #5cff3b, inset 0 0 %dpx rgba(0,0,0,.8), 0 0 %dpx rgba(140,255,100,.9)"></div>'
-                % (86 * S, 76 * S, 84 * S, 84 * S, 12 * S, 2 * S, 2 * S, 14 * S, 16 * S))
+        # the five +1s under the Ring (the Ring itself is painted in the SVG, full art, since 1.43.4)
         stats = "".join('<span style="padding:%dpx %dpx;border-radius:99px;background:rgba(6,8,5,.8);border:1px solid #5cff3b">+1 %s</span>'
                         % (1 * S, 4 * S, s) for s in ("STR", "AGI", "STA", "INT", "SPI"))
         slot += ('<div style="position:absolute;left:0;top:%dpx;width:%dpx;display:flex;justify-content:center;gap:%dpx;'
-                 'font:800 %dpx Cz;letter-spacing:%dpx;color:#b9ffa6">%s</div>' % (170 * S, W * S, 3 * S, 6 * S, 0, stats))
+                 'font:800 %dpx Cz;letter-spacing:%dpx;color:#b9ffa6">%s</div>' % (212 * S, W * S, 3 * S, 6 * S, 0, stats))
     badge_css = ("background:linear-gradient(180deg,#fff7d6,#d9a441);border:1px solid #fff;color:#1d1405" if ring
                  else "background:rgba(%s,.8);border:1px solid rgba(255,233,168,.75);color:#ffe9a8" % dark)
     return """<!doctype html><html><head><meta charset="utf-8"><style>
