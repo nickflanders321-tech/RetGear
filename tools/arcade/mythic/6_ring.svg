@@ -5,11 +5,11 @@
           <linearGradient id="one" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.03"/></linearGradient>
           <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffbe6"/><stop offset="0.28" stop-color="#ffd76a"/><stop offset="0.6" stop-color="#c98f22"/><stop offset="1" stop-color="#6e4a10"/></linearGradient>
           <linearGradient id="goldIn" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5c12"/><stop offset="0.5" stop-color="#e9b64a"/><stop offset="1" stop-color="#fff2c2"/></linearGradient>
-          <radialGradient id="gem" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="#eaffd9"/><stop offset="0.25" stop-color="#8dff6a"/><stop offset="0.65" stop-color="#1f9e2c"/><stop offset="1" stop-color="#0b3d10"/></radialGradient>
-          <radialGradient id="gemGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#d8ffc4" stop-opacity="0.95"/><stop offset="0.5" stop-color="#5cff3b" stop-opacity="0.35"/><stop offset="1" stop-color="#5cff3b" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gem" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="#e4f2ff"/><stop offset="0.25" stop-color="#7cc4ff"/><stop offset="0.65" stop-color="#1546c8"/><stop offset="1" stop-color="#06185e"/></radialGradient>
+          <radialGradient id="gemGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#cfe8ff" stop-opacity="0.95"/><stop offset="0.5" stop-color="#3d9bff" stop-opacity="0.35"/><stop offset="1" stop-color="#3d9bff" stop-opacity="0"/></radialGradient>
           <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5"/></filter>
           <filter id="softer" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
-          <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d8ffc4" stop-opacity="0.9"/><stop offset="1" stop-color="#5cff3b" stop-opacity="0"/></linearGradient>
+          <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfe8ff" stop-opacity="0.9"/><stop offset="1" stop-color="#3d9bff" stop-opacity="0"/></linearGradient>
           <linearGradient id="goldBack" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4a3008"/><stop offset="0.5" stop-color="#a8751c"/><stop offset="1" stop-color="#4a3008"/></linearGradient>
           <symbol id="spark" viewBox="-10 -10 20 20"><path d="M0,-10 L1.6,-1.6 L10,0 L1.6,1.6 L0,10 L-1.6,1.6 L-10,0 L-1.6,-1.6 Z" fill="#ffffff"/></symbol>
           <filter id="swirl" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.005 0.008" numOctaves="2" seed="11"/><feDisplacementMap in="SourceGraphic" scale="210" xChannelSelector="R" yChannelSelector="B"/><feGaussianBlur stdDeviation="4.5"/></filter>
@@ -36,7 +36,7 @@
         <ellipse cx="195" cy="336" rx="60" ry="5" fill="#ff8a3a" opacity="0.35" filter="url(#soft)"/>
         <g transform="translate(195 208) rotate(-14) scale(1.12)">
           <!-- orbits behind -->
-          <ellipse rx="128" ry="34" transform="rotate(28)" fill="none" stroke="#8dff6a" stroke-width="1.6" opacity="0.45"/>
+          <ellipse rx="128" ry="34" transform="rotate(28)" fill="none" stroke="#7cc4ff" stroke-width="1.6" opacity="0.45"/>
           <ellipse rx="128" ry="34" transform="rotate(-38)" fill="none" stroke="#fff7d6" stroke-width="1.2" opacity="0.35"/>
           <!-- the band: the inside face (seen through the opening), then the outer face -->
           <ellipse cx="7" cy="2" rx="62" ry="86" fill="none" stroke="url(#goldBack)" stroke-width="10"/>
@@ -45,35 +45,41 @@
           <ellipse rx="84" ry="106" fill="none" stroke="#fff3c9" stroke-width="1.2" opacity="0.9"/>
           <ellipse rx="64" ry="86" fill="none" stroke="#6e4a10" stroke-width="1.2" opacity="0.9"/>
           <!-- engraved waypoint stars round the band, softly lit green -->
-          <g fill="#5cff3b" opacity="0.7" filter="url(#soft)"><use href="#star4" x="67.0" y="13.6" width="11" height="11"/><use href="#star4" x="53.5" y="52.5" width="11" height="11"/><use href="#star4" x="28.2" y="80.0" width="11" height="11"/><use href="#star4" x="-3.7" y="90.5" width="11" height="11"/><use href="#star4" x="-36.0" y="82.0" width="11" height="11"/><use href="#star4" x="-62.2" y="56.2" width="11" height="11"/><use href="#star4" x="-77.2" y="18.1" width="11" height="11"/><use href="#star4" x="-78.0" y="-24.6" width="11" height="11"/><use href="#star4" x="-64.5" y="-63.5" width="11" height="11"/><use href="#star4" x="51.2" y="-67.2" width="11" height="11"/><use href="#star4" x="66.2" y="-29.1" width="11" height="11"/></g>
+          <g fill="#3d9bff" opacity="0.7" filter="url(#soft)"><use href="#star4" x="67.0" y="13.6" width="11" height="11"/><use href="#star4" x="53.5" y="52.5" width="11" height="11"/><use href="#star4" x="28.2" y="80.0" width="11" height="11"/><use href="#star4" x="-3.7" y="90.5" width="11" height="11"/><use href="#star4" x="-36.0" y="82.0" width="11" height="11"/><use href="#star4" x="-62.2" y="56.2" width="11" height="11"/><use href="#star4" x="-77.2" y="18.1" width="11" height="11"/><use href="#star4" x="-78.0" y="-24.6" width="11" height="11"/><use href="#star4" x="-64.5" y="-63.5" width="11" height="11"/><use href="#star4" x="51.2" y="-67.2" width="11" height="11"/><use href="#star4" x="66.2" y="-29.1" width="11" height="11"/></g>
           <g fill="#f4ffe9" stroke="#5a3a08" stroke-width="0.6"><use href="#star4" x="67.0" y="13.6" width="11" height="11"/><use href="#star4" x="53.5" y="52.5" width="11" height="11"/><use href="#star4" x="28.2" y="80.0" width="11" height="11"/><use href="#star4" x="-3.7" y="90.5" width="11" height="11"/><use href="#star4" x="-36.0" y="82.0" width="11" height="11"/><use href="#star4" x="-62.2" y="56.2" width="11" height="11"/><use href="#star4" x="-77.2" y="18.1" width="11" height="11"/><use href="#star4" x="-78.0" y="-24.6" width="11" height="11"/><use href="#star4" x="-64.5" y="-63.5" width="11" height="11"/><use href="#star4" x="51.2" y="-67.2" width="11" height="11"/><use href="#star4" x="66.2" y="-29.1" width="11" height="11"/></g>
           <ellipse rx="74" ry="96" fill="none" stroke="#6e4a10" stroke-width="0.8" stroke-dasharray="1 5" opacity="0.7"/>
           <path fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.8" d="M -72,-26 A 74,96 0 0 1 -36,-84"/>
           <path fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.5" d="M 40,80 A 74,96 0 0 1 68,38"/>
           <!-- orbits in front (their near halves) -->
-          <path d="M -112.9,-60.1 A 128,34 28 0 0 112.9,60.1" transform="rotate(0)" fill="none" stroke="#8dff6a" stroke-width="2.2" opacity="0.8"/>
-          <circle cx="104" cy="70" r="3.2" fill="#eaffd9"/><circle cx="-84" cy="-28" r="2.4" fill="#eaffd9" opacity="0.8"/>
+          <path d="M -112.9,-60.1 A 128,34 28 0 0 112.9,60.1" transform="rotate(0)" fill="none" stroke="#7cc4ff" stroke-width="2.2" opacity="0.8"/>
+          <circle cx="104" cy="70" r="3.2" fill="#e4f2ff"/><circle cx="-84" cy="-28" r="2.4" fill="#e4f2ff" opacity="0.8"/>
           <!-- the setting and the emerald -->
           <circle cx="0" cy="-124" r="70" fill="url(#gemGlow)"/>
           <path fill="url(#gold)" stroke="#fff3c9" stroke-width="1.2" d="M -32,-100 L 32,-100 L 23,-85 L -23,-85 Z"/>
-          <g transform="translate(0 -126)">
-            <polygon points="-36,0 -22,-24 22,-24 36,0 22,24 -22,24" fill="#5cff3b" opacity="0.55" filter="url(#softer)"/>
-            <polygon points="-34,0 -21,-23 21,-23 34,0 21,23 -21,23" fill="url(#gem)" stroke="#eaffd9" stroke-width="1.6"/>
-            <polygon points="-21,-23 0,-8 21,-23" fill="#ffffff" opacity="0.38"/>
-            <polygon points="-34,0 -12,0 -21,-23" fill="#ffffff" opacity="0.2"/>
-            <polygon points="34,0 12,0 21,23" fill="#062b09" opacity="0.45"/>
-            <polygon points="-12,0 12,0 0,-8" fill="#ffffff" opacity="0.3"/>
-            <polygon points="-12,0 12,0 21,23 -21,23" fill="#0b3d10" opacity="0.28"/>
-            <polygon points="-12,0 0,-8 12,0 0,9" fill="#d8ffc4" opacity="0.5"/>
-            <path d="M -19,-15 L -9,-19" stroke="#fff" stroke-width="2.8" stroke-linecap="round" opacity="0.95"/>
-            <g fill="url(#gold)" stroke="#6e4a10" stroke-width="0.8"><polygon points="-38,-3 -30,-10 -27,4"/><polygon points="38,-3 30,-10 27,4"/><polygon points="-5,25 5,25 0,31"/><polygon points="-5,-25 5,-25 0,-31"/></g>
-            <use href="#spark" x="-26" y="-34" width="26" height="26" opacity="0.95"/>
+          <g transform="translate(0 -124) scale(1.18)">
+            <ellipse rx="34" ry="31" fill="#4aa8ff" opacity="0.6" filter="url(#softer)"/>
+            <ellipse rx="27" ry="24.3" fill="url(#gem)" stroke="#dcefff" stroke-width="1.6"/>
+            <polygon points="0.0,-24.3 10.3,-22.5 19.1,-17.2 5.0,-10.8" fill="#ffffff" opacity="0.36"/>
+            <polygon points="19.1,-17.2 24.9,-9.3 27.0,0.0 12.0,-4.5" fill="#ffffff" opacity="0.16"/>
+            <polygon points="27.0,0.0 24.9,9.3 19.1,17.2 12.0,4.5" fill="#ffffff" opacity="0.26"/>
+            <polygon points="19.1,17.2 10.3,22.5 0.0,24.3 5.0,10.8" fill="#ffffff" opacity="0.09"/>
+            <polygon points="19.1,17.2 0.0,24.3 5.0,10.8" fill="#030b2e" opacity="0.4"/>
+            <polygon points="0.0,24.3 -10.3,22.5 -19.1,17.2 -5.0,10.8" fill="#ffffff" opacity="0.04"/>
+            <polygon points="0.0,24.3 -19.1,17.2 -5.0,10.8" fill="#030b2e" opacity="0.4"/>
+            <polygon points="-19.1,17.2 -24.9,9.3 -27.0,0.0 -12.0,4.5" fill="#ffffff" opacity="0.04"/>
+            <polygon points="-19.1,17.2 -27.0,0.0 -12.0,4.5" fill="#030b2e" opacity="0.4"/>
+            <polygon points="-27.0,0.0 -24.9,-9.3 -19.1,-17.2 -12.0,-4.5" fill="#ffffff" opacity="0.12"/>
+            <polygon points="-19.1,-17.2 -10.3,-22.5 -0.0,-24.3 -5.0,-10.8" fill="#ffffff" opacity="0.24"/>
+            <polygon points="5.0,-10.8 12.0,-4.5 12.0,4.5 5.0,10.8 -5.0,10.8 -12.0,4.5 -12.0,-4.5 -5.0,-10.8" fill="#bfe2ff" opacity="0.35" stroke="#ffffff" stroke-width="0.6" stroke-opacity="0.6"/>
+            <path d="M -15,-14 L -6,-19" stroke="#fff" stroke-width="2.8" stroke-linecap="round" opacity="0.95"/>
+            <g fill="url(#gold)" stroke="#6e4a10" stroke-width="0.8"><polygon points="-30,-6 -24,-14 -21,-3"/><polygon points="30,-6 24,-14 21,-3"/><polygon points="-30,6 -24,14 -21,3"/><polygon points="30,6 24,14 21,3"/></g>
+            <use href="#spark" x="-28" y="-36" width="26" height="26" opacity="0.95"/>
           </g>
         </g>
         <!-- glints -->
         <use href="#spark" x="96" y="230" width="18" height="18" opacity="0.85"/>
         <use href="#spark" x="262" y="128" width="14" height="14" opacity="0.7"/>
         <use href="#spark" x="268" y="268" width="10" height="10" opacity="0.6"/>
-        <g fill="#b9ffa6"><circle cx="72" cy="150" r="1.8" opacity="0.8"/><circle cx="318" cy="200" r="2.2" opacity="0.8"/><circle cx="292" cy="96" r="1.4"/><circle cx="104" cy="300" r="1.6" opacity="0.7"/><circle cx="160" cy="70" r="1.2"/><circle cx="240" cy="330" r="1.4" opacity="0.7"/></g>
+        <g fill="#b8dcff"><circle cx="72" cy="150" r="1.8" opacity="0.8"/><circle cx="318" cy="200" r="2.2" opacity="0.8"/><circle cx="292" cy="96" r="1.4"/><circle cx="104" cy="300" r="1.6" opacity="0.7"/><circle cx="160" cy="70" r="1.2"/><circle cx="240" cy="330" r="1.4" opacity="0.7"/></g>
         <g fill="#fff8dc"><circle cx="40" cy="52" r="1.6"/><circle cx="346" cy="60" r="1.8"/><circle cx="352" cy="300" r="1.2"/><circle cx="42" cy="296" r="1.3"/><circle cx="120" cy="34" r="1"/><circle cx="270" cy="30" r="1.2"/></g>
       </svg>
