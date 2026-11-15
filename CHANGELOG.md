@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.42.0
 
 - **Every Waylaid Crate recipe is on the gear lists.** All the gear made by recipes bought with Merchant's Favor (at the Crossroads and in Redridge) is now listed for players of that profession, with its favor cost and the standing it needs. Before, most were cut unless they beat everything else by a wide margin. Waypath+ shows the ones that are real upgrades for you.
 - **Relics are on the gear lists.** Librams for paladins, idols for druids and totems for shamans now have their own slot in the Gear tab, the gear guide and the Character window panel. A relic's effect changes one of your spells, which stat weights can't measure, so relics are ranked by item level.
