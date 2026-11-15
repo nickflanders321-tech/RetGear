@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.43.0
 
 - **Profession guides checked against the game itself.** Waypath+ now compares every step of every profession guide with WoW Forever's own recipe tables, and the hourly data update repeats the check. If a game patch moves a recipe's skill range, the update is held back and flagged for a fix instead of going out wrong.
 - **Blacksmithing, Leatherworking and Tailoring past 225 are fixed.** WoW Forever moved most high-level recipes 20 to 45 points lower than in Classic, so the old steps had you making recipes that had already turned grey. The guides now follow wow-professions.com's updated WoW Forever routes, and every step matches the game's own recipe ranges:
