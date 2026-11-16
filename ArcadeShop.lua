@@ -1,6 +1,7 @@
 -- Waypath+ cards: the Shop tab (every pack in one place) and the sections the Sets tab and the Album are sorted into.
---   Shop: packs waiting to be opened first, then the regular packs, then each dungeon's, raid's and holiday's pack:
---   open the ones you have, buy the ones you can, and see how the others are earned. Chips pick one kind.
+--   Shop: a storefront with the three regular packs in display cases and an aisle each for dungeons, raids and
+--   holidays; an aisle lists its packs (ready to open, to buy, locked): open the ones you have, buy the ones you can,
+--   and see how the others are earned.
 --   Sections: Dungeons, Raids, Holidays, Field Guide and the Collection sets; the Sets tab shows one at a time and the
 --   Album's < > step through the section of the page you're on.
 local _, RG = ...
@@ -89,128 +90,214 @@ local function entries(ctx, view)
   return list
 end
 
-local CHIPS = { { "all", "All" }, { "waiting", "To open" }, { "regular", "Regular" }, { "dungeon", "Dungeons" }, { "raid", "Raids" }, { "holiday", "Holidays" } }
-local function filtered(ctx, view)
-  local all = entries(ctx, view)
-  local sec = view.shopSection or "all"
-  local out = {}
-  for _, e in ipairs(all) do
-    if sec == "all" or (sec == "waiting" and (e.count or 0) > 0) or e.section == sec then out[#out + 1] = e end
-  end
-  local rank = { regular = 0, dungeon = 1, raid = 2, holiday = 3 }
-  table.sort(out, function(x, y)
-    local wx, wy = (x.count or 0) > 0, (y.count or 0) > 0
-    if wx ~= wy then return wx end                                  -- packs to open first
-    if x.section ~= y.section then return (rank[x.section] or 9) < (rank[y.section] or 9) end
-    if (x.order or 0) ~= (y.order or 0) then return (x.order or 0) < (y.order or 0) end   -- (unlocked before locked)
-    if (x.lo or 0) ~= (y.lo or 0) then return (x.lo or 0) < (y.lo or 0) end
-    return (x.art or 9) < (y.art or 9) or ((x.art or 9) == (y.art or 9) and x.title < y.title)
-  end)
-  return out, all
-end
-
 -- ---------------------------------------------------------------------------
--- The Shop page: chips, then a grid of pack tiles
+-- The Shop: a storefront (the three regular packs in their display cases, and an aisle each for dungeons, raids
+-- and holidays); an aisle opens a clean list of its packs, ready ones first, then the ones to buy, then the locked
 -- ---------------------------------------------------------------------------
 local MEDIA = "Interface\\AddOns\\Waypath\\Media\\Arcade\\"
-local COLS, ROWS, TW, TH, GX, GY = 3, 3, 228, 124, 14, 12
-local shop, chips, setChips
+local X0, PW = 34, 722                      -- the page's left edge and width in the window
+local CW, CH, CG = 230, 248, 16             -- a display case
+local AH = 168                              -- an aisle banner
+local RH, RP, ROWS = 46, 50, 8              -- a list row, its pitch, rows a page
+local AISLES = { { "dungeon", "Dungeons", "Dungeon packs" }, { "raid", "Raids", "Raid packs" }, { "holiday", "Holidays", "Holiday packs" } }
+local PACKCOL = { { 0.62, 0.52, 1 }, { 1, 0.62, 0.28 }, { 0.3, 0.92, 0.82 } }
+local shop, setChips
 
-local function makeTile(parent, u)
-  local t = CreateFrame("Button", nil, parent, "BackdropTemplate")
-  t:SetSize(TW, TH)
-  t:SetBackdrop({ bgFile = u.WHITE, edgeFile = u.WHITE, edgeSize = 1 })
-  t:SetBackdropColor(0.07, 0.062, 0.048, 0.96); t:SetBackdropBorderColor(0.45, 0.37, 0.22, 0.75)
-  t.glow = t:CreateTexture(nil, "BACKGROUND", nil, 1); t.glow:SetTexture(MEDIA .. "Soft"); t.glow:SetBlendMode("ADD")
-  t.glow:SetPoint("TOPLEFT", 2, -2); t.glow:SetSize(96, TH - 4); t.glow:SetAlpha(0.35)
-  -- the pack: its own wrapper art, or the plain foil tinted for a dungeon, raid or holiday, with the name on it
-  t.pack = CreateFrame("Frame", nil, t); t.pack:SetSize(58, 88); t.pack:SetPoint("LEFT", 12, 0)
-  t.body = t.pack:CreateTexture(nil, "ARTWORK", nil, 0); t.body:SetAllPoints(); t.body:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
-  t.trim = t.pack:CreateTexture(nil, "ARTWORK", nil, 1); t.trim:SetAllPoints(); t.trim:SetTexture(MEDIA .. "PackTrim"); t.trim:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
-  -- the pack's medallion shows its dungeon, raid or holiday: the place's own picture, cut round
-  t.emb = t.pack:CreateTexture(nil, "ARTWORK", nil, 2); t.emb:SetSize(27, 27); t.emb:SetPoint("CENTER", t.pack, "TOPLEFT", 29, -36.5)
-  -- (cut round with a mask texture: the older SetMask made every later SetTexCoord on it fail in this client, which
-  -- stopped the Shop part-way through painting its tiles)
+-- a place's picture in a round medallion: its painting, its loading screen (below the logo), or its first card's icon
+local function medal(tex, title)
+  local pl = RG.ARCADE_PLACE and RG.ARCADE_PLACE[title]
+  local scr = RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[title]
+  if pl then
+    local col, row = pl[2] % 8, math.floor(pl[2] / 8)
+    tex:SetTexture(MEDIA .. "Places" .. pl[1])
+    local x0, y0 = col * 120 / 1024, row * 84 / 1024
+    pcall(tex.SetTexCoord, tex, x0 + 18 / 1024, x0 + 102 / 1024, y0, y0 + 84 / 1024); return true
+  elseif scr then
+    tex:SetTexture(scr[1])
+    if scr[2] == 1 then pcall(tex.SetTexCoord, tex, 0.29, 0.71, 0.25, 1) else pcall(tex.SetTexCoord, tex, 0.22, 0.78, 0.25, 1) end
+    return true
+  end
+  local u = U()
+  for _, st in ipairs(u.getSets()) do
+    if st.name == title and st.cards[1] then
+      local ic = u.iconFor(st.cards[1])
+      if ic then tex:SetTexture(ic); pcall(tex.SetTexCoord, tex, 0.08, 0.92, 0.08, 0.92); return true end
+    end
+  end
+  return false
+end
+local function roundMask(parent, tex)
   pcall(function()
-    local mk = t.pack:CreateMaskTexture(); mk:SetAllPoints(t.emb)
+    local mk = parent:CreateMaskTexture(); mk:SetAllPoints(tex)
     mk:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    t.emb:AddMaskTexture(mk)
+    tex:AddMaskTexture(mk)
   end)
-  t.packName = u.fs(t.pack, "head", 7.5); t.packName:SetPoint("CENTER", 0, -4); t.packName:SetWidth(52); t.packName:SetJustifyH("CENTER")
-  t.packName:SetTextColor(1, 0.96, 0.85); t.packName:SetShadowColor(0, 0, 0, 1); t.packName:SetShadowOffset(1, -1)
-  t.badge = CreateFrame("Frame", nil, t, "BackdropTemplate"); t.badge:SetSize(24, 18); t.badge:SetPoint("TOPRIGHT", t.pack, "TOPRIGHT", 8, 6)
-  t.badge:SetBackdrop({ bgFile = u.WHITE, edgeFile = u.WHITE, edgeSize = 1 }); t.badge:SetBackdropColor(0.18, 0.5, 0.26, 1); t.badge:SetBackdropBorderColor(0.6, 1, 0.68, 1)
-  t.badge:SetFrameLevel(t.pack:GetFrameLevel() + 3)
-  t.badgeText = u.fs(t.badge, "head", 11); t.badgeText:SetPoint("CENTER", 0, 0); t.badgeText:SetTextColor(1, 1, 1)
-  t.title = u.fs(t, "head", 13.5); t.title:SetPoint("TOPLEFT", 84, -10); t.title:SetWidth(TW - 94); t.title:SetJustifyH("LEFT")
-  if t.title.SetMaxLines then t.title:SetMaxLines(2) end   -- (a long dungeon name takes two lines)
-  t.tag = u.fs(t, "head", 9.5); t.tag:SetPoint("TOPLEFT", t.title, "BOTTOMLEFT", 0, -3)
-  t.status = u.fs(t, "body", 12); t.status:SetPoint("TOPLEFT", t.tag, "BOTTOMLEFT", 0, -4); t.status:SetWidth(TW - 94); t.status:SetJustifyH("LEFT")
-  t.btn = u.gbtn(t, "Open", 126, 24, function() if t.entry and t.entry.enabled and t.entry.act then t.entry.act() end end)
-  t.btn:SetPoint("BOTTOMRIGHT", -10, 10)
-  -- the tile itself opens the set's Album page; hovering says what's in the pack and how it's earned
-  t:SetScript("OnClick", function() if t.entry and t.entry.album and RG.ArcadeOpenAlbum then RG.ArcadeOpenAlbum(t.entry.album) end end)
-  t:SetScript("OnEnter", function(self)
-    self:SetBackdropBorderColor(1, 0.84, 0.45, 1)
-    local e = self.entry; if not e then return end
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(e.title, 1, 0.93, 0.74)
-    GameTooltip:AddLine(e.sub, 0.9, 0.9, 0.9, true)
-    local o = RG.ArcadePackOdds and RG.ArcadePackOdds(e.tipKind or "dungeon")
-    if o then GameTooltip:AddLine(string.format("Mythic 1 in %d packs   ·   holo or full art %d%%", o.mythic, math.floor(o.holo * 100 + 0.5)), 1, 0.9, 0.55) end
-    if e.album then GameTooltip:AddLine("Click the tile to see its cards in the Album", 0.6, 0.6, 0.6) end
-    GameTooltip:Show()
-  end)
-  t:SetScript("OnLeave", function(self) self:SetBackdropBorderColor(0.45, 0.37, 0.22, 0.75); GameTooltip:Hide() end)
-  return t
+end
+-- a small foil pack tinted for its kind, with its place in the medallion
+local function miniPack(parent, w, h)
+  local p = CreateFrame("Frame", nil, parent); p:SetSize(w, h)
+  p.body = p:CreateTexture(nil, "ARTWORK", nil, 0); p.body:SetAllPoints(); p.body:SetTexture(MEDIA .. "PackBody"); p.body:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
+  p.trim = p:CreateTexture(nil, "ARTWORK", nil, 1); p.trim:SetAllPoints(); p.trim:SetTexture(MEDIA .. "PackTrim"); p.trim:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
+  p.emb = p:CreateTexture(nil, "ARTWORK", nil, 2); p.emb:SetSize(w * 0.46, w * 0.46); p.emb:SetPoint("CENTER", p, "TOPLEFT", w / 2, -h * 0.415)
+  roundMask(p, p.emb)
+  return p
+end
+local function paintMini(p, title, col)
+  p.body:SetVertexColor(col[1], col[2], col[3], 1)
+  p.emb:SetShown(medal(p.emb, title))
+end
+local function badge(parent, u)
+  local b = CreateFrame("Frame", nil, parent, "BackdropTemplate"); b:SetSize(24, 18)
+  b:SetBackdrop({ bgFile = u.WHITE, edgeFile = u.WHITE, edgeSize = 1 }); b:SetBackdropColor(0.18, 0.5, 0.26, 1); b:SetBackdropBorderColor(0.6, 1, 0.68, 1)
+  b.t = u.fs(b, "head", 11); b.t:SetPoint("CENTER", 0, 0); b.t:SetTextColor(1, 1, 1)
+  return b
+end
+local function tip(self, e)
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:AddLine(e.title, 1, 0.93, 0.74)
+  GameTooltip:AddLine(e.sub, 0.9, 0.9, 0.9, true)
+  local o = RG.ArcadePackOdds and RG.ArcadePackOdds(e.tipKind or "dungeon")
+  if o then GameTooltip:AddLine(string.format("Mythic 1 in %d packs   ·   holo or full art %d%%", o.mythic, math.floor(o.holo * 100 + 0.5)), 1, 0.9, 0.55) end
+  if e.album then GameTooltip:AddLine("Click to see its cards in the Album", 0.6, 0.6, 0.6) end
+  GameTooltip:Show()
 end
 
-local function paintTile(t, e)
-  t.entry = e
-  if e.art then
-    t.body:SetTexture(MEDIA .. "PackArt" .. e.art); t.body:SetVertexColor(1, 1, 1, 1); t.trim:Hide(); t.packName:SetText(""); t.emb:Hide()
-    local c = ({ { 0.62, 0.52, 1 }, { 1, 0.62, 0.28 }, { 0.3, 0.92, 0.82 } })[e.art]
-    t.glow:SetVertexColor(c[1], c[2], c[3])
-  else
-    local c = e.col or COL.dungeon
-    t.body:SetTexture(MEDIA .. "PackBody"); t.body:SetVertexColor(c[1], c[2], c[3], 1); t.trim:Show()
-    t.packName:SetText("")   -- (the tint says which kind; the name is beside it)
-    -- the medallion: the place's painting or loading screen, else its top card's icon
-    local shown = false
-    local pl = RG.ARCADE_PLACE and RG.ARCADE_PLACE[e.title]
-    local scr = RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[e.title]
-    if pl then
-      local col, row = pl[2] % 8, math.floor(pl[2] / 8)
-      t.emb:SetTexture(MEDIA .. "Places" .. pl[1])
-      -- (the middle of the painting, square)
-      local x0, y0 = col * 120 / 1024, row * 84 / 1024
-      pcall(t.emb.SetTexCoord, t.emb, x0 + 18 / 1024, x0 + 102 / 1024, y0, y0 + 84 / 1024); shown = true
-    elseif scr then
-      t.emb:SetTexture(scr[1])
-      -- (square, from below the logo at the loading screen's top)
-      if scr[2] == 1 then pcall(t.emb.SetTexCoord, t.emb, 0.29, 0.71, 0.25, 1) else pcall(t.emb.SetTexCoord, t.emb, 0.22, 0.78, 0.25, 1) end
-      shown = true
-    else
-      local u = U()
-      for _, st in ipairs(u.getSets()) do
-        if st.name == e.title and st.cards[1] then
-          local ic = u.iconFor(st.cards[1])
-          if ic then t.emb:SetTexture(ic); pcall(t.emb.SetTexCoord, t.emb, 0.08, 0.92, 0.08, 0.92); shown = true end
-          break
-        end
-      end
-    end
-    t.emb:SetShown(shown)
-    t.glow:SetVertexColor(c[1], c[2], c[3])
+-- one of the three regular packs, in its display case
+local function makeCase(parent, u)
+  local c = CreateFrame("Button", nil, parent); c:SetSize(CW, CH)
+  c.bg = c:CreateTexture(nil, "BACKGROUND"); c.bg:SetAllPoints(); c.bg:SetTexture(MEDIA .. "ShopCase")
+  c.glow = c:CreateTexture(nil, "BORDER"); c.glow:SetTexture(MEDIA .. "Glow"); c.glow:SetBlendMode("ADD"); c.glow:SetSize(220, 220); c.glow:SetPoint("CENTER", c, "BOTTOM", 0, 110)
+  c.name = u.fs(c, "title", 15); c.name:SetPoint("TOP", 0, -18); c.name:SetTextColor(1, 0.94, 0.78)
+  c.sub = u.fs(c, "body", 11); c.sub:SetPoint("TOP", c.name, "BOTTOM", 0, -3); c.sub:SetTextColor(0.86, 0.8, 0.86); c.sub:SetWidth(CW - 30)
+  c.pack = c:CreateTexture(nil, "ARTWORK"); c.pack:SetSize(84, 127); c.pack:SetPoint("BOTTOM", c, "BOTTOM", 0, CH * 0.142)
+  c.pack:SetTexCoord(6 / 256, 250 / 256, 100 / 512, 468 / 512)
+  c.shadow = c:CreateTexture(nil, "BORDER", nil, 1); c.shadow:SetTexture(MEDIA .. "Soft"); c.shadow:SetVertexColor(0, 0, 0, 0.75); c.shadow:SetSize(120, 18); c.shadow:SetPoint("CENTER", c.pack, "BOTTOM", 0, 2)
+  c.badge = badge(c, u); c.badge:SetPoint("CENTER", c.pack, "TOPRIGHT", -2, -4); c.badge:SetFrameLevel(c:GetFrameLevel() + 3)
+  c.btn = u.gbtn(c, "", 150, 24, function() if c.entry and c.entry.enabled and c.entry.act then c.entry.act() end end)
+  c.btn:SetPoint("BOTTOM", c, "BOTTOM", 0, 3)
+  c:SetScript("OnEnter", function(self) self.glow:SetAlpha(0.75); if self.entry then tip(self, self.entry) end end)
+  c:SetScript("OnLeave", function(self) self.glow:SetAlpha(0.45); GameTooltip:Hide() end)
+  c:SetScript("OnClick", function(self) if self.entry and self.entry.enabled and self.entry.act then self.entry.act() end end)
+  return c
+end
+local function paintCase(c, e)
+  c.entry = e
+  c.pack:SetTexture(MEDIA .. "PackArt" .. e.art)
+  local col = PACKCOL[e.art] or { 1, 0.9, 0.6 }
+  c.glow:SetVertexColor(col[1], col[2], col[3]); c.glow:SetAlpha(0.45)
+  c.name:SetText(e.title)
+  local def = e.def
+  c.sub:SetText(def and (def.size .. " cards   ·   " .. (def.rares > 1 and ("last " .. def.rares .. " rare or better") or "last one rare or better")) or "")
+  c.badge:SetShown((e.count or 0) > 0); c.badge.t:SetText(tostring(e.count or 0))
+  c.btn:SetText(e.label or ""); c.btn:SetEnabled(e.enabled and true or false)
+  c:Show()
+end
+
+-- an aisle: dungeons, raids or holidays, with three of its packs fanned out and how many are waiting
+local function makeAisle(parent, u)
+  local b = CreateFrame("Button", nil, parent); b:SetSize(CW, AH)
+  b.bd = b:CreateTexture(nil, "BACKGROUND"); b.bd:SetPoint("TOPLEFT", 6, -6); b.bd:SetPoint("BOTTOMRIGHT", -6, 6)
+  b.shade = b:CreateTexture(nil, "BACKGROUND", nil, 1); b.shade:SetPoint("TOPLEFT", 6, -6); b.shade:SetPoint("BOTTOMRIGHT", -6, 6)
+  b.shade:SetColorTexture(0.03, 0.025, 0.04, 0.72)
+  b.glow = b:CreateTexture(nil, "BORDER"); b.glow:SetTexture(MEDIA .. "Glow"); b.glow:SetBlendMode("ADD"); b.glow:SetSize(200, 200); b.glow:SetPoint("CENTER", b, "LEFT", 62, -8)
+  b.frame = b:CreateTexture(nil, "OVERLAY"); b.frame:SetAllPoints(); b.frame:SetTexture(MEDIA .. "ShopFrame")
+  b.packs = {}
+  for i = 1, 3 do
+    local p = miniPack(b, 44, 66); p:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 16 + (i - 1) * 26, 18 + (i == 2 and 10 or 0)); p:SetFrameLevel(b:GetFrameLevel() + (i == 2 and 3 or 1))
+    b.packs[i] = p
   end
-  t.badge:SetShown((e.count or 0) > 0); t.badgeText:SetText(tostring(e.count or 0))
-  t.title:SetText(e.title)
-  local tags = { regular = "|cffe8d5a8EVERY CARD|r", dungeon = "|cff8cc8ffDUNGEON PACK|r", raid = "|cffd9a5ffRAID PACK|r", holiday = "|cffff9fb0HOLIDAY PACK|r" }
-  t.tag:SetText(tags[e.section] or "")
-  t.status:SetText(e.status or "")
-  t.btn:SetText(e.label or ""); t.btn:SetEnabled(e.enabled and true or false)
-  t:SetAlpha((e.enabled or (e.count or 0) > 0) and 1 or 0.72)
-  t:Show()
+  b.title = u.fs(b, "title", 17); b.title:SetPoint("TOPLEFT", 18, -18); b.title:SetTextColor(1, 0.94, 0.78)
+  b.line1 = u.fs(b, "head", 11); b.line1:SetPoint("TOPRIGHT", -16, -60); b.line1:SetWidth(120); b.line1:SetJustifyH("RIGHT")
+  b.line2 = u.fs(b, "body", 11); b.line2:SetPoint("TOPRIGHT", b.line1, "BOTTOMRIGHT", 0, -4); b.line2:SetWidth(120); b.line2:SetJustifyH("RIGHT"); b.line2:SetTextColor(0.84, 0.8, 0.72)
+  b.go = u.fs(b, "head", 11); b.go:SetPoint("BOTTOMRIGHT", -18, 16); b.go:SetText("BROWSE  >"); b.go:SetTextColor(1, 0.86, 0.5)
+  b.badge = badge(b, u); b.badge:SetPoint("TOPRIGHT", -14, -14); b.badge:SetFrameLevel(b:GetFrameLevel() + 5)
+  b:SetScript("OnEnter", function(self) self.glow:SetAlpha(0.7); self.shade:SetColorTexture(0.03, 0.025, 0.04, 0.6) end)
+  b:SetScript("OnLeave", function(self) self.glow:SetAlpha(0.4); self.shade:SetColorTexture(0.03, 0.025, 0.04, 0.72) end)
+  return b
+end
+local function paintAisle(b, key, title, list, ctx)
+  local col = COL[key]
+  b.key = key
+  b.title:SetText(string.upper(title))
+  b.glow:SetVertexColor(col[1], col[2], col[3]); b.glow:SetAlpha(0.4)
+  local ready, open, locked, onNow, onUntil = 0, 0, 0, nil, nil
+  for _, e in ipairs(list) do
+    ready = ready + (e.count or 0)
+    if e.enabled and (e.count or 0) == 0 then open = open + 1 elseif not e.enabled and (e.count or 0) == 0 then locked = locked + 1 end
+    if key == "holiday" and e.order == 0 and not onNow then onNow = e.title end
+  end
+  -- the banner's picture: a place in this aisle with a loading screen (one with packs waiting first)
+  local pick
+  for _, e in ipairs(list) do if RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[e.title] and (not pick or ((e.count or 0) > 0 and (pick.count or 0) == 0)) then pick = e end end
+  local scr = pick and RG.ARCADE_PLACE_FILE[pick.title]
+  if scr then
+    b.bd:SetTexture(scr[1]); b.bd:SetVertexColor(1, 1, 1, 1)
+    -- (cut to the banner's shape, below the logo at the top of the loading screen)
+    local have = ((scr[2] == 1) and 16 / 9 or 4 / 3) / 0.78
+    local want = (CW - 12) / (AH - 12)
+    if have > want then local cut = (1 - want / have) / 2; b.bd:SetTexCoord(cut, 1 - cut, 0.22, 1) else b.bd:SetTexCoord(0, 1, 0.22, 1) end
+  else b.bd:SetColorTexture(col[1] * 0.25, col[2] * 0.25, col[3] * 0.25, 1) end
+  for i, p in ipairs(b.packs) do
+    local e = list[i]
+    if e then paintMini(p, e.title, col); p:Show() else p:Hide() end
+  end
+  b.badge:SetShown(ready > 0); b.badge.t:SetText(tostring(ready))
+  if ready > 0 then b.line1:SetText("|cff7be08a" .. ready .. " TO OPEN|r")
+  elseif key == "holiday" then b.line1:SetText(onNow and "|cff7be08aON NOW|r" or "|cffa89bc9NONE ON NOW|r")
+  else b.line1:SetText(open > 0 and ("|cffe8c46a" .. open .. " TO BUY|r") or "|cffa89bc9ALL LOCKED|r") end
+  if key == "holiday" then b.line2:SetText(onNow and onNow or (#list .. " holidays,\nearned while they're on"))
+  else b.line2:SetText(#list .. " " .. (key == "raid" and "raids" or "dungeons") .. (locked > 0 and ("\n" .. locked .. " still locked") or "\nall unlocked")) end
+  b:Show()
+end
+
+-- a row in an aisle's list
+local function makeRow(parent, u)
+  local r = CreateFrame("Button", nil, parent, "BackdropTemplate"); r:SetSize(PW, RH)
+  r:SetBackdrop({ bgFile = u.WHITE, edgeFile = u.WHITE, edgeSize = 1 }); r:SetBackdropColor(0.07, 0.062, 0.05, 0.96); r:SetBackdropBorderColor(0.3, 0.25, 0.16, 0.8)
+  r.bar = r:CreateTexture(nil, "ARTWORK"); r.bar:SetPoint("TOPLEFT", 1, -1); r.bar:SetPoint("BOTTOMLEFT", 1, 1); r.bar:SetWidth(3)
+  r.pack = miniPack(r, 26, 40); r.pack:SetPoint("LEFT", 12, 0)
+  r.badge = badge(r, u); r.badge:SetSize(20, 15); r.badge:SetPoint("CENTER", r.pack, "TOPRIGHT", 2, -2); r.badge:SetFrameLevel(r:GetFrameLevel() + 4)
+  r.name = u.fs(r, "head", 13); r.name:SetPoint("TOPLEFT", 50, -8); r.name:SetTextColor(1, 0.94, 0.78)
+  r.sub = u.fs(r, "body", 11); r.sub:SetPoint("BOTTOMLEFT", 50, 8); r.sub:SetTextColor(0.78, 0.74, 0.66)
+  r.status = u.fs(r, "body", 12); r.status:SetPoint("RIGHT", -142, 0); r.status:SetJustifyH("RIGHT")
+  r.btn = u.gbtn(r, "", 120, 24, function() if r.entry and r.entry.enabled and r.entry.act then r.entry.act() end end); r.btn:SetPoint("RIGHT", -10, 0)
+  r.head = u.fs(r, "head", 10.5); r.head:SetPoint("LEFT", 6, 0); r.head:SetTextColor(0.85, 0.72, 0.42)
+  r:SetScript("OnClick", function(self) if self.entry and self.entry.album and RG.ArcadeOpenAlbum then RG.ArcadeOpenAlbum(self.entry.album) end end)
+  r:SetScript("OnEnter", function(self) if self.entry then self:SetBackdropBorderColor(1, 0.84, 0.45, 1); tip(self, self.entry) end end)
+  r:SetScript("OnLeave", function(self) self:SetBackdropBorderColor(0.3, 0.25, 0.16, 0.8); GameTooltip:Hide() end)
+  return r
+end
+local function paintRow(r, e, sec)
+  r.entry = e.header and nil or e
+  local isHead = e.header and true or false
+  for _, w in ipairs({ r.pack, r.badge, r.name, r.sub, r.status, r.btn, r.bar }) do w:SetShown(not isHead) end
+  r.head:SetShown(isHead)
+  if isHead then
+    r:SetHeight(22); r:SetBackdropColor(0, 0, 0, 0); r:SetBackdropBorderColor(0, 0, 0, 0)
+    r.head:SetText(e.header); r:Show(); return
+  end
+  r:SetHeight(RH); r:SetBackdropColor(0.07, 0.062, 0.05, 0.96); r:SetBackdropBorderColor(0.3, 0.25, 0.16, 0.8)
+  paintMini(r.pack, e.title, e.col or COL.dungeon)
+  r.badge:SetShown((e.count or 0) > 0); r.badge.t:SetText(tostring(e.count or 0))
+  r.name:SetText(e.title)
+  local bits = {}
+  local sets = U().getSets()
+  for _, st in ipairs(sets) do
+    if st.name == e.title then
+      if st.lo then bits[#bits + 1] = (st.lo == st.hi) and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi) end
+      bits[#bits + 1] = #st.cards .. " cards"
+      if RG.ArcadeSetHeart then local h = RG.ArcadeSetHeart(st); if h ~= "" then bits[#bits + 1] = "heart found" .. h end end
+      break
+    end
+  end
+  r.sub:SetText(table.concat(bits, "   ·   "))
+  r.status:SetText(e.status or "")
+  local ready, buy = (e.count or 0) > 0, e.enabled and (e.count or 0) == 0
+  local c = ready and { 0.48, 0.88, 0.54 } or (buy and { 0.91, 0.77, 0.42 } or { 0.4, 0.38, 0.46 })
+  r.bar:SetColorTexture(c[1], c[2], c[3], 1)
+  r.btn:SetText(e.label or ""); r.btn:SetEnabled(e.enabled and true or false)
+  r:SetAlpha((ready or buy) and 1 or 0.78)
+  r:Show()
 end
 
 local function chipRow(u, frame, list, onPick)
@@ -233,6 +320,25 @@ local function waitingCount(ctx)
   return n
 end
 
+local function buildShop(frame, u, view)
+  shop = CreateFrame("Frame", nil, frame); shop:SetAllPoints(frame); shop:SetFrameLevel((frame:GetFrameLevel() or 1) + 4)
+  shop.head = u.fs(shop, "title", 15); shop.head:SetPoint("TOPLEFT", X0, -160); shop.head:SetTextColor(1, 0.92, 0.7)
+  shop.right = u.fs(shop, "body", 12); shop.right:SetPoint("TOPRIGHT", shop, "TOPRIGHT", -X0, -163); shop.right:SetJustifyH("RIGHT"); shop.right:SetTextColor(0.85, 0.78, 0.6)
+  shop.line = shop:CreateTexture(nil, "ARTWORK"); shop.line:SetColorTexture(0.72, 0.58, 0.3, 0.45); shop.line:SetHeight(1)
+  shop.line:SetPoint("TOPLEFT", X0, -184); shop.line:SetPoint("TOPRIGHT", -X0, -184)
+  shop.back = u.gbtn(shop, "<  Shop", 78, 24, function() view.shopSection = nil; view.shopPage = 0; RG.ArcadeRefresh(true) end)
+  shop.back:SetPoint("TOPLEFT", X0, -156)
+  shop.cases, shop.aisles, shop.rows = {}, {}, {}
+  for i = 1, 3 do
+    local c = makeCase(shop, u); c:SetPoint("TOPLEFT", shop, "TOPLEFT", X0 + (i - 1) * (CW + CG), -194); shop.cases[i] = c
+    local b = makeAisle(shop, u); b:SetPoint("TOPLEFT", shop, "TOPLEFT", X0 + (i - 1) * (CW + CG), -454); shop.aisles[i] = b
+    b:SetScript("OnClick", function(self) view.shopSection = self.key; view.shopPage = 0; RG.ArcadeRefresh(true) end)
+  end
+  for i = 1, ROWS + 3 do shop.rows[i] = makeRow(shop, u) end
+  shop.empty = u.fs(shop, "body", 14); shop.empty:SetPoint("TOP", 0, -260); shop.empty:SetTextColor(0.6, 0.58, 0.69)
+  RG.ArcadeShopFrame = shop
+end
+
 RG.ArcadeViewHooks = RG.ArcadeViewHooks or {}
 table.insert(RG.ArcadeViewHooks, function(view, ctx)
   local u = U(); local frame = ctx.frame
@@ -246,48 +352,100 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   end
   for _, b in ipairs(setChips) do b:SetShown(view.mode == "sets"); b:SetActive(b.key == (view.setSection or "all")) end
 
-  -- the Shop
-  if not shop then
-    shop = CreateFrame("Frame", nil, frame); shop:SetAllPoints(frame); shop:SetFrameLevel((frame:GetFrameLevel() or 1) + 4)
-    shop.tiles = {}
-    local x0 = (790 - (COLS * TW + (COLS - 1) * GX)) / 2
-    for i = 1, COLS * ROWS do
-      local tl = makeTile(shop, u)
-      tl:SetPoint("TOPLEFT", shop, "TOPLEFT", x0 + ((i - 1) % COLS) * (TW + GX), -228 - math.floor((i - 1) / COLS) * (TH + GY))
-      shop.tiles[i] = tl
-    end
-    shop.head = u.fs(shop, "head", 12.5); shop.head:SetPoint("TOPLEFT", x0, -200); shop.head:SetTextColor(u.GOLDC[1], u.GOLDC[2], u.GOLDC[3])
-    shop.right = u.fs(shop, "body", 12); shop.right:SetPoint("TOPRIGHT", shop, "TOPRIGHT", -x0, -201); shop.right:SetJustifyH("RIGHT"); shop.right:SetTextColor(0.769, 0.687, 0.522)
-    shop.line = shop:CreateTexture(nil, "ARTWORK"); shop.line:SetColorTexture(0.72, 0.58, 0.3, 0.4); shop.line:SetHeight(1)
-    shop.line:SetPoint("TOPLEFT", x0, -218); shop.line:SetPoint("TOPRIGHT", -x0, -218)
-    shop.empty = u.fs(shop, "body", 14); shop.empty:SetPoint("TOP", 0, -260); shop.empty:SetTextColor(0.6, 0.58, 0.69)
-    chips = chipRow(u, frame, CHIPS, function(k) view.shopSection = k; view.shopPage = 0; RG.ArcadeRefresh(true) end)
-  end
+  if not shop then buildShop(frame, u, view) end
   local on = view.mode == "shop"
   shop:SetShown(on)
-  for _, b in ipairs(chips) do b:SetShown(on); b:SetActive(b.key == (view.shopSection or "all")) end
   if not on then return end
 
   local n = waitingCount(ctx)
-  local secName = ({ all = "Every pack", waiting = "Packs to open", regular = "Regular packs", dungeon = "Dungeon packs", raid = "Raid packs", holiday = "Holiday packs" })[view.shopSection or "all"]
-  shop.head:SetText(string.upper(secName))
-  shop.right:SetText((n > 0 and ("|cff7be08a" .. n .. " pack" .. (n == 1 and "" or "s") .. " to open|r   ·   ") or "") .. (ctx.a.coins or 0) .. " coins")
-  local list = filtered(ctx, view)
-  local per = COLS * ROWS
-  local pages = math.max(1, math.ceil(#list / per))
-  local pg = math.max(0, math.min(view.shopPage or 0, pages - 1)); view.shopPage = pg
-  for i, tl in ipairs(shop.tiles) do
-    local e = list[pg * per + i]
-    -- (one tile that can't be painted is hidden and logged; it never stops the rest)
-    if e then
-      local ok, err = pcall(paintTile, tl, e)
-      if not ok then tl:Hide(); tl.entry = nil; if RG.RecordError then RG.RecordError(err) elseif RG.Debug then RG.Debug(err) end end
-    else tl:Hide(); tl.entry = nil end
+  shop.right:SetText((n > 0 and ("|cff7be08a" .. n .. " pack" .. (n == 1 and "" or "s") .. " to open|r     ") or "") .. "|cffffe08a" .. (ctx.a.coins or 0) .. "|r coins")
+  -- (the dungeons' pools are built the first time anything needs them: the odds do that)
+  if not (RG.ArcadeDunPools and next(RG.ArcadeDunPools)) and RG.ArcadePackOdds then pcall(RG.ArcadePackOdds, "normal") end
+  local all = entries(ctx, view)
+  local sec = view.shopSection
+  if sec ~= "dungeon" and sec ~= "raid" and sec ~= "holiday" then sec = nil; view.shopSection = nil end
+  for _, r in ipairs(shop.rows) do r:Hide() end
+  shop.empty:SetText("")
+
+  if not sec then
+    -- the storefront
+    shop.back:Hide(); shop.head:ClearAllPoints(); shop.head:SetPoint("TOPLEFT", X0, -160); shop.head:SetText("THE PACK SHOP")
+    for i, k in ipairs(ctx.PACK_ORDER) do
+      for _, e in ipairs(all) do if e.section == "regular" and e.tipKind == k then e.def = ctx.PACKS[k]; pcall(paintCase, shop.cases[i], e) end end
+    end
+    for i, ai in ipairs(AISLES) do
+      local list = {}
+      for _, e in ipairs(all) do if e.section == ai[1] then list[#list + 1] = e end end
+      table.sort(list, function(x, y)
+        local wx, wy = (x.count or 0) > 0, (y.count or 0) > 0
+        if wx ~= wy then return wx end
+        if (x.order or 0) ~= (y.order or 0) then return (x.order or 0) < (y.order or 0) end
+        if (x.lo or 0) ~= (y.lo or 0) then return (x.lo or 0) < (y.lo or 0) end
+        return x.title < y.title
+      end)
+      local ok, err = pcall(paintAisle, shop.aisles[i], ai[1], ai[2], list, ctx)
+      if not ok then shop.aisles[i]:Hide(); if RG.RecordError then RG.RecordError(err) end end
+    end
+    frame.prev:Hide(); frame.next:Hide(); frame.pageText:Hide()
+    return
   end
-  shop.empty:SetText(#list == 0 and ((view.shopSection == "waiting") and "No packs waiting. Earn them by playing, or buy one." or "Nothing here yet.") or "")
-  frame.prev:SetShown(pages > 1); frame.next:SetShown(pages > 1); frame.pageText:SetShown(pages > 1)
-  if pages > 1 then
-    frame.pageText:SetText((pg + 1) .. " / " .. pages)
-    frame.prev:SetEnabled(pg > 0); frame.next:SetEnabled(pg + 1 < pages)
+
+  -- an aisle: its packs, ready to open first, then to buy, then locked (a header over each group)
+  for _, c in ipairs(shop.cases) do c:Hide() end
+  for _, b in ipairs(shop.aisles) do b:Hide() end
+  shop.back:Show(); shop.head:ClearAllPoints(); shop.head:SetPoint("LEFT", shop.back, "RIGHT", 14, 0)
+  local name = sec == "raid" and "RAID PACKS" or (sec == "holiday" and "HOLIDAY PACKS" or "DUNGEON PACKS")
+  shop.head:SetText(name)
+  local groups = { {}, {}, {} }
+  for _, e in ipairs(all) do
+    if e.section == sec then
+      local g = (e.count or 0) > 0 and 1 or (e.enabled and 2 or 3)
+      local gl = groups[g]; gl[#gl + 1] = e
+    end
+  end
+  for _, gl in ipairs(groups) do
+    table.sort(gl, function(x, y)
+      if (x.order or 0) ~= (y.order or 0) then return (x.order or 0) < (y.order or 0) end
+      if (x.lo or 0) ~= (y.lo or 0) then return (x.lo or 0) < (y.lo or 0) end
+      return x.title < y.title
+    end)
+  end
+  local HEADS = { "READY TO OPEN", sec == "holiday" and "ON NOW" or "TO BUY", sec == "holiday" and "EARNED WHILE THEY'RE ON" or "LOCKED" }
+  local list = {}
+  for g, gl in ipairs(groups) do
+    if #gl > 0 then list[#list + 1] = { header = HEADS[g] .. "   ·   " .. #gl }; for _, e in ipairs(gl) do list[#list + 1] = e end end
+  end
+  -- pages by height: a header row is short
+  local pages, cur, used = {}, {}, 0
+  local LIMIT = ROWS * RP
+  local lastHead
+  for _, e in ipairs(list) do
+    if e.header then lastHead = e.header end
+    local h = e.header and 26 or RP
+    if used + h > LIMIT and #cur > 0 then
+      pages[#pages + 1] = cur; cur, used = {}, 0
+      -- (a group that runs onto the next page keeps its header there)
+      if not e.header and lastHead then cur[1] = { header = lastHead:gsub("   ·   %d+$", "") .. "   ·   continued" }; used = 26 end
+    end
+    cur[#cur + 1] = e; used = used + h
+  end
+  if #cur > 0 then pages[#pages + 1] = cur end
+  local np = math.max(1, #pages)
+  local pg = math.max(0, math.min(view.shopPage or 0, np - 1)); view.shopPage = pg
+  local y = -194
+  for i, e in ipairs(pages[pg + 1] or {}) do
+    local r = shop.rows[i]
+    if r then
+      r:ClearAllPoints(); r:SetPoint("TOPLEFT", shop, "TOPLEFT", X0, y)
+      local ok, err = pcall(paintRow, r, e, sec)
+      if not ok then r:Hide(); if RG.RecordError then RG.RecordError(err) end end
+      y = y - (e.header and 26 or RP)
+    end
+  end
+  if #list == 0 then shop.empty:SetText("Nothing here yet.") end
+  frame.prev:SetShown(np > 1); frame.next:SetShown(np > 1); frame.pageText:SetShown(np > 1)
+  if np > 1 then
+    frame.pageText:SetText((pg + 1) .. " / " .. np)
+    frame.prev:SetEnabled(pg > 0); frame.next:SetEnabled(pg + 1 < np)
   end
 end)
