@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- **Smoother while you quest.** With the Waypath+ window open, looting, quest updates and buffs used to make it redraw up to three times a second; it now waits for things to settle and redraws once. Route steps, worn gear and options are worked out once instead of over and over, so the busiest moments take about a third of the time they did, opening the window and its tabs is two to three times quicker, and it makes about half as much memory garbage (the cause of small stutters).
+- **Fresher data** from WoW Forever's latest quest database: better spots for a few quest items (Isha Awak, Counterattack!, Secrets of the Dreamers), two new Alliance starting-zone steps, a quest that was wrongly shown to every race, refined NPC positions, and a new rare (Thicket Hunter) in the Excavation Site pack.
+- **Professions:** Leatherworking 265-300 now names wow-professions.com's alternative (Blue Suede Bracers then Blue Suede Hat), and the Arcane Salvager camp object notes the November 10 hotfix (it needs a Runed Golden Rod now, and helps at any Enchanting skill).
+
 ## v1.44.0
 - **Pulling a Mythic is an event now.** When a Mythic is in your pack, its card takes longer to turn, shaking harder and harder as a sound rises under it. Then: a white flash, two shockwaves, the table shakes, a burst of sparks, and the card springs up to the middle while "MYTHIC" drops in letter by letter, coloured rays turn behind it and embers rise, to a new impact chord. **The 1 Ring** gets its own gold-and-blue version, a deeper sound, and then engraves your name round its band one letter at a time, each with a glint and a chime, before "One of one · Opened by you" appears. Click once to skip to the end, again to go on. (All the sounds and effects are new and made by us.)
 

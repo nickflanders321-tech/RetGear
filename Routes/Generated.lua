@@ -124,6 +124,7 @@ RG.GEN_STEPS = {
       { t = "At Auberdine (levels 18-20): The Tower of Althalaxx, Tharnariun's Hope, The Blackwood Corrupted, The Absent Minded Prospector, Holy Diver, A Lost Master. From Sentinel Elissa Starbreeze, Tharnariun Treetender, Thundris Windweaver and others.", q = { 965, 2139, 4763, 729, 87760, 986, 993 }, w = { 1439, 37.0, 44.1, "Auberdine" } },
       { t = "At Stormwind City (level 17): Business in Auberdine, Making Do. From Borgus Steelhand, Baros Alexston.", q = { 97894, 97926 }, w = { 1453, 59.4, 34.3, "Stormwind City" } },
       { t = "Onu (levels 17-20): The Master's Glaive, Mathystra Relics.", q = { 944, 951 }, w = { 1439, 43.5, 76.3, "Onu" } },
+      { t = "At Darnassus (level 17): Grove of the Ancients. From Arch Druid Fandral Staghelm.", q = { 952 }, w = { 1457, 34.8, 9.3, "Darnassus" } },
       { t = "Therylune (level 18): Therylune's Escape.", q = { 945 }, w = { 1439, 38.6, 87.3, "Therylune" } },
       { t = "Balthule Shadowstrike (level 18): The Tower of Althalaxx.", q = { 966, 967 }, w = { 1439, 55.0, 24.9, "Balthule Shadowstrike" } },
       { t = "Volcor (levels 20-22): Escape Through Stealth, Escape Through Force.", q = { 995, 994 }, w = { 1439, 45.0, 85.3, "Volcor" } },
@@ -954,6 +955,7 @@ RG.GEN_STEPS = {
       { t = "At Camp Taurajo (level 24): Weapons of Choice. From Tatternack Steelforge.", q = { 893 }, w = { 1413, 45.6, 59.0, "Camp Taurajo" } },
       { t = "At the Crossroads (levels 22-25): Egg Hunt, In Nightmares. From Korran, Falla Sagewind.", q = { 868, 3369 }, w = { 1413, 52.0, 29.9, "the Crossroads" } },
       { t = "Gann Stonespire (levels 23-26): Gann's Reclamation, Revenge of Gann.", q = { 843, 846, 849 }, w = { 1413, 45.9, 77.0, "Gann Stonespire" } },
+      { t = "Sulhasa (level 23): Field to Clear.", q = { 98093 }, w = { 1413, 47.9, 77.6, "Sulhasa" } },
       { t = "At Camp Taurajo (levels 25-27): Betrayal from Within, Mahren Skyseer. From Mangletooth, Jorn Skyseer.", q = { 879, 874, 906 }, w = { 1413, 45.6, 59.0, "Camp Taurajo" } },
       { t = "At Ratchet (level 27): Isha Awak. From Mahren Skyseer.", q = { 873 }, w = { 1413, 62.0, 39.4, "Ratchet" } },
     },
@@ -1387,7 +1389,7 @@ RG.GEN_DUNGEONS = {
     { id = 6981, n = "The Glowing Shard", g = "", at = "starts from an item", w = nil, l = 26, r = 15 },
   },
   ["The Hall of Thanes"] = {
-    { id = 96395, n = "An Ancient Grudge", g = "", at = "starts from an item", w = nil, l = 15, r = 1 },
+    { id = 96395, n = "An Ancient Grudge", g = "", at = "starts from an item", w = nil, l = 15, r = 10 },
   },
   ["Shadowfang Keep"] = {
     { id = 1098, n = "Deathstalkers in Shadowfang", g = "High Executor Hadrec", at = "Silverpine Forest", w = { 1421, 43.4, 40.9, "High Executor Hadrec" }, l = 25, r = 18 },
@@ -1812,7 +1814,7 @@ RG.GEN_DUNGEONS_A = {
   },
   ["The Hall of Thanes"] = {
     { id = 96394, n = "The Restless Dead", g = "Afadra Dunwall", at = "Ironforge", w = { 1455, 33.2, 48.0, "Afadra Dunwall" }, l = 15, r = 10 },
-    { id = 96395, n = "An Ancient Grudge", g = "", at = "starts from an item", w = nil, l = 15, r = 1 },
+    { id = 96395, n = "An Ancient Grudge", g = "", at = "starts from an item", w = nil, l = 15, r = 10 },
     { id = 96403, n = "Important Heirlooms", g = "Thom Filch", at = "Ironforge", w = { 1455, 32.2, 44.5, "Thom Filch" }, l = 15, r = 10 },
     { id = 96393, n = "Old Ironforge Incursion", g = "Earthseer Farsen", at = "Dun Morogh", w = { 1426, 64.9, 58.5, "Earthseer Farsen" }, l = 16, r = 9 },
   },

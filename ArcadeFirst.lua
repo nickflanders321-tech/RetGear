@@ -224,6 +224,7 @@ RG.ARCADE_FIRST = {
   ["The Questioner"] = "2026-11-13",
   ["The Shaper's Terrace"] = "2026-11-14",
   ["The Wild King"] = "2026-12-09",
+  ["Thicket Hunter"] = "2026-11-15",
   ["Thicket Lurker"] = "2026-11-12",
   ["Thornstarter Igleg"] = "2026-11-13",
   ["Thunderhoof"] = "2026-11-14",

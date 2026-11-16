@@ -118,10 +118,16 @@ end
 -- have already picked one up. A reminder near the trainers (ProfNudge.lua) covers professions instead.
 local PROF_QUEST = { "^Camping 101", "^Craftsman's Writ", "^An Enchanting Lesson", "^Stolen Enchanting Supplies", "^My First Alchemy Set",
   "^My First Real Potion", "^I Need a Tailor", "^Leather Technique" }
+local profName = {}   -- name -> true/false, once worked out
 function RG.IsProfQuestName(name)
   if not name then return false end
-  for _, p in ipairs(PROF_QUEST) do if name:find(p) then return true end end
-  return false
+  local r = profName[name]
+  if r == nil then
+    r = false
+    for _, p in ipairs(PROF_QUEST) do if name:find(p) then r = true break end end
+    profName[name] = r
+  end
+  return r
 end
 function RG.HideProfQuest(id, name)
   if RG.Opt and RG.Opt("profQuests") then return false end
@@ -133,7 +139,39 @@ end
 
 -- entry = the route entry the step belongs to; text = the step text.
 -- Returns done (bool), reason (short text for the tooltip).
+-- (kept per route entry and reused, so asking costs no new tables or strings)
+-- route texts, quest names and places in lower case, made once (steps are checked many times a second while you quest)
+local lowered = {}
+local function lower(s)
+  local l = lowered[s]
+  if not l then l = s:lower(); lowered[s] = l end
+  return l
+end
+local stepMemo = setmetatable({}, { __mode = "k" })   -- entry -> { g = generation, d = text -> done, w = text -> why }
+local stepMemoAt, stepGen = nil, 0
+local stepAuto
+local function clear(t) for k in pairs(t) do t[k] = nil end end
 function RG.StepAuto(entry, text)
+  if not (entry and text) then return stepAuto(entry, text) end
+  local now = GetTime and GetTime()
+  if now ~= stepMemoAt then stepMemoAt = now; stepGen = stepGen + 1 end
+  local m = stepMemo[entry]
+  if not m then m = { g = stepGen, d = {}, w = {} }; stepMemo[entry] = m
+  elseif m.g ~= stepGen then clear(m.d); clear(m.w); m.g = stepGen end
+  local d = m.d[text]
+  if d ~= nil then return d, m.w[text] end
+  local done, why = stepAuto(entry, text)
+  m.d[text] = done and true or false; m.w[text] = why
+  return done, why
+end
+do   -- (and again whenever something a step can depend on changes, even within the same frame)
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "QUEST_ACCEPTED", "QUEST_REMOVED", "PLAYER_LEVEL_UP", "SKILL_LINES_CHANGED",
+    "LEARNED_SPELL_IN_TAB", "SPELLS_CHANGED", "TAXIMAP_OPENED", "HEARTHSTONE_BOUND", "PLAYER_EQUIPMENT_CHANGED", "BAG_UPDATE_DELAYED",
+    "ZONE_CHANGED_NEW_AREA", "PLAYER_XP_UPDATE" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function() stepMemoAt = nil end)
+end
+function stepAuto(entry, text)
   local key = entry and (entry.zone .. "|" .. entry.from)
   local sq = key and RG.STEP_QUESTS and RG.STEP_QUESTS[key]
   if sq and text then
@@ -158,14 +196,14 @@ function RG.StepAuto(entry, text)
       end
     end
   end
-  local t = text:lower()
+  local t = lower(text)
   -- flight paths
   if t:find("flight path", 1, true) then
     -- every flight master in the game (both factions), so Alliance steps tick off too
-    local places = { entry.fp }
-    for _, f in ipairs(RG.FLIGHTS or {}) do places[#places + 1] = f[1] end
-    for _, place in ipairs(places) do
-      if place and t:find(place:lower(), 1, true) and RG.KnowsFP(place) then return true, "You know the " .. place .. " flight path" end
+    if entry.fp and t:find(lower(entry.fp), 1, true) and RG.KnowsFP(entry.fp) then return true, "You know the " .. entry.fp .. " flight path" end
+    for _, f in ipairs(RG.FLIGHTS or {}) do
+      local place = f[1]
+      if place and t:find(lower(place), 1, true) and RG.KnowsFP(place) then return true, "You know the " .. place .. " flight path" end
     end
     if entry.fp and t:find("grab the flight path", 1, true) and RG.KnowsFP(entry.fp) then return true, "You know this flight path" end
   end
@@ -184,7 +222,7 @@ function RG.StepAuto(entry, text)
   if t:find("seal of command", 1, true) and knowsSpell("Seal of Command") then return true, "You know Seal of Command" end
   -- named quests
   for _, n in ipairs(questNames()) do
-    if t:find(n:lower(), 1, true) then
+    if t:find(lower(n), 1, true) then
       if RG.QuestState(n) == "done" then return true, "Quest turned in: " .. n end
     end
   end

@@ -746,11 +746,24 @@ function RG.DungeonDrops(routeZone, max)
   return out
 end
 
+local wornIds, wornAt = {}, nil   -- the item ids you're wearing, read once a frame (and again when gear changes)
+do
+  local f = CreateFrame("Frame")
+  pcall(f.RegisterEvent, f, "PLAYER_EQUIPMENT_CHANGED"); pcall(f.RegisterEvent, f, "UNIT_INVENTORY_CHANGED")
+  f:SetScript("OnEvent", function() wornAt = nil end)
+end
 function RG.OwnState(id)
-  for slot = 1, 18 do
-    local l = GetInventoryItemLink("player", slot)
-    if l and tonumber(l:match("item:(%d+)")) == id then return "equipped" end
+  local now = GetTime and GetTime()
+  if now ~= wornAt then
+    wornAt = now
+    for k in pairs(wornIds) do wornIds[k] = nil end
+    for slot = 1, 18 do
+      local l = GetInventoryItemLink("player", slot)
+      local i = l and tonumber(l:match("item:(%d+)"))
+      if i then wornIds[i] = true end
+    end
   end
+  if wornIds[id] then return "equipped" end
   local count = C_Item and C_Item.GetItemCount and C_Item.GetItemCount(id, true) or (GetItemCount and GetItemCount(id, true)) or 0
   if count and count > 0 then return "owned" end
   return nil

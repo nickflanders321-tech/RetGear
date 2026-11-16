@@ -50,18 +50,26 @@ RG.MAIL_QUESTS = {
 local function count(id, bank)
   return (C_Item and C_Item.GetItemCount and C_Item.GetItemCount(id, bank)) or (GetItemCount and GetItemCount(id, bank)) or 0
 end
+-- (returns true when something it keeps changed, so the window only redraws for a real change)
 local function snapshot()
-  if not RG.IsMain() then return end   -- only your main's bags count for the bank alt's list
+  if not RG.IsMain() then return true end   -- only your main's bags count for the bank alt's list
   RG.db.mainHave = RG.db.mainHave or {}
   RG.db.mailDone = RG.db.mailDone or {}
-  RG.db.mainLevel = UnitLevel("player")
+  local changed = false
+  local lvl = UnitLevel("player")
+  if RG.db.mainLevel ~= lvl then RG.db.mainLevel = lvl; changed = true end
   local p = RG.Professions and RG.Professions()["Blacksmithing"]
-  RG.db.mainBS = p and p.rank or 0
+  local bs = p and p.rank or 0
+  if RG.db.mainBS ~= bs then RG.db.mainBS = bs; changed = true end
   for _, q in ipairs(RG.MAIL_QUESTS) do
-    for _, it in ipairs(q.items) do RG.db.mainHave[it[1]] = count(it[1], true) end
+    for _, it in ipairs(q.items) do
+      local n = count(it[1], true)
+      if RG.db.mainHave[it[1]] ~= n then RG.db.mainHave[it[1]] = n; changed = true end
+    end
     -- chain parts share one name, so only trust the game for single quests
-    if not q.quest:find("%(") and RG.QuestState and RG.QuestState(q.quest) == "done" then RG.db.mailDone[q.quest] = true end
+    if not RG.db.mailDone[q.quest] and not q.quest:find("%(") and RG.QuestState and RG.QuestState(q.quest) == "done" then RG.db.mailDone[q.quest] = true; changed = true end
   end
+  return changed
 end
 RG.MailSnapshot = snapshot
 
@@ -201,9 +209,9 @@ f:SetScript("OnEvent", function(_, event)
     C_Timer.After(0.2, showMailButton)
   else
     RG.Debounce("mailSnap", 0.8, function()
-      snapshot()
+      local changed = snapshot()
       if mailBtn and mailBtn:IsShown() then showMailButton() end
-      if RG.RefreshUI then RG.RefreshUI() end
+      if changed and RG.RefreshUI then RG.RefreshUI() end
     end)
     return
   end

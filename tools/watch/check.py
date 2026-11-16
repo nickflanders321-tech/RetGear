@@ -117,10 +117,46 @@ def page_text(html):
     html = re.sub(r'(?i)<br\s*/?>|</(p|div|li|tr|h\d|td|th|table|ul|ol)>', '\n', html)
     txt = _h.unescape(re.sub(r'<[^>]+>', ' ', html))
     lines = [re.sub(r'\s+', ' ', l).strip() for l in txt.split('\n')]
-    return [l for l in lines if 3 <= len(l) <= 400 and ROUTE_LINE.search(l) and not re.search(r'(?i)cookie|copyright|\u00a9|comment|reply|ago\b', l)]
+    return [route_core(l) for l in lines if 3 <= len(l) <= 400 and ROUTE_LINE.search(l) and not re.search(r'(?i)cookie|copyright|\u00a9|comment|reply|ago\b', l)]
+# A craft line ("45x Bolt of Woolen Cloth - 135 Wool Cloth") sometimes runs straight into a tip on the page ("... Keep the
+# bolts, you will need them later.", "... Alternative:", "... Formula: ... is sold by"), and the tips get reworded often;
+# only the count, the craft and its materials are the route. Cut the line after its last "N Material".
+def route_core(l):
+    m = re.match(r'^(\d+\s*x\s+.+?)\s+[-\u2013\u2014]\s+(\d.*)$', l)
+    if not m: return l
+    head, words = m.group(1), m.group(2).replace(',', ' , ').split()
+    mats, cur, i = [], None, 0
+    while i < len(words):
+        w = words[i]
+        nxt = words[i + 1] if i + 1 < len(words) else ''
+        if cur is None:
+            if not w.isdigit(): break
+            cur = [w]
+        elif w in (',', 'and'):
+            mats.append(cur); cur = None
+        elif w.endswith(':'):
+            break
+        elif w[0].isupper() or w[0].isdigit() and len(cur) > 1:
+            # a capitalised word that starts a sentence ("Keep the bolts", "The bandage is") isn't part of the name
+            nn = words[i + 2] if i + 2 < len(words) else ''
+            if nxt and nxt[0].islower() and not (nxt in ('and', 'or') or nxt in ('of', 'the') and nn[:1].isupper()): break
+            cur.append(w.rstrip('.'))
+            if w.endswith('.'): break
+        elif w in ('of', 'the') and nxt[:1].isupper():
+            cur.append(w)
+        else:
+            break
+        i += 1
+    if cur and len(cur) > 1: mats.append(cur)
+    mats = [' '.join(x) for x in mats if len(x) > 1]
+    return head + ' - ' + ', '.join(mats) if mats else l
 changed_guides = []
 os.makedirs(PG_DIR, exist_ok=True)
 pg_state = state.get('profguides') or {}
+PG_FORMAT = 2   # bump when page_text changes: the next run records the new lines without reporting them as changed
+if state.get('profguides_format') != PG_FORMAT:
+    pg_state = {g: 'rebaseline' for g in pg_state}
+    state['profguides_format'] = PG_FORMAT
 for g in GUIDES:
     path = os.path.join(PG_DIR, g + '.txt')
     try:
@@ -133,7 +169,7 @@ for g in GUIDES:
         continue
     import hashlib
     h = hashlib.sha1('\n'.join(lines).encode('utf-8')).hexdigest()
-    if pg_state.get(g) and pg_state[g] != h: changed_guides.append(g)
+    if pg_state.get(g) and pg_state[g] not in (h, 'rebaseline'): changed_guides.append(g)
     if pg_state.get(g) != h:
         open(path, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
         pg_state[g] = h

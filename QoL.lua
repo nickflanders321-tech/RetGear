@@ -25,12 +25,17 @@ RG.OPTIONS = {
 }
 -- Options whose default steps back when Questie already does the same thing (your own choice always wins)
 RG.BESIDE_QUESTIE = { newQuests = "available", nameplateAlert = "nameplates", mapPins = "map" }
+local optDefault, optN = {}, -1   -- each option's default by key (rebuilt while files add options as they load)
 function RG.Opt(key)
   local v = RG.db and RG.db[key]
   if v == nil then
     local q = RG.BESIDE_QUESTIE[key]
     if q and RG.QuestieDoes and RG.QuestieDoes(q) then return false end
-    for _, o in ipairs(RG.OPTIONS) do if o.key == key then return o.default end end
+    if optN ~= #RG.OPTIONS then
+      optDefault, optN = {}, #RG.OPTIONS
+      for _, o in ipairs(RG.OPTIONS) do if optDefault[o.key] == nil then optDefault[o.key] = o.default end end
+    end
+    return optDefault[key]
   end
   return v ~= false
 end

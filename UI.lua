@@ -3133,10 +3133,28 @@ end
 -- Many events ask for a redraw at once (looting fires several); coalesce them
 -- into a single rebuild a tenth of a second later.
 local refreshQueued
+-- One change (a loot, a quest update) sets off several of these from different places over the next second (the bags,
+-- the 2nd-spec gear, the mail snapshot, item data arriving): redraw once things have been quiet for 0.15 s, and at
+-- the latest a second after the first request.
+local firstReq, lastReq = nil, 0
+local function refreshCheck()
+  local now = GetTime and GetTime() or 0
+  if not firstReq then refreshQueued = nil return end
+  local quiet, waited = now - lastReq, now - firstReq
+  if quiet >= 0.149 or waited >= 0.999 then
+    firstReq, refreshQueued = nil, nil
+    RG.RefreshUINow()
+  else
+    C_Timer.After(math.min(0.15 - quiet, 1.0 - waited) + 0.01, refreshCheck)
+  end
+end
 function RG.RefreshUI()
-  if not frame or not frame:IsShown() or refreshQueued then return end
-  refreshQueued = true
-  C_Timer.After(0.1, function() refreshQueued = nil; RG.RefreshUINow() end)
+  if not frame or not frame:IsShown() then return end
+  local now = GetTime and GetTime() or 0
+  lastReq = now
+  if refreshQueued then return end
+  refreshQueued, firstReq = true, now
+  C_Timer.After(0.15, refreshCheck)
 end
 function RG.RefreshUINow()
   if not frame or not frame:IsShown() then return end
@@ -3549,8 +3567,10 @@ ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 ev:RegisterEvent("BAG_UPDATE_DELAYED")
 ev:RegisterEvent("PLAYER_XP_UPDATE")
 ev:RegisterEvent("SKILL_LINES_CHANGED")
-ev:SetScript("OnEvent", function()
-  if pendingRefresh or not frame or not frame:IsShown() then return end
+ev:SetScript("OnEvent", function(_, event)
+  if not frame or not frame:IsShown() then return end
+  if event == "BAG_UPDATE_DELAYED" then RG.RefreshUI() return end   -- (redrawn with everything else the bags set off)
+  if pendingRefresh then return end
   pendingRefresh = true
   C_Timer.After(0.3, function() pendingRefresh = nil; RG.RefreshUI() end)
 end)
