@@ -41,7 +41,7 @@ L.plan = {
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 205, to = 235, craft = "Nightscape Pants", n = 36, mats = "14 Thick Leather, 4 Silken Thread each (only the Artisan trainers teach it: they sell for more than the boots)" },
   { from = 235, to = 265, craft = "Wicked Leather Gauntlets", n = 36, mats = "8 Rugged Leather, 1 Black Dye, 1 Rune Thread each (pattern: Werg Thickblade, Tirisfal Glades; Leonard Porter, Western Plaguelands. Or Blue Suede Shoes if the pattern costs more than about 13 gold)" },
-  { from = 265, to = 300, craft = "Runic Leather Headband", n = 53, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel)" },
+  { from = 265, to = 300, craft = "Runic Leather Headband", n = 53, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel. Short on Runecloth? From 275 make Blue Suede Bracers instead, 10 Rugged Leather, 1 Blue Dye, 1 Rune Thread each, then Blue Suede Hat from 280, 16 Rugged Leather, 4 Blue Dye, 1 Rune Thread each)" },
 }
 L.mats = { 2318, 2319, 4234, 4304, 8170, 783, 4232, 4235, 8169, 8171 }
 RG.RegisterProfession("Leatherworking", L)
