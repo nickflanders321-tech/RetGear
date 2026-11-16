@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **More polish from in game:** the Feats tab's guild alerts button no longer hides under the achievements; the powder keg's brass plate fits a long dungeon name on two lines ("EXCAVATION SITE: WETLANDS"); a print that climbs as it turns over says "HOLO!" instead of a line that ran off the card with a broken arrow; "Excavation Site: Wetlands' Mythic" (not "Wetlands's"); the window's message line stays on one line, clear of the page arrows; the master set no longer says 100% at 1206 of 1212; in the Shop, a dungeon you've cleared but can't afford yet is listed with the ones to buy ("need 27 more coins"), not with the locked ones.
 - **Arena polish:** cards in your hand no longer print their type over their rules ("Deal 4 damage" under "SPELL"); a minion's keywords show as small icons instead of stray letters (P, D); armour shows as a shield and a number instead of "[3]"; minion names on the board no longer run into each other; long card names on the big preview shrink to fit instead of being cut off.
 
 ## v1.46.1

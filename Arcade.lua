@@ -3054,8 +3054,9 @@ local function showReveal(got, notes, meta)
     local mp = meta.mythPityBefore
     if mp then
       local left = RG.ARCADE_MYTH_PITY - mp
-      info[#info + 1] = { "Mythic", left <= 1 and "|cffffe58cThis pack holds " .. meta.dungeon .. "'s Mythic|r"
-        or ("|cffffe58c" .. meta.dungeon .. "'s Mythic|r for certain within " .. left .. " of its packs") }
+      local poss = meta.dungeon .. (meta.dungeon:sub(-1) == "s" and "'" or "'s")
+      info[#info + 1] = { "Mythic", left <= 1 and "|cffffe58cThis pack holds " .. poss .. " Mythic|r"
+        or ("|cffffe58c" .. poss .. " Mythic|r for certain within " .. left .. " of its packs") }
     end
   else
     info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from the whole collection   ·   " .. def.rares .. " rare or better" }
@@ -3567,7 +3568,8 @@ local function build()
   end
 
   -- footer
-  frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 56); frame.msg:SetWidth(480); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
+  frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 60); frame.msg:SetWidth(470)
+  if frame.msg.SetMaxLines then frame.msg:SetMaxLines(1) end   -- (one line, clear of the page arrows and the buttons under it); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
   frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "album" then view.albumPage = math.max(1, (view.albumPage or 1) - 1) elseif view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) elseif view.mode == "shop" then view.shopPage = math.max(0, (view.shopPage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
   frame.prev:SetPoint("BOTTOM", 230, 58)
   frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "album" then view.albumPage = (view.albumPage or 1) + 1 elseif view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 elseif view.mode == "shop" then view.shopPage = (view.shopPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
@@ -4019,7 +4021,7 @@ function RG.ArcadeRefresh(keepMsg)
     local mh, mt = RG.ArcadeMaster()
     local mp = mt > 0 and mh / mt or 0
     pgHead(2, 546, "Master set", "every card, in any finish   ·   " .. math.floor(MASTER_GOAL * 100) .. "% is the goal for level 60")
-    pgBar(1, 574, GOLDHEX .. mh .. "|r of " .. mt .. " cards", string.format("%d%%", math.floor(mp * 100 + 0.5)), mp, mp >= MASTER_GOAL and { 0.48, 0.88, 0.54 } or GOLDC)
+    pgBar(1, 574, GOLDHEX .. mh .. "|r of " .. mt .. " cards", string.format("%d%%", math.floor(mp * 100)), mp, mp >= MASTER_GOAL and { 0.48, 0.88, 0.54 } or GOLDC)
   end
   local free = a.free or 0
   local bonus = a.bonus or 0

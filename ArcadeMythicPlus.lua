@@ -653,7 +653,7 @@ do
   hearts[#hearts + 1] = { id = "hearts28", name = "Keeper of Hearts", text = "Hold the heart of every dungeon.", pts = 100, need = #names, have = heartsHeld, reward = { title = "Keeper of Hearts" } }
   for _, dn in ipairs(names) do
     local key = RG.ARCADE_SET_MYTHIC[dn]
-    hearts[#hearts + 1] = { id = "heart:" .. dn, name = "Heart of " .. dn:gsub("^The ", "the "), text = "Pull " .. dn .. "'s Mythic.", pts = 15, need = 1,
+    hearts[#hearts + 1] = { id = "heart:" .. dn, name = "Heart of " .. dn:gsub("^The ", "the "), text = "Pull " .. dn .. (dn:sub(-1) == "s" and "'" or "'s") .. " Mythic.", pts = 15, need = 1,
       have = function(a) local c = UI().byKey[key]; return owned(a, c) and 1 or 0 end, reward = { coins = 50 } }
   end
   if RG.ArcadeFeatsAdd then RG.ArcadeFeatsAdd("hearts", "Hearts", hearts) end
@@ -674,7 +674,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   local b = rawget(ctx.frame, "mpAnnounce")
   if view.mode ~= "feats" then if b then b:Hide() end return end
   if not b then
-    b = u.gbtn(ctx.frame, "", 240, 22, function()
+    b = u.gbtn(ctx.frame, "", 186, 22, function()
       local a = store(); if not a then return end
       a.announce = (a.announce == false) and true or false
       RG.ArcadeRefresh(true)
@@ -683,6 +683,6 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
     ctx.frame.mpAnnounce = b
   end
   local a = ctx.a
-  b:SetText("Guild Mythic alerts: " .. ((a and a.announce == false) and "off" or "on"))
+  b:SetText("Guild alerts: " .. ((a and a.announce == false) and "off" or "on"))
   b:Show()
 end)

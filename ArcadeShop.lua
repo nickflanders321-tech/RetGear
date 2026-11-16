@@ -73,7 +73,7 @@ local function entries(ctx, view)
         local notYet = opens and date and date("%Y-%m-%d") < opens
         e.sub = "5 cards from " .. s.name .. " only: " .. (raid and "its bosses, their loot, its elites." or "the place, its bosses, their drops and its elites.")
         if have > 0 then e.status = "|cff7be08a" .. have .. " to open|r"; e.label = "Open (" .. have .. ")"; e.enabled = true
-        elseif cleared then e.status = price .. " coins"; e.label = "Buy · " .. price; e.enabled = coins >= price
+        elseif cleared then e.status = coins >= price and (price .. " coins") or ("|cffa89bc9need " .. (price - coins) .. " more coins|r"); e.label = "Buy · " .. price; e.enabled = coins >= price; e.unlocked = true
         elseif notYet then
           local y, m, dd = opens:match("^(%d+)-(%d+)-(%d+)$")
           e.status = "|cffa89bc9opens " .. tonumber(dd) .. " " .. MON[tonumber(m)] .. "|r"; e.label = "Not open yet"
@@ -223,7 +223,8 @@ local function paintAisle(b, key, title, list, ctx)
   local ready, open, locked, onNow, onUntil = 0, 0, 0, nil, nil
   for _, e in ipairs(list) do
     ready = ready + (e.count or 0)
-    if e.enabled and (e.count or 0) == 0 then open = open + 1 elseif not e.enabled and (e.count or 0) == 0 then locked = locked + 1 end
+    local unl = e.enabled or e.unlocked
+    if unl and (e.count or 0) == 0 then open = open + 1 elseif not unl and (e.count or 0) == 0 then locked = locked + 1 end
     if key == "holiday" and e.order == 0 and not onNow then onNow = e.title end
   end
   -- the banner's picture: a place in this aisle with a loading screen (one with packs waiting first)
@@ -244,7 +245,7 @@ local function paintAisle(b, key, title, list, ctx)
   b.badge:SetShown(ready > 0); b.badge.t:SetText(tostring(ready))
   if ready > 0 then b.line1:SetText("|cff7be08a" .. ready .. " TO OPEN|r")
   elseif key == "holiday" then b.line1:SetText(onNow and "|cff7be08aON NOW|r" or "|cffa89bc9NONE ON NOW|r")
-  else b.line1:SetText(open > 0 and ("|cffe8c46a" .. open .. " TO BUY|r") or "|cffa89bc9ALL LOCKED|r") end
+  else b.line1:SetText(open > 0 and ("|cffe8c46a" .. open .. " UNLOCKED|r") or "|cffa89bc9ALL LOCKED|r") end
   if key == "holiday" then b.line2:SetText(onNow and onNow or (#list .. " holidays\nearned while on"))
   else b.line2:SetText(#list .. " " .. (key == "raid" and "raids" or "dungeons") .. (locked > 0 and ("\n" .. locked .. " still locked") or "\nall unlocked")) end
   b:Show()
@@ -291,8 +292,8 @@ local function paintRow(r, e, sec)
     end
   end
   r.sub:SetText(table.concat(bits, "   ·   "))
-  local ready, buy = (e.count or 0) > 0, e.enabled and (e.count or 0) == 0
-  r.status:SetText((ready or buy) and "" or (e.status or ""))   -- (the button already says "Open (2)" or "Buy · 70")
+  local ready, buy = (e.count or 0) > 0, (e.enabled or e.unlocked) and (e.count or 0) == 0
+  r.status:SetText((ready or (buy and e.enabled)) and "" or (e.status or ""))   -- (the button already says "Open (2)" or "Buy · 70")
   local c = ready and { 0.48, 0.88, 0.54 } or (buy and { 0.91, 0.77, 0.42 } or { 0.4, 0.38, 0.46 })
   r.bar:SetColorTexture(c[1], c[2], c[3], 1)
   r.btn:SetText(e.label or ""); r.btn:SetEnabled(e.enabled and true or false)
@@ -399,7 +400,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   local groups = { {}, {}, {} }
   for _, e in ipairs(all) do
     if e.section == sec then
-      local g = (e.count or 0) > 0 and 1 or (e.enabled and 2 or 3)
+      local g = (e.count or 0) > 0 and 1 or ((e.enabled or e.unlocked) and 2 or 3)
       local gl = groups[g]; gl[#gl + 1] = e
     end
   end

@@ -54,8 +54,8 @@ local function fx(reveal)
   f.keg = tex(f, "PackKeg"); f.keg:SetAllPoints(f)
   f.hot = tex(f, "PackKegHot", "ARTWORK", 3, true); f.hot:SetAllPoints(f); f.hot:SetVertexColor(1, 0.45, 0.1)
   f.label = f:CreateFontString(nil, "OVERLAY")
-  pcall(f.label.SetFont, f.label, (RG.FONTS and (RG.FONTS.semibold or RG.FONTS.medium)) or "Fonts\\FRIZQT__.TTF", 10, "")
-  f.label:SetPoint("CENTER", f, "TOPLEFT", 80, -300 * K); f.label:SetWidth(84); f.label:SetTextColor(1, 0.86, 0.55)
+  pcall(f.label.SetFont, f.label, (RG.FONTS and (RG.FONTS.semibold or RG.FONTS.medium)) or "Fonts\\FRIZQT__.TTF", 8, "")   -- (two lines fit "EXCAVATION SITE: WETLANDS")
+  f.label:SetPoint("CENTER", f, "TOPLEFT", 80, -300 * K); f.label:SetWidth(90); f.label:SetTextColor(1, 0.86, 0.55)
   if f.label.SetMaxLines then f.label:SetMaxLines(2) end
   f.label:SetShadowColor(0, 0, 0, 1); f.label:SetShadowOffset(1, -1); f.label:Hide()
   -- the fuse, bead by bead, and what burns at its end
@@ -402,7 +402,8 @@ function RG.ArcadeUpgradeMoment(card, g, reveal)
       self.flash:SetAlpha(1)
       pcall(UI.paint, card, g.card, g.finish, 1)
       local from, to = FIN[g.upgraded] and FIN[g.upgraded][1] or "?", FIN[g.finish] and FIN[g.finish][1] or "?"
-      if card.new then card.new:SetText("|cffffd36bUPGRADED|r  |cffe8dcc0" .. from .. " → " .. to .. "|r") end
+      -- (the game's font has no arrow, and the space over the card holds one word)
+      if card.new then card.new:SetText("|cffffd36b" .. string.upper(to) .. "!|r") end
       -- the burst in the reveal, in the new print's light
       local b = reveal and rawget(reveal, "burst")
       if b then
