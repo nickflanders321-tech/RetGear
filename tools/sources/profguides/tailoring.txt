@@ -49,7 +49,7 @@ Artisan Tailoring (200-300)
 23x Bolt of Runecloth - 115 Runecloth
 215-225
 26x Mageweave Bag - 104 Bolt of Mageweave, 52 Silken Thread
-10x Runecloth Belt - 30 Bolt of Runecloth, 10 Rune Thread.
+10x Runecloth Belt - 30 Bolt of Runecloth, 10 Rune Thread
 225-240
 24x Runecloth Belt - 72 Bolt of Runecloth, 24 Rune Thread
 240-250

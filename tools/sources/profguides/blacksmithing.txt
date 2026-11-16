@@ -50,7 +50,7 @@ Make 5x Runed Copper Belt instead (10 Copper Bar each) if one Silver Bar costs m
 125-140
 24x Bronze Shortsword - 120 Bronze Bar, 96 Weak Flux, 48 Medium Leather
 Weak Flux and the Strong Flux for the Bronze Warhammers (140-150) are sold by the Blacksmithing Supply vendor right next to the Blacksmithing trainer in every capital city.
-24x Patterned Bronze Bracers - 120 Bronze Bar, 48 Coarse Grinding Stone.
+24x Patterned Bronze Bracers - 120 Bronze Bar, 48 Coarse Grinding Stone
 140-150
 10x Bronze Warhammer - 80 Bronze Bar, 10 Strong Flux, 10 Medium Leather
 Expert Blacksmithing (150-215)
@@ -67,12 +67,12 @@ Expert Blacksmithing (150-215)
 Artisan Blacksmithing (215-300)
 215-225
 10x Heavy Mithril Breastplate - 160 Mithril Bar
-10x Mithril Spurs - 40 Mithril Bar, 30 Solid Grinding Stone (120 Solid Stone).
+10x Mithril Spurs - 40 Mithril Bar, 30 Solid Grinding Stone
 225-230
 5x Dense Sharpening Stone - 5 Dense Stone
 230-240
 16x Heavy Mithril Boots - 224 Mithril Bar, 64 Thick Leather
-16x Mithril Spurs - 64 Mithril Bar, 48 Solid Grinding Stone (192 Solid Stone).
+16x Mithril Spurs - 64 Mithril Bar, 48 Solid Grinding Stone
 240-245
 5x Imperial Plate Belt - 110 Thorium Bar, 30 Rugged Leather, 5 Aquamarine
 Note: In Classic, Derotain Mudsipper's Imperial Plate quests need Blacksmithing 265. Forever lowered the Imperial Plate Belt from 265 to 240, so I assume the quests were lowered too, but I couldn't test it.

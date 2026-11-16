@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## v1.44.1
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
 - **Cards: raiders look like themselves.** A raider card (a player you've grouped or chatted with) said "Orc Warrior in raid gear" but showed one of a handful of stock characters, sometimes a quest giver or a raid boss. It now shows a character of that player's own race and sex, dressed in their class's raid set, and says which ("Undead Priest in Faith raid gear"; race names as the game shows them, so no more "Scourge" or "NightElf").
 - **Cards: a full accuracy sweep.** Every card was checked against the game's data: the Four Horsemen's spirits now show their ghostly selves and Taerar his own model; creatures that aren't humanoid no longer say "humanoid" (the Skeletons and Ghouls of WoW Forever's new dungeons are undead, and Aku'mai, Gahz'rilla and other creatures with no type in the data just give their level); the bosses of WoW Forever's own dungeons show their own level; and the leftover "creature" placeholder is gone.
 - **Smoother while you quest.** With the Waypath+ window open, looting, quest updates and buffs used to make it redraw up to three times a second; it now waits for things to settle and redraws once. Route steps, worn gear and options are worked out once instead of over and over, so the busiest moments take about a third of the time they did, opening the window and its tabs is two to three times quicker, and it makes about half as much memory garbage (the cause of small stutters).

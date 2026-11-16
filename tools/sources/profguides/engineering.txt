@@ -42,7 +42,7 @@ Journeyman Engineering (50-150)
 20x Coarse Dynamite - 60 Coarse Blasting Powder, 20 Linen Cloth
 100-105
 5x Silver Contact - 5 Silver Bar
-5x Flying Tiger Goggles - 30 Light Leather, 10 Tigerseye.
+5x Flying Tiger Goggles - 30 Light Leather, 10 Tigerseye
 105-125
 25x Bronze Tube - 50 Bronze Bar, 25 Weak Flux
 125-135

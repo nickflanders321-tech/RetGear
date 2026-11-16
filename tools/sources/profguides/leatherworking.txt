@@ -55,8 +55,8 @@ Artisan Leatherworking (205-300)
 36x Nightscape Pants - 504 Thick Leather, 144 Silken Thread
 235-265
 36x Wicked Leather Gauntlets - 288 Rugged Leather, 36 Black Dye, 36 Rune Thread
-36x Blue Suede Shoes - 288 Rugged Leather, 36 Blue Dye, 36 Rune Thread.
+36x Blue Suede Shoes - 288 Rugged Leather, 36 Blue Dye, 36 Rune Thread
 265-300
 53x Runic Leather Headband - 742 Rugged Leather, 530 Runecloth, 53 Rune Thread
-27x Blue Suede Bracers - 270 Rugged Leather, 27 Blue Dye, 27 Rune Thread.
-20x Blue Suede Hat - 320 Rugged Leather, 80 Blue Dye, 20 Rune Thread.
+27x Blue Suede Bracers - 270 Rugged Leather, 27 Blue Dye, 27 Rune Thread
+20x Blue Suede Hat - 320 Rugged Leather, 80 Blue Dye, 20 Rune Thread

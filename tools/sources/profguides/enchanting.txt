@@ -61,7 +61,7 @@ Journeyman Enchanting (70-150)
 32x Enchant Cloak - Minor Protection - 64 Strange Dust
 130-150
 20x Enchant Boots - Minor Stamina - 80 Strange Dust
-20x Enchant Bracer - Lesser Stamina - 20 Soul Dust.
+20x Enchant Bracer - Lesser Stamina - 20 Soul Dust
 Expert Enchanting (150-225)
 150-151
 1x Runed Golden Rod - 1 Golden Rod, 1 Iridescent Pearl, 1 Greater Astral Essence, 1 Soul Dust
@@ -69,7 +69,7 @@ Expert Enchanting (150-225)
 16x Minor Mana Oil - 16 Soul Dust, 32 Maple Seed, 16 Leaded Vial
 165-200
 47x Enchant Boots - Lesser Agility - 47 Soul Dust
-15x Enchant Bracer - Strength - 15 Vision Dust.
+15x Enchant Bracer - Strength - 15 Vision Dust
 200-201
 1x Runed Truesilver Rod - 1 Truesilver Rod, 1 Black Pearl, 1 Greater Mystic Essence, 1 Vision Dust
 201-220

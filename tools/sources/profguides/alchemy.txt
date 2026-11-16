@@ -37,11 +37,11 @@ Journeyman Alchemy (55-150)
 10x Lesser Mana Potion - 10 Mageroyal, 10 Stranglekelp, 10 Empty Vial
 130-150
 20x Fire Oil - 40 Firefin Snapper, 20 Empty Vial
-20x Lesser Mana Potion - 20 Mageroyal, 20 Stranglekelp, 20 Empty Vial.
+20x Lesser Mana Potion - 20 Mageroyal, 20 Stranglekelp, 20 Empty Vial
 Expert Alchemy (150-225)
 150-165
 15x Elixir of Fire Power - 30 Fire Oil, 15 Kingsblood, 15 Leaded Vial
-22x Lesser Mana Potion - 22 Mageroyal, 22 Stranglekelp, 22 Empty Vial.
+22x Lesser Mana Potion - 22 Mageroyal, 22 Stranglekelp, 22 Empty Vial
 165-195
 36x Mana Potion - 36 Stranglekelp, 36 Kingsblood, 36 Leaded Vial
 195-225
@@ -58,4 +58,4 @@ If Stonescale Eel is expensive, skip this and keep making the Elixir of Greater 
 10x Elixir of Greater Intellect - 10 Blindweed, 10 Khadgar's Whisker, 10 Crystal Vial
 265-300
 47x Elixir of Greater Defense - 94 Stonescale Oil, 47 Sungrass, 47 Crystal Vial
-55x Superior Mana Potion - 110 Sungrass, 110 Blindweed, 55 Crystal Vial.
+55x Superior Mana Potion - 110 Sungrass, 110 Blindweed, 55 Crystal Vial
