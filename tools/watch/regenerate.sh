@@ -20,7 +20,7 @@ rm -rf "$T/ps"
 git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fitzforge/polestar "$T/ps" && git -C "$T/ps" sparse-checkout set forever-db || rm -rf "$T/ps"
 FX=""; [ -s "$T/ps/forever-db/corrections/quests.json" ] && FX="--fixes $T/ps/forever-db"
 python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX
-python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" .
+python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" . $FX
 $LUA tools/nodes/dump.lua "$C/foreverObjectDB.lua" "$T/veins.tsv"
 python3 tools/nodes/gen.py "$T/qdb" "$T/veins.tsv" NodeData.lua
 $LUA tools/gear/dump.lua "$C" "$T/forever_gear.json"

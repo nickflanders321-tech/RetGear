@@ -765,22 +765,22 @@ RG.ARCADE_DUNGEON_ROWS = {
   { 2, "Snowtalon", 3, 7, "Dungeon boss, level 58" },
   { 2, "Cinder", 3, 7, "Dungeon boss, level 58" },
   { 2, "Bolt", 3, 7, "Dungeon boss, level 58" },
+  { 1, "Talon of Tor'Rel", 2, 280012, "Rare dungeon drop, required level 58" },
   { 1, "Frostfang Mail Vest", 2, 280013, "Rare dungeon drop, required level 58" },
   { 1, "Raptorscale Bulwark", 2, 280014, "Rare dungeon drop, required level 58" },
+  { 1, "Venomvessel Ring", 2, 280015, "Rare dungeon drop, required level 58" },
   { 1, "Spiderchitin Wrap", 2, 280016, "Rare dungeon drop, required level 58" },
   { 1, "Octoclaw Chain Boots", 2, 280017, "Rare dungeon drop, required level 58" },
   { 1, "Hammer of Thundering Hooves", 2, 280018, "Rare dungeon drop, required level 58" },
+  { 1, "Dinofrill Casque", 2, 280019, "Rare dungeon drop, required level 58" },
   { 1, "Deep Jungle Rifle", 2, 280020, "Rare dungeon drop, required level 58" },
   { 1, "Tooth of the Matriarch", 2, 280021, "Rare dungeon drop, required level 58" },
   { 1, "Scaleguard Scimitar", 2, 280022, "Rare dungeon drop, required level 58" },
+  { 1, "Nanaya's Control Spire", 2, 280023, "Rare dungeon drop, required level 58" },
   { 1, "Legplates of Reinforced Crystal", 2, 280024, "Rare dungeon drop, required level 58" },
   { 1, "Leggings of Curation", 2, 280025, "Rare dungeon drop, required level 58" },
   { 1, "Albinofur Grips", 2, 280026, "Rare dungeon drop, required level 58" },
   { 1, "Crownroar Chestplate", 2, 280027, "Rare dungeon drop, required level 58" },
-  { 1, "Heartflame Gauntlets", 2, 280028, "Rare dungeon drop, required level 58" },
-  { 1, "Sparklance Wand", 2, 280031, "Rare dungeon drop, required level 58" },
-  { 1, "Bolt's Charged Eyeball", 2, 280032, "Rare dungeon drop, required level 58" },
-  { 1, "Regal Direhorn Drape", 2, 280045, "Rare dungeon drop, required level 58" },
 }
 -- { name, instance id, lowest level, highest level, { card names } }, easiest first
 RG.ARCADE_DUNGEONS = {
@@ -811,7 +811,7 @@ RG.ARCADE_DUNGEONS = {
   { "Blackrock Spire", 229, 55, 62, { "Blackrock Spire", "General Drakkisath", "Warchief Rend Blackhand", "The Beast", "Goraluk Anvilcrack", "Overlord Wyrmthalak", "Pyroguard Emberseer", "Solakar Flamewreath", "Urok Doomhowl", "Crystal Fang", "Highlord Omokk", "Halycon", "Mother Smolderweb", "Bannok Grimaxe", "Ghok Bashguud", "Jed Runewatcher", "Quartermaster Zigris", "Shadow Hunter Vosh'gajin", "War Master Voone", "Spirestone Lord Magus", "Spirestone Battle Lord", "Burning Felguard", "Spirestone Butcher", "Blackblade of Shahram", "Felstriker", "Mark of the Dragon Lord", "Band of Rumination", "Battleborn Armbraces", "Beaststalker's Tunic", "Blackhand Doomsaw", "Blackmist Armguards", "Blademaster Leggings", "Bloodmoon Cloak", "Breastplate of Valor", "Brigam Girdle", "Dal'Rend's Sacred Charge", "Dal'Rend's Tribal Guardian", "Devout Robe", "Draconian Deflector", "Draconic Infused Emblem", "Dragonrider Boots", "Dreadmist Robe", "Spirit of Lord Valthalak", "Rage Talon Captain", "Blackhand Assassin", "Blackhand Elite", "Blackhand Iron Guard", "Rage Talon Dragon Guard", "Rage Talon Fire Tongue", "Blackhand Dragon Handler" } },
   { "Stratholme", 329, 55, 62, { "Stratholme", "Baron Rivendare", "Balnazzar", "Ramstein the Gorger", "Maleki the Pallid", "Cannon Master Willey", "Postmaster Malown", "Archivist Galford", "Nerub'enkan", "Balzaphon", "Stonespine", "Baroness Anastari", "Magistrate Barthilas", "Timmy the Cruel", "Skul", "Hearthsinger Forresten", "The Unforgiven", "Book of the Dead", "Runeblade of Baron Rivendare", "Idol of Brutality", "Cape of the Black Baron", "Crown of Tyranny", "Demonshear", "Dracorian Gauntlets", "Fire Striders", "Gauntlets of Deftness", "Gift of the Elven Magi", "Grand Crusader's Helm", "Hammer of the Grand Crusader", "Helm of the Executioner", "Ritssyn's Wand of Bad Mojo", "Robes of the Exalted", "Scepter of the Unholy", "Seal of Rivendare", "Shroud of the Nathrezim", "Black Guard Swordsmith", "Grand Crusader Dathrohan", "Ezra Grimm", "Thuzadin Necromancer", "Venom Belcher", "Ash'ari Crystal", "Bile Spewer", "Crimson Battle Mage" } },
   { "Scholomance", 289, 56, 62, { "Scholomance", "Death Knight Darkreaver", "Ras Frostwhisper", "Darkmaster Gandling", "Jandice Barov", "Rattlegore", "Kirtonos the Herald", "Lord Blackwood", "Vectus", "Doctor Theolen Krastinov", "Lorekeeper Polkelt", "Scholomance Adept", "Scholomance Necromancer", "Marduk Blackpool", "Alanna's Embrace", "Headmaster's Charge", "Don Mauricio's Band of Domination", "Beaststalker's Cap", "Blackwood's Thigh", "Bone Golem Shoulders", "Bone Ring Helm", "Bonecreeper Stylus", "Boots of the Shrieker", "Coif of Elements", "Corpselight Greaves", "Darkshade Gloves", "Deadwalker Mantle", "Devout Crown", "Dreadmist Mask", "Ghostloom Leggings", "Gravestone War Axe", "Helm of Valor", "Blood Steward of Kirtonos", "Risen Construct", "Risen Warrior", "Spectral Teacher", "Aspect of Banality", "Aspect of Corruption", "Aspect of Malice", "Aspect of Shadow" } },
-  { "The Shaper's Terrace", 3001, 58, 58, { "The Shaper's Terrace", "Nanaya", "Tor'Rel", "Venomridge", "Thunderhoof", "Direhorn Matriarch", "Snowtalon", "Cinder", "Bolt", "Frostfang Mail Vest", "Raptorscale Bulwark", "Spiderchitin Wrap", "Octoclaw Chain Boots", "Hammer of Thundering Hooves", "Deep Jungle Rifle", "Tooth of the Matriarch", "Scaleguard Scimitar", "Legplates of Reinforced Crystal", "Leggings of Curation", "Albinofur Grips", "Crownroar Chestplate", "Heartflame Gauntlets", "Sparklance Wand", "Bolt's Charged Eyeball", "Regal Direhorn Drape" } },
+  { "The Shaper's Terrace", 3001, 58, 58, { "The Shaper's Terrace", "Nanaya", "Tor'Rel", "Venomridge", "Thunderhoof", "Direhorn Matriarch", "Snowtalon", "Cinder", "Bolt", "Talon of Tor'Rel", "Frostfang Mail Vest", "Raptorscale Bulwark", "Venomvessel Ring", "Spiderchitin Wrap", "Octoclaw Chain Boots", "Hammer of Thundering Hooves", "Dinofrill Casque", "Deep Jungle Rifle", "Tooth of the Matriarch", "Scaleguard Scimitar", "Nanaya's Control Spire", "Legplates of Reinforced Crystal", "Leggings of Curation", "Albinofur Grips", "Crownroar Chestplate" } },
 }
 -- WoW Forever dungeons with no bosses or loot in the game data yet: the Album shows them as coming soon
 RG.ARCADE_DUNGEONS_SOON = {  }

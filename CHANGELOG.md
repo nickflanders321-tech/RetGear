@@ -9,6 +9,7 @@
 - **Rivals.** An honorable kill of a player you have targeted or can see turns them into a Rival card (their race and sex, their class's raid set). Beat them again and the print climbs: Rare at 3 wins, a Holo "Nemesis" at 5. The same player counts once a day.
 - **The binder.** Each set's page shows how full it is, and can show every card, only the missing ones, or only the new ones.
 - Three new card backs, locked until earned (hover one to see how).
+- Fresher quest data from WoW Forever's latest database; Alliance routes no longer send you to Twice Misplaced Trust in Booty Bay (the game's own quest record makes it Horde-only).
 
 ## v1.44.1
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).

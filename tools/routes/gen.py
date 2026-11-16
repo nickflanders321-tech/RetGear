@@ -11,6 +11,10 @@ Usage: python3 gen.py <QuestieDB checkout> <forever.json from tools/objectives/d
 """
 import json, re, sys, os, math
 
+# --fixes <Polestar forever-db>: its hand-checked quest sides (CC BY 4.0), as tools/objectives/gen.py uses them
+FIXES = None
+if '--fixes' in sys.argv:
+    i = sys.argv.index('--fixes'); FIXES = sys.argv[i + 1]; del sys.argv[i:i + 2]
 QDB = sys.argv[1].rstrip('/') + '/'
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -19,6 +23,16 @@ def _sorted_pairs(kv):
         return (0, int(s), '') if s.lstrip('-').isdigit() else (1, 0, s)
     return dict(sorted(kv, key=k))
 D = json.load(open(sys.argv[2], encoding='utf-8'), object_pairs_hook=_sorted_pairs)
+if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
+    _corr = json.load(open(os.path.join(FIXES, 'corrections', 'quests.json'), encoding='utf-8'))
+    for _k, _v in _corr.items():
+        _q = D['quests'].get(_k)
+        if _v.get('remove'): D['quests'].pop(_k, None); continue
+        _st = _v.get('set') or {}
+        if _q is None or 'races' not in _st: continue
+        if isinstance(_q, dict): _q['6'] = _st['races']
+        else:
+            _q = list(_q) + [None] * max(0, 6 - len(_q)); _q[5] = _st['races']; D['quests'][_k] = _q
 OUT = (sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')).rstrip('/') + '/'
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
 def areas_of(uimap, also=()):
