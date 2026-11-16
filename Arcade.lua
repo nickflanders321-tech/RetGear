@@ -127,7 +127,7 @@ end
 
 local function addRaider(name, class, race, sex)
   if not name or not class or byKey["@" .. name] then return end
-  if #CARDS >= #(RG.ARCADE_DATA or {}) + MAX_RAIDERS then return end
+  if #CARDS >= #(RG.ARCADE_DATA or {}) + MAX_RAIDERS + (RG.__rivalCards or 0) then return end
   local cname = class:sub(1, 1) .. class:sub(2):lower()
   local ri = RG.ArcadeRaceInfo(race)
   local set = RG.ARCADE_GEAR_SET and RG.ARCADE_GEAR_SET[class]
@@ -140,6 +140,25 @@ local function addRaider(name, class, race, sex)
 end
 
 RG.ArcadeAddRaider = addRaider
+-- A Rival (ArcadeCollector.lua): a player of the other faction you beat in an honorable kill, drawn like a raider (their
+-- race and sex, their class's raid set). Not in any pack: the card comes from the kill, and its print climbs as you
+-- beat them again. key "!" .. name
+function RG.ArcadeAddRival(name, class, race, sex, beaten)
+  if type(name) ~= "string" or type(class) ~= "string" then return nil end
+  local key = "!" .. name
+  local cname = class:sub(1, 1) .. class:sub(2):lower()
+  local ri = RG.ArcadeRaceInfo(race)
+  local set = RG.ARCADE_GEAR_SET and RG.ARCADE_GEAR_SET[class]
+  local text = ((ri and ri.name) and (ri.name .. " ") or "") .. cname .. " in " .. (set and (set .. " ") or "") .. "raid gear   ·   beaten " .. (beaten or 1) .. ((beaten or 1) == 1 and " time" or " times")
+  local c = byKey[key]
+  if c then c.text, c.beaten = text, beaten; return c end
+  if (RG.__rivalCards or 0) >= 150 then return nil end
+  c = { id = #CARDS + 1, kind = 4, key = key, name = name, tier = 6, ref = 0, class = class, race = race, sex = sex, rival = true, beaten = beaten,
+        text = text, icon = "Interface\\Icons\\ClassIcon_" .. cname }
+  CARDS[#CARDS + 1] = c; byKey[key] = c
+  RG.__rivalCards = (RG.__rivalCards or 0) + 1
+  return c
+end
 local raidersLoaded
 local function store()
   if not WaypathDB then return nil end
@@ -159,6 +178,7 @@ local function store()
   if not raidersLoaded then
     raidersLoaded = true
     for name, r in pairs(a.raiders) do addRaider(name, r[1], r[2], r[3]) end
+    for name, r in pairs(a.rivals or {}) do if type(r) == "table" then RG.ArcadeAddRival(name, r.class, r.race, r.sex, r.n or 1) end end
   end
   a.cards = a.cards or {}
   -- an Arena card update: changed cards sell back for their full crafting value for two weeks
@@ -242,6 +262,7 @@ local function meet(name, class, race, sex)
   if n >= MAX_RAIDERS then return end
   a.raiders[name] = { class, race, sex }
   addRaider(name, class, race, sex)
+  if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, "raider", 1) end
 end
 ev:SetScript("OnEvent", function(_, event, text, author, _, _, _, _, _, _, _, _, _, guid)
   if event == "PLAYER_LEVEL_UP" then
@@ -305,7 +326,7 @@ end)
 local byTier, tierWeight
 local function buildPools()   -- (the Raiders pool only counts once there is one)
   byTier, tierWeight = {}, 0
-  for _, c in ipairs(CARDS) do if not c.dun then byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end end
+  for _, c in ipairs(CARDS) do if not c.dun and not c.rival then byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end end
   for t = 1, #TIER do if byTier[t] then tierWeight = tierWeight + TIER[t][2] end end
   -- dungeon packs: { [dungeon] = { list, byTier, weight } } from ArcadeDungeons.lua (cards found by name)
   RG.ArcadeDunPools = {}
@@ -360,6 +381,7 @@ end
 -- ---------------------------------------------------------------------------
 local function setOf(c)
   if c.dun then return c.dun end   -- a dungeon's own card: that dungeon's set
+  if c.rival then return "Rivals" end
   if c.tier == 7 then return "Mythic"
   elseif c.kind == 3 then
     local z = c.text:match("^Found in (.+)$")
@@ -456,6 +478,7 @@ local function claimSets(a)
       if dpk then a.dpk = a.dpk or {}; a.dpk[s.name] = (a.dpk[s.name] or 0) + dpk end
       done[#done + 1] = s.name .. " " .. RG.ARCADE_STAGES[stage][1]:lower() .. " (" .. RG.ArcadeStageText(s, stage) .. ")"
       won[#won + 1] = { name = s.name, stage = stage, text = RG.ArcadeStageText(s, stage) }
+      if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, "set", 1, s, stage) end
     end
   end
   return done, won
@@ -480,6 +503,7 @@ local function todaysGoals(a)
   return a.goals
 end
 local function goalProgress(a, id, n)
+  if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, id, n) end   -- (the week's and month's quests, achievements)
   local g = todaysGoals(a)
   local def
   for _, d in ipairs(GOALS) do if d[1] == id then def = d end end
@@ -615,12 +639,17 @@ local function openOne(a, kind, dn)
     if i > size - def.rares then least = math.max(least, 2) end   -- the last cards: rare or better (one in a pack, two in a jumbo, three in a super jumbo)
     if i == size then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- the last card: holo after a long dry spell or from a reward pack
     local f = rollFinish(least)
+    -- now and then a print climbs one finish as it turns over (ArcadePackFx.lua shows it): about 1 card in 40 tries,
+    -- Common to Rare and Rare to Holo; a Holo's try succeeds 1 time in 25 (Full art about 1 card in 1,000)
+    local up
+    if c.tier ~= 7 and f < 4 and math.random() < 0.025 and (f < 3 or math.random() < 0.04) then up = f; f = f + 1 end
     local isNew = owned(a, c.id) == 0
+    if isNew then a.fresh = a.fresh or {}; a.fresh[c.key or c.name] = true end
     local slot = a.cards[c.key or c.name] or {}
     local newPrint = (not isNew) and (slot[f] or 0) == 0
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
-    got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
+    got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id), upgraded = up }
     if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or (c.dun and TIER[7].rate or (TIER[7].rate / 5))) + 0.5); meta.mythic = c.name end
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
@@ -631,6 +660,7 @@ local function openOne(a, kind, dn)
     end
   end
   a.pity = shiny and 0 or ((a.pity or 0) + def.weight)   -- a bigger pack counts for more dry packs
+  if RG.ArcadeCollectorPack then pcall(RG.ArcadeCollectorPack, got, meta) end
   local notes = {}
   local function note(x) if x then notes[#notes + 1] = x end end
   note(goalProgress(a, "packs2", 1)); note(goalProgress(a, "packs3", 1))
@@ -1246,7 +1276,31 @@ local KINDCOL = { { 1, 0.6, 0.25 }, { 0.35, 0.9, 0.55 }, { 0.35, 0.65, 1 }, { 0.
 -- card layout in card units (256 x 358): the art window (and where the art goes on a Full art print: to the card's
 -- edge), the name plate on inspect-size cards and on small ones (taller: a long name takes two lines)
 local U = { art = { 12, 20, 244, 202 }, full = { 4, 4, 252, 214 }, plate = { 14, 208, 242, 238 }, plateS = { 10, 205, 246, 249 } }
+-- a card's set and its number in it ("THE DEADMINES  ·  07 / 24"), from the album's own sets (dungeons and the Field
+-- Guide first, as the album lists them); cards in no set keep the collection's own number
+do
+  local pos, n
+  function U.setPos(card)
+    if not pos or n ~= #CARDS then
+      pos, n = {}, #CARDS
+      for _, s in ipairs(getSets()) do
+        for i, c in ipairs(s.cards) do if not pos[c] then pos[c] = { s.name, i, #s.cards } end end
+      end
+    end
+    return pos[card]
+  end
+end
 function U.mix(c, k) return { c[1] + (1 - c[1]) * k, c[2] + (1 - c[2]) * k, c[3] + (1 - c[3]) * k } end
+-- The "Gilded Codex" frame (1.45): the metal by rarity (iron, bronze, silver, gold, bright gold, crimson), the text's
+-- parchment on inspect-size and small cards, and a soft halo round the rarer subjects
+U.METAL = { { 0.62, 0.62, 0.66 }, { 0.9, 0.62, 0.38 }, { 0.86, 0.9, 1 }, { 1, 0.8, 0.42 }, { 1, 0.9, 0.52 }, { 1, 0.42, 0.48 }, { 1, 0.95, 0.75 } }
+U.panel, U.panelS = { 12, 240, 244, 324 }, { 8, 251, 248, 320 }
+U.HALO = { [4] = 0.3, [5] = 0.45, [6] = 0.38 }
+-- dark text on parchment, light text on a Full art print's glass (the keyword colour and the story's grey follow)
+function U.ink(w, s)
+  if not w.fullArt or type(s) ~= "string" then return s end
+  return (s:gsub("|cff9a3a08", "|cffffe9a8"):gsub("|cff6b5a42", "|cff9a9fad"))
+end
 
 local function lv(f) local l = f.GetFrameLevel and f:GetFrameLevel(); return type(l) == "number" and l or 1 end
 -- names and chat text can hold letters our card fonts do not have (Cyrillic, Chinese, Korean...): those use the game's own font
@@ -1358,6 +1412,7 @@ local function cardAnim(w, t)
     local k = ((t / period) + w.phase) % 1
     w.foil:ClearAllPoints(); w.foil:SetPoint("LEFT", w.fx, "LEFT", (-1.5 + 2.0 * k) * w.cw, 0)
     w.foil:SetAlpha(fx.foil * (0.75 + 0.25 * math.sin(t * 2 + w.phase * 6)))
+    if w.finish == 3 and not (w.card and w.card.mythic) then local r, g, b = hsv((t * 0.12 + w.phase) % 1, 0.55, 1); w.foil:SetVertexColor(r, g, b) else w.foil:SetVertexColor(1, 1, 1) end
   end
   if fx.aura > 0 then w.aura:SetAlpha(fx.aura * (0.7 + 0.3 * math.sin(t * 1.6 + w.phase * 6))) end
   if fx.spin and w.rune.SetRotation then w.rune:SetRotation((t * 0.12 + w.phase * 6) % 6.2832) end
@@ -1376,7 +1431,7 @@ end
 -- ---------------------------------------------------------------------------
 local FX = {   -- by finish: aura, foil, rune brightness, spin, rays, sparks
   [1] = { aura = 0, foil = 0, rune = 0.2 },
-  [2] = { aura = 0.3, foil = 0, rune = 0.32 },
+  [2] = { aura = 0.3, foil = 0.2, rune = 0.32 },
   [3] = { aura = 0.42, foil = 0.5, rune = 0.5, spin = true, sparks = true },
   [4] = { aura = 0.62, foil = 0.75, rune = 0.62, spin = true, sparks = true, rays = 0.6 },
 }
@@ -1427,6 +1482,14 @@ local function makeCard(parent, w)
   f.edge = f.top:CreateTexture(nil, "ARTWORK", nil, 1); f.edge:SetTexture(MEDIA .. "Edge1"); f.edge:SetTexCoord(0, 1, 0, CARD_V); f.edge:SetAllPoints(f)
   f.plate = f.top:CreateTexture(nil, "ARTWORK", nil, 2); f.plate:SetTexture(MEDIA .. "NamePlate")
   f.pill = f.top:CreateTexture(nil, "ARTWORK", nil, 2); f.pill:SetTexture(MEDIA .. "Pill"); box(f.pill, { 184, 6, 246, 22 }); f.pill:Hide()
+  -- the Gilded Codex pieces (tools/arcade/art_codex.py): the card's body round the picture window, cut to the kind's
+  -- shape (drawn over the picture, so 3D models get the shape too), the kind's crest, the rarity gem on the name
+  -- ribbon, and the text's parchment (a Full art print's smoked glass)
+  f.win = f.top:CreateTexture(nil, "ARTWORK", nil, -1); f.win:SetTexCoord(0, 1, 0, CARD_V); f.win:SetAllPoints(f); f.win:Hide()
+  f.panel = f.top:CreateTexture(nil, "BORDER"); f.panel:Hide()
+  f.crest = f.top:CreateTexture(nil, "OVERLAY", nil, 1); f.crest:SetTexture(MEDIA .. "Crests"); f.crest:SetSize(30 * u, 30 * u)
+  f.crest:SetPoint("CENTER", f, "TOPLEFT", 128 * u, -9 * u); f.crest:Hide()
+  f.gem = f.top:CreateTexture(nil, "ARTWORK", nil, 3); f.gem:SetTexture(MEDIA .. "Gem"); f.gem:Hide()
   -- Full art prints: the picture runs to the card's edge and fades into the card under the name plate
   f.fade = f.fx:CreateTexture(nil, "ARTWORK"); f.fade:SetTexture(MEDIA .. "Fade"); box(f.fade, { 4, 146, 252, 214 }); f.fade:Hide()
   f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 20, 209, 236, 237 })
@@ -1456,6 +1519,7 @@ local function makeCard(parent, w)
   f:SetScript("OnMouseUp", function(self, btn) if self.onCard and self.card then self.onCard(self, btn) end end)
   f:SetScript("OnEnter", function(self)
     if self.hover ~= false then self.hl:SetAlpha(0.09) end
+    if self.collect and RG.ArcadeSeen then pcall(RG.ArcadeSeen, self) end
     local c = self.card
     if not c or self.noTip then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -1623,6 +1687,10 @@ local function layoutText(w, big, name, text)
   w.plate:ClearAllPoints()
   w.plate:SetPoint("TOPLEFT", w, "TOPLEFT", pb[1] * u, -pb[2] * u); w.plate:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", pb[3] * u, -(pb[4] + 3) * u)   -- (+3: the plate's shadow)
   w.text:ClearAllPoints(); w.text:SetJustifyH("CENTER"); w.text:SetJustifyV("TOP")
+  local qb = big and U.panel or U.panelS
+  w.panel:ClearAllPoints(); w.panel:SetPoint("TOPLEFT", w, "TOPLEFT", qb[1] * u, -qb[2] * u); w.panel:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", qb[3] * u, -qb[4] * u)
+  local gs = (big and 13 or 15) * u
+  w.gem:ClearAllPoints(); w.gem:SetSize(gs, gs); w.gem:SetPoint("CENTER", w, "TOPLEFT", (pb[3] - 20) * u, -((pb[2] + pb[4]) / 2) * u)
   if big then
     w.nameB:Hide(); w.type:Show()
     w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 14 * u, -242 * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 242 * u, -257 * u)
@@ -1696,6 +1764,7 @@ function RG.ArcadePaintMythic(w, card, copies, a)
   w.body:Hide(); w.frameTex:Hide(); w.slot:Hide(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
   w.art:Hide(); w.spot:Hide(); w.emb:Hide(); w.rays:Hide(); w.nameB:Hide(); w.text:Hide()
   w.edge:Hide(); w.plate:Hide(); w.pill:Hide(); w.fade:Hide()
+  w.win:Hide(); w.panel:Hide(); w.crest:Hide(); w.gem:Hide()
   if rawget(w, "scn") then hideScene(w.scn) end
   w.name:SetText(""); w.type:SetText(""); w.num:SetText(""); w.fin:SetText("")
   w.pclip:Show(); w.mframe:Show()
@@ -1763,7 +1832,14 @@ local function paint(w, card, finish, copies)
   local u = w.u
   local a = WaypathDB and WaypathDB.arcade
   local t = TIER[card.tier][3]
-  w.num:SetText(string.format("#%04d", card.id or 0))
+  do
+    local sp = U.setPos(card)
+    if sp and w.cw >= 190 then
+      local nm = sp[1]:upper(); if #nm > 26 then nm = nm:sub(1, 25) .. "." end
+      w.num:SetText(string.format("%s  ·  %02d / %02d", nm, sp[2], sp[3]))
+    elseif sp then w.num:SetText(string.format("%02d / %02d", sp[2], sp[3]))
+    else w.num:SetText(string.format("#%04d", card.id or 0)) end
+  end
   w.art:ClearAllPoints(); w.iconBack:ClearAllPoints(); w.iconEdge:ClearAllPoints()
   local function placeIcon(sz)
     w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(sz * u, sz * u)
@@ -1779,6 +1855,7 @@ local function paint(w, card, finish, copies)
   if not finish then
     -- an empty slot in the binder: a silhouette and the collector number
     w.body:Hide(); w.frameTex:Hide(); w.edge:Hide(); w.plate:Hide(); w.pill:Hide(); w.slot:Show(); w.glow:Hide(); w.rune:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.spot:Hide(); w.emb:Hide()
+    w.win:Hide(); w.panel:Hide(); w.crest:Hide(); w.gem:Hide()
     w.art:Show(); w.art:SetDesaturated(true); w.art:SetVertexColor(0, 0, 0, 0.6); placeIcon(74)
     if scene then w.art:Hide() end
     w.nameB:Hide(); w.name:SetText(""); w.type:SetText(""); w.text:SetText(""); w.count:SetText(""); w.fin:SetText("")
@@ -1790,6 +1867,8 @@ local function paint(w, card, finish, copies)
   w.edge:SetTexture(MEDIA .. "Edge" .. finish); w.edge:Show(); w.plate:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
   w.num:SetTextColor(0.66, 0.68, 0.74)
   local fx = FX[finish]
+  local ha = U.HALO[card.tier]
+  if ha and ha > (fx.aura or 0) then fx = setmetatable({ aura = ha }, { __index = FX[finish] }) end
   w.fxset = fx
   local kc = KINDCOL[card.kind] or KINDCOL[1]
   w.glow:SetVertexColor(kc[1], kc[2], kc[3], 0.55)
@@ -1803,8 +1882,16 @@ local function paint(w, card, finish, copies)
     w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.artClip, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
     w.emb:SetVertexColor(t[1], t[2], t[3], 0.34); w.emb:Show()
   else w.emb:Hide(); if card.kind == 4 or scene then w.spot:Hide() end end
-  tintTex(w.frameTex, U.mix(t, 0.55), 1)
-  tintTex(w.plate, U.mix(t, 0.4), 1)
+  -- the Gilded Codex frame: the window's shape and crest by kind, the metal and the ribbon's gem by rarity, parchment
+  -- under the text (a Full art print: no window, its picture runs to the edge, and the text sits on smoked glass)
+  local kind = (card.kind and card.kind >= 1 and card.kind <= 4) and card.kind or 1
+  w.frameTex:SetTexture(MEDIA .. "Codex" .. kind); tintTex(w.frameTex, U.METAL[card.tier] or U.METAL[1], 1)
+  w.win:SetTexture(MEDIA .. "Win" .. kind); w.win:SetShown(not full)
+  w.plate:SetTexture(MEDIA .. "Ribbon"); w.plate:SetVertexColor(1, 1, 1, 1)
+  tintTex(w.gem, t, 1); w.gem:Show()
+  w.crest:SetTexCoord((kind - 1) / 4, kind / 4, 0, 1); w.crest:SetShown(w.cw >= 90)
+  w.fullArt = full and true or false
+  w.panel:SetTexture(MEDIA .. (full and "Glass" or "Panel")); w.panel:Show()
   tintTex(w.rune, t, fx.rune)
   tintTex(w.aura, t, 1)
   w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
@@ -1852,9 +1939,12 @@ local function paint(w, card, finish, copies)
   if fx.sparks then for _, sp in ipairs(w.sparks) do sp:Show(); tintTex(sp, { 1, 0.95, 0.8 }, 0.8) end end
   -- text: the name on the plate, the type line in the rarity's colour, what the card does in the Arena, then its story
   local big = w.cw >= 190
-  local tc = U.mix(t, 0.55)
+  local tc = full and U.mix(t, 0.55) or { t[1] * 0.55, t[2] * 0.55, t[3] * 0.55 }
   setfont(w.type, "head", math.max(7.5, 9 * u)); w.type:SetTextColor(tc[1], tc[2], tc[3])
-  w.type:SetText(KIND[card.kind] .. "  ·  " .. TIER[card.tier][1])
+  w.type:SetShadowColor(0, 0, 0, full and 0.8 or 0)
+  if full then w.text:SetTextColor(0.96, 0.94, 0.89) else w.text:SetTextColor(0.17, 0.11, 0.05) end
+  w.text:SetShadowColor(0, 0, 0, full and 0.8 or 0)
+  w.type:SetText((card.rival and "Rival" or KIND[card.kind]) .. "  ·  " .. TIER[card.tier][1])
   setfont(w.count, "title", math.max(9, 13 * u), "OUTLINE")
   setfont(w.num, "head", math.max(6.5, 8 * u))
   local hl = RG.ArcadeHilite
@@ -1866,10 +1956,10 @@ local function paint(w, card, finish, copies)
     layoutText(w, true)
     fitText(w.name, card.name, 212 * u, 16 * u, 8.5, "title")
     setfont(w.text, "body", 11.5 * u)
-    w.text:SetText(rules .. (rules ~= "" and story ~= "" and "\n" or "") .. (story ~= "" and ("|cff9a9fad" .. story .. "|r") or ""))
+    w.text:SetText(U.ink(w, rules .. (rules ~= "" and story ~= "" and "\n" or "") .. (story ~= "" and ("|cff6b5a42" .. story .. "|r") or "")))
   else
     local short = rules:gsub("%s+", " ")
-    layoutText(w, false, card.name, w.cw < 120 and "" or short)   -- (the grid shows the name and the numbers; the rest is on the inspect card)
+    layoutText(w, false, card.name, w.cw < 120 and "" or U.ink(w, short))   -- (the grid shows the name and the numbers; the rest is on the inspect card)
   end
   -- how the print was made: on the label in the corner (the edge says it too)
   local label = w.cw >= 150
@@ -1891,7 +1981,7 @@ local COLS, ROWS, CELLW = 6, 3, 104
 local GRIDX, GRIDY = 118, 150
 local WINW, WINH = 790, 730
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
-local SHOWS = { "All", "Owned", "Missing", "Extras" }
+local SHOWS = { "All", "Owned", "Missing", "Extras", "New" }
 local SORTS = { "Owned", "Collection", "Rarity", "Name", "Power" }
 local FNAME = { "Common", "Rare", "Holo", "Full art" }
 
@@ -1909,6 +1999,7 @@ local function collectionList(a)
     if ok and view.show == 2 and n == 0 then ok = false end
     if ok and view.show == 3 and n > 0 then ok = false end
     if ok and view.show == 4 and not hasExtra(a, c) then ok = false end
+    if ok and view.show == 5 and not (a.fresh and a.fresh[c.key or c.name]) then ok = false end
     if ok and q ~= "" and not (c.name:lower():find(q, 1, true) or (c.text or ""):lower():find(q, 1, true)) then ok = false end
     if ok and view.set and setOf(c) ~= view.set then ok = false end
     if ok and view.showcase and not isPinned(a, c) then ok = false end
@@ -2053,6 +2144,12 @@ local function coverAnim(c, t)
   end
   local k = 0.5 + 0.5 * math.sin(t * (c.rare and 3 or 2) + c.phase * 5)
   c.glow:SetVertexColor(pc[1], pc[2], pc[3], (c.rare and 0.45 or 0.28) + (c.rare and 0.3 or 0.15) * k)
+  -- the pack's best card: a short shiver every few seconds
+  if c.best and c.flipping ~= true and not c.holding then
+    local p = (t + c.phase * 3) % 2.6
+    local dx = p < 0.35 and math.sin(p * 70) * 2.2 * (1 - p / 0.35) or 0
+    c:ClearAllPoints(); c:SetPoint("CENTER", dx, c.lift or 0)
+  end
 end
 
 local function oddsText(g)
@@ -2172,6 +2269,7 @@ local function flip(i)
       if big >= 2 then reveal.shakeT, reveal.shakeK = 0.35, big end
       if g.record then reveal.record = true; reveal.title:SetText("Your rarest pull yet!"); playSound(nil, nil, "best") end
       if g.card.tier == 7 then RG.ArcadeMythicMoment(g) end
+      if g.upgraded and RG.ArcadeUpgradeMoment then pcall(RG.ArcadeUpgradeMoment, card, g, reveal) end
       for _, fn in ipairs(RG.ArcadeRevealHooks or {}) do pcall(fn, card, g, reveal) end   -- (a raid boss roars)
       if reveal.flipped >= #reveal.got then
         reveal.all:Hide(); reveal.ok:SetText("Done")
@@ -2255,6 +2353,7 @@ local function tearOpen()
   end
   reveal.shardT = 0.8
   reveal.shakeT, reveal.shakeK = 0.3, 1.5
+  for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "open", reveal) end   -- (planks, broken chains, snow)
   reveal.holding, reveal.tear, reveal.picks = false, 0, 0
   startDeal()
 end
@@ -2629,6 +2728,7 @@ local function showReveal(got, notes, meta)
       if reveal.holdT < 0.25 and reveal.moved < 8 then
         reveal.picks, reveal.pickIdle = reveal.picks + 1, 0
         playSound(nil, nil, "pick")
+        for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "pick", reveal, reveal.picks) end
         if reveal.picks >= 3 then tearOpen() end
       end
     end)
@@ -2770,6 +2870,7 @@ local function showReveal(got, notes, meta)
         if self.pickIdle > 2 and self.picks > 0 then self.picks = 0 end
         if self.tear >= 1 then tearOpen(); return end
         local tt = math.max(self.tear, self.picks / 3 * 0.85)
+        for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "tick", self, t, tt) end
         local k = (self.baseK or 1) * (1 + 0.015 * math.sin(t * 3) + 0.10 * tt)
         self.lastK = k
         self.seal:SetScale(k)
@@ -2924,7 +3025,7 @@ local function showReveal(got, notes, meta)
   for i = 1, PACK_MAX do reveal.cards[i]:Hide() end
   for i, g in ipairs(got) do
     local w = reveal.cards[i]
-    paint(w, g.card, g.finish, 1)
+    paint(w, g.card, g.upgraded or g.finish, 1)
     w.new:SetText("")
     local c = w.cover
     c.flipping = false; c:SetScript("OnUpdate", nil); c:SetWidth(w.cw); c:Show()
@@ -2937,9 +3038,17 @@ local function showReveal(got, notes, meta)
     c.prismatic = g.card.tier == 7 or nil   -- a Mythic inside: the glow runs through every colour
     c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.691, 0.617, 0.469 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
+    c.best = nil
     if glowLv >= 2 or g.card.tier >= 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
   end
+  -- the best card in a pack worth waiting for trembles now and then while it's face down (save it for last)
+  do
+    local bi, bs
+    for i, g in ipairs(got) do local s = g.finish * 10 + g.card.tier; if not bs or s > bs then bs, bi = s, i end end
+    if bi and bs >= 25 then local c = reveal.cards[bi].cover; c.best = true; c.glow:Show(); anim[c] = coverAnim end
+  end
+  for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "setup", reveal, meta, kind) end   -- (a dungeon's crate, a raid's chains)
   do   -- "Open next pack" while packs are waiting, else it buys another like this one
     local a, waiting = store(), 0
     if a then for _, kk in ipairs(PACK_ORDER) do waiting = waiting + tokenCount(a, kk) end end
@@ -3119,7 +3228,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Main window
 -- ---------------------------------------------------------------------------
-local MODES = { { "cards", "Collection" }, { "album", "Album" }, { "sets", "Sets" }, { "shop", "Shop" }, { "today", "Today" }, { "trade", "Trade" }, { "stats", "Ledger" } }
+local MODES = { { "cards", "Collection" }, { "album", "Album" }, { "sets", "Sets" }, { "shop", "Shop" }, { "today", "Today" }, { "feats", "Feats" }, { "trade", "Trade" }, { "stats", "Ledger" } }
 
 local function cell_click(self, btn)
   local c = self.card
@@ -3203,7 +3312,7 @@ local function build()
 
   -- tabs
   frame.modes = {}
-  local tw = 98
+  local tw = 88
   for i, m in ipairs(MODES) do
     local t = gtab(frame, m[2]:upper(), tw, function() view.mode = m[1]; view.set = (m[1] == "cards") and view.set or nil; RG.ArcadeRefresh(true) end)
     t:SetPoint("TOP", frame, "TOP", (i - (#MODES + 1) / 2) * (tw + 6), -128)
@@ -3279,7 +3388,7 @@ local function build()
   cells = {}
   local gx0 = (WINW - ((COLS - 1) * GRIDX + CELLW)) / 2
   for i = 1, COLS * ROWS do
-    local c = makeCard(frame, CELLW)
+    local c = makeCard(frame, CELLW); c.collect = true
     c:SetFrameLevel(lv(frame) + 3)
     c.homeX, c.homeY = gx0 + ((i - 1) % COLS) * GRIDX, -196 - math.floor((i - 1) / COLS) * GRIDY
     c:SetPoint("TOPLEFT", frame, "TOPLEFT", c.homeX, c.homeY)
@@ -3567,10 +3676,19 @@ function RG.ArcadeRefresh(keepMsg)
     if not st then st = sets[1]; view.album = st and st.name end
     if st then
       local n = #st.cards
-      local pages = math.max(1, math.ceil(n / #cells))
+      -- the binder's filter (ArcadeCollector.lua's button): every card, only the missing ones, or only the new ones
+      local shown = st.cards
+      if RG.ArcadeAlbumShow and RG.ArcadeAlbumShow ~= 1 then
+        shown = {}
+        for _, c in ipairs(st.cards) do
+          local want = RG.ArcadeAlbumShow == 2 and owned(a, c.id) == 0 or (RG.ArcadeAlbumShow == 3 and a.fresh and a.fresh[c.key or c.name])
+          if want then shown[#shown + 1] = c end
+        end
+      end
+      local pages = math.max(1, math.ceil(#shown / #cells))
       view.albumPage = math.max(1, math.min(view.albumPage or 1, pages))
       for i, cell in ipairs(cells) do
-        local c = st.cards[(view.albumPage - 1) * #cells + i]
+        local c = shown[(view.albumPage - 1) * #cells + i]
         local missing = c and owned(a, c.id) == 0
         -- (a WoW Forever original nobody in your guild has found yet: only its outline, ArcadeFirstEdition.lua)
         local hidden = missing and RG.ArcadeUndiscovered and RG.ArcadeUndiscovered(c)
@@ -3687,26 +3805,31 @@ function RG.ArcadeRefresh(keepMsg)
     local tw = (PGW - 2 * 16) / 3
     local streak = ((a.packDay == today() or a.packDay == yesterdayStr()) and (a.packStreak or 0) or 0)
     local lw = time and time() >= LAUNCH and time() < LAUNCH + 7 * 86400
-    pgTile(1, PGX, 196, tw, 80, tostring(a.free or 0), "Free packs", lw and "launch week: 2 a day, 5 saved" or "1 a day, up to 3 saved", { 0.5, 0.88, 0.6 })
-    pgTile(2, PGX + tw + 16, 196, tw, 80, tostring(a.bonus or 0), "Reward packs", "jumbo: 2 rares and a holo", { 0.85, 0.6, 1 })
-    pgTile(3, PGX + 2 * (tw + 16), 196, tw, 80, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day: a reward pack", GOLDC)
-    pgHead(1, 298, "Limits and guarantees")
-    pgBar(1, 326, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
-    local dc = (a.day == today()) and (a.dayCoins or 0) or 0
-    pgBar(2, 368, "Coins from quests, kills and skill-ups today   (no daily limit)", tostring(dc), math.min(1, dc / 100), GOLDC)
-    pgBar(3, 410, "Quick duel win streak   (the Duel button: each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
-    pgHead(2, 464, "Today's goals", "new goals every day")
-    local n = 0
-    for _, id in ipairs(g.pick) do
-      for _, d in ipairs(GOALS) do
-        if d[1] == id then
-          n = n + 1
-          local done = g.done[id]
-          local prog = math.min(g.prog[id] or 0, d[3])
-          pgBar(3 + n, 492 + (n - 1) * 42, (done and "|cff7be08a" or "|cfff4ecd8") .. d[2] .. "|r", done and "done" or (prog .. " / " .. d[3] .. "   ·   +" .. d[4] .. " coins"), prog / d[3], done and { 0.48, 0.88, 0.54 } or GOLDC)
+    pgTile(1, PGX, 192, tw, 64, tostring(a.free or 0), "Free packs", lw and "launch week: 2 a day, 5 saved" or "1 a day, up to 3 saved", { 0.5, 0.88, 0.6 })
+    pgTile(2, PGX + tw + 16, 192, tw, 64, tostring(a.bonus or 0), "Reward packs", "jumbo: 2 rares and a holo", { 0.85, 0.6, 1 })
+    pgTile(3, PGX + 2 * (tw + 16), 192, tw, 64, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day: a reward pack", GOLDC)
+    -- collector quests: today's goals, the week's and the month's (ArcadeCollector.lua draws the three columns)
+    local drew = RG.ArcadeQuestColumns and select(2, pcall(RG.ArcadeQuestColumns, { frame = frame, a = a, g = g, GOALS = GOALS, x = PGX, y = 268, w = PGW, h = 268 }))
+    local y0 = drew and 552 or 298
+    if not drew then
+      pgHead(2, 464, "Today's goals", "new goals every day")
+      local n = 0
+      for _, id in ipairs(g.pick) do
+        for _, d in ipairs(GOALS) do
+          if d[1] == id then
+            n = n + 1
+            local done = g.done[id]
+            local prog = math.min(g.prog[id] or 0, d[3])
+            pgBar(3 + n, 492 + (n - 1) * 42, (done and "|cff7be08a" or "|cfff4ecd8") .. d[2] .. "|r", done and "done" or (prog .. " / " .. d[3] .. "   ·   +" .. d[4] .. " coins"), prog / d[3], done and { 0.48, 0.88, 0.54 } or GOLDC)
+          end
         end
       end
     end
+    pgHead(1, y0, "Limits and guarantees")
+    pgBar(1, y0 + 26, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
+    local dc = (a.day == today()) and (a.dayCoins or 0) or 0
+    pgBar(2, y0 + 62, "Coins from quests, kills and skill-ups today   (no daily limit)", tostring(dc), math.min(1, dc / 100), GOLDC)
+    pgBar(3, y0 + 98, "Quick duel win streak   (the Duel button: each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
   elseif view.mode == "trade" and view.tradeSub == "friends" and RG.ArcadeSocialView then
     -- friends' and guildmates' albums, and trades of your spare cards for their spare ones (ArcadeSocial.lua)
     RG.ArcadeSocialView({ pgHead = pgHead, pgBox = pgBox, showRows = showRows, frame = frame, say = say, view = view, a = a, PGW = PGW, PGX = PGX, GOLDC = GOLDC })
@@ -3812,7 +3935,7 @@ function RG.ArcadePortrait(c)
   return "icon", iconFor(c)
 end
 
-RG.ArcadeUI = { scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
+RG.ArcadeUI = { ink = U.ink, setPos = U.setPos, scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
   owned = owned, power = power, iconFor = iconFor, getSets = getSets, setProgress = setProgress, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
 

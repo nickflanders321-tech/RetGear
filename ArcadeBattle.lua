@@ -150,7 +150,7 @@ end
 -- rules keywords stand out in the card text
 local KEYWORDS = { "Divine Shield", "Battlecry", "Deathrattle", "Windfury", "Lifesteal", "Stealth", "Poisonous", "Taunt", "Charge", "Rush", "Freeze", "Silence", "Spell Damage", "Combo", "Overload", "Discover" }
 local function hilite(t)
-  for _, k in ipairs(KEYWORDS) do t = t:gsub(k, "|cffffe9a8" .. k .. "|r") end
+  for _, k in ipairs(KEYWORDS) do t = t:gsub(k, "|cff9a3a08" .. k .. "|r") end
   return t
 end
 RG.ArcadeHilite = hilite
@@ -169,12 +169,12 @@ local function paintCard(w, key, owner, live)
     if w.cw >= 190 then
       U.layoutText(w, true)
       U.fitText(w.name, d.name, 212 * w.u, 16 * w.u, 8, "title")
-      w.text:SetText(hilite(d.text or "") .. (d.lore and d.lore ~= "" and ("\n|cff9a9fad" .. d.lore .. "|r") or ""))
+      w.text:SetText(U.ink(w, hilite(d.text or "") .. (d.lore and d.lore ~= "" and ("\n|cff6b5a42" .. d.lore .. "|r") or "")))
     else   -- hand and board cards: the name on the parchment in a readable size, the effect line under it
       w.name:SetText("")
       local t = (d.text or ""):gsub("%s+", " ")
       if #t > 56 then t = t:sub(1, 54):gsub("%s*%S*$", "") .. "..." end
-      U.layoutText(w, false, d.name, hilite(t))
+      U.layoutText(w, false, d.name, U.ink(w, hilite(t)))
     end
   end
   cardStats(w, d, live)
@@ -184,11 +184,16 @@ end
 -- Rewards and saved decks
 -- ---------------------------------------------------------------------------
 local function store() return U.store() end
-local BACKS = { "Back", "Back2", "Back3", "Back4", "Back5" }
-local BACK_NAMES = { "Midnight", "Crimson", "Emerald", "Azure", "Gilt" }
+-- (the last three are earned: ArcadeCollector.lua's achievements and monthly quests unlock them)
+local BACKS = { "Back", "Back2", "Back3", "Back4", "Back5", "Back6", "Back7", "Back8" }
+local BACK_NAMES = { "Midnight", "Crimson", "Emerald", "Azure", "Gilt", "Cartographer", "Ember", "Radiant" }
+RG.ARCADE_BACK_NAMES = BACK_NAMES
+local function backOpen(a, i) return i <= 5 or (RG.ArcadeBackUnlocked and RG.ArcadeBackUnlocked(a, BACK_NAMES[i])) end
 function RG.CardBackName()
   local a = U and U.store and U.store()
-  return BACKS[(a and a.cardBack) or 1] or "Back"
+  local i = (a and a.cardBack) or 1
+  if not backOpen(a, i) then i = 1 end
+  return BACKS[i] or "Back"
 end
 local function avail(a)   -- the keys you can put in a deck, and how many copies
   local out, keys = {}, {}
@@ -1505,6 +1510,8 @@ local function refreshMenu()
   for i, b in ipairs(menu.backs or {}) do
     local on = i == (a.cardBack or 1)
     if on then b:SetBackdropBorderColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3], 1) else b:SetBackdropBorderColor(0.3, 0.27, 0.22, 0.9) end
+    local open = backOpen(a, i)
+    b.tex:SetDesaturated(not open); b.tex:SetAlpha(open and 1 or 0.4)
   end
   local n = deckSize(dk)
   menu.deckInfo:SetText(n == B.DECK and "|cff9fe39aDeck ready|r" or ("|cffe39a9a" .. n .. " / " .. B.DECK .. " cards|r"))
@@ -1695,8 +1702,12 @@ local function buildMenu()
     b:SetSize(34, 48); b:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -24 - (#BACKS - i) * 42, 16)
     b:SetBackdrop({ bgFile = U.WHITE, edgeFile = U.WHITE, edgeSize = 2 }); b:SetBackdropColor(0, 0, 0, 1)
     b.tex = b:CreateTexture(nil, "ARTWORK"); b.tex:SetTexture(U.MEDIA .. name); b.tex:SetTexCoord(0, 1, 0, 358 / 512); b.tex:SetPoint("TOPLEFT", 2, -2); b.tex:SetPoint("BOTTOMRIGHT", -2, 2)
-    b:SetScript("OnClick", function() local a = store(); if a then a.cardBack = i end; refreshMenu(); if RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end end)
-    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(BACK_NAMES[i] .. " card back"); GameTooltip:Show() end)
+    b:SetScript("OnClick", function() local a = store(); if a and backOpen(a, i) then a.cardBack = i end; refreshMenu(); if RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end end)
+    b:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(BACK_NAMES[i] .. " card back")
+      if not backOpen(store(), i) then GameTooltip:AddLine((RG.ArcadeBackHow and RG.ArcadeBackHow(BACK_NAMES[i])) or "Earned in the Feats tab", 0.8, 0.8, 0.8, true) end
+      GameTooltip:Show()
+    end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     menu.backs[i] = b
   end

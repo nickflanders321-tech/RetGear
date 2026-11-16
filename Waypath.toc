@@ -119,6 +119,8 @@ ArcadeBattle.lua
 ArcadeDuel.lua
 ArcadeMatch.lua
 ArcadeBoard.lua
+ArcadePackFx.lua
+ArcadeCollector.lua
 GateOn.lua
 FishMode.lua
 FishTools.lua

@@ -62,7 +62,10 @@ local function summary()
   local spares = mySparesAndMissing()
   local _, sig = tradeList()
   local badges = RG.ArcadeExplorerBadges and RG.ArcadeExplorerBadges() or 0
-  return table.concat({ sig, own, total, g, s, b, n, #spares, badges }, "|")
+  local title, pts = "", 0
+  if RG.ArcadeMyTitle then title, pts = RG.ArcadeMyTitle() end
+  title = (title or ""):gsub("[|;]", ""):sub(1, 40)
+  return table.concat({ sig, own, total, g, s, b, n, #spares, badges, title, pts or 0 }, "|")
 end
 
 -- long lists go out in pieces
@@ -199,8 +202,8 @@ handlers.Q = function(sender)
   local s = summary(); if s then send("S|" .. s, "WHISPER", sender) end
 end
 handlers.S = function(sender, rest)
-  local sig, own, total, g, s, b, n, sp, ex = strsplit("|", rest)
-  S.peers[sender] = { sig = sig, own = tonumber(own) or 0, total = tonumber(total) or 0, g = tonumber(g) or 0, s = tonumber(s) or 0, b = tonumber(b) or 0, n = tonumber(n) or 0, spares = tonumber(sp) or 0, badges = tonumber(ex) or 0, t = now() }
+  local sig, own, total, g, s, b, n, sp, ex, title, pts = strsplit("|", rest)
+  S.peers[sender] = { sig = sig, own = tonumber(own) or 0, total = tonumber(total) or 0, g = tonumber(g) or 0, s = tonumber(s) or 0, b = tonumber(b) or 0, n = tonumber(n) or 0, spares = tonumber(sp) or 0, badges = tonumber(ex) or 0, title = (title and title ~= "") and title or nil, pts = tonumber(pts) or 0, t = now() }
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
 end
 -- someone's spares came in: answer with the ones you want and your own spares
@@ -342,7 +345,7 @@ function RG.ArcadeSocialView(ctx)
     for _, name in ipairs(names) do
       if #rows >= 10 then break end
       local p = S.peers[name]
-      rows[#rows + 1] = { left = short(name) .. "   |cff9a96b0" .. p.own .. " / " .. p.total .. " cards   ·   " .. p.g .. " gold set" .. (p.g == 1 and "" or "s") .. "   ·   " .. p.spares .. " spare" .. (p.spares == 1 and "" or "s") .. ((p.badges or 0) > 0 and ("   ·   " .. p.badges .. " Explorer badge" .. (p.badges == 1 and "" or "s")) or "") .. "|r",
+      rows[#rows + 1] = { left = short(name) .. (p.title and ("  |cffe8c46a<" .. p.title .. ">|r") or "") .. "   |cff9a96b0" .. ((p.pts or 0) > 0 and (p.pts .. " pts   ·   ") or "") .. p.own .. " / " .. p.total .. " cards   ·   " .. p.g .. " gold set" .. (p.g == 1 and "" or "s") .. "   ·   " .. p.spares .. " spare" .. (p.spares == 1 and "" or "s") .. ((p.badges or 0) > 0 and ("   ·   " .. p.badges .. " Explorer badge" .. (p.badges == 1 and "" or "s")) or "") .. "|r",
         right = "Open", frac = p.total > 0 and p.own / p.total or 0, act = function() view.socialSel = name; RG.ArcadeRefresh(true) end }
     end
     if #names == 0 then rows[#rows + 1] = { left = "|cff9a96b0Nobody yet. Guildmates, group members and online friends with Waypath+ answer within a few seconds.|r", right = "" } end
