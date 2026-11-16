@@ -1378,8 +1378,8 @@ local function fitText(t, text, maxW, size, minSize, key)
   local sz = math.max(size, minSize)
   setfont(t, key, sz)
   t:SetText(text)
-  for _ = 1, 8 do
-    local wd = t:GetStringWidth()
+  for _ = 1, 24 do
+    local wd = t.GetUnboundedStringWidth and t:GetUnboundedStringWidth() or t:GetStringWidth()
     if type(wd) ~= "number" or wd <= maxW or sz <= minSize then break end
     sz = sz - 0.5; setfont(t, key, sz)
   end
@@ -1766,10 +1766,11 @@ local function layoutText(w, big, name, text)
   w.nameB:Show()
   local showType = w.cw >= 120
   local hasText = text and text ~= ""
-  w.type:SetShown(w.cw >= 80)
+  -- (a small card with rules, like a card in your Arena hand, has no room for both: the rules win)
+  w.type:SetShown(w.cw >= 80 and (showType or not hasText))
   if showType and hasText then
     w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 14 * u, -252 * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 242 * u, -264 * u)
-  elseif w.cw >= 80 then
+  elseif w.cw >= 80 and not hasText then
     -- a grid card has no room for rules: its type line sits in the middle of the panel, so the panel isn't blank
     showType = false
     w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 12 * u, -(qb[2] + 4) * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 244 * u, -(qb[4] - 14) * u)

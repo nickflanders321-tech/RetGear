@@ -445,7 +445,7 @@ local function makeMinion(parent)
   -- the name sits inside the tile, on a dark band across the top: nothing hangs below the tile to run into the hero or the turn banner
   m.nameBand = top:CreateTexture(nil, "ARTWORK", nil, 3); m.nameBand:SetColorTexture(0.02, 0.015, 0.05, 0.62)
   m.nameBand:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -3); m.nameBand:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -3); m.nameBand:SetHeight(14)
-  m.name = U.fs(top, "head", 10, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "TOP", 0, -6); m.name:SetWidth(MW - 10); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
+  m.name = U.fs(top, "head", 9, "OVERLAY"); m.name:SetPoint("TOP", m.tile, "TOP", 0, -6); m.name:SetWidth(MW - 16); m.name:SetWordWrap(false); m.name:SetTextColor(0.95, 0.9, 0.78)
   m.zz = U.fs(top, "title", 14, "OVERLAY", "OUTLINE"); m.zz:SetPoint("TOPRIGHT", m.tile, "TOPRIGHT", -8, -20); m.zz:SetTextColor(0.7, 0.8, 1); m.zz:SetText("Zz")
   m.fx = U.fs(top, "head", 9, "OVERLAY", "OUTLINE"); m.fx:SetPoint("TOPLEFT", m.tile, "TOPLEFT", 8, -20); m.fx:SetTextColor(1, 0.85, 0.5)
   m:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -502,14 +502,16 @@ local function paintMinion(w, m, side)
   w.name:SetText(m.name)
   Sh(w.bubble, m.kw.shield); Sh(w.ice, m.frozen)
   Sh(w.zz, m.sick and not (m.kw.charge or m.kw.rush) and not m.frozen)
+  -- its keywords as small icons (not bare letters): windfury, lifesteal, poison, deathrattle, end of turn, stealth
   local bits = {}
-  if m.kw.windfury then bits[#bits + 1] = "W" end
-  if m.kw.lifesteal then bits[#bits + 1] = "L" end
-  if m.kw.poison then bits[#bits + 1] = "P" end
-  if m.dr then bits[#bits + 1] = "D" end
-  if m.eot then bits[#bits + 1] = "E" end
-  if m.kw.stealth then bits[#bits + 1] = "S" end
-  w.fx:SetText(table.concat(bits, " "))
+  local function ic(path) bits[#bits + 1] = "|TInterface\\Icons\\" .. path .. ":13:13:0:0:64:64:5:59:5:59|t" end
+  if m.kw.windfury then ic("Spell_Nature_Windfury") end
+  if m.kw.lifesteal then ic("Spell_Shadow_LifeDrain02") end
+  if m.kw.poison then ic("Ability_Poisons") end
+  if m.dr then ic("Spell_Shadow_DeathCoil") end
+  if m.eot then ic("INV_Misc_PocketWatch_01") end
+  if m.kw.stealth then ic("Ability_Stealth") end
+  w.fx:SetText(table.concat(bits, ""))
   w.glow:Hide()
 end
 
@@ -1279,7 +1281,7 @@ refresh = function()
     h.hpT:SetText(P.hp); h.hpT:SetTextColor(1, P.hp < P.maxhp and 0.5 or 1, P.hp < P.maxhp and 0.5 or 1)
     local atk = B.heroAtk(P)
     Sh(h.atkB, atk > 0); Sh(h.atkT, atk > 0); h.atkT:SetText(atk)
-    h.arm:SetText(P.armor > 0 and ("[" .. P.armor .. "]") or "")
+    h.arm:SetText(P.armor > 0 and ("|TInterface\\Icons\\INV_Shield_06:15:15:0:0:64:64:5:59:5:59|t " .. P.armor) or "")
     h.name:SetText(P.name)
     Sh(h.ice, P.frozen)
     local col
