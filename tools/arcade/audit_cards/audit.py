@@ -33,8 +33,9 @@ for i, kind, name, tier, ref, text, disp, cid, owner, dup in cards:
         m = re.search(r'level (\d+)', text); lvl = int(m.group(1)) if m else None
         if d and d not in disp_ok: issues['model missing from the game'].append((name, d, text))
         if not ents:
-            if not d and not cid: issues['no model at all'].append((name, '', text))
+            if not d and not cid and not text.startswith('Mythic'): issues['painted scene instead of a model (no creature of that name)'].append((name, '', text))
             continue
+        if not d and not cid and any(T[e]['models'] for e in ents): issues['no model, though the creature has one'].append((name, text, ents[:3]))
         allm = set().union(*(T[e]['models'] for e in ents))
         if d and d not in allm:
             issues['model belongs to another creature'].append((name, d, text, sorted(allm)[:6]))
@@ -63,6 +64,16 @@ for i, kind, name, tier, ref, text, disp, cid, owner, dup in cards:
         if m:
             if m.group(1) != QN[q]: issues['item quality differs'].append((name, m.group(1), QN[q], iid))
             if int(m.group(2)) != il: issues['item level differs'].append((name, int(m.group(2)), il, iid))
-for k, v in issues.items():
-    print('== %s: %d' % (k, len(v)))
-    for x in v[:12]: print('   ', x)
+# Real problems stop a release (tools/watch/regenerate.sh: the hourly watcher then opens a "needs-claude" issue);
+# the rest are known differences, listed for a look.
+ERRORS = ['model missing from the game', 'model belongs to another creature', 'name shared: shows another creature of the same name',
+          'no model, though the creature has one', 'creature type on the card differs']
+nerr = nwarn = 0
+for k, v in sorted(issues.items(), key=lambda kv: (kv[0] not in ERRORS, kv[0])):
+    bad = k in ERRORS
+    if bad: nerr += len(v)
+    else: nwarn += len(v)
+    print('%s %s: %d' % ('ERROR' if bad else 'note:', k, len(v)))
+    for x in v[:(40 if bad else 5)]: print('   ', x)
+print('card audit: %d cards, %d errors, %d notes' % (len(cards), nerr, nwarn))
+sys.exit(1 if nerr else 0)

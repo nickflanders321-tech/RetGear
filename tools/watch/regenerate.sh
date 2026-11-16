@@ -73,6 +73,9 @@ python3 tools/community/import.py "${GITHUB_REPOSITORY:-nickflanders321-tech/Ret
 if [ -d "$T/ps/forever-db" ]; then
   python3 tools/questnotes/gen.py "$T/ps/forever-db" . || true
 fi
+# every card against the game data: its 3D model, level and type, item names and qualities (an error stops the release)
+mkdir -p "$T/cards" && $LUA tools/arcade/audit_cards/dump.lua "$T/cards" > /dev/null
+python3 tools/arcade/audit_cards/audit.py "$T" "$T/cards"
 # both checks must pass
 $LUA tools/audit/audit.lua > "$T/audit.txt" || { cat "$T/audit.txt"; exit 1; }
 python3 tools/audit/crosscheck.py . "$T/forever.json" "$T/forever_gear.json" "$LUA"

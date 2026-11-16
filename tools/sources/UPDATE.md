@@ -127,6 +127,10 @@ files. Changes to the generated files count as meaningful changes.
   (generators read the Lua data exactly as the add-on does; hand-written quests, givers and
   items exist in WoW Forever, are Horde-friendly and usable). Fix its warnings where you can,
   or add them to BACKLOG.md;
+- `lua5.1 tools/arcade/audit_cards/dump.lua /tmp/cards && python3 tools/arcade/audit_cards/audit.py /tmp /tmp/cards`
+  (every card against the game data: an NPC card's 3D model is in WoW Forever's model table and belongs to a creature
+  of that name, the creature type on the card is right; "note:" lines are known differences). regenerate.sh runs it,
+  and an error stops the hourly watcher's release and opens a "needs-claude" issue;
 - syntax-check every .lua file with Lua 5.1 loadfile; every file in Waypath.toc and
   Waypath_Forever.toc exists (and new files are listed in both);
 - watch for the Lua pitfall `local a, b = F and F()` (only one value survives; write
