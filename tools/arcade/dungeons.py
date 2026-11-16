@@ -54,6 +54,19 @@ fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
 # (an entry can come through as a list in a fresh dump: only proper records are used)
 FI = {k: v for k, v in fv["items"].items() if isinstance(v, dict)}
 FN = {k: v for k, v in fv["npcs"].items() if isinstance(v, dict)}
+
+# Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
+# with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type
+# (it used to say "humanoid" for all of them).
+_tyname = {}
+for _e, _n, _t in rows('creature_template', ['Entry', 'Name', 'CreatureType']):
+    if int(_t or 0) in TYPE: _tyname.setdefault(clean(_n).lower(), int(_t))
+for _k, _v in FN.items():
+    _k = int(_k)
+    if ctype.get(_k) not in TYPE:
+        _t = _tyname.get(clean(_v.get("name") or "").lower())
+        if _t: ctype[_k] = _t
+def tyword(t): return (" " + TYPE[t]) if t in TYPE else ""
 def L(v):
     if v is None: return []
     if isinstance(v, dict): return [v[k] for k in sorted(v, key=lambda x: int(x))]
@@ -123,8 +136,8 @@ for d in DUNS:
         n = FN[str(x)]
         nm = clean(n["name"])
         if not ok(nm): continue
-        ty = TYPE.get(ctype.get(x, 7), "humanoid")
-        card(2, nm, 4 if i == 0 else 3, ctype.get(x, 7), "Dungeon boss, level %d %s" % (n.get("maxLevel") or 0, ty), pool)
+        ty = tyword(ctype.get(x))
+        card(2, nm, 4 if i == 0 else 3, ctype.get(x, 7), "Dungeon boss, level %d%s" % (n.get("maxLevel") or 0, ty), pool)
         if cdisp.get(x): displays[nm] = cdisp[x]
         else: creatures[nm] = x
     # the loot: every purple, and the best blues
@@ -145,7 +158,7 @@ for d in DUNS:
     for nm, x in regs:
         if nreg >= 8 or not ok(nm): continue
         before = len(pool)
-        card(2, nm, 1, ctype.get(x, 7), "Dungeon elite, level %d %s" % (FN[str(x)].get("maxLevel") or 0, TYPE.get(ctype.get(x, 7), "humanoid")), pool)
+        card(2, nm, 1, ctype.get(x, 7), "Dungeon elite, level %d%s" % (FN[str(x)].get("maxLevel") or 0, tyword(ctype.get(x))), pool)
         if len(pool) > before:
             nreg += 1
             if cdisp.get(x): displays[nm] = cdisp[x]
@@ -213,7 +226,7 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
         for n in order:
             nm = clean(FN[str(n)]["name"])
             if ok(nm) and nm.lower() not in taken:
-                card(2, nm, 4 if n == last else 3, 7, "Dungeon boss, level %d humanoid" % hi, pool)
+                card(2, nm, 4 if n == last else 3, ctype.get(n, 7), "Dungeon boss, level %d%s" % (FN[str(n)].get("maxLevel") or hi, tyword(ctype.get(n))), pool)
                 if cdisp.get(n): displays[nm] = cdisp[n]
                 else: creatures[nm] = n
         shown = 0
@@ -230,7 +243,7 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
             nm = clean(FN[str(n)]["name"])
             if nreg >= 8 or not ok(nm) or nm.lower() in taken: continue
             before = len(pool)
-            card(2, nm, 1, 7, "Dungeon elite, level %d humanoid" % max(lo, hi - 1), pool)
+            card(2, nm, 1, ctype.get(n, 7), "Dungeon elite, level %d%s" % (FN[str(n)].get("maxLevel") or max(lo, hi - 1), tyword(ctype.get(n))), pool)
             if len(pool) > before:
                 nreg += 1
                 if cdisp.get(n): displays[nm] = cdisp[n]

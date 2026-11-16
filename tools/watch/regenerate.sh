@@ -50,6 +50,8 @@ $LUA tools/fishloot/dump.lua "$C" "$T/fl_obj.tsv" "$T/fl_items.tsv"
 python3 tools/fishloot/gen.py "$T/classic.sql" "$T/qdb" "$T/fl_obj.tsv" "$T/fl_items.tsv" .
 python3 tools/flights/gen.py "$T/classic.sql" "$T/qdb" "$T/npcs.tsv" .
 python3 tools/arcade/gen.py "$T/classic.sql" "$T/qdb" .
+# NPC cards' 3D models and place cards' map art, by name (kept in step with the card list above)
+python3 tools/arcade/gen_art.py "$T/classic.sql" .
 python3 tools/arcade/gear.py "$T/classic.sql" .
 # dungeon packs: each levelling dungeon's own cards (WoW Forever's item names and qualities when the client tables are there)
 WG=""; [ -s "$T/wago/ItemSparse.csv.gz" ] && WG="--wago $T/wago"

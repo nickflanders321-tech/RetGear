@@ -12,3 +12,5 @@ RG.ARCADE_GEAR = {
   WARLOCK = { 22506, 22507, 22504, 22510, 22505, 22508, 22511, 22509 }, -- Plagueheart Robe; Plagueheart Sandals; Plagueheart Bindings; Plagueheart Gloves; Plagueheart Belt; Plagueheart Shoulderpads; Plagueheart Circlet; Plagueheart Leggings
   DRUID = { 22490, 22491, 22488, 22494, 22489, 22492, 22495, 22493 }, -- Dreamwalker Legguards; Dreamwalker Tunic; Dreamwalker Girdle; Dreamwalker Handguards; Dreamwalker Spaulders; Dreamwalker Headpiece; Dreamwalker Boots; Dreamwalker Wristguards
 }
+-- each class's set by name (the raider cards say what their model wears)
+RG.ARCADE_GEAR_SET = { WARRIOR = "Dreadnaught", PALADIN = "Redemption", HUNTER = "Cryptstalker", ROGUE = "Bonescythe", PRIEST = "Faith", SHAMAN = "Earthshatter", MAGE = "Frostfire", WARLOCK = "Plagueheart", DRUID = "Dreamwalker" }

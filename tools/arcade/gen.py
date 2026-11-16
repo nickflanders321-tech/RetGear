@@ -68,7 +68,7 @@ for name, eid, lvl, rank, ct in cr:
     if n >= 400: break
     if name.lower() in seen: continue
     tier = 5 if (rank == 3 and lvl >= 58) else (4 if rank == 3 else (3 if rank == 2 else 2))
-    add(2, name, tier, ct, "%s, level %d %s" % (RANK[rank], lvl, TYPE.get(ct, "creature")))
+    add(2, name, tier, ct, "%s, level %d%s" % (RANK[rank], lvl, (" " + TYPE[ct]) if ct in TYPE else ""))   # (no type in the data: none named)
     n += 1
 
 # places: zones, then subzones named in QuestieDB's Forever zone table

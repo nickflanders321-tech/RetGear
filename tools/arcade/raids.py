@@ -27,6 +27,19 @@ for e, ct, m in rows('creature_template', ['Entry', 'CreatureType', 'ModelId1'])
     ctype[int(e)] = int(ct or 0); cdisp[int(e)] = int(m or 0)
 fv = json.load(open(json_path))
 FN = {int(k): v for k, v in fv["npcs"].items() if isinstance(v, dict)}
+
+# Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
+# with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type
+# (it used to say "humanoid" for all of them).
+_tyname = {}
+for _e, _n, _t in rows('creature_template', ['Entry', 'Name', 'CreatureType']):
+    if int(_t or 0) in TYPE: _tyname.setdefault(clean(_n).lower(), int(_t))
+for _k, _v in FN.items():
+    _k = int(_k)
+    if ctype.get(_k) not in TYPE:
+        _t = _tyname.get(clean(_v.get("name") or "").lower())
+        if _t: ctype[_k] = _t
+def tyword(t): return (" " + TYPE[t]) if t in TYPE else ""
 FI = {int(k): v for k, v in fv["items"].items() if isinstance(v, dict)}
 def tab(n):
     p = os.path.join(wago, n + ".csv.gz")
@@ -93,9 +106,9 @@ for name, size, where, title, opens, key, art, alias in RAIDS:
     for i, (bn, cid, eid) in enumerate(bosses):
         if not ok(bn): continue
         n = FN.get(cid, {})
-        ty = TYPE.get(ctype.get(cid, 7), "humanoid") if cid in ctype else "creature"   # (WoW Forever's own bosses: no type in the data)
+        ty = tyword(ctype.get(cid))   # (WoW Forever's own bosses without a type in the data: none named)
         lvl = min(63, n.get("maxLevel") or 63)
-        card(2, bn, 5 if i == 0 else 4, ctype.get(cid, 7), "Raid boss, level %d %s" % (lvl, ty), pool)
+        card(2, bn, 5 if i == 0 else 4, ctype.get(cid, 7), "Raid boss, level %d%s" % (lvl, ty), pool)
         if cid and cdisp.get(cid): displays[bn] = cdisp[cid]
         elif cid: creatures[bn] = cid
     bids = {b[1] for b in bosses if b[1]}
@@ -110,7 +123,7 @@ for name, size, where, title, opens, key, art, alias in RAIDS:
     zones = {n.get("zone") for cid, n in FN.items() if cid in bids}
     regs = sorted({(clean(n["name"]), cid) for cid, n in FN.items() if n.get("zone") in zones and (n.get("rank") or 0) == 1 and cid not in bids})
     for nm, cid in regs[:6]:
-        if ok(nm) and card(2, nm, 2, ctype.get(cid, 7), "Raid elite, level %d %s" % (FN[cid].get("maxLevel") or 60, TYPE.get(ctype.get(cid, 7), "humanoid")), pool):
+        if ok(nm) and card(2, nm, 2, ctype.get(cid, 7), "Raid elite, level %d%s" % (FN[cid].get("maxLevel") or 60, tyword(ctype.get(cid))), pool):
             if cdisp.get(cid): displays[nm] = cdisp[cid]
             else: creatures[nm] = cid
     if key:

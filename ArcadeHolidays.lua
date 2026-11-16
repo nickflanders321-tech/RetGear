@@ -130,7 +130,7 @@ RG.ARCADE_HOLIDAY_ROWS = {
   { 2, "Kaymard Copperpinch", 3, 7, "Feast of Winter Veil, level 30 humanoid" },
   { 2, "Wulmort Jinglepocket", 3, 7, "Feast of Winter Veil, level 30 humanoid" },
   { 2, "Greatfather Winter", 3, 7, "Feast of Winter Veil, level 30 humanoid" },
-  { 2, "Strange Snowman", 3, 10, "Feast of Winter Veil, level 35 humanoid" },
+  { 2, "Strange Snowman", 3, 10, "Feast of Winter Veil, level 35" },
   { 2, "Wonderform Operator", 3, 7, "Feast of Winter Veil, level 30 humanoid" },
   { 2, "Historian Karnik", 2, 7, "Feast of Winter Veil, level 20 humanoid" },
   { 2, "Sagorne Creststrider", 2, 7, "Feast of Winter Veil, level 50 humanoid" },

@@ -100,12 +100,40 @@ local RACE_DIR = { Human = "Human", Dwarf = "Dwarf", NightElf = "NightElf", Gnom
 local MAX_RAIDERS = 400
 local byKey = {}
 for _, c in ipairs(CARDS) do byKey[c.key or c.name] = c end   -- (a dungeon's Mythic shares its boss's name: its own key)
+-- A raider's race, from the game's own list: its race id (to draw a character of that race) and its name as the game
+-- shows it ("Scourge" is Undead, "NightElf" Night Elf; WoW Forever's own races too)
+do
+  local races
+  function RG.ArcadeRaceInfo(file)
+    if not file or file == "" then return nil end
+    if not races then
+      races = {}
+      if C_CreatureInfo and C_CreatureInfo.GetRaceInfo then
+        for i = 1, 150 do
+          local ok, info = pcall(C_CreatureInfo.GetRaceInfo, i)
+          if ok and type(info) == "table" and info.clientFileString and not races[info.clientFileString] then
+            races[info.clientFileString] = { id = info.raceID or i, name = info.raceName }
+          end
+        end
+      end
+    end
+    local r = races[file]
+    if not next(races) then races = nil end   -- (the list wasn't there yet: ask again next time)
+    if r then return r end
+    -- (no list on this client: the file name, readable)
+    return { name = (file == "Scourge" and "Undead") or file:gsub("(%l)(%u)", "%1 %2") }
+  end
+end
+
 local function addRaider(name, class, race, sex)
   if not name or not class or byKey["@" .. name] then return end
   if #CARDS >= #(RG.ARCADE_DATA or {}) + MAX_RAIDERS then return end
   local cname = class:sub(1, 1) .. class:sub(2):lower()
+  local ri = RG.ArcadeRaceInfo(race)
+  local set = RG.ARCADE_GEAR_SET and RG.ARCADE_GEAR_SET[class]
   local c = { id = #CARDS + 1, kind = 4, key = "@" .. name, name = name, tier = 6, ref = 0, class = class, race = race, sex = sex,
-              text = (race or "") .. " " .. cname .. " in raid gear", icon = "Interface\\Icons\\ClassIcon_" .. cname }
+              text = ((ri and ri.name) and (ri.name .. " ") or "") .. cname .. " in " .. (set and (set .. " ") or "") .. "raid gear",
+              icon = "Interface\\Icons\\ClassIcon_" .. cname }
   CARDS[#CARDS + 1] = c; byKey[c.key] = c
   RG.ArcadePoolsDirty = true
   return true
@@ -1550,7 +1578,28 @@ local RAIDER_FACE = {
 local RAIDER_ANY = { 10344, 10355, 10343, 2240, 8762, 10375, 4912, 12169 }
 local function dressModel(w, c, finish)
   local m = ensureModel(w)
-  if not m or not m.SetDisplayInfo then return false end
+  if not m then return false end
+  -- the raider as they are: a character of their race and sex, in their class's raid set (dressed once it loads)
+  local ri = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(c.race)
+  if ri and ri.id and m.SetCustomRace then
+    m.cls = c.class; m.creature = false
+    m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
+    m:SetFrameLevel(lv(w) + 2)
+    if pcall(m.SetCustomRace, m, ri.id, c.sex == 3 and 1 or 0) then
+      pcall(function()
+        if m.Undress then m:Undress() end
+        for _, id in ipairs((RG.ARCADE_GEAR or {})[c.class or ""] or {}) do if m.TryOn then m:TryOn("item:" .. id) end end
+      end)
+      m.zoom = 0
+      if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
+      if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
+      if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
+      m:Show()
+      return true
+    end
+  end
+  -- (a client that can't draw a race: a figure of that class from the game's own people)
+  if not m.SetDisplayInfo then return false end
   local list = RAIDER_FACE[(c.class or ""):upper()] or RAIDER_ANY
   local id = list[seedOf(c.name or "?") % #list + 1]
   m.cls = c.class; m.creature = true

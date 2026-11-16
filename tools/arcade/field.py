@@ -34,6 +34,19 @@ for e, ct, m in rows('creature_template', ['Entry', 'CreatureType', 'ModelId1'])
 fv = json.load(open(json_path))
 FN = {int(k): v for k, v in fv["npcs"].items() if isinstance(v, dict)}
 
+# Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
+# with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type
+# (it used to say "humanoid" for all of them).
+_tyname = {}
+for _e, _n, _t in rows('creature_template', ['Entry', 'Name', 'CreatureType']):
+    if int(_t or 0) in TYPE: _tyname.setdefault(clean(_n).lower(), int(_t))
+for _k, _v in FN.items():
+    _k = int(_k)
+    if ctype.get(_k) not in TYPE:
+        _t = _tyname.get(clean(_v.get("name") or "").lower())
+        if _t: ctype[_k] = _t
+def tyword(t): return (" " + TYPE[t]) if t in TYPE else ""
+
 # zone names: the same tables the gear guide uses
 gsrc = open(os.path.join(here, '..', 'gear', 'gen.py'), encoding='utf-8').read()
 AREA = eval(re.search(r'^AREA = (\{.*?\})\n', gsrc, re.S | re.M).group(1))
@@ -109,8 +122,8 @@ for zn, nm, nid, n in rares:
         tier = 4 if elite else 3
         pts = {(round(x), round(y)) for _, x, y in spawns[nid]}
         if len(pts) <= 1: tier += 1   # (one spot to find it in)
-        ty = TYPE.get(ctype.get(nid, 7), "humanoid")
-        add_row(2, nm, tier, ctype.get(nid, 7), "%s, level %d %s" % ("Rare elite" if elite else "Rare", n.get("maxLevel") or 0, ty))
+        ty = tyword(ctype.get(nid))
+        add_row(2, nm, tier, ctype.get(nid, 7), "%s, level %d%s" % ("Rare elite" if elite else "Rare", n.get("maxLevel") or 0, ty))
         if cdisp.get(nid): displays[nm] = cdisp[nid]
         elif nm not in displays: creatures[nm] = nid
     if card not in pages[pg]["cards"]: pages[pg]["cards"].append(card)
@@ -125,7 +138,7 @@ for wname in WORLD:
     pages.setdefault(wpage, {"zone": "World bosses", "cards": []})
     lvl = max(FN[i].get("maxLevel") or 0 for i in ids)
     lvl = 63 if lvl > 63 else lvl
-    add_row(2, card, 5, ctype.get(ids[0], 2), "World boss, witnessed, level %d %s" % (lvl, TYPE.get(ctype.get(ids[0], 2), "dragonkin")))
+    add_row(2, card, 5, ctype.get(ids[0], 2), "World boss, witnessed, level %d%s" % (lvl, tyword(ctype.get(ids[0], 2))))
     pages[wpage]["cards"].append(card)
     for nid in ids:
         z, x, y = spawns[nid][0]
