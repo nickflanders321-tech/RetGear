@@ -541,6 +541,7 @@ RG.ArcadeDaily = dailyCheck
 -- Packs, selling, duels
 -- ---------------------------------------------------------------------------
 local PITY = 7   -- a pack after this many without a holo or full art always has one
+RG.ARCADE_MYTH_PITY = 30   -- a dungeon's Mythic is in one of its first 30 packs at the latest (counted until you have it)
 local STREAK_BONUS = 7         -- a reward seal for every 7th day in a row you break a seal
 local MANY_MAX = 10            -- most seals "Break all" opens at once
 
@@ -622,7 +623,17 @@ local function openOne(a, kind, dn)
   local mythic
   if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
   local mroll, mw = math.random(), (def.weight or 1)
-  if not a.ring and byKey["The 1 Ring"] and mroll < TIER[7].ring * mw then
+  -- a dungeon's own Mythic: by luck, or for certain in the 30th of its packs opened without it
+  local myCard = dn and RG.ARCADE_SET_MYTHIC and byKey[RG.ARCADE_SET_MYTHIC[dn] or ""]
+  local myDue
+  if myCard and owned(a, myCard.id) == 0 then
+    a.mpity = a.mpity or {}
+    meta.mythPityBefore = a.mpity[dn] or 0
+    myDue = meta.mythPityBefore >= RG.ARCADE_MYTH_PITY - 1
+  end
+  if myDue then
+    mythic = myCard
+  elseif not a.ring and byKey["The 1 Ring"] and mroll < TIER[7].ring * mw then
     mythic = byKey["The 1 Ring"]
     a.ring = { by = (UnitName and UnitName("player")) or "?", date = today() }
   elseif mroll < TIER[7].rate * mw and dn and RG.ARCADE_SET_MYTHIC and byKey[RG.ARCADE_SET_MYTHIC[dn] or ""] then
@@ -631,6 +642,10 @@ local function openOne(a, kind, dn)
     local pool = {}
     for _, c in ipairs(byTier[7]) do if not (c.mythic and c.mythic.one) then pool[#pool + 1] = c end end
     if #pool > 0 then mythic = pool[math.random(#pool)] end
+  end
+  if meta.mythPityBefore then
+    if mythic == myCard then a.mpity[dn] = nil; meta.mythGuaranteed = myDue or nil
+    else a.mpity[dn] = meta.mythPityBefore + 1 end
   end
   for i = 1, size do
     local c = rollCard(a, dn)
@@ -3012,6 +3027,13 @@ local function showReveal(got, notes, meta)
   elseif meta.dungeon then
     title = meta.dungeon .. " Pack"
     info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from " .. meta.dungeon .. " only   ·   " .. def.rares .. " rare or better" }
+    -- its own Mythic: how many more of its packs until it's certain
+    local mp = meta.mythPityBefore
+    if mp then
+      local left = RG.ARCADE_MYTH_PITY - mp
+      info[#info + 1] = { "Mythic", left <= 1 and "|cffffe58cThis pack holds " .. meta.dungeon .. "'s Mythic|r"
+        or ("|cffffe58c" .. meta.dungeon .. "'s Mythic|r for certain within " .. left .. " of its packs") }
+    end
   else
     info[#info + 1] = { "Contents", GOLDHEX .. def.size .. " cards|r from the whole collection   ·   " .. def.rares .. " rare or better" }
     if meta.daily then title = "Daily " .. def.name; info[#info + 1] = { "Daily", "|cff7be08aDay " .. (meta.streak or 1) .. " in a row|r" } end
