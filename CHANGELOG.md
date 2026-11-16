@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **The cards open on your collection.** Opening the card window now always starts on your collection, never straight into a pack. The main window's pack row is now "Pack shop" and opens the Shop tab, where you pick what to open. A pack screen left open closes with the window (its cards are already yours).
+
 ## v1.46.0
 - **Every Mythic pull is an event of its own.** A dungeon's Mythic, "the heart" of its dungeon: the dungeon's loading screen spreads behind the pack screen, the boss roars as it lands (in its own voice where the game's data has one: VanCleef, Aku'mai, Thermaplugg, Amnennar and Rivendare), "THE HEART OF SHADOWFANG KEEP" drops in letter by letter, and a wax seal stamps onto the card. The six Waypath Mythics get an entrance each: footsteps cross the screen to The Wanderer, a golden waypoint pin drops onto The First Waypoint, flames rise round The Last Campfire, a pillar of light and a great "60" stamp down for Sixty, and time slows, greys and pours sand for The Hourglass of Forever; then their own name and a gold seal. (The 1 Ring keeps its engraving.)
 - **Mythics stay special in your collection.** Each one carries effects in its own style (ghosts in Shadowfang Keep, embers in Blackrock Depths, water in Blackfathom Deeps, sand in Zul'Farrak, cogs in Gnomeregan, green mist in Scholomance and more; footprints, glints, a pillar of light, falling sand for the six), faint at rest and full when you hover. A dungeon Mythic's picture slowly drifts, and its boss comes to life now and then. The seal and its foot say who pulled it and when.

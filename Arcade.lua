@@ -3541,7 +3541,11 @@ local function build()
   end
   frame.cells = cells
   frame.insp = makeCard(frame, 230); frame.insp:SetFrameLevel(lv(frame) + 40); frame.insp.noTip = true; frame.insp.hover = false; frame.insp:EnableMouse(false); frame.insp:Hide()
-  frame:HookScript("OnHide", function() frame.insp:Hide() end)
+  frame:HookScript("OnHide", function()
+    frame.insp:Hide()
+    -- (a pack screen left open goes with the window: its cards are already in your collection)
+    if reveal and reveal:IsShown() then reveal:Hide() end
+  end)
   -- the text screens (Sets, Today, Trade, Ledger)
   frame.panel = fs(frame, "body", 14); frame.panel:SetPoint("TOPLEFT", 40, -200); frame.panel:SetWidth(WINW - 80); frame.panel:SetJustifyH("LEFT"); frame.panel:SetJustifyV("TOP"); frame.panel:SetSpacing(6)
   frame.panel:SetTextColor(0.9, 0.86, 0.74)
@@ -4054,14 +4058,17 @@ function RG.ArcadeOpenAlbum(name)
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
 end
 function RG.ArcadeSound(role) pcall(playSound, nil, 1, role) end
--- the Cards tab opens a pack straight away
-function RG.ArcadeBuyNow(many)
+-- the main window's pack row: the card window on its Shop tab (a pack is opened from there, never straight away)
+function RG.ArcadeBuyNow()
   RG.ShowArcade()
-  if frame and frame.buyNow then frame.buyNow(many) end
+  view.mode = "shop"
+  if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
 end
 function RG.ShowArcade()
   if WaypathFrame and WaypathFrame.IsShown and WaypathFrame:IsShown() then WaypathFrame:Hide() end   -- never stack on the main window
   if not frame then build() end
+  -- (opening the window always starts on your collection; a link to an Album page or the Shop moves on from there)
+  if not frame:IsShown() then view.mode = "cards"; view.set = nil; view.showcase = false end
   local a = store(); if a then a.seen = true end
   -- window size: the screen-fit scale, times your own setting (/wp cardscale 1.2)
   do

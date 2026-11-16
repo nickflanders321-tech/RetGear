@@ -3007,17 +3007,18 @@ local function renderCards()
   local price = RG.ArcadePackPrice or 25
   local coins = a.coins or 0
   n = n + 1
-  setItem(getRow(n), nil, nil, "|cffffffffWaypath Arena|r", "Duel the computer with the cards you have found. Every card plays as a minion, a spell or a weapon.  " .. GREY .. "Record " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.|r", GOLD .. "Play|r", "", "gold")
-  getRow(n).icon:SetTexture("Interface\\Icons\\Ability_Warrior_Challange")
-  getRow(n).onClick = function() if RG.ShowBattle then RG.ShowBattle() end end
-  n = n + 1
-  setItem(getRow(n), nil, nil, "|cffffffffOpen a pack|r", "Five cards: items, NPCs and places from the world, some as rare, holo or full art prints.", price == 0 and (GREEN .. "Free in the beta|r") or (GOLD .. price .. " coins|r"), "", price == 0 and "green" or ((coins >= price) and "gold" or nil))
-  getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
-  getRow(n).onClick = function() if RG.ArcadeBuyNow then RG.ArcadeBuyNow() end end
-  n = n + 1
   setItem(getRow(n), nil, nil, "|cffffffffYour collection|r", own .. " of " .. total .. " cards  ·  " .. prints .. " prints. Browse, sort, pin favourites to your showcase and trade extras.", GOLD .. "Open|r", "", nil)
   getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
   getRow(n).onClick = function() if RG.ShowArcade then RG.ShowArcade() end end
+  n = n + 1
+  local waiting = (RG.ArcadePacksWaiting and RG.ArcadePacksWaiting()) or 0
+  setItem(getRow(n), nil, nil, "|cffffffffPack shop|r", "Open the packs you've earned, or buy new ones: five cards of items, NPCs and places, some as rare, holo or full art prints.", waiting > 0 and (GREEN .. waiting .. " to open|r") or (GOLD .. price .. " coins|r"), "", waiting > 0 and "green" or ((coins >= price) and "gold" or nil))
+  getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
+  getRow(n).onClick = function() if RG.ArcadeBuyNow then RG.ArcadeBuyNow() end end
+  n = n + 1
+  setItem(getRow(n), nil, nil, "|cffffffffWaypath Arena|r", "Duel the computer with the cards you have found. Every card plays as a minion, a spell or a weapon.  " .. GREY .. "Record " .. (a.bWins or 0) .. " won, " .. (a.bLoss or 0) .. " lost.|r", GOLD .. "Play|r", "", "gold")
+  getRow(n).icon:SetTexture("Interface\\Icons\\Ability_Warrior_Challange")
+  getRow(n).onClick = function() if RG.ShowBattle then RG.ShowBattle() end end
   n = n + 1
   setItem(getRow(n), nil, nil, "|cffffffffCoins|r", "You earn coins from quests, kills, skill-ups and duel wins." .. GREY .. "  Today's goals and the full ledger are in the collection window.|r", GOLD .. coins .. "|r", "", nil)
   getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
