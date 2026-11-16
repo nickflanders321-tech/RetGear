@@ -4,8 +4,8 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 1-150
 19x Mote of Magic (vendor)
 1x Copper Rod (vendor)
-272x Strange Dust
-307x Lesser Magic Essence
+265x Strange Dust
+293x Lesser Magic Essence and 23x Simple Wood (vendor)
 1x Silver Rod
 1x Shadowgem
 4x Lesser Magic Essence
@@ -47,12 +47,15 @@ Journeyman Enchanting (70-150)
 49x Enchant Chest - Minor Absorption - 49 Lesser Magic Essence
 109-110
 1x Runed Silver Rod - 1 Silver Rod, 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem
-110-150
-52x Enchant 2H Weapon - Lesser Intellect - 208 Lesser Magic Essence
-110-130: 32x Enchant Cloak - Minor Protection - 64 Strange Dust
-130-150: 20x Enchant Boots - Minor Stamina - 80 Strange Dust
-70-100
-30x Enchant Bracer - Minor Stamina - 60 Strange Dust
+110-125
+23x Greater Magic Wand - 23 Simple Wood, 46 Lesser Magic Essence
+125-150
+37x Enchant 2H Weapon - Lesser Intellect - 148 Lesser Magic Essence
+25x Enchant Boots - Minor Stamina - 100 Strange Dust
+70-85
+23x Enchant Chest - Inferior Stamina - 23 Strange Dust
+85-100
+15x Enchant Bracer - Minor Stamina - 30 Strange Dust
 100-109
 9x Enchant Cloak - Minor Protection - 18 Strange Dust
 109-110
