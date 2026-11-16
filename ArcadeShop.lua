@@ -187,7 +187,8 @@ local function paintTile(t, e)
       pcall(t.emb.SetTexCoord, t.emb, x0 + 18 / 1024, x0 + 102 / 1024, y0, y0 + 84 / 1024); shown = true
     elseif scr then
       t.emb:SetTexture(scr[1])
-      if scr[2] == 1 then pcall(t.emb.SetTexCoord, t.emb, 0.3, 0.7, 0.14, 0.86) else pcall(t.emb.SetTexCoord, t.emb, 0.15, 0.85, 0.1, 0.9) end
+      -- (square, from below the logo at the loading screen's top)
+      if scr[2] == 1 then pcall(t.emb.SetTexCoord, t.emb, 0.29, 0.71, 0.25, 1) else pcall(t.emb.SetTexCoord, t.emb, 0.22, 0.78, 0.25, 1) end
       shown = true
     else
       local u = U()

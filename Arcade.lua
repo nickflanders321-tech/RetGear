@@ -1087,6 +1087,26 @@ end
 -- ---------------------------------------------------------------------------
 -- Card widgets
 -- ---------------------------------------------------------------------------
+-- items whose data the game is still sending: the cards are drawn again once they arrive (a batch, a moment later)
+do
+  local waiting, queued, ev = {}, false, nil
+  function RG.ArcadeIconWait(id)
+    if waiting[id] then return end
+    waiting[id] = true
+    if not ev then
+      ev = CreateFrame("Frame")
+      pcall(ev.RegisterEvent, ev, "ITEM_DATA_LOAD_RESULT")
+      ev:SetScript("OnEvent", function(_, _, itemID)
+        if not waiting[itemID] then return end
+        waiting[itemID] = nil
+        if queued or not (C_Timer and C_Timer.After) then return end
+        queued = true
+        C_Timer.After(0.4, function() queued = false; if RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end end)
+      end)
+    end
+    pcall(C_Item.RequestLoadItemDataByID, id)
+  end
+end
 local function iconFor(c)
   if c.icon then return c.icon end
   if c.kind == 1 then
@@ -1096,6 +1116,10 @@ local function iconFor(c)
     local ic
     if C_Item and C_Item.GetItemIconByID then ic = C_Item.GetItemIconByID(c.ref) end
     if not ic and GetItemIcon then ic = GetItemIcon(c.ref) end
+    -- an item the game hasn't sent yet: ask for it, and redraw the cards when it arrives (RG.ArcadeIconWait)
+    if C_Item and C_Item.IsItemDataCachedByID and C_Item.RequestLoadItemDataByID and not C_Item.IsItemDataCachedByID(c.ref) then
+      if RG.ArcadeIconWait then RG.ArcadeIconWait(c.ref) end
+    end
     return ic or "Interface\\Icons\\INV_Misc_QuestionMark"
   end
   -- NPCs and places: the game's own icon, picked from the name first (a troll gets a troll head, a spider a spider),
@@ -1467,7 +1491,7 @@ local function makeCard(parent, w)
   f.rune = f.artClip:CreateTexture(nil, "BACKGROUND", nil, 3); f.rune:SetTexture(MEDIA .. "Rune"); f.rune:SetBlendMode("ADD")
   f.rune:SetSize(ah * 1.08, ah * 1.08); f.rune:SetPoint("CENTER", f.artClip, "CENTER", 0, 0)
   f.iconBack = f.artClip:CreateTexture(nil, "ARTWORK", nil, 0); f.iconBack:SetColorTexture(0.08, 0.06, 0.1, 0.9)
-  f.iconEdge = f.artClip:CreateTexture(nil, "ARTWORK", nil, 1); f.iconEdge:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.95)
+  f.iconEdge = f.artClip:CreateTexture(nil, "ARTWORK", nil, 1); f.iconEdge:SetTexture(MEDIA .. "IconRim")   -- (a gold rim round a dark slot: an icon still loading shows as an empty slot, not a gold square)
   f.art = f.artClip:CreateTexture(nil, "ARTWORK", nil, 2); f.art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   -- foil sweeps across the whole card, above the model
   f.fx = CreateFrame("Frame", nil, f); f.fx:SetAllPoints(f); f.fx:SetFrameLevel(base + 3)
@@ -1620,7 +1644,8 @@ local function placeArt(w, c, full)
   else
     -- a dungeon or raid: its own loading screen from the game's files, cut to the painting's shape
     w.art:SetTexture(scr[1])
-    if scr[2] == 1 then w.art:SetTexCoord(0.125, 0.875, 0, 1) else w.art:SetTexCoord(0, 1, 0.035, 0.965) end
+    -- (the top of a loading screen carries the game's logo: the painting is cut from below it)
+    if scr[2] == 1 then w.art:SetTexCoord(0.178, 0.822, 0.22, 1) else w.art:SetTexCoord(0.071, 0.929, 0.22, 1) end
   end
   local pw = (full and 248 or 186) * u; local ph = pw * 84 / 120   -- (Full art: the painting runs to the card's edge)
   w.art:ClearAllPoints(); w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(pw, ph)
@@ -1705,11 +1730,18 @@ local function layoutText(w, big, name, text)
   w.nameB:ClearAllPoints()
   w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", (pb[1] + 5) * u, -(pb[2] + 1) * u); w.nameB:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", (pb[3] - 5) * u, -(pb[4] - 1) * u)
   w.nameB:SetWordWrap(false); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
-  local wd = w.nameB.GetUnboundedStringWidth and w.nameB:GetUnboundedStringWidth() or w.nameB:GetStringWidth()
-  if type(wd) == "number" and wd > bw then
+  -- (the game can measure a string as narrower than it draws in a frame not yet shown: an estimate from its letters
+  -- is the floor, so a long name never runs off both ends of the ribbon)
+  local function width(size)
+    local m = w.nameB.GetUnboundedStringWidth and w.nameB:GetUnboundedStringWidth() or w.nameB:GetStringWidth()
+    local est = #(name or "") * size * 0.68
+    return math.max(type(m) == "number" and m or 0, est)
+  end
+  local wd = width(sz)
+  if wd > bw then
     -- first a little smaller on one line, then two lines
-    while sz > 8 and wd > bw do sz = sz - 0.5; setfont(w.nameB, "head", sz); w.nameB:SetText(name or ""); wd = w.nameB.GetUnboundedStringWidth and w.nameB:GetUnboundedStringWidth() or w.nameB:GetStringWidth() end
-    if type(wd) == "number" and wd > bw then
+    while sz > 8 and wd > bw do sz = sz - 0.5; setfont(w.nameB, "head", sz); w.nameB:SetText(name or ""); wd = width(sz) end
+    if wd > bw then
       sz = math.min(sz, math.max(7, ((pb[4] - pb[2] - 4) * u) / 2 - 1))
       setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
       w.nameB:SetWordWrap(true)
@@ -1718,9 +1750,15 @@ local function layoutText(w, big, name, text)
   elseif w.nameB.SetMaxLines then w.nameB:SetMaxLines(1) end
   w.nameB:Show()
   local showType = w.cw >= 120
-  w.type:SetShown(showType)
-  if showType then
+  local hasText = text and text ~= ""
+  w.type:SetShown(w.cw >= 80)
+  if showType and hasText then
     w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 14 * u, -252 * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 242 * u, -264 * u)
+  elseif w.cw >= 80 then
+    -- a grid card has no room for rules: its type line sits in the middle of the panel, so the panel isn't blank
+    showType = false
+    w.type:ClearAllPoints(); w.type:SetPoint("TOPLEFT", w, "TOPLEFT", 12 * u, -(qb[2] + 4) * u); w.type:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", 244 * u, -(qb[4] - 14) * u)
+    if w.type.SetJustifyV then w.type:SetJustifyV("MIDDLE") end
   end
   local top = showType and 266 or 254
   local tsz = 9
@@ -1932,7 +1970,7 @@ local function paint(w, card, finish, copies)
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
     w.art:Hide()
-  else placeIcon(full and 120 or 94) end
+  else placeIcon(full and 136 or 110) end
   if fx.rays then tintTex(w.rays, { 1, 0.86, 0.5 }, fx.rays); w.rays:Show() end
   if fx.foil > 0 then w.foil:Show() end
   if fx.aura > 0 then w.aura:Show(); w.aura:SetAlpha(fx.aura) end
@@ -2327,9 +2365,14 @@ local function startDeal()
   reveal.title:SetText("Turn each card")
   local n = #(reveal.got or {})
   for i = 1, n do local x, y, sc = dealPositions(i, n); placeCard(reveal.cards[i], x, y, sc); reveal.cards[i]:Show(); reveal.cards[i]:SetAlpha(0) end
-  setPlaque({ { "Tip", "A glowing back hides a better card   ·   hold a card to peek at its print, let go to turn it" } })
+  setPlaque({ { "Tip", "A glowing back hides a better card   ·   hold a card to peek, let go to turn it" } })
   reveal.spot:ClearAllPoints(); reveal.spot:SetPoint("CENTER", reveal, "CENTER", 0, 30); reveal.spot:SetSize(760, n > 5 and 520 or 380)
   playSound(nil, nil, "deal")
+  local ps = reveal.pendingStage
+  if ps then
+    reveal.pendingStage = nil
+    if C_Timer and C_Timer.After then C_Timer.After(1.1, function() if reveal:IsShown() then RG.ArcadeStageCelebrate(ps) end end) else RG.ArcadeStageCelebrate(ps) end
+  end
 end
 
 local function cursorXY()
@@ -2342,7 +2385,7 @@ end
 -- the seal gives way: shards fly, the table jolts, the cards are dealt
 local function tearOpen()
   if reveal.phase ~= "seal" then return end
-  playSound(nil, nil, "crack"); if playFx then playFx("tear") end
+  if not rawget(reveal, "sealOwn") then playSound(nil, nil, "crack"); if playFx then playFx("tear") end end   -- (a keg has its own bang)
   local c = reveal.sealCol or { 1, 0.8, 0.5 }
   for _, sh in ipairs(reveal.shards) do
     local ang = math.random() * 6.283
@@ -2354,7 +2397,7 @@ local function tearOpen()
   reveal.shardT = 0.8
   reveal.shakeT, reveal.shakeK = 0.3, 1.5
   for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "open", reveal) end   -- (planks, broken chains, snow)
-  reveal.holding, reveal.tear, reveal.picks = false, 0, 0
+  reveal.holding, reveal.tear, reveal.picks, reveal.sealAt = false, 0, 0, nil
   startDeal()
 end
 
@@ -2691,7 +2734,7 @@ local function showReveal(got, notes, meta)
     reveal.packKind = fs(reveal.seal, "head", 12); reveal.packKind:SetPoint("CENTER", reveal.seal, "TOP", 0, -232); reveal.packKind:SetTextColor(1, 0.96, 0.85)
     reveal.ribbon = reveal.seal:CreateTexture(nil, "OVERLAY"); reveal.ribbon:Hide()
     reveal.ribbonText = fs(reveal.seal, "title", 13); reveal.ribbonText:SetText("")
-    reveal.sealHint = fs(reveal.seal, "head", 12); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -26); reveal.sealHint:SetText("Drag across the top to rip it open   ·   or click it three times"); reveal.sealHint:SetTextColor(0.85, 0.78, 0.6)
+    reveal.sealHint = fs(reveal.seal, "head", 12); reveal.sealHint:SetPoint("TOP", reveal.seal, "BOTTOM", 0, -8); reveal.sealHint:SetText("Drag across the top to rip it open   ·   or click it three times"); reveal.sealHint:SetTextColor(0.95, 0.88, 0.68)
     reveal.seal:EnableMouse(true)
     reveal.sealCol = { 1, 1, 1 }
     -- the info plaque under the pack (and, after the deal, the results)
@@ -2729,7 +2772,7 @@ local function showReveal(got, notes, meta)
         reveal.picks, reveal.pickIdle = reveal.picks + 1, 0
         playSound(nil, nil, "pick")
         for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "pick", reveal, reveal.picks) end
-        if reveal.picks >= 3 then tearOpen() end
+        if reveal.picks >= 3 and not rawget(reveal, "sealOwn") then tearOpen() end   -- (a seal with its own timing opens itself: ArcadePackFx.lua)
       end
     end)
     reveal.share = gbtn(reveal, "Show off", 132, 30, function()
@@ -2857,7 +2900,11 @@ local function showReveal(got, notes, meta)
         elseif ins:IsShown() then ins:Hide(); ins.src = nil end
       end
       if self.phase == "seal" then
-        if self.holding then
+        if rawget(self, "sealAt") then   -- (a lit fuse: the seal opens itself when it burns down)
+          self.sealAt = self.sealAt - dt
+          if self.sealAt <= 0 then self.sealAt = nil; tearOpen(); return end
+        end
+        if self.holding and not rawget(self, "sealOwn") then
           self.holdT = self.holdT + dt
           local x, y = cursorXY()
           local d = math.sqrt((x - self.hx) ^ 2 + (y - self.hy) ^ 2)
@@ -3013,6 +3060,8 @@ local function showReveal(got, notes, meta)
   do local a = store(); reveal.snd:SetText(a and a.mute and "Sound: off" or "Sound: on") end
   reveal.burst:Hide(); reveal.burstLeft = 0
   reveal.tear, reveal.picks, reveal.holding, reveal.shardT, reveal.shakeT = 0, 0, false, 0, 0
+  reveal.sealAt, reveal.sealOwn, reveal.pendingStage = nil, nil, nil
+  do local sb = rawget(reveal, "stageBanner"); if sb then sb:Hide() end end   -- (the last pack's set banner goes with it)
   for _, sh in ipairs(reveal.shards) do sh.tex:Hide() end
   do local sc = frame and frame.GetScale and frame:GetScale(); reveal:SetScale(type(sc) == "number" and sc > 0 and sc or 1) end
   revealPoint(reveal, 0, 0)
@@ -3060,6 +3109,8 @@ end
 -- A set stage finished by this pack: a banner in the medal's colour rises over the pack, rays turn behind it
 function RG.ArcadeStageCelebrate(list)
   if not (reveal and reveal:IsShown() and list and list[1]) then return end
+  -- (while the pack is still sealed the banner would sit on it: it waits until the cards are dealt)
+  if reveal.phase == "seal" then reveal.pendingStage = list; return end
   local w = list[#list]   -- the highest one this pack reached
   local sg = RG.ARCADE_STAGES[w.stage]
   local c = sg[3]
@@ -3757,7 +3808,8 @@ function RG.ArcadeRefresh(keepMsg)
     view.page = math.max(1, math.min(view.page, pages))
     for i, cell in ipairs(cells) do
       local c = list[(view.page - 1) * #cells + i]
-      paint(cell, c, c and bestFinish(a, c.id), c and owned(a, c.id))
+      -- (the last page's spare cells stay empty: binder slots belong to the Album)
+      if c then cell:Show(); paint(cell, c, bestFinish(a, c.id), owned(a, c.id)) else paint(cell, nil); cell:Hide() end
     end
     frame.pageText:SetText(view.page .. " / " .. pages .. (view.set and ("  ·  " .. view.set) or ""))
     frame.prev:SetEnabled(view.page > 1); frame.next:SetEnabled(view.page < pages)
@@ -3809,8 +3861,8 @@ function RG.ArcadeRefresh(keepMsg)
     pgTile(2, PGX + tw + 16, 192, tw, 64, tostring(a.bonus or 0), "Reward packs", "jumbo: 2 rares and a holo", { 0.85, 0.6, 1 })
     pgTile(3, PGX + 2 * (tw + 16), 192, tw, 64, streak .. (streak == 1 and " day" or " days"), "Pack streak", "every 7th day: a reward pack", GOLDC)
     -- collector quests: today's goals, the week's and the month's (ArcadeCollector.lua draws the three columns)
-    local drew = RG.ArcadeQuestColumns and select(2, pcall(RG.ArcadeQuestColumns, { frame = frame, a = a, g = g, GOALS = GOALS, x = PGX, y = 268, w = PGW, h = 268 }))
-    local y0 = drew and 552 or 298
+    local drew = RG.ArcadeQuestColumns and select(2, pcall(RG.ArcadeQuestColumns, { frame = frame, a = a, g = g, GOALS = GOALS, x = PGX, y = 268, w = PGW, h = 236 }))
+    local y0 = drew and 514 or 298
     if not drew then
       pgHead(2, 464, "Today's goals", "new goals every day")
       local n = 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The dungeon, raid and holiday packs' own seals (Waypath+ 1.45), drawn over the pack's wrapper (256x512, the pack's
 own size on screen is 160x320):
-  PackCrate   a dungeon pack: a wooden crate with a fuse (ArcadePackFx.lua burns it down, then it bursts into planks)
+  (a dungeon pack's powder keg is tools/arcade/art_keg.py's)
   PackChains  a raid pack: two crossed chains, light grey (tinted in game: they glow as the lock heats)
   PackLock    the padlock where they cross (64x64)
   PackRibbon  a holiday pack: a ribbon round the wrapper; PackBow its bow (128x64)
@@ -141,7 +141,6 @@ def make_bow(w=128, h=64):
 
 
 def main():
-    save("PackCrate", make_crate(), 256, 512)
     save("PackChains", make_chains(), 256, 512)
     save("PackLock", make_lock(), 64, 64)
     save("PackRibbon", make_ribbon(), 256, 512)

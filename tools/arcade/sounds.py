@@ -94,9 +94,9 @@ SOUNDS = {
                         *[(0.03, sine(f, 3.4, 0.2, 1.6, 0.3, vib=2.2, vf=4.8)) for f in (110.0, 164.8, 220.0, 277.2, 329.6, 440.0)],
                         (0.2, arp([A5, Cs6, E6, A6, Cs7, E7], 0.09, 1.6, 0.42, 0.55)), (0.25, shimmer(3.0, 0.5)), (0.9, bell(A5, 2.6, 0.45, 1.0))),
     # a dungeon pack's crate: the fuse fizzes, then the crate bursts (a thump, splintering wood)
-    "fuse": lambda: mix((0, noise(0.45, 0.5, 0.35, 0.01, band=[2500, 9000])), (0.05, noise(0.3, 0.3, 0.2, 0.01, band=[5000, 11000]))),
-    "boom": lambda: mix((0, sine(55, 0.9, 1.0, 0.35, 0.002)), (0, noise(0.6, 1.0, 0.25, 0.001, band=[60, 900])),
-                        *[(0.03 + 0.04 * k, noise(0.12, 0.5, 0.06, 0.001, band=[900, 4000])) for k in range(5)]),
+    "fuse": lambda: fuse(),
+    "rumble": lambda: rumble(),
+    "boom": lambda: boom(),
     # a raid pack: each click is a clank on the lock; the chains snap with a ring of metal
     "clank": lambda: mix((0, noise(0.05, 0.8, 0.02, 0.0005, band=[1500, 6000])), (0, bell(392.0, 0.5, 0.5, 0.18)), (0, bell(587.3, 0.4, 0.3, 0.12))),
     "snap": lambda: mix((0, noise(0.08, 1.0, 0.03, 0.0005, band=[2000, 9000])), (0.02, bell(783.99, 1.0, 0.5, 0.4)), (0.05, bell(1174.7, 0.9, 0.35, 0.35)),
@@ -110,6 +110,35 @@ SOUNDS = {
 }
 
 A5, Cs6, E6b, A6, Cs7, E7 = 880.0, 1108.7, 1318.5, 1760.0, 2217.5, 2637.0
+def fuse(d=1.9):
+    # a lit fuse: a strike, then a fizzing hiss full of tiny crackles that brightens as it burns down
+    n = int(SR * d)
+    hiss = noise(d, 0.45, d * 3, 0.01, band=[3000, 10000])
+    hiss *= np.linspace(0.7, 1.0, n)[:len(hiss)]
+    crack = np.zeros(n)
+    for _ in range(70):
+        at = int(rng.integers(0, n - 600)); crack[at:at + 300] += noise(300 / SR, rng.uniform(0.2, 0.6), 0.002, 0.0002, band=[2500, 9000])[:300]
+    strike = noise(0.12, 0.9, 0.04, 0.001, band=[800, 6000])
+    out = mix((0, strike), (0.05, hiss + crack[:len(hiss)]))
+    return fade(out, 40)
+def rumble(d=0.9):
+    # the keg strains: a low growl that swells, a creak of wood
+    t = t_(d)
+    up = (t / d) ** 1.5
+    g = (np.sin(2 * np.pi * 48 * t + 3 * np.sin(2 * np.pi * 7 * t)) * 0.6 + noise(d, 0.6, d * 3, 0.01, band=[40, 220])[:len(t)]) * up
+    creak = sine(180, 0.35, 0.3, 0.2, 0.05, vib=25, vf=9)
+    return mix((0, g), (0.3, creak))
+def boom():
+    # the keg goes up: a sharp crack, a deep thump that rolls on, a roar of fire, then staves and hoops landing
+    crack_ = noise(0.05, 1.0, 0.012, 0.0003, band=[1500, 9000])
+    thump = mix((0, sine(42, 1.6, 1.0, 0.55, 0.002)), (0, sine(64, 0.9, 0.6, 0.3, 0.002)))
+    roar_ = noise(1.6, 1.0, 0.55, 0.004, band=[40, 700])
+    hiss = noise(1.2, 0.35, 0.4, 0.02, band=[1500, 6000])
+    parts = [(0, crack_), (0, thump), (0.01, roar_), (0.05, hiss)]
+    for k in range(7):   # wood clattering down
+        parts.append((0.45 + k * 0.09 + rng.uniform(0, 0.05), mix((0, noise(0.06, 0.5, 0.025, 0.0005, band=[400, 2500])), (0, sine(rng.uniform(180, 320), 0.08, 0.35, 0.03, 0.001)))))
+    parts.append((0.62, bell(rng.uniform(900, 1100), 0.8, 0.22, 0.25)))   # a hoop rings as it lands
+    return mix(*parts)
 def riser(d=1.3):
     t = t_(d)
     up = (t / d) ** 2

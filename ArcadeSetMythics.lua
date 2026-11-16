@@ -60,8 +60,11 @@ local function placeBackdrop(w, dn)
     bg:SetTexture(MEDIA .. "Places" .. pl[1])
   elseif scr then
     bg:SetTexture(scr[1])
-    local have = (scr[2] == 1) and (16 / 9) or (4 / 3)
-    if have > want then local cut = (1 - want / have) / 2; bg:SetTexCoord(cut, 1 - cut, 0, 1) else local cut = (1 - have / want) / 2; bg:SetTexCoord(0, 1, cut, 1 - cut) end
+    -- (a loading screen's top carries the game's logo: the picture is cut from below it)
+    local TOPCUT = 0.22
+    local have = ((scr[2] == 1) and (16 / 9) or (4 / 3)) / (1 - TOPCUT)
+    if have > want then local cut = (1 - want / have) / 2; bg:SetTexCoord(cut, 1 - cut, TOPCUT, 1)
+    else local keep = (1 - TOPCUT) * have / want; bg:SetTexCoord(0, 1, 1 - keep, 1) end
   else bg:Hide(); return false end
   bg:SetVertexColor(1, 1, 1, 1); bg:Show()
   return true

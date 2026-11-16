@@ -34,6 +34,19 @@ local function showNext()
   local b = table.remove(queue, 1)
   banner.kind:SetText(b[1]); banner.name:SetText(b[2]); banner.sub:SetText(b[3] or "")
   banner.medal:SetVertexColor(b[4] and b[4][1] or 1, b[4] and b[4][2] or 0.82, b[4] and b[4][3] or 0.4)
+  -- (with the cards' window or a pack open, the banner sits just above it, never on its title)
+  local over
+  for _, n in ipairs({ "WaypathArcadePack", "WaypathArcade" }) do
+    local w = _G[n]
+    if not over and w and w.IsShown and w:IsShown() and w.GetTop and type(w:GetTop()) == "number" then over = w end
+  end
+  banner:ClearAllPoints()
+  if over then
+    local top = over:GetTop() * (over:GetEffectiveScale() or 1) / (UIParent:GetEffectiveScale() or 1)
+    local room = (UIParent:GetHeight() or 768) - top
+    if room >= 80 then banner:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, top + 8)
+    else banner:SetPoint("TOPLEFT", over, "TOPRIGHT", 10, 0) end
+  else banner:SetPoint("TOP", UIParent, "TOP", 0, -120) end
   banner.age = 0; banner:SetAlpha(0); banner:Show()
   if RG.ArcadeSound then RG.ArcadeSound("reward") end
 end
@@ -368,13 +381,16 @@ end
 -- ---------------------------------------------------------------------------
 local qcol
 local function questRow(parent, u)
+  -- the quest's name on its own line, its reward and progress under it, the bar along the bottom
   local r = CreateFrame("Frame", nil, parent)
   r.bg = r:CreateTexture(nil, "BACKGROUND"); r.bg:SetAllPoints(); r.bg:SetColorTexture(0.94, 0.89, 0.78, 1)
-  r.name = u.fs(r, "body", 12); r.name:SetPoint("TOPLEFT", 9, -6); r.name:SetJustifyH("LEFT"); r.name:SetTextColor(0.17, 0.11, 0.05); r.name:SetShadowColor(0, 0, 0, 0)
-  r.rw = u.fs(r, "head", 9); r.rw:SetPoint("TOPRIGHT", -8, -8); r.rw:SetJustifyH("RIGHT"); r.rw:SetTextColor(0.42, 0.29, 0.13); r.rw:SetShadowColor(0, 0, 0, 0)
-  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetColorTexture(0.82, 0.74, 0.54, 1); r.barBg:SetHeight(5); r.barBg:SetPoint("BOTTOMLEFT", 9, 9); r.barBg:SetPoint("BOTTOMRIGHT", -54, 9)
-  r.bar = r:CreateTexture(nil, "OVERLAY"); r.bar:SetHeight(5); r.bar:SetPoint("BOTTOMLEFT", r.barBg, "BOTTOMLEFT", 0, 0)
-  r.pr = u.fs(r, "head", 9); r.pr:SetPoint("BOTTOMRIGHT", -8, 6); r.pr:SetJustifyH("RIGHT"); r.pr:SetTextColor(0.48, 0.35, 0.16); r.pr:SetShadowColor(0, 0, 0, 0)
+  r.name = u.fs(r, "body", 12); r.name:SetPoint("TOPLEFT", 9, -6); r.name:SetPoint("TOPRIGHT", -8, -6); r.name:SetJustifyH("LEFT")
+  if r.name.SetWordWrap then r.name:SetWordWrap(false) end
+  r.name:SetTextColor(0.17, 0.11, 0.05); r.name:SetShadowColor(0, 0, 0, 0)
+  r.rw = u.fs(r, "head", 9); r.rw:SetPoint("BOTTOMLEFT", 9, 13); r.rw:SetJustifyH("LEFT"); r.rw:SetTextColor(0.55, 0.36, 0.1); r.rw:SetShadowColor(0, 0, 0, 0)
+  r.pr = u.fs(r, "head", 9); r.pr:SetPoint("BOTTOMRIGHT", -8, 13); r.pr:SetJustifyH("RIGHT"); r.pr:SetTextColor(0.42, 0.31, 0.15); r.pr:SetShadowColor(0, 0, 0, 0)
+  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetColorTexture(0.82, 0.74, 0.54, 1); r.barBg:SetHeight(4); r.barBg:SetPoint("BOTTOMLEFT", 9, 6); r.barBg:SetPoint("BOTTOMRIGHT", -8, 6)
+  r.bar = r:CreateTexture(nil, "OVERLAY"); r.bar:SetHeight(4); r.bar:SetPoint("BOTTOMLEFT", r.barBg, "BOTTOMLEFT", 0, 0)
   return r
 end
 local function fillRow(r, name, prog, need, done, rw, bw)
@@ -382,7 +398,7 @@ local function fillRow(r, name, prog, need, done, rw, bw)
   local k = math.max(0, math.min(1, (prog or 0) / math.max(1, need)))
   r.bar:SetWidth(math.max(1, bw * k)); r.bar:SetColorTexture(done and 0.42 or 0.72, done and 0.66 or 0.53, done and 0.3 or 0.17, 1)
   r.bg:SetColorTexture(done and 0.86 or 0.94, done and 0.91 or 0.89, done and 0.79 or 0.78, 1)
-  r.pr:SetText(done and "done" or (math.min(prog or 0, need) .. " / " .. need))
+  r.pr:SetText(done and "DONE" or (math.min(prog or 0, need) .. " / " .. need))
   r:Show()
 end
 local function shortReward(r)
@@ -400,12 +416,12 @@ function RG.ArcadeQuestColumns(ctx)
     for c = 1, 3 do
       local col = CreateFrame("Frame", nil, qcol)
       col.bg = col:CreateTexture(nil, "BACKGROUND"); col.bg:SetAllPoints(); col.bg:SetColorTexture(0.12, 0.09, 0.06, 0.92)
-      col.edge = col:CreateTexture(nil, "BORDER"); col.edge:SetPoint("TOPLEFT", -1, 1); col.edge:SetPoint("BOTTOMRIGHT", 1, -1); col.edge:SetColorTexture(0.42, 0.31, 0.14, 0.9)
+      col.edge = col:CreateTexture(nil, "BACKGROUND", nil, -8); col.edge:SetPoint("TOPLEFT", -1, 1); col.edge:SetPoint("BOTTOMRIGHT", 1, -1); col.edge:SetColorTexture(0.42, 0.31, 0.14, 0.9)
       col.head = u.fs(col, "title", 13); col.head:SetPoint("TOPLEFT", 10, -9); col.head:SetTextColor(1, 0.88, 0.54)
-      col.when = u.fs(col, "body", 11); col.when:SetPoint("TOPRIGHT", -10, -11); col.when:SetTextColor(0.66, 0.58, 0.42)
+      col.when = u.fs(col, "body", 11); col.when:SetPoint("TOPRIGHT", -10, -11); col.when:SetTextColor(0.86, 0.78, 0.6)
       col.rows = {}
       for i = 1, 4 do col.rows[i] = questRow(col, u) end
-      col.note = u.fs(col, "body", 11); col.note:SetJustifyH("LEFT"); col.note:SetTextColor(0.6, 0.55, 0.45)
+      col.note = u.fs(col, "body", 11); col.note:SetJustifyH("LEFT"); col.note:SetTextColor(0.84, 0.77, 0.62)
       qcol.cols[c] = col
     end
   end
@@ -415,10 +431,10 @@ function RG.ArcadeQuestColumns(ctx)
   local q, wk, mo = quests(a)
   local function place(col, i)
     col:ClearAllPoints(); col:SetPoint("TOPLEFT", qcol, "TOPLEFT", (i - 1) * (cw + gap), 0); col:SetSize(cw, ctx.h)
-    for k, r in ipairs(col.rows) do r:ClearAllPoints(); r:SetPoint("TOPLEFT", col, "TOPLEFT", 8, -34 - (k - 1) * 54); r:SetSize(cw - 16, 48); r:Hide() end
+    for k, r in ipairs(col.rows) do r:ClearAllPoints(); r:SetPoint("TOPLEFT", col, "TOPLEFT", 8, -34 - (k - 1) * 48); r:SetSize(cw - 16, 44); r:Hide() end
     col.note:ClearAllPoints(); col.note:SetPoint("BOTTOMLEFT", 10, 8); col.note:SetWidth(cw - 20)
   end
-  local bw = cw - 16 - 63
+  local bw = cw - 16 - 17
   -- today
   local c1 = qcol.cols[1]; place(c1, 1)
   c1.head:SetText("TODAY"); c1.when:SetText("new goals tomorrow")
@@ -459,7 +475,7 @@ local PER = 8
 local function featRow(parent, u)
   local r = CreateFrame("Button", nil, parent)
   r.bg = r:CreateTexture(nil, "BACKGROUND"); r.bg:SetAllPoints(); r.bg:SetColorTexture(0.94, 0.89, 0.78, 1)
-  r.medal = r:CreateTexture(nil, "ARTWORK"); r.medal:SetTexture(MEDIA .. "Seal"); r.medal:SetSize(38, 38); r.medal:SetPoint("LEFT", 8, 0)
+  r.medal = r:CreateTexture(nil, "ARTWORK"); r.medal:SetTexture(MEDIA .. "Medal"); r.medal:SetSize(40, 40); r.medal:SetPoint("LEFT", 8, 0)
   r.name = u.fs(r, "title", 12); r.name:SetPoint("TOPLEFT", 54, -6); r.name:SetJustifyH("LEFT"); r.name:SetTextColor(0.17, 0.11, 0.05); r.name:SetShadowColor(0, 0, 0, 0)
   r.desc = u.fs(r, "body", 11); r.desc:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2); r.desc:SetJustifyH("LEFT"); r.desc:SetTextColor(0.3, 0.22, 0.12); r.desc:SetShadowColor(0, 0, 0, 0)
   r.rw = u.fs(r, "head", 8.5); r.rw:SetPoint("BOTTOMLEFT", 54, 6); r.rw:SetJustifyH("LEFT"); r.rw:SetTextColor(0.55, 0.36, 0.1); r.rw:SetShadowColor(0, 0, 0, 0)
@@ -490,7 +506,15 @@ local function buildFeats(frame, u)
   end
   fp.ptsBox = CreateFrame("Frame", nil, fp); fp.ptsBox:SetSize(170, 70); fp.ptsBox:SetPoint("TOPLEFT", fp, "TOPLEFT", 40, -440)
   fp.ptsBox.bg = fp.ptsBox:CreateTexture(nil, "BACKGROUND"); fp.ptsBox.bg:SetAllPoints(); fp.ptsBox.bg:SetColorTexture(0.14, 0.1, 0.05, 0.95)
-  fp.ptsL = u.fs(fp.ptsBox, "head", 10); fp.ptsL:SetPoint("TOPLEFT", 12, -10); fp.ptsL:SetTextColor(0.66, 0.58, 0.42); fp.ptsL:SetText("COLLECTOR POINTS")
+  fp.ptsL = u.fs(fp.ptsBox, "head", 10); fp.ptsL:SetPoint("TOPLEFT", 12, -10); fp.ptsL:SetTextColor(0.86, 0.78, 0.6); fp.ptsL:SetText("COLLECTOR POINTS")
+  -- the next achievement within reach, from any category
+  fp.next = CreateFrame("Frame", nil, fp); fp.next:SetSize(170, 96); fp.next:SetPoint("TOPLEFT", fp.ptsBox, "BOTTOMLEFT", 0, -10)
+  fp.next.bg = fp.next:CreateTexture(nil, "BACKGROUND"); fp.next.bg:SetAllPoints(); fp.next.bg:SetColorTexture(0.14, 0.1, 0.05, 0.95)
+  fp.nextL = u.fs(fp.next, "head", 10); fp.nextL:SetPoint("TOPLEFT", 12, -10); fp.nextL:SetTextColor(0.86, 0.78, 0.6); fp.nextL:SetText("CLOSEST NEXT")
+  fp.nextN = u.fs(fp.next, "title", 13); fp.nextN:SetPoint("TOPLEFT", 12, -28); fp.nextN:SetWidth(148); fp.nextN:SetJustifyH("LEFT"); fp.nextN:SetTextColor(1, 0.92, 0.7)
+  fp.nextT = u.fs(fp.next, "body", 11); fp.nextT:SetPoint("TOPLEFT", fp.nextN, "BOTTOMLEFT", 0, -3); fp.nextT:SetWidth(148); fp.nextT:SetJustifyH("LEFT"); fp.nextT:SetTextColor(0.82, 0.76, 0.64)
+  fp.nextBg = fp.next:CreateTexture(nil, "ARTWORK"); fp.nextBg:SetColorTexture(0.3, 0.24, 0.14, 1); fp.nextBg:SetSize(146, 4); fp.nextBg:SetPoint("BOTTOMLEFT", 12, 10)
+  fp.nextBar = fp.next:CreateTexture(nil, "OVERLAY"); fp.nextBar:SetColorTexture(0.91, 0.77, 0.42, 1); fp.nextBar:SetHeight(4); fp.nextBar:SetPoint("BOTTOMLEFT", fp.nextBg, "BOTTOMLEFT", 0, 0)
   fp.pts = u.fs(fp.ptsBox, "title", 26); fp.pts:SetPoint("BOTTOMLEFT", 12, 8); fp.pts:SetTextColor(1, 0.88, 0.54)
   fp.rows = {}
   for i = 1, PER do
@@ -502,7 +526,7 @@ local function buildFeats(frame, u)
   -- what others see
   fp.who = CreateFrame("Frame", nil, fp); fp.who:SetSize(186, 250); fp.who:SetPoint("TOPLEFT", fp, "TOPLEFT", 564, -214)
   fp.who.bg = fp.who:CreateTexture(nil, "BACKGROUND"); fp.who.bg:SetAllPoints(); fp.who.bg:SetColorTexture(0.12, 0.09, 0.06, 0.95)
-  fp.who.edge = fp.who:CreateTexture(nil, "BORDER"); fp.who.edge:SetPoint("TOPLEFT", -1, 1); fp.who.edge:SetPoint("BOTTOMRIGHT", 1, -1); fp.who.edge:SetColorTexture(0.55, 0.41, 0.16, 0.9)
+  fp.who.edge = fp.who:CreateTexture(nil, "BACKGROUND", nil, -8); fp.who.edge:SetPoint("TOPLEFT", -1, 1); fp.who.edge:SetPoint("BOTTOMRIGHT", 1, -1); fp.who.edge:SetColorTexture(0.55, 0.41, 0.16, 0.9)
   fp.whoH = u.fs(fp, "head", 10); fp.whoH:SetPoint("BOTTOMLEFT", fp.who, "TOPLEFT", 0, 6); fp.whoH:SetTextColor(0.66, 0.6, 0.72); fp.whoH:SetText("WHAT OTHERS SEE")
   fp.whoName = u.fs(fp.who, "title", 15); fp.whoName:SetPoint("TOPLEFT", 12, -12); fp.whoName:SetTextColor(1, 0.95, 0.82)
   fp.whoTitle = u.fs(fp.who, "body", 13); fp.whoTitle:SetPoint("TOPLEFT", fp.whoName, "BOTTOMLEFT", 0, -4); fp.whoTitle:SetTextColor(0.91, 0.77, 0.42)
@@ -510,8 +534,10 @@ local function buildFeats(frame, u)
   for i = 1, 3 do
     local c = u.makeCard(fp.who, 52); c:SetPoint("TOPLEFT", fp.who, "TOPLEFT", 12 + (i - 1) * 58, -64); c.noTip = true; c:EnableMouse(false); fp.whoCards[i] = c
   end
-  fp.whoPts = u.fs(fp.who, "head", 10); fp.whoPts:SetPoint("BOTTOMLEFT", 12, 12); fp.whoPts:SetTextColor(0.66, 0.58, 0.42)
-  fp.hint = u.fs(fp, "body", 12); fp.hint:SetPoint("TOPLEFT", fp.who, "BOTTOMLEFT", 0, -12); fp.hint:SetWidth(186); fp.hint:SetJustifyH("LEFT"); fp.hint:SetTextColor(0.66, 0.62, 0.7)
+  fp.whoPts = u.fs(fp.who, "head", 10); fp.whoPts:SetPoint("BOTTOMLEFT", 12, 12); fp.whoPts:SetTextColor(0.86, 0.78, 0.6)
+  fp.whoEmpty = u.fs(fp.who, "body", 11); fp.whoEmpty:SetPoint("TOPLEFT", 12, -70); fp.whoEmpty:SetWidth(162); fp.whoEmpty:SetJustifyH("LEFT"); fp.whoEmpty:SetTextColor(0.72, 0.66, 0.56)
+  fp.whoEmpty:SetText("Your showcase is empty. Open a card you own and choose Showcase: your first three pinned cards show here.")
+  fp.hint = u.fs(fp, "body", 12); fp.hint:SetPoint("TOPLEFT", fp.who, "BOTTOMLEFT", 0, -12); fp.hint:SetWidth(186); fp.hint:SetJustifyH("LEFT"); fp.hint:SetTextColor(0.8, 0.76, 0.84)
   fp.hint:SetText("Your title and points show on your showcase and in friends' albums. Click an achievement you've earned that gives a title to wear it.")
 end
 local function paintFeats(a)
@@ -568,6 +594,22 @@ local function paintFeats(a)
     if c and best then u.paint(w, c, best, 1) else w:Hide() end
   end
   fp.whoPts:SetText(points(a) .. " COLLECTOR POINTS")
+  local any = false
+  for _, w in ipairs(fp.whoCards) do if w:IsShown() then any = true end end
+  fp.whoEmpty:SetShown(not any)
+  -- the closest next: the unearned achievement you're furthest along (not a hidden one)
+  local best, bk, bh
+  for _, f in ipairs(FEATS) do
+    if not f.hidden and not st.earned[f.id] then
+      local ok, have = pcall(f.have, a); have = ok and have or 0
+      local k = math.min(0.999, have / f.need)
+      if not bk or k > bk then best, bk, bh = f, k, have end
+    end
+  end
+  if best then
+    fp.nextN:SetText(best.name); fp.nextT:SetText(best.text .. "  |cffe8c46a" .. math.min(bh, best.need) .. " / " .. best.need .. "|r")
+    fp.nextBar:SetWidth(math.max(1, 146 * bk)); fp.next:Show()
+  else fp.next:Hide() end
   fp.who.edge:SetColorTexture(a.showGlow and 0.95 or 0.55, a.showGlow and 0.78 or 0.41, a.showGlow and 0.3 or 0.16, 0.95)
 end
 
@@ -631,5 +673,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   if k >= 1 then alb.bar:SetColorTexture(0.48, 0.88, 0.54, 1) else alb.bar:SetColorTexture(0.91, 0.77, 0.42, 1) end
   alb.txt:SetText(have .. " / " .. n .. "  ·  " .. math.floor(k * 100 + 0.5) .. "%")
   alb.btn:SetText(ALB_SHOW[RG.ArcadeAlbumShow])
-  alb:SetShown(not st.soon)
+  -- (a message on the window's bottom line, such as "Sold 32 extra cards", has the line to itself)
+  local msg = frame.msg and frame.msg.GetText and frame.msg:GetText()
+  alb:SetShown(not st.soon and not (type(msg) == "string" and msg ~= ""))
 end)
