@@ -1915,7 +1915,11 @@ local function paint(w, card, finish, copies)
     w.num:SetTextColor(0.5, 0.5, 0.56)
     return
   end
-  if card.mythic then RG.ArcadePaintMythic(w, card, copies, a); return end
+  if card.mythic then
+    RG.ArcadePaintMythic(w, card, copies, a)
+    if RG.ArcadeMythicCardHook then pcall(RG.ArcadeMythicCardHook, w, card, finish) end   -- (its seal and effects: ArcadeMythicPlus.lua)
+    return
+  end
   w.body:Show(); w.frameTex:SetShown(not full); w.slot:Hide(); w.glow:Show()
   w.edge:SetTexture(MEDIA .. "Edge" .. finish); w.edge:Show(); w.plate:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
   w.num:SetTextColor(0.66, 0.68, 0.74)
@@ -2539,10 +2543,11 @@ function RG.ArcadeMythicMoment(g)
       m.glints[i] = q
     end
     m.letters = {}
-    for i = 1, 12 do
+    for i = 1, 28 do
       local l = fs(m.top, "title", 30); l:SetTextColor(1, 0.95, 0.77); l:SetAlpha(0); m.letters[i] = l
     end
     m.sub = fs(m.top, "head", 13); m.sub:SetPoint("TOP", 0, -74); m.sub:SetTextColor(1, 0.9, 0.66)
+    m.pre = fs(m.top, "head", 12); m.pre:SetPoint("TOP", 0, -16); m.pre:SetTextColor(0.85, 0.76, 0.52)   -- (over a long title: "THE HEART OF")
     m.flash = m.top:CreateTexture(nil, "OVERLAY", nil, 7); m.flash:SetAllPoints(m); m.flash:SetColorTexture(1, 1, 1, 1); m.flash:SetAlpha(0)
     m:SetScript("OnClick", function(self)
       local st = rawget(self, "st")
@@ -2558,21 +2563,27 @@ function RG.ArcadeMythicMoment(g)
   local a = store()
   local col = my.glow or { 1, 0.9, 0.6 }
   m.hint:SetText((one and "The rarest card there is: one per account" or ("About 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5))) .. "   ·   click anywhere to go on")
-  -- the title, a letter at a time
-  local word = one and "THE 1 RING" or "MYTHIC"
+  -- the title, a letter at a time (ArcadeMythicPlus.lua names a dungeon's heart, or one of the six, and adds its own entrance)
+  local spec = { word = one and "THE 1 RING" or "MYTHIC", sub = nil, pre = nil, extra = 0 }
+  for _, fn in ipairs(RG.ArcadeMythicHooks or {}) do pcall(fn, "start", m, g, spec) end
+  local word = spec.word
+  local gap = #word > 12 and 4 or 12
+  m.pre:SetText(spec.pre or ""); m.pre:SetAlpha(0)
   local chars, widths, total = {}, {}, 0
   for ch in word:gmatch(".") do chars[#chars + 1] = ch end
   for i, l in ipairs(m.letters) do
     local ch = chars[i]
+    setfont(l, "title", #word > 12 and 22 or 30)
     l:SetText(ch or ""); l:SetAlpha(0)
     local wd = ch and (ch == " " and 14 or ((type(l.GetStringWidth) == "function" and tonumber(l:GetStringWidth()) or 0) > 0 and l:GetStringWidth() or 22)) or 0
-    widths[i] = wd; if ch then total = total + wd + (i > 1 and 12 or 0) end
+    widths[i] = wd; if ch then total = total + wd + (i > 1 and gap or 0) end
   end
   local x = -total / 2
   for i, l in ipairs(m.letters) do
-    if chars[i] then l.cx = x + widths[i] / 2; x = x + widths[i] + 12 end
+    l.cx = nil
+    if chars[i] then l.cx = x + widths[i] / 2; x = x + widths[i] + gap end
   end
-  m.sub:SetText(one and ("O N E   O F   O N E" .. ((a and a.ring and a.ring.by) and ("   ·   Opened by " .. a.ring.by) or "")) or string.upper(g.card.name or ""))
+  m.sub:SetText(spec.sub or one and ("O N E   O F   O N E" .. ((a and a.ring and a.ring.by) and ("   ·   Opened by " .. a.ring.by) or "")) or string.upper(g.card.name or ""))
   m.sub:SetAlpha(0)
   -- the sparks: each flies out on its own line, slows, falls a little and fades
   for _, p in ipairs(m.parts) do
@@ -2593,7 +2604,7 @@ function RG.ArcadeMythicMoment(g)
   local shownGl = {}
   for _, l in ipairs(gl) do if l:IsShown() then shownGl[#shownGl + 1] = l; l:SetAlpha(0) end end
   local ENGRAVE, STEP = 1.0, 0.11
-  local st = { endAt = one and (ENGRAVE + #shownGl * STEP + 0.6) or 1.6, engraved = 0, glintAt = {} }
+  local st = { endAt = (one and (ENGRAVE + #shownGl * STEP + 0.6) or 1.6) + (spec.extra or 0), engraved = 0, glintAt = {} }
   m.st = st
   m.card:SetScale(0.25)
   m:Show()
@@ -2671,6 +2682,8 @@ function RG.ArcadeMythicMoment(g)
     end
     local subAt = one and (st.endAt - 0.4) or 1.0
     self.sub:SetAlpha(clamp((e - subAt) / 0.4)); self.hint:SetAlpha(clamp((e - st.endAt) / 0.5))
+    self.pre:SetAlpha(clamp((e - 0.3) / 0.3))
+    for _, fn in ipairs(RG.ArcadeMythicHooks or {}) do pcall(fn, "tick", self, g, e, t, st) end
   end
 end
 
@@ -3791,7 +3804,7 @@ function RG.ArcadeRefresh(keepMsg)
       frame.pageText:SetText(view.albumPage .. " / " .. pages)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
       local clearedHere = st.dungeon and not st.soon and select(2, RG.ArcadeDungeonPacks(st.name))
-      frame.albTitle:SetText((RG.ArcadeSetTag and RG.ArcadeSetTag(st) or "") .. st.name .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
+      frame.albTitle:SetText((RG.ArcadeSetTag and RG.ArcadeSetTag(st) or "") .. st.name .. (RG.ArcadeSetHeart and RG.ArcadeSetHeart(st) or "") .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
       frame.albNext:ClearAllPoints()
       frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 430) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)
@@ -3863,7 +3876,7 @@ function RG.ArcadeRefresh(keepMsg)
         local medal = paid > 0 and RG.ARCADE_STAGES[paid] or nil
         local function hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255)) end
         local tag = ((not view.setSection or view.setSection == "all") and RG.ArcadeSetTag) and RG.ArcadeSetTag(s) or ""   -- (one section shown: no need to tag each row)
-        b.left:SetText(tag .. (paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name:gsub("^Field Guide: ", "") .. "|r" .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
+        b.left:SetText(tag .. (paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name:gsub("^Field Guide: ", "") .. "|r" .. (RG.ArcadeSetHeart and RG.ArcadeSetHeart(s) or "") .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
         b.right:SetText(s.soon and "|cffa89bc9coming soon|r" or paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
         b.fill:Show(); b.fillBg:Show()
         local fc = paid >= 3 and { 0.48, 0.88, 0.54 } or sg[3]

@@ -94,6 +94,12 @@ SOUNDS = {
                         *[(0.03, sine(f, 3.4, 0.2, 1.6, 0.3, vib=2.2, vf=4.8)) for f in (110.0, 164.8, 220.0, 277.2, 329.6, 440.0)],
                         (0.2, arp([A5, Cs6, E6, A6, Cs7, E7], 0.09, 1.6, 0.42, 0.55)), (0.25, shimmer(3.0, 0.5)), (0.9, bell(A5, 2.6, 0.45, 1.0))),
     # a dungeon pack's crate: the fuse fizzes, then the crate bursts (a thump, splintering wood)
+    # the Mythics' moments: a seal stamped down, a campfire's crackle, footsteps, Sixty's bell and the hourglass's sand
+    "stamp": lambda: mix((0, sine(70, 0.35, 0.9, 0.12, 0.001)), (0, noise(0.08, 0.8, 0.03, 0.0005, band=[150, 1500])), (0.02, noise(0.05, 0.3, 0.02, 0.0005, band=[2000, 6000]))),
+    "crackle": lambda: crackle(),
+    "steps": lambda: mix(*[(0.22 * i, mix((0, noise(0.07, 0.6 - 0.04 * i, 0.03, 0.002, band=[150, 1200])), (0.01, noise(0.05, 0.25, 0.02, 0.001, band=[2000, 5000])))) for i in range(8)]),
+    "sixty": lambda: mix((0, sine(65.4, 1.8, 0.8, 0.8, 0.004)), *[(0.05 * i, bell(f, 2.2, 0.35, 0.9)) for i, f in enumerate((523.25, 659.25, 783.99, 1046.5))], (0.3, shimmer(1.8, 0.4))),
+    "sandfall": lambda: mix((0, noise(1.6, 0.6, 1.2, 0.3, band=[1500, 7000])), (0, sine(98, 1.6, 0.25, 1.2, 0.3, vib=3, vf=0.6)), (1.2, bell(1318.5, 1.2, 0.3, 0.5))),
     "fuse": lambda: fuse(),
     "rumble": lambda: rumble(),
     "boom": lambda: boom(),
@@ -110,6 +116,13 @@ SOUNDS = {
 }
 
 A5, Cs6, E6b, A6, Cs7, E7 = 880.0, 1108.7, 1318.5, 1760.0, 2217.5, 2637.0
+def crackle(d=1.6):
+    n = int(SR * d); out = np.zeros(n)
+    for _ in range(45):
+        at = int(rng.integers(0, n - 2000)); k = noise(rng.uniform(0.005, 0.03), rng.uniform(0.2, 0.9), 0.01, 0.0002, band=[800, 6000])
+        out[at:at + len(k)] += k[:n - at]
+    roar_ = noise(d, 0.35, d, 0.2, band=[80, 600])
+    return fade(out + roar_[:n], 60)
 def fuse(d=1.9):
     # a lit fuse: a strike, then a fizzing hiss full of tiny crackles that brightens as it burns down
     n = int(SR * d)

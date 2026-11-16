@@ -91,6 +91,7 @@ local function rewardText(r)
   if r.back then bits[#bits + 1] = "the " .. r.back .. " card back" end
   if r.title then bits[#bits + 1] = "the title \"" .. r.title .. "\"" end
   if r.glow then bits[#bits + 1] = "a glow round your showcase" end
+  if r.edge then bits[#bits + 1] = "an ember-gold edge on your showcase" end
   return table.concat(bits, ", ")
 end
 local function pay(a, r)
@@ -100,6 +101,7 @@ local function pay(a, r)
   if r.back then a.backs = a.backs or {}; a.backs[r.back] = true end
   if r.title then a.titles = a.titles or {}; a.titles[r.title] = true; a.title = a.title or r.title end
   if r.glow then a.showGlow = true end
+  if r.edge then a.heartEdge = true end
 end
 function RG.ArcadeBackUnlocked(a, name) return a and a.backs and a.backs[name] and true or false end
 local BACK_HOW = { Cartographer = "Earned by finishing a set in a month's collector quests, or the Cartographer achievement.",
@@ -214,6 +216,15 @@ local FEATS = {
   { id = "owl", cat = "pulls", hidden = true, name = "Night Owl", text = "Open a pack between 2 and 5 in the morning.", pts = 5, need = 1, have = function(a) return cnt(a, "owl") end, reward = { coins = 15 } },
 }
 RG.ARCADE_FEATS = FEATS
+-- more achievements from other files (ArcadeMythicPlus.lua's Hearts and the Six): a category and its list
+function RG.ArcadeFeatsAdd(cat, catName, list)
+  local have = false
+  for _, c in ipairs(CATS) do if c[1] == cat then have = true end end
+  if not have then CATS[#CATS + 1] = { cat, catName } end
+  for _, f in ipairs(list) do f.cat = f.cat or cat; FEATS[#FEATS + 1] = f end
+end
+-- (other files' rewards: a title, a back, a glow, coins, or anything they pay themselves)
+RG.ArcadeFeatPay = function(a, r) end
 local function featState(a)
   a.feat = a.feat or {}; a.feat.earned = a.feat.earned or {}; a.feat.n = a.feat.n or {}
   return a.feat
@@ -363,9 +374,9 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
     t:Show()
   end
   -- the showcase glow (an achievement's reward): pinned cards in your collection glow gold
-  if a and a.showGlow and w.collect and w.aura then
+  if a and (a.showGlow or a.heartEdge) and w.collect and w.aura then
     for _, k in ipairs(a.showcase or {}) do
-      if k == (card.key or card.name) then w.aura:SetVertexColor(1, 0.84, 0.4, 1); w.aura:SetAlpha(math.max(w.aura:GetAlpha() or 0, 0.4)); w.aura:Show() end
+      if k == (card.key or card.name) then if a.heartEdge then w.aura:SetVertexColor(1, 0.55, 0.2, 1) else w.aura:SetVertexColor(1, 0.84, 0.4, 1) end; w.aura:SetAlpha(math.max(w.aura:GetAlpha() or 0, 0.4)); w.aura:Show() end
     end
   end
 end)
@@ -496,7 +507,7 @@ local function buildFeats(frame, u)
   FS.cats = {}
   for i, c in ipairs(CATS) do
     local b = CreateFrame("Button", nil, fp)
-    b:SetSize(170, 34); b:SetPoint("TOPLEFT", fp, "TOPLEFT", 40, -196 - (i - 1) * 38)
+    b:SetSize(170, 30); b:SetPoint("TOPLEFT", fp, "TOPLEFT", 40, -196 - (i - 1) * 33)
     b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints()
     b.l = u.fs(b, "head", 11); b.l:SetPoint("LEFT", 12, 0)
     b.r = u.fs(b, "body", 11); b.r:SetPoint("RIGHT", -10, 0); b.r:SetTextColor(0.66, 0.58, 0.42)
@@ -504,7 +515,7 @@ local function buildFeats(frame, u)
     b.key = c[1]
     FS.cats[i] = b
   end
-  fp.ptsBox = CreateFrame("Frame", nil, fp); fp.ptsBox:SetSize(170, 70); fp.ptsBox:SetPoint("TOPLEFT", fp, "TOPLEFT", 40, -440)
+  fp.ptsBox = CreateFrame("Frame", nil, fp); fp.ptsBox:SetSize(170, 64); fp.ptsBox:SetPoint("TOPLEFT", fp, "TOPLEFT", 40, -(196 + #CATS * 33 + 6))
   fp.ptsBox.bg = fp.ptsBox:CreateTexture(nil, "BACKGROUND"); fp.ptsBox.bg:SetAllPoints(); fp.ptsBox.bg:SetColorTexture(0.14, 0.1, 0.05, 0.95)
   fp.ptsL = u.fs(fp.ptsBox, "head", 10); fp.ptsL:SetPoint("TOPLEFT", 12, -10); fp.ptsL:SetTextColor(0.86, 0.78, 0.6); fp.ptsL:SetText("COLLECTOR POINTS")
   -- the next achievement within reach, from any category
@@ -654,12 +665,12 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   if not alb then
     alb = CreateFrame("Frame", nil, frame); alb:SetSize(330, 26); alb:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 40, 56)
     alb:SetFrameLevel((frame:GetFrameLevel() or 1) + 6)
-    alb.btn = u.gbtn(alb, ALB_SHOW[1], 120, 24, function()
+    alb.btn = u.gbtn(alb, ALB_SHOW[1], 100, 24, function()
       RG.ArcadeAlbumShow = RG.ArcadeAlbumShow % 3 + 1
       if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
     end)
     alb.btn:SetPoint("LEFT", 0, 0)
-    alb.barBg = alb:CreateTexture(nil, "ARTWORK"); alb.barBg:SetColorTexture(0.2, 0.15, 0.08, 1); alb.barBg:SetSize(120, 6); alb.barBg:SetPoint("LEFT", alb.btn, "RIGHT", 12, 0)
+    alb.barBg = alb:CreateTexture(nil, "ARTWORK"); alb.barBg:SetColorTexture(0.2, 0.15, 0.08, 1); alb.barBg:SetSize(70, 6); alb.barBg:SetPoint("LEFT", alb.btn, "RIGHT", 112, 0)   -- (room for ArcadeMythicPlus.lua's Trophies button)
     alb.bar = alb:CreateTexture(nil, "OVERLAY"); alb.bar:SetHeight(6); alb.bar:SetPoint("LEFT", alb.barBg, "LEFT", 0, 0)
     alb.txt = u.fs(alb, "head", 10); alb.txt:SetPoint("LEFT", alb.barBg, "RIGHT", 8, 0); alb.txt:SetTextColor(0.85, 0.78, 0.6)
     -- (hidden again whenever the window leaves the Album)
@@ -669,9 +680,9 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   for _, c in ipairs(st.cards or {}) do if u.owned(a, c.id) > 0 then have = have + 1 end end
   local n = #(st.cards or {})
   local k = n > 0 and have / n or 0
-  alb.bar:SetWidth(math.max(1, 120 * k))
+  alb.bar:SetWidth(math.max(1, 70 * k))
   if k >= 1 then alb.bar:SetColorTexture(0.48, 0.88, 0.54, 1) else alb.bar:SetColorTexture(0.91, 0.77, 0.42, 1) end
-  alb.txt:SetText(have .. " / " .. n .. "  ·  " .. math.floor(k * 100 + 0.5) .. "%")
+  alb.txt:SetText(have .. "/" .. n .. "  " .. math.floor(k * 100 + 0.5) .. "%")
   alb.btn:SetText(ALB_SHOW[RG.ArcadeAlbumShow])
   -- (a message on the window's bottom line, such as "Sold 32 extra cards", has the line to itself)
   local msg = frame.msg and frame.msg.GetText and frame.msg:GetText()
