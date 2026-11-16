@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Polish from your second look in game:** card names now stay clear of the rarity gem and fit their ribbon on small cards; the inspect window's print buttons ("Full art  1") and showcase button fit their text; the Album's bottom row no longer crowds the Mythic button, and its pack button says "Open its pack (3)", "Buy a pack · 70" or "Clear it to unlock" without spilling out; the Feats tab's stray page arrow is gone, its rows' rewards and progress lines no longer overlap, and its page arrows sit clear of the pack buttons; the Today tab's numbers no longer sit on their captions; the Shop's list rows drop the price already on their button.
 - **The cards open on your collection.** Opening the card window now always starts on your collection, never straight into a pack. The main window's pack row is now "Pack shop" and opens the Shop tab, where you pick what to open. A pack screen left open closes with the window (its cards are already yours).
 
 ## v1.46.0

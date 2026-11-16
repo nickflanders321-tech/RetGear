@@ -245,7 +245,7 @@ local function paintAisle(b, key, title, list, ctx)
   if ready > 0 then b.line1:SetText("|cff7be08a" .. ready .. " TO OPEN|r")
   elseif key == "holiday" then b.line1:SetText(onNow and "|cff7be08aON NOW|r" or "|cffa89bc9NONE ON NOW|r")
   else b.line1:SetText(open > 0 and ("|cffe8c46a" .. open .. " TO BUY|r") or "|cffa89bc9ALL LOCKED|r") end
-  if key == "holiday" then b.line2:SetText(onNow and onNow or (#list .. " holidays,\nearned while they're on"))
+  if key == "holiday" then b.line2:SetText(onNow and onNow or (#list .. " holidays\nearned while on"))
   else b.line2:SetText(#list .. " " .. (key == "raid" and "raids" or "dungeons") .. (locked > 0 and ("\n" .. locked .. " still locked") or "\nall unlocked")) end
   b:Show()
 end
@@ -291,8 +291,8 @@ local function paintRow(r, e, sec)
     end
   end
   r.sub:SetText(table.concat(bits, "   ·   "))
-  r.status:SetText(e.status or "")
   local ready, buy = (e.count or 0) > 0, e.enabled and (e.count or 0) == 0
+  r.status:SetText((ready or buy) and "" or (e.status or ""))   -- (the button already says "Open (2)" or "Buy · 70")
   local c = ready and { 0.48, 0.88, 0.54 } or (buy and { 0.91, 0.77, 0.42 } or { 0.4, 0.38, 0.46 })
   r.bar:SetColorTexture(c[1], c[2], c[3], 1)
   r.btn:SetText(e.label or ""); r.btn:SetEnabled(e.enabled and true or false)

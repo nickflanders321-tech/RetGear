@@ -486,12 +486,13 @@ local PER = 8
 local function featRow(parent, u)
   local r = CreateFrame("Button", nil, parent)
   r.bg = r:CreateTexture(nil, "BACKGROUND"); r.bg:SetAllPoints(); r.bg:SetColorTexture(0.94, 0.89, 0.78, 1)
-  r.medal = r:CreateTexture(nil, "ARTWORK"); r.medal:SetTexture(MEDIA .. "Medal"); r.medal:SetSize(40, 40); r.medal:SetPoint("LEFT", 8, 0)
-  r.name = u.fs(r, "title", 12); r.name:SetPoint("TOPLEFT", 54, -6); r.name:SetJustifyH("LEFT"); r.name:SetTextColor(0.17, 0.11, 0.05); r.name:SetShadowColor(0, 0, 0, 0)
+  r.medal = r:CreateTexture(nil, "ARTWORK"); r.medal:SetTexture(MEDIA .. "Medal"); r.medal:SetSize(36, 36); r.medal:SetPoint("LEFT", 8, 0)
+  r.name = u.fs(r, "title", 12); r.name:SetPoint("TOPLEFT", 54, -4); r.name:SetJustifyH("LEFT"); r.name:SetTextColor(0.17, 0.11, 0.05); r.name:SetShadowColor(0, 0, 0, 0)
   r.desc = u.fs(r, "body", 11); r.desc:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2); r.desc:SetJustifyH("LEFT"); r.desc:SetTextColor(0.3, 0.22, 0.12); r.desc:SetShadowColor(0, 0, 0, 0)
-  r.rw = u.fs(r, "head", 8.5); r.rw:SetPoint("BOTTOMLEFT", 54, 6); r.rw:SetJustifyH("LEFT"); r.rw:SetTextColor(0.55, 0.36, 0.1); r.rw:SetShadowColor(0, 0, 0, 0)
+  r.rw = u.fs(r, "head", 8.5); r.rw:SetPoint("BOTTOMLEFT", 54, 8); r.rw:SetPoint("BOTTOMRIGHT", -40, 8); r.rw:SetJustifyH("LEFT")
+  if r.rw.SetWordWrap then r.rw:SetWordWrap(false) end; r.rw:SetTextColor(0.55, 0.36, 0.1); r.rw:SetShadowColor(0, 0, 0, 0)
   r.pts = u.fs(r, "title", 15); r.pts:SetPoint("RIGHT", -10, 0); r.pts:SetTextColor(0.55, 0.42, 0.16); r.pts:SetShadowColor(0, 0, 0, 0)
-  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetColorTexture(0.82, 0.74, 0.54, 1); r.barBg:SetHeight(4); r.barBg:SetPoint("BOTTOMRIGHT", -46, 9); r.barBg:SetWidth(90)
+  r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetColorTexture(0.82, 0.74, 0.54, 1); r.barBg:SetHeight(3); r.barBg:SetPoint("BOTTOMLEFT", 54, 3); r.barBg:SetPoint("BOTTOMRIGHT", -40, 3)   -- (a thin line under the reward)
   r.bar = r:CreateTexture(nil, "OVERLAY"); r.bar:SetHeight(4); r.bar:SetPoint("BOTTOMLEFT", r.barBg, "BOTTOMLEFT", 0, 0); r.bar:SetColorTexture(0.72, 0.53, 0.17, 1)
   r:SetScript("OnClick", function(self)
     local a = store(); local f = self.feat
@@ -519,19 +520,19 @@ local function buildFeats(frame, u)
   fp.ptsBox.bg = fp.ptsBox:CreateTexture(nil, "BACKGROUND"); fp.ptsBox.bg:SetAllPoints(); fp.ptsBox.bg:SetColorTexture(0.14, 0.1, 0.05, 0.95)
   fp.ptsL = u.fs(fp.ptsBox, "head", 10); fp.ptsL:SetPoint("TOPLEFT", 12, -10); fp.ptsL:SetTextColor(0.86, 0.78, 0.6); fp.ptsL:SetText("COLLECTOR POINTS")
   -- the next achievement within reach, from any category
-  fp.next = CreateFrame("Frame", nil, fp); fp.next:SetSize(170, 96); fp.next:SetPoint("TOPLEFT", fp.ptsBox, "BOTTOMLEFT", 0, -10)
-  fp.next.bg = fp.next:CreateTexture(nil, "BACKGROUND"); fp.next.bg:SetAllPoints(); fp.next.bg:SetColorTexture(0.14, 0.1, 0.05, 0.95)
-  fp.nextL = u.fs(fp.next, "head", 10); fp.nextL:SetPoint("TOPLEFT", 12, -10); fp.nextL:SetTextColor(0.86, 0.78, 0.6); fp.nextL:SetText("CLOSEST NEXT")
-  fp.nextN = u.fs(fp.next, "title", 13); fp.nextN:SetPoint("TOPLEFT", 12, -28); fp.nextN:SetWidth(148); fp.nextN:SetJustifyH("LEFT"); fp.nextN:SetTextColor(1, 0.92, 0.7)
-  fp.nextT = u.fs(fp.next, "body", 11); fp.nextT:SetPoint("TOPLEFT", fp.nextN, "BOTTOMLEFT", 0, -3); fp.nextT:SetWidth(148); fp.nextT:SetJustifyH("LEFT"); fp.nextT:SetTextColor(0.82, 0.76, 0.64)
-  fp.nextBg = fp.next:CreateTexture(nil, "ARTWORK"); fp.nextBg:SetColorTexture(0.3, 0.24, 0.14, 1); fp.nextBg:SetSize(146, 4); fp.nextBg:SetPoint("BOTTOMLEFT", 12, 10)
-  fp.nextBar = fp.next:CreateTexture(nil, "OVERLAY"); fp.nextBar:SetColorTexture(0.91, 0.77, 0.42, 1); fp.nextBar:SetHeight(4); fp.nextBar:SetPoint("BOTTOMLEFT", fp.nextBg, "BOTTOMLEFT", 0, 0)
+  fp.near = CreateFrame("Frame", nil, fp); fp.near:SetSize(170, 96); fp.near:SetPoint("TOPLEFT", fp.ptsBox, "BOTTOMLEFT", 0, -10)
+  fp.near.bg = fp.near:CreateTexture(nil, "BACKGROUND"); fp.near.bg:SetAllPoints(); fp.near.bg:SetColorTexture(0.14, 0.1, 0.05, 0.95)
+  fp.nextL = u.fs(fp.near, "head", 10); fp.nextL:SetPoint("TOPLEFT", 12, -10); fp.nextL:SetTextColor(0.86, 0.78, 0.6); fp.nextL:SetText("CLOSEST NEXT")
+  fp.nextN = u.fs(fp.near, "title", 13); fp.nextN:SetPoint("TOPLEFT", 12, -28); fp.nextN:SetWidth(148); fp.nextN:SetJustifyH("LEFT"); fp.nextN:SetTextColor(1, 0.92, 0.7)
+  fp.nextT = u.fs(fp.near, "body", 11); fp.nextT:SetPoint("TOPLEFT", fp.nextN, "BOTTOMLEFT", 0, -3); fp.nextT:SetWidth(148); fp.nextT:SetJustifyH("LEFT"); fp.nextT:SetTextColor(0.82, 0.76, 0.64)
+  fp.nextBg = fp.near:CreateTexture(nil, "ARTWORK"); fp.nextBg:SetColorTexture(0.3, 0.24, 0.14, 1); fp.nextBg:SetSize(146, 4); fp.nextBg:SetPoint("BOTTOMLEFT", 12, 10)
+  fp.nextBar = fp.near:CreateTexture(nil, "OVERLAY"); fp.nextBar:SetColorTexture(0.91, 0.77, 0.42, 1); fp.nextBar:SetHeight(4); fp.nextBar:SetPoint("BOTTOMLEFT", fp.nextBg, "BOTTOMLEFT", 0, 0)
   fp.pts = u.fs(fp.ptsBox, "title", 26); fp.pts:SetPoint("BOTTOMLEFT", 12, 8); fp.pts:SetTextColor(1, 0.88, 0.54)
   fp.rows = {}
   for i = 1, PER do
-    local r = featRow(fp, u); r:SetSize(330, 52); r:SetPoint("TOPLEFT", fp, "TOPLEFT", 222, -196 - (i - 1) * 56); fp.rows[i] = r
+    local r = featRow(fp, u); r:SetSize(330, 50); r:SetPoint("TOPLEFT", fp, "TOPLEFT", 222, -196 - (i - 1) * 54); fp.rows[i] = r
   end
-  fp.prev = u.gbtn(fp, "<", 30, 22, function() FS.page = math.max(0, (FS.page or 0) - 1); RG.ArcadeRefresh(true) end); fp.prev:SetPoint("TOPLEFT", fp, "TOPLEFT", 222, -650)
+  fp.prev = u.gbtn(fp, "<", 30, 22, function() FS.page = math.max(0, (FS.page or 0) - 1); RG.ArcadeRefresh(true) end); fp.prev:SetPoint("TOPLEFT", fp, "TOPLEFT", 222, -634)
   fp.next = u.gbtn(fp, ">", 30, 22, function() FS.page = (FS.page or 0) + 1; RG.ArcadeRefresh(true) end); fp.next:SetPoint("LEFT", fp.prev, "RIGHT", 6, 0)
   FS.pageT = u.fs(fp, "head", 11); FS.pageT:SetPoint("LEFT", fp.next, "RIGHT", 10, 0); FS.pageT:SetTextColor(0.8, 0.72, 0.52)
   -- what others see
@@ -585,7 +586,7 @@ local function paintFeats(a)
       r.bg:SetColorTexture(got and 0.97 or 0.9, got and 0.92 or 0.86, got and 0.78 or 0.76, 1)
       local showBar = not got and not hide and f.need > 1
       r.barBg:SetShown(showBar); r.bar:SetShown(showBar)
-      if showBar then r.bar:SetWidth(math.max(1, 90 * math.min(1, have / f.need))) end
+      if showBar then r.bar:SetWidth(math.max(1, 236 * math.min(1, have / f.need))) end
       local wearing = got and f.reward and f.reward.title and a.title == f.reward.title
       if wearing then r.rw:SetText("WEARING THE TITLE \"" .. f.reward.title:upper() .. "\"") end
       r:Show()
@@ -619,8 +620,8 @@ local function paintFeats(a)
   end
   if best then
     fp.nextN:SetText(best.name); fp.nextT:SetText(best.text .. "  |cffe8c46a" .. math.min(bh, best.need) .. " / " .. best.need .. "|r")
-    fp.nextBar:SetWidth(math.max(1, 146 * bk)); fp.next:Show()
-  else fp.next:Hide() end
+    fp.nextBar:SetWidth(math.max(1, 146 * bk)); fp.near:Show()
+  else fp.near:Hide() end
   fp.who.edge:SetColorTexture(a.showGlow and 0.95 or 0.55, a.showGlow and 0.78 or 0.41, a.showGlow and 0.3 or 0.16, 0.95)
 end
 
@@ -687,4 +688,6 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   -- (a message on the window's bottom line, such as "Sold 32 extra cards", has the line to itself)
   local msg = frame.msg and frame.msg.GetText and frame.msg:GetText()
   alb:SetShown(not st.soon and not (type(msg) == "string" and msg ~= ""))
+  -- (the set's progress is in the header above; down here the bar only crowded the Mythic button)
+  alb.barBg:Hide(); alb.bar:Hide(); alb.txt:Hide()
 end)

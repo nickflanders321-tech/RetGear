@@ -674,7 +674,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   local b = rawget(ctx.frame, "mpAnnounce")
   if view.mode ~= "feats" then if b then b:Hide() end return end
   if not b then
-    b = u.gbtn(ctx.frame, "", 186, 22, function()
+    b = u.gbtn(ctx.frame, "", 240, 22, function()
       local a = store(); if not a then return end
       a.announce = (a.announce == false) and true or false
       RG.ArcadeRefresh(true)
@@ -683,6 +683,6 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
     ctx.frame.mpAnnounce = b
   end
   local a = ctx.a
-  b:SetText("Tell my guild about Mythics: " .. ((a and a.announce == false) and "off" or "on"))
+  b:SetText("Guild Mythic alerts: " .. ((a and a.announce == false) and "off" or "on"))
   b:Show()
 end)

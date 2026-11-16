@@ -1531,7 +1531,7 @@ local function makeCard(parent, w)
   f.gem = f.top:CreateTexture(nil, "ARTWORK", nil, 3); f.gem:SetTexture(MEDIA .. "Gem"); f.gem:Hide()
   -- Full art prints: the picture runs to the card's edge and fades into the card under the name plate
   f.fade = f.fx:CreateTexture(nil, "ARTWORK"); f.fade:SetTexture(MEDIA .. "Fade"); box(f.fade, { 4, 146, 252, 214 }); f.fade:Hide()
-  f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 20, 209, 236, 237 })
+  f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 34, 209, 222, 237 })   -- (clear of the rarity gem at the plate's right)
   f.name:SetJustifyH("CENTER"); f.name:SetJustifyV("MIDDLE"); f.name:SetWordWrap(false); f.name:SetTextColor(0.07, 0.06, 0.1)
   f.type = fs(f.top, "head", 9 * u); box(f.type, { 14, 242, 242, 257 })
   f.type:SetJustifyH("CENTER"); f.type:SetJustifyV("MIDDLE"); f.type:SetWordWrap(false); f.type:SetTextColor(0.85, 0.8, 0.7)
@@ -1740,16 +1740,16 @@ local function layoutText(w, big, name, text)
   end
   -- small cards: the name fills the plate in a size you can read (two lines if it needs them)
   w.name:SetText("")
-  local bw = (pb[3] - pb[1] - 10) * u
+  local bw = (pb[3] - pb[1] - 56) * u   -- (clear of the rarity gem, and the same on the left so the name stays centred)
   local sz = w.cw >= 110 and 10 or 9
   w.nameB:ClearAllPoints()
-  w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", (pb[1] + 5) * u, -(pb[2] + 1) * u); w.nameB:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", (pb[3] - 5) * u, -(pb[4] - 1) * u)
+  w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", (pb[1] + 28) * u, -(pb[2] + 1) * u); w.nameB:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", (pb[3] - 28) * u, -(pb[4] - 1) * u)
   w.nameB:SetWordWrap(false); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
   -- (the game can measure a string as narrower than it draws in a frame not yet shown: an estimate from its letters
   -- is the floor, so a long name never runs off both ends of the ribbon)
   local function width(size)
     local m = w.nameB.GetUnboundedStringWidth and w.nameB:GetUnboundedStringWidth() or w.nameB:GetStringWidth()
-    local est = #(name or "") * size * 0.68
+    local est = #(name or "") * size * 0.8   -- (the card font's capitals run wide)
     return math.max(type(m) == "number" and m or 0, est)
   end
   local wd = width(sz)
@@ -2011,7 +2011,7 @@ local function paint(w, card, finish, copies)
   w.text:SetShown(true)
   if big then
     layoutText(w, true)
-    fitText(w.name, card.name, 212 * u, 16 * u, 8.5, "title")
+    fitText(w.name, card.name, 186 * u, 16 * u, 8.5, "title")
     setfont(w.text, "body", 11.5 * u)
     w.text:SetText(U.ink(w, rules .. (rules ~= "" and story ~= "" and "\n" or "") .. (story ~= "" and ("|cff6b5a42" .. story .. "|r") or "")))
   else
@@ -3257,7 +3257,8 @@ local function refreshDetail()
   for k = 1, 4 do
     local n = slot[k] or 0
     local b = detail.prints[k]
-    b:SetText(FNAME[k] .. " x" .. n)
+    if b.label then setfont(b.label, "head", 10) end   -- (four prints in a row: "Full art  1" fits at this size)
+    b:SetText(FNAME[k] .. "  " .. n)
     b:SetEnabled(true); b:SetActive(k == f)
   end
   local cost = RG.ArcadeCraftCost(c, f)
@@ -3267,7 +3268,7 @@ local function refreshDetail()
   detail.craft:SetEnabled(cost ~= nil and (a.coins or 0) >= cost)
   if refund then detail.refund:SetText("Refund  ·  " .. (cost or 0) .. " coins"); detail.refund:Show() else detail.refund:Hide() end
   detail.pin:SetEnabled(owned(a, c.id) > 0); detail.duel:SetEnabled(owned(a, c.id) > 0)
-  detail.pin:SetText(isPinned(a, c) and "Remove from showcase" or "Add to showcase")
+  detail.pin:SetText(isPinned(a, c) and "Unpin from showcase" or "Pin to showcase")
   detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
   detail.offer:SetEnabled(c.kind ~= 4 and (slot[f] or 0) >= 1)
 end
@@ -3671,7 +3672,10 @@ local function pgTile(i, x, y, wd, ht, value, label, sub, col)
   pgPlace(t, x, y, wd, ht)
   t.accent:SetColorTexture(col[1], col[2], col[3], 0.9)
   t.lab:SetText(string.upper(label)); t.val:SetText(value); t.val:SetTextColor(col[1], col[2], col[3])
-  t.sub:SetWidth(wd - 28); t.sub:SetText(sub or "")
+  -- (a short tile keeps its number on the right, clear of the line under the label)
+  t.val:ClearAllPoints()
+  if ht < 70 then t.val:SetPoint("RIGHT", -14, 4); t.val:SetJustifyH("RIGHT") else t.val:SetPoint("TOPLEFT", 14, -26); t.val:SetJustifyH("LEFT") end
+  t.sub:SetWidth(ht < 70 and (wd - 28 - 70) or (wd - 28)); t.sub:SetText(sub or "")
   return t
 end
 local function pgHead(i, y, text, right)
@@ -3850,9 +3854,9 @@ function RG.ArcadeRefresh(keepMsg)
       -- a dungeon's pack
       if st.dungeon and RG.ArcadeDunPools and RG.ArcadeDunPools[st.name] then
         local have, cleared = RG.ArcadeDungeonPacks(st.name)
-        if have > 0 then frame.albOpen:SetText("Open " .. st.name:gsub("^The ", "") .. " pack (" .. have .. ")"); frame.albOpen:SetEnabled(true)
-        elseif cleared then frame.albOpen:SetText("Buy a pack: " .. PACKS.dungeon.price .. " coins"); frame.albOpen:SetEnabled((a.coins or 0) >= PACKS.dungeon.price)
-        else frame.albOpen:SetText(st.raid and "Defeat one of its bosses to earn its packs" or "Clear it to earn its packs"); frame.albOpen:SetEnabled(false) end
+        if have > 0 then frame.albOpen:SetText("Open its pack (" .. have .. ")"); frame.albOpen:SetEnabled(true)
+        elseif cleared then frame.albOpen:SetText("Buy a pack · " .. PACKS.dungeon.price); frame.albOpen:SetEnabled((a.coins or 0) >= PACKS.dungeon.price)
+        else frame.albOpen:SetText(st.raid and "Beat a boss to unlock" or "Clear it to unlock"); frame.albOpen:SetEnabled(false) end
         frame.albOpen:Show()
       elseif not st.field then frame.albOpen:Hide() end
       for _, fn in ipairs(RG.ArcadeAlbumHooks or {}) do pcall(fn, st, frame) end   -- (a raid page: its size, opening day and photos)
