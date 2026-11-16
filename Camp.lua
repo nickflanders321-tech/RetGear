@@ -16,7 +16,7 @@ table.insert(RG.OPTIONS, { key = "wellFed", label = "Remind me to eat for Well F
 RG.CAMPFIRES = {
   { name = "Basic Campfire",      cook = 1,   slots = 3,  wood = "Simple Wood", how = "Learned with Cooking. Buy Simple Wood and Flint and Tinder from the Cooking trainer." },
   { name = "Journeyman Campfire", cook = 90,  learn = 90,  slots = 5,  wood = "Star Wood",   how = "Blueprint from Lord Serpentis in Wailing Caverns (also reported in Deadmines). Cooking 90 to place it since the November 10 hotfix (was 140)." },
-  { name = "Expert Campfire",     cook = 220, learn = 200, slots = 10, wood = "Thick Logs",  how = "Blueprint source not found yet. The weekly update will add it." },
+  { name = "Expert Campfire",     cook = 220, learn = 200, slots = 10, wood = "Thick Logs",  how = "Blueprint from Slavecrusher Grox in Krol'dok Stronghold (Riverglades, levels 40-45)." },
 }
 -- Your professions' camp objects. buff = what you get; mats = what it costs to place.
 RG.CAMP_OBJECTS = {
@@ -43,18 +43,18 @@ RG.CAMP_OBJECTS = {
   { prof = "Herbalism",      skill = 300, name = "Seed Hybridizer",  buff = "Multiplies seeds or combines them into rarer ones", mats = "4 Mountain Silversage, 1 Crystal Vial, 2 Runecloth", how = "Blueprint source not found yet" },
   { prof = "Mining",         skill = 20,  name = "Lodestone",        buff = "+melee Attack Power (12 up to 90). Doesn't stack with Blessing of Might", mats = "1 Rough Stone, 1 Copper Bar", how = "Trainer recipe or Camping 101", best = "group" },
   { prof = "Mining",         skill = 140, name = "Rock Garden",      buff = "A common ore node that grows over time", mats = "2 Heavy Stone, 1 Iron Ore, 1 Silver Bar", how = "Blueprint: Relic Guardian, Excavation Site" },
-  { prof = "Mining",         skill = 300, name = "Molten Foundry",   buff = "Needed to smelt Heavy Thorium", mats = "5 Thorium Bar, 2 Dense Stone, 1 Truesilver Bar", how = "Blueprint source not found yet" },
+  { prof = "Mining",         skill = 300, name = "Molten Foundry",   buff = "Needed to smelt Heavy Thorium", mats = "5 Thorium Bar, 2 Dense Stone, 1 Truesilver Bar", how = "Blueprint: Ambassador Flamelash, Blackrock Depths" },
   { prof = "Skinning",       skill = 20,  name = "Camp Chair",       buff = "+2% crit. Doesn't stack with Moonkin Aura", mats = "3 Light Leather, 2 Simple Wood", how = "Trainer recipe or Camping 101" },
   { prof = "Skinning",       skill = 140, name = "Field Guide",      buff = "A book anyone at camp can read to learn Track Beasts", mats = "3 Medium Leather, 2 Slimy Murloc Scale, 1 Fine Thread", how = "Blueprint: Lady Anacondra, Wailing Caverns" },
   { prof = "Skinning",       skill = 300, name = "Trapper's Workbench", buff = "A workbench with a trap", mats = "2 Simple Wood, 4 Heavy Leather, 1 Iron Bar", how = "Blueprint: Houndmaster Loksey, Scarlet Monastery (Library)" },
   { prof = "Cooking",        skill = 140, name = "Cookie's Feast",   buff = "Stamina food for everyone at camp", mats = "2 Mystery Meat, 1 Heavy Kodo Meat, 1 Soothing Spices", how = "Blueprint: Cookie, The Deadmines (try the AH)" },
-  { prof = "Cooking",        skill = 300, name = "Iron Oven",        buff = "Needed for the most advanced Cooking recipes", mats = "10 Simple Flour, 5 Refreshing Spring Water, 4 Soothing Spices", how = "Blueprint source not found yet" },
+  { prof = "Cooking",        skill = 300, name = "Iron Oven",        buff = "Needed for the most advanced Cooking recipes", mats = "10 Simple Flour, 5 Refreshing Spring Water, 4 Soothing Spices", how = "Blueprint: Quartermaster Zigris, Lower Blackrock Spire" },
   { prof = "First Aid",      skill = 20,  name = "First Aid Kit",    buff = "+Stamina. Doesn't stack with Power Word: Fortitude", mats = "3 Linen Bandage, 1 Refreshing Spring Water", how = "Trainer recipe or Camping 101" },
   { prof = "First Aid",      skill = 140, name = "Toxin Study",      buff = "Healing potions and anti-venom", mats = "1 Anti-Venom, 2 Mageweave Bandage, 2 Simple Wood", how = "Blueprint: Commander Springvale, Shadowfang Keep" },
   { prof = "First Aid",      skill = 300, name = "Plague Doctor's Laboratory", buff = "Healing potions and poultices", mats = "2 Simple Wood, 2 Strong Anti-Venom, 5 Heavy Runecloth Bandage", how = "Blueprint source not found yet" },
   { prof = "Fishing",        skill = 20,  name = "Fish Bowl",        buff = "+8% to all stats. Doesn't stack with Blessing of Kings", mats = "1 Raw Brilliant Smallfish, 1 Empty Vial", how = "Trainer recipe or Camping 101", best = "heal" },
   { prof = "Fishing",        skill = 140, name = "Fishing Rack",     buff = "Uncommon fish for an hour, plus fishing lures", mats = "2 Simple Wood, 1 Crystal Vial, 2 Raw Mithril Head Trout", how = "Blueprint: Gelihast, Blackfathom Deeps" },
-  { prof = "Fishing",        skill = 300, name = "Fishing Hut",      buff = "Rare fish for an hour, plus fishing lures", mats = "5 Simple Wood, 2 Bolt of Runecloth, 1 Seasonal Fish Steaks", how = "Blueprint source not found yet" },
+  { prof = "Fishing",        skill = 300, name = "Fishing Hut",      buff = "Rare fish for an hour, plus fishing lures", mats = "5 Simple Wood, 2 Bolt of Runecloth, 1 Seasonal Fish Steaks", how = "Blueprint: Jammal'an the Prophet, Temple of Atal'Hakkar" },
 }
 
 -- Leveling plan for Fishing and Cooking, tied to your route. "@start" and "@second" are
@@ -231,7 +231,7 @@ end
 local lastSkill = {}
 local MILESTONES = {
   Fishing = { [20] = "Learn the Fish Bowl at your Fishing trainer.", [50] = "Train Journeyman Fishing (level 10).", [125] = "Get Expert Fishing: \"The Bass and You\" (Old Man Heming, Booty Bay, 1g, level 20; or the AH).", [140] = "Fishing Rack unlocked if you have the blueprint (Gelihast, Blackfathom Deeps).", [225] = "Take Nat Pagle, Angler Extreme in Dustwallow Marsh (level 35) for Artisan Fishing." },
-  Cooking = { [50] = "Train Journeyman Cooking.", [90] = "You can learn and place the Journeyman Campfire (blueprint from Lord Serpentis, Wailing Caverns): 5 object slots.", [125] = "Get the Expert Cookbook now. Skill stops at 150 without it.", [200] = "You can learn the Expert Campfire blueprint.", [225] = "Artisan Cooking: Clamlette Surprise in Gadgetzan (level 35)." },
+  Cooking = { [50] = "Train Journeyman Cooking.", [90] = "You can learn and place the Journeyman Campfire (blueprint from Lord Serpentis, Wailing Caverns): 5 object slots.", [125] = "Get the Expert Cookbook now. Skill stops at 150 without it.", [200] = "You can learn the Expert Campfire blueprint (Slavecrusher Grox, Krol'dok Stronghold): 10 object slots at Cooking 220.", [225] = "Artisan Cooking: Clamlette Surprise in Gadgetzan (level 35)." },
   Blacksmithing = { [20] = "Learn the Sharpening Wheel camp object at your trainer.", [140] = "Anvil camp object unlocked if you have the blueprint (Deadmines, or the AH)." },
   Mining = { [20] = "Lodestone camp object unlocked (good for groups without a paladin).", [140] = "Rock Garden unlocked if you have the blueprint (Wetlands excavation site, or the AH)." },
 }

@@ -52,6 +52,12 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Bones; Nerlokh and Rokren (Gelkis side) and Orgrul and Hagiak (Magram side) give the rest; Checking Things Out is Horde only. Route
    notes and a level 38 travel tip for both factions; no flight point inside (Shadowprey Village / Nijel's Point). Riverglades grew to
    Horde 28 steps / 64 quests and Alliance 31 / 75. Still open: **Mount Hyjal** (no quests in the data yet; coverage.py: no steps).
+   2026-11-16 (v1.45.0): **Mount Hyjal started.** QuestieDB's Forever data has had Hyjal quests since November 10 (Horde 7 steps / 13
+   quests, Alliance 9 / 16), but the game has 102 (ForeverChanges, levels 56-60). Route notes for both factions now name Elderwild,
+   the shared camp in the far west (Horde: Zet'gan, Kal'tinzan, Ortak Lomgok, breadcrumb Grain of Memory from Abigail Sawyer in
+   Undercity; Alliance: Sefira Everbright, Daythor Brellan, Hnaz Blunderflame, Johun "Punchy" Dillas, breadcrumb Unsealing Blackthorne
+   Pact from Mathias Shaw). Still open: the other ~85 Hyjal quests (they appear as QuestieDB adds them; check the hubs then: the
+   night elf village by the World Tree and the Shrine of Aviana), and whether Elderwild has a flight master or inn.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -90,6 +96,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    skill-300 object except the Trapper's Workbench. QuestieDB's Forever item data has the blueprint items for the
    Anarchist's Workbench (273117) and Plague Doctor's Laboratory (273118) but no drop yet; Mmonster and
    wow-professions.com (2026-11-08) list them all as unknown. Fill in as soon as QuestieDB or a guide names a drop.
+   2026-11-16 (v1.45.0): QuestieDB's Forever item data now names four: Expert Campfire (Slavecrusher Grox, Krol'dok Stronghold; Warcraft
+   Wiki agrees), Iron Oven (Quartermaster Zigris, LBRS), Fishing Hut (Jammal'an the Prophet, Sunken Temple), Molten Foundry (Ambassador
+   Flamelash, BRD). Still unknown: Alchemy Laboratory, Master Forge, Arcane Forge, Anarchist's Workbench, Sewing Machine, Loom, Seed
+   Hybridizer, Plague Doctor's Laboratory.
 
 11. **Dungeon quests not in QuestieDB yet:** Ancient Gurubashi Idol (Mazu'kon, Mulgore), A Token of Vengeance, Tome of
    Twilight and Eye of Mugg (Krom'rosh) are in Mmonster's guides but not in the Forever quest data, so they're only named
@@ -110,9 +120,15 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Ruins of Lordaeron: Blizzard's November 2 launch notes say every dungeon quest needs level 15; QuestieDB's Forever data still has 16 for The New Plague, Crest of Lordaeron and Unending Torment (2026-11-05). The route note says 15, the route entry stays at 16; drop the entry to 15 (with MOVED_STEPS) once the quest data agrees. 2026-11-07: Blizzard's November 6 hotfix had to lower Unending Torment (Horde) from 16 to 15 on the live realms, so the launch notes' "15" wasn't live for every quest; QuestieDB still says 16 for all three. The Paladin step says 15 for Unending Torment; the entry stays at 16.
 - Shen'dralas, 2026-11-06: eXputer (2026-10-28) reports guides split between 40-45 and 45-53. Ours stays 38-43
   until launch quest data is in QuestieDB.
+- Mount Hyjal: guides 55-60 (Mmonster, wowforeverleveling.com), 56-60 (ForeverChanges quest levels, minimum 54), 60 (Skycoach); ours
+  58-60. The Horde quests in the data are levels 57-60, so 58 stays for now; consider 57 once more Hyjal quests are in the data (2026-11-16).
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.45.0: Mount Hyjal route notes and Elderwild hub for both factions (item 1, Hyjal part); four camp blueprint sources from QuestieDB
+  (item 10, partial); Blizzard's November 13-14 hotfixes applied (dungeon XP 12-level rule on the dungeon cards, Wild Growth for
+  Restoration Druids).
 
 - v1.41.0: player report #10: the fishing HUD's duplicate "Go fishing" button. (A buff reminder shipped in v1.41.0 too,
   without the owner's go-ahead, and was removed in v1.41.1.)

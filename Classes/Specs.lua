@@ -286,7 +286,7 @@ S("DRUID", {
     tips = { "Rejuvenation and Regrowth on the tank and let them tick.",
       "Healing Touch when you have time; Nature's Swiftness, Healing Touch and Swiftmend together for a huge heal in about a second.",
       "Down-rank heals to save mana, and stop casting for 5 seconds to let Spirit regen kick in." },
-    forever = { "Tranquility arrives at level 30.", "Rebirth needs Stranglethorn Seeds." },
+    forever = { "Tranquility arrives at level 30.", "Rebirth needs Stranglethorn Seeds.", "Since the November 13 hotfix Wild Growth gets twice as much from healing power (6.6% per heal, was 3.3%), but it can't be cast while moving and its ranks share one 6 sec cooldown." },
     source = "https://mobalytics.gg/wow-forever/classes/restoration-druid-guide" },
 })
 
@@ -296,4 +296,4 @@ for class, list in pairs(RG.SPECS) do
   RG.SPEC_BY[class] = {}
   for _, s in ipairs(list) do s.class = class; RG.SPEC_BY[class][s.key] = s end
 end
-RG.SPECS_UPDATED = "2026-11-12"
+RG.SPECS_UPDATED = "2026-11-16"
