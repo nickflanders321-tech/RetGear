@@ -2850,7 +2850,16 @@ local function showReveal(got, notes, meta)
     -- opens the next waiting pack: one like this if you have it, else whichever kind is waiting, else buys one like this
     reveal.again = gbtn(reveal, "Open next pack", 190, 30, function()
       if not (frame and frame.buyNow) then return end
+      -- a dungeon's pack: another from the same dungeon while there is one to open or buy
+      local m = reveal.meta
+      local dn = m and not m.many and m.dungeon
+      if dn then
+        local have, cleared = RG.ArcadeDungeonPacks(dn)
+        local a0 = store()
+        if have > 0 or (cleared and a0 and (a0.coins or 0) >= PACKS.dungeon.price) then frame.buyNow("dungeon", dn); return end
+      end
       local a, k = store(), (reveal.meta and reveal.meta.many) and "normal" or reveal.kind
+      if k == "dungeon" then k = "normal" end
       if a and tokenCount(a, k) == 0 then
         for _, kk in ipairs(PACK_ORDER) do if tokenCount(a, kk) > 0 then k = kk break end end
       end
@@ -3136,8 +3145,17 @@ local function showReveal(got, notes, meta)
   do   -- "Open next pack" while packs are waiting, else it buys another like this one
     local a, waiting = store(), 0
     if a then for _, kk in ipairs(PACK_ORDER) do waiting = waiting + tokenCount(a, kk) end end
-    reveal.again:SetText(waiting > 0 and "Open next pack" or "Buy another pack")
-    reveal.again:SetEnabled((waiting > 0 or afford(meta.many and "normal" or kind)) and true or false)
+    local dn = meta.dungeon
+    if dn and not meta.many then
+      -- a dungeon's pack: the next one from the same dungeon (one you earned, or bought once it's cleared)
+      local have, cleared = RG.ArcadeDungeonPacks(dn)
+      local can = have > 0 or (cleared and a and (a.coins or 0) >= PACKS.dungeon.price)
+      reveal.again:SetText(have > 0 and ("Open next pack (" .. have .. ")") or (can and ("Buy another · " .. PACKS.dungeon.price) or (waiting > 0 and "Open next pack" or "Buy another pack")))
+      reveal.again:SetEnabled((can or waiting > 0) and true or false)
+    else
+      reveal.again:SetText(waiting > 0 and "Open next pack" or "Buy another pack")
+      reveal.again:SetEnabled((waiting > 0 or afford(meta.many and "normal" or kind)) and true or false)
+    end
   end
 end
 
