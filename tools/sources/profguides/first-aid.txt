@@ -2,11 +2,13 @@ WoW Forever First Aid Leveling Guide 1-300
 WoW Forever First Aid Leveling Guide 1-300
 This WoW Forever First Aid leveling guide will show you the fastest way to level your First Aid skill from 1 to 300. You will also find every trainer location and where to train First Aid past 150 and 225.
 1-225
-130x Linen Cloth
-81x Peacebloom
-24x Linen Cloth
-150x Wool Cloth
-134x Silk Cloth
+148x Linen Cloth
+86x Peacebloom
+32x Linen Cloth
+12x Wool Cloth
+151x Wool Cloth
+54x Spider Ichor and 31x Bruiseweed
+141x Silk Cloth
 19x Mageweave Cloth
 225-300
 89x Mageweave Cloth
@@ -14,23 +16,29 @@ This WoW Forever First Aid leveling guide will show you the fastest way to level
 30x Golden Sansam
 Apprentice First Aid (1-75)
 1-75
-81x Minor Healing Potion - 81 Peacebloom, 81 Mild Spices, 81 Empty Vial
+86x Minor Healing Potion - 86 Peacebloom, 86 Mild Spices, 86 Empty Vial
 1-40
 50x Linen Bandage - 50 Linen Cloth
 40-75
-40x Heavy Linen Bandage - 80 Linen Cloth
+49x Heavy Linen Bandage - 98 Linen Cloth
 Journeyman First Aid (75-150)
 75-80
-12x Heavy Linen Bandage - 24 Linen Cloth
-80-115
-50x Wool Bandage - 50 Wool Cloth
+16x Heavy Linen Bandage - 32 Linen Cloth
+80-90
+12x Wool Bandage - 12 Wool Cloth
+90-115
+43x Wool Bandage - 43 Wool Cloth
 115-150
-50x Heavy Wool Bandage - 100 Wool Cloth
+54x Heavy Wool Bandage - 108 Wool Cloth
+90-125
+54x Simple Poultice - 54 Spider Ichor, 54 Mild Spices, 54 Bottle of Dalaran Noir
+125-150
+31x Healing Potion - 31 Bruiseweed, 31 Hot Spices, 31 Leaded Vial
 Expert First Aid (150-225)
 150-180
-42x Silk Bandage - 42 Silk Cloth
+47x Silk Bandage - 47 Silk Cloth
 180-210
-46x Heavy Silk Bandage - 92 Silk Cloth
+47x Heavy Silk Bandage - 94 Silk Cloth
 210-225
 19x Mageweave Bandage - 19 Mageweave Cloth
 Artisan First Aid (225-300)

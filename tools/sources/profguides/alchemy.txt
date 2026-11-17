@@ -2,10 +2,10 @@ WoW Forever Alchemy Leveling Guide 1-300
 WoW Forever Alchemy Leveling Guide 1-300
 This WoW Forever Alchemy leveling guide will show you the fastest and cheapest way to level your Alchemy skill from 1 to 300. You will also find every trainer location and where to train Alchemy past 75, 150 and 225.
 1-150
-82x Peacebloom
+83x Peacebloom
 54x Silverleaf
 50x Mageroyal
-54x Earthroot
+56x Earthroot
 60x Briarthorn
 10x Stranglekelp
 40x Firefin Snapper
@@ -29,7 +29,7 @@ Journeyman Alchemy (55-150)
 55-65
 10x Minor Mana Potion - 10 Mageroyal, 10 Peacebloom, 10 Empty Vial
 65-90
-27x Elixir of Minor Fortitude - 54 Earthroot, 27 Peacebloom, 27 Empty Vial
+28x Elixir of Minor Fortitude - 56 Earthroot, 28 Peacebloom, 28 Empty Vial
 90-120
 30x Elixir of Wisdom - 30 Mageroyal, 60 Briarthorn, 30 Empty Vial
 120-130
