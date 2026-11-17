@@ -120,6 +120,7 @@ local function scanValue(prices)            -- prices: unit prices, one per auct
 end
 RG.__scanValue = scanValue   -- (tests)
 local function dayIndex() return math.floor(time() / 86400) end
+RG.GLUT_LISTINGS = 8   -- this many of one piece of gear listed at once: flooded
 local function marketOf(rec)
   if not (rec and rec.d) then return nil end
   local today, num, den = dayIndex(), 0, 0
@@ -225,6 +226,11 @@ function RG.SellPrice(id, link)
   end
   local exp = myExpired(id, last)
   if exp >= 2 then why.slow = exp end
+  -- a flooded item: dozens of the same piece of gear listed at once (on Forever, often a wall of near-identical
+  -- prices). Yours would sit at the back of that queue, so its listed price isn't a price you can count on.
+  local maxStack = select(8, RG.ItemInfo(id))
+  local n = rec and not rec.none and rec.t and time() - rec.t < 2 * DAY and rec.n or 0
+  if (maxStack == 1 or maxStack == nil) and n >= RG.GLUT_LISTINGS then why.glut = n end
   return math.floor(p + 0.5), why
 end
 
@@ -250,7 +256,11 @@ function RG.PriceText(id, link)
     if why.cheapest then bits[#bits + 1] = "cheapest now " .. money(why.cheapest) end
     bits[#bits + 1] = "market " .. money(p)
     if why.slow then bits[#bits + 1] = "|cffff7f50came back unsold " .. why.slow .. "x|r" .. GREY end
+    if why.glut then bits[#bits + 1] = "|cffff7f50" .. why.glut .. " listed: flooded|r" .. GREY end
     return money(sp) .. GREY .. "  to sell · " .. table.concat(bits, " · ") .. "|r"
+  end
+  if sp and why and why.glut then
+    return money(sp) .. GREY .. "  listed · |cffff7f50" .. why.glut .. " listed: flooded, unlikely to sell|r"
   end
   if src == "market" then
     -- the steady value first, then what the cheapest one costs right now

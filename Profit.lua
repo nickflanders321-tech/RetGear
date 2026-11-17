@@ -46,13 +46,15 @@ function RG.ProfitInfo(id, link)
   local ah, why = RG.SellPrice(id, link)
   if not ah or (rec and rec.none and not (why and why.variant)) then return { vendor = vendor, unpriced = true } end
   local net = math.floor(ah * (1 - AH_CUT))
-  return { ah = ah, net = net, vendor = vendor, gain = net - vendor, src = src, age = rec and rec.t, why = why, slow = why and why.slow }
+  return { ah = ah, net = net, vendor = vendor, gain = net - vendor, src = src, age = rec and rec.t, why = why, slow = why and why.slow, glut = why and why.glut }
 end
 
 -- Is this stack worth taking to the AH instead of a vendor?
 local function worthIt(p, count)
   if not p or p.unpriced or p.bound then return false end
   if p.gain <= 0 then return false end
+  -- flooded (a wall of the same piece listed): only when you've sold it yourself lately, or it's worth far more
+  if p.glut and not (p.why and p.why.mine) and p.net < math.max(1, p.vendor) * 8 then return false end
   -- it came back unsold twice lately: only worth another try for three times the vendor price
   if p.slow and p.net < math.max(1, p.vendor) * 3 then return false end
   if p.vendor > 0 and p.net < p.vendor * 1.25 then return false end -- tiny margins aren't worth the trip
@@ -173,7 +175,11 @@ local function OnTooltip(tooltip, data)
   if RG.TooltipBound and RG.TooltipBound(tooltip, data) then return end   -- (soulbound: it can't be sold there)
   local p = RG.ProfitInfo(id, link)
   if not p or p.unpriced or p.bound then return end
-  if worthIt(p, 1) or (p.gain > 0 and RG.BagSellSet()[id] and worthIt(p, RG.BagSellSet()[id])) then
+  if p.glut and p.gain > 0 and not worthIt(p, 1) then
+    -- the listings say more than the vendor, but there's a pile of them: say so, rather than send you to the AH
+    tooltip:AddLine(GREY .. "  Auction House: " .. p.glut .. " listed at ~" .. "|r" .. RG.Money(p.ah) .. GREY .. ", flooded. It likely won't sell; the vendor's " .. "|r" .. RG.Money(p.vendor) .. GREY .. " is sure.|r", 1, 1, 1, true)
+    tooltip:Show()
+  elseif worthIt(p, 1) or (p.gain > 0 and RG.BagSellSet()[id] and worthIt(p, RG.BagSellSet()[id])) then
     tooltip:AddLine(COIN .. " " .. GOLD .. "Sell this on the Auction House|r", 1, 1, 1)
     tooltip:AddDoubleLine(GREY .. "  You keep " .. "|r" .. RG.Money(p.net) .. GREY .. " each after the AH cut|r", GREY .. "vendor " .. "|r" .. RG.Money(p.vendor))
     tooltip:Show()
