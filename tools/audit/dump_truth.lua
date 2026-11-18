@@ -25,6 +25,7 @@ local function load(f, optional)
   if not ok and not optional then io.stderr:write("could not load " .. f .. ": " .. tostring(e) .. "\n") end
 end
 load("Data.lua")
+load("Classes/SimWeights.lua", true)
 for _, f in ipairs({ "Paladin", "Warrior", "Hunter", "Rogue", "Priest", "Shaman", "Mage", "Warlock", "Druid" }) do load("Classes/" .. f .. ".lua") end
 load("Classes/Specs.lua", true)
 for _, f in ipairs({ "Undead", "Durotar", "Tauren", "Skyborne" }) do load("Races/" .. f .. ".lua") end

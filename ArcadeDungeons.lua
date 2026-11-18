@@ -642,6 +642,7 @@ RG.ARCADE_DUNGEON_ROWS = {
   { 1, "Golemsight Long Gun", 2, 273029, "Rare dungeon drop, required level 28" },
   { 1, "Ring of Power Regulation", 2, 273030, "Rare dungeon drop, required level 28" },
   { 2, "Thicket Hunter", 1, 7, "Dungeon elite, level 27" },
+  { 2, "Thicket Stalker", 1, 7, "Dungeon elite, level 27" },
   { 3, "City of Dalaran", 3, 0, "Dungeon, levels 25-30" },
   { 2, "Shade of the Archmage", 4, 7, "Dungeon boss, level 30" },
   { 2, "Arcane Anomaly", 3, 7, "Dungeon boss, level 30" },
@@ -762,7 +763,6 @@ RG.ARCADE_DUNGEON_ROWS = {
   { 2, "Venomridge", 3, 7, "Dungeon boss, level 58" },
   { 2, "Thunderhoof", 3, 7, "Dungeon boss, level 58" },
   { 2, "Direhorn Matriarch", 3, 7, "Dungeon boss, level 58" },
-  { 2, "Snowtalon", 3, 7, "Dungeon boss, level 58" },
   { 2, "Cinder", 3, 7, "Dungeon boss, level 58" },
   { 2, "Bolt", 3, 7, "Dungeon boss, level 58" },
   { 1, "Talon of Tor'Rel", 2, 280012, "Rare dungeon drop, required level 58" },
@@ -779,8 +779,8 @@ RG.ARCADE_DUNGEON_ROWS = {
   { 1, "Nanaya's Control Spire", 2, 280023, "Rare dungeon drop, required level 58" },
   { 1, "Legplates of Reinforced Crystal", 2, 280024, "Rare dungeon drop, required level 58" },
   { 1, "Leggings of Curation", 2, 280025, "Rare dungeon drop, required level 58" },
-  { 1, "Albinofur Grips", 2, 280026, "Rare dungeon drop, required level 58" },
-  { 1, "Crownroar Chestplate", 2, 280027, "Rare dungeon drop, required level 58" },
+  { 1, "Heartflame Gauntlets", 2, 280028, "Rare dungeon drop, required level 58" },
+  { 1, "Sparklance Wand", 2, 280031, "Rare dungeon drop, required level 58" },
 }
 -- { name, instance id, lowest level, highest level, { card names } }, easiest first
 RG.ARCADE_DUNGEONS = {
@@ -791,7 +791,7 @@ RG.ARCADE_DUNGEONS = {
   { "Wailing Caverns", 43, 18, 22, { "Wailing Caverns", "Mutanus the Devourer", "Lord Pythas", "Verdan the Everliving", "Deviate Moccasin", "Lord Serpentis", "Skum", "Lord Cobrahn", "Deviate Faerie Dragon", "Kresh", "Mutant Scale Breastplate", "Slime-encrusted Pads", "Deep Fathom Ring", "Living Root", "Seedcloud Buckler", "Cobrahn's Grasp", "Stinging Viper", "Venomstrike", "Leggings of the Fang", "Gargoyle's Bite", "Glowing Lizardscale Cloak", "Firebelcher", "Kresh's Back", "Stormbringer Belt", "Deviate Dreadfang", "Deviate Venomwing", "Deviate Shambler", "Deviate Viper", "Disciple of Naralex", "Druid of the Fang", "Deviate Adder", "Deviate Guardian" } },
   { "Shadowfang Keep", 33, 20, 26, { "Shadowfang Keep", "Archmage Arugal", "Sever", "Deathsworn Captain", "Wolf Master Nandos", "Baron Silverlaine", "Commander Springvale", "Odo the Blindwatcher", "Razorclaw the Butcher", "Belt of Arugal", "Meteor Shard", "Robes of Arugal", "Commander's Crest", "Feline Mantle", "Odo's Ley Staff", "Silverlaine's Family Seal", "Abomination Skin Leggings", "Butcher's Cleaver", "Phantom Armor", "The Axe of Severing", "Arugal", "Fenrus the Devourer", "Blood Seeker", "Lupine Horror", "Shadowfang Ragetooth", "Tormented Officer", "Vile Bat", "Wailing Guardsman" } },
   { "Blackfathom Deeps", 48, 23, 28, { "Blackfathom Deeps", "Aku'mai", "Twilight Lord Kelris", "Gelihast", "Ghamoo-ra", "Lady Sarevess", "Leech Pants", "Moss Cinch", "Strike of the Hydra", "Glowing Thresher Cape", "Rod of the Sleepwalker", "Algae Fists", "Bite of Serra'kis", "Naga Battle Gloves", "Tortoise Armor", "Baron Aquanis", "Aku'mai Snapjaw", "Twilight Elementalist", "Twilight Shadowmage", "Barbed Crustacean", "Lorgus Jett", "Twilight Aquamancer", "Twilight Reaver" } },
-  { "Excavation Site: Wetlands", 2998, 24, 28, { "Excavation Site: Wetlands", "Relic Guardian", "Thicket Lurker", "Saltspine", "Shadetooth", "Sparkleshell Mantle", "Supple Bellyskin Leggings", "Saltscale Girdle", "Glinteye Slippers", "Raptorclaw Greaves", "Garb of Florid Feathers", "Raptor's Gaze", "Reliquary Mantle", "Golemsight Long Gun", "Ring of Power Regulation", "Thicket Hunter" } },
+  { "Excavation Site: Wetlands", 2998, 24, 28, { "Excavation Site: Wetlands", "Relic Guardian", "Thicket Lurker", "Saltspine", "Shadetooth", "Sparkleshell Mantle", "Supple Bellyskin Leggings", "Saltscale Girdle", "Glinteye Slippers", "Raptorclaw Greaves", "Garb of Florid Feathers", "Raptor's Gaze", "Reliquary Mantle", "Golemsight Long Gun", "Ring of Power Regulation", "Thicket Hunter", "Thicket Stalker" } },
   { "The Stockade", 34, 24, 26, { "The Stockade", "Bruegal Ironknuckle", "Iron Knuckles", "Jimmied Handcuffs", "Prison Shank", "Bazil Thredd", "Hamhock", "Kam Deepfury", "Defias Insurgent", "Dextren Ward", "Defias Convict", "Defias Inmate", "Defias Prisoner" } },
   { "City of Dalaran", 2959, 25, 30, { "City of Dalaran", "Shade of the Archmage", "Arcane Anomaly", "Atrexis the Grave Knight", "Fel Ancient", "Mana Devourer", "Arcanic Enigma", "Unstable Sentinel", "Lyn the Ignored", "Runemender's Seal", "Bonebinder's Signet", "Gravespike Repeater", "Ephemeral Grips", "Mana-Warped Chain Shirt", "Graveweave Bindings", "Felbough Arm", "Garb of Fallen Felbark", "Blightleaf Rope", "Spine of the Devourer", "Slitherwrap Girdle", "Manascale Treads", "Wand of Mana Concentration", "Violet Sorcerer's Robes", "Drape of Shifting Energy", "Guardian's Dualblade" } },
   { "Gnomeregan", 90, 28, 34, { "Gnomeregan", "Mekgineer Thermaplugg", "Dark Iron Ambassador", "Electrocutioner 6000", "Crowd Pummeler 9-60", "Grubbis", "Viscous Fallout", "Charged Gear", "Electromagnetic Gigaflux Reactivator", "Thermaplugg's Central Core", "Thermaplugg's Left Arm", "Glass Shooter", "Royal Diplomatic Scepter", "Electrocutioner Lagnut", "Electrocutioner Leg", "Grubbis Paws", "Manual Crowd Pummeler", "Emissary Cuffs", "Acidic Walkers", "Hydrocane", "Toxic Revenger", "Arcane Nullifier X-21", "Dark Iron Agent", "Mechanized Guardian", "Mechano-Frostwalker", "Mechano-Flamewalker", "Chomper", "Holdout Medic", "Holdout Technician" } },
@@ -811,7 +811,7 @@ RG.ARCADE_DUNGEONS = {
   { "Blackrock Spire", 229, 55, 62, { "Blackrock Spire", "General Drakkisath", "Warchief Rend Blackhand", "The Beast", "Goraluk Anvilcrack", "Overlord Wyrmthalak", "Pyroguard Emberseer", "Solakar Flamewreath", "Urok Doomhowl", "Crystal Fang", "Highlord Omokk", "Halycon", "Mother Smolderweb", "Bannok Grimaxe", "Ghok Bashguud", "Jed Runewatcher", "Quartermaster Zigris", "Shadow Hunter Vosh'gajin", "War Master Voone", "Spirestone Lord Magus", "Spirestone Battle Lord", "Burning Felguard", "Spirestone Butcher", "Blackblade of Shahram", "Felstriker", "Mark of the Dragon Lord", "Band of Rumination", "Battleborn Armbraces", "Beaststalker's Tunic", "Blackhand Doomsaw", "Blackmist Armguards", "Blademaster Leggings", "Bloodmoon Cloak", "Breastplate of Valor", "Brigam Girdle", "Dal'Rend's Sacred Charge", "Dal'Rend's Tribal Guardian", "Devout Robe", "Draconian Deflector", "Draconic Infused Emblem", "Dragonrider Boots", "Dreadmist Robe", "Spirit of Lord Valthalak", "Rage Talon Captain", "Blackhand Assassin", "Blackhand Elite", "Blackhand Iron Guard", "Rage Talon Dragon Guard", "Rage Talon Fire Tongue", "Blackhand Dragon Handler" } },
   { "Stratholme", 329, 55, 62, { "Stratholme", "Baron Rivendare", "Balnazzar", "Ramstein the Gorger", "Maleki the Pallid", "Cannon Master Willey", "Postmaster Malown", "Archivist Galford", "Nerub'enkan", "Balzaphon", "Stonespine", "Baroness Anastari", "Magistrate Barthilas", "Timmy the Cruel", "Skul", "Hearthsinger Forresten", "The Unforgiven", "Book of the Dead", "Runeblade of Baron Rivendare", "Idol of Brutality", "Cape of the Black Baron", "Crown of Tyranny", "Demonshear", "Dracorian Gauntlets", "Fire Striders", "Gauntlets of Deftness", "Gift of the Elven Magi", "Grand Crusader's Helm", "Hammer of the Grand Crusader", "Helm of the Executioner", "Ritssyn's Wand of Bad Mojo", "Robes of the Exalted", "Scepter of the Unholy", "Seal of Rivendare", "Shroud of the Nathrezim", "Black Guard Swordsmith", "Grand Crusader Dathrohan", "Ezra Grimm", "Thuzadin Necromancer", "Venom Belcher", "Ash'ari Crystal", "Bile Spewer", "Crimson Battle Mage" } },
   { "Scholomance", 289, 56, 62, { "Scholomance", "Death Knight Darkreaver", "Ras Frostwhisper", "Darkmaster Gandling", "Jandice Barov", "Rattlegore", "Kirtonos the Herald", "Lord Blackwood", "Vectus", "Doctor Theolen Krastinov", "Lorekeeper Polkelt", "Scholomance Adept", "Scholomance Necromancer", "Marduk Blackpool", "Alanna's Embrace", "Headmaster's Charge", "Don Mauricio's Band of Domination", "Beaststalker's Cap", "Blackwood's Thigh", "Bone Golem Shoulders", "Bone Ring Helm", "Bonecreeper Stylus", "Boots of the Shrieker", "Coif of Elements", "Corpselight Greaves", "Darkshade Gloves", "Deadwalker Mantle", "Devout Crown", "Dreadmist Mask", "Ghostloom Leggings", "Gravestone War Axe", "Helm of Valor", "Blood Steward of Kirtonos", "Risen Construct", "Risen Warrior", "Spectral Teacher", "Aspect of Banality", "Aspect of Corruption", "Aspect of Malice", "Aspect of Shadow" } },
-  { "The Shaper's Terrace", 3001, 58, 58, { "The Shaper's Terrace", "Nanaya", "Tor'Rel", "Venomridge", "Thunderhoof", "Direhorn Matriarch", "Snowtalon", "Cinder", "Bolt", "Talon of Tor'Rel", "Frostfang Mail Vest", "Raptorscale Bulwark", "Venomvessel Ring", "Spiderchitin Wrap", "Octoclaw Chain Boots", "Hammer of Thundering Hooves", "Dinofrill Casque", "Deep Jungle Rifle", "Tooth of the Matriarch", "Scaleguard Scimitar", "Nanaya's Control Spire", "Legplates of Reinforced Crystal", "Leggings of Curation", "Albinofur Grips", "Crownroar Chestplate" } },
+  { "The Shaper's Terrace", 3001, 58, 58, { "The Shaper's Terrace", "Nanaya", "Tor'Rel", "Venomridge", "Thunderhoof", "Direhorn Matriarch", "Cinder", "Bolt", "Talon of Tor'Rel", "Frostfang Mail Vest", "Raptorscale Bulwark", "Venomvessel Ring", "Spiderchitin Wrap", "Octoclaw Chain Boots", "Hammer of Thundering Hooves", "Dinofrill Casque", "Deep Jungle Rifle", "Tooth of the Matriarch", "Scaleguard Scimitar", "Nanaya's Control Spire", "Legplates of Reinforced Crystal", "Leggings of Curation", "Heartflame Gauntlets", "Sparklance Wand" } },
 }
 -- WoW Forever dungeons with no bosses or loot in the game data yet: the Album shows them as coming soon
 RG.ARCADE_DUNGEONS_SOON = {  }
@@ -1260,12 +1260,12 @@ RG.ARCADE_DUNGEON_CREATURE = {
   ["Skeletal Soldier"] = 250626,
   ["Skeleton"] = 250618,
   ["Slavecrusher Grox"] = 258966,
-  ["Snowtalon"] = 262297,
   ["The Abandoned"] = 250631,
   ["The Baron"] = 250660,
   ["The Questioner"] = 256236,
   ["Thicket Hunter"] = 260801,
   ["Thicket Lurker"] = 260800,
+  ["Thicket Stalker"] = 271732,
   ["Thunderhoof"] = 261812,
   ["Tidemistress Ca'zass"] = 255997,
   ["Tor'Rel"] = 261811,

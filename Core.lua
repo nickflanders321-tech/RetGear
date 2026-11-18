@@ -166,6 +166,7 @@ local function InitDB()
   if db.hitCapByClass[cls] == nil then db.hitCapByClass[cls] = RG.DEFAULT_HIT_CAP end
   db.hitCap = db.hitCapByClass[cls]
   if RG.ApplyMainSpec then RG.ApplyMainSpec(true) end
+  if RG.SyncDefaultWeights then RG.SyncDefaultWeights() end
   if db.talentHit == nil then db.talentHit = 0 end
   if db.tooltip == nil then db.tooltip = true end
   if db.levelAlerts == nil then db.levelAlerts = true end
@@ -470,6 +471,31 @@ end
 -- Score an item. hitRoom = how much hit % still counts before the cap (nil = all
 -- of it); slot = the inventory slot it would go in (17 = off-hand).
 -- w and model are optional: the 2nd Spec tab scores with its spec's weights and weapon model.
+-- When the default weights change (a new wowsims/forever update), every saved weight still at the old default moves to
+-- the new one; a weight you set yourself (/wp weight) stays yours.
+function RG.SyncDefaultWeights()
+  local db = RG.db
+  if not (db and db.weights and RG.DEFAULT_WEIGHTS) then return end
+  local cls = RG.PLAYER_CLASS or "PALADIN"
+  local m = RG.MainSpec and RG.MainSpec()
+  local key = m and m.key or "main"
+  db.weightsBase = db.weightsBase or {}
+  local id = cls .. ":" .. key
+  local base = db.weightsBase[id]
+  local hand = RG.HAND_WEIGHTS and RG.HAND_WEIGHTS[cls] and RG.HAND_WEIGHTS[cls][key]
+  local changed = false
+  local nb = {}
+  for k, v in pairs(RG.DEFAULT_WEIGHTS) do
+    local was
+    if base then was = base[k] elseif hand then was = hand[k] end
+    local cur = db.weights[k]
+    if cur == nil or (was ~= nil and math.abs(cur - was) < 1e-6 and cur ~= v) then db.weights[k] = v; changed = true end
+    nb[k] = v
+  end
+  db.weightsBase[id] = nb
+  if changed and RG.ClearScoreCache then RG.ClearScoreCache() end
+end
+
 function RG.Score(link, hitRoom, slot, w, model)
   local s = RG.GetStats(link)
   if not s then return 0 end

@@ -2,6 +2,8 @@
 -- for gen.py.   Usage: lua5.1 specs_dump.lua <Waypath+ folder> <out.json>
 local dir, out = arg[1], arg[2]
 local RG = {}
+local sim = loadfile(dir .. "/Classes/SimWeights.lua")
+if sim then sim("Waypath", RG) end
 local chunk = assert(loadfile(dir .. "/Classes/Specs.lua"))
 chunk("Waypath", RG)
 local function enc(v)

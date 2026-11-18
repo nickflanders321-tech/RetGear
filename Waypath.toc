@@ -16,6 +16,7 @@
 
 Data.lua
 News.lua
+Classes\SimWeights.lua
 Classes\Paladin.lua
 Classes\PaladinGear.lua
 Classes\Warrior.lua

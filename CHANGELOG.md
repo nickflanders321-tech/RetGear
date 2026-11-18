@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Gear scores now use simulator stat weights.** Every spec that wowsims/forever (the WoW Forever combat simulator, MIT licence) has stat weights for now scores gear with them: Warrior (Arms, Fury, Protection), Ret Paladin, Hunter (all three), Rogue (all three), Priest (Shadow, Discipline, Holy), Shaman (Elemental, Enhancement) and Druid (Balance, Feral, Bear). Mage, Warlock, Holy and Protection Paladin, Restoration Druid and Restoration Shaman keep the hand-made weights until the simulator covers them. Upgrade arrows, the gear lists and "best in slot" all follow. Weights you changed yourself are kept; ones you never touched move to the new numbers. The weekly data update refreshes them.
 - **Ret score: polearms count.** Paladins can learn polearms from a weapon master at level 20, but the Ret score treated every polearm as unusable and scored it 0, so a big two-handed upgrade could show as a downgrade. Polearms now score like any other two-hander, and the gear lists will include them from the next data update.
 
 ## v1.49.1

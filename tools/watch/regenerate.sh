@@ -36,6 +36,9 @@ if [ ! -s "$T/wago/SkillLineAbility.csv.gz" ] && [ ! -s "$T/wago/SkillLineAbilit
   git clone -q --depth 1 -b data/wago "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/wago" || true
 fi
 [ -s "$T/wago/SkillLineAbility.csv.gz" ] || [ -s "$T/wago/SkillLineAbility.csv" ] && IDB="$IDB --wago $T/wago"
+# wowsims/forever's stat weights (MIT): the WoW Forever simulator's own EP presets for every spec it covers
+rm -rf "$T/wowsims"
+GIT_LFS_SKIP_SMUDGE=1 git clone -q --depth 1 https://github.com/wowsims/forever.git "$T/wowsims" && python3 tools/sims/wowsims.py "$T/wowsims" . || echo "wowsims: kept the weights from the last update"
 $LUA tools/gear/specs_dump.lua . "$T/specs.json"
 python3 tools/gear/gen.py "$T/classic.sql" "$T/forever_gear.json" "$T/qdb" . --specs "$T/specs.json" $IDB
 $LUA tools/waypoints/dump.lua "$C/foreverNpcDB.lua" "$T/npcs.tsv"

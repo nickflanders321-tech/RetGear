@@ -22,7 +22,24 @@
 --   stats, tips, forever, source
 local _, RG = ...
 RG.SPECS = {}
-local function S(class, list) RG.SPECS[class] = list end
+-- wowsims/forever's weights (Classes/SimWeights.lua) go over the hand-made ones: a spec's own, and the levelling
+-- spec's into its class's weights. Anything wowsims doesn't value keeps the hand-made number.
+RG.HAND_WEIGHTS = {}   -- (the hand-made numbers, so saved weights nobody changed can move to the new ones: Core.lua)
+local function simMerge(base, class, key)
+  local sw = RG.SIM_WEIGHTS and RG.SIM_WEIGHTS[class] and RG.SIM_WEIGHTS[class][key]
+  if not (sw and base) then return base end
+  RG.HAND_WEIGHTS[class] = RG.HAND_WEIGHTS[class] or {}
+  if not RG.HAND_WEIGHTS[class][key] then local c = {}; for k, v in pairs(base) do c[k] = v end; RG.HAND_WEIGHTS[class][key] = c end
+  for k, v in pairs(sw) do base[k] = v end
+  return base
+end
+local function S(class, list)
+  RG.SPECS[class] = list
+  for _, s in ipairs(list) do
+    if s.weights then simMerge(s.weights, class, s.key) end
+    if s.main and RG.CLASSES and RG.CLASSES[class] then simMerge(RG.CLASSES[class].weights, class, s.key) end
+  end
+end
 
 -- Shared stat sets ---------------------------------------------------------
 local function healer(extra)

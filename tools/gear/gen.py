@@ -231,6 +231,12 @@ def read_class(path):
     armor = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', lua_table(src, 'armor'))}
     bit = int(re.search(r'\w\.classBit = (\d+)', src).group(1))
     rel = re.search(r'\w\.relic = (\d+)', src)   # librams (7), idols (8), totems (9)
+    # the levelling spec's weights from wowsims/forever (tools/sims/wowsims.py) go over the class file's own
+    sim = os.path.join(os.path.dirname(path), "..", "tools", "sims", "weights.json")
+    if os.path.exists(sim):
+        sj = json.load(open(sim))
+        key = sj.get("main", {}).get(tok)
+        for k, v in (sj.get("weights", {}).get(tok, {}).get(key) or {}).items(): w[k] = float(v)
     return dict(tok=tok, name=name, spec=spec, w=w, model=model, weapons=weapons, armor=armor, bit=bit, relic=int(rel.group(1)) if rel else None)
 
 STAT = {3: "AGI", 4: "STR", 5: "INT", 6: "SPI", 7: "STA"}
@@ -712,7 +718,7 @@ def entry(c):
 
 CLASSES = {}
 for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
-    if path.endswith('Gear.lua') or path.endswith('Specs.lua'): continue
+    if path.endswith('Gear.lua') or path.endswith('Specs.lua') or path.endswith('SimWeights.lua'): continue
     C = read_class(path)
     CLASSES[C["tok"]] = C
     if ONLY and C["name"] not in ONLY and C["tok"] not in ONLY: continue

@@ -47,10 +47,10 @@ def lst(x):
 # ---------------------------------------------------------------------------
 # 1a. tools/gear/gen.py: class weights, model, weapons, armor
 src = open(os.path.join(ADDON, 'tools/gear/gen.py'), encoding='utf-8').read()
-ns = {'re': re}
+ns = {'re': re, 'os': os, 'json': json}
 exec(src[src.index('def lua_table'):src.index('\n', src.index('    return dict(tok=tok')) + 1], ns)
 for f in sorted(glob.glob(os.path.join(ADDON, 'Classes/*.lua'))):
-    if f.endswith('Gear.lua') or f.endswith('Specs.lua'): continue
+    if f.endswith('Gear.lua') or f.endswith('Specs.lua') or f.endswith('SimWeights.lua'): continue
     p = ns['read_class'](f); t = T['classes'].get(p['tok'])
     if not t: problem('gear gen', '%s: class not loaded by the add-on' % p['tok']); continue
     tw = {k: float(v) for k, v in (t.get('weights') or {}).items()}
