@@ -3,18 +3,18 @@ WoW Forever Tailoring Leveling Guide 1-300
 This WoW Forever Tailoring leveling guide will show you the fastest and cheapest way to level your Tailoring skill from 1 to 300. You will also find every trainer location and where to train Tailoring past 75, 150 and 225.
 1-150
 60x Linen Cloth
-459x Wool Cloth
+408-459x Wool Cloth
 29x Elixir of Wisdom
-216x Silk Cloth
-115x Mageweave Cloth
+205-216x Silk Cloth
+93-115x Mageweave Cloth
 150-225
-520x Silk Cloth
-670x Mageweave Cloth
-134x Bolt of Mageweave
-115x Runecloth
+492-520x Silk Cloth
+538-670x Mageweave Cloth
+108-134x Bolt of Mageweave
+104-115x Runecloth
 225-280
 This list is not final yet, but the skill ranges come from the game data, so it should be pretty close. The 280-300 part is not included here yet.
-1440x Runecloth
+1292-1440x Runecloth
 44x Rugged Leather
 39x Ironweb Spider Silk
 Apprentice Tailoring (1-55)

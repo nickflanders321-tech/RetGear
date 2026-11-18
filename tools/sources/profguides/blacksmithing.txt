@@ -73,7 +73,7 @@ Artisan Blacksmithing (215-300)
 16x Heavy Mithril Boots - 224 Mithril Bar, 64 Thick Leather
 240-245
 5x Imperial Plate Belt - 110 Thorium Bar, 30 Rugged Leather, 5 Aquamarine
-Note: In Classic, Derotain Mudsipper's Imperial Plate quests need Blacksmithing 265. Forever lowered the Imperial Plate Belt from 265 to 240, so I assume the quests were lowered too, but I couldn't test it.
+Note: In Classic, Derotain Mudsipper's Imperial Plate quests need Blacksmithing 265. Forever lowered the Imperial Plate Belt from 265 to 240, so I assume the quests were lowered too, but I couldn't test it. If you tried it, let me know if you could take the quest at 240.
 240-255: 27x Dazzling Mithril Rapier - 378 Mithril Bar, 27 Aquamarine, 54 Lesser Moonstone, 54 Moss Agate, 27 Solid Grinding Stone, 54 Mageweave Cloth
 240-255: 20x Runed Mithril Hammer - 360 Mithril Bar, 40 Core of Earth, 20 Solid Grinding Stone, 80 Thick Leather
 240-255: 17x Thorium Bracers - 204 Thorium Bar, 68 Blue Power Crystal
@@ -85,6 +85,7 @@ Note: In Classic, Derotain Mudsipper's Imperial Plate quests need Blacksmithing 
 33x Mithril Spurs - 132 Mithril Bar, 99 Solid Grinding Stone
 245-270
 27x Imperial Plate Bracers - 540 Thorium Bar, 27 Star Ruby
+Note: In Classic, Derotain Mudsipper's Imperial Plate quests need Blacksmithing 265. Forever lowered the Imperial Plate Bracers from 270 to 245, so I assume the quests were lowered too, but I couldn't test it. If you tried it, let me know if you could take the quest at 245.
 270-290
 20x Imperial Plate Boots - 680 Thorium Bar, 20 Star Ruby, 20 Aquamarine
 290-300

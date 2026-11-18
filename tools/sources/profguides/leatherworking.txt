@@ -2,26 +2,28 @@ WoW Forever Leatherworking Leveling Guide 1-300
 WoW Forever Leatherworking Leveling Guide 1-300
 This WoW Forever Leatherworking leveling guide will show you the fastest and cheapest way to level your Leatherworking skill from 1 to 300. You will also find every trainer location and where to train Leatherworking past 75, 150 and 225.
 1-150
-105x Ruined Leather Scraps
-414x Light Leather
+98-105x Ruined Leather Scraps
+348-414x Light Leather
 27x Light Hide
-139x Medium Leather
+120-139x Medium Leather
 10x Medium Hide
 30x Heavy Hide
 150-225
-126x Medium Leather
-377x Heavy Leather
+109-126x Medium Leather
+341-377x Heavy Leather
 16x Iron Buckle
-340x Thick Leather
+314-340x Thick Leather
 225-300
-224x Thick Leather
-1030x Rugged Leather
-530x Runecloth
+207-224x Thick Leather
+916-1030x Rugged Leather
+464-530x Runecloth
 Apprentice Leatherworking (1-55)
 1-30
 35x Light Leather - 105 Ruined Leather Scraps
 30-55
 27x Cured Light Hide - 27 Light Hide, 27 Salt
+24x Light Armor Kit - 24 Light Leather
+10x Embossed Leather Gloves - 30 Light Leather, 20 Coarse Thread
 Journeyman Leatherworking (55-130)
 55-75
 21x Embossed Leather Gloves - 63 Light Leather, 42 Coarse Thread
