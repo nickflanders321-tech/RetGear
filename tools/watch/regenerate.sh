@@ -82,3 +82,10 @@ python3 tools/arcade/audit_cards/audit.py "$T" "$T/cards"
 # both checks must pass
 $LUA tools/audit/audit.lua > "$T/audit.txt" || { cat "$T/audit.txt"; exit 1; }
 python3 tools/audit/crosscheck.py . "$T/forever.json" "$T/forever_gear.json" "$LUA"
+# every weapon and armor piece through the add-on's own stat reader and scorer, in every form the game could show it,
+# and tooltips against the gear lists for every class, spec and level (an error stops the release)
+if [ -d "$T/itemdb/Forever" ] && [ -s "$T/wago/Spell.csv.gz" ]; then
+  python3 tools/audit/stats.py . "$T/itemdb" "$T/wago" "$LUA"
+else
+  echo "score audit skipped: needs the data/itemdb and data/wago branches (with the Spell table)"
+fi

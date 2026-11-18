@@ -13,12 +13,13 @@ RG.SIM_WEIGHTS = {
     resto = { CRIT = 4.2, HASTE = 5, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.3 },   -- estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
   },
   HUNTER = {
-    bm = { AGI = 5, AP = 0.95, CRIT = 56, HASTE = 25.5, HIT = 67.5, INT = 2.15, MP5 = 0.35, RANGED_DPS = 8.6, RAP = 1, RHASTE = 25.5, STR = 1.05, WEAPON_DPS = 13.75 },   -- hunter/dps / WeaveEpWeights (Weave), per RAP
-    mm = { AGI = 5, AP = 0.95, CRIT = 56, HASTE = 25.5, HIT = 67.5, INT = 2.15, MP5 = 0.35, RANGED_DPS = 8.6, RAP = 1, RHASTE = 25.5, STR = 1.05, WEAPON_DPS = 13.75 },   -- hunter/dps / WeaveEpWeights (Weave), per RAP
-    sv = { AGI = 2.703, AP = 1, CRIT = 37.081, HASTE = 25.946, HIT = 65.135, INT = 1.892, MP5 = 0.757, RANGED_DPS = 0.73, RAP = 0.405, STR = 1.081, WEAPON_DPS = 12.243 },   -- hunter/dps / MeleeEpWeights (Melee), per AP
+    bm = { AGI = 2.941, AP = 1, CRIT = 34.588, HASTE = 23.529, HIT = 33.529, INT = 1.118, MP5 = 0.118, RANGED_DPS = 8.441, RAP = 1, RHASTE = 23.529 },   -- hunter/dps / TurretEpWeights (Turret), per RAP
+    mm = { AGI = 2.941, AP = 1, CRIT = 34.588, HASTE = 23.529, HIT = 33.529, INT = 1.118, MP5 = 0.118, RANGED_DPS = 8.441, RAP = 1, RHASTE = 23.529 },   -- hunter/dps / TurretEpWeights (Turret), per RAP
+    sv = { AGI = 1.923, AP = 1, CRIT = 26.385, HASTE = 18.462, HIT = 46.346, INT = 1.346, MP5 = 0.538, RANGED_DPS = 0.519, RAP = 0.288, STR = 0.769, WEAPON_DPS = 8.712 },   -- hunter/dps / MeleeEpWeights (Melee), per AP
   },
   PALADIN = {
     holy = { CRIT = 6.3, HASTE = 5, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.09 },   -- estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
+    prot = { AGI = 0.452, AP = 0.235, ARMOR = 0.043, BLOCK = 0.043, BLOCKVAL = 0.539, CRIT = 5.357, DEF = 0.27, DODGE = 1.461, EXPERTISE = 2.217, HASTE = 2.174, HIT = 11.518, PARRY = 1.957, STA = 1, STR = 0.539, WEAPON_DPS = 1.174 },   -- estimated from WARRIOR prot (warrior/protection / PreBiSThreatEpWeights (Pre-BiS (Threat)), per STA)
     ret = { AGI = 2.23, AP = 1, CRIT = 43.12, EXPERTISE = 5.1, HASTE = 64.68, HIT = 68.3, INT = 2.06, MP5 = 0.23, SP = 2.36, STR = 2.4, WEAPON_DPS = 13.85 },   -- paladin/retribution / UnsealedWrathEpWeights (Unsealed Wrath), per AP
     ret_holyshock = { AGI = 3.11, AP = 1, CRIT = 65.24, EXPERTISE = 6.2, HASTE = 40.6, HIT = 102.5, INT = 4.53, MP5 = 0.01, SP = 5.78, STR = 2.5, WEAPON_DPS = 13.04 },   -- paladin/retribution / HolyShockEpWeights (Holy Shock), per AP
   },
@@ -40,8 +41,8 @@ RG.SIM_WEIGHTS = {
   WARRIOR = {
     arms = { AGI = 1.71, AP = 1, CRIT = 31.22, EXPERTISE = 1.46, HASTE = 11.9, HIT = 47, STR = 2.2, WEAPON_DPS = 16.63 },   -- warrior/dps / PreBiSArmsEpWeights (Pre-BiS - Arms), per AP
     fury = { AGI = 1.7, AP = 1, CRIT = 31.64, EXPERTISE = 2.35, HASTE = 17.6, HIT = 47, STR = 2.2, WEAPON_DPS = 12.59 },   -- warrior/dps / PreBiSFuryEpWeights (Pre-BiS - Fury), per AP; hit below the cap from PreBiSArmsEpWeights
-    prot = { AGI = 0.443, AP = 0.235, ARMOR = 0.035, BLOCK = 0.087, BLOCKVAL = 0.53, CRIT = 5.235, DEF = 0.174, DODGE = 1.461, EXPERTISE = 1.93, HASTE = 1.652, HIT = 11.518, PARRY = 1.957, STA = 1, STR = 0.539, WEAPON_DPS = 1.157 },   -- warrior/protection / PreBiSEpWeights (Pre-BiS (Defense Cap)), per STA; hit below the cap from PreBiSArmsEpWeights
+    prot = { AGI = 0.452, AP = 0.235, ARMOR = 0.043, BLOCK = 0.043, BLOCKVAL = 0.539, CRIT = 5.357, DEF = 0.27, DODGE = 1.461, EXPERTISE = 2.217, HASTE = 2.174, HIT = 11.518, PARRY = 1.957, STA = 1, STR = 0.539, WEAPON_DPS = 1.174 },   -- warrior/protection / PreBiSThreatEpWeights (Pre-BiS (Threat)), per STA; hit below the cap from PreBiSArmsEpWeights
   },
 }
-RG.SIM_ESTIMATED = { DRUID = { resto = true }, PALADIN = { holy = true }, SHAMAN = { resto = true } }   -- not simulated: estimated from the Holy Priest weights
+RG.SIM_ESTIMATED = { DRUID = { resto = true }, PALADIN = { holy = true, prot = true }, SHAMAN = { resto = true } }   -- not simulated: estimated from the Holy Priest's (healers) or the Protection Warrior's (Protection Paladin) weights
 RG.SIM_MAIN = { DRUID = "feral", HUNTER = "bm", MAGE = "frost", PALADIN = "ret", PRIEST = "shadow", ROGUE = "combat", SHAMAN = "enh", WARLOCK = "aff", WARRIOR = "arms" }

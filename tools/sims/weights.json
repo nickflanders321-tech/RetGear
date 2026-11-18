@@ -4,6 +4,7 @@
    "resto"
   ],
   "PALADIN": [
+   "prot",
    "holy"
   ],
   "SHAMAN": [
@@ -26,10 +27,11 @@
   "DRUID bear": "druid/feralbear / DefaultEpWeights (Bear), per STA",
   "DRUID feral": "druid/feralcat / DefaultEpWeights (Cat), per AP",
   "DRUID resto": "estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL",
-  "HUNTER bm": "hunter/dps / WeaveEpWeights (Weave), per RAP",
-  "HUNTER mm": "hunter/dps / WeaveEpWeights (Weave), per RAP",
+  "HUNTER bm": "hunter/dps / TurretEpWeights (Turret), per RAP",
+  "HUNTER mm": "hunter/dps / TurretEpWeights (Turret), per RAP",
   "HUNTER sv": "hunter/dps / MeleeEpWeights (Melee), per AP",
   "PALADIN holy": "estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL",
+  "PALADIN prot": "estimated from WARRIOR prot (warrior/protection / PreBiSThreatEpWeights (Pre-BiS (Threat)), per STA)",
   "PALADIN ret": "paladin/retribution / UnsealedWrathEpWeights (Unsealed Wrath), per AP",
   "PALADIN ret_holyshock": "paladin/retribution / HolyShockEpWeights (Holy Shock), per AP",
   "PRIEST disc": "priest/healer / DiscSingleTargetEpWeights (Disc Single-Target), per HEAL",
@@ -43,7 +45,7 @@
   "SHAMAN resto": "estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL",
   "WARRIOR arms": "warrior/dps / PreBiSArmsEpWeights (Pre-BiS - Arms), per AP",
   "WARRIOR fury": "warrior/dps / PreBiSFuryEpWeights (Pre-BiS - Fury), per AP; hit below the cap from PreBiSArmsEpWeights",
-  "WARRIOR prot": "warrior/protection / PreBiSEpWeights (Pre-BiS (Defense Cap)), per STA; hit below the cap from PreBiSArmsEpWeights"
+  "WARRIOR prot": "warrior/protection / PreBiSThreatEpWeights (Pre-BiS (Threat)), per STA; hit below the cap from PreBiSArmsEpWeights"
  },
  "source": "wowsims/forever 3633162 2026-11-18",
  "weights": {
@@ -94,45 +96,41 @@
   },
   "HUNTER": {
    "bm": {
-    "AGI": 5.0,
-    "AP": 0.95,
-    "CRIT": 56.0,
-    "HASTE": 25.5,
-    "HIT": 67.5,
-    "INT": 2.15,
-    "MP5": 0.35,
-    "RANGED_DPS": 8.6,
+    "AGI": 2.941,
+    "AP": 1.0,
+    "CRIT": 34.588,
+    "HASTE": 23.529,
+    "HIT": 33.529,
+    "INT": 1.118,
+    "MP5": 0.118,
+    "RANGED_DPS": 8.441,
     "RAP": 1.0,
-    "RHASTE": 25.5,
-    "STR": 1.05,
-    "WEAPON_DPS": 13.75
+    "RHASTE": 23.529
    },
    "mm": {
-    "AGI": 5.0,
-    "AP": 0.95,
-    "CRIT": 56.0,
-    "HASTE": 25.5,
-    "HIT": 67.5,
-    "INT": 2.15,
-    "MP5": 0.35,
-    "RANGED_DPS": 8.6,
+    "AGI": 2.941,
+    "AP": 1.0,
+    "CRIT": 34.588,
+    "HASTE": 23.529,
+    "HIT": 33.529,
+    "INT": 1.118,
+    "MP5": 0.118,
+    "RANGED_DPS": 8.441,
     "RAP": 1.0,
-    "RHASTE": 25.5,
-    "STR": 1.05,
-    "WEAPON_DPS": 13.75
+    "RHASTE": 23.529
    },
    "sv": {
-    "AGI": 2.703,
+    "AGI": 1.923,
     "AP": 1.0,
-    "CRIT": 37.081,
-    "HASTE": 25.946,
-    "HIT": 65.135,
-    "INT": 1.892,
-    "MP5": 0.757,
-    "RANGED_DPS": 0.73,
-    "RAP": 0.405,
-    "STR": 1.081,
-    "WEAPON_DPS": 12.243
+    "CRIT": 26.385,
+    "HASTE": 18.462,
+    "HIT": 46.346,
+    "INT": 1.346,
+    "MP5": 0.538,
+    "RANGED_DPS": 0.519,
+    "RAP": 0.288,
+    "STR": 0.769,
+    "WEAPON_DPS": 8.712
    }
   },
   "PALADIN": {
@@ -143,6 +141,23 @@
     "INT": 0.35,
     "MP5": 0.6,
     "SPI": 0.09
+   },
+   "prot": {
+    "AGI": 0.452,
+    "AP": 0.235,
+    "ARMOR": 0.043,
+    "BLOCK": 0.043,
+    "BLOCKVAL": 0.539,
+    "CRIT": 5.357,
+    "DEF": 0.27,
+    "DODGE": 1.461,
+    "EXPERTISE": 2.217,
+    "HASTE": 2.174,
+    "HIT": 11.518,
+    "PARRY": 1.957,
+    "STA": 1.0,
+    "STR": 0.539,
+    "WEAPON_DPS": 1.174
    },
    "ret": {
     "AGI": 2.23,
@@ -284,21 +299,21 @@
     "WEAPON_DPS": 12.59
    },
    "prot": {
-    "AGI": 0.443,
+    "AGI": 0.452,
     "AP": 0.235,
-    "ARMOR": 0.035,
-    "BLOCK": 0.087,
-    "BLOCKVAL": 0.53,
-    "CRIT": 5.235,
-    "DEF": 0.174,
+    "ARMOR": 0.043,
+    "BLOCK": 0.043,
+    "BLOCKVAL": 0.539,
+    "CRIT": 5.357,
+    "DEF": 0.27,
     "DODGE": 1.461,
-    "EXPERTISE": 1.93,
-    "HASTE": 1.652,
+    "EXPERTISE": 2.217,
+    "HASTE": 2.174,
     "HIT": 11.518,
     "PARRY": 1.957,
     "STA": 1.0,
     "STR": 0.539,
-    "WEAPON_DPS": 1.157
+    "WEAPON_DPS": 1.174
    }
   }
  }

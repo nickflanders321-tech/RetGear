@@ -1,7 +1,15 @@
 # Changelog
 
 ## Unreleased
-- **Fix: spell power counted twice.** Items listing "+X Spell Power" also say "Increases damage and healing done by magical spells... by up to X" in their text, and the score added both. With Ret's simulator weight for spell power, cloth caster gear (Witherseed Gloves) came out as an upgrade over plate Strength gloves. It's now counted once, and crit, hit and Ranged Attack Power get the same protection.
+- **Gear scores read every item right.** Fixes found by a new audit that runs every weapon and armor piece in WoW Forever (10,551 with stats) through the add-on's own stat reader, in every form the game can show it:
+  - **Nothing counts twice.** The game often shows a stat in its stat list and again as an "Equip:" line (spell power does: Witherseed Gloves came out as an upgrade over plate Strength gloves). Each stat now counts once, at its larger value. 1.50.0 could also count crit and hit twice.
+  - **Ratings counted right.** WoW Forever stores dodge, parry and block as ratings (12, 15 and 5 per 1%); they were counted as whole percents, 5 to 15 times too much for tanks.
+  - **WoW Forever's own wordings are read.** "Critical Strike with Melee and Ranged attacks by 1.0%" and "hit with ranged weapons by 3.0%" were missed (Blackhand's Breadth, Trueaim Gauntlets, Marksman Bands...).
+  - **Penalties count.** Negative stats (Shriveled Heart: -5 Strength) were dropped.
+  - **Conditional bonuses don't count:** "mana per 5 sec to your Imp", "in Haunted areas".
+- **Hunters:** Beast Mastery and Marksmanship now use the simulator's ranged (Turret) weights; 1.50.0 used its melee-weaving Survival weights, which favored melee weapons. "+Attack Power" gear now counts for ranged attack power too (it raises both), so it's no longer undervalued by half.
+- **Protection Warrior** uses the simulator's below-the-defense-cap tank weights (a levelling or dungeon tank). **Protection Paladin** now uses the same tank weights instead of the old hand-made ones, which valued dodge and parry about 8 times too high.
+- Tooltips, upgrade arrows and the gear lists now score every item identically for every class, spec and level (checked on 1.9 million item, spec and level combinations), and the weekly data update re-runs these checks before every release.
 
 ## v1.50.0
 - **Gear scores now use simulator stat weights.** Every spec that wowsims/forever (the WoW Forever combat simulator, MIT licence) has stat weights for now scores gear with them: Warrior (Arms, Fury, Protection), Ret Paladin, Hunter (all three), Rogue (all three), Priest (Shadow, Discipline, Holy), Shaman (Elemental, Enhancement) and Druid (Balance, Feral, Bear). Upgrade arrows, the gear lists and "best in slot" all follow. Weights you changed yourself are kept; ones you never touched move to the new numbers. The weekly data update refreshes them.

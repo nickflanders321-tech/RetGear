@@ -22,10 +22,14 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 PICK = {
     ("WARRIOR", "arms"): ("warrior/dps", "PreBiSArmsEpWeights"),
     ("WARRIOR", "fury"): ("warrior/dps", "PreBiSFuryEpWeights"),
-    ("WARRIOR", "prot"): ("warrior/protection", "PreBiSEpWeights"),
+    # the Threat set sits below the defense cap, like a levelling or dungeon tank (the Defense Cap set values defense
+    # only past the cap)
+    ("WARRIOR", "prot"): ("warrior/protection", "PreBiSThreatEpWeights"),
     ("PALADIN", "ret"): ("paladin/retribution", "UnsealedWrathEpWeights"),
-    ("HUNTER", "bm"): ("hunter/dps", "WeaveEpWeights"),
-    ("HUNTER", "mm"): ("hunter/dps", "WeaveEpWeights"),
+    # wowsims' hunter playstyles: Turret shoots from range (Beast Mastery and Marksmanship), Weave is Survival
+    # weaving melee between shots, Melee is Survival in melee (Waypath+'s Survival: a melee spec)
+    ("HUNTER", "bm"): ("hunter/dps", "TurretEpWeights"),
+    ("HUNTER", "mm"): ("hunter/dps", "TurretEpWeights"),
     ("HUNTER", "sv"): ("hunter/dps", "MeleeEpWeights"),
     ("ROGUE", "assassination"): ("rogue/dps", "EP_PRESET_ASSASSINATION"),
     ("ROGUE", "combat"): ("rogue/dps", "EP_PRESET_COMBAT_SINISTER"),
@@ -124,6 +128,10 @@ def convert(raw, kind):
         if k not in MAP or v <= 0: continue
         key = MAP[k]
         w[key] = w.get(key, 0) + v * PER.get(k, 1)
+    # "+X Attack Power" on an item raises melee and ranged attack power both (wowsims' item data gives such an item
+    # equal StatAttackPower and StatRangedAttackPower), so Waypath+'s AP is worth both weights; RAP stays the ranged-only
+    # stat ("+X ranged Attack Power")
+    if w.get("RAP"): w["AP"] = w.get("AP", 0) + w["RAP"]
     base = {"tank": "STA", "heal": "HEAL", "caster": "SP", "ranged": "RAP"}.get(kind, "AP")
     if base == "RAP" and not w.get("RAP"): base = "AP"
     if not w.get(base):
@@ -163,7 +171,13 @@ for (cls, key), (spec_dir, name, like) in sorted(ALT.items()):
     w, base = convert(raw, KIND.get(like, "melee"))
     out.setdefault(cls, {})[key] = finish(w, KIND.get(like, "melee"))
     notes["%s %s" % (cls, key)] = "%s / %s (%s), per %s" % (spec_dir, name, label, base)
-est = {}
+# Protection Paladin: wowsims has no weights for it yet. Its survival and melee threat stats are a Protection
+# Warrior's (both tank with a shield in plate), from that spec's weights above; spell power and Intellect (the
+# paladin's Holy threat) keep Waypath+'s own values
+pw = dict(out["WARRIOR"]["prot"])
+out.setdefault("PALADIN", {})["prot"] = pw
+notes["PALADIN prot"] = "estimated from WARRIOR prot (%s)" % notes["WARRIOR prot"].split(";")[0]
+est = {"PALADIN": ["prot"]}
 label, raw = preset(*EST_FROM)
 for (cls, key), mult in sorted(ESTIMATE.items()):
     w, base = convert(raw, "heal")
@@ -196,7 +210,7 @@ for cls in sorted(out):
             ", ".join("%s = %s" % (k, ("%.3f" % v).rstrip("0").rstrip(".")) for k, v in sorted(out[cls][key].items())), notes["%s %s" % (cls, key)]))
     L.append("  },")
 L.append("}")
-L.append("RG.SIM_ESTIMATED = { %s }   -- not simulated: estimated from the Holy Priest weights" % ", ".join("%s = { %s }" % (c, ", ".join("%s = true" % k for k in sorted(ks))) for c, ks in sorted(est.items())))
+L.append("RG.SIM_ESTIMATED = { %s }   -- not simulated: estimated from the Holy Priest's (healers) or the Protection Warrior's (Protection Paladin) weights" % ", ".join("%s = { %s }" % (c, ", ".join("%s = true" % k for k in sorted(ks))) for c, ks in sorted(est.items())))
 L.append("RG.SIM_MAIN = { %s }" % ", ".join('%s = "%s"' % (c, k) for c, k in sorted(main.items())))
 open(os.path.join(OUT, "Classes/SimWeights.lua"), "w").write("\n".join(L) + "\n")
 for k, v in notes.items(): print(k, "<-", v)

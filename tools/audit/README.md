@@ -30,3 +30,13 @@ that everything is *read* correctly, not just present:
 
 It exits 1 on a problem; warnings (a giver written differently, a few uncovered quests) are
 listed for the next update to look at. The twice-weekly update runs it before committing.
+
+## Gear scores (stats.py)
+
+`python3 tools/audit/stats.py <addon dir> <LibItemDB dir> <wago dir> [lua]` runs every weapon and armor piece in WoW
+Forever through the add-on's own stat reader (Core.lua `RG.ParseItemStats`, through `stats_check.lua`) in four forms:
+the stat table plus the game's own Equip: spell text (from the client's Spell table), the same with every stat also
+written out as Equip: text (the way the game shows spell power twice), stats only as Classic text, and stats as ratings
+in text. Each must equal the item's true stats (LibItemDB's walk of the client). Then `RG.ScoreStats` (tooltips and
+upgrade arrows) must equal tools/gear/gen.py's `score()` (the gear lists) for every class's and spec's weights, every
+weapon model and levels 10, 30, 47 and 60. tools/watch/regenerate.sh runs it; any difference stops the release.

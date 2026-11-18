@@ -258,8 +258,9 @@ def stats_of(d):
             aura, bp, misc = int(sp["EffectApplyAuraName%d" % e]), int(sp["EffectBasePoints%d" % e]) + 1, int(sp["EffectMiscValue%d" % e])
             if aura == 99: s["AP"] += bp
             elif aura == 124: s["RAP"] += bp
-            elif aura in (52, 57): s["CRIT"] += bp          # WoW Forever merges melee and spell crit
-            elif aura in (54, 55): s["HIT"] += bp           # ... and hit
+            # WoW Forever merges melee and spell crit (and hit) into one stat: an item with both counts it once
+            elif aura in (52, 57): s["CRIT"] = max(s["CRIT"], bp)
+            elif aura in (54, 55): s["HIT"] = max(s["HIT"], bp)
             elif aura == 135: s["HEAL"] += bp
             elif aura == 85 and misc == 0: s["MP5"] += bp
             elif aura == 30 and misc == 95: s["DEF"] += bp     # Defense skill

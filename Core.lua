@@ -337,127 +337,172 @@ end
 -- ---------------------------------------------------------------------------
 -- Stat extraction: the stat table plus vanilla-style "Equip:" lines
 -- ---------------------------------------------------------------------------
-local STAT_KEYS = {
-  ITEM_MOD_STRENGTH_SHORT = "STR", ITEM_MOD_AGILITY_SHORT = "AGI", ITEM_MOD_STAMINA_SHORT = "STA",
-  ITEM_MOD_INTELLECT_SHORT = "INT", ITEM_MOD_SPIRIT_SHORT = "SPI",
-  ITEM_MOD_ATTACK_POWER_SHORT = "AP", ITEM_MOD_MELEE_ATTACK_POWER_SHORT = "AP",
-  ITEM_MOD_CRIT_RATING_SHORT = "CRIT_RATING", ITEM_MOD_CRIT_MELEE_RATING_SHORT = "CRIT_RATING",
-  ITEM_MOD_HIT_RATING_SHORT = "HIT_RATING", ITEM_MOD_HIT_MELEE_RATING_SHORT = "HIT_RATING",
-  ITEM_MOD_HASTE_RATING_SHORT = "HASTE_RATING", ITEM_MOD_MASTERY_RATING_SHORT = "MASTERY_RATING",
-  ITEM_MOD_VERSATILITY = "VERS_RATING", ITEM_MOD_SPELL_POWER_SHORT = "SP",
-  ITEM_MOD_SPELL_DAMAGE_DONE_SHORT = "SP",
-  ITEM_MOD_SPELL_HEALING_DONE_SHORT = "HEAL", ITEM_MOD_MANA_REGENERATION_SHORT = "MP5",
-  ITEM_MOD_POWER_REGEN0_SHORT = "MP5", ITEM_MOD_RANGED_ATTACK_POWER_SHORT = "RAP",
-  ITEM_MOD_CRIT_SPELL_RATING_SHORT = "CRIT_RATING", ITEM_MOD_HIT_SPELL_RATING_SHORT = "HIT_RATING",
-  -- tank stats (used by tank specs on the 2nd Spec tab)
-  RESISTANCE0_NAME = "ARMOR", ITEM_MOD_DEFENSE_SKILL_RATING_SHORT = "DEF", ITEM_MOD_DODGE_RATING_SHORT = "DODGE",
-  ITEM_MOD_PARRY_RATING_SHORT = "PARRY", ITEM_MOD_BLOCK_RATING_SHORT = "BLOCK", ITEM_MOD_BLOCK_VALUE_SHORT = "BLOCKVAL",
-  -- WoW Forever's expertise (Edgemaster's Handguards: 10) is a rating, weighed per point
-  ITEM_MOD_EXPERTISE_RATING_SHORT = "EXPERTISE",
-}
--- WoW Forever's rating per 1% (wowsims/forever's mechanics, from the game files): a rating on an item counts as the
--- percent it gives, so it meets the same weight and the same hit cap as "Improves your chance to hit by 1%"
-local RATING_PCT = { CRIT_RATING = { "CRIT", 14 }, HIT_RATING = { "HIT", 10 }, HASTE_RATING = { "HASTE", 10 } }
+-- One rule keeps this from counting anything twice: the game often gives the same stat in both places (the stat table
+-- says "Spell Power 8" and the tooltip says "Equip: Increases damage and healing done by magical spells and effects by
+-- up to 8"; a hit rating of 10 shows as "Improves your chance to hit by 1%"). So each stat is read from the table and
+-- from the text separately, and the larger of the two counts, never the sum. tools/audit/stats.py runs every
+-- weapon and armor piece in the game through this in each form the game could present it.
+--
+-- WoW Forever stores hit, crit, haste, dodge, parry and block as ratings (wowsims/forever's mechanics, from the game
+-- files): 10 per 1% hit, 14 per 1% crit, 10 per 1% haste, 12 per 1% dodge, 15 per 1% parry, 5 per 1% block. Waypath+
+-- weighs those per 1%, so a rating is divided down. Defense is per point; expertise stays a rating (its weight is per
+-- rating point, from the same simulator).
+local STAT_KEYS = {}
+do
+  local function add(names, key, div, also)
+    for _, n in ipairs(names) do
+      STAT_KEYS[n] = { key, div or 1, also }; STAT_KEYS[n .. "_SHORT"] = { key, div or 1, also }
+    end
+  end
+  add({ "ITEM_MOD_STRENGTH" }, "STR"); add({ "ITEM_MOD_AGILITY" }, "AGI"); add({ "ITEM_MOD_STAMINA" }, "STA")
+  add({ "ITEM_MOD_INTELLECT" }, "INT"); add({ "ITEM_MOD_SPIRIT" }, "SPI")
+  add({ "ITEM_MOD_ATTACK_POWER", "ITEM_MOD_MELEE_ATTACK_POWER" }, "AP")
+  add({ "ITEM_MOD_RANGED_ATTACK_POWER" }, "RAP")
+  add({ "ITEM_MOD_FERAL_ATTACK_POWER" }, "FAP")
+  add({ "ITEM_MOD_CRIT_RATING", "ITEM_MOD_CRIT_MELEE_RATING", "ITEM_MOD_CRIT_SPELL_RATING", "ITEM_MOD_CRIT_RANGED_RATING" }, "CRIT", 14)
+  add({ "ITEM_MOD_HIT_RATING", "ITEM_MOD_HIT_MELEE_RATING", "ITEM_MOD_HIT_SPELL_RATING", "ITEM_MOD_HIT_RANGED_RATING" }, "HIT", 10)
+  add({ "ITEM_MOD_HASTE_RATING", "ITEM_MOD_HASTE_MELEE_RATING", "ITEM_MOD_HASTE_SPELL_RATING" }, "HASTE", 10)
+  add({ "ITEM_MOD_HASTE_RANGED_RATING" }, "RHASTE", 10)
+  add({ "ITEM_MOD_EXPERTISE_RATING" }, "EXPERTISE")
+  add({ "ITEM_MOD_DEFENSE_SKILL_RATING" }, "DEF")
+  add({ "ITEM_MOD_DODGE_RATING" }, "DODGE", 12)
+  add({ "ITEM_MOD_PARRY_RATING" }, "PARRY", 15)
+  add({ "ITEM_MOD_BLOCK_RATING" }, "BLOCK", 5)
+  add({ "ITEM_MOD_BLOCK_VALUE" }, "BLOCKVAL")
+  -- spell power is damage and healing; the older split stats are one each
+  add({ "ITEM_MOD_SPELL_POWER" }, "SP", 1, "HEAL")
+  add({ "ITEM_MOD_SPELL_DAMAGE_DONE" }, "SP")
+  add({ "ITEM_MOD_SPELL_HEALING_DONE" }, "HEAL")
+  add({ "ITEM_MOD_MANA_REGENERATION", "ITEM_MOD_POWER_REGEN0" }, "MP5")
+  STAT_KEYS.RESISTANCE0_NAME = { "ARMOR", 1 }
+end
+RG.STAT_KEYS = STAT_KEYS
 -- Spell schools in "Increases damage done by Shadow spells and effects by up to X."
 local SCHOOL = { holy = "SP_HOLY", fire = "SP_FIRE", nature = "SP_NATURE", frost = "SP_FROST", shadow = "SP_SHADOW", arcane = "SP_ARCANE" }
 
--- Text patterns for "Equip:" effects that many Classic-era items use.
+-- "Equip:" text: { pattern (lower case, one number), stat, divisor }. The number may have decimals ("by 1.5%").
+local N = "([%d]+%.?%d*)"
 local LINE_PATTERNS = {
-  { "improves your chance to get a critical strike by (%d+)%%", "CRIT" },
-  { "improves your chance to hit by (%d+)%%", "HIT" },
-  { "^equip: %+(%d+) attack power%.?$", "AP" },
-  { "increases attack power by (%d+)", "AP" },
-  { "increases damage and healing done by magical spells and effects by up to (%d+)", "SP" },
-  { "increases ranged attack power by (%d+)", "RAP" },
-  -- WoW Forever merges hit and crit: spell hit and crit count as hit and crit for everyone
-  { "improves your chance to hit with spells by (%d+)%%", "HIT" },
-  -- healing (used by healer specs on the 2nd Spec tab)
-  { "increases damage and healing done by magical spells and effects by up to (%d+)", "HEAL" },
-  { "increases healing done by spells and effects by up to (%d+)", "HEAL" },
-  { "restores (%d+) mana per 5 sec", "MP5" },
-  { "improves your chance to get a critical strike with spells by (%d+)%%", "SCRIT" },
-  { "improves your chance to get a critical strike with spells by (%d+)%%", "CRIT" },
-  -- tank stats
-  { "increased defense %+(%d+)", "DEF" },
-  { "increases your chance to dodge an attack by (%d+)%%", "DODGE" },
-  { "increases your chance to parry an attack by (%d+)%%", "PARRY" },
-  { "increases your chance to block attacks with a shield by (%d+)%%", "BLOCK" },
-  { "increases the block value of your shield by (%d+)", "BLOCKVAL" },
+  -- percents (the Classic wording)
+  -- (WoW Forever words them "with melee attacks", "with Melee and Ranged attacks", "with ranged weapons", "with
+  -- spells", with a decimal: "by 1.0%". Forever merges melee, ranged and spell crit and hit into one stat each.
+  -- "the critical strike chance of your Flash of Light" is one spell's, which no weight measures: not matched.)
+  { "chance to get a critical strike[^%d]- by " .. N .. "%%", "CRIT" },
+  { "chance to hit[^%d]- by " .. N .. "%%", "HIT" },
+  { "increases your chance to dodge an attack by " .. N .. "%%", "DODGE" },
+  { "increases your chance to parry an attack by " .. N .. "%%", "PARRY" },
+  { "increases your chance to block attacks with a shield by " .. N .. "%%", "BLOCK" },
+  { "increases your ranged attack speed by " .. N .. "%%", "RHASTE" },
+  { "increases ranged attack speed by " .. N .. "%%", "RHASTE" },
+  { "increases your attack and casting speed by " .. N .. "%%", "HASTE" },
+  { "increases your attack speed by " .. N .. "%%", "HASTE" },
+  { "increases attack speed by " .. N .. "%%", "HASTE" },
+  { "increases your haste by " .. N .. "%%", "HASTE" },
+  { "increases your expertise by " .. N .. "%%", "EXPERTISE", 0.1 },   -- 1% = 10 rating
+  -- ratings (the later wording, should WoW Forever's tooltips use it)
+  { "critical strike rating by " .. N, "CRIT", 14 }, { "%+" .. N .. " critical strike rating", "CRIT", 14 }, { "%+" .. N .. " crit rating", "CRIT", 14 },
+  { "hit rating by " .. N, "HIT", 10 }, { "%+" .. N .. " hit rating", "HIT", 10 },
+  { "haste rating by " .. N, "HASTE", 10 }, { "%+" .. N .. " haste rating", "HASTE", 10 },
+  { "dodge rating by " .. N, "DODGE", 12 }, { "%+" .. N .. " dodge rating", "DODGE", 12 },
+  { "parry rating by " .. N, "PARRY", 15 }, { "%+" .. N .. " parry rating", "PARRY", 15 },
+  { "block rating by " .. N, "BLOCK", 5 }, { "%+" .. N .. " block rating", "BLOCK", 5 },
+  { "expertise rating by " .. N, "EXPERTISE" }, { "%+" .. N .. " expertise", "EXPERTISE" }, { "increases your expertise by " .. N .. "%.?$", "EXPERTISE" },
+  { "defense rating by " .. N, "DEF" }, { "%+" .. N .. " defense rating", "DEF" },
+  -- flat stats
+  { "increased defense %+" .. N, "DEF" }, { "increases defense by " .. N, "DEF" },
+  { "^equip: %+" .. N .. " attack power%.?$", "AP" },
+  { "increases attack power by " .. N, "AP" },
+  { "increases ranged attack power by " .. N, "RAP" }, { "^equip: %+" .. N .. " ranged attack power%.?$", "RAP" },
+  { "increases damage and healing done by magical spells and effects by up to " .. N, "SP" },
+  { "increases damage and healing done by magical spells and effects by up to " .. N, "HEAL" },
+  { "increases spell power by " .. N, "SP" }, { "increases spell power by " .. N, "HEAL" },
+  { "increases damage done by magical spells and effects by up to " .. N, "SP" },
+  { "increases healing done by spells and effects by up to " .. N, "HEAL" },
+  { "increases healing done by up to " .. N, "HEAL" },
+  { "and damage done by up to " .. N .. " for all magical spells", "SP" },
+  { "restores " .. N .. " mana per 5 sec%.?$", "MP5" },   -- (not "... to your Imp", "... in Haunted areas")
+  { "increases the block value of your shield by " .. N, "BLOCKVAL" },
 }
+RG.LINE_PATTERNS = LINE_PATTERNS
+-- conditional bonuses no weight measures: only against some creatures, only in some forms, a chance on hit, a use
+local CONDITIONAL = { "when fighting", " against ", "forms only", "chance on hit", "chance on melee", "chance when hit",
+  " to your ", " areas", "while ", " for your pet" }
+
+local function blank()
+  return { STR = 0, AGI = 0, STA = 0, INT = 0, SPI = 0, AP = 0, RAP = 0, CRIT = 0, HIT = 0, SP = 0,
+           SP_HOLY = 0, SP_FIRE = 0, SP_NATURE = 0, SP_FROST = 0, SP_SHADOW = 0, SP_ARCANE = 0,
+           DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0,
+           ARMOR = 0, DEF = 0, DODGE = 0, PARRY = 0, BLOCK = 0, BLOCKVAL = 0,
+           HASTE = 0, RHASTE = 0, EXPERTISE = 0, FAP = 0 }
+end
+
+-- raw: GetItemStats' table (or nil); lines: the tooltip's { leftText, rightText } lines (or nil). Pure: the audit
+-- (tools/audit/stats.py) calls it directly.
+function RG.ParseItemStats(raw, lines)
+  local s, tab, txt = blank(), {}, {}
+  if raw then
+    for k, v in pairs(raw) do
+      local m = STAT_KEYS[k]
+      if m and type(v) == "number" then
+        tab[m[1]] = (tab[m[1]] or 0) + v / m[2]
+        if m[3] then tab[m[3]] = (tab[m[3]] or 0) + v / m[2] end
+      end
+      if (k == "ITEM_MOD_DAMAGE_PER_SECOND_SHORT" or k == "ITEM_MOD_DAMAGE_PER_SECOND") and type(v) == "number" then s.DPS = v end
+    end
+  end
+  -- in the text too, each stat counts once, at its largest: the game can show one stat in two wordings (its stat line
+  -- and its spell's line), and one line can match more than one pattern
+  local seenLine = {}
+  local function put(key, v) if v > (txt[key] or 0) then txt[key] = v end end
+  for _, line in ipairs(lines or {}) do
+    local t = type(line.leftText) == "string" and line.leftText:lower()
+    if t then t = t:gsub("%s+$", "") end
+    if t and not seenLine[t] then
+      seenLine[t] = true
+      local r = type(line.rightText) == "string" and line.rightText:lower()
+      local sp = r and r:match("speed (%d+%.%d+)")
+      if sp then s.SPEED = tonumber(sp) end
+      local dps = t:match("^%(([%d%.]+) damage per second%)")
+      if dps and s.DPS == 0 then s.DPS = tonumber(dps) end
+      local armor = t:match("^(%d+) armor$")
+      if armor then put("ARMOR", tonumber(armor)) end
+      local block = t:match("^(%d+) block$")
+      if block then put("BLOCKVAL", tonumber(block)) end
+      if t:find("^equip:") then
+        -- feral attack power ("... in Cat, Bear, Dire Bear and Moonkin forms only") counts only in those forms
+        if t:find("forms only") then
+          local fap = t:match("attack power by " .. N) or t:match("%+" .. N .. " attack power")
+          if fap then put("FAP", tonumber(fap)) end
+        end
+        local cond = false
+        for _, c in ipairs(CONDITIONAL) do if t:find(c, 1, true) then cond = true end end
+        if not cond then
+          local school, n = t:match("increases damage done by (%a+) spells and effects by up to " .. N)
+          if school and SCHOOL[school] then put(SCHOOL[school], tonumber(n)) end
+          for _, p in ipairs(LINE_PATTERNS) do
+            local n = t:match(p[1])
+            if n and tonumber(n) then put(p[2], tonumber(n) / (p[3] or 1)) end
+          end
+        end
+      end
+    end
+  end
+  -- table and text: the larger of the two, never the sum (a stat only in the table counts as it is, a penalty too)
+  for k in pairs(s) do
+    local a, b = tab[k], txt[k]
+    if a and b then s[k] = math.max(a, b) elseif a then s[k] = a elseif b then s[k] = b end
+  end
+  return s
+end
 
 local cache = {}
 function RG.ClearScoreCache() wipe(cache) end
 function RG.GetStats(link)
   if not link then return nil end
   if cache[link] then return cache[link] end
-  local s = { STR = 0, AGI = 0, STA = 0, INT = 0, SPI = 0, AP = 0, RAP = 0, CRIT = 0, HIT = 0, SP = 0,
-              SP_HOLY = 0, SP_FIRE = 0, SP_NATURE = 0, SP_FROST = 0, SP_SHADOW = 0, SP_ARCANE = 0,
-              CRIT_RATING = 0, HIT_RATING = 0, HASTE_RATING = 0, MASTERY_RATING = 0, VERS_RATING = 0,
-              DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0,
-              ARMOR = 0, DEF = 0, DODGE = 0, PARRY = 0, BLOCK = 0, BLOCKVAL = 0,
-              HASTE = 0, RHASTE = 0, EXPERTISE = 0, FAP = 0 }
   local raw = GetItemStats and GetItemStats(link)
-  if raw then
-    for k, v in pairs(raw) do
-      local key = STAT_KEYS[k]
-      if key then s[key] = s[key] + v end
-      if k == "ITEM_MOD_DAMAGE_PER_SECOND_SHORT" then s.DPS = v end
-    end
-    -- modern "spell power" heals too
-    if (raw.ITEM_MOD_SPELL_POWER_SHORT or 0) > 0 then s.HEAL = s.HEAL + raw.ITEM_MOD_SPELL_POWER_SHORT end
-  end
-  -- a stat the game's stat table already gives isn't counted again from the tooltip's "Equip:" line (the game lists
-  -- "+8 Spell Power" in the table and "Increases damage and healing done by magical spells... by up to 8" as text:
-  -- both are the same 8)
-  local fromTable = { AP = raw and (raw.ITEM_MOD_ATTACK_POWER_SHORT or 0) > 0, HEAL = s.HEAL > 0, MP5 = s.MP5 > 0,
-    SP = s.SP > 0, CRIT = s.CRIT_RATING > 0, HIT = s.HIT_RATING > 0, RAP = s.RAP > 0,
-    DEF = s.DEF > 0, DODGE = s.DODGE > 0, PARRY = s.PARRY > 0, BLOCK = s.BLOCK > 0, BLOCKVAL = s.BLOCKVAL > 0 }
-  -- Tooltip text for Equip: lines and weapon speed.
   local data = C_TooltipInfo and C_TooltipInfo.GetHyperlink and C_TooltipInfo.GetHyperlink(link)
-  local equipSeen = {}
-  if data and data.lines then
-    for _, line in ipairs(data.lines) do
-      local t = line.leftText and line.leftText:lower()
-      if t then
-        local r = line.rightText and line.rightText:lower()
-        local sp = r and r:match("speed (%d+%.%d+)")
-        if sp then s.SPEED = tonumber(sp) end
-        local dps = t:match("^%(([%d%.]+) damage per second%)")
-        if dps and s.DPS == 0 then s.DPS = tonumber(dps) end
-        local armor = s.ARMOR == 0 and t:match("^(%d+) armor$")
-        if armor then s.ARMOR = tonumber(armor) end
-        local block = s.BLOCKVAL == 0 and t:match("^(%d+) block$")
-        if block then s.BLOCKVAL = tonumber(block) end
-        if t:find("^equip:") then
-          local school, n = t:match("increases damage done by (%a+) spells and effects by up to (%d+)")
-          if school and SCHOOL[school] and not equipSeen[t] then s[SCHOOL[school]] = s[SCHOOL[school]] + tonumber(n); equipSeen[t] = true end
-          -- feral attack power ("... in Cat, Bear, Dire Bear and Moonkin forms only") counts only in those forms
-          local feral = t:find("forms only")
-          local fap = feral and t:match("attack power by (%d+)")
-          if fap and not equipSeen[t .. "FAP"] then s.FAP = s.FAP + tonumber(fap); equipSeen[t .. "FAP"] = true end
-          -- haste: ranged attack speed is a hunter's; attack (and casting) speed or haste is everyone's
-          local rh = t:match("ranged attack speed by (%d+)%%")
-          local mh = not rh and (t:match("attack speed by (%d+)%%") or t:match("attack and casting speed by (%d+)%%") or t:match("haste by (%d+)%%"))
-          if rh and not equipSeen[t .. "RH"] then s.RHASTE = s.RHASTE + tonumber(rh); equipSeen[t .. "RH"] = true end
-          if mh and not equipSeen[t .. "H"] then s.HASTE = s.HASTE + tonumber(mh); equipSeen[t .. "H"] = true end
-          local ex = t:match("expertise rating by (%d+)") or t:match("increases your expertise by (%d+)") or t:match("^equip: %+(%d+) expertise")
-          if ex and s.EXPERTISE == 0 then s.EXPERTISE = tonumber(ex) end
-          for _, p in ipairs(LINE_PATTERNS) do
-            local n = not feral and t:match(p[1])
-            -- Ignore situational bonuses like "when fighting Beasts", and don't
-            -- count Attack Power twice when the stat table already has it.
-            if n and not t:find("when fighting") and not equipSeen[t .. p[2]] and not fromTable[p[2]] then
-              s[p[2]] = s[p[2]] + tonumber(n)
-              equipSeen[t .. p[2]] = true
-            end
-          end
-        end
-      end
-    end
-  end
-  for k, r in pairs(RATING_PCT) do
-    if s[k] > 0 then s[r[1]] = s[r[1]] + s[k] / r[2]; s[k] = 0 end
-  end
+  local s = RG.ParseItemStats(raw, data and data.lines)
   -- Only remember the result once the item's data has actually loaded.
   if raw or (data and data.lines and #data.lines > 1) then cache[link] = s end
   return s
@@ -493,9 +538,6 @@ function RG.CanUse(link)
   return true
 end
 
--- Score an item. hitRoom = how much hit % still counts before the cap (nil = all
--- of it); slot = the inventory slot it would go in (17 = off-hand).
--- w and model are optional: the 2nd Spec tab scores with its spec's weights and weapon model.
 -- When the default weights change (a new wowsims/forever update), every saved weight still at the old default moves to
 -- the new one; a weight you set yourself (/wp weight) stays yours.
 function RG.SyncDefaultWeights()
@@ -574,26 +616,21 @@ function RG.SetRetBuild(key)
   if RG.RefreshUI then RG.RefreshUI() end
 end
 
-function RG.Score(link, hitRoom, slot, w, model, parts)
-  local s = RG.GetStats(link)
-  if not s then return 0 end
-  if not RG.CanUse(link) then return 0 end
-  w = w or RG.db.weights
-  local f = RG.LevelFactor()
-  local hit = s.HIT
-  if hitRoom then hit = math.max(0, math.min(hit, hitRoom)) end
-  local score = hit * (RG.EffWeight(w, "HIT", f) or 0)
-  if parts and hit ~= 0 then parts.HIT = (parts.HIT or 0) + score end
+-- The score of a stat table (RG.GetStats) for an item that goes in equip slot loc. Pure: the audit
+-- (tools/audit/stats.py) checks it against tools/gear/gen.py's score() for every item, class, spec and level.
+-- f: level factor (default: yours); parts (optional): filled with each stat's share, for the tooltip's breakdown
+function RG.ScoreStats(s, loc, slot, w, model, f, parts, ilvl)
+  f = f or RG.LevelFactor()
+  local score = 0
   for k, v in pairs(s) do
-    if k ~= "HIT" and k ~= "DPS" and k ~= "SPEED" and v ~= 0 and w[k] then
+    if k ~= "DPS" and k ~= "SPEED" and v ~= 0 and w[k] then
       local c = v * RG.EffWeight(w, k, f)
       score = score + c
       if parts then parts[k] = (parts[k] or 0) + c end
     end
   end
   if s.DPS > 0 then
-    local loc = RG.EquipLoc(link)
-    model = model or RG.WEAPON_MODEL or "2H"
+    model = model or "2H"
     local wd, sp = 0, 0
     if RANGED_LOC[loc] then
       wd = s.DPS * (w.RANGED_DPS or 0)
@@ -612,11 +649,28 @@ function RG.Score(link, hitRoom, slot, w, model, parts)
   end
   -- a libram, idol or totem changes one of your spells, which no stat weight measures: rank it by item level
   -- (the gear generator does the same, so the lists and this agree)
-  if score <= 0 and RG.EquipLoc(link) == "INVTYPE_RELIC" then
-    local ilvl = select(4, GetItemInfo(link))
-    if type(ilvl) == "number" then score = ilvl * 0.5; if parts then parts.RELIC = (parts.RELIC or 0) + score end end
+  if score <= 0 and loc == "INVTYPE_RELIC" and type(ilvl) == "number" then
+    score = ilvl * 0.5
+    if parts then parts.RELIC = (parts.RELIC or 0) + score end
   end
   return score
+end
+
+-- Score an item for you. hitRoom = how much hit % still counts before the cap (nil = all of it); slot = the inventory
+-- slot it would go in (17 = off-hand); parts (optional): filled with each stat's share, for the tooltip's breakdown.
+-- w and model are optional: the 2nd Spec tab scores with its spec's weights and weapon model.
+function RG.Score(link, hitRoom, slot, w, model, parts)
+  local s = RG.GetStats(link)
+  if not s then return 0 end
+  if not RG.CanUse(link) then return 0 end
+  w = w or RG.db.weights
+  if hitRoom and s.HIT > 0 then
+    local c = {}; for k, v in pairs(s) do c[k] = v end
+    c.HIT = math.max(0, math.min(s.HIT, hitRoom)); s = c
+  end
+  local loc = RG.EquipLoc(link)
+  local ilvl = loc == "INVTYPE_RELIC" and select(4, GetItemInfo(link)) or nil
+  return RG.ScoreStats(s, loc, slot, w, model or RG.WEAPON_MODEL or "2H", nil, parts, ilvl)
 end
 
 -- Total hit % from equipped gear plus talents.
