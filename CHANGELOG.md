@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.50.0
 - **Gear scores now use simulator stat weights.** Every spec that wowsims/forever (the WoW Forever combat simulator, MIT licence) has stat weights for now scores gear with them: Warrior (Arms, Fury, Protection), Ret Paladin, Hunter (all three), Rogue (all three), Priest (Shadow, Discipline, Holy), Shaman (Elemental, Enhancement) and Druid (Balance, Feral, Bear). Upgrade arrows, the gear lists and "best in slot" all follow. Weights you changed yourself are kept; ones you never touched move to the new numbers. The weekly data update refreshes them.
 - **Scores fit your level.** The simulator's weights are for level 60, where 1% crit or hit is worth far more than at level 20 (your Attack Power and weapon are much smaller there). Crit, hit, haste, expertise and the tank percents now scale with your level and reach the full value at 60, in tooltips, upgrade arrows and the gear lists alike. Before, crit and hit gear was overrated while levelling.
 - **Hover breakdown.** An upgrade or downgrade in a tooltip now shows where it comes from, e.g. "+43 Crit · -14 Strength".
