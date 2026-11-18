@@ -21,11 +21,11 @@ G.trainA = {
 }
 G.supplies = "Blacksmith Hammer and Weak Flux: the Engineering or Blacksmithing Supply vendor by the trainer."
 G.plan = {
-  { from = 1,   to = 30,  craft = "Rough Blasting Powder", n = 60, mats = "1 Rough Stone each. Keep them all." },
-  { from = 30,  to = 50,  craft = "Handful of Copper Bolts", n = 30, mats = "1 Copper Bar each. Keep them all." },
+  { from = 1,   to = 30,  craft = "Rough Blasting Powder", n = 66, mats = "1 Rough Stone each. Keep them all." },
+  { from = 30,  to = 50,  craft = "Handful of Copper Bolts", n = 33, mats = "1 Copper Bar each. Keep them all." },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 50,  to = 51,  craft = "Arclight Spanner", n = 1, mats = "6 Copper Bar (keep it)" },
-  { from = 51,  to = 75,  craft = "Rough Copper Bomb", n = 30, mats = "1 Copper Bar, 1 Handful of Copper Bolts, 2 Rough Blasting Powder, 1 Linen Cloth each" },
+  { from = 51,  to = 75,  craft = "Rough Copper Bomb", n = 33, mats = "1 Copper Bar, 1 Handful of Copper Bolts, 2 Rough Blasting Powder, 1 Linen Cloth each" },
   { from = 75,  to = 90,  craft = "Coarse Blasting Powder", n = 60, mats = "1 Coarse Stone each. Keep them." },
   { from = 90,  to = 100, craft = "Coarse Dynamite", n = 20, mats = "3 Coarse Blasting Powder, 1 Linen Cloth each" },
   { from = 100, to = 105, craft = "Silver Contact", n = 5, mats = "1 Silver Bar each" },
@@ -43,7 +43,7 @@ G.plan = {
   { from = 200, to = 215, craft = "Unstable Trigger", n = 20, mats = "1 Mithril Bar, 1 Mageweave Cloth, 1 Solid Blasting Powder each" },
   { from = 215, to = 238, craft = "Mithril Casing", n = 40, mats = "3 Mithril Bar each" },
   { from = 238, to = 250, craft = "Hi-Explosive Bomb", n = 20, mats = "2 Mithril Casing, 1 Unstable Trigger, 2 Solid Blasting Powder each" },
-  { from = 250, to = 260, craft = "Dense Blasting Powder", n = 30, mats = "2 Dense Stone each" },
+  { from = 250, to = 260, craft = "Dense Blasting Powder", n = 44, mats = "2 Dense Stone each" },
   { from = 260, to = 285, craft = "Thorium Widget", n = 35, mats = "3 Thorium Bar, 1 Runecloth each (schematic: an Engineering supplier in a capital city; Sovik in Orgrimmar for the Horde)" },
   { from = 285, to = 300, craft = "Thorium Tube", n = 20, mats = "6 Thorium Bar each (schematic: Xizzer Fizzbolt, Everlook)" },
 }

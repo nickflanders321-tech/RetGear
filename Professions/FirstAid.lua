@@ -20,17 +20,18 @@ F.trainA = {
   expert = "the book Expert First Aid - Under Wraps from Doctor Gustaf VanHowzen (Theramore Isle), with the Heavy Silk and Mageweave Bandage manuals",
   artisan = "the Triage quest from Doctor Gustaf VanHowzen (Theramore Isle; skill 225, level 35)",
 }
-F.supplies = "Only cloth (or Peacebloom, Mild Spices and Empty Vials for the potion route)."
+F.supplies = "Only cloth (or Peacebloom, Spider Ichor, Bruiseweed, spices and vials for the potion and poultice route)."
 F.plan = {
-  { from = 1,   to = 40,  craft = "Linen Bandage", n = 50, mats = "1 Linen Cloth each (or Minor Healing Potion to 75)" },
-  { from = 40,  to = 75,  craft = "Heavy Linen Bandage", n = 40, mats = "2 Linen Cloth each" },
+  { from = 1,   to = 40,  craft = "Linen Bandage", n = 50, mats = "1 Linen Cloth each (or 86 Minor Healing Potions to 75: 1 Peacebloom, 1 Mild Spices, 1 Empty Vial each)" },
+  { from = 40,  to = 75,  craft = "Heavy Linen Bandage", n = 49, mats = "2 Linen Cloth each" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50)" },
-  { from = 75,  to = 80,  craft = "Heavy Linen Bandage", n = 12, mats = "2 Linen Cloth each" },
-  { from = 80,  to = 115, craft = "Wool Bandage", n = 50, mats = "1 Wool Cloth each" },
-  { from = 115, to = 150, craft = "Heavy Wool Bandage", n = 50, mats = "2 Wool Cloth each" },
+  { from = 75,  to = 80,  craft = "Heavy Linen Bandage", n = 16, mats = "2 Linen Cloth each" },
+  { from = 80,  to = 90,  craft = "Wool Bandage", n = 12, mats = "1 Wool Cloth each" },
+  { from = 90,  to = 115, craft = "Wool Bandage", n = 43, mats = "1 Wool Cloth each (or 90-125: 54 Simple Poultices, 1 Spider Ichor, 1 Mild Spices, 1 Bottle of Dalaran Noir each)" },
+  { from = 115, to = 150, craft = "Heavy Wool Bandage", n = 54, mats = "2 Wool Cloth each (or 125-150: 31 Healing Potions, 1 Bruiseweed, 1 Hot Spices, 1 Leaded Vial each)" },
   { from = 125, to = 125, train = "Expert: buy Expert First Aid - Under Wraps (Balai Lok'Wein, Dustwallow Marsh)" },
-  { from = 150, to = 180, craft = "Silk Bandage", n = 42, mats = "1 Silk Cloth each" },
-  { from = 180, to = 210, craft = "Heavy Silk Bandage", n = 46, mats = "2 Silk Cloth each" },
+  { from = 150, to = 180, craft = "Silk Bandage", n = 47, mats = "1 Silk Cloth each" },
+  { from = 180, to = 210, craft = "Heavy Silk Bandage", n = 47, mats = "2 Silk Cloth each" },
   { from = 210, to = 225, craft = "Mageweave Bandage", n = 19, mats = "1 Mageweave Cloth each" },
   { from = 225, to = 225, train = "Artisan: the Triage quest at Hammerfall (level 35)" },
   { from = 225, to = 240, craft = "Mageweave Bandage", n = 29, mats = "1 Mageweave Cloth each" },

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.48.0
+- **Profession guides follow wow-professions.com's updated WoW Forever routes:** First Aid makes 49 Heavy Linen Bandages (40-75), 16 more to 80, 12 then 43 Wool Bandages (80-90, 90-115), 54 Heavy Wool, 47 Silk and 47 Heavy Silk Bandages, and lists the potion and poultice route (86 Minor Healing Potions to 75, 54 Simple Poultices 90-125, 31 Healing Potions 125-150) as alternatives; Engineering makes 66 Rough Blasting Powder, 33 Copper Bolts and 33 Rough Copper Bombs, and 44 Dense Blasting Powder (250-260); Alchemy makes 28 Elixirs of Minor Fortitude and drops the Lesser Mana Potion alternative at 130-150; Blacksmithing's Mithril Spurs alternative is now its own route (10 Spurs at 215-225, then 33 from 230 to 245 instead of the boots and belt). All checked against the game's own recipe ranges.
+- Quest and card data updated from WoW Forever's latest game data.
+
 ## v1.47.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
