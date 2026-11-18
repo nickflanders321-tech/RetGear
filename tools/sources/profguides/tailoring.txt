@@ -6,11 +6,11 @@ This WoW Forever Tailoring leveling guide will show you the fastest and cheapest
 408-459x Wool Cloth
 29x Elixir of Wisdom
 205-216x Silk Cloth
-93-115x Mageweave Cloth
+94-115x Mageweave Cloth
 150-225
 492-520x Silk Cloth
-538-670x Mageweave Cloth
-108-134x Bolt of Mageweave
+507-625x Mageweave Cloth
+102-125x Bolt of Mageweave
 104-115x Runecloth
 225-280
 This list is not final yet, but the skill ranges come from the game data, so it should be pretty close. The 280-300 part is not included here yet.
@@ -48,7 +48,7 @@ Artisan Tailoring (200-300)
 205-215
 23x Bolt of Runecloth - 115 Runecloth
 215-225
-26x Mageweave Bag - 104 Bolt of Mageweave, 52 Silken Thread
+19x Red Mageweave Bag - 95 Bolt of Mageweave, 38 Red Dye, 38 Heavy Silken Thread
 10x Runecloth Belt - 30 Bolt of Runecloth, 10 Rune Thread
 225-240
 24x Runecloth Belt - 72 Bolt of Runecloth, 24 Rune Thread

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.50.2
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
 ## v1.50.1
 - **One-key fishing works with mouse buttons.** The key picker on the Fishing tab now takes a side mouse button (Mouse Button 4, 5...), the middle button or the mouse wheel, with Shift, Ctrl or Alt if you like. The left and right buttons stay yours.
 - **Gear scores read every item right.** Fixes found by a new audit that runs every weapon and armor piece in WoW Forever (10,551 with stats) through the add-on's own stat reader, in every form the game can show it:

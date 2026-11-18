@@ -10,11 +10,10 @@ This WoW Forever Leatherworking leveling guide will show you the fastest and che
 30x Heavy Hide
 150-225
 109-126x Medium Leather
-341-377x Heavy Leather
-16x Iron Buckle
-314-340x Thick Leather
+153x Heavy Leather
+363-390x Thick Leather
 225-300
-207-224x Thick Leather
+208-224x Thick Leather
 916-1030x Rugged Leather
 464-530x Runecloth
 Apprentice Leatherworking (1-55)
@@ -48,10 +47,8 @@ Expert Leatherworking (130-205)
 10x Barbaric Shoulders - 80 Heavy Leather, 10 Cured Heavy Hide, 20 Fine Thread
 165-185
 20x Guardian Gloves - 80 Heavy Leather, 20 Cured Heavy Hide, 20 Silken Thread
-185-195
-16x Barbaric Harness - 224 Heavy Leather, 32 Fine Thread, 16 Iron Buckle
-195-205
-12x Nightscape Headband - 60 Thick Leather, 24 Silken Thread
+185-205
+22x Nightscape Headband - 110 Thick Leather, 44 Silken Thread
 Artisan Leatherworking (205-300)
 205-235
 36x Nightscape Pants - 504 Thick Leather, 144 Silken Thread
