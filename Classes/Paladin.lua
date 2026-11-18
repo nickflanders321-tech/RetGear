@@ -42,7 +42,7 @@ P.hitCap = 9
 -- Armor: level each type can be worn from (1 cloth, 2 leather, 3 mail, 4 plate).
 P.classBit = 2
 P.model = "2H"
-P.weapons = { 0, 1, 4, 5, 7, 8 }
+P.weapons = { 0, 1, 4, 5, 6, 7, 8 }   -- (polearms too: a weapon master teaches them from level 20)
 P.armor = { [1] = 1, [2] = 1, [3] = 1, [4] = 40 }
 P.shield = true
 P.relic = 7   -- librams
@@ -52,8 +52,8 @@ P.relic = 7   -- librams
 -- has no hard requirement and that's when people usually pick it up.
 -- src  = where it comes from, how = Quest / Dungeon / Crafted / Raid,
 -- ah   = true when it can be bought on the Auction House (Bind on Equip).
--- Paladins in this era can use one- and two-handed swords, maces and axes,
--- but not staves or polearms, so those are left out.
+-- Paladins in this era can use one- and two-handed swords, maces and axes, and
+-- polearms (trained at a weapon master from level 20), but not staves.
 --
 -- Tailored for an Undead (Horde) Paladin: only Horde or neutral quests, and
 -- dungeons on the Horde side of the map where there's a choice. Entries with

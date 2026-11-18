@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Ret score: polearms count.** Paladins can learn polearms from a weapon master at level 20, but the Ret score treated every polearm as unusable and scored it 0, so a big two-handed upgrade could show as a downgrade. Polearms now score like any other two-hander, and the gear lists will include them from the next data update.
+
 ## v1.49.1
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
 
