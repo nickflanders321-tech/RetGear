@@ -406,7 +406,11 @@ function RG.GetStats(link)
     -- modern "spell power" heals too
     if (raw.ITEM_MOD_SPELL_POWER_SHORT or 0) > 0 then s.HEAL = s.HEAL + raw.ITEM_MOD_SPELL_POWER_SHORT end
   end
+  -- a stat the game's stat table already gives isn't counted again from the tooltip's "Equip:" line (the game lists
+  -- "+8 Spell Power" in the table and "Increases damage and healing done by magical spells... by up to 8" as text:
+  -- both are the same 8)
   local fromTable = { AP = raw and (raw.ITEM_MOD_ATTACK_POWER_SHORT or 0) > 0, HEAL = s.HEAL > 0, MP5 = s.MP5 > 0,
+    SP = s.SP > 0, CRIT = s.CRIT_RATING > 0, HIT = s.HIT_RATING > 0, RAP = s.RAP > 0,
     DEF = s.DEF > 0, DODGE = s.DODGE > 0, PARRY = s.PARRY > 0, BLOCK = s.BLOCK > 0, BLOCKVAL = s.BLOCKVAL > 0 }
   -- Tooltip text for Equip: lines and weapon speed.
   local data = C_TooltipInfo and C_TooltipInfo.GetHyperlink and C_TooltipInfo.GetHyperlink(link)
