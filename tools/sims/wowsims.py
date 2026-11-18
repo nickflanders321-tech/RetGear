@@ -46,14 +46,32 @@ mech = open(os.path.join(SRC, "ui/sim/constants/mechanics.ts")).read()
 CONST = {k: float(v) for k, v in re.findall(r'export const (\w+) = ([\d.]+);', mech)}
 PER = {"StatHitRating": CONST["HIT_RATING_PER_HIT_PERCENT"], "StatCritRating": CONST["CRIT_RATING_PER_CRIT_PERCENT"],
        "StatDodgeRating": CONST["DODGE_RATING_PER_DODGE_PERCENT"], "StatParryRating": CONST["PARRY_RATING_PER_PARRY_PERCENT"],
-       "StatBlockRating": CONST["BLOCK_RATING_PER_BLOCK_PERCENT"], "StatDefenseRating": CONST["DEFENSE_RATING_PER_DEFENSE_LEVEL"]}
+       "StatBlockRating": CONST["BLOCK_RATING_PER_BLOCK_PERCENT"], "StatDefenseRating": CONST["DEFENSE_RATING_PER_DEFENSE_LEVEL"],
+       "StatHasteRating": CONST["HASTE_RATING_PER_HASTE_PERCENT"]}
+# Expertise stays per rating point: WoW Forever items list it as a rating (Edgemaster's Handguards: 10)
 MAP = {"StatStrength": "STR", "StatAgility": "AGI", "StatStamina": "STA", "StatIntellect": "INT", "StatSpirit": "SPI",
        "StatSpellDamage": "SP", "StatHealingPower": "HEAL", "StatArcaneDamage": "SP_ARCANE", "StatFireDamage": "SP_FIRE",
        "StatFrostDamage": "SP_FROST", "StatHolyDamage": "SP_HOLY", "StatNatureDamage": "SP_NATURE", "StatShadowDamage": "SP_SHADOW",
        "StatAttackPower": "AP", "StatRangedAttackPower": "RAP", "StatHitRating": "HIT", "StatCritRating": "CRIT",
        "StatMP5": "MP5", "StatArmor": "ARMOR", "StatDefenseRating": "DEF", "StatDodgeRating": "DODGE",
        "StatParryRating": "PARRY", "StatBlockRating": "BLOCK", "StatBlockValue": "BLOCKVAL",
+       "StatHasteRating": "HASTE", "StatExpertiseRating": "EXPERTISE", "StatFeralAttackPower": "FAP",
        "PseudoStatMainHandDps": "WEAPON_DPS", "PseudoStatRangedDps": "RANGED_DPS"}
+
+# Alternatives a player can pick in the Gear tab (Ret: the Holy Shock build instead of Unsealed Wrath)
+ALT = {("PALADIN", "ret_holyshock"): ("paladin/retribution", "HolyShockEpWeights", "ret")}
+
+# Presets measured on gear that already sits at the hit cap give hit only its value past the cap, close to 0. Waypath+
+# stops counting hit at the cap itself, so it needs hit's value below the cap: taken from the class's preset that was
+# measured below it (Arms: "Hit is its value below the 8% cap"), as hit per point of Strength, times this spec's
+# Strength. Fury misses more with two weapons, so its hit is worth at least as much as Arms' per Strength.
+HIT_FROM = {("WARRIOR", "fury"): ("warrior/dps", "PreBiSArmsEpWeights"),
+            ("WARRIOR", "prot"): ("warrior/dps", "PreBiSArmsEpWeights")}
+
+# Specs wowsims has no weights for, estimated from its Holy Priest single-target healing weights. Crit is worth more to
+# a Holy Paladin (Illumination refunds the spell's mana on a crit); Spirit regenerates less for a paladin or a shaman.
+ESTIMATE = {("PALADIN", "holy"): {"CRIT": 1.5, "SPI": 0.3}, ("DRUID", "resto"): {}, ("SHAMAN", "resto"): {"SPI": 0.5}}
+EST_FROM = ("priest/healer", "HolySingleTargetEpWeights")
 
 def value(expr):
     expr = re.sub(r'Mechanics\.(\w+)', lambda m: repr(CONST[m.group(1)]), expr.strip())
@@ -111,7 +129,18 @@ def convert(raw, kind):
     if not w.get(base):
         base = max(w, key=lambda k: w[k] if k in ("AP", "RAP", "SP", "HEAL", "STA") else 0)
     b = w[base]
-    return {k: round(v / b, 3) for k, v in sorted(w.items())}, base
+    w = {k: v / b for k, v in w.items()}
+    # Haste on WoW Forever gear is rare (about 40 items, 1-2% each) and a preset's haste weight is measured at the edge
+    # of one proc build (Unsealed Wrath gives 1% haste 5x the value of 1% crit): keep it at most 1.5x crit so a 1% haste
+    # piece can't outrank a much bigger item on that one number
+    if w.get("HASTE") and w.get("CRIT"): w["HASTE"] = min(w["HASTE"], 1.5 * w["CRIT"])
+    return {k: round(v, 3) for k, v in sorted(w.items())}, base
+
+def finish(w, kind):
+    # a damage sim gives Stamina nothing: while levelling it keeps Waypath+'s own small value (and near-zero Spirit too)
+    if kind not in ("tank",): w.pop("STA", None)
+    if w.get("SPI", 1) < 0.05: w.pop("SPI", None)
+    return w
 
 rev = subprocess.run(["git", "-C", SRC, "log", "-1", "--format=%h %cs"], capture_output=True, text=True).stdout.strip()
 out, notes = {}, {}
@@ -119,11 +148,30 @@ for (cls, key), (spec_dir, name) in sorted(PICK.items()):
     label, raw = preset(spec_dir, name)
     kind = KIND.get(key, "melee")
     w, base = convert(raw, kind)
-    # a damage sim gives Stamina nothing: while levelling it keeps Waypath+'s own small value (and near-zero Spirit too)
-    if kind not in ("tank",): w.pop("STA", None)
-    if w.get("SPI", 1) < 0.05: w.pop("SPI", None)
-    out.setdefault(cls, {})[key] = w
+    note = "%s / %s (%s), per %s" % (spec_dir, name, label, base)
+    if (cls, key) in HIT_FROM:
+        _, ref = preset(*HIT_FROM[(cls, key)])
+        braw = raw.get("StatStrength", 0) / sum(v for k, v in raw.items() if MAP.get(k) == base)
+        below = ref["StatHitRating"] / ref["StatStrength"] * PER["StatHitRating"] * braw
+        if below > w.get("HIT", 0): w["HIT"] = round(below, 3); note += "; hit below the cap from " + HIT_FROM[(cls, key)][1]
+    # a ranged hunter's haste is ranged haste ("Increases ranged attack speed by 1%" on quivers and some gear)
+    if kind == "ranged" and w.get("HASTE"): w["RHASTE"] = w["HASTE"]
+    out.setdefault(cls, {})[key] = finish(w, kind)
+    notes["%s %s" % (cls, key)] = note
+for (cls, key), (spec_dir, name, like) in sorted(ALT.items()):
+    label, raw = preset(spec_dir, name)
+    w, base = convert(raw, KIND.get(like, "melee"))
+    out.setdefault(cls, {})[key] = finish(w, KIND.get(like, "melee"))
     notes["%s %s" % (cls, key)] = "%s / %s (%s), per %s" % (spec_dir, name, label, base)
+est = {}
+label, raw = preset(*EST_FROM)
+for (cls, key), mult in sorted(ESTIMATE.items()):
+    w, base = convert(raw, "heal")
+    for k, m in mult.items():
+        if k in w: w[k] = round(w[k] * m, 3)
+    est.setdefault(cls, []).append(key)
+    out.setdefault(cls, {})[key] = finish(w, "heal")
+    notes["%s %s" % (cls, key)] = "estimated from %s / %s (%s), per %s" % (EST_FROM[0], EST_FROM[1], label, base)
 
 # each class's levelling spec (main = true in Classes/Specs.lua): its weights are the class's own
 specs_src = open(os.path.join(OUT, "Classes/Specs.lua"), encoding="utf-8").read()
@@ -134,7 +182,7 @@ for line in specs_src.splitlines():
     m = re.search(r'key = "(\w+)".*\bmain = true', line)
     if m and cur: main[cur] = m.group(1)
 os.makedirs(os.path.join(OUT, "tools/sims"), exist_ok=True)
-json.dump({"source": "wowsims/forever " + rev, "weights": out, "presets": notes, "main": main}, open(os.path.join(OUT, "tools/sims/weights.json"), "w"), indent=1, sort_keys=True)
+json.dump({"source": "wowsims/forever " + rev, "weights": out, "estimated": est, "presets": notes, "main": main}, open(os.path.join(OUT, "tools/sims/weights.json"), "w"), indent=1, sort_keys=True)
 L = ["-- Waypath+ stat weights from wowsims/forever (https://github.com/wowsims/forever, MIT licence, (c) the wowsims team),",
      "-- the WoW Forever simulator's own EP presets (%s). Generated by tools/sims/wowsims.py: don't edit by hand." % rev,
      "-- Merged over the hand-made weights at load (Data.lua's RegisterClass, Classes/Specs.lua): crit and hit per 1%,",
@@ -148,6 +196,7 @@ for cls in sorted(out):
             ", ".join("%s = %s" % (k, ("%.3f" % v).rstrip("0").rstrip(".")) for k, v in sorted(out[cls][key].items())), notes["%s %s" % (cls, key)]))
     L.append("  },")
 L.append("}")
+L.append("RG.SIM_ESTIMATED = { %s }   -- not simulated: estimated from the Holy Priest weights" % ", ".join("%s = { %s }" % (c, ", ".join("%s = true" % k for k in sorted(ks))) for c, ks in sorted(est.items())))
 L.append("RG.SIM_MAIN = { %s }" % ", ".join('%s = "%s"' % (c, k) for c, k in sorted(main.items())))
 open(os.path.join(OUT, "Classes/SimWeights.lua"), "w").write("\n".join(L) + "\n")
 for k, v in notes.items(): print(k, "<-", v)

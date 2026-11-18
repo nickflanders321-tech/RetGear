@@ -7,36 +7,41 @@ local _, RG = ...
 RG.SIM_SOURCE = "wowsims/forever 3633162 2026-11-18"
 RG.SIM_WEIGHTS = {
   DRUID = {
-    balance = { CRIT = 10.64, HIT = 14.5, INT = 0.2, SP = 1, SP_ARCANE = 0.68, SP_NATURE = 0.32 },   -- druid/balance / PreBiSEpWeights (Pre-BiS), per SP
-    bear = { AGI = 0.432, AP = 0.22, ARMOR = 0.174, CRIT = 5.071, DEF = 0.873, DODGE = 1.285, HIT = 6.86, STA = 1, STR = 0.485, WEAPON_DPS = 3.084 },   -- druid/feralbear / DefaultEpWeights (Bear), per STA
-    feral = { AGI = 2.685, AP = 1, CRIT = 29.042, HIT = 21.377, STR = 2.437, WEAPON_DPS = 8.786 },   -- druid/feralcat / DefaultEpWeights (Cat), per AP
+    balance = { CRIT = 10.64, HASTE = 9.5, HIT = 14.5, INT = 0.2, SP = 1, SP_ARCANE = 0.68, SP_NATURE = 0.32 },   -- druid/balance / PreBiSEpWeights (Pre-BiS), per SP
+    bear = { AGI = 0.432, AP = 0.22, ARMOR = 0.174, CRIT = 5.071, DEF = 0.873, DODGE = 1.285, EXPERTISE = 1.771, FAP = 0.22, HASTE = 3.571, HIT = 6.86, STA = 1, STR = 0.485, WEAPON_DPS = 3.084 },   -- druid/feralbear / DefaultEpWeights (Bear), per STA
+    feral = { AGI = 2.685, AP = 1, CRIT = 29.042, EXPERTISE = 2.012, FAP = 0.997, HASTE = 16.123, HIT = 21.377, STR = 2.437, WEAPON_DPS = 8.786 },   -- druid/feralcat / DefaultEpWeights (Cat), per AP
+    resto = { CRIT = 4.2, HASTE = 5, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.3 },   -- estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
   },
   HUNTER = {
-    bm = { AGI = 5, AP = 0.95, CRIT = 56, HIT = 67.5, INT = 2.15, MP5 = 0.35, RANGED_DPS = 8.6, RAP = 1, STR = 1.05, WEAPON_DPS = 13.75 },   -- hunter/dps / WeaveEpWeights (Weave), per RAP
-    mm = { AGI = 5, AP = 0.95, CRIT = 56, HIT = 67.5, INT = 2.15, MP5 = 0.35, RANGED_DPS = 8.6, RAP = 1, STR = 1.05, WEAPON_DPS = 13.75 },   -- hunter/dps / WeaveEpWeights (Weave), per RAP
-    sv = { AGI = 2.703, AP = 1, CRIT = 37.081, HIT = 65.135, INT = 1.892, MP5 = 0.757, RANGED_DPS = 0.73, RAP = 0.405, STR = 1.081, WEAPON_DPS = 12.243 },   -- hunter/dps / MeleeEpWeights (Melee), per AP
+    bm = { AGI = 5, AP = 0.95, CRIT = 56, HASTE = 25.5, HIT = 67.5, INT = 2.15, MP5 = 0.35, RANGED_DPS = 8.6, RAP = 1, RHASTE = 25.5, STR = 1.05, WEAPON_DPS = 13.75 },   -- hunter/dps / WeaveEpWeights (Weave), per RAP
+    mm = { AGI = 5, AP = 0.95, CRIT = 56, HASTE = 25.5, HIT = 67.5, INT = 2.15, MP5 = 0.35, RANGED_DPS = 8.6, RAP = 1, RHASTE = 25.5, STR = 1.05, WEAPON_DPS = 13.75 },   -- hunter/dps / WeaveEpWeights (Weave), per RAP
+    sv = { AGI = 2.703, AP = 1, CRIT = 37.081, HASTE = 25.946, HIT = 65.135, INT = 1.892, MP5 = 0.757, RANGED_DPS = 0.73, RAP = 0.405, STR = 1.081, WEAPON_DPS = 12.243 },   -- hunter/dps / MeleeEpWeights (Melee), per AP
   },
   PALADIN = {
-    ret = { AGI = 2.23, AP = 1, CRIT = 43.12, HIT = 68.3, INT = 2.06, MP5 = 0.23, SP = 2.36, STR = 2.4, WEAPON_DPS = 13.85 },   -- paladin/retribution / UnsealedWrathEpWeights (Unsealed Wrath), per AP
+    holy = { CRIT = 6.3, HASTE = 5, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.09 },   -- estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
+    ret = { AGI = 2.23, AP = 1, CRIT = 43.12, EXPERTISE = 5.1, HASTE = 64.68, HIT = 68.3, INT = 2.06, MP5 = 0.23, SP = 2.36, STR = 2.4, WEAPON_DPS = 13.85 },   -- paladin/retribution / UnsealedWrathEpWeights (Unsealed Wrath), per AP
+    ret_holyshock = { AGI = 3.11, AP = 1, CRIT = 65.24, EXPERTISE = 6.2, HASTE = 40.6, HIT = 102.5, INT = 4.53, MP5 = 0.01, SP = 5.78, STR = 2.5, WEAPON_DPS = 13.04 },   -- paladin/retribution / HolyShockEpWeights (Holy Shock), per AP
   },
   PRIEST = {
-    disc = { CRIT = 9.8, HEAL = 1, INT = 0.2, MP5 = 0.4, SPI = 0.15 },   -- priest/healer / DiscSingleTargetEpWeights (Disc Single-Target), per HEAL
-    holy = { CRIT = 4.2, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.3 },   -- priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
-    shadow = { CRIT = 11.76, HIT = 11.4, INT = 0.24, SP = 1, SP_SHADOW = 1 },   -- priest/dps / ShadowEpWeights (Shadow), per SP
+    disc = { CRIT = 9.8, HASTE = 1.5, HEAL = 1, INT = 0.2, MP5 = 0.4, SPI = 0.15 },   -- priest/healer / DiscSingleTargetEpWeights (Disc Single-Target), per HEAL
+    holy = { CRIT = 4.2, HASTE = 5, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.3 },   -- priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
+    shadow = { CRIT = 11.76, HASTE = 7.3, HIT = 11.4, INT = 0.24, SP = 1, SP_SHADOW = 1 },   -- priest/dps / ShadowEpWeights (Shadow), per SP
   },
   ROGUE = {
-    assassination = { AGI = 2.06, AP = 1, CRIT = 28.28, HIT = 28, STR = 1.1, WEAPON_DPS = 8.44 },   -- rogue/dps / EP_PRESET_ASSASSINATION (Assassination), per AP
-    combat = { AGI = 1.96, AP = 1, CRIT = 23.8, HIT = 24.2, STR = 1.1, WEAPON_DPS = 10.57 },   -- rogue/dps / EP_PRESET_COMBAT_SINISTER (Combat Sinister), per AP
-    subtlety = { AGI = 1.93, AP = 1, CRIT = 22.82, HIT = 21.2, STR = 1.1, WEAPON_DPS = 10.47 },   -- rogue/dps / EP_PRESET_SUBTLETY (Subtlety), per AP
+    assassination = { AGI = 2.06, AP = 1, CRIT = 28.28, EXPERTISE = 2.77, HASTE = 19.3, HIT = 28, STR = 1.1, WEAPON_DPS = 8.44 },   -- rogue/dps / EP_PRESET_ASSASSINATION (Assassination), per AP
+    combat = { AGI = 1.96, AP = 1, CRIT = 23.8, EXPERTISE = 2.55, HASTE = 17.2, HIT = 24.2, STR = 1.1, WEAPON_DPS = 10.57 },   -- rogue/dps / EP_PRESET_COMBAT_SINISTER (Combat Sinister), per AP
+    subtlety = { AGI = 1.93, AP = 1, CRIT = 22.82, EXPERTISE = 2.42, HASTE = 14.3, HIT = 21.2, STR = 1.1, WEAPON_DPS = 10.47 },   -- rogue/dps / EP_PRESET_SUBTLETY (Subtlety), per AP
   },
   SHAMAN = {
-    ele = { CRIT = 8.54, HIT = 11.8, INT = 0.19, MP5 = 0.04, SP = 1, SP_FIRE = 0.31, SP_NATURE = 0.69 },   -- shaman/elemental / DefaultEpWeights (Default), per SP
-    enh = { AGI = 1.32, AP = 1, CRIT = 33.88, HIT = 52, INT = 1.99, SP = 1.27, SP_NATURE = 0.72, STR = 2.2, WEAPON_DPS = 14.18 },   -- shaman/enhancement / PreBiSEpWeights (Pre-BiS), per AP
+    ele = { CRIT = 8.54, HASTE = 12.3, HIT = 11.8, INT = 0.19, MP5 = 0.04, SP = 1, SP_FIRE = 0.31, SP_NATURE = 0.69 },   -- shaman/elemental / DefaultEpWeights (Default), per SP
+    enh = { AGI = 1.32, AP = 1, CRIT = 33.88, EXPERTISE = 3.5, HASTE = 28.1, HIT = 52, INT = 1.99, SP = 1.27, SP_NATURE = 0.72, STR = 2.2, WEAPON_DPS = 14.18 },   -- shaman/enhancement / PreBiSEpWeights (Pre-BiS), per AP
+    resto = { CRIT = 4.2, HASTE = 5, HEAL = 1, INT = 0.35, MP5 = 0.6, SPI = 0.15 },   -- estimated from priest/healer / HolySingleTargetEpWeights (Holy Single-Target), per HEAL
   },
   WARRIOR = {
-    arms = { AGI = 1.71, AP = 1, CRIT = 31.22, HIT = 47, STR = 2.2, WEAPON_DPS = 16.63 },   -- warrior/dps / PreBiSArmsEpWeights (Pre-BiS - Arms), per AP
-    fury = { AGI = 1.7, AP = 1, CRIT = 31.64, HIT = 16.9, STR = 2.2, WEAPON_DPS = 12.59 },   -- warrior/dps / PreBiSFuryEpWeights (Pre-BiS - Fury), per AP
-    prot = { AGI = 0.443, AP = 0.235, ARMOR = 0.035, BLOCK = 0.087, BLOCKVAL = 0.53, CRIT = 5.235, DEF = 0.174, DODGE = 1.461, HIT = 0.348, PARRY = 1.957, STA = 1, STR = 0.539, WEAPON_DPS = 1.157 },   -- warrior/protection / PreBiSEpWeights (Pre-BiS (Defense Cap)), per STA
+    arms = { AGI = 1.71, AP = 1, CRIT = 31.22, EXPERTISE = 1.46, HASTE = 11.9, HIT = 47, STR = 2.2, WEAPON_DPS = 16.63 },   -- warrior/dps / PreBiSArmsEpWeights (Pre-BiS - Arms), per AP
+    fury = { AGI = 1.7, AP = 1, CRIT = 31.64, EXPERTISE = 2.35, HASTE = 17.6, HIT = 47, STR = 2.2, WEAPON_DPS = 12.59 },   -- warrior/dps / PreBiSFuryEpWeights (Pre-BiS - Fury), per AP; hit below the cap from PreBiSArmsEpWeights
+    prot = { AGI = 0.443, AP = 0.235, ARMOR = 0.035, BLOCK = 0.087, BLOCKVAL = 0.53, CRIT = 5.235, DEF = 0.174, DODGE = 1.461, EXPERTISE = 1.93, HASTE = 1.652, HIT = 11.518, PARRY = 1.957, STA = 1, STR = 0.539, WEAPON_DPS = 1.157 },   -- warrior/protection / PreBiSEpWeights (Pre-BiS (Defense Cap)), per STA; hit below the cap from PreBiSArmsEpWeights
   },
 }
+RG.SIM_ESTIMATED = { DRUID = { resto = true }, PALADIN = { holy = true }, SHAMAN = { resto = true } }   -- not simulated: estimated from the Holy Priest weights
 RG.SIM_MAIN = { DRUID = "feral", HUNTER = "bm", MAGE = "frost", PALADIN = "ret", PRIEST = "shadow", ROGUE = "combat", SHAMAN = "enh", WARLOCK = "aff", WARRIOR = "arms" }

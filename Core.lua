@@ -165,6 +165,7 @@ local function InitDB()
   for k, v in pairs(RG.DEFAULT_WEIGHTS) do if db.weights[k] == nil then db.weights[k] = v end end
   if db.hitCapByClass[cls] == nil then db.hitCapByClass[cls] = RG.DEFAULT_HIT_CAP end
   db.hitCap = db.hitCapByClass[cls]
+  if RG.ApplySimBuild then RG.ApplySimBuild() end
   if RG.ApplyMainSpec then RG.ApplyMainSpec(true) end
   if RG.SyncDefaultWeights then RG.SyncDefaultWeights() end
   if db.talentHit == nil then db.talentHit = 0 end
@@ -351,7 +352,12 @@ local STAT_KEYS = {
   -- tank stats (used by tank specs on the 2nd Spec tab)
   RESISTANCE0_NAME = "ARMOR", ITEM_MOD_DEFENSE_SKILL_RATING_SHORT = "DEF", ITEM_MOD_DODGE_RATING_SHORT = "DODGE",
   ITEM_MOD_PARRY_RATING_SHORT = "PARRY", ITEM_MOD_BLOCK_RATING_SHORT = "BLOCK", ITEM_MOD_BLOCK_VALUE_SHORT = "BLOCKVAL",
+  -- WoW Forever's expertise (Edgemaster's Handguards: 10) is a rating, weighed per point
+  ITEM_MOD_EXPERTISE_RATING_SHORT = "EXPERTISE",
 }
+-- WoW Forever's rating per 1% (wowsims/forever's mechanics, from the game files): a rating on an item counts as the
+-- percent it gives, so it meets the same weight and the same hit cap as "Improves your chance to hit by 1%"
+local RATING_PCT = { CRIT_RATING = { "CRIT", 14 }, HIT_RATING = { "HIT", 10 }, HASTE_RATING = { "HASTE", 10 } }
 -- Spell schools in "Increases damage done by Shadow spells and effects by up to X."
 local SCHOOL = { holy = "SP_HOLY", fire = "SP_FIRE", nature = "SP_NATURE", frost = "SP_FROST", shadow = "SP_SHADOW", arcane = "SP_ARCANE" }
 
@@ -388,7 +394,8 @@ function RG.GetStats(link)
               SP_HOLY = 0, SP_FIRE = 0, SP_NATURE = 0, SP_FROST = 0, SP_SHADOW = 0, SP_ARCANE = 0,
               CRIT_RATING = 0, HIT_RATING = 0, HASTE_RATING = 0, MASTERY_RATING = 0, VERS_RATING = 0,
               DPS = 0, SPEED = 0, HEAL = 0, MP5 = 0, SCRIT = 0,
-              ARMOR = 0, DEF = 0, DODGE = 0, PARRY = 0, BLOCK = 0, BLOCKVAL = 0 }
+              ARMOR = 0, DEF = 0, DODGE = 0, PARRY = 0, BLOCK = 0, BLOCKVAL = 0,
+              HASTE = 0, RHASTE = 0, EXPERTISE = 0, FAP = 0 }
   local raw = GetItemStats and GetItemStats(link)
   if raw then
     for k, v in pairs(raw) do
@@ -420,8 +427,19 @@ function RG.GetStats(link)
         if t:find("^equip:") then
           local school, n = t:match("increases damage done by (%a+) spells and effects by up to (%d+)")
           if school and SCHOOL[school] and not equipSeen[t] then s[SCHOOL[school]] = s[SCHOOL[school]] + tonumber(n); equipSeen[t] = true end
+          -- feral attack power ("... in Cat, Bear, Dire Bear and Moonkin forms only") counts only in those forms
+          local feral = t:find("forms only")
+          local fap = feral and t:match("attack power by (%d+)")
+          if fap and not equipSeen[t .. "FAP"] then s.FAP = s.FAP + tonumber(fap); equipSeen[t .. "FAP"] = true end
+          -- haste: ranged attack speed is a hunter's; attack (and casting) speed or haste is everyone's
+          local rh = t:match("ranged attack speed by (%d+)%%")
+          local mh = not rh and (t:match("attack speed by (%d+)%%") or t:match("attack and casting speed by (%d+)%%") or t:match("haste by (%d+)%%"))
+          if rh and not equipSeen[t .. "RH"] then s.RHASTE = s.RHASTE + tonumber(rh); equipSeen[t .. "RH"] = true end
+          if mh and not equipSeen[t .. "H"] then s.HASTE = s.HASTE + tonumber(mh); equipSeen[t .. "H"] = true end
+          local ex = t:match("expertise rating by (%d+)") or t:match("increases your expertise by (%d+)") or t:match("^equip: %+(%d+) expertise")
+          if ex and s.EXPERTISE == 0 then s.EXPERTISE = tonumber(ex) end
           for _, p in ipairs(LINE_PATTERNS) do
-            local n = t:match(p[1])
+            local n = not feral and t:match(p[1])
             -- Ignore situational bonuses like "when fighting Beasts", and don't
             -- count Attack Power twice when the stat table already has it.
             if n and not t:find("when fighting") and not equipSeen[t .. p[2]] and not fromTable[p[2]] then
@@ -432,6 +450,9 @@ function RG.GetStats(link)
         end
       end
     end
+  end
+  for k, r in pairs(RATING_PCT) do
+    if s[k] > 0 then s[r[1]] = s[r[1]] + s[k] / r[2]; s[k] = 0 end
   end
   -- Only remember the result once the item's data has actually loaded.
   if raw or (data and data.lines and #data.lines > 1) then cache[link] = s end
@@ -496,38 +517,100 @@ function RG.SyncDefaultWeights()
   if changed and RG.ClearScoreCache then RG.ClearScoreCache() end
 end
 
-function RG.Score(link, hitRoom, slot, w, model)
+-- Level scaling. The weights are level-60 values (wowsims/forever simulates level 60): there 1% crit is worth about
+-- 2.4% of everything your Attack Power and weapon add up to. Lower down that total is much smaller (less Attack Power,
+-- a slower, weaker weapon), so 1% crit, hit, haste, dodge... is worth fewer points of Strength or Attack Power. Those
+-- weights scale with a typical character's Attack Power plus 14 x weapon DPS at your level (about 20 x level + 80),
+-- reaching the full value at 60. Flat stats (Strength, Attack Power, spell damage, Stamina) and weapon DPS don't scale:
+-- they are what the percents are measured against. tools/gear/gen.py uses the same formula for the gear lists.
+RG.LEVEL_SCALED = { CRIT = true, HIT = true, HASTE = true, RHASTE = true, EXPERTISE = true, SCRIT = true,
+  DODGE = true, PARRY = true, BLOCK = true, DEF = true }
+function RG.LevelFactor(lvl)
+  lvl = lvl or (UnitLevel and UnitLevel("player")) or 60
+  if type(lvl) ~= "number" or lvl <= 0 then lvl = 60 end
+  return math.max(0.15, math.min(1, (lvl + 4) / 64))
+end
+-- the weight that counts right now: level-scaled for the percent stats
+function RG.EffWeight(w, k, f)
+  local v = w[k]
+  if not v then return nil end
+  if RG.LEVEL_SCALED[k] then v = v * (f or RG.LevelFactor()) end
+  return v
+end
+
+-- parts (optional): filled with each stat's share of the score, for the tooltip's breakdown
+-- Ret builds (Gear tab): wowsims/forever weighs Ret gear for two builds, Unsealed Wrath (the default) and Holy Shock.
+-- Switching puts the chosen build's weights into the class's and the Ret spec's tables; your untouched saved weights
+-- follow (RG.SyncDefaultWeights), ones you set yourself stay.
+RG.RET_BUILDS = { { key = "unsealed", label = "Unsealed Wrath", sim = "ret" }, { key = "holyshock", label = "Holy Shock", sim = "ret_holyshock" } }
+function RG.RetBuild() return (RG.db and RG.db.retBuild) or "unsealed" end
+function RG.ApplySimBuild()
+  if RG.PLAYER_CLASS ~= "PALADIN" then return end
+  local sims = RG.SIM_WEIGHTS and RG.SIM_WEIGHTS.PALADIN
+  local hand = RG.HAND_WEIGHTS and RG.HAND_WEIGHTS.PALADIN and RG.HAND_WEIGHTS.PALADIN.ret
+  if not (sims and sims.ret and hand) then return end
+  local pick = sims.ret
+  for _, b in ipairs(RG.RET_BUILDS) do if b.key == RG.RetBuild() and sims[b.sim] then pick = sims[b.sim] end end
+  local targets = { RG.CLASSES and RG.CLASSES.PALADIN and RG.CLASSES.PALADIN.weights }
+  for _, s in ipairs((RG.SPECS or {}).PALADIN or {}) do if s.key == "ret" and s.weights then targets[#targets + 1] = s.weights end end
+  for _, t in pairs(targets) do
+    for _, b in ipairs(RG.RET_BUILDS) do for k in pairs(sims[b.sim] or {}) do t[k] = hand[k] end end
+    for k, v in pairs(pick) do t[k] = v end
+  end
+end
+function RG.SetRetBuild(key)
+  if not RG.db then return end
+  RG.db.retBuild = key
+  RG.ApplySimBuild()
+  if RG.ApplyMainSpec then RG.ApplyMainSpec(true) end
+  RG.SyncDefaultWeights()
+  if RG.ClearScoreCache then RG.ClearScoreCache() end
+  if RG.CompareReset then RG.CompareReset() end
+  if RG.UpdateBagArrows then pcall(RG.UpdateBagArrows) end
+  if RG.RefreshUI then RG.RefreshUI() end
+end
+
+function RG.Score(link, hitRoom, slot, w, model, parts)
   local s = RG.GetStats(link)
   if not s then return 0 end
   if not RG.CanUse(link) then return 0 end
   w = w or RG.db.weights
+  local f = RG.LevelFactor()
   local hit = s.HIT
   if hitRoom then hit = math.max(0, math.min(hit, hitRoom)) end
-  local score = hit * (w.HIT or 0)
+  local score = hit * (RG.EffWeight(w, "HIT", f) or 0)
+  if parts and hit ~= 0 then parts.HIT = (parts.HIT or 0) + score end
   for k, v in pairs(s) do
-    if k ~= "HIT" and k ~= "DPS" and k ~= "SPEED" and v ~= 0 and w[k] then score = score + v * w[k] end
+    if k ~= "HIT" and k ~= "DPS" and k ~= "SPEED" and v ~= 0 and w[k] then
+      local c = v * RG.EffWeight(w, k, f)
+      score = score + c
+      if parts then parts[k] = (parts[k] or 0) + c end
+    end
   end
   if s.DPS > 0 then
     local loc = RG.EquipLoc(link)
     model = model or RG.WEAPON_MODEL or "2H"
+    local wd, sp = 0, 0
     if RANGED_LOC[loc] then
-      score = score + s.DPS * (w.RANGED_DPS or 0)
+      wd = s.DPS * (w.RANGED_DPS or 0)
     else
       local twoH = loc == "INVTYPE_2HWEAPON"
       local mult
       if twoH then mult = MULT_2H[model] or 1
       elseif slot == 17 or loc == "INVTYPE_WEAPONOFFHAND" then mult = model == "DW" and 0.5 or 0
       else mult = MULT_1H[model] or 1 end
-      score = score + s.DPS * (w.WEAPON_DPS or 0) * mult
-      if twoH and model == "2H" and s.SPEED > 3.0 then score = score + (s.SPEED - 3.0) * 10 * (w.SLOW_BONUS or 0) end
-      if model == "DW" and not twoH and slot ~= 17 and s.SPEED > 2.6 then score = score + (s.SPEED - 2.6) * 10 * (w.SLOW_BONUS or 0) end
+      wd = s.DPS * (w.WEAPON_DPS or 0) * mult
+      if twoH and model == "2H" and s.SPEED > 3.0 then sp = (s.SPEED - 3.0) * 10 * (w.SLOW_BONUS or 0) end
+      if model == "DW" and not twoH and slot ~= 17 and s.SPEED > 2.6 then sp = (s.SPEED - 2.6) * 10 * (w.SLOW_BONUS or 0) end
     end
+    score = score + wd + sp
+    if parts then parts.WEAPON = (parts.WEAPON or 0) + wd; if sp ~= 0 then parts.SPEED = (parts.SPEED or 0) + sp end end
   end
   -- a libram, idol or totem changes one of your spells, which no stat weight measures: rank it by item level
   -- (the gear generator does the same, so the lists and this agree)
   if score <= 0 and RG.EquipLoc(link) == "INVTYPE_RELIC" then
     local ilvl = select(4, GetItemInfo(link))
-    if type(ilvl) == "number" then score = ilvl * 0.5 end
+    if type(ilvl) == "number" then score = ilvl * 0.5; if parts then parts.RELIC = (parts.RELIC or 0) + score end end
   end
   return score
 end
@@ -609,7 +692,8 @@ do
 end
 
 -- onlySlot: compare against that one slot (the gear lists use it to suggest a different ring or trinket for each slot)
-local function compareRaw(link, onlySlot)
+-- parts (optional): filled with the stat-by-stat difference for the slot the answer picks (the tooltip's breakdown)
+local function compareRaw(link, onlySlot, parts)
   local loc = RG.EquipLoc(link)
   local slots = loc and RG.EQUIP_SLOTS[loc]
   if not slots then return nil end
@@ -623,24 +707,31 @@ local function compareRaw(link, onlySlot)
   local cap = RG.db.hitCap
   local curHit = RG.CurrentHit()
   local best
+  local hitW = RG.EffWeight(RG.db.weights, "HIT") or 0
   for _, slot in ipairs(slots) do
+    local pn, po = parts and {} or nil, parts and {} or nil
     local old = wornLink(slot)
     local oldScore, oldHit = 0, 0
-    if old then oldHit = RG.GetStats(old).HIT; oldScore = RG.Score(old, nil, slot) end
+    if old then oldHit = RG.GetStats(old).HIT; oldScore = RG.Score(old, nil, slot, nil, nil, po) end
     -- Two-hander replaces main hand and off hand together.
     if loc == "INVTYPE_2HWEAPON" then
       local off = wornLink(17)
-      if off then oldScore = oldScore + RG.Score(off, nil, 17); oldHit = oldHit + RG.GetStats(off).HIT end
+      if off then oldScore = oldScore + RG.Score(off, nil, 17, nil, nil, po); oldHit = oldHit + RG.GetStats(off).HIT end
     end
     local hitWithout = curHit - oldHit
-    local newScore = RG.Score(link, math.max(0, cap - hitWithout), slot)
+    local newScore = RG.Score(link, math.max(0, cap - hitWithout), slot, nil, nil, pn)
     -- Count the old item's hit only up to the cap too.
     if old and oldHit > 0 then
       local capped = math.max(0, math.min(oldHit, cap - hitWithout))
-      oldScore = oldScore - (oldHit - capped) * (RG.db.weights.HIT or 0)
+      oldScore = oldScore - (oldHit - capped) * hitW
+      if po then po.HIT = (po.HIT or 0) - (oldHit - capped) * hitW end
     end
     local delta = newScore - oldScore
-    if not best or delta > best.delta then best = { delta = delta, slot = slot, new = newScore, old = oldScore } end
+    if not best or delta > best.delta then best = { delta = delta, slot = slot, new = newScore, old = oldScore, pn = pn, po = po } end
+  end
+  if parts and best then
+    for k, v in pairs(best.pn) do parts[k] = (parts[k] or 0) + v end
+    for k, v in pairs(best.po) do parts[k] = (parts[k] or 0) - v end
   end
   return best.delta, best.slot, best.new, best.old
 end
@@ -666,6 +757,29 @@ do
   local f = CreateFrame("Frame")
   for _, e in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "ACTIVE_TALENT_GROUP_CHANGED", "CHARACTER_POINTS_CHANGED", "PLAYER_TALENT_UPDATE", "SKILL_LINES_CHANGED" }) do pcall(f.RegisterEvent, f, e) end
   f:SetScript("OnEvent", function() cmpMemo = {} end)
+end
+
+-- "+38 Crit · +12 Strength · -20 Weapon damage": where an upgrade (or a downgrade) comes from, biggest first
+local PART_NAME = { STR = "Strength", AGI = "Agility", STA = "Stamina", INT = "Intellect", SPI = "Spirit", AP = "Attack Power",
+  RAP = "Ranged AP", FAP = "Feral AP", CRIT = "Crit", SCRIT = "Spell crit", HIT = "Hit", HASTE = "Haste", RHASTE = "Ranged haste",
+  EXPERTISE = "Expertise", SP = "Spell power", SP_HOLY = "Holy damage", SP_FIRE = "Fire damage", SP_NATURE = "Nature damage",
+  SP_FROST = "Frost damage", SP_SHADOW = "Shadow damage", SP_ARCANE = "Arcane damage", HEAL = "Healing", MP5 = "Mana regen",
+  ARMOR = "Armor", DEF = "Defense", DODGE = "Dodge", PARRY = "Parry", BLOCK = "Block", BLOCKVAL = "Block value",
+  WEAPON = "Weapon damage", SPEED = "Weapon speed", RELIC = "Item level" }
+function RG.ScoreBreakdown(link)
+  local parts = {}
+  local ok, d = pcall(compareRaw, link, nil, parts)
+  if not ok or not d then return nil end
+  local list = {}
+  for k, v in pairs(parts) do if math.abs(v) >= 0.5 then list[#list + 1] = { k = k, v = v } end end
+  if #list == 0 then return nil end
+  table.sort(list, function(a, b) return math.abs(a.v) > math.abs(b.v) end)
+  local out = {}
+  for i = 1, math.min(4, #list) do
+    local e = list[i]
+    out[#out + 1] = (e.v > 0 and GREEN .. string.format("+%.0f", e.v) or RED .. string.format("%.0f", e.v)) .. "|r " .. GREY .. (PART_NAME[e.k] or e.k) .. "|r"
+  end
+  return table.concat(out, GREY .. "  ·  |r")
 end
 
 function RG.FormatDelta(d)
@@ -717,6 +831,8 @@ local function OnTooltip(tooltip, data)
   tooltip:AddLine(" ")
   if right then tooltip:AddDoubleLine(icon .. GOLD .. RG.SCORE_NAME .. "|r  " .. string.format("%.0f", score), right)
   else tooltip:AddLine(icon .. GOLD .. RG.SCORE_NAME .. "|r  " .. string.format("%.0f", score)) end
+  local why = delta and math.abs(delta) > 0.5 and RG.ScoreBreakdown and RG.ScoreBreakdown(link)
+  if why then tooltip:AddLine(why, 1, 1, 1, true) end
   local id = tonumber(link:match("item:(%d+)"))
   if id then
     local guide = RG.GuideByID and RG.GuideByID[id]

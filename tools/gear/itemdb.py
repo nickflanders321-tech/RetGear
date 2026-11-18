@@ -20,7 +20,8 @@ STAT = {"ITEM_MOD_STRENGTH_SHORT": "STR", "ITEM_MOD_AGILITY_SHORT": "AGI", "ITEM
         "ITEM_MOD_ATTACK_POWER_SHORT": "AP", "ITEM_MOD_MELEE_ATTACK_POWER_SHORT": "AP", "ITEM_MOD_RANGED_ATTACK_POWER_SHORT": "RAP",
         "ITEM_MOD_SPELL_DAMAGE_DONE": "SP", "ITEM_MOD_SPELL_HEALING_DONE": "HEAL",
         "ITEM_MOD_POWER_REGEN0_SHORT": "MP5", "CRIT_PCT": "CRIT", "SPELL_CRIT_PCT": "CRIT", "HIT_PCT": "HIT", "SPELL_HIT_PCT": "HIT",
-        "DEFENSE": "DEF", "DODGE_PCT": "DODGE", "PARRY_PCT": "PARRY", "BLOCK_PCT": "BLOCK", "BLOCK_VALUE": "BLOCKVAL"}
+        "DEFENSE": "DEF", "DODGE_PCT": "DODGE", "PARRY_PCT": "PARRY", "BLOCK_PCT": "BLOCK", "BLOCK_VALUE": "BLOCKVAL",
+        "EXPERTISE": "EXPERTISE", "MELEE_HASTE_PCT": "HASTE", "RANGED_HASTE_PCT": "RHASTE", "FERAL_ATTACK_POWER": "FAP"}
 # Forever counts melee and spell crit (and hit) as one stat: an item listing both gives it once
 MERGED = {"CRIT", "HIT"}
 ROW = re.compile(r'^\[(\d+)\]=(?:"((?:[^"\\]|\\.)*)"|(-?[\d.]+)),?\s*$')

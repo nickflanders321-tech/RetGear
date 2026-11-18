@@ -633,6 +633,18 @@ local function renderGear()
     rows[n].onClick = function() local nx = setups[idx % #setups + 1]; RG.SetWeaponSetup(nx.key) end
     rows[n].tip = "Click for the next setup. Your weapon lists and upgrade scores follow how you fight."
   end
+  local ms = RG.MainSpec and RG.MainSpec()
+  if RG.PLAYER_CLASS == "PALADIN" and RG.SetRetBuild and ms and ms.key == "ret" then
+    local cur, idx = RG.RetBuild(), 1
+    for i, b in ipairs(RG.RET_BUILDS) do if b.key == cur then idx = i end end
+    local labels = {}
+    for i, b in ipairs(RG.RET_BUILDS) do labels[#labels + 1] = (i == idx and GOLD or GREY) .. b.label .. "|r" end
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffRet build|r", table.concat(labels, GREY .. "  ·  |r"), GOLD .. RG.RET_BUILDS[idx].label .. "|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\Spell_Holy_AuraOfLight")
+    rows[n].onClick = function() RG.SetRetBuild(RG.RET_BUILDS[idx % #RG.RET_BUILDS + 1].key) end
+    rows[n].tip = "Click to switch. The WoW Forever simulator (wowsims) weighs Ret gear differently for each build: Holy Shock values hit, crit and spell power more. Weights you set yourself stay."
+  end
   if RG.OpenWeightEditor then
     n = n + 1
     local pname = RG.WeightProfileName and RG.WeightProfileName()

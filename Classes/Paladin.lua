@@ -24,12 +24,7 @@ P.weights = {
   SP_HOLY    = 0.3,   -- Holy spell damage only (Exorcism, Consecration, Holy Strike)
   WEAPON_DPS = 14,    -- per point of two-hand weapon DPS
   SLOW_BONUS = 4,     -- per 0.1 sec of weapon speed above 3.0 (slow 2H swings hit harder)
-  -- Modern rating stats, in case WoW Forever items use ratings instead of %:
-  CRIT_RATING = 1.0,
-  HIT_RATING  = 1.0,
-  HASTE_RATING = 0.8,
-  MASTERY_RATING = 0.6,
-  VERS_RATING = 0.7,
+  -- (a crit, hit or haste rating on an item counts as the percent it gives: Core.lua's RATING_PCT)
 }
 
 -- Hit chance needed to never miss a boss three levels above you.

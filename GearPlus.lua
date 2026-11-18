@@ -321,13 +321,14 @@ end
 -- Pawn's stat names -> Waypath+'s (anything else in a Pawn scale is skipped and listed)
 local PAWN = {
   Strength = "STR", Agility = "AGI", Stamina = "STA", Intellect = "INT", Spirit = "SPI", Armor = "ARMOR",
-  Ap = "AP", Rap = "RAP", FeralAp = "AP", SpellDamage = "SP", SpellPower = "SP", Healing = "HEAL",
+  Ap = "AP", Rap = "RAP", FeralAp = "FAP", SpellDamage = "SP", SpellPower = "SP", Healing = "HEAL",
   FireSpellDamage = "SP_FIRE", FrostSpellDamage = "SP_FROST", ShadowSpellDamage = "SP_SHADOW", ArcaneSpellDamage = "SP_ARCANE",
   NatureSpellDamage = "SP_NATURE", HolySpellDamage = "SP_HOLY", Mp5 = "MP5", Hp5 = "HP5",
   HitRating = "HIT", Hit = "HIT", HitPercent = "HIT", CritRating = "CRIT", Crit = "CRIT", CritPercent = "CRIT",
   SpellHitRating = "HIT", SpellHit = "HIT", SpellCritRating = "CRIT", SpellCrit = "CRIT",
   DefenseRating = "DEF", Defense = "DEF", DodgeRating = "DODGE", Dodge = "DODGE", DodgePercent = "DODGE",
-  ParryRating = "PARRY", Parry = "PARRY", BlockRating = "BLOCK", Block = "BLOCK", BlockValue = "BLOCKVALUE",
+  ParryRating = "PARRY", Parry = "PARRY", BlockRating = "BLOCK", Block = "BLOCK", BlockValue = "BLOCKVAL",
+  HasteRating = "HASTE", Haste = "HASTE", HastePercent = "HASTE", Expertise = "EXPERTISE", ExpertiseRating = "EXPERTISE",
   Dps = "WEAPON_DPS", MeleeDps = "WEAPON_DPS", RangedDps = "RANGED_DPS",
 }
 -- a Pawn scale string: ( Pawn: v1: "Name": Strength=2, Agility=1.1, ... )  -> name, weights, skipped stats
@@ -405,7 +406,7 @@ local function makeEditor()
   RG.DialogBackdrop(ed)
   ed.t = ed:CreateFontString(nil, "OVERLAY"); RG.Font(ed.t, "semibold", 14); ed.t:SetPoint("TOPLEFT", 14, -12); ed.t:SetText(GOLD .. "Stat weights|r")
   ed.h = ed:CreateFontString(nil, "OVERLAY"); RG.Font(ed.h, "regular", 11); ed.h:SetPoint("TOPLEFT", ed.t, "BOTTOMLEFT", 0, -6); ed.h:SetWidth(430); ed.h:SetJustifyH("LEFT")
-  ed.h:SetText(GREY .. "Points per stat (Hit and crit per 1%). Change the numbers, or paste a Pawn scale here to import it. Scores, tooltips and upgrade arrows follow your weights; the gear lists themselves come from Waypath+'s own.|r")
+  ed.h:SetText(GREY .. "Points per stat at level 60 (hit, crit and haste per 1%; below 60 those count for less, as they do in the game). Change the numbers, or paste a Pawn scale here to import it. Scores, tooltips and upgrade arrows follow your weights; the gear lists themselves come from Waypath+'s own.|r")
   local sf = CreateFrame("ScrollFrame", nil, ed, "UIPanelScrollFrameTemplate")
   sf:SetPoint("TOPLEFT", 14, -74); sf:SetPoint("BOTTOMRIGHT", -34, 84)
   ed.box = CreateFrame("EditBox", nil, sf); ed.box:SetMultiLine(true); ed.box:SetAutoFocus(false); ed.box:SetWidth(400)

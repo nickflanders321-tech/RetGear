@@ -286,11 +286,18 @@ def weapon(d):
 
 MULT_2H = {"2H": 1, "DW": 0.75, "ranged": 1, "caster": 0, "feral": 1, "tank": 0.6}
 MULT_1H = {"2H": 0.55, "DW": 1, "ranged": 0.55, "caster": 0, "feral": 0.55, "tank": 1}
-def score(d, slot, C):
-    """Same formula as RG.Score in Core.lua."""
+# Level scaling, as RG.LevelFactor in Core.lua: the weights are level-60 values, and crit, hit, haste, dodge... are worth
+# less Strength or Attack Power lower down, in step with a typical character's Attack Power plus 14 x weapon DPS
+LEVEL_SCALED = {"CRIT", "HIT", "HASTE", "RHASTE", "EXPERTISE", "SCRIT", "DODGE", "PARRY", "BLOCK", "DEF"}
+def level_factor(lvl):
+    return max(0.15, min(1.0, (lvl + 4) / 64.0))
+
+def score(d, slot, C, lvl=60, f=None):
+    """Same formula as RG.Score in Core.lua, for a character of level lvl (or with level factor f)."""
     W, model = C["w"], C["model"]
     s = stats_of(d)
-    v = sum(W.get(k, 0) * s[k] for k in s)
+    if f is None: f = level_factor(lvl)
+    v = sum(W.get(k, 0) * s[k] * (f if k in LEVEL_SCALED else 1) for k in s)
     # what the item gives beyond its armor value (and, except for tanks, beyond Stamina)
     stat_only = v - W.get("ARMOR", 0) * s.get("ARMOR", 0)
     if C.get("kind") != "tank": stat_only -= W.get("STA", 0) * s.get("STA", 0)
@@ -608,6 +615,11 @@ SETUPS = {"WARRIOR": ("DW", "SB"), "PALADIN": ("SB",), "SHAMAN": ("SB",), "HUNTE
 SETUP_MODEL = {"DW": "DW", "SB": "tank"}
 WEAPON_SLOTS = {"2H", "Main Hand", "Off Hand"}
 
+def at(c, lvl):
+    """a candidate's score for a character of level lvl"""
+    if "B" not in c: return c["score"]
+    return c["A"] + c["B"] * level_factor(lvl)
+
 def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
     """The upgrade path for every slot plus the best quest reward and dungeon drop per
     5-level window, from lvl_from to 60. alts: also the best piece from each kind of source per
@@ -630,15 +642,18 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         if not src: continue
         req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
         if req > 60: continue
-        sc, st, stat_only = score(d, slot, C)
-        if sc <= 0: continue
-        # armor and jewelry must carry stats this class wants, not only Stamina
-        if slot in ARMOR_INV.values() and stat_only <= 1.0: continue
         src.sort(key=lambda x: ORDER.get(x["how"], 9))
         s0 = src[0]
         lvl = max(req, int(s0.get("req") or 0)) if s0["how"] == "Quest" else req
+        # the score is A + B x level factor (B: the level-scaled stats), so a piece can be weighed at any level
+        a0, _, _ = score(d, slot, C, f=0.0)
+        a1, _, _ = score(d, slot, C, f=1.0)
+        sc, st, stat_only = score(d, slot, C, lvl)
+        if sc <= 0: continue
+        # armor and jewelry must carry stats this class wants, not only Stamina
+        if slot in ARMOR_INV.values() and stat_only <= 1.0: continue
         if lvl < max(5, lvl_from - 2): continue
-        cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "q": int(d["Quality"]),
+        cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "A": a0, "B": a1 - a0, "q": int(d["Quality"]),
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
                             "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"), "onah": any(x["how"] == "BoE" for x in src),
                             "mf": s0.get("mf"),
@@ -649,11 +664,13 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         all_c.sort(key=lambda c: (c["lvl"], -c["score"]))
         lst = [c for c in all_c if c["how"] not in EXTRA]
         by_id = {}
-        # 1) the upgrade path: anything better than everything available at its level or below
-        best = 0
+        # 1) the upgrade path: anything better than everything available at its level or below (each weighed at
+        #    the new piece's level: crit on an older piece is worth more by then too)
+        path = []
         for c in lst:
+            best = max([at(p, c["lvl"]) for p in path] or [0])
             if c["score"] > best * 1.05:
-                by_id[c["id"]] = c; best = max(best, c["score"])
+                by_id[c["id"]] = c; path.append(c)
         # 2) per 5-level window: the best quest reward and the best dungeon drop (easy alternatives)
         for lo in range(start, 61, 5):
             win = [c for c in lst if lo <= c["lvl"] < lo + 5]
@@ -661,7 +678,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
                 w = [c for c in win if c["how"] == how]
                 if w:
                     top = max(w, key=lambda c: c["score"])
-                    prior = max([c["score"] for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
+                    prior = max([at(c, top["lvl"]) for c in by_id.values() if c["lvl"] <= lo - 3] or [0])
                     if top["score"] > prior * 1.05: by_id[top["id"]] = top
         # 3) crafted gear and Auction House world drops, only when they clearly beat everything else you can get by
         #    then (15% or more) and the last such piece picked for the slot (10%), so they don't crowd out your
@@ -670,7 +687,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
             best_x = 0
             for c in all_c:
                 if c["how"] != how: continue
-                other = max([x["score"] for x in lst if x["lvl"] <= c["lvl"]] or [0])
+                other = max([at(x, c["lvl"]) for x in lst if x["lvl"] <= c["lvl"]] or [0])
                 if c["score"] > other * 1.15 and c["score"] > best_x * 1.10:
                     by_id[c["id"]] = c; best_x = c["score"]
         picked += [c for c in by_id.values() if c["lvl"] >= lvl_from - 2]
