@@ -112,7 +112,19 @@ local function applyKey()
   else softOff() end
 end
 RG.FishApplyKey = applyKey
-function RG.FishKey() return db().key end
+-- the key's name as players know it ("Mouse Button 4", "SHIFT-Mouse Wheel Up"); short = for the HUD's little label
+local MOUSE_NAME = { BUTTON3 = { "Middle Mouse", "MM" }, MOUSEWHEELUP = { "Mouse Wheel Up", "WhUp" },
+  MOUSEWHEELDOWN = { "Mouse Wheel Down", "WhDn" } }
+function RG.FishKeyText(key, short)
+  if not key then return nil end
+  local mods, base = key:match("^(.-)([^-]+)$")
+  local name = MOUSE_NAME[base] and MOUSE_NAME[base][short and 2 or 1]
+  local n = not name and base:match("^BUTTON(%d+)$")
+  if n then name = short and ("M" .. n) or ("Mouse Button " .. n) end
+  if short and mods ~= "" then mods = mods:gsub("SHIFT%-", "s"):gsub("CTRL%-", "c"):gsub("ALT%-", "a") end
+  return (mods or "") .. (name or base)
+end
+function RG.FishKey(short) return RG.FishKeyText(db().key, short) end
 function RG.FishSetKey(key)
   if inCombat() then RG.Print("Set your fishing key after the fight.") return end
   db().key = key
@@ -125,25 +137,47 @@ local picker
 function RG.FishPickKey(done)
   if inCombat() then RG.Print("Set your fishing key after the fight.") return end
   if not picker then
-    picker = CreateFrame("Frame", "WaypathFishKeyPicker", UIParent, "BackdropTemplate")
-    picker:SetSize(340, 96); picker:SetPoint("CENTER", 0, 120); picker:SetFrameStrata("FULLSCREEN_DIALOG")
-    if RG.DialogBackdrop then RG.DialogBackdrop(picker) end
-    picker.t = picker:CreateFontString(nil, "OVERLAY"); RG.Font(picker.t, "display", 16); picker.t:SetTextColor(0.937, 0.902, 0.824); picker.t:SetPoint("TOP", 0, -18); picker.t:SetText("Press the key you want to fish with")
-    picker.s = picker:CreateFontString(nil, "OVERLAY"); RG.Font(picker.s, "regular", 12); picker.s:SetPoint("TOP", picker.t, "BOTTOM", 0, -10)
-    picker.s:SetText("It casts, then hooks the fish at the splash.\nEsc cancels  ·  Backspace removes the key"); picker.s:SetTextColor(0.75, 0.75, 0.75)
+    -- the whole screen listens (so a mouse button or the wheel anywhere counts); the box in the middle says what to do
+    picker = CreateFrame("Frame", "WaypathFishKeyPicker", UIParent)
+    picker:SetAllPoints(UIParent); picker:SetFrameStrata("FULLSCREEN_DIALOG")
+    local box = CreateFrame("Frame", nil, picker, "BackdropTemplate")
+    box:SetSize(360, 112); box:SetPoint("CENTER", 0, 120)
+    if RG.DialogBackdrop then RG.DialogBackdrop(box) end
+    picker.t = box:CreateFontString(nil, "OVERLAY"); RG.Font(picker.t, "display", 16); picker.t:SetTextColor(0.937, 0.902, 0.824); picker.t:SetPoint("TOP", 0, -18); picker.t:SetText("Press the key or mouse button to fish with")
+    picker.s = box:CreateFontString(nil, "OVERLAY"); RG.Font(picker.s, "regular", 12); picker.s:SetPoint("TOP", picker.t, "BOTTOM", 0, -10)
+    picker.hint = "It casts, then hooks the fish at the splash. Side buttons, the middle\nbutton and the wheel work too. Esc cancels  ·  Backspace removes it"
+    picker.s:SetText(picker.hint); picker.s:SetTextColor(0.75, 0.75, 0.75)
+    picker.s:SetJustifyH("CENTER")
     picker:EnableKeyboard(true)
     if picker.SetPropagateKeyboardInput then picker:SetPropagateKeyboardInput(false) end
-    picker:SetScript("OnKeyDown", function(self, k)
-      if k == "LSHIFT" or k == "RSHIFT" or k == "LCTRL" or k == "RCTRL" or k == "LALT" or k == "RALT" then return end
+    local function take(self, k)
       self:Hide()
-      if k == "ESCAPE" then return end
-      if k == "BACKSPACE" or k == "DELETE" then RG.FishSetKey(nil); if self.done then self.done(nil) end return end
       local mods = (IsAltKeyDown() and "ALT-" or "") .. (IsControlKeyDown() and "CTRL-" or "") .. (IsShiftKeyDown() and "SHIFT-" or "")
       RG.FishSetKey(mods .. k)
       if self.done then self.done(mods .. k) end
+    end
+    picker:SetScript("OnKeyDown", function(self, k)
+      if k == "LSHIFT" or k == "RSHIFT" or k == "LCTRL" or k == "RCTRL" or k == "LALT" or k == "RALT" then return end
+      if k == "ESCAPE" then self:Hide() return end
+      if k == "BACKSPACE" or k == "DELETE" then self:Hide(); RG.FishSetKey(nil); if self.done then self.done(nil) end return end
+      take(self, k)
     end)
+    -- mouse buttons: the left and right buttons stay yours (they click, turn the camera and loot), so they can't be picked
+    picker:EnableMouse(true)
+    picker:SetScript("OnMouseDown", function(self, b)
+      if b == "LeftButton" or b == "RightButton" then
+        picker.s:SetText("The left and right buttons stay yours: pick a side button,\nthe middle button, the wheel or a key. Esc cancels")
+        return
+      end
+      if b == "MiddleButton" then take(self, "BUTTON3") return end
+      local n = b and b:match("^Button(%d+)$")
+      if n then take(self, "BUTTON" .. n) end
+    end)
+    if picker.EnableMouseWheel then picker:EnableMouseWheel(true) end
+    picker:SetScript("OnMouseWheel", function(self, delta) take(self, delta > 0 and "MOUSEWHEELUP" or "MOUSEWHEELDOWN") end)
   end
   picker.done = done
+  picker.s:SetText(picker.hint)
   picker:Show()
 end
 

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **One-key fishing works with mouse buttons.** The key picker on the Fishing tab now takes a side mouse button (Mouse Button 4, 5...), the middle button or the mouse wheel, with Shift, Ctrl or Alt if you like. The left and right buttons stay yours.
 - **Gear scores read every item right.** Fixes found by a new audit that runs every weapon and armor piece in WoW Forever (10,551 with stats) through the add-on's own stat reader, in every form the game can show it:
   - **Nothing counts twice.** The game often shows a stat in its stat list and again as an "Equip:" line (spell power does: Witherseed Gloves came out as an upgrade over plate Strength gloves). Each stat now counts once, at its larger value. 1.50.0 could also count crit and hit twice.
   - **Ratings counted right.** WoW Forever stores dodge, parry and block as ratings (12, 15 and 5 per 1%); they were counted as whole percents, 5 to 15 times too much for tanks.

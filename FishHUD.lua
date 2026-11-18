@@ -366,7 +366,7 @@ local function actionDef(list)
       tip = { "Watch your bobber", "At the splash, " .. (k and ("press " .. k .. " or ") or "") .. "right-click the bobber to hook the fish. Clicking here now would only cast again, so it waits." } }
   end
   return { key = "cast", icon = ic or "Interface\\Icons\\Trade_Fishing", state = "main", secure = { type = "spell", spell = n or "Fishing" },
-    keytext = RG.FishKey and RG.FishKey() or nil, tip = "cast" }
+    keytext = RG.FishKey and RG.FishKey(true) or nil, tip = "cast" }
 end
 
 
