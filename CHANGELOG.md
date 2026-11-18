@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.49.0
+- **Profession guides follow wow-professions.com's updated WoW Forever routes:** Leatherworking 30-55 lists the new alternative (24 Light Armor Kits, then 10 Embossed Leather Gloves) next to the Cured Light Hides; Blacksmithing notes that Derotain Mudsipper's Imperial Plate quests needed skill 265 in Classic and probably need less in Forever (unconfirmed). Tailoring's route is unchanged (the guide now gives its material totals as ranges). All checked against the game's own recipe ranges.
+- Quest and card data updated from WoW Forever's latest game data.
+
 ## v1.48.1
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
 

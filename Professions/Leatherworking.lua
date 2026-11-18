@@ -22,7 +22,7 @@ L.trainA = {
 L.supplies = "Salt, threads and dyes: the Leatherworking Supply vendor by each trainer (Brill: Abigail Shiel)."
 L.plan = {
   { from = 1,   to = 30,  craft = "Light Leather", n = 35, mats = "3 Ruined Leather Scraps each (or Light Armor Kit from bought Light Leather)" },
-  { from = 30,  to = 55,  craft = "Cured Light Hide", n = 27, mats = "1 Light Hide, 1 Salt each. Keep 24 for 100." },
+  { from = 30,  to = 55,  craft = "Cured Light Hide", n = 27, mats = "1 Light Hide, 1 Salt each. Keep 24 for 100. (Or 24 Light Armor Kits, 1 Light Leather each, then 10 Embossed Leather Gloves, 3 Light Leather, 2 Coarse Thread each; cure the hides for 100 later)" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 55,  to = 75,  craft = "Embossed Leather Gloves", n = 21, mats = "3 Light Leather, 2 Coarse Thread each" },
   { from = 75,  to = 80,  craft = "Medium Leather", n = 8, mats = "4 Light Leather each" },
