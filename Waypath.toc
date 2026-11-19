@@ -95,6 +95,7 @@ ArcadeCards.lua
 ArcadeMythic.lua
 ArcadeArt.lua
 ArcadeFrame.lua
+ArcadeRaiderLook.lua
 ArcadeDungeons.lua
 ArcadeField.lua
 ArcadeRaids.lua

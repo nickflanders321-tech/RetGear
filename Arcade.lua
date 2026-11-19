@@ -1681,8 +1681,8 @@ end
 -- with the card's other pictures, so it is first reset to a player character (SetUnit "player": also what gives the
 -- body its skin) and then turned into the raider's race. Whether this client really does that is checked once with a
 -- hidden model (RG.ArcadeRaceProbe): when the race doesn't change, a raider card would show someone else (your own
--- character, or the card shown before it), so then it gets its own drawn scenery instead. It never shows a different
--- race or a stand-in.
+-- character, or the card shown before it), so then it shows a stand-in of exactly the raider's race and sex instead
+-- (standIn, below). It never shows a different race.
 local function raceAD() local a = WaypathDB and WaypathDB.arcade; return a end
 function RG.ArcadeRaceProbe()
   local a = raceAD()
@@ -1714,19 +1714,45 @@ function RG.ArcadeRaceProbe()
   -- (no answer within a few seconds: try again next session)
   if C_Timer and C_Timer.After then C_Timer.After(6, function() if a.customRace == nil then m:Hide(); RG.__raceProbe = nil end end) end
 end
+-- On a client that can't change a model's race: a raider of your own race and sex is your own character in their
+-- class's raid set (as above, minus the race change); anyone else is one of the game's own NPCs of exactly their race
+-- and sex, dressed most like their class's raid set (ArcadeRaiderLook.lua, from the game's tables).
+local function standIn(w, m, c, ri)
+  local _, mine = UnitRace("player")
+  local mineInfo = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(mine)
+  local same = mineInfo and mineInfo.id == ri.id and (UnitSex("player") == 3) == (c.sex == 3)
+  if same and m.SetUnit and pcall(m.SetUnit, m, "player") then
+    m.creature = false
+    return true
+  end
+  local look = RG.ARCADE_RAIDER_LOOK and RG.ARCADE_RAIDER_LOOK[c.class or ""]
+  local d = look and look[ri.id .. ":" .. (c.sex == 3 and 1 or 0)]
+  if not (d and m.SetDisplayInfo) then return false end
+  m.creature = true; m.zoom = 0; m.cam = 1; m.face = 0.4
+  if not pcall(m.SetDisplayInfo, m, d) then return false end
+  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
+  if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
+  m:Show()
+  return "npc"
+end
 local function dressModel(w, c, finish)
   local a = raceAD()
-  if a and a.customRace == false then return false end
   if RG.ArcadeRaceProbe then RG.ArcadeRaceProbe() end
   local m = ensureModel(w)
-  if not m or not m.SetCustomRace or not m.SetUnit then return false end
+  if not m then return false end
   local ri = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(c.race)
   if not (ri and ri.id) then return false end
   m.cls = c.class; m.creature = false
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
-  if not pcall(m.SetUnit, m, "player") then m:Hide() return false end
-  if not pcall(m.SetCustomRace, m, ri.id, c.sex == 3 and 1 or 0) then m:Hide() return false end
+  if (a and a.customRace == false) or not m.SetCustomRace or not m.SetUnit then
+    local r = standIn(w, m, c, ri)
+    if r == "npc" then return true end
+    if not r then m:Hide() return false end
+  else
+    if not pcall(m.SetUnit, m, "player") then m:Hide() return false end
+    if not pcall(m.SetCustomRace, m, ri.id, c.sex == 3 and 1 or 0) then m:Hide() return false end
+  end
   pcall(function()
     if m.Undress then m:Undress() end
     for _, id in ipairs((RG.ARCADE_GEAR or {})[c.class or ""] or {}) do if m.TryOn then m:TryOn("item:" .. id) end end

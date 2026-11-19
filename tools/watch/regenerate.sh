@@ -70,6 +70,9 @@ python3 tools/arcade/holidays.py "$T/classic.sql" "$T/forever_gear.json" "$T/hol
 python3 tools/arcade/firstseen.py .
 # how close each NPC card's camera sits, from its model's proportions in the game's model table
 [ -s "$T/wago/CreatureModelData.csv.gz" ] && python3 tools/arcade/frame.py "$T/wago" .
+# raider cards' stand-ins (a client that can't change a model's race): an NPC of the raider's race and sex in armor most
+# like their class's raid set
+[ -s "$T/wago/NPCModelItemSlotDisplayInfo.csv.gz" ] && python3 tools/arcade/raiderlook.py "$T/wago" . "$T/classic.sql" "$T/qdb"
 # card art the game can't find by itself: item icons on appearances, dungeons' loading screens
 [ -s "$T/wago/ItemAppearance.csv.gz" ] && python3 tools/arcade/artfix.py "$T/classic.sql" "$T/wago" .
 # players' /wp share reports (GitHub issues labelled "quests"): quests the published data doesn't have yet
