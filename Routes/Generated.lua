@@ -1028,7 +1028,7 @@ RG.GEN_STEPS = {
       { t = "Deathstalker Lesh (level 20): Time To Strike.", q = { 494 }, w = { 1424, 20.8, 47.4, "Deathstalker Lesh" } },
       { t = "At Tarren Mill (levels 25-26): Battle of Hillsbrad, Souvenirs of Death, Scout Support. From High Executor Darthalia, Deathguard Samsa.", q = { 528, 546, 98094, 529, 532 }, w = { 1424, 62.8, 19.0, "Tarren Mill" } },
       { t = "At Tarren Mill (level 28): Elixir of Agony, Battle of Hillsbrad. From Apothecary Lydon, High Executor Darthalia.", q = { 509, 539, 513 }, w = { 1424, 62.8, 19.0, "Tarren Mill" } },
-      { t = "Deathstalker Masoj (level 25): Valuable Vantages.", q = { 98095 }, w = { 1424, 63.6, 53.1, "Deathstalker Masoj" } },
+      { t = "Deathstalker Masoj (level 25): Valuable Vantages.", q = { 98095 }, w = { 1424, 64.0, 53.8, "Deathstalker Masoj" } },
       { t = "At Tarren Mill (level 30): Humbert's Sword, Battle of Hillsbrad. From Deathguard Humbert, High Executor Darthalia.", q = { 547, 541 }, w = { 1424, 62.8, 19.0, "Tarren Mill" } },
       { t = "At Tarren Mill (level 32): The Hammer May Fall, Battle of Hillsbrad. From Tallow, High Executor Darthalia.", q = { 676, 550 }, w = { 1424, 62.8, 19.0, "Tarren Mill" } },
       { t = "At Undercity (level 30): Elixir of Agony. From Master Apothecary Faranell.", q = { 515 }, w = { 1458, 48.8, 69.3, "Undercity" } },

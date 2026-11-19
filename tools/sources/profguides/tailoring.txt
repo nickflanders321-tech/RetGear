@@ -3,18 +3,18 @@ WoW Forever Tailoring Leveling Guide 1-300
 This WoW Forever Tailoring leveling guide will show you the fastest and cheapest way to level your Tailoring skill from 1 to 300. You will also find every trainer location and where to train Tailoring past 75, 150 and 225.
 1-150
 60x Linen Cloth
-408-459x Wool Cloth
+459x Wool Cloth
 29x Elixir of Wisdom
-205-216x Silk Cloth
-94-115x Mageweave Cloth
+216x Silk Cloth
+115x Mageweave Cloth
 150-225
-492-520x Silk Cloth
-507-625x Mageweave Cloth
-102-125x Bolt of Mageweave
-104-115x Runecloth
+520x Silk Cloth
+555x Mageweave Cloth
+125x Bolt of Mageweave
+115x Runecloth
 225-280
 This list is not final yet, but the skill ranges come from the game data, so it should be pretty close. The 280-300 part is not included here yet.
-1292-1440x Runecloth
+1440x Runecloth
 44x Rugged Leather
 39x Ironweb Spider Silk
 Apprentice Tailoring (1-55)
@@ -41,14 +41,14 @@ Expert Tailoring (140-200)
 170-190
 26x Crimson Silk Pantaloons - 104 Bolt of Silk Cloth, 52 Red Dye, 52 Silken Thread
 190-200
-19x Black Mageweave Leggings - 38 Bolt of Mageweave, 57 Silken Thread
+17x Black Mageweave Leggings - 34 Bolt of Mageweave, 51 Silken Thread
 Artisan Tailoring (200-300)
 200-205
 5x Black Mageweave Shoulders - 15 Bolt of Mageweave, 10 Heavy Silken Thread
 205-215
 23x Bolt of Runecloth - 115 Runecloth
 215-225
-19x Red Mageweave Bag - 95 Bolt of Mageweave, 38 Red Dye, 38 Heavy Silken Thread
+17x Red Mageweave Bag - 85 Bolt of Mageweave, 34 Red Dye, 34 Heavy Silken Thread
 10x Runecloth Belt - 30 Bolt of Runecloth, 10 Rune Thread
 225-240
 24x Runecloth Belt - 72 Bolt of Runecloth, 24 Rune Thread
@@ -56,6 +56,8 @@ Artisan Tailoring (200-300)
 11x Runecloth Gloves - 44 Bolt of Runecloth, 44 Rugged Leather, 11 Rune Thread
 250-280
 39x Runecloth Cuffs - 195 Bolt of Runecloth, 39 Ironweb Spider Silk, 39 Rune Thread
+19x Runecloth Gloves - 76 Bolt of Runecloth, 76 Rugged Leather, 19 Rune Thread
+21x Runecloth Shoulders - 147 Bolt of Runecloth, 42 Ironweb Spider Silk, 84 Rugged Leather, 21 Rune Thread
 280-300
 280-300
 58x Runecloth Shoulders

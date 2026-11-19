@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.52.3
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.52.2
 - **Raider cards: the right person on every client.** Where the game can't change a model's race (the add-on checks once), a raider card no longer falls back to drawn scenery: a raider of your own race and sex is your own character in their class's raid set, and anyone else is one of the game's own NPCs of exactly their race and sex, picked from the game's tables for armor most like their class's raid sets (tier 1 to 3 pieces first, then their armor type). All 144 race, sex and class combinations have one, and the weekly data update re-picks them and stops a release if one is missing.
 

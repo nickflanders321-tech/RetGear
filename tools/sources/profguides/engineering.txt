@@ -4,8 +4,8 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 1-150
 66x Rough Stone
 72x Copper Bar
-53x Linen Cloth
-60x Coarse Stone
+50x Linen Cloth
+51x Coarse Stone
 5x Silver Bar
 30x Light Leather and 10x Tigerseye
 80x Bronze Bar
@@ -24,8 +24,8 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 225-300
 84x Mithril Bar
 88x Dense Stone
-225x Thorium Bar
-35x Runecloth
+186x Thorium Bar
+20x Runecloth
 Apprentice Engineering (1-50)
 1-30
 66x Rough Blasting Powder - 66 Rough Stone
@@ -37,9 +37,9 @@ Journeyman Engineering (50-150)
 51-75
 33x Rough Copper Bomb - 33 Copper Bar, 33 Handful of Copper Bolts, 66 Rough Blasting Powder, 33 Linen Cloth
 75-90
-60x Coarse Blasting Powder - 60 Coarse Stone
+51x Coarse Blasting Powder - 51 Coarse Stone
 90-100
-20x Coarse Dynamite - 60 Coarse Blasting Powder, 20 Linen Cloth
+17x Coarse Dynamite - 51 Coarse Blasting Powder, 17 Linen Cloth
 100-105
 5x Silver Contact - 5 Silver Bar
 5x Flying Tiger Goggles - 30 Light Leather, 10 Tigerseye
@@ -70,7 +70,7 @@ Artisan Engineering (200-300)
 20x Hi-Explosive Bomb - 40 Mithril Casing, 20 Unstable Trigger, 40 Solid Blasting Powder
 250-260
 44x Dense Blasting Powder - 88 Dense Stone
-260-285
-35x Thorium Widget - 105 Thorium Bar, 35 Runecloth
-285-300
-20x Thorium Tube - 120 Thorium Bar
+260-280
+20x Thorium Widget - 60 Thorium Bar, 20 Runecloth
+280-300
+21x Thorium Tube - 126 Thorium Bar

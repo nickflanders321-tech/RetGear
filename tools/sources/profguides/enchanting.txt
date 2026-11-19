@@ -4,14 +4,14 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 1-150
 19x Mote of Magic (vendor)
 1x Copper Rod (vendor)
-265x Strange Dust
+257x Strange Dust
 293x Lesser Magic Essence and 23x Simple Wood (vendor)
 1x Silver Rod
 1x Shadowgem
 4x Lesser Magic Essence
 3x Strange Dust
 150-225
-64x Soul Dust
+61x Soul Dust
 39x Soul Dust and 15x Vision Dust
 1x Golden Rod
 1x Iridescent Pearl
@@ -24,7 +24,7 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 1x Greater Mystic Essence
 50x Stranglethorn Seed (vendor)
 225-300
-37x Vision Dust
+34x Vision Dust
 260x Dream Dust
 20x Purple Lotus
 20x Crystal Vial (vendor)
@@ -53,7 +53,7 @@ Journeyman Enchanting (70-150)
 37x Enchant 2H Weapon - Lesser Intellect - 148 Lesser Magic Essence
 25x Enchant Boots - Minor Stamina - 100 Strange Dust
 70-85
-23x Enchant Chest - Inferior Stamina - 23 Strange Dust
+21x Enchant Chest - Inferior Stamina - 21 Strange Dust
 85-100
 15x Enchant Bracer - Minor Stamina - 30 Strange Dust
 100-109
@@ -61,7 +61,7 @@ Journeyman Enchanting (70-150)
 109-110
 1x Runed Silver Rod - 1 Silver Rod, 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem
 110-130
-32x Enchant Cloak - Minor Protection - 64 Strange Dust
+29x Enchant Cloak - Minor Protection - 58 Strange Dust
 130-150
 20x Enchant Boots - Minor Stamina - 80 Strange Dust
 20x Enchant Bracer - Lesser Stamina - 20 Soul Dust
@@ -71,7 +71,7 @@ Expert Enchanting (150-225)
 151-165
 16x Minor Mana Oil - 16 Soul Dust, 32 Maple Seed, 16 Leaded Vial
 165-200
-47x Enchant Boots - Lesser Agility - 47 Soul Dust
+44x Enchant Boots - Lesser Agility - 44 Soul Dust
 15x Enchant Bracer - Strength - 15 Vision Dust
 200-201
 1x Runed Truesilver Rod - 1 Truesilver Rod, 1 Black Pearl, 1 Greater Mystic Essence, 1 Vision Dust
@@ -82,7 +82,7 @@ If you didn't buy Formula: Lesser Wizard Oil yet, the vendors are listed at the 
 5x Enchant Cloak - Greater Defense - 5 Vision Dust
 Artisan Enchanting (225-300)
 225-250
-37x Enchant Gloves - Agility - 37 Vision Dust
+34x Enchant Gloves - Agility - 34 Vision Dust
 250-265
 20x Lesser Mana Oil - 20 Dream Dust, 20 Purple Lotus, 20 Crystal Vial
 265-299

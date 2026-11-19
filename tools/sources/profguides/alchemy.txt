@@ -14,10 +14,10 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 51x Kingsblood
 36x Liferoot
 225-300
-26x Liferoot
-26x Stranglekelp
+23x Liferoot
+23x Stranglekelp
 25x Khadgar's Whisker
-47x Sungrass
+44x Sungrass
 25x Blindweed
 47x Stonescale Eel
 Apprentice Alchemy (1-55)
@@ -45,7 +45,7 @@ Expert Alchemy (150-225)
 36x Nature Protection Potion - 36 Liferoot, 36 Stranglekelp, 36 Leaded Vial
 Artisan Alchemy (225-300)
 225-235
-26x Nature Protection Potion - 26 Liferoot, 26 Stranglekelp, 26 Leaded Vial
+23x Nature Protection Potion - 23 Liferoot, 23 Stranglekelp, 23 Leaded Vial
 235-250
 15x Elixir of Greater Intellect - 15 Blindweed, 15 Khadgar's Whisker, 15 Crystal Vial
 250-260
@@ -54,5 +54,5 @@ If Stonescale Eel is expensive, skip this and keep making the Elixir of Greater 
 260-265
 10x Elixir of Greater Intellect - 10 Blindweed, 10 Khadgar's Whisker, 10 Crystal Vial
 265-300
-47x Elixir of Greater Defense - 94 Stonescale Oil, 47 Sungrass, 47 Crystal Vial
+44x Elixir of Greater Defense - 88 Stonescale Oil, 44 Sungrass, 44 Crystal Vial
 55x Superior Mana Potion - 110 Sungrass, 110 Blindweed, 55 Crystal Vial
