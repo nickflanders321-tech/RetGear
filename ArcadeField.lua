@@ -158,7 +158,7 @@ RG.ARCADE_FIELD_ROWS = {
   { 2, "Rathorian", 4, 3, "Rare, level 15 demon" },
   { 2, "Stonearm", 4, 7, "Rare, level 15 humanoid" },
   { 2, "Dishu", 4, 1, "Rare, level 13 beast" },
-  { 2, "Doomkin", 3, 7, "Rare, level 9999" },
+  { 2, "Doomkin", 3, 7, "Rare" },
   { 2, "Harb Foulmountain", 4, 7, "Rare, level 27 humanoid" },
   { 2, "Sri'skulk", 4, 1, "Rare, level 13 beast" },
   { 2, "Coldrasp", 3, 7, "Rare, level 12" },

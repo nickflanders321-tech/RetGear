@@ -1592,7 +1592,15 @@ local function hasArt(c)
 end
 -- how close the camera sits: upright creatures are framed head and chest, long low ones whole, so each is centred
 local ZOOM = { [7] = 0.6, [1] = 0.05, [2] = 0.1, [3] = 0.4, [4] = 0.3, [5] = 0.3, [6] = 0.5, [8] = 0.0, [9] = 0.25 }
-function RG.ArcadeModelZoom(c) return ZOOM[c and c.ref or 7] or 0.4 end
+-- ... but a hunched or stocky model (a quilboar, an ogre, a gnome) framed that close fills the card with its head: the
+-- less upright the model (its height over its length, from the game's model table: ArcadeFrame.lua), the less it zooms.
+-- A human or an elf (about 1.9) keeps the full zoom; a quilboar (1.4) gets under half of it.
+function RG.ArcadeModelZoom(c)
+  local z = ZOOM[c and c.ref or 7] or 0.4
+  local up = c and RG.ARCADE_SHAPE and RG.ARCADE_SHAPE[c.name]
+  if up and z >= 0.25 then z = z * math.max(0.25, math.min(1, (up - 1.0) / 0.9)) end
+  return z
+end
 -- how far the camera sits back (1 = the game's own framing): dragons, giants and bosses are far bigger than the frame
 local CAM = { [1] = 1.3, [2] = 2.0, [3] = 1.4, [4] = 1.4, [5] = 1.8, [6] = 1.1, [7] = 1.0, [8] = 1.0, [9] = 1.3 }
 function RG.ArcadeCamScale(c)
@@ -1669,51 +1677,64 @@ local function placeArt(w, c, full)
   return true
 end
 
--- A Raider is shown as one of the game's own textured people of their class (a Scarlet judge, a dwarven pyromancer, a
--- dragonmaw battlemaster...), picked from the name so the same Raider always gets the same one. (A bare player-race
--- model has no skin when it is not a unit, so it came out all white.)
-local RAIDER_FACE = {
-  WARRIOR = { 4912, 10344, 4937, 10346, 10431 }, PALADIN = { 10355, 10342, 10431, 5072, 16154 },
-  PRIEST = { 12169, 10342, 5072, 10482, 10920 }, MAGE = { 2240, 8762, 16024, 10432, 9472 },
-  WARLOCK = { 10432, 6669, 11578, 9472, 10343 }, ROGUE = { 10343, 10875, 4003, 10344, 10346 },
-  HUNTER = { 10375, 4731, 10875, 4033, 10346 }, DRUID = { 2168, 1542, 12169, 15421, 10375 },
-  SHAMAN = { 6102, 10911, 10443, 10357, 4527 },
-}
-local RAIDER_ANY = { 10344, 10355, 10343, 2240, 8762, 10375, 4912, 12169 }
-local function dressModel(w, c, finish)
-  local m = ensureModel(w)
-  if not m then return false end
-  -- the raider as they are: a character of their race and sex, in their class's raid set (dressed once it loads)
-  local ri = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(c.race)
-  if ri and ri.id and m.SetCustomRace then
-    m.cls = c.class; m.creature = false
-    m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
-    m:SetFrameLevel(lv(w) + 2)
-    if pcall(m.SetCustomRace, m, ri.id, c.sex == 3 and 1 or 0) then
-      pcall(function()
-        if m.Undress then m:Undress() end
-        for _, id in ipairs((RG.ARCADE_GEAR or {})[c.class or ""] or {}) do if m.TryOn then m:TryOn("item:" .. id) end end
-      end)
-      m.zoom = 0
-      if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
-      if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
-      if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
-      m:Show()
-      return true
-    end
+-- A Raider is drawn as a character of their own race and sex in their class's raid set. The model frame is shared
+-- with the card's other pictures, so it is first reset to a player character (SetUnit "player": also what gives the
+-- body its skin) and then turned into the raider's race. Whether this client really does that is checked once with a
+-- hidden model (RG.ArcadeRaceProbe): when the race doesn't change, a raider card would show someone else (your own
+-- character, or the card shown before it), so then it gets its own drawn scenery instead. It never shows a different
+-- race or a stand-in.
+local function raceAD() local a = WaypathDB and WaypathDB.arcade; return a end
+function RG.ArcadeRaceProbe()
+  local a = raceAD()
+  if not a or a.customRace ~= nil or RG.__raceProbe then return end
+  local ok, m = pcall(CreateFrame, "DressUpModel", nil, UIParent)
+  if not ok or not m or not m.SetUnit or not m.SetCustomRace or not m.GetModelFileID then a.customRace = false return end
+  RG.__raceProbe = m
+  m:SetSize(64, 64); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -500, 500); m:SetAlpha(0); m:Show()
+  local step, own = 1, nil
+  local function finish(v)
+    a.customRace = v; m:Hide(); m:SetScript("OnModelLoaded", nil)
+    -- (raider cards already on screen were drawn before the answer: draw them again)
+    if v == false and RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end
   end
-  -- (a client that can't draw a race: a figure of that class from the game's own people)
-  if not m.SetDisplayInfo then return false end
-  local list = RAIDER_FACE[(c.class or ""):upper()] or RAIDER_ANY
-  local id = list[seedOf(c.name or "?") % #list + 1]
-  m.cls = c.class; m.creature = true
+  m:SetScript("OnModelLoaded", function(self)
+    local fid = self:GetModelFileID()
+    if step == 1 then
+      own = fid
+      -- another race and sex than yours: a Tauren if you aren't one, else a Gnome
+      local _, mine = UnitRace("player")
+      local probe = (mine == "Tauren") and 7 or 6
+      step = 2
+      if not pcall(self.SetCustomRace, self, probe, (UnitSex("player") == 3) and 0 or 1) then finish(false) end
+    elseif step == 2 then
+      finish(fid ~= nil and fid ~= 0 and fid ~= own)
+    end
+  end)
+  if not pcall(m.SetUnit, m, "player") then finish(false) return end
+  -- (no answer within a few seconds: try again next session)
+  if C_Timer and C_Timer.After then C_Timer.After(6, function() if a.customRace == nil then m:Hide(); RG.__raceProbe = nil end end) end
+end
+local function dressModel(w, c, finish)
+  local a = raceAD()
+  if a and a.customRace == false then return false end
+  if RG.ArcadeRaceProbe then RG.ArcadeRaceProbe() end
+  local m = ensureModel(w)
+  if not m or not m.SetCustomRace or not m.SetUnit then return false end
+  local ri = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(c.race)
+  if not (ri and ri.id) then return false end
+  m.cls = c.class; m.creature = false
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
   m:SetFrameLevel(lv(w) + 2)
-  if not pcall(m.SetDisplayInfo, m, id) then m:Hide() return false end
-  m.zoom = 0.3   -- (the whole figure, head included)
-  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, m.zoom) end
+  if not pcall(m.SetUnit, m, "player") then m:Hide() return false end
+  if not pcall(m.SetCustomRace, m, ri.id, c.sex == 3 and 1 or 0) then m:Hide() return false end
+  pcall(function()
+    if m.Undress then m:Undress() end
+    for _, id in ipairs((RG.ARCADE_GEAR or {})[c.class or ""] or {}) do if m.TryOn then m:TryOn("item:" .. id) end end
+  end)
+  m.zoom = 0
+  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
   if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
-  if m.SetFacing then pcall(m.SetFacing, m, 0.5) end
+  if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
   m:Show()
   return true
 end

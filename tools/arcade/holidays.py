@@ -28,6 +28,10 @@ for e, n, q in rows('item_template', ['entry', 'name', 'Quality']):
     quality[int(e)] = int(q); iname[int(e)] = clean(n)
 fv = json.load(open(json_path))
 FN = {int(k): v for k, v in fv["npcs"].items() if isinstance(v, dict)}
+# a level the game data marks as unknown or scaled (9999, -1...) is no level: the card uses the place's level
+for _n in FN.values():
+    _n["sortLevel"] = _n.get("maxLevel") or 0   # (the order cards were picked in stays as it always was)
+    if not (0 < (_n.get("maxLevel") or 0) <= 63): _n["maxLevel"] = None
 
 # Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
 # with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type
@@ -108,7 +112,7 @@ for hname, key, match, hid in HOLIDAYS:
         lunar_elder = key == "lunar" and nm.startswith("Elder ")
         tier = 2 if lunar_elder else (4 if lead is None else (3 if count[n] >= 3 else 2))
         lvl = clvl.get(n) or (FN.get(n) or {}).get("maxLevel") or 0
-        if add(2, nm, tier, ctype.get(n, 7), "%s, level %d%s" % (hname, lvl, tyword(ctype.get(n))), pool, lunar_elder):
+        if add(2, nm, tier, ctype.get(n, 7), (("%s, level %d%s" % (hname, lvl, tyword(ctype.get(n)))) if lvl else hname + tyword(ctype.get(n))), pool, lunar_elder):
             if lead is None and not lunar_elder: lead = nm
             if cdisp.get(n): displays[nm] = cdisp[n]
             else: creatures[nm] = n
@@ -121,7 +125,7 @@ for hname, key, match, hid in HOLIDAYS:
         if not nm or nm.startswith("Innkeeper") or re.search(r"Counter|Trigger|Bunny|Credit|Dummy|Target|Invisible", nm): continue
         elite = ((FN.get(n) or {}).get("rank") or 0) >= 1
         lvl = clvl.get(n) or (FN.get(n) or {}).get("maxLevel") or 0
-        if add(2, nm, 4 if elite else 3, ctype.get(n, 7), "%s, level %d%s" % (hname, lvl, tyword(ctype.get(n))), pool):
+        if add(2, nm, 4 if elite else 3, ctype.get(n, 7), (("%s, level %d%s" % (hname, lvl, tyword(ctype.get(n)))) if lvl else hname + tyword(ctype.get(n))), pool):
             if cdisp.get(n): displays[nm] = cdisp[n]
             else: creatures[nm] = n
     items = sorted({i for q in qs for i in rewards.get(q["id"], []) + q["items"]}, key=lambda i: (-quality.get(i, 1), iname.get(i, "")))

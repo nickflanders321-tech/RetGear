@@ -94,6 +94,7 @@ GateOff.lua
 ArcadeCards.lua
 ArcadeMythic.lua
 ArcadeArt.lua
+ArcadeFrame.lua
 ArcadeDungeons.lua
 ArcadeField.lua
 ArcadeRaids.lua

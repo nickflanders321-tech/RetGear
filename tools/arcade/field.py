@@ -33,6 +33,10 @@ for e, ct, m in rows('creature_template', ['Entry', 'CreatureType', 'ModelId1'])
 
 fv = json.load(open(json_path))
 FN = {int(k): v for k, v in fv["npcs"].items() if isinstance(v, dict)}
+# a level the game data marks as unknown or scaled (9999, -1...) is no level: the card uses the place's level
+for _n in FN.values():
+    _n["sortLevel"] = _n.get("maxLevel") or 0   # (the order cards were picked in stays as it always was)
+    if not (0 < (_n.get("maxLevel") or 0) <= 63): _n["maxLevel"] = None
 
 # Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
 # with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type
@@ -45,6 +49,19 @@ for _k, _v in FN.items():
     if ctype.get(_k) not in TYPE:
         _t = _tyname.get(clean(_v.get("name") or "").lower())
         if _t: ctype[_k] = _t
+# A level WoW Forever leaves unknown (9999): the classic creature's own, by its id, or by its name when only one
+# classic creature has it (a named one: Atal'alarion). WoW Forever's own dungeons reuse common names like "Skeleton" at
+# their own level: those take the dungeon's.
+_lvid, _lvname, _ncount = {}, {}, {}
+for _e, _n, _hi in rows('creature_template', ['Entry', 'Name', 'MaxLevel']):
+    _ncount[clean(_n).lower()] = _ncount.get(clean(_n).lower(), 0) + 1
+    if 0 < int(_hi or 0) <= 63:
+        _lvid[int(_e)] = int(_hi); _lvname.setdefault(clean(_n).lower(), int(_hi))
+for _k, _v in FN.items():
+    if not _v.get("maxLevel"):
+        _nm = clean(_v.get("name") or "").lower()
+        _v["maxLevel"] = _lvid.get(int(_k)) or (_lvname.get(_nm) if _ncount.get(_nm) == 1 else None)
+        _v["borrowedLevel"] = bool(_v["maxLevel"])
 def tyword(t): return (" " + TYPE[t]) if t in TYPE else ""
 
 # zone names: the same tables the gear guide uses
@@ -110,7 +127,7 @@ for nid, n in FN.items():
     z, zn = zone_of(z0)
     if not zn: continue
     rares.append((zn, nm, nid, n))
-rares.sort(key=lambda r: (r[0], -(r[3].get("maxLevel") or 0), r[1]))
+rares.sort(key=lambda r: (r[0], -r[3]["sortLevel"], r[1]))
 for zn, nm, nid, n in rares:
     pg = "Field Guide: " + zn
     pages.setdefault(pg, {"zone": zn, "cards": []})
@@ -123,7 +140,7 @@ for zn, nm, nid, n in rares:
         pts = {(round(x), round(y)) for _, x, y in spawns[nid]}
         if len(pts) <= 1: tier += 1   # (one spot to find it in)
         ty = tyword(ctype.get(nid))
-        add_row(2, nm, tier, ctype.get(nid, 7), "%s, level %d%s" % ("Rare elite" if elite else "Rare", n.get("maxLevel") or 0, ty))
+        add_row(2, nm, tier, ctype.get(nid, 7), ("%s, level %d%s" % ("Rare elite" if elite else "Rare", n["maxLevel"], ty)) if n.get("maxLevel") else ("Rare elite" if elite else "Rare") + ty)
         if cdisp.get(nid): displays[nm] = cdisp[nid]
         elif nm not in displays: creatures[nm] = nid
     if card not in pages[pg]["cards"]: pages[pg]["cards"].append(card)
@@ -137,7 +154,7 @@ for wname in WORLD:
     card = "Witness: " + wname
     pages.setdefault(wpage, {"zone": "World bosses", "cards": []})
     lvl = max(FN[i].get("maxLevel") or 0 for i in ids)
-    lvl = 63 if lvl > 63 else lvl
+    lvl = 63 if (lvl > 63 or not lvl) else lvl   # (world bosses: skull level shows as 63)
     add_row(2, card, 5, ctype.get(ids[0], 2), "World boss, witnessed, level %d%s" % (lvl, tyword(ctype.get(ids[0], 2))))
     pages[wpage]["cards"].append(card)
     for nid in ids:

@@ -27,6 +27,10 @@ for e, ct, m in rows('creature_template', ['Entry', 'CreatureType', 'ModelId1'])
     ctype[int(e)] = int(ct or 0); cdisp[int(e)] = int(m or 0)
 fv = json.load(open(json_path))
 FN = {int(k): v for k, v in fv["npcs"].items() if isinstance(v, dict)}
+# a level the game data marks as unknown or scaled (9999, -1...) is no level: the card uses the place's level
+for _n in FN.values():
+    _n["sortLevel"] = _n.get("maxLevel") or 0   # (the order cards were picked in stays as it always was)
+    if not (0 < (_n.get("maxLevel") or 0) <= 63): _n["maxLevel"] = None
 
 # Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
 # with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type

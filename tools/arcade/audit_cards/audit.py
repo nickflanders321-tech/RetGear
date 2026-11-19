@@ -64,10 +64,29 @@ for i, kind, name, tier, ref, text, disp, cid, owner, dup in cards:
         if m:
             if m.group(1) != QN[q]: issues['item quality differs'].append((name, m.group(1), QN[q], iid))
             if int(m.group(2)) != il: issues['item level differs'].append((name, int(m.group(2)), il, iid))
+# Polish: what a player reads on every card
+BADWORD = re.compile(r"\b(DEPRECATED|UNUSED|OLD|PH|DND|TEST|Test|NYI|zz|ZZ)\b|\[PH\]|\(old\)|<|>|\$")
+seen_name = collections.defaultdict(set)
+for i, kind, name, tier, ref, text, disp, cid, owner, dup in cards:
+    if BADWORD.search(name): issues['placeholder word in a card name'].append((name, text))
+    if BADWORD.search(text): issues['placeholder word in a card text'].append((name, text))
+    m = re.search(r'(?<!item )level (-?\d+)', text)
+    if m and not (1 <= int(m.group(1)) <= 63): issues['level on the card is not a real level'].append((name, text))
+    m = re.search(r'item level (\d+)', text)
+    if m and int(m.group(1)) <= 0: issues['level on the card is not a real level'].append((name, text))
+    if re.search(r'  |^ | $|,,|\.\.(?!\.)| ,', name + '|' + text): issues['spacing or punctuation slip'].append((name, text))
+    if not name.strip(): issues['card with no name'].append((i, text))
+    if len(name) > 40: issues['name too long for the plate'].append((name, len(name)))
+    seen_name[name.lower()].add((kind, text))
+for n, v in seen_name.items():
+    if len(v) > 1 and len({k for k, _ in v}) == 1 and not any(t.startswith('Mythic') for _, t in v):
+        issues['same name, two different cards'].append((n, sorted(v)[:3]))
 # Real problems stop a release (tools/watch/regenerate.sh: the hourly watcher then opens a "needs-claude" issue);
 # the rest are known differences, listed for a look.
 ERRORS = ['model missing from the game', 'model belongs to another creature', 'name shared: shows another creature of the same name',
-          'no model, though the creature has one', 'creature type on the card differs']
+          'no model, though the creature has one', 'creature type on the card differs',
+          'placeholder word in a card name', 'placeholder word in a card text', 'level on the card is not a real level',
+          'spacing or punctuation slip', 'card with no name']
 nerr = nwarn = 0
 for k, v in sorted(issues.items(), key=lambda kv: (kv[0] not in ERRORS, kv[0])):
     bad = k in ERRORS

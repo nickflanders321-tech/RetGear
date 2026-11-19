@@ -54,6 +54,10 @@ fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
 # (an entry can come through as a list in a fresh dump: only proper records are used)
 FI = {k: v for k, v in fv["items"].items() if isinstance(v, dict)}
 FN = {k: v for k, v in fv["npcs"].items() if isinstance(v, dict)}
+# a level the game data marks as unknown or scaled (9999, -1...) is no level: the card uses the place's level
+for _n in FN.values():
+    _n["sortLevel"] = _n.get("maxLevel") or 0   # (the order cards were picked in stays as it always was)
+    if not (0 < (_n.get("maxLevel") or 0) <= 63): _n["maxLevel"] = None
 
 # Creatures WoW Forever added (not in the classic data) or listed there with no type: the type of a classic creature
 # with the same name (its new dungeons' Skeletons and Ghouls are undead). Still unknown: the card names no type
@@ -66,6 +70,25 @@ for _k, _v in FN.items():
     if ctype.get(_k) not in TYPE:
         _t = _tyname.get(clean(_v.get("name") or "").lower())
         if _t: ctype[_k] = _t
+# A level WoW Forever leaves unknown (9999): the classic creature's own, by its id, or by its name when only one
+# classic creature has it (a named one: Atal'alarion). WoW Forever's own dungeons reuse common names like "Skeleton" at
+# their own level: those take the dungeon's.
+_lvid, _lvname, _ncount = {}, {}, {}
+for _e, _n, _hi in rows('creature_template', ['Entry', 'Name', 'MaxLevel']):
+    _ncount[clean(_n).lower()] = _ncount.get(clean(_n).lower(), 0) + 1
+    if 0 < int(_hi or 0) <= 63:
+        _lvid[int(_e)] = int(_hi); _lvname.setdefault(clean(_n).lower(), int(_hi))
+for _k, _v in FN.items():
+    if not _v.get("maxLevel"):
+        _nm = clean(_v.get("name") or "").lower()
+        _v["maxLevel"] = _lvid.get(int(_k)) or (_lvname.get(_nm) if _ncount.get(_nm) == 1 else None)
+        _v["borrowedLevel"] = bool(_v["maxLevel"])
+def near(n, lo, hi, fb):
+    """a creature's level for its card: WoW Forever's own; one borrowed from the classic data only when it fits the
+    dungeon (within 2 levels of its range); else fb"""
+    v = n.get("maxLevel")
+    if n.get("borrowedLevel"): return v if v and lo - 2 <= v <= hi + 2 else fb
+    return v or fb
 def tyword(t): return (" " + TYPE[t]) if t in TYPE else ""
 def L(v):
     if v is None: return []
@@ -127,8 +150,9 @@ creatures = {}   # NPC cards with no display id in the data: their creature id (
 for d in DUNS:
     bosses = boss_items.get(d, {})
     if not bosses: print("no bosses found for", d, file=sys.stderr); continue
-    blist = sorted(bosses, key=lambda x: (-(FN[str(x)].get("maxLevel") or 0), -len(bosses[x]), FN[str(x)]["name"]))
-    levels = [FN[str(x)].get("maxLevel") or 0 for x in blist]
+    blist = sorted(bosses, key=lambda x: (-FN[str(x)]["sortLevel"], -len(bosses[x]), FN[str(x)]["name"]))
+    levels = [FN[str(x)].get("maxLevel") for x in blist if FN[str(x)].get("maxLevel")] or \
+        [max([int((FI.get(str(i)) or {}).get("reqLevel") or 0) for b in bosses.values() for i in b] or [60]) + 2]   # (no boss level known: its loot's)
     lo, hi = min(levels), max(levels)
     pool = []
     card(3, d, 3, 0, "Dungeon, levels %d-%d" % (max(1, lo - 2), hi), pool)
@@ -137,7 +161,7 @@ for d in DUNS:
         nm = clean(n["name"])
         if not ok(nm): continue
         ty = tyword(ctype.get(x))
-        card(2, nm, 4 if i == 0 else 3, ctype.get(x, 7), "Dungeon boss, level %d%s" % (n.get("maxLevel") or 0, ty), pool)
+        card(2, nm, 4 if i == 0 else 3, ctype.get(x, 7), "Dungeon boss, level %d%s" % (near(n, lo, hi, hi), ty), pool)
         if cdisp.get(x): displays[nm] = cdisp[x]
         else: creatures[nm] = x
     # the loot: every purple, and the best blues
@@ -153,12 +177,12 @@ for d in DUNS:
         card(1, nm, 4 if q >= 4 else (2 if q == 3 else 1), i, "%s dungeon drop, item level %d" % ({4: "Epic", 3: "Rare"}.get(q, "Uncommon") if q < 5 else "Legendary", ilevel.get(i, 0)), pool)
     # the regulars: elites living there that aren't bosses
     regs = sorted({(clean(FN[str(x)]["name"]), x) for x, dd in npc_dun.items() if dd == d and (FN[str(x)].get("rank") or 0) == 1 and x not in bosses},
-                  key=lambda t: (-(FN[str(t[1])].get("maxLevel") or 0), t[0]))
+                  key=lambda t: (-FN[str(t[1])]["sortLevel"], t[0]))
     nreg = 0
     for nm, x in regs:
         if nreg >= 8 or not ok(nm): continue
         before = len(pool)
-        card(2, nm, 1, ctype.get(x, 7), "Dungeon elite, level %d%s" % (FN[str(x)].get("maxLevel") or 0, tyword(ctype.get(x))), pool)
+        card(2, nm, 1, ctype.get(x, 7), "Dungeon elite, level %d%s" % (near(FN[str(x)], lo, hi, max(lo, hi - 1)), tyword(ctype.get(x))), pool)
         if len(pool) > before:
             nreg += 1
             if cdisp.get(x): displays[nm] = cdisp[x]
@@ -226,7 +250,8 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
         for n in order:
             nm = clean(FN[str(n)]["name"])
             if ok(nm) and nm.lower() not in taken:
-                card(2, nm, 4 if n == last else 3, ctype.get(n, 7), "Dungeon boss, level %d%s" % (FN[str(n)].get("maxLevel") or hi, tyword(ctype.get(n))), pool)
+                # (WoW Forever's own dungeons span their loot's levels: a borrowed level must sit by the top of it)
+                card(2, nm, 4 if n == last else 3, ctype.get(n, 7), "Dungeon boss, level %d%s" % (near(FN[str(n)], hi, hi, hi), tyword(ctype.get(n))), pool)
                 if cdisp.get(n): displays[nm] = cdisp[n]
                 else: creatures[nm] = n
         shown = 0
@@ -243,7 +268,7 @@ if wago and os.path.exists(os.path.join(wago, "Map.csv.gz")):
             nm = clean(FN[str(n)]["name"])
             if nreg >= 8 or not ok(nm) or nm.lower() in taken: continue
             before = len(pool)
-            card(2, nm, 1, ctype.get(n, 7), "Dungeon elite, level %d%s" % (FN[str(n)].get("maxLevel") or max(lo, hi - 1), tyword(ctype.get(n))), pool)
+            card(2, nm, 1, ctype.get(n, 7), "Dungeon elite, level %d%s" % (near(FN[str(n)], hi, hi, max(lo, hi - 1)), tyword(ctype.get(n))), pool)
             if len(pool) > before:
                 nreg += 1
                 if cdisp.get(n): displays[nm] = cdisp[n]
