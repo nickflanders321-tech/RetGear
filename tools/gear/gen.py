@@ -293,12 +293,24 @@ LEVEL_SCALED = {"CRIT", "HIT", "HASTE", "RHASTE", "EXPERTISE", "SCRIT", "DODGE",
 def level_factor(lvl):
     return max(0.15, min(1.0, (lvl + 4) / 64.0))
 
+# Agility and Intellect, as RG.EffWeight in Core.lua: for a damage spec most of their worth is the crit they give, so
+# that part scales with level too; the Attack Power Agility gives (Rogue 1, Cat 1, Hunter 2 ranged) stays
+AGI_AP = {"ROGUE": {"AP": 1}, "DRUID": {"AP": 1}, "HUNTER": {"RAP": 2}}
+def eff_weight(W, k, f, cls):
+    v = W.get(k, 0)
+    if k in LEVEL_SCALED: return v * f
+    if k in ("AGI", "INT") and v > 0 and (W.get("AP") == 1 or W.get("RAP") == 1):
+        flat = sum(per * W.get(st, 0) for st, per in AGI_AP.get(cls or "", {}).items()) if k == "AGI" else 0
+        flat = min(v, flat)
+        return flat + (v - flat) * f
+    return v
+
 def score(d, slot, C, lvl=60, f=None):
     """Same formula as RG.Score in Core.lua, for a character of level lvl (or with level factor f)."""
     W, model = C["w"], C["model"]
     s = stats_of(d)
     if f is None: f = level_factor(lvl)
-    v = sum(W.get(k, 0) * s[k] * (f if k in LEVEL_SCALED else 1) for k in s)
+    v = sum(eff_weight(W, k, f, C.get("tok")) * s[k] for k in s)
     # what the item gives beyond its armor value (and, except for tanks, beyond Stamina)
     stat_only = v - W.get("ARMOR", 0) * s.get("ARMOR", 0)
     if C.get("kind") != "tank": stat_only -= W.get("STA", 0) * s.get("STA", 0)

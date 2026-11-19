@@ -21,7 +21,7 @@ assert(RG.ParseItemStats and RG.ScoreStats, "Core.lua has no RG.ParseItemStats /
 
 -- cases: one per line, fields split by \1, lists by \2, key=value by \3:
 --   P <id> <form> <raw k=v list> <tooltip lines (left text only)>
---   S <key> <loc> <slot> <model> <f> <ilvl> <weights k=v list> <stats k=v list>
+--   S <key> <loc> <slot> <model> <f> <ilvl> <weights k=v list> <stats k=v list> <class>
 local function kv(field)
   local t = {}
   for part in (field or ""):gmatch("[^\2]+") do
@@ -53,7 +53,7 @@ for line in io.lines(casesFile) do
   elseif f[1] == "S" then
     local s = { DPS = 0, SPEED = 0 }
     for k, v in pairs(kv(f[9])) do s[k] = v end
-    local score = RG.ScoreStats(s, f[3], tonumber(f[4]), kv(f[8]), f[5], tonumber(f[6]), nil, tonumber(f[7]))
+    local score = RG.ScoreStats(s, f[3], tonumber(f[4]), kv(f[8]), f[5], tonumber(f[6]), nil, tonumber(f[7]), f[10])
     io.write("S ", f[2], " ", string.format("%.4f", score), "\n")
   end
 end

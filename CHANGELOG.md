@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Agility and Intellect fit your level.** For damage specs most of their worth is the crit they give, and crit is worth less below 60, so that part now scales with your level like crit itself (the Attack Power Agility gives Rogues, Cats and Hunters stays). Before, a level 47 Ret Paladin saw Chelonian Cuffs (+10 Intellect) as an upgrade over Strength bracers; they're now even, as they should be. Tooltips, upgrade arrows, quest reward picks and the gear lists all follow.
+
 ## v1.51.0
 - **Profession guides follow wow-professions.com's updated WoW Forever routes:** Leatherworking goes straight from 185 to 205 on 22 Nightscape Headbands (no Barbaric Harness or Iron Buckles, so far less Heavy Leather); Tailoring makes 19 Red Mageweave Bags at 215-225 (5 Bolts of Mageweave, 2 Red Dye, 2 Heavy Silken Thread each) instead of 26 Mageweave Bags, with Runecloth Belts still the alternative; Blacksmithing drops the guess about the skill Derotain Mudsipper's Imperial Plate quests need, as the guide did. All checked against the game's own recipe ranges.
 

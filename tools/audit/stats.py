@@ -212,7 +212,7 @@ score_expect = {}
 sample = [iid for iid in sorted(truth) if items[iid]["inv"] in SLOT_OF]
 for wkey, w in weights:
     for model in ("2H", "DW", "ranged", "caster", "feral", "tank"):
-        C = {"w": {k: float(v) for k, v in w.items()}, "model": model}
+        C = {"w": {k: float(v) for k, v in w.items()}, "model": model, "tok": wkey.split(".")[0]}
         for iid in sample[::3]:                                   # a third of all items for each, every item somewhere
             it = items[iid]
             slot = SLOT_OF[it["inv"]]
@@ -226,7 +226,7 @@ for wkey, w in weights:
                 stats = dict(st for st in it["stats"].items() if st[1])
                 stats["DPS"] = it["dps"] or 0; stats["SPEED"] = it["speed"] or 0
                 cases.append(SEP1.join(["S", key, loc, str(lslot), model, repr(ns["level_factor"](lvl)), str(it["ilvl"]),
-                                        enc(C["w"]), enc(stats)]))
+                                        enc(C["w"]), enc(stats), C["tok"]]))
 
 tmp = tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt", encoding="utf-8")
 tmp.write("\n".join(cases) + "\n"); tmp.close()

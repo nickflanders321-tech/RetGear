@@ -577,10 +577,24 @@ function RG.LevelFactor(lvl)
   return math.max(0.15, math.min(1, (lvl + 4) / 64))
 end
 -- the weight that counts right now: level-scaled for the percent stats
-function RG.EffWeight(w, k, f)
+-- Agility and Intellect: for a damage spec (weights per Attack Power or Ranged AP) most of their worth is the crit they
+-- give (in WoW Forever Intellect gives a Ret Paladin or Enhancement Shaman about as much crit as Agility does), so that
+-- part scales with your level like crit itself. The part that is Attack Power stays: Agility gives a Rogue 1 AP, a Cat
+-- 1 AP, a Hunter 2 ranged AP. tools/gear/gen.py's score() does the same.
+RG.AGI_AP = { ROGUE = { AP = 1 }, DRUID = { AP = 1 }, HUNTER = { RAP = 2 } }
+local function critPart(w, k, v, f, cls)
+  if not (w.AP == 1 or w.RAP == 1) then return v end      -- casters, healers and tanks: as they are
+  local flat = 0
+  if k == "AGI" then for stat, per in pairs(RG.AGI_AP[cls or ""] or {}) do flat = flat + per * (w[stat] or 0) end end
+  flat = math.min(v, flat)
+  return flat + (v - flat) * f
+end
+function RG.EffWeight(w, k, f, cls)
   local v = w[k]
   if not v then return nil end
-  if RG.LEVEL_SCALED[k] then v = v * (f or RG.LevelFactor()) end
+  f = f or RG.LevelFactor()
+  if RG.LEVEL_SCALED[k] then v = v * f
+  elseif (k == "AGI" or k == "INT") and v > 0 then v = critPart(w, k, v, f, cls or RG.PLAYER_CLASS) end
   return v
 end
 
@@ -619,12 +633,12 @@ end
 -- The score of a stat table (RG.GetStats) for an item that goes in equip slot loc. Pure: the audit
 -- (tools/audit/stats.py) checks it against tools/gear/gen.py's score() for every item, class, spec and level.
 -- f: level factor (default: yours); parts (optional): filled with each stat's share, for the tooltip's breakdown
-function RG.ScoreStats(s, loc, slot, w, model, f, parts, ilvl)
+function RG.ScoreStats(s, loc, slot, w, model, f, parts, ilvl, cls)
   f = f or RG.LevelFactor()
   local score = 0
   for k, v in pairs(s) do
     if k ~= "DPS" and k ~= "SPEED" and v ~= 0 and w[k] then
-      local c = v * RG.EffWeight(w, k, f)
+      local c = v * RG.EffWeight(w, k, f, cls)
       score = score + c
       if parts then parts[k] = (parts[k] or 0) + c end
     end
