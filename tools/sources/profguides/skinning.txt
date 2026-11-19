@@ -9,9 +9,9 @@ Mob level: 1-2
 75-150
 Go to the small raptor camp just west of Northwatch Hold. Skin the level 16-17 ones until 80, from 80 you can skin the level 18 ones too. Stay here until 150, the last 10 points are green but the respawn is fast.
 Mob level: 16-18
-75-125 Loch Modan
+75-130 Loch Modan
 Mob level: 16-17
-125-150 Wetlands
+130-150 Wetlands
 Mob level: 25-27
 150-225
 Mob level: 30-32

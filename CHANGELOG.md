@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.52.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
 ## v1.52.0
 - **Raider cards always show the right character.** A Raider card's picture shares its frame with the card shown before it, and on some clients the race change silently did nothing, so the card kept showing the previous card's character (or your own). The frame is now reset first, the add-on checks once (with a hidden model) that this client really changes the race, and where it doesn't, Raider cards get their own drawn scenery. They never show someone of another race any more (the old stand-in NPCs are gone).
 - **Monsters framed by their own shape.** Cards used to zoom every humanoid in on head and chest, which filled the card with the head of a hunched or stocky creature (quilboars, ogres, gnomes). The zoom now follows each model's proportions from the game's model table: a human or elf keeps the close-up, a quilboar gets under half of it.

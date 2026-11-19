@@ -4,7 +4,7 @@
   "questiedb_forever_tree": "73aaefc0f63d33fbfcadf3f8bf7bdc87c06ccf73",
   "last_issue_seen": 15,
   "checked": "2026-11-16T13:59:46Z",
-  "wago_export": "941e76e82844254b3064c1f91ca050c2965769d6",
+  "wago_export": "3ef9437fa53bb0069b2ed784aa7601296bc57d6b",
   "profguides": {
     "alchemy": "6353ec3226a5626231aa4515c6bd487b88e37781",
     "blacksmithing": "1ee4585ae47cc664f517f8eb8853b75a959eb5bc",
@@ -17,7 +17,7 @@
     "fishing": "c24e3b78eb76e617f195e1972568722d972606ac",
     "mining": "e58c46605a2ee2270d8988a8fafaab752f383c99",
     "herbalism": "f80f1cb17163f260fd76cd63d77dd499c89a25df",
-    "skinning": "8006a0ceac9481429e93c9ab92801dd725a9879f"
+    "skinning": "b4b264b17485ecdc76e211ee9f332aedc7104548"
   },
   "profguides_format": 2
 }

@@ -47,7 +47,7 @@
   "WARRIOR fury": "warrior/dps / PreBiSFuryEpWeights (Pre-BiS - Fury), per AP; hit below the cap from PreBiSArmsEpWeights",
   "WARRIOR prot": "warrior/protection / PreBiSThreatEpWeights (Pre-BiS (Threat)), per STA; hit below the cap from PreBiSArmsEpWeights"
  },
- "source": "wowsims/forever 1381c2b 2026-11-19",
+ "source": "wowsims/forever 84c19d4 2026-11-19",
  "weights": {
   "DRUID": {
    "balance": {
