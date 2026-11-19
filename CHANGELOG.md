@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.51.1
 - **Agility and Intellect fit your level.** For damage specs most of their worth is the crit they give, and crit is worth less below 60, so that part now scales with your level like crit itself (the Attack Power Agility gives Rogues, Cats and Hunters stays). Before, a level 47 Ret Paladin saw Chelonian Cuffs (+10 Intellect) as an upgrade over Strength bracers; they're now even, as they should be. Tooltips, upgrade arrows, quest reward picks and the gear lists all follow.
 
 ## v1.51.0
