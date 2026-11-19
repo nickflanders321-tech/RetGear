@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.52.0
 - **Raider cards always show the right character.** A Raider card's picture shares its frame with the card shown before it, and on some clients the race change silently did nothing, so the card kept showing the previous card's character (or your own). The frame is now reset first, the add-on checks once (with a hidden model) that this client really changes the race, and where it doesn't, Raider cards get their own drawn scenery. They never show someone of another race any more (the old stand-in NPCs are gone).
 - **Monsters framed by their own shape.** Cards used to zoom every humanoid in on head and chest, which filled the card with the head of a hunched or stocky creature (quilboars, ogres, gnomes). The zoom now follows each model's proportions from the game's model table: a human or elf keeps the close-up, a quilboar gets under half of it.
 - **No more "level 9999".** 22 dungeon and rare cards printed the game data's "unknown level" mark; they now show the creature's real level (from the original game's data when WoW Forever leaves it blank) or the dungeon's. No card was added or removed.
