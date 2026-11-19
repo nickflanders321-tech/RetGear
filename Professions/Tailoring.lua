@@ -38,7 +38,7 @@ T.plan = {
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 200, to = 205, craft = "Black Mageweave Shoulders", n = 5, mats = "3 Bolt of Mageweave, 2 Heavy Silken Thread each (only the Artisan trainers teach it)" },
   { from = 205, to = 215, craft = "Bolt of Runecloth", n = 23, mats = "5 Runecloth each. Keep the bolts for the next steps." },
-  { from = 215, to = 225, craft = "Mageweave Bag or Runecloth Belt", n = 26, mats = "4 Bolt of Mageweave, 2 Silken Thread each (or Runecloth Belt: 3 Bolt of Runecloth, 1 Rune Thread; about 10 crafts)" },
+  { from = 215, to = 225, craft = "Red Mageweave Bag or Runecloth Belt", n = 19, mats = "5 Bolt of Mageweave, 2 Red Dye, 2 Heavy Silken Thread each (or Runecloth Belt: 3 Bolt of Runecloth, 1 Rune Thread; about 10 crafts)" },
   { from = 225, to = 240, craft = "Runecloth Belt", n = 24, mats = "3 Bolt of Runecloth, 1 Rune Thread each" },
   { from = 240, to = 250, craft = "Runecloth Gloves", n = 11, mats = "4 Bolt of Runecloth, 4 Rugged Leather, 1 Rune Thread each (pattern: Qia, Everlook)" },
   { from = 250, to = 280, craft = "Runecloth Cuffs", n = 39, mats = "5 Bolt of Runecloth, 1 Ironweb Spider Silk, 1 Rune Thread each (pattern: Pexmit, Mount Hyjal; Bind on Pickup)" },

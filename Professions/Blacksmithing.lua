@@ -48,7 +48,7 @@ B.plan = {
   { from = 215, to = 225, craft = "Heavy Mithril Breastplate", n = 10, mats = "16 Mithril Bar each (or 10 Mithril Spurs if you have the plans: 4 Mithril Bar, 3 Solid Grinding Stone each)" },
   { from = 225, to = 230, craft = "Dense Sharpening Stone", n = 5, mats = "1 Dense Stone each" },
   { from = 230, to = 240, craft = "Heavy Mithril Boots", n = 16, mats = "14 Mithril Bar, 4 Thick Leather each (or with the Mithril Spurs plans: 33 Mithril Spurs from 230 to 245 instead of the boots and the belt)" },
-  { from = 240, to = 245, craft = "Imperial Plate Belt", n = 5, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine each (plans: Derotain Mudsipper, Tanaris, level 50 quest; he gives the next three plans too, so bring about 250 Thorium Bar. In Classic his Imperial Plate quests need skill 265; Forever lowered the belt to 240 and the bracers to 245, so they likely need less, but that is unconfirmed)" },
+  { from = 240, to = 245, craft = "Imperial Plate Belt", n = 5, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine each (plans: Derotain Mudsipper, Tanaris, level 50 quest; he gives the next three plans too, so bring about 250 Thorium Bar)" },
   { from = 245, to = 270, craft = "Imperial Plate Bracers", n = 27, mats = "20 Thorium Bar, 1 Star Ruby each (Derotain Mudsipper)" },
   { from = 270, to = 290, craft = "Imperial Plate Boots", n = 20, mats = "34 Thorium Bar, 1 Star Ruby, 1 Aquamarine each (Derotain Mudsipper)" },
   { from = 290, to = 300, craft = "Imperial Plate Leggings", n = 10, mats = "44 Thorium Bar, 2 Star Ruby each (Derotain Mudsipper)" },

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.51.0
+- **Profession guides follow wow-professions.com's updated WoW Forever routes:** Leatherworking goes straight from 185 to 205 on 22 Nightscape Headbands (no Barbaric Harness or Iron Buckles, so far less Heavy Leather); Tailoring makes 19 Red Mageweave Bags at 215-225 (5 Bolts of Mageweave, 2 Red Dye, 2 Heavy Silken Thread each) instead of 26 Mageweave Bags, with Runecloth Belts still the alternative; Blacksmithing drops the guess about the skill Derotain Mudsipper's Imperial Plate quests need, as the guide did. All checked against the game's own recipe ranges.
+
 ## v1.50.2
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
