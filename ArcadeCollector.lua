@@ -86,7 +86,7 @@ local PACKNAME = { normal = "pack", jumbo = "jumbo pack", super = "super jumbo p
 local function rewardText(r)
   if not r then return "" end
   local bits = {}
-  if r.coins then bits[#bits + 1] = r.coins .. " coins" end
+  if r.coins then bits[#bits + 1] = RG.ArcadeBoost(r.coins) .. " coins" end
   if r.pack then bits[#bits + 1] = "a " .. PACKNAME[r.pack] end
   if r.back then bits[#bits + 1] = "the " .. r.back .. " card back" end
   if r.title then bits[#bits + 1] = "the title \"" .. r.title .. "\"" end
@@ -96,7 +96,7 @@ local function rewardText(r)
 end
 local function pay(a, r)
   if not r then return end
-  if r.coins then a.coins = (a.coins or 0) + r.coins; a.stats = a.stats or {}; a.stats.bonus = (a.stats.bonus or 0) + r.coins end
+  if r.coins then local c = RG.ArcadeBoost(r.coins); a.coins = (a.coins or 0) + c; a.stats = a.stats or {}; a.stats.bonus = (a.stats.bonus or 0) + c end
   if r.pack then a.tok = a.tok or { normal = 0, jumbo = 0, super = 0 }; a.tok[r.pack] = (a.tok[r.pack] or 0) + 1 end
   if r.back then a.backs = a.backs or {}; a.backs[r.back] = true end
   if r.title then a.titles = a.titles or {}; a.titles[r.title] = true; a.title = a.title or r.title end
@@ -416,7 +416,7 @@ local function shortReward(r)
   if not r then return "" end
   if r.back then return "CARD BACK" end
   if r.pack then return (r.pack == "super" and "SUPER JUMBO" or (r.pack == "jumbo" and "JUMBO" or "PACK")) end
-  if r.coins then return r.coins .. " COINS" end
+  if r.coins then return RG.ArcadeBoost(r.coins) .. " COINS" end
   return ""
 end
 function RG.ArcadeQuestColumns(ctx)

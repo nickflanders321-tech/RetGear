@@ -70,7 +70,7 @@ local function dungeonDone(name, iid)
       local before = a.dunClear and a.dunClear[dn]
       RG.ArcadeGrantDungeon(dn, before and 1 or 2, dn .. " cleared")
     end
-  elseif a.dunDay.day == today() and (a.dunDay.n or 0) >= 2 then
+  elseif a.dunDay.day == today() and (a.dunDay.n or 0) >= 4 then   -- (four repeat clears a day pay: 2 until 1.53)
     if dn and RG.ArcadeGrantDungeon then RG.ArcadeGrantDungeon(dn, 0) end
     return
   else

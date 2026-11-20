@@ -3032,7 +3032,7 @@ local function renderCards()
   getRow(n).icon:SetTexture("Interface\\Icons\\Ability_Warrior_Challange")
   getRow(n).onClick = function() if RG.ShowBattle then RG.ShowBattle() end end
   n = n + 1
-  setItem(getRow(n), nil, nil, "|cffffffffCoins|r", "You earn coins from quests, kills, skill-ups and duel wins." .. GREY .. "  Today's goals and the full ledger are in the collection window.|r", GOLD .. coins .. "|r", "", nil)
+  setItem(getRow(n), nil, nil, "|cffffffffCoins|r", "You earn coins from quests, kills, skill-ups, dungeons, raids and duel wins; at 60 also elites, rares, reputation, gathering and battlegrounds." .. GREY .. "  Today's goals and the full ledger are in the collection window.|r", GOLD .. coins .. "|r", "", nil)
   getRow(n).icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
   return n
 end

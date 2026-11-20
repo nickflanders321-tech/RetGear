@@ -131,8 +131,9 @@ local function unwrap()
   for year, st in pairs(a.wvGift) do
     if st == "wrapped" and now() >= presentDay(year) then
       a.wvGift[year] = "opened"
-      a.coins = (a.coins or 0) + 50
-      grant(d, year, 3, "Your Winter Veil present: 3 packs and 50 coins")
+      local c = RG.ArcadeBoost(50)
+      a.coins = (a.coins or 0) + c
+      grant(d, year, 3, "Your Winter Veil present: 3 packs and " .. c .. " coins")
       if RG.ArcadeFx then RG.ArcadeFx("best") end
       return true
     end

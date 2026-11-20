@@ -51,7 +51,8 @@ local NAME_ICON = {
 local LAUNCH = 1793833200
 -- beta: every pack of every kind is free; from the launch on, packs cost coins (the balance below)
 local FREE_PACKS = (time and time() or LAUNCH) < LAUNCH
--- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 10,000 coins
+-- RELEASE BALANCE (checked with tools/arcade/economy.py): a player who levels 1-60 earns about 10,000 coins (about
+-- 12,200 since 1.53's +20%: a median of about 81% of the Master Set at 60 instead of 77%; ArcadeEarn.lua pays at 60)
 -- (XP, level-ups, quests, kills, skill-ups, goals, duels, set rewards, and the bonuses in ArcadeRewards.lua)
 -- plus about 190 packs' worth of free cards (daily packs, a reward Jumbo every 7th day, milestone, dungeon,
 -- quest-line and gear packs, and the level 60 gift). Spent on packs at about 10 coins a card, with extras sold
@@ -77,12 +78,16 @@ local function tokenCount(a, kind)
 end
 local function packPrice(kind) return FREE_PACKS and 0 or PACKS[kind or "normal"].price end
 local PACK_PRICE, PACK_SIZE = packPrice("normal"), 5
--- How coins are earned, before the x1.2 EARN_RATE (about 6,500 coins over a 1-60 climb, see RELEASE BALANCE above):
+-- How coins are earned, before EARN_RATE (x1.44; about 6,500 coins over a 1-60 climb before it, see RELEASE BALANCE above):
 --   XP: 1 coin per 4% of a level          level-up: 5 + level/5 (+25 at every 10th level)
 --   quest turn-in: 3 + level/20           mob kills (that give XP): 1 coin per 4
 --   profession skill-ups: 1 coin per 2    duel win: 4
 -- There is no daily limit (there was one up to 1.11.0); quests, kills and skill-ups are still counted per day for the Today tab.
-local EARN_RATE = 1.2         -- every coin earned from play counts 20% more (launch feedback: packs came too slowly)
+-- every coin earned from play counts 44% more: +20% at launch (packs came too slowly), and another +20% with grading
+-- (1.53: COIN_BOOST, which every other coin reward gets too: set stages, goals, quests, achievements, grants)
+RG.ARCADE_COIN_BOOST = 1.2   -- (on RG: Arcade.lua is at Lua's 200-locals limit)
+local EARN_RATE = 1.2 * RG.ARCADE_COIN_BOOST
+function RG.ArcadeBoost(n) if type(n) ~= "number" or n <= 0 then return n end return math.floor(n * RG.ARCADE_COIN_BOOST + 0.5) end
 local COLLECTOR_LUCK = 0.10   -- each card has this chance to be one you do not own yet (a small mercy, so the last cards do not take forever)
 local MASTER_GOAL = 0.75
 
@@ -444,7 +449,7 @@ RG.ARCADE_STAGES = {
   { "Gold", "every card holo or full art", { 1, 0.82, 0.3 } },
 }
 function RG.ArcadeStageReward(s, stage)
-  local coins = stage == 1 and s.reward or (stage == 2 and math.floor(s.reward * 1.5) or s.reward * 3)
+  local coins = RG.ArcadeBoost(stage == 1 and s.reward or (stage == 2 and math.floor(s.reward * 1.5) or s.reward * 3))
   local packs = stage == 2 and { jumbo = 1 } or (stage == 3 and { super = 1 } or nil)
   local dpk = (stage == 1 and s.dungeon and not s.holiday) and 2 or nil
   if s.field and stage == 1 then packs = { jumbo = 1 } end   -- (a Field Guide page: its Explorer badge and a jumbo pack)
@@ -489,6 +494,7 @@ local GOALS = {
   { "shiny", "Pull a holo or full art", 1, 8 }, { "new5", "Find 5 new cards", 5, 6 }, { "sell", "Sell your extras", 1, 3 },
   { "win3", "Win 3 arena duels", 3, 9 }, { "archm", "Beat the Archmage", 1, 10 },
 }
+for _, d in ipairs(GOALS) do d[4] = RG.ArcadeBoost(d[4]) end
 local function today() return date and date("%Y-%m-%d") or "today" end
 local function todaysGoals(a)
   if a.goals and a.goals.day == today() then return a.goals end
@@ -784,7 +790,7 @@ end
 -- a bonus: coins and packs from a milestone, a dungeon, a quest line, a gear upgrade...
 function RG.ArcadeGrant(label, coins, packs)
   local a = store(); if not a then return end
-  coins = coins or 0
+  coins = RG.ArcadeBoost(coins or 0)
   a.coins = (a.coins or 0) + coins
   a.stats = a.stats or {}; a.stats.bonus = (a.stats.bonus or 0) + coins
   local t, bits = tok(a), {}
@@ -972,7 +978,7 @@ function RG.ArcadeDuel()
   local win = score(mine, mf, foe) >= score(foe, ff, mine)
   local prize, goal = 0, nil
   if win then
-    prize = math.floor((4 + math.min(a.streak or 0, 4)) * EARN_RATE + 0.5)   -- +1 for each win in a row, up to +4 (then the +20%)
+    prize = math.floor((4 + math.min(a.streak or 0, 4)) * EARN_RATE + 0.5)   -- +1 for each win in a row, up to +4 (then EARN_RATE)
     a.coins = a.coins + prize; a.wins = (a.wins or 0) + 1; a.streak = (a.streak or 0) + 1
     a.stats = a.stats or {}; a.stats.duel = (a.stats.duel or 0) + prize
     goal = goalProgress(a, "duel2", 1)
@@ -3587,7 +3593,7 @@ local function build()
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine(dn .. " pack")
     GameTooltip:AddLine("5 cards from " .. dn .. " only: the place, its bosses, their drops and its elites. " .. ((RG.ArcadePackOdds and ("Mythic 1 in " .. RG.ArcadePackOdds("dungeon", dn).mythic .. " packs.")) or ""), 1, 1, 1, true)
-    GameTooltip:AddLine("Clearing it (three of its bosses) gives two the first time and one more each time after (twice a day). " ..
+    GameTooltip:AddLine("Clearing it (three of its bosses) gives two the first time and one more each time after (four times a day). " ..
       (cleared and ("Since you've cleared it, you can also buy them for " .. PACKS.dungeon.price .. " coins.") or "Once you've cleared it, you can also buy them with coins."), 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)

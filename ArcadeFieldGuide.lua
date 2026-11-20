@@ -90,6 +90,7 @@ local function slain(nid, guid)
   end
   local fin = finishFor(r.kills, witness)
   if RG.ArcadeGiveCard then RG.ArcadeGiveCard(e[1], fin) end
+  if RG.ArcadeEarnField then pcall(RG.ArcadeEarnField, e[1], witness, r.kills) end   -- (coins: ArcadeEarn.lua)
   if RG.ArcadeSound then RG.ArcadeSound("reward") end
   local nextAt
   for i = fin + 1, 4 do local need = (witness and WITNESS_FOR or KILLS_FOR)[i]; if need > r.kills then nextAt = { i, need }; break end end

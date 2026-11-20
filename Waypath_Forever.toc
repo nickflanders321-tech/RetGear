@@ -114,6 +114,7 @@ ArcadeRewards.lua
 ArcadeSocial.lua
 ArcadeFieldGuide.lua
 ArcadeRaidPacks.lua
+ArcadeEarn.lua
 ArcadeHolidayPacks.lua
 ArcadeFirstEdition.lua
 ArcadeShop.lua

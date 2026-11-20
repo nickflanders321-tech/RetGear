@@ -44,6 +44,7 @@ local function lockout()
   local anchor = (region == 1) and (5 * 86400 + 15 * 3600) or (6 * 86400 + 7 * 3600)   -- (1 Jan 1970 was a Thursday)
   return math.floor((now - anchor) / (7 * 86400)) + 1
 end
+RG.ArcadeLockout = lockout
 
 -- ---------------------------------------------------------------------------
 -- Raid photos

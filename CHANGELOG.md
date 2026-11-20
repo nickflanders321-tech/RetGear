@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+- **20% more coins from everything.** Every coin source pays 20% more: XP, level-ups, quests, kills, skill-ups, duels and the Arena, dungeon clears, quest lines, gear upgrades, level milestones, set stages, daily goals, weekly and monthly quests, achievements and the season reward (on top of the 20% from launch).
+- **Coins at level 60.** When XP stops, these keep paying:
+  - dungeon bosses: 3 coins each (20 a day), and repeat dungeon clears now pay four times a day (was twice);
+  - raid bosses: 15 coins each, 40 for a raid's last boss, once per boss each weekly lockout;
+  - world bosses: 30 coins for being in the kill, once a week per boss;
+  - rare elites whose Field Guide card you already have: 8 coins (5 a day);
+  - elite mobs at 60: 1 coin for every 3 (up to 40 coins a day);
+  - reputation: 25 coins each time a faction reaches Friendly, Honored, Revered or Exalted;
+  - gathering at 60: 1 coin for every 5 herbs, ore or skins (up to 20 coins a day);
+  - battlegrounds: 8 coins a win, 3 a loss (6 games a day).
+
 ## v1.52.6
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
 - **Dungeon Mythics: 1 in 10, certain by the 10th.** Until you have a dungeon's own Mythic, each of that dungeon's packs has a 1 in 10 chance of it, and the 10th pack you open without it always has it (it was 1 in 150, certain by the 30th). Packs you've already opened without it count, so some players will get theirs in their very next pack. Once you have it, another copy is as rare as any Mythic. The pack's plaque, the shop, the Album and the Mythic moment all show the new odds.
