@@ -54,7 +54,7 @@ RG.FISH_LOOT = {
   pools = {
     { name = "Feralas Ahi Fishing Location", items = { { 16967, 100 } }, spots = { { 1444, 62.1, 51.4, "Feralas: 12 spots (nearest cluster)" } } },
     { name = "Firefin Snapper School", items = { { 6359, 85 }, { 3820, 5 }, { 21150, 5 }, { 21151, 5 } }, spots = { { 1413, 64.3, 57.8, "The Barrens: 5 spots (nearest cluster)" } } },
-    { name = "Fishing Trap", items = { { 286205, 100 } }, spots = { { 1429, 46.6, 64.7, "Elwynn Forest: 22 spots (nearest cluster)" } } },
+    { name = "Fishing Trap", items = { { 286205, 100 } }, spots = { { 1429, 46.6, 64.8, "Elwynn Forest: 14 spots (nearest cluster)" } } },
     { name = "Floating Debris", items = { { 20708, 60 }, { 3820, 20 }, { 20709, 20 } }, spots = { { 1413, 63.0, 52.4, "The Barrens: 3 spots (nearest cluster)" } } },
     { name = "Floating Wreckage", items = { { 21150, 60 }, { 3820, 20 }, { 21151, 20 } }, spots = { { 1413, 64.3, 57.8, "The Barrens: 5 spots (nearest cluster)" } } },
     { name = "Misty Reed Mahi Mahi Fishing Location", items = { { 16970, 100 } }, spots = { { 1435, 86.2, 88.0, "Swamp of Sorrows: 56 spots (nearest cluster)" } } },
