@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.52.4
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
 ## v1.52.3
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 

@@ -25,12 +25,13 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 50x Stranglethorn Seed (vendor)
 225-300
 34x Vision Dust
-260x Dream Dust
-20x Purple Lotus
-20x Crystal Vial (vendor)
+104x Dream Dust
+26x Purple Lotus
+52x Crystal Vial (vendor)
+52x Firebloom
 1x Arcanite Rod
 1x Golden Pearl
-10x Illusion Dust
+88x Illusion Dust
 4x Greater Eternal Essence
 4x Small Brilliant Shard
 2x Large Brilliant Shard
@@ -83,9 +84,13 @@ If you didn't buy Formula: Lesser Wizard Oil yet, the vendors are listed at the 
 Artisan Enchanting (225-300)
 225-250
 34x Enchant Gloves - Agility - 34 Vision Dust
-250-265
-20x Lesser Mana Oil - 20 Dream Dust, 20 Purple Lotus, 20 Crystal Vial
-265-299
-40x Enchant Shield - Greater Stamina - 240 Dream Dust
+250-270
+26x Lesser Mana Oil - 26 Dream Dust, 26 Purple Lotus, 26 Crystal Vial
+270-275
+5x Enchant Shield - Greater Stamina - 30 Dream Dust
+275-295
+26x Wizard Oil - 78 Illusion Dust, 52 Firebloom, 26 Crystal Vial
+295-299
+8x Enchant Shield - Greater Stamina - 48 Dream Dust
 299-300
 1x Runed Arcanite Rod - 1 Arcanite Rod, 1 Golden Pearl, 10 Illusion Dust, 4 Greater Eternal Essence, 4 Small Brilliant Shard, 2 Large Brilliant Shard

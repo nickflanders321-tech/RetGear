@@ -1,23 +1,23 @@
 {
   "game_build": "1.60.1.70959",
   "game_build_source": "https://blizztrack.com/view/wowf?type=versions",
-  "questiedb_forever_tree": "e4d7a6ffaa078aa1c3537d8a6c889582af191f73",
+  "questiedb_forever_tree": "0f8fe40c456346a92b36398cbab33ef64db9ebf3",
   "last_issue_seen": 15,
   "checked": "2026-11-16T13:59:46Z",
   "wago_export": "3ad84bba0b79e582e77d13e49a26ac2c6f671ca4",
   "profguides": {
-    "alchemy": "40e82f0af668f9e547c9456b8b7f1eeb78560998",
+    "alchemy": "0611e525d5ef05c5d56754b5920757996e9d62de",
     "blacksmithing": "1ee4585ae47cc664f517f8eb8853b75a959eb5bc",
-    "enchanting": "8403015727f5547ee956bc9274c9b1fca3fab26b",
-    "engineering": "05a64cfa6567506a7f518d33032d494b8effcf29",
+    "enchanting": "f30bb06f621688f6b1a0346b3e040da44788a88b",
+    "engineering": "678e68a49bbaa49c3a81fa9cf070d27ad425e8cb",
     "leatherworking": "af4abb98e948df96be6dfc6534bcea5a3df95650",
     "tailoring": "717be3172c6e262ce13eabd8eb13b95762c275ca",
-    "cooking": "64cf9db0783b5d0ea84ae716e94763ab5e76f322",
+    "cooking": "2ca0017914432224458e2d10258c17c1a9cdd40f",
     "first-aid": "1348566ed13301b67955c09798e56a3154c45690",
     "fishing": "c24e3b78eb76e617f195e1972568722d972606ac",
     "mining": "e58c46605a2ee2270d8988a8fafaab752f383c99",
     "herbalism": "f80f1cb17163f260fd76cd63d77dd499c89a25df",
-    "skinning": "b4b264b17485ecdc76e211ee9f332aedc7104548"
+    "skinning": "6965bf25a9f54f765140905ed0169c42a3812d31"
   },
   "profguides_format": 2
 }

@@ -15,8 +15,10 @@ Fishing and Cooking Leveling Guide 1-300
 225-300
 12x Giant Egg
 10x Zesty Clam Meat
-140x Raw Spotted Yellowtail
-140x Raw Redgill
+72x Raw Spotted Yellowtail
+72x Raw Redgill
+18x Raw Nightfin Snapper
+18x Refreshing Spring Water (vendor)
 Apprentice Cooking (1-50)
 55x Brilliant Smallfish
 55x Raw Brilliant Smallfish
@@ -71,9 +73,12 @@ Make around 25-30 from one of these three.
 55x Soothing Turtle Bisque
 55x Turtle Meat , 55x Soothing Spices
 Artisan Cooking (225-300)
-Collect 12x Giant Egg , 10x Zesty Clam Meat and 20x Alterac Swiss . Don't go to Gadgetzan before you have all of them , otherwise you make the trip twice.
-225-300
-140x Spotted Yellowtail
-140x Raw Spotted Yellowtail
-140x Filet of Redgill
-140x Raw Redgill
+Buy 12x Giant Egg and 10x Zesty Clam Meat on the Auction House.
+Buy 20x Alterac Swiss from Innkeeper Abeqwa in Freewind Post, Dwane Wertle in Dustwallow Marsh or Ben Trias in Stormwind. If you are not close to any of them or don't want to travel, you can buy it on the Auction House.
+225-285
+72x Spotted Yellowtail
+72x Raw Spotted Yellowtail
+72x Filet of Redgill
+72x Raw Redgill
+285-300
+18x Nightfin Soup - 18 Raw Nightfin Snapper, 18 Refreshing Spring Water

@@ -14,8 +14,8 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 51x Kingsblood
 36x Liferoot
 225-300
-23x Liferoot
-23x Stranglekelp
+26x Liferoot
+26x Stranglekelp
 25x Khadgar's Whisker
 44x Sungrass
 25x Blindweed
@@ -45,7 +45,7 @@ Expert Alchemy (150-225)
 36x Nature Protection Potion - 36 Liferoot, 36 Stranglekelp, 36 Leaded Vial
 Artisan Alchemy (225-300)
 225-235
-23x Nature Protection Potion - 23 Liferoot, 23 Stranglekelp, 23 Leaded Vial
+26x Nature Protection Potion - 26 Liferoot, 26 Stranglekelp, 26 Leaded Vial
 235-250
 15x Elixir of Greater Intellect - 15 Blindweed, 15 Khadgar's Whisker, 15 Crystal Vial
 250-260

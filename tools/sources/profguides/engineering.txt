@@ -72,5 +72,7 @@ Artisan Engineering (200-300)
 44x Dense Blasting Powder - 88 Dense Stone
 260-280
 20x Thorium Widget - 60 Thorium Bar, 20 Runecloth
+10x Thorium Widget - 30 Thorium Bar, 10 Runecloth
+10x Thorium Grenade - 10 Thorium Widget, 30 Thorium Bar, 30 Dense Blasting Powder, 30 Runecloth
 280-300
 21x Thorium Tube - 126 Thorium Bar

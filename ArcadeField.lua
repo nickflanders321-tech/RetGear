@@ -6,6 +6,7 @@ local _, RG = ...
 RG.ARCADE_DATA = RG.ARCADE_DATA or {}
 RG.ARCADE_FIELD_ROWS = {
   { 2, "Jimmy the Bleeder", 4, 7, "Rare, level 23 humanoid" },
+  { 2, "Lyn the Ignored", 4, 7, "Rare elite" },
   { 2, "Needletooth", 3, 7, "Rare, level 35" },
   { 2, "Oakpaw", 4, 7, "Rare, level 27 humanoid" },
   { 2, "Akkrilus", 4, 3, "Rare, level 26 demon" },
@@ -843,6 +844,7 @@ RG.ARCADE_FIELD_CREATURE = {
   ["Legion Hulk"] = 249238,
   ["Lieutenant Skarresh"] = 228721,
   ["Lord Gazzran"] = 228969,
+  ["Lyn the Ignored"] = 247032,
   ["Mad Marrius"] = 257034,
   ["Matriarch Bristlefur"] = 276189,
   ["Mosh'gra"] = 259801,

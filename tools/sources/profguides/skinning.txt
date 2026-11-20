@@ -14,6 +14,9 @@ Mob level: 16-17
 130-150 Wetlands
 Mob level: 25-27
 150-225
+150-160 In front of the cave
+Mob level: 22-24
+160-225 Foothill Caverns
 Mob level: 30-32
 Mob level: 26-29
 225-280
