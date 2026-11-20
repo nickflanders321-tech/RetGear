@@ -40,7 +40,7 @@ local function mySparesAndMissing()
     if RG.ArcadeTradable(keyOf(c)) then
       local n, any = counts(a, c), false
       for f = 1, 4 do if (n[f] or 0) > 0 then any = true end end
-      for f = 1, 4 do if (n[f] or 0) >= 2 then spares[#spares + 1] = { i = i, f = f }; break end end
+      for f = 1, 4 do if (n[f] or 0) - (RG.ArcadeGradeHeld and RG.ArcadeGradeHeld(keyOf(c), f) or 0) >= 2 then spares[#spares + 1] = { i = i, f = f }; break end end   -- (graded copies aren't spares)
       if not any then missing[i] = true end
     end
   end

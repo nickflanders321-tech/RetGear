@@ -67,7 +67,7 @@ function RG.SetCardsOnly(on)
 end
 
 -- the slash command: with the mode on, /wp opens the cards, and only the card commands are answered
-local CARD_CMDS = { arcade = true, cards = true, match = true, queue = true, board = true, cardscan = true, cardcheck = true, cardcam = true, setup = true, cardsonly = true, help = true, report = true }
+local CARD_CMDS = { arcade = true, cards = true, match = true, queue = true, board = true, cardscan = true, cardcheck = true, gradecheck = true, gradetour = true, grading = true, cardcam = true, setup = true, cardsonly = true, help = true, report = true }
 function RG.WrapCardsOnlySlash()
   local base = SlashCmdList and SlashCmdList.WAYPATH
   if not base then return end

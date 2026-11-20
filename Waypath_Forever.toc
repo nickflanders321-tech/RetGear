@@ -126,6 +126,8 @@ ArcadeBoard.lua
 ArcadePackFx.lua
 ArcadeCollector.lua
 ArcadeMythicPlus.lua
+ArcadeGrading.lua
+ArcadeGradingUI.lua
 GateOn.lua
 FishMode.lua
 FishTools.lua

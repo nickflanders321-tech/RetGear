@@ -2,6 +2,15 @@
 
 ## Unreleased
 - **20% more coins from everything.** Every coin source pays 20% more: XP, level-ups, quests, kills, skill-ups, duels and the Arena, dungeon clears, quest lines, gear upgrades, level milestones, set stages, daily goals, weekly and monthly quests, achievements and the season reward (on top of the 20% from launch).
+- **Card grading by the Waypoint Grading Guild.** Send a card to be graded and it comes back in a case with its grade, from 1 (Poor) to 10 (Gem Mint).
+  - Every copy has a hidden condition, fixed when you get it: Centering, Corners, Edges and Surface. Nobody sees it until the card comes back. About 1 card in 15 grades a Gem Mint 10. Every print is graded the same way.
+  - Open any card and press **Grade a copy**, or go to the Shop's **Grading desk**. Standard grading takes 12 hours and costs 40 coins; Express takes 1 hour and costs 150. You can have 5 cards out at once. Your first 5 Standard gradings are free, and you get one more free every week (it doesn't pile up).
+  - When a card comes back, a parcel arrives with an **Open now** button. Break the wax seal and the four scores roll in one at a time. Before the last one, it says what that score needs; then the cloth comes off and the seal lands: gold for a 10, silver for 8 and 9, bronze below.
+  - A card that grades poorly looks it: worn corners, nicked edges, scratches, and at the bottom a crease and a water stain, each from its own score.
+  - A graded card can be pinned to your showcase (the collection shows its seal), sold for its grade (a 10 sells for 8 times its value, a 9 for 4 times, an 8 for twice), or cracked out of its case, which rolls its condition again for another try. Selling or cracking a 9 or 10 asks first. Graded copies are never sold as extras, crafted or traded.
+  - Seven new grading achievements.
+  - `/wp gradetour` shows every kind of card in a case, at every size and grade, and can play the reveal without touching your collection. `/wp gradecheck` puts every card in a case at every size and lists anything that doesn't fit.
+
 - **Coins at level 60.** When XP stops, these keep paying:
   - dungeon bosses: 3 coins each (20 a day), and repeat dungeon clears now pay four times a day (was twice);
   - raid bosses: 15 coins each, 40 for a raid's last boss, once per boss each weekly lockout;

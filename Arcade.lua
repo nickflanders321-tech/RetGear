@@ -918,6 +918,7 @@ function RG.ArcadeRefund(c, f)
   if not RG.ArcadeRefundOpen(a, key) then return false, "This card can't be refunded." end
   local slot = a.cards[key]
   if not (slot and (slot[f] or 0) > 0) then return false, "You have no copy of that print." end
+  if RG.ArcadeGradeFree and RG.ArcadeGradeFree(a, key, f) < 1 then return false, "Your copies of that print are graded: a case can't be refunded." end
   if RG.ArcadeRefundable(a, key, f) < 1 then return false, "Only copies you owned when the card changed can be refunded." end
   local v = RG.ArcadeCraftCost(c, f) or 0
   slot[f] = slot[f] - 1
@@ -934,15 +935,18 @@ function RG.ArcadeSellExtras()
     local c = RG.ArcadeRefundOpen(a, key) and byKey[key]
     for f = 1, 4 do
       local n = slot[f] or 0
-      if n > 1 then
+      -- (graded copies stay, and count as the one you keep: ArcadeGrading.lua)
+      local h = RG.ArcadeGradeHeld and RG.ArcadeGradeHeld(key, f) or 0
+      local extra = n - h - (h > 0 and 0 or 1)
+      if extra > 0 then
         -- copies owned when the card changed sell at full value (the one you keep counts as one of them); the rest at
         -- the normal price
-        local full = c and math.min(n - 1, math.max(0, RG.ArcadeRefundable(a, key, f) - 1)) or 0
+        local full = c and math.min(extra, math.max(0, RG.ArcadeRefundable(a, key, f) - 1)) or 0
         local fv = full > 0 and RG.ArcadeCraftCost(c, f) or nil
         if not fv then full = 0 end
         if full > 0 then rn = rn + full; rc = rc + full * fv; RG.ArcadeUseRefund(a, key, f, full) end
-        coins = coins + (n - 1 - full) * FINISH[f][4]
-        cnt = cnt + n - 1; slot[f] = 1
+        coins = coins + (extra - full) * FINISH[f][4]
+        cnt = cnt + extra; slot[f] = n - extra
       end
     end
   end
@@ -1022,7 +1026,8 @@ end
 local PREFIX = "WPCARD"
 local trade = { out = nil, incoming = nil }
 RG.ArcadeTrade = trade
-local function countOf(a, c, f) local s = a.cards[c.key or c.name]; return s and (s[f] or 0) or 0 end
+-- (copies in a grading case, at the graders or waiting to be opened don't count: ArcadeGrading.lua)
+local function countOf(a, c, f) local k = c.key or c.name; local s = a.cards[k]; return math.max(0, (s and (s[f] or 0) or 0) - (RG.ArcadeGradeHeld and RG.ArcadeGradeHeld(k, f) or 0)) end
 local function extraOf(a, c, f) return countOf(a, c, f) >= 2 end
 local function ownsOf(a, c, f) return countOf(a, c, f) >= 1 end
 local function tradable(c) return c and c.kind ~= 4 and c.tier ~= 7 and not c.field and not c.bound end   -- (Raiders, Mythics, Field Guide and holiday cards stay with whoever earned them)
@@ -3377,6 +3382,7 @@ local function refreshDetail()
   detail.craft:SetText(cost and (refund and ("Craft  ·  " .. cost) or ("Craft " .. FNAME[f] .. "  ·  " .. cost .. " coins")) or "Cannot be crafted")
   detail.craft:SetEnabled(cost ~= nil and (a.coins or 0) >= cost)
   if refund then detail.refund:SetText("Refund  ·  " .. (cost or 0) .. " coins"); detail.refund:Show() else detail.refund:Hide() end
+  if RG.ArcadeGradeDetailRefresh then pcall(RG.ArcadeGradeDetailRefresh, detail, c, f) end
   detail.pin:SetEnabled(owned(a, c.id) > 0); detail.duel:SetEnabled(owned(a, c.id) > 0)
   detail.pin:SetText(isPinned(a, c) and "Unpin from showcase" or "Pin to showcase")
   detail.duel:SetText(a.duelCard == (c.key or c.name) and "Duel card (set)" or "Use for duels")
@@ -3435,6 +3441,7 @@ local function openDetail(c)
       refreshDetail(); if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
     end)
     detail.refund:SetPoint("BOTTOMLEFT", X0 + 164, 152); detail.refund:Hide()
+    if RG.ArcadeGradeDetailBuild then pcall(RG.ArcadeGradeDetailBuild, detail) end   -- (Grade a copy, Cases: ArcadeGradingUI.lua)
   end
   detail.data, detail.finish = c, bestFinish(a, c.id) or 1
   detail:Show(); refreshDetail()
@@ -4161,7 +4168,7 @@ end
 
 RG.ArcadeUI = { ink = U.ink, setPos = U.setPos, scaleGrip = scaleGrip, modelZoom = RG.ArcadeModelZoom, camScale = RG.ArcadeCamScale, portrait = RG.ArcadePortrait, layoutText = layoutText, makeCard = makeCard, paint = paint, fs = fs, setfont = setfont, fitText = fitText, gbtn = gbtn, gtab = gtab, darkPanel = darkPanel, lv = lv,
   MEDIA = MEDIA, GOLDC = GOLDC, TIER = TIER, FINISH = FINISH, KINDCOL = KINDCOL, CARDS = CARDS, byKey = byKey, store = store, bestFinish = bestFinish,
-  owned = owned, power = power, iconFor = iconFor, getSets = getSets, setProgress = setProgress, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
+  owned = owned, setOf = setOf, power = power, iconFor = iconFor, getSets = getSets, setProgress = setProgress, usesScene = usesScene, sharedModel = sharedModel, newScene = newScene, setScene = setScene, hideScene = hideScene, goalProgress = goalProgress, FONT = FONT, WHITE = WHITE, EARN_RATE = EARN_RATE }
 
 RG.ArcadePackPrice = PACK_PRICE
 RG.ArcadeOpenDetail = openDetail
