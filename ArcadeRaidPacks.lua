@@ -332,6 +332,8 @@ local function raidFrame(w, card, finish)
   f:SetAllPoints(w)
   f:SetFrameLevel((w:GetFrameLevel() or 1) + 5)
   f.tex:SetTexture(MEDIA .. art); f.glow:SetTexture(MEDIA .. art)
+  -- (a Gilded print: the raid's frame in gold)
+  if finish == 5 then f.tex:SetVertexColor(1, 0.84, 0.46); f.glow:SetVertexColor(1, 0.84, 0.46) else f.tex:SetVertexColor(1, 1, 1); f.glow:SetVertexColor(1, 1, 1) end
   f.pulse = (finish or 1) >= 3
   f.glow:SetShown(f.pulse)
   f:Show()

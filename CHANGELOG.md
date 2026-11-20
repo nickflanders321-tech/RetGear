@@ -26,6 +26,17 @@
   - gathering at 60: 1 coin for every 5 herbs, ore or skins (up to 20 coins a day);
   - battlegrounds: 8 coins a win, 3 a loss (6 games a day).
 
+- **A new print: Gilded.** Any card a pack can hold can now come Gilded, about 1 pack in 15 (a little rarer than a Full art):
+  - black lacquer with a frame of hammered gold in the card's own shape, a gold double edge, gold lettering on a black name plate, a black glass text panel, gold-leaf flecks and gold corner brackets, with a gold shimmer and glow;
+  - it waits face down in the pack on a gold back and turns over with a gold burst;
+  - it glows gold in your collection, counts toward sets, and can be graded, traded and shown off like any print;
+  - it only comes from packs: it can't be crafted or refunded, and it's never a level 60 gift or a holiday gift. Mythics don't come Gilded.
+  - The pack's odds and its tooltip show the Gilded odds.
+  - `/wp gildedtour` shows one card of each kind as Holo and Gilded side by side, and the gold back. `/wp gildedcheck` draws every card that can come Gilded at every size and lists anything wrong.
+- The "Gilded Hand" achievement is now called **Golden Hand** (its title, "the Gilded", is the same).
+- A Mythic always counts as your best pull in a pack and on your stats page, above any print of any other card.
+- A long card name on a big card now goes onto two lines instead of being shrunk and cut short.
+
 ## v1.52.6
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
 - **Dungeon Mythics: 1 in 10, certain by the 10th.** Until you have a dungeon's own Mythic, each of that dungeon's packs has a 1 in 10 chance of it, and the 10th pack you open without it always has it (it was 1 in 150, certain by the 30th). Packs you've already opened without it count, so some players will get theirs in their very next pack. Once you have it, another copy is as rare as any Mythic. The pack's plaque, the shop, the Album and the Mythic moment all show the new odds.

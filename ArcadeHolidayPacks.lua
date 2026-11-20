@@ -181,7 +181,7 @@ local function giftable()
         local c = u.byKey[n]
         local s = a.cards[n]
         if c and not c.field and s then
-          for f = 4, 1, -1 do if (s[f] or 0) >= 2 and (not best or f > best[2]) then best = { n, f, d, year } end end
+          for f = 4, 1, -1 do if (s[f] or 0) >= 2 and (not best or f > best[2]) then best = { n, f, d, year } end end   -- (never a Gilded copy: those are only given by hand, in a trade)
         end
       end
       if best then return best end

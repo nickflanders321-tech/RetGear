@@ -204,7 +204,7 @@ local function retro()
     for name in pairs(FIRST) do
       local s = a.cards and a.cards[name]
       if s and inWindow(name) then
-        local n = (s[1] or 0) + (s[2] or 0) + (s[3] or 0) + (s[4] or 0)
+        local n = (s[1] or 0) + (s[2] or 0) + (s[3] or 0) + (s[4] or 0) + (s[5] or 0)
         if n > (a.first[name] or 0) then a.first[name] = n end
       end
     end

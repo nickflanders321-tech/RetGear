@@ -157,7 +157,7 @@ local function tip(self, e)
   GameTooltip:AddLine(e.title, 1, 0.93, 0.74)
   GameTooltip:AddLine(e.sub, 0.9, 0.9, 0.9, true)
   local o = RG.ArcadePackOdds and RG.ArcadePackOdds(e.tipKind or "dungeon", e.album)
-  if o then GameTooltip:AddLine(string.format("Mythic 1 in %d packs   ·   holo or full art %d%%", o.mythic, math.floor(o.holo * 100 + 0.5)), 1, 0.9, 0.55) end
+  if o then GameTooltip:AddLine(string.format("Mythic 1 in %d packs   ·   holo or full art %d%%   ·   Gilded 1 in %d", o.mythic, math.floor(o.holo * 100 + 0.5), o.gilded or 0), 1, 0.9, 0.55) end
   if e.album then GameTooltip:AddLine("Click to see its cards in the Album", 0.6, 0.6, 0.6) end
   GameTooltip:Show()
 end

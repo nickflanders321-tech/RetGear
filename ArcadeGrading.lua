@@ -127,7 +127,7 @@ end
 local function valid(r)
   if type(r) ~= "table" or type(r.key) ~= "string" or type(r.owner) ~= "string" or type(r.cert) ~= "number" then return false end
   local s = decode(r.s); if not s then return false end
-  if r.grade ~= gradeOf(s) or not (r.f and r.f >= 1 and r.f <= 4) then return false end
+  if r.grade ~= gradeOf(s) or not (r.f and r.f >= 1 and r.f <= 5) then return false end
   return r.sig == sign(r)
 end
 local function meOwner()
@@ -196,7 +196,7 @@ function RG.ArcadeGradeable(c) return c and c.kind ~= nil end   -- (every card: 
 function RG.ArcadeGradeSend(key, f, svc, which)
   local a = store(); if not a then return false, "Nothing to grade yet." end
   local c = cardOf(key); local sv = SERVICE[svc]
-  if not (c and sv and f and f >= 1 and f <= 4) then return false, "Pick a card and a service." end
+  if not (c and sv and f and f >= 1 and f <= 5) then return false, "Pick a card and a service." end
   local g = G(a)
   if #g.queue >= SLOTS then return false, "All " .. SLOTS .. " grading slots are busy. One comes back soon." end
   local l = conditions(a, key, f)
@@ -298,7 +298,7 @@ function RG.ArcadeGradeSell(cert)
   if slot and (slot[r.f] or 0) > 0 then slot[r.f] = slot[r.f] - 1 end
   a.coins = (a.coins or 0) + v
   a.stats = a.stats or {}; a.stats.gradeSold = (a.stats.gradeSold or 0) + v
-  if slot and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) == 0 and a.showcase then
+  if slot and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) + (slot[5] or 0) == 0 and a.showcase then
     for k = #a.showcase, 1, -1 do if a.showcase[k] == r.key then table.remove(a.showcase, k) end end
   end
   conditions(a, r.key, r.f)
@@ -323,7 +323,7 @@ function RG.ArcadeGradeRemoveCase(id)
   table.remove(G(a).cases, i)
   local slot = a.cards[r.key]
   if slot and (slot[r.f] or 0) > 0 then slot[r.f] = slot[r.f] - 1 end
-  if slot and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) == 0 and a.showcase then
+  if slot and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) + (slot[5] or 0) == 0 and a.showcase then
     for k = #a.showcase, 1, -1 do if a.showcase[k] == r.key then table.remove(a.showcase, k) end end
   end
   if a.gradePin and a.gradePin[r.key] == id then a.gradePin[r.key] = nil end

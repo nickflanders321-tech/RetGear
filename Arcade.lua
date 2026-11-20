@@ -17,7 +17,11 @@ local TIER = {  -- how rare the subject itself is: draw weight, name colour
 }
 local FINISH = {  -- finish names, draw weights, power bonus, sell price
   { "Common", 70, 0, 1 }, { "Rare", 22, 6, 3 }, { "Holo", 6, 16, 5 }, { "Full art", 2, 30, 15 },
+  -- the Gilded print (1.53, ArcadeGilded.lua): never rolled by weight; any pack card can turn Gilded on its own roll
+  -- (RG.ARCADE_GILDED_RATE, about 1 in 15 five-card packs), and it can't be crafted
+  { "Gilded", 0, 40, 40 },
 }
+RG.ARCADE_GILDED_RATE = 1 - (14 / 15) ^ (1 / 5)   -- per card: 1 in 15 packs of 5 (about 1 card in 73)
 local CREATURE_ICON = {
   [1] = "Ability_Hunter_Pet_Wolf", [2] = "INV_Misc_Head_Dragon_01", [3] = "Spell_Shadow_SummonFelHunter", [4] = "Spell_Fire_Elemental_Totem",
   [5] = "Spell_Nature_EarthElemental_Totem", [6] = "Spell_Shadow_AnimateDead", [7] = "INV_Misc_Head_Orc_01", [8] = "Ability_Hunter_Pet_Rabbit",
@@ -196,7 +200,7 @@ local function store()
       local slot = a.cards[k]
       if type(slot) == "table" then
         local t
-        for f = 1, 4 do if (slot[f] or 0) > 0 then t = t or {}; t[f] = slot[f]; n = n + slot[f] end end
+        for f = 1, 5 do if (slot[f] or 0) > 0 then t = t or {}; t[f] = slot[f]; n = n + slot[f] end end
         own[k] = t
       end
     end
@@ -215,8 +219,8 @@ local function store()
   end
   return a
 end
-local function owned(a, id) local c = a.cards[CARDS[id].key or CARDS[id].name]; return c and ((c[1] or 0) + (c[2] or 0) + (c[3] or 0) + (c[4] or 0)) or 0 end
-local function bestFinish(a, id) local c = a.cards[CARDS[id].key or CARDS[id].name]; if not c then return nil end; for f = 4, 1, -1 do if (c[f] or 0) > 0 then return f end end end
+local function owned(a, id) local c = a.cards[CARDS[id].key or CARDS[id].name]; return c and ((c[1] or 0) + (c[2] or 0) + (c[3] or 0) + (c[4] or 0) + (c[5] or 0)) or 0 end
+local function bestFinish(a, id) local c = a.cards[CARDS[id].key or CARDS[id].name]; if not c then return nil end; for f = 5, 1, -1 do if (c[f] or 0) > 0 then return f end end end
 
 -- ---------------------------------------------------------------------------
 -- Coins from XP: 1 coin for every 2% of a level you gain
@@ -561,7 +565,7 @@ local function cardOdds(c, f)
   local least = c.tier == 6 and 3 or 1
   local total = 0
   for k = least, #FINISH do total = total + FINISH[k][2] end
-  local p = (TIER[c.tier][2] / tierWeight) / #pool * (FINISH[f][2] / total)
+  local p = (TIER[c.tier][2] / tierWeight) / #pool * (f == 5 and RG.ARCADE_GILDED_RATE or (FINISH[f][2] / total))
   if p <= 0 then return nil end
   return math.max(1, math.floor(1 / p + 0.5))
 end
@@ -599,7 +603,8 @@ function RG.ArcadePackOdds(kind, dn)
     local c = byKey[RG.ARCADE_SET_MYTHIC[dn]]
     if c and not (a and owned(a, c.id) > 0) then mrate = RG.ARCADE_MYTH_RATE end
   end
-  return { mythic = math.floor(1 / (mrate * (def.weight or 1)) + 0.5), holo = anyOf(3), full = anyOf(4), size = def.size, rares = def.rares, pity = PITY }
+  return { mythic = math.floor(1 / (mrate * (def.weight or 1)) + 0.5), holo = anyOf(3), full = anyOf(4), size = def.size, rares = def.rares, pity = PITY,
+    gilded = math.floor(1 / (1 - (1 - RG.ARCADE_GILDED_RATE) ^ def.size) + 0.5) }
 end
 -- one seal: pays for it, rolls the five cards, returns got, notes, meta
 local function openOne(a, kind, dn)
@@ -676,6 +681,8 @@ local function openOne(a, kind, dn)
     -- Common to Rare and Rare to Holo; a Holo's try succeeds 1 time in 25 (Full art about 1 card in 1,000)
     local up
     if c.tier ~= 7 and f < 4 and math.random() < 0.025 and (f < 3 or math.random() < 0.04) then up = f; f = f + 1 end
+    -- the Gilded print: its own roll, for any card a pack can hold but a Mythic (it replaces the print rolled above)
+    if c.tier ~= 7 and not c.mythic and not c.field and not c.bound and math.random() < RG.ARCADE_GILDED_RATE then f = 5; up = nil end
     local isNew = owned(a, c.id) == 0
     if isNew then a.fresh = a.fresh or {}; a.fresh[c.key or c.name] = true end
     local slot = a.cards[c.key or c.name] or {}
@@ -687,7 +694,7 @@ local function openOne(a, kind, dn)
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
     local r = a.rarest
-    if not r or (f * 10 + c.tier) > (r.finish * 10 + r.tier) then
+    if not r or RG.ArcadeRareScore(f, c.tier) > RG.ArcadeRareScore(r.finish, r.tier) then
       if r then got[#got].record = true end
       a.rarest = { name = c.name, finish = f, tier = c.tier }
     end
@@ -720,7 +727,10 @@ local function openOne(a, kind, dn)
   return got, notes, meta
 end
 
-local function pullScore(g) return g.finish * 10 + g.card.tier + (g.new and 0.5 or 0) end
+-- how rare a pull is: the print, then the rarity; a Mythic always ranks above any print of any other card (a Gilded
+-- print is about 1 pack in 15, a Mythic hundreds of times rarer)
+function RG.ArcadeRareScore(f, tier) return (tier == 7 and 100 or 0) + (f or 1) * 10 + (tier or 1) end
+local function pullScore(g) return RG.ArcadeRareScore(g.finish, g.card.tier) + (g.new and 0.5 or 0) end
 
 function RG.ArcadeOpenPack(kind, dn)
   local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
@@ -837,7 +847,7 @@ function RG.ArcadeGiftCards()
   local fresh, any = {}, {}
   for _, c in ipairs(CARDS) do
     if c.kind ~= 4 and c.tier ~= 7 and not c.dun then
-      for f = 1, #FINISH do
+      for f = 1, 4 do   -- (never a Gilded print: those come only from packs)
         if (c.tier == 6 and 5.5 or c.tier) * 18 + FINISH[f][3] + (c.id % 7) >= 105 then
           local e = { c, f }
           any[#any + 1] = e
@@ -859,7 +869,7 @@ function RG.ArcadeGiftCards()
     slot[f] = (slot[f] or 0) + 1; a.cards[c.key or c.name] = slot
     got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
     local r = a.rarest
-    if not r or (f * 10 + c.tier) > (r.finish * 10 + r.tier) then a.rarest = { name = c.name, finish = f, tier = c.tier } end
+    if not r or RG.ArcadeRareScore(f, c.tier) > RG.ArcadeRareScore(r.finish, r.tier) then a.rarest = { name = c.name, finish = f, tier = c.tier } end
     for i = #fresh, 1, -1 do if fresh[i][1].id == c.id then table.remove(fresh, i) end end
   end
   table.sort(got, function(x, y) return pullScore(x) < pullScore(y) end)
@@ -878,6 +888,7 @@ end
 local CRAFT_BASE = { 40, 80, 160, 320, 640 }
 local CRAFT_FINISH = { 1, 2, 5, 12 }
 function RG.ArcadeCraftCost(c, f)
+  if (f or 1) > 4 then return nil end   -- (a Gilded print comes only from packs)
   if not c or c.kind == 4 or c.field or c.bound or (c.tier or 6) > 5 then return nil end   -- (Field Guide and holiday cards come only from the world)
   return (CRAFT_BASE[c.tier] or 640) * (CRAFT_FINISH[f or 1] or 1)
 end
@@ -919,6 +930,7 @@ function RG.ArcadeRefund(c, f)
   local slot = a.cards[key]
   if not (slot and (slot[f] or 0) > 0) then return false, "You have no copy of that print." end
   if RG.ArcadeGradeFree and RG.ArcadeGradeFree(a, key, f) < 1 then return false, "Your copies of that print are graded: a case can't be refunded." end
+  if not RG.ArcadeCraftCost(c, f) then return false, "That print can't be refunded." end
   if RG.ArcadeRefundable(a, key, f) < 1 then return false, "Only copies you owned when the card changed can be refunded." end
   local v = RG.ArcadeCraftCost(c, f) or 0
   slot[f] = slot[f] - 1
@@ -933,7 +945,7 @@ function RG.ArcadeSellExtras()
   local coins, cnt, rn, rc = 0, 0, 0, 0
   for key, slot in pairs(a.cards) do
     local c = RG.ArcadeRefundOpen(a, key) and byKey[key]
-    for f = 1, 4 do
+    for f = 1, 5 do
       local n = slot[f] or 0
       -- (graded copies stay, and count as the one you keep: ArcadeGrading.lua)
       local h = RG.ArcadeGradeHeld and RG.ArcadeGradeHeld(key, f) or 0
@@ -995,7 +1007,7 @@ function RG.ArcadeStats()
   local own, prints = 0, 0
   for _, c in ipairs(CARDS) do
     if bestFinish(a, c.id) then own = own + 1 end
-    for k = 1, 4 do if ((a.cards[c.key or c.name] or {})[k] or 0) > 0 then prints = prints + 1 end end
+    for k = 1, 5 do if ((a.cards[c.key or c.name] or {})[k] or 0) > 0 then prints = prints + 1 end end
   end
   return a, own, #CARDS, prints
 end
@@ -1059,7 +1071,7 @@ local function addCard(a, key, f, n)
   slot[f] = math.max(0, (slot[f] or 0) + n)
   a.cards[key] = slot
   -- a card traded away completely leaves the showcase too
-  if n < 0 and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) == 0 and a.showcase then
+  if n < 0 and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) + (slot[5] or 0) == 0 and a.showcase then
     for i = #a.showcase, 1, -1 do if a.showcase[i] == key then table.remove(a.showcase, i) end end
   end
 end
@@ -1495,7 +1507,9 @@ local function cardAnim(w, t)
     local k = ((t / period) + w.phase) % 1
     w.foil:ClearAllPoints(); w.foil:SetPoint("LEFT", w.fx, "LEFT", (-1.5 + 2.0 * k) * w.cw, 0)
     w.foil:SetAlpha(fx.foil * (0.75 + 0.25 * math.sin(t * 2 + w.phase * 6)))
-    if w.finish == 3 and not (w.card and w.card.mythic) then local r, g, b = hsv((t * 0.12 + w.phase) % 1, 0.55, 1); w.foil:SetVertexColor(r, g, b) else w.foil:SetVertexColor(1, 1, 1) end
+    if w.finish == 3 and not (w.card and w.card.mythic) then local r, g, b = hsv((t * 0.12 + w.phase) % 1, 0.55, 1); w.foil:SetVertexColor(r, g, b)
+    elseif w.finish == 5 and not (w.card and w.card.mythic) then w.foil:SetVertexColor(1, 0.8, 0.4)
+    else w.foil:SetVertexColor(1, 1, 1) end
   end
   if fx.aura > 0 then w.aura:SetAlpha(fx.aura * (0.7 + 0.3 * math.sin(t * 1.6 + w.phase * 6))) end
   if fx.spin and w.rune.SetRotation then w.rune:SetRotation((t * 0.12 + w.phase * 6) % 6.2832) end
@@ -1518,8 +1532,9 @@ local FX = {   -- by finish: aura, foil, rune brightness, spin, rays, sparks
   [3] = { aura = 0.42, foil = 0.5, rune = 0.5, spin = true, sparks = true },
   [4] = { aura = 0.62, foil = 0.75, rune = 0.62, spin = true, sparks = true, rays = 0.6 },
 }
-for i = 1, 4 do FX[i].finish = i end
-FX[5] = { aura = 0.85, foil = 0.85, rune = 0, sparks = true, prism = true, finish = 4 }   -- a Mythic
+FX[5] = { aura = 0.7, foil = 0.55, rune = 0.45, sparks = true }   -- the Gilded print (ArcadeGilded.lua: its gold)
+for i = 1, 5 do FX[i].finish = i end
+FX.mythic = { aura = 0.85, foil = 0.85, rune = 0, sparks = true, prism = true, finish = 4 }   -- a Mythic
 
 local function makeCard(parent, w)
   local h = math.floor(w * 358 / 256 + 0.5)
@@ -1950,7 +1965,7 @@ function RG.ArcadePaintMythic(w, card, copies, a)
     RG.ArcadeRingEngrave(w, my.one and ((a and a.ring and a.ring.by and a.ring.by ~= "?" and a.ring.by) or "The road goes on") or nil)
   end
   -- glow, light sweep, sparkles, the turning edge
-  local fx = FX[5]
+  local fx = FX.mythic
   w.fxset = fx
   tintTex(w.aura, my.glow or { 1, 0.9, 0.6 }, 1); w.aura:Show(); w.aura:SetAlpha(fx.aura)
   w.foil:Show()
@@ -2032,7 +2047,7 @@ local function paint(w, card, finish, copies)
     return
   end
   w.body:Show(); w.frameTex:SetShown(not full); w.slot:Hide(); w.glow:Show()
-  w.edge:SetTexture(MEDIA .. "Edge" .. finish); w.edge:Show(); w.plate:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()
+  w.edge:SetTexture(MEDIA .. "Edge" .. math.min(finish, 4)); w.edge:Show(); w.plate:Show(); w.rune:Show(); w.iconBack:Show(); w.iconEdge:Show(); w.art:Show()   -- (a Gilded print's gold edge: ArcadeGilded.lua)
   w.num:SetTextColor(0.66, 0.68, 0.74)
   local fx = FX[finish]
   local ha = U.HALO[card.tier]
@@ -2150,13 +2165,13 @@ local WINW, WINH = 790, 730
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
 local SHOWS = { "All", "Owned", "Missing", "Extras", "New" }
 local SORTS = { "Owned", "Collection", "Rarity", "Name", "Power" }
-local FNAME = { "Common", "Rare", "Holo", "Full art" }
+local FNAME = { "Common", "Rare", "Holo", "Full art", "Gilded" }
 
 local function isPinned(a, c)
   for _, k in ipairs(a.showcase or {}) do if k == (c.key or c.name) then return true end end
   return false
 end
-local function hasExtra(a, c) local s = a.cards[c.key or c.name]; if not s then return false end; for f = 1, 4 do if (s[f] or 0) >= 2 then return true end end return false end
+local function hasExtra(a, c) local s = a.cards[c.key or c.name]; if not s then return false end; for f = 1, 5 do if (s[f] or 0) >= 2 then return true end end return false end
 
 local function collectionList(a)
   local list, q = {}, (view.search or ""):lower()
@@ -2338,7 +2353,7 @@ end
 local function summarize()
   local best, bi
   for i, g in ipairs(reveal.got) do
-    local sc = g.finish * 10 + g.card.tier
+    local sc = RG.ArcadeRareScore(g.finish, g.card.tier)
     if not best or sc > best then best, bi = sc, i end
   end
   local g = reveal.got[bi]
@@ -2918,7 +2933,7 @@ local function showReveal(got, notes, meta)
     end)
     reveal.share = gbtn(reveal, "Show off", 132, 30, function()
       local bg
-      for _, g in ipairs(reveal.got or {}) do if not bg or g.finish * 10 + g.card.tier > bg.finish * 10 + bg.card.tier then bg = g end end
+      for _, g in ipairs(reveal.got or {}) do if not bg or RG.ArcadeRareScore(g.finish, g.card.tier) > RG.ArcadeRareScore(bg.finish, bg.card.tier) then bg = g end end
       if not bg then return end
       local msg = "Waypath+ cards: I pulled " .. bg.card.name .. " (" .. FNAME[bg.finish] .. ")" .. (bg.odds and (", about 1 in " .. groupDigits(bg.odds) .. " cards") or "") .. "!"
       -- players in your group or guild with Waypath+ get the card itself; the chat box is filled in for everyone else
@@ -2948,7 +2963,7 @@ local function showReveal(got, notes, meta)
         local cv = reveal.cards[i].cover
         if cv and cv:IsShown() and not cv.flipping then order[#order + 1] = i end
       end
-      local function score(i) local g = reveal.got[i]; return g.finish * 10 + g.card.tier + (g.new and 0.5 or 0) end
+      local function score(i) local g = reveal.got[i]; return RG.ArcadeRareScore(g.finish, g.card.tier) + (g.new and 0.5 or 0) end
       table.sort(order, function(x, y) local sx, sy = score(x), score(y); if sx ~= sy then return sx < sy end return x < y end)
       local t = 0.05
       for k, i in ipairs(order) do
@@ -3182,7 +3197,7 @@ local function showReveal(got, notes, meta)
     local o = RG.ArcadePackOdds(kind)
     -- (a dungeon pack opened without its own Mythic: 1 in 10)
     if meta.dungeon and meta.mythPityBefore then o.mythic = math.floor(1 / (RG.ARCADE_MYTH_RATE * (def.weight or 1)) + 0.5) end
-    info[#info + 1] = { "Odds", "|cffffe58cMythic 1 in " .. o.mythic .. " packs|r   ·   holo or full art in " .. math.floor(o.holo * 100 + 0.5) .. "%   ·   full art in " .. math.floor(o.full * 100 + 0.5) .. "%" }
+    info[#info + 1] = { "Odds", "|cffffe58cMythic 1 in " .. o.mythic .. " packs|r   ·   holo or full art in " .. math.floor(o.holo * 100 + 0.5) .. "%   ·   full art in " .. math.floor(o.full * 100 + 0.5) .. "%   ·   |cffffd36bGilded 1 in " .. o.gilded .. "|r" }
   end
   -- a plain pack, jumbo or super jumbo has its own wrapper (picture and colour); gifts, reward packs and several packs
   -- at once keep the tinted foil
@@ -3241,12 +3256,14 @@ local function showReveal(got, notes, meta)
     c.peel, c.lift, c.holding = 0, 0, false; c.fold:Hide(); c.peek:Hide(); c:SetHeight(w.ch); c.tex:SetTexCoord(0, 1, 0, CARD_V)
     c:ClearAllPoints(); c:SetPoint("CENTER", 0, 0); c.cued = false
     -- how good the card inside is: the better of its print (Rare 2, Holo 3, Full art 4) and its rarity (Renowned 2, Epic 3, Legendary 4)
-    local glowLv = math.max(g.finish, (g.card.tier >= 3 and g.card.tier <= 5) and g.card.tier - 1 or 1)
+    local glowLv = math.min(4, math.max(g.finish, (g.card.tier >= 3 and g.card.tier <= 5) and g.card.tier - 1 or 1))
     c.rare = (glowLv >= 3 or g.card.tier == 6) and true or false
     c.glowCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (glowLv == 4 and { 1, 0.7, 0.15 } or (glowLv == 3 and { 0.7, 0.35, 0.95 } or { 0.3, 0.55, 1 }))
+    if g.finish == 5 then c.glowCol = { 1, 0.82, 0.35 } end   -- (a Gilded print: gold)
     c.prismatic = g.card.tier == 7 or nil   -- a Mythic inside: the glow runs through every colour
-    c.peekCol = g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.691, 0.617, 0.469 })))
+    c.peekCol = g.finish == 5 and { 1, 0.82, 0.35 } or g.card.tier == 6 and { 1, 0.2, 0.35 } or (g.finish == 4 and { 1, 0.75, 0.2 } or (g.finish == 3 and { 0.7, 0.35, 0.95 } or (g.finish == 2 and { 0.3, 0.55, 1 } or { 0.691, 0.617, 0.469 })))
     if RG.CardBackName then c.tex:SetTexture(MEDIA .. RG.CardBackName()) end
+    if g.finish == 5 then c.tex:SetTexture(MEDIA .. "GildedBack") end   -- (a Gilded print waits face down on its gold back)
     c.best = nil
     if glowLv >= 2 or g.card.tier >= 6 then c.glow:Show(); anim[c] = coverAnim else anim[c] = nil; c.glow:Hide() end
     w:SetAlpha(0); w:Hide()   -- 3D models ignore alpha: the cards stay hidden until they are dealt
@@ -3254,7 +3271,7 @@ local function showReveal(got, notes, meta)
   -- the best card in a pack worth waiting for trembles now and then while it's face down (save it for last)
   do
     local bi, bs
-    for i, g in ipairs(got) do local s = g.finish * 10 + g.card.tier; if not bs or s > bs then bs, bi = s, i end end
+    for i, g in ipairs(got) do local s = RG.ArcadeRareScore(g.finish, g.card.tier); if not bs or s > bs then bs, bi = s, i end end
     if bi and bs >= 25 then local c = reveal.cards[bi].cover; c.best = true; c.glow:Show(); anim[c] = coverAnim end
   end
   for _, fn in ipairs(RG.ArcadeSealHooks or {}) do pcall(fn, "setup", reveal, meta, kind) end   -- (a dungeon's crate, a raid's chains)
@@ -3370,11 +3387,15 @@ local function refreshDetail()
   end
   detail.info:SetText("Set: |cffffffff" .. setOf(c) .. "|r" .. arena .. "\nDuel power: |cffffffff" .. power(c, f) .. "|r" .. (a.duelCard == (c.key or c.name) and "   |cff7be08aYour duel card|r" or "")
     .. "\nOwned: |cffffffff" .. owned(a, c.id) .. "|r" .. (have == 0 and ("\n|cffe0b36bYou do not have this print yet|r") or ""))
-  for k = 1, 4 do
+  -- the prints in a row: four, or five for a card that can come Gilded (each label fits its button)
+  local five = RG.ArcadeCanGild and RG.ArcadeCanGild(c)
+  local bw = five and 62 or 80
+  for k = 1, 5 do
     local n = slot[k] or 0
     local b = detail.prints[k]
-    if b.label then setfont(b.label, "head", 10) end   -- (four prints in a row: "Full art  1" fits at this size)
-    b:SetText(FNAME[k] .. "  " .. n)
+    b:SetShown(k <= 4 or five)
+    b:SetWidth(bw); b:ClearAllPoints(); b:SetPoint("BOTTOMLEFT", detail, "BOTTOMLEFT", 290 + (k - 1) * (bw + (five and 3.5 or 2)), 118)
+    if b.label then fitText(b.label, FNAME[k] .. "  " .. n, bw - 6, 10, 7.5, "head") end
     b:SetEnabled(true); b:SetActive(k == f)
   end
   local cost = RG.ArcadeCraftCost(c, f)
@@ -3408,7 +3429,7 @@ local function openDetail(c)
     detail.info = fs(detail, "body", 13); detail.info:SetPoint("TOPLEFT", detail.flavor, "BOTTOMLEFT", 0, -10); detail.info:SetWidth(320); detail.info:SetJustifyH("LEFT"); detail.info:SetTextColor(0.833, 0.743, 0.565); detail.info:SetSpacing(3)
     local close = gbtn(detail, "X", 26, 24, function() detail:Hide() end); close:SetPoint("TOPRIGHT", -14, -14)
     detail.prints = {}
-    for k = 1, 4 do
+    for k = 1, 5 do   -- (the fifth, Gilded, only for a card that can come Gilded: refreshDetail lays them out)
       local b = gbtn(detail, "", 80, 24, function() detail.finish = k; refreshDetail() end)
       b:SetPoint("BOTTOMLEFT", X0 + (k - 1) * 82, 118)
       detail.prints[k] = b
@@ -3714,6 +3735,7 @@ local function build()
       GameTooltip:AddDoubleLine("Mythic", "1 in " .. o.mythic .. " packs", 1, 0.9, 0.55, 1, 1, 1)
       GameTooltip:AddDoubleLine("Holo or full art", string.format("%d%% of packs", math.floor(o.holo * 100 + 0.5)), 0.7, 0.35, 0.95, 1, 1, 1)
       GameTooltip:AddDoubleLine("Full art", string.format("%d%% of packs", math.floor(o.full * 100 + 0.5)), 1, 0.6, 0.1, 1, 1, 1)
+      GameTooltip:AddDoubleLine("Gilded", "1 in " .. o.gilded .. " packs", 1, 0.83, 0.42, 1, 1, 1)
       GameTooltip:AddLine(o.size .. " cards; the last " .. (o.rares > 1 and (o.rares .. " are") or "one is") .. " rare or better.", 0.8, 0.8, 0.8, true)
       GameTooltip:AddLine("After " .. o.pity .. " packs without a holo, the next one has one.", 0.8, 0.8, 0.8, true)
       GameTooltip:Show()
@@ -4071,7 +4093,7 @@ function RG.ArcadeRefresh(keepMsg)
     for _, c in ipairs(CARDS) do
       if c.kind ~= 4 then
         local s2 = a.cards[c.key or c.name]
-        if s2 then for f = 1, 4 do if (s2[f] or 0) >= 1 then list[#list + 1] = { c = c, f = f, n = s2[f] } end end end
+        if s2 then for f = 1, 5 do if (s2[f] or 0) >= 1 then list[#list + 1] = { c = c, f = f, n = s2[f] } end end end
       end
     end
     table.sort(list, function(x, y)

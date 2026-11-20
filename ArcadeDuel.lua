@@ -561,7 +561,7 @@ end
 RG.__cardShown = function(text, sender)
   local key, finish, class, race = text:match("^K|([^|]+)|(%d)|?([^|]*)|?([^|]*)")
   finish = tonumber(finish)
-  if not key or #key > 40 or not finish or finish < 1 or finish > 4 or not sender then return end
+  if not key or #key > 40 or not finish or finish < 1 or finish > 5 or not sender then return end
   local U = RG.ArcadeUI
   local card = U and U.byKey and U.byKey[key]
   if not card and key:sub(1, 1) == "@" and class:match("^%u+$") and #class <= 12 and (race == "" or (race:match("^%a+$") and #race <= 16)) and RG.ArcadeAddRaider then

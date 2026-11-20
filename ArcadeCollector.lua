@@ -195,7 +195,7 @@ local FEATS = {
   { id = "holo1", cat = "pulls", name = "First Light", text = "Pull a holo.", pts = 5, need = 1, have = function(a) return cnt(a, "holo") end, reward = { coins = 10 } },
   { id = "full1", cat = "pulls", name = "Edge to Edge", text = "Pull a Full art print.", pts = 10, need = 1, have = function(a) return cnt(a, "full") end, reward = { coins = 25 } },
   { id = "leg1", cat = "pulls", name = "Legend in Hand", text = "Pull a Legendary.", pts = 15, need = 1, have = function(a) return cnt(a, "legend") end, reward = { coins = 40 } },
-  { id = "gilded", cat = "pulls", name = "Gilded Hand", text = "Pull a Legendary in Full art.", pts = 50, need = 1, have = function(a) return cnt(a, "gilded") end, reward = { title = "the Gilded" } },
+  { id = "gilded", cat = "pulls", name = "Golden Hand", text = "Pull a Legendary in Full art.", pts = 50, need = 1, have = function(a) return cnt(a, "gilded") end, reward = { title = "the Gilded" } },
   { id = "climb", cat = "pulls", name = "Climber", text = "See a print climb as it turns over.", pts = 10, need = 1, have = function(a) return cnt(a, "upgrade") end, reward = { coins = 25 } },
   { id = "packs100", cat = "pulls", name = "Pack Rat", text = "Open 100 packs.", pts = 20, need = 100, have = function(a) return a.packs or 0 end, reward = { title = "Pack Rat" } },
   { id = "mythic", cat = "pulls", name = "Mythic Hands", text = "Own a Mythic.", pts = 100, need = 1, have = function(a) return ownedWhere(a, function(c) return c.tier == 7 end) end, reward = { back = "Radiant", glow = true } },
@@ -602,7 +602,7 @@ local function paintFeats(a)
     local k = (a.showcase or {})[i]
     local c = k and u.byKey[k]
     local best
-    if c then for f = 4, 1, -1 do if a.cards[k] and (a.cards[k][f] or 0) > 0 then best = f; break end end end
+    if c then for f = 5, 1, -1 do if a.cards[k] and (a.cards[k][f] or 0) > 0 then best = f; break end end end
     if c and best then u.paint(w, c, best, 1) else w:Hide() end
   end
   fp.whoPts:SetText(points(a) .. " COLLECTOR POINTS")
