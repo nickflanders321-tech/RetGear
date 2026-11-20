@@ -261,7 +261,7 @@ local function buildDesk(frame)
   local u = U()
   desk = CreateFrame("Frame", nil, frame); desk:SetAllPoints(frame); desk:SetFrameLevel(lvOf(frame) + 6)
   local X0 = 34
-  desk.back = u.gbtn(desk, "<  Shop", 78, 24, function() local v = RG.ArcadeView; if v then v.shopSection = nil; v.gradeCert = nil end; RG.ArcadeRefresh(true) end)
+  desk.back = u.gbtn(desk, "<  Shop", 78, 24, function() local v = RG.ArcadeView; if v then v.shopSection = nil; v.gradeCert = nil; v.gradeLedger = nil end; RG.ArcadeRefresh(true) end)
   desk.back:SetPoint("TOPLEFT", X0, -156)
   desk.head = u.fs(desk, "title", 15); desk.head:SetPoint("LEFT", desk.back, "RIGHT", 14, 0); desk.head:SetTextColor(1, 0.92, 0.7)
   desk.right = u.fs(desk, "body", 12); desk.right:SetPoint("TOPRIGHT", desk, "TOPRIGHT", -X0, -163); desk.right:SetJustifyH("RIGHT"); desk.right:SetTextColor(0.85, 0.78, 0.6)
@@ -349,23 +349,135 @@ local function buildDesk(frame)
     desk.subs[i] = r
   end
   desk.gname = u.fs(desk.info, "title", 24); desk.gname:SetPoint("TOPLEFT", 16, -158); desk.gname:SetTextColor(1, 0.83, 0.42)
-  desk.ginfo = u.fs(desk.info, "body", 12.5); desk.ginfo:SetPoint("TOPLEFT", 16, -192); desk.ginfo:SetWidth(400); desk.ginfo:SetJustifyH("LEFT"); desk.ginfo:SetSpacing(3)
+  desk.ginfo = u.fs(desk.info, "body", 11.5); desk.ginfo:SetPoint("TOPLEFT", 16, -190); desk.ginfo:SetWidth(400); desk.ginfo:SetJustifyH("LEFT"); desk.ginfo:SetSpacing(3)
   desk.ginfo:SetTextColor(0.85, 0.8, 0.68)
-  desk.pin = u.gbtn(desk.info, "Pin to showcase", 128, 28, function()
-    if desk.rec and RG.ArcadeGradePin(desk.rec.cert) then say("Your " .. (cardOf(desk.rec.key) or {}).name .. " case is on your showcase.") end
+  desk.pin = u.gbtn(desk.info, "Showcase", 96, 28, function()
+    if desk.rec and RG.ArcadeGradePin(desk.rec.id) then say("Your " .. (cardOf(desk.rec.key) or {}).name .. " case is on your showcase.") end
   end); desk.pin:SetPoint("BOTTOMLEFT", 16, 16)
-  desk.sell = u.gbtn(desk.info, "Sell", 128, 28, function()
+  desk.sell = u.gbtn(desk.info, "Sell", 96, 28, function()
     local r = desk.rec; if not r then return end
     local v = RG.ArcadeGradeValue(r)
-    local function go() local ok, msg = RG.ArcadeGradeSell(r.cert); say(msg); local vv = RG.ArcadeView; if ok and vv then vv.gradeCert = nil end; RG.ArcadeRefresh(true) end
+    local function go() local ok, msg = RG.ArcadeGradeSell(r.id); say(msg); local vv = RG.ArcadeView; if ok and vv then vv.gradeCert = nil end; RG.ArcadeRefresh(true) end
     if r.grade >= 9 then desk.confirm:Ask("Sell your " .. r.grade .. " (" .. RG.ArcadeGradeName(r.grade) .. ") for " .. v .. " coins?\nIt leaves your collection for good.", "Sell it", go) else go() end
-  end); desk.sell:SetPoint("LEFT", desk.pin, "RIGHT", 8, 0)
-  desk.crack = u.gbtn(desk.info, "Crack the case", 128, 28, function()
+  end); desk.sell:SetPoint("LEFT", desk.pin, "RIGHT", 6, 0)
+  desk.crack = u.gbtn(desk.info, "Crack case", 96, 28, function()
     local r = desk.rec; if not r then return end
-    local function go() local ok, msg = RG.ArcadeGradeCrack(r.cert); say(msg); local vv = RG.ArcadeView; if ok and vv then vv.gradeCert = nil; sel.key, sel.f, sel.copy = r.key, r.f, 1 end; RG.ArcadeRefresh(true) end
+    local function go() local ok, msg = RG.ArcadeGradeCrack(r.id); say(msg); local vv = RG.ArcadeView; if ok and vv then vv.gradeCert = nil; sel.key, sel.f, sel.copy = r.key, r.f, 1 end; RG.ArcadeRefresh(true) end
     if r.grade >= 9 then desk.confirm:Ask("Crack the case of your " .. r.grade .. " (" .. RG.ArcadeGradeName(r.grade) .. ")?\nThe grade is lost for good, and the card is graded fresh next time.", "Crack it", go) else go() end
-  end); desk.crack:SetPoint("LEFT", desk.sell, "RIGHT", 8, 0)
+  end); desk.crack:SetPoint("LEFT", desk.sell, "RIGHT", 6, 0)
+  -- trading it: offer it to your group, or answer a graded offer with it (ArcadeGradingGuild.lua)
+  desk.offer = u.gbtn(desk.info, "Offer", 96, 28, function()
+    local r = desk.rec; if not r then return end
+    local t = RG.ArcadeTrade
+    local ok, msg
+    if t and t.incoming and t.incoming.case and RG.ArcadeGradeAnswer then ok, msg = RG.ArcadeGradeAnswer(nil, nil, r.id)
+    elseif RG.ArcadeOfferCase then ok, msg = RG.ArcadeOfferCase(r.id) end
+    say(msg); RG.ArcadeRefresh(true)
+  end); desk.offer:SetPoint("LEFT", desk.crack, "RIGHT", 6, 0)
+  -- the guild's graded copies of this card
+  desk.popH = u.fs(desk.info, "title", 12); desk.popH:SetPoint("TOPLEFT", 16, -302); desk.popH:SetTextColor(1, 0.83, 0.42)
+  desk.pop = {}
+  local PL = { { 10, 10, "10" }, { 9, 9, "9" }, { 8, 8, "8" }, { 7, 7, "7" }, { 6, 6, "6" }, { 1, 5, "1-5" } }
+  for i, e in ipairs(PL) do
+    local r = CreateFrame("Frame", nil, desk.info); r:SetSize(400, 15); r:SetPoint("TOPLEFT", 16, -320 - (i - 1) * 17)
+    r.lo, r.hi = e[1], e[2]
+    r.l = u.fs(r, "head", 11); r.l:SetPoint("LEFT"); r.l:SetWidth(34); r.l:SetJustifyH("LEFT"); r.l:SetText(e[3])
+    r.bg = r:CreateTexture(nil, "ARTWORK"); r.bg:SetColorTexture(0.18, 0.16, 0.13, 1); r.bg:SetPoint("LEFT", 40, 0); r.bg:SetSize(300, 9)
+    r.bar = r:CreateTexture(nil, "OVERLAY"); r.bar:SetColorTexture(0.79, 0.64, 0.29, 1); r.bar:SetPoint("LEFT", 40, 0); r.bar:SetSize(1, 9)
+    r.n = u.fs(r, "head", 11); r.n:SetPoint("RIGHT"); r.n:SetJustifyH("RIGHT")
+    desk.pop[i] = r
+  end
   desk.confirm = confirmBox(desk)
+
+  -- the Guild Ledger: sets (left), the guild's best scores for the one picked (right)
+  desk.ledgerBtn = u.gbtn(desk, "Guild Ledger", 120, 24, function()
+    local v = RG.ArcadeView; if not v then return end
+    v.gradeLedger = not v.gradeLedger; v.gradeCert = nil; RG.ArcadeRefresh(true)
+  end)
+  desk.ledgerBtn:SetPoint("LEFT", desk.head, "RIGHT", 18, 0)
+  desk.ledger = CreateFrame("Frame", nil, desk); desk.ledger:SetAllPoints(desk)
+  local lb = box(X0, -196, 300, 478, "SETS")
+  lb:SetParent(desk.ledger); desk.lsets = lb
+  lb.rows = {}
+  for i = 1, 13 do
+    local b = CreateFrame("Button", nil, lb); b:SetSize(272, 28); b:SetPoint("TOPLEFT", 14, -34 - (i - 1) * 31)
+    b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints(b); b.bg:SetColorTexture(1, 0.85, 0.5, 0.06)
+    b.name = u.fs(b, "body", 12); b.name:SetPoint("TOPLEFT", 6, -3); b.name:SetWidth(200); b.name:SetJustifyH("LEFT"); b.name:SetWordWrap(false)
+    b.sub = u.fs(b, "body", 10.5); b.sub:SetPoint("BOTTOMLEFT", 6, 2); b.sub:SetTextColor(0.62, 0.58, 0.5)
+    b.score = u.fs(b, "head", 12); b.score:SetPoint("RIGHT", -6, 0); b.score:SetJustifyH("RIGHT")
+    b:SetScript("OnClick", function(self) local v = RG.ArcadeView; if v and self.set then v.ledgerSet = self.set; RG.ArcadeRefresh(true) end end)
+    lb.rows[i] = b
+  end
+  lb.page = 1
+  lb.prev = u.gbtn(lb, "<", 30, 22, function() lb.page = math.max(1, lb.page - 1); RG.ArcadeRefresh(true) end); lb.prev:SetPoint("BOTTOMLEFT", 14, 12)
+  lb.next = u.gbtn(lb, ">", 30, 22, function() lb.page = lb.page + 1; RG.ArcadeRefresh(true) end); lb.next:SetPoint("LEFT", lb.prev, "RIGHT", 6, 0)
+  lb.pageT = u.fs(lb, "body", 11); lb.pageT:SetPoint("LEFT", lb.next, "RIGHT", 8, 0); lb.pageT:SetTextColor(0.7, 0.66, 0.56)
+  local bb = box(X0 + 312, -196, 410, 478, "THE LEADERBOARD")
+  bb:SetParent(desk.ledger); desk.lboard = bb
+  bb.note = u.fs(bb, "body", 12); bb.note:SetPoint("TOPLEFT", 14, -34); bb.note:SetWidth(380); bb.note:SetJustifyH("LEFT"); bb.note:SetTextColor(0.8, 0.75, 0.64); bb.note:SetSpacing(2)
+  bb.rows = {}
+  for i = 1, 10 do
+    local r = CreateFrame("Frame", nil, bb); r:SetSize(380, 26); r:SetPoint("TOPLEFT", 14, -96 - (i - 1) * 30)
+    r.rank = u.fs(r, "title", 13); r.rank:SetPoint("LEFT", 0, 0); r.rank:SetWidth(28); r.rank:SetJustifyH("LEFT")
+    r.name = u.fs(r, "body", 13); r.name:SetPoint("LEFT", 30, 0); r.name:SetWidth(170); r.name:SetJustifyH("LEFT"); r.name:SetWordWrap(false)
+    r.bg = r:CreateTexture(nil, "ARTWORK"); r.bg:SetColorTexture(0.18, 0.16, 0.13, 1); r.bg:SetPoint("LEFT", 204, 0); r.bg:SetSize(110, 8)
+    r.bar = r:CreateTexture(nil, "OVERLAY"); r.bar:SetColorTexture(0.85, 0.66, 0.26, 1); r.bar:SetPoint("LEFT", 204, 0); r.bar:SetSize(1, 8)
+    r.score = u.fs(r, "head", 12); r.score:SetPoint("RIGHT", 0, 0); r.score:SetJustifyH("RIGHT")
+    bb.rows[i] = r
+  end
+end
+
+local function paintLedger(view)
+  local sets, sizeOf = RG.ArcadeGradeLedger()
+  local myName = (UnitName and select(2, pcall(UnitName, "player"))) or "?"
+  local list = {}
+  for name, holders in pairs(sets) do
+    local mine = holders[myName]
+    local top = 0; for _, e in pairs(holders) do top = math.max(top, e.score) end
+    list[#list + 1] = { name = name, mine = mine and mine.score or 0, top = top, max = 10 * math.max(1, sizeOf(name)), n = sizeOf(name) }
+  end
+  table.sort(list, function(x, y) if x.mine ~= y.mine then return x.mine > y.mine end; if x.top ~= y.top then return x.top > y.top end; return x.name < y.name end)
+  local lb, bb = desk.lsets, desk.lboard
+  local per = #lb.rows
+  local pages = math.max(1, math.ceil(#list / per)); lb.page = math.min(lb.page, pages)
+  if not (view.ledgerSet and sets[view.ledgerSet]) then view.ledgerSet = list[1] and list[1].name end
+  for i, b in ipairs(lb.rows) do
+    local e = list[(lb.page - 1) * per + i]
+    if e then
+      b.set = e.name; b.name:SetText(e.name); b.sub:SetText(e.n .. " cards")
+      b.score:SetText((e.mine > 0 and ("|cffffd36b" .. e.mine .. "|r") or "|cff7d776a0|r") .. " / " .. e.max)
+      b.bg:SetColorTexture(1, 0.85, 0.5, e.name == view.ledgerSet and 0.18 or 0.06)
+      b:Show()
+    else b:Hide() end
+  end
+  lb.prev:SetShown(pages > 1); lb.next:SetShown(pages > 1); lb.pageT:SetText(pages > 1 and (lb.page .. " / " .. pages) or "")
+  lb.prev:SetEnabled(lb.page > 1); lb.next:SetEnabled(lb.page < pages)
+  for _, r in ipairs(bb.rows) do r:Hide() end
+  local guild = IsInGuild and IsInGuild()
+  if not view.ledgerSet then
+    bb.h:SetText("THE LEADERBOARD")
+    bb.note:SetText("Nobody " .. (guild and "in your guild " or "") .. "has a graded card yet. Every graded card adds its grade to its set's score: the best graded copy of each card counts, 10 at most." ..
+      (guild and "" or "\n\nJoin a guild to see your guildmates' scores here."))
+    return
+  end
+  local holders = sets[view.ledgerSet] or {}
+  local rows = {}
+  for name, e in pairs(holders) do rows[#rows + 1] = { name = name, score = e.score, graded = e.graded } end
+  table.sort(rows, function(x, y) if x.score ~= y.score then return x.score > y.score end return x.name < y.name end)
+  local max = 10 * math.max(1, sizeOf(view.ledgerSet))
+  bb.h:SetText(view.ledgerSet:upper())
+  bb.note:SetText("Each card's best graded copy adds its grade (10 at most): a full set of Gem Mints scores " .. max .. "." ..
+    (guild and "\nYour guildmates with Waypath+ share their cases when they log in." or "\nJoin a guild to see your guildmates here."))
+  for i, r in ipairs(bb.rows) do
+    local e = rows[i]
+    if e then
+      local isMe = e.name == myName
+      r.rank:SetText(i); r.rank:SetTextColor(i == 1 and 1 or 0.85, i == 1 and 0.83 or 0.8, i == 1 and 0.42 or 0.7)
+      r.name:SetText((isMe and "|cffffd36b" or "") .. e.name .. (isMe and "|r" or "") .. "  |cff8f8a7c" .. e.graded .. " graded|r")
+      r.bar:SetWidth(math.max(1, 110 * e.score / max)); r.score:SetText(e.score .. " / " .. max)
+      r:Show()
+    end
+  end
 end
 
 local function paintSlots(a, st)
@@ -399,7 +511,15 @@ end
 local function paintDesk(view, a)
   local u = U()
   local st = RG.ArcadeGradeState()
-  desk.head:SetText(view.gradeCert and "A GRADED CARD" or "THE GRADING DESK")
+  desk.head:SetText(view.gradeLedger and "THE GUILD LEDGER" or (view.gradeCert and "A GRADED CARD" or "THE GRADING DESK"))
+  desk.ledgerBtn:SetText(view.gradeLedger and "Grading desk" or "Guild Ledger")
+  if view.gradeLedger then
+    desk.ledger:Show(); desk.page:Hide()
+    for _, w in ipairs({ desk.pick, desk.case, desk.caseNote, desk.svcBox, desk.slotBox }) do w:Hide() end
+    paintLedger(view)
+    return
+  end
+  desk.ledger:Hide()
   desk.right:SetText("|cffffe08a" .. (a.coins or 0) .. "|r coins")
   -- a case's page
   if view.gradeCert then
@@ -423,11 +543,34 @@ local function paintDesk(view, a)
       local same = 0; for _, x in ipairs(mine) do if x.grade == r.grade then same = same + 1 end end
       local lines = {}
       if miss then lines[#lines + 1] = "|cffd9b48a" .. miss .. "|r" end
-      lines[#lines + 1] = "Certificate |cffffffff" .. string.format("%07d", r.cert) .. "|r, graded " .. (r.when or "") .. (r.by and (" by " .. r.by) or "") .. (r.where and (" in " .. r.where) or "")
-      lines[#lines + 1] = "You have |cffffffff" .. #mine .. "|r graded " .. (#mine == 1 and "copy" or "copies") .. " of this card" .. (#mine > 1 and (", " .. same .. " at this grade") or "") .. "."
-      lines[#lines + 1] = "Sells for " .. GOLD .. v .. "|r coins  ·  ungraded, this print's worth is " .. base .. "."
-      lines[#lines + 1] = "|cff8f8a7cCracking the case makes it ungraded again, and its condition is rolled fresh: send it back for another chance.|r"
+      lines[#lines + 1] = "Certificate |cffffffff" .. string.format("%07d", r.cert) .. "|r  ·  graded " .. (r.when or "") .. (r.by and (" by " .. r.by) or "")
+      -- its history: everyone it was traded to
+      local went = {}
+      for i, h in ipairs(r.hist or {}) do if i > 1 and h[1] == "traded" then went[#went + 1] = h[2] .. " (" .. (h[3] or "") .. ")" end end
+      while #went > 3 do table.remove(went, 1) end   -- (the last three: room for the guild's count below)
+      if #went > 0 then lines[#lines + 1] = "Traded to " .. table.concat(went, ", ") .. "." end
+      lines[#lines + 1] = "Sells for " .. GOLD .. v .. "|r coins (ungraded " .. base .. ")  ·  you have " .. #mine .. " graded"
+      local okSig = RG.ArcadeGradeValid and RG.ArcadeGradeValid(r)
+      if not okSig then lines[#lines + 1] = "|cffff8a70This case didn't pass its certificate check: it stays yours, but isn't shared with your guild or tradable.|r" end
       desk.ginfo:SetText(table.concat(lines, "\n"))
+      -- the guild's population of this card
+      local pop, total = {}, 0
+      if RG.ArcadeGradePop then pop, total = RG.ArcadeGradePop(r.key) end
+      local most = 1
+      for _, row in ipairs(desk.pop) do local n = 0; for g = row.lo, row.hi do n = n + (pop[g] or 0) end; row.cnt = n; most = math.max(most, n) end
+      for _, row in ipairs(desk.pop) do
+        local mineRow = r.grade >= row.lo and r.grade <= row.hi
+        row.bar:SetWidth(math.max(1, 300 * row.cnt / most)); row.n:SetText(row.cnt)
+        row.bar:SetColorTexture(mineRow and 1 or 0.6, mineRow and 0.85 or 0.48, mineRow and 0.45 or 0.22, 1)
+        row.l:SetTextColor(mineRow and 1 or 0.75, mineRow and 0.85 or 0.7, mineRow and 0.45 or 0.6)
+      end
+      local guild = IsInGuild and IsInGuild()
+      desk.popH:SetText((guild and "YOUR GUILD" or "YOUR CASES") .. "  ·  " .. total .. " GRADED" .. ((total > 0 and pop[r.grade] == 1 and total > 1) and "  ·  THE ONLY " .. r.grade or ""))
+      local t = RG.ArcadeTrade
+      local answering = t and t.incoming and t.incoming.case
+      desk.offer:SetText(answering and "Answer" or "Offer")
+      desk.offer:SetEnabled(okSig and RG.ArcadeTradable and RG.ArcadeTradable(r.key) and IsInGroup and IsInGroup() and true or false)
+      desk.sell:SetEnabled(okSig and true or false)
       return
     end
   end
@@ -464,7 +607,7 @@ local function paintDesk(view, a)
       if r then
         local cc = cardOf(r.key)
         sealTex(b.seal, RG.ArcadeGradeSeal(r.grade)); b.g:SetText(r.grade)
-        b.name:SetText((cc and cc.name or "?") .. "  |cffa89bc9" .. (u.FINISH[r.f] and u.FINISH[r.f][1] or "") .. "|r"); b.cert = r.cert; b:Show()
+        b.name:SetText((cc and cc.name or "?") .. "  |cffa89bc9" .. (u.FINISH[r.f] and u.FINISH[r.f][1] or "") .. "|r"); b.cert = r.id; b:Show()
       end
     end
     if pages > 1 then desk.casePrev:Show(); desk.caseNext:Show(); desk.casePrev:SetEnabled(desk.casePage > 1); desk.caseNext:SetEnabled(desk.casePage < pages); desk.casePageT:SetText(desk.casePage .. " / " .. pages) end
@@ -494,7 +637,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   -- the Shop's storefront: a way in
   local shop = RG.ArcadeShopFrame
   if shop and not rawget(desk, "door") then
-    desk.door = U().gbtn(shop, "Grading desk", 150, 24, function() view.shopSection = "grading"; view.gradeCert = nil; RG.ArcadeRefresh(true) end)
+    desk.door = U().gbtn(shop, "Grading desk", 150, 24, function() view.shopSection = "grading"; view.gradeCert = nil; view.gradeLedger = nil; RG.ArcadeRefresh(true) end)
     desk.door:SetPoint("LEFT", shop.head, "RIGHT", 18, 0)   -- (beside "THE PACK SHOP"; the coins are on the right)
   end
   local st = RG.ArcadeGradeState()
@@ -517,7 +660,7 @@ function RG.ArcadeGradeDesk(key, f, cert)
   local v = RG.ArcadeView
   if not v then if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end; v = RG.ArcadeView end
   if not v then return end
-  v.mode = "shop"; v.shopSection = "grading"; v.gradeCert = cert
+  v.mode = "shop"; v.shopSection = "grading"; v.gradeCert = cert; v.gradeLedger = nil
   if key then sel.key, sel.f, sel.copy = key, f, 1 end
   RG.ArcadeRefresh(true)
 end
@@ -533,7 +676,7 @@ function RG.ArcadeGradeDetailBuild(detail)
   detail.gradeCases = u.gbtn(detail, "Cases", 113, 26, function()
     local c = detail.data; if not c then return end
     local r = RG.ArcadeGradeShown(c.key or c.name)
-    detail:Hide(); RG.ArcadeGradeDesk(nil, nil, r and r.cert)
+    detail:Hide(); RG.ArcadeGradeDesk(nil, nil, r and r.id)
   end)
   detail.gradeCases:SetPoint("LEFT", detail.gradeBtn, "RIGHT", 4, 0)
 end
@@ -688,7 +831,7 @@ function RG.ArcadeGradePlay(rec, s, opts)
     if RG.ArcadeSound then RG.ArcadeSound(g >= 10 and "best" or (g >= 8 and "reward" or "pick")) end
     if RG.ArcadeFx and g >= 10 then pcall(RG.ArcadeFx, "best") end
     local more = (not self.opts.demo) and #RG.ArcadeGradeState().back or 0
-    local cert = self.rec.cert
+    local cert = self.rec.id
     local function nextOne() if more > 0 then RG.ArcadeGradeReveal(1) else self:Hide() end end
     if self.opts.demo then setButtons("Close", function() self:Hide() end, nil, nil)
     elseif g <= 7 then

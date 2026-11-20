@@ -1046,6 +1046,7 @@ end
 function RG.ArcadeAcceptOffer(c, f)
   local a = store(); local o = trade.incoming
   if not (a and o) then return false, "No offer to answer." end
+  if o.case and RG.ArcadeGradeAnswer then return RG.ArcadeGradeAnswer(c, f) end   -- (a graded card's offer: ArcadeGradingGuild.lua)
   if not tradable(c) or not ownsOf(a, c, f) then return false, "Pick one of your cards to give back." end
   sendAddon("A|" .. o.key .. "|" .. o.finish .. "|" .. (c.key or c.name) .. "|" .. f, "WHISPER", o.from)
   trade.pending = { give = { key = c.key or c.name, finish = f }, get = { key = o.key, finish = o.finish }, from = o.from }
@@ -4082,8 +4083,10 @@ function RG.ArcadeRefresh(keepMsg)
     pgBox(1, 196, 104, "Trade with your party", "Offer any card you own (Offer to group, here or on the card itself). Someone in your group answers with one of theirs, and the swap happens when you both agree. Extra copies are listed first; giving away your only copy of a print takes it out of your collection.\n|cff9a96b0Raiders can't be traded.|r")
     local y = 316
     local status
-    if trade.incoming then status = { "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. ").|r  Pick one of your cards below to answer.", { 0.48, 0.88, 0.54 } }
-    elseif trade.out then status = { "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. "). Waiting for an answer.", GOLDC }
+    -- (a graded card's offer says its grade; it can be answered with a case from that case's page too)
+    local function gtag(t) return t.case and (", graded " .. t.case.grade .. " " .. (RG.ArcadeGradeName and RG.ArcadeGradeName(t.case.grade) or "")) or "" end
+    if trade.incoming then status = { "|cff7be08a" .. (trade.incoming.from or "Someone") .. " offers " .. trade.incoming.key .. " (" .. FNAME[trade.incoming.finish] .. gtag(trade.incoming) .. ").|r  Pick one of your cards below to answer" .. (trade.incoming.case and ", or one of your graded cards from its page." or "."), { 0.48, 0.88, 0.54 } }
+    elseif trade.out then status = { "Your offer: " .. trade.out.key .. " (" .. FNAME[trade.out.finish] .. gtag(trade.out) .. "). Waiting for an answer.", GOLDC }
     elseif trade.pending then status = { "Answer sent. Waiting for " .. trade.pending.from .. ".", GOLDC } end
     if status then pgBox(2, y, 40, nil, status[1], status[2]); y = y + 54 end
     local per = status and 7 or 9   -- (fills the page down to the arrows)

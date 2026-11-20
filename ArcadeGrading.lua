@@ -110,13 +110,52 @@ function RG.ArcadeGradeName(g) return GRADE_NAME[g] or "" end
 function RG.ArcadeGradeSeal(g) return (g >= 10 and "gold") or (g >= 8 and "silver") or "bronze" end
 
 -- ---------------------------------------------------------------------------
+-- Certificates: who graded it (its owner: "Name-Realm") and its number make it one of a kind (its id); the check
+-- (sig) is worked out from the case's own facts, so a case edited by hand in the save file, or sent with its grade
+-- changed, no longer passes (ArcadeGradingGuild.lua checks every case it's sent, and leaves out any that fail).
+-- ---------------------------------------------------------------------------
+local SALT = "Waypoint Grading Guild / est. 2026 / every print graded the same"
+local function hash(str, seed, m)
+  local h = seed
+  for i = 1, #str do h = (h * 31 + str:byte(i)) % m end
+  return h
+end
+local function sign(r)
+  local body = table.concat({ tostring(r.cert), tostring(r.owner), tostring(r.key), tostring(r.f), tostring(r.grade), tostring(r.s), tostring(r.when) }, "|") .. SALT
+  return string.format("%08x%06x", hash(body, 7, 4294967291), hash(body:reverse(), 13, 16777213))
+end
+local function valid(r)
+  if type(r) ~= "table" or type(r.key) ~= "string" or type(r.owner) ~= "string" or type(r.cert) ~= "number" then return false end
+  local s = decode(r.s); if not s then return false end
+  if r.grade ~= gradeOf(s) or not (r.f and r.f >= 1 and r.f <= 4) then return false end
+  return r.sig == sign(r)
+end
+local function meOwner()
+  local n = (UnitName and select(2, pcall(UnitName, "player"))) or "?"
+  local realm = (GetNormalizedRealmName and select(2, pcall(GetNormalizedRealmName))) or (GetRealmName and select(2, pcall(GetRealmName))) or ""
+  if type(n) ~= "string" then n = "?" end
+  if type(realm) ~= "string" then realm = "" end
+  return n .. (realm ~= "" and ("-" .. realm:gsub("%s", "")) or "")
+end
+RG.ArcadeGradeSign, RG.ArcadeGradeValid, RG.ArcadeGradeOwner = sign, valid, meOwner
+
+-- ---------------------------------------------------------------------------
 -- The save: a.grading = { queue = {...}, back = {...}, cases = {...}, firstUsed, weekUsed, nextCert }, a.cond[key][f] = { conditions }
 -- ---------------------------------------------------------------------------
 local function G(a)
   a.grading = a.grading or {}
   local g = a.grading
   g.queue = g.queue or {}; g.back = g.back or {}; g.cases = g.cases or {}
-  g.firstUsed = g.firstUsed or 0; g.nextCert = g.nextCert or 4100
+  g.firstUsed = g.firstUsed or 0
+  if not g.nextCert then g.nextCert = (hash(meOwner(), 3, 9000) + 1000) * 1000 + 1 end   -- (7 digits, different for each grader)
+  -- (cases from before certificates: yours, made by this version; sign them once)
+  if not g.signed then
+    for _, r in ipairs(g.cases) do
+      r.owner = r.owner or meOwner(); r.id = r.id or (r.owner .. "#" .. r.cert)
+      if not r.sig then r.sig = sign(r) end
+    end
+    g.signed = true
+  end
   return g
 end
 -- copies of a print that are graded, at the graders or waiting to be opened (they stay in your collection)
@@ -201,7 +240,9 @@ function RG.ArcadeGradeOpen(i)
   local cert = g.nextCert; g.nextCert = g.nextCert + 1
   local zone = (GetRealZoneText and select(2, pcall(GetRealZoneText))) or nil
   local r = { cert = cert, key = q.key, f = q.f, grade = grade, s = encode(s), when = date and date("%d %b %Y") or "", t = now(), svc = q.svc,
-    by = (UnitName and select(2, pcall(UnitName, "player"))) or "?", where = type(zone) == "string" and zone or nil }
+    by = (UnitName and select(2, pcall(UnitName, "player"))) or "?", where = type(zone) == "string" and zone or nil, owner = meOwner() }
+  r.id = r.owner .. "#" .. cert
+  r.sig = sign(r)
   r.hist = { { "graded", r.by, r.when } }
   g.cases[#g.cases + 1] = r
   a.stats = a.stats or {}; a.stats.graded = (a.stats.graded or 0) + 1
@@ -214,6 +255,7 @@ function RG.ArcadeGradeOpen(i)
   local c = cardOf(q.key)
   if c and c.tier == 7 and grade >= 10 then n.gradeMythic = (n.gradeMythic or 0) + 1 end
   if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, "gradeOpened", 1) end
+  if RG.ArcadeGradeShare then pcall(RG.ArcadeGradeShare) end   -- (your guild sees it: ArcadeGradingGuild.lua)
   return r, s
 end
 function RG.ArcadeGradeCases(key, f)
@@ -232,9 +274,10 @@ function RG.ArcadeGradeState()
   local a = store(); if not a then return { queue = {}, back = {}, cases = {} } end
   return G(a)
 end
-local function findCase(cert)
-  local a = store(); if not a then return nil end
-  for i, r in ipairs(G(a).cases) do if r.cert == cert then return r, i, a end end
+-- a case by its id ("Owner#cert")
+local function findCase(id)
+  local a = store(); if not a or id == nil then return nil end
+  for i, r in ipairs(G(a).cases) do if r.id == id then return r, i, a end end
 end
 RG.ArcadeGradeFind = findCase
 
@@ -247,6 +290,7 @@ function RG.ArcadeGradeValue(r)
 end
 function RG.ArcadeGradeSell(cert)
   local r, i, a = findCase(cert); if not r then return false, "That case isn't yours any more." end
+  if not valid(r) then return false, "This case didn't pass its certificate check, so it can't be sold for its grade. You can still crack it out of its case." end
   local c = cardOf(r.key)
   local v = RG.ArcadeGradeValue(r)
   table.remove(G(a).cases, i)
@@ -258,6 +302,7 @@ function RG.ArcadeGradeSell(cert)
     for k = #a.showcase, 1, -1 do if a.showcase[k] == r.key then table.remove(a.showcase, k) end end
   end
   conditions(a, r.key, r.f)
+  if RG.ArcadeGradeShare then pcall(RG.ArcadeGradeShare) end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
   return true, (c and c.name or "The card") .. " (" .. r.grade .. ", " .. GRADE_NAME[r.grade] .. ") sold for " .. v .. " coins."
 end
@@ -268,14 +313,39 @@ function RG.ArcadeGradeCrack(cert)
   table.remove(G(a).cases, i)
   local l = conditions(a, r.key, r.f)   -- (the copy is free again: a fresh condition joins the list)
   a.stats = a.stats or {}; a.stats.cracked = (a.stats.cracked or 0) + 1
+  if RG.ArcadeGradeShare then pcall(RG.ArcadeGradeShare) end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
   return true, "You cracked the case. " .. (c and c.name or "The card") .. " is ungraded again: send it back for another chance."
 end
+-- a case leaving in a trade (its copy goes with it), and one arriving
+function RG.ArcadeGradeRemoveCase(id)
+  local r, i, a = findCase(id); if not r then return nil end
+  table.remove(G(a).cases, i)
+  local slot = a.cards[r.key]
+  if slot and (slot[r.f] or 0) > 0 then slot[r.f] = slot[r.f] - 1 end
+  if slot and (slot[1] or 0) + (slot[2] or 0) + (slot[3] or 0) + (slot[4] or 0) == 0 and a.showcase then
+    for k = #a.showcase, 1, -1 do if a.showcase[k] == r.key then table.remove(a.showcase, k) end end
+  end
+  if a.gradePin and a.gradePin[r.key] == id then a.gradePin[r.key] = nil end
+  conditions(a, r.key, r.f)
+  return r
+end
+function RG.ArcadeGradeAddCase(r)
+  local a = store(); if not (a and valid(r)) then return false end
+  r.id = r.owner .. "#" .. r.cert
+  if findCase(r.id) then return false end
+  local slot = a.cards[r.key] or {}; a.cards[r.key] = slot
+  slot[r.f] = (slot[r.f] or 0) + 1
+  local g = G(a); g.cases[#g.cases + 1] = r
+  conditions(a, r.key, r.f)
+  return true
+end
+
 -- the case on your showcase: which graded copy stands for the card (its best, unless you chose one)
 function RG.ArcadeGradePin(cert)
   local r, _, a = findCase(cert); if not r then return false end
   a.gradePin = a.gradePin or {}
-  a.gradePin[r.key] = cert
+  a.gradePin[r.key] = r.id
   if RG.ArcadePin then
     a.showcase = a.showcase or {}
     local on = false; for _, k in ipairs(a.showcase) do if k == r.key then on = true end end

@@ -8,6 +8,11 @@
   - When a card comes back, a parcel arrives with an **Open now** button. Break the wax seal and the four scores roll in one at a time. Before the last one, it says what that score needs; then the cloth comes off and the seal lands: gold for a 10, silver for 8 and 9, bronze below.
   - A card that grades poorly looks it: worn corners, nicked edges, scratches, and at the bottom a crease and a water stain, each from its own score.
   - A graded card can be pinned to your showcase (the collection shows its seal), sold for its grade (a 10 sells for 8 times its value, a 9 for 4 times, an 8 for twice), or cracked out of its case, which rolls its condition again for another try. Selling or cracking a 9 or 10 asks first. Graded copies are never sold as extras, crafted or traded.
+  - **With your guild:** everyone with Waypath+ shares their graded cards on the guild channel, so a graded card's page shows how many your guild has graded at each grade (and when yours is the only one).
+  - **The Guild Ledger** (a button on the Grading desk): for each set, your best graded copy of each card adds its grade to a score, with your guild's leaderboard for every set.
+  - **Card history:** a graded card's page shows its certificate, who graded it and when, and everyone it was traded to.
+  - **Trading graded cards:** offer a case to your group from its page; it changes hands with its grade, certificate and history. A graded offer can be answered with any card, or with one of your own cases.
+  - **Certificates:** every case carries a check worked out from its own facts. A case edited by hand in the save file, or sent with a changed grade, fails it: it isn't shared, counted, traded or sold for its grade (it can still be cracked).
   - Seven new grading achievements.
   - `/wp gradetour` shows every kind of card in a case, at every size and grade, and can play the reveal without touching your collection. `/wp gradecheck` puts every card in a case at every size and lists anything that doesn't fit.
 
