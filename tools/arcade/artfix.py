@@ -47,11 +47,13 @@ for f in ("ArcadeCards.lua", "ArcadeDungeons.lua", "ArcadeField.lua", "ArcadeRai
         for kind, name, ref in re.findall(r'^\s*\{ (\d), "((?:[^"\\]|\\.)*)", \d, (-?\d+), "(?:[^"\\]|\\.)*" \},', open(p, encoding="utf-8").read(), re.M):
             cards.append((int(kind), name.replace('\\"', '"'), int(ref)))
 
+# every item card carries its icon (the client's own item table): the game doesn't always answer for an item it hasn't
+# loaded (Leggings of the Grand Crusader, Vis'kag the Bloodletter came back with no icon), and a card can't wait
 icons, guessed = {}, []
 for kind, name, ref in cards:
     if kind != 1 or ref <= 0: continue
     r = items.get(ref)
-    if r and int(r["IconFileDataID"] or 0): continue
+    if r and int(r["IconFileDataID"] or 0): icons[ref] = int(r["IconFileDataID"]); continue
     if ref in ima: icons[ref] = ima[ref]; continue
     k = classic.get(ref)
     if k and k in kind_icon: icons[ref] = kind_icon[k][1]; guessed.append(name)
@@ -65,12 +67,14 @@ ALIAS = {"Stormwind Stockade": "The Stockade", "Deadmines": "The Deadmines", "Su
 screens = {r["ID"]: r for r in tab("LoadingScreens")}
 use = {}
 maps = [r for r in tab("Map") if r["InstanceType"] in ("1", "2")]
-for r in maps: use[r["LoadingScreenID"]] = use.get(r["LoadingScreenID"], 0) + 1
+# (the developers' test maps don't count as sharing a screen: Onyxia's Lair shares its screen with "Test Dungeon")
+for r in maps:
+    if not re.search(r"\btest\b", r["MapName_lang"], re.I): use[r["LoadingScreenID"]] = use.get(r["LoadingScreenID"], 0) + 1
 place_names = {name for kind, name, ref in cards if kind == 3}
 places = {}
 for r in maps:
     s = screens.get(r["LoadingScreenID"])
-    if not s or use[r["LoadingScreenID"]] > 1: continue
+    if not s or use.get(r["LoadingScreenID"], 0) != 1: continue
     name = ALIAS.get(r["MapName_lang"], r["MapName_lang"])
     if name not in place_names: continue
     main, narrow = int(s["MainImageFileDataID"] or 0), int(s["NarrowScreenFileDataID"] or 0)

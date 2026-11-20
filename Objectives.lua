@@ -1876,7 +1876,7 @@ RG.QDATA = {
 [7061]={e={1456,60.3,51.7,"Cairne Bloodhoof"},s={1454,38.7,35.9,"Sagorne Creststrider"},n="The Feast of Winter Veil",r=10,l=60,ps={6964},ra="OUTRS"},
 [7064]={e={1443,26.9,77.7,"Selendra"},s={1443,26.9,77.7,"Selendra"},n="Corruption of Earth and Seed",r=45,l=51,x={7065},ra="OUTRS",o={{"k","Princess Theradras",{"Princess Theradras"},{}}}},
 [7065]={e={1443,63.8,10.7,"Keeper Marandis"},s={1443,63.8,10.7,"Keeper Marandis"},n="Corruption of Earth and Seed",r=45,l=51,x={7064},ra="HDNGA",o={{"k","Princess Theradras",{"Princess Theradras"},{}}}},
-[7066]={e={1450,36.2,41.8,"Keeper Remulos"},n="Seed of Life",r=45,l=51},
+[7066]={e={1450,36.2,41.8,"Keeper Remulos"},n="Seed of Life",r=39,l=51},
 [7067]={e={1443,50.4,86.7,"Centaur Pariah"},s={1443,50.4,86.7,"Centaur Pariah"},n="The Pariah's Instructions",r=39,l=48},
 [7068]={e={1454,39.2,86.3,"Uthel'nay"},s={1454,39.2,86.3,"Uthel'nay"},n="Shadowshard Fragments",r=39,l=42,x={7070},ra="OUTRS",o={{"i","Shadowshard Fragment",{"Shadowshard Rumbler","Shadowshard Smasher","Shadowshard Thunderer"},{{1443,28.1,55.6,1},{1443,27.1,55.2,2}}}}},
 [7082]={e={1416,65.5,55.1,"Corporal Teeka Bloodsnarl"},s={1416,65.5,55.1,"Corporal Teeka Bloodsnarl"},n="The Graveyards of Alterac",r=51,l=60,ra="OUTRS",o={{"k","Graveyard Assaulted",{"PvP Graveyard Credit Marker"},{{1459,51.6,57.1,1}}}}},

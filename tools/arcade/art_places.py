@@ -1,6 +1,6 @@
 """Painted landscapes for the place cards: one original picture per place, drawn by us.
 
-  python3 tools/arcade/art_places.py [preview]
+  python3 tools/arcade/art_places.py [preview | add]   (add: only places with no painting yet, existing ones untouched)
 
 Reads the place cards from ArcadeCards.lua, paints each (a sky for the time of day, three hazy mountain
 layers, a lit landmark chosen from the place's name, foreground silhouettes, mist, bloom), packs them into
@@ -513,6 +513,19 @@ def read_places():
         name = m.group(1).replace('\\"', '"'); text = m.group(2)
         zone = name if text == "Zone" else text.replace("Found in ", "")
         out.append((name, zone))
+    # then the dungeon and raid places of the other packs that have no loading screen of their own in the game
+    # (ArcadeArtFix.lua: RG.ARCADE_PLACE_FILE), after every other place so no painting moves: the zone is the place
+    # text's last part ("Raid, 20 players, level 60, Mount Hyjal")
+    have = {n for n, _ in out}
+    fix = open(os.path.join(ADDON, "ArcadeArtFix.lua"), encoding="utf-8").read()
+    screens = set(re.findall(r'^\s*\["((?:[^"\\]|\\.)*)"\] = \{ \d+, [01] \},', fix, re.M))
+    for f in ("ArcadeDungeons.lua", "ArcadeRaids.lua", "ArcadeHolidays.lua", "ArcadeField.lua"):
+        p = os.path.join(ADDON, f)
+        if not os.path.exists(p): continue
+        for m in re.finditer(r'^\s*\{ 3, "((?:[^"\\]|\\.)*)", \d, -?\d+, "((?:[^"\\]|\\.)*)" \},', open(p, encoding="utf-8").read(), re.M):
+            name = m.group(1).replace('\\"', '"')
+            if name in have or name in screens: continue
+            have.add(name); out.append((name, m.group(2).split(", ")[-1]))
     return out
 
 def main():
@@ -530,6 +543,32 @@ def main():
         sheet.save(os.environ.get("PREVIEW", "/tmp/places.png"))
         return
     per = COLS * ROWS
+    if len(sys.argv) > 1 and sys.argv[1] == "add":
+        # paint only the places that have no painting yet, into the free cells after the last one; every existing
+        # painting stays exactly as it is (a full repaint on another machine can differ by a few pixels everywhere)
+        txt = open(os.path.join(ADDON, "ArcadePlaces.lua"), encoding="utf-8").read()
+        have = {m.group(1).replace('\\"', '"'): (int(m.group(2)), int(m.group(3)))
+                for m in re.finditer(r'\["((?:[^"\\]|\\.)*)"\] = \{ (\d+), (\d+) \}', txt)}
+        nxt = max(((a - 1) * per + c for a, c in have.values()), default=-1) + 1
+        new = [(nm, z) for nm, z in places if nm not in have]
+        if not new: print("place paintings: none to add"); return
+        lookup = dict(have)
+        imgs = {}
+        for nm, z in new:
+            a, c = divmod(nxt, per); nxt += 1
+            path = os.path.join(ADDON, "Media", "Arcade", "Places%d.tga" % (a + 1))
+            if a + 1 not in imgs:
+                imgs[a + 1] = Image.open(path).convert("RGBA") if os.path.exists(path) else Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
+            im, _, _ = paint_place(nm, z)
+            imgs[a + 1].paste(im.convert("RGBA"), ((c % COLS) * CW, (c // COLS) * CH))
+            lookup[nm] = (a + 1, c)
+        for a, im in imgs.items(): im.save(os.path.join(ADDON, "Media", "Arcade", "Places%d.tga" % a))
+        def q2(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+        head = txt[:txt.index("RG.ARCADE_PLACE = {")]
+        body = ["RG.ARCADE_PLACE = {"] + ["  [%s] = { %d, %d }," % (q2(k), v[0], v[1]) for k, v in sorted(lookup.items())] + ["}"]
+        open(os.path.join(ADDON, "ArcadePlaces.lua"), "w", encoding="utf-8").write(head + "\n".join(body) + "\n")
+        print("place paintings added:", ", ".join(n for n, _ in new))
+        return
     atlases = []; lookup = {}
     for i, (nm, z) in enumerate(places):
         a, c = divmod(i, per)

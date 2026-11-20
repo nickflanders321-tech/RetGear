@@ -47,7 +47,9 @@ jobs:
 
       - name: Install Lua 5.1
         if: steps.check.outputs.data_changed == 'true' || steps.check.outputs.build_changed == 'true'
-        run: sudo apt-get install -y -qq lua5.1 >/dev/null
+        run: |
+          sudo apt-get install -y -qq lua5.1 >/dev/null
+          pip install -q numpy scipy pillow 2>/dev/null || true   # (painting a new place card)
 
       - name: Rebuild the data from WoW Forever's latest quest data
         id: regen

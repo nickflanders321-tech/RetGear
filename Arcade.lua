@@ -4167,8 +4167,9 @@ local function cardCheck()
   if not ok or not m then RG.Print("This game cannot show models, so there is nothing to check.") return end
   m:SetSize(64, 64); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -200, 200); m:Show()
   checking = true
-  local list, bad, i, n, pending = {}, {}, 0, 0, 0
-  for _, c in ipairs(CARDS) do if c.kind == 1 or c.kind == 2 or c.kind == 3 then list[#list + 1] = c end end
+  local list, bad, i, n, pending, unreleased = {}, {}, 0, 0, 0, {}
+  -- (the Mythic cards have their own hand-made art: nothing to look up)
+  for _, c in ipairs(CARDS) do if (c.kind == 1 or c.kind == 2 or c.kind == 3) and c.tier ~= 7 and not c.mythic then list[#list + 1] = c end end
   RG.Print("Checking " .. #list .. " cards... about a minute.")
   local step
   local function verdict(c)
@@ -4179,7 +4180,12 @@ local function cardCheck()
       local nd = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.npcDisp
       if not id and cid then
         if not (nd and nd[cid]) then pending = pending + 1 end   -- (a WoW Forever creature: its model arrives once the game has seen it)
-      elseif not id then bad[#bad + 1] = "NPC with no model (drawn scenery): " .. c.name
+      elseif not id then
+        -- a raid that hasn't opened yet: its encounter's creatures aren't in the game's files until it does
+        local first = RG.ARCADE_FIRST and RG.ARCADE_FIRST[c.name]
+        local today = date and date("%Y-%m-%d")
+        if first and today and first > today then unreleased[#unreleased + 1] = c.name .. " (opens " .. first .. ")"
+        else bad[#bad + 1] = "NPC with no model (drawn scenery): " .. c.name end
       else
         local fid = m.GetModelFileID and m:GetModelFileID()
         if not fid or fid == 0 then bad[#bad + 1] = "NPC model will not load: " .. c.name .. " (display " .. id .. ")" end
@@ -4195,6 +4201,7 @@ local function cardCheck()
     checking = false; m:Hide()
     local out = { "Waypath+ card check: " .. n .. " cards looked at, " .. #bad .. " problem(s)", "" }
     if pending > 0 then out[#out + 1] = pending .. " WoW Forever creature(s) show their model once you've seen them in game (until then, drawn scenery)."; out[#out + 1] = "" end
+    if #unreleased > 0 then out[#out + 1] = "Drawn scenery until their raid opens and the game's files have them: " .. table.concat(unreleased, ", ") .. "."; out[#out + 1] = "" end
     for _, l in ipairs(bad) do out[#out + 1] = l end
     if #bad == 0 then out[#out + 1] = "Every picture loads." end
     RG.ShowErrors(table.concat(out, "\n"), "Waypath+ card check  ·  Ctrl+A, Ctrl+C to copy")

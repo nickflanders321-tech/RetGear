@@ -75,6 +75,8 @@ python3 tools/arcade/firstseen.py .
 [ -s "$T/wago/NPCModelItemSlotDisplayInfo.csv.gz" ] && python3 tools/arcade/raiderlook.py "$T/wago" . "$T/classic.sql" "$T/qdb"
 # card art the game can't find by itself: item icons on appearances, dungeons' loading screens
 [ -s "$T/wago/ItemAppearance.csv.gz" ] && python3 tools/arcade/artfix.py "$T/classic.sql" "$T/wago" .
+# a dungeon or raid place with no loading screen of its own gets a painting (only new ones: existing paintings untouched)
+if python3 -c "import numpy, scipy, PIL" 2>/dev/null; then python3 tools/arcade/art_places.py add; else echo "place paintings skipped: needs numpy, scipy and Pillow"; fi
 # players' /wp share reports (GitHub issues labelled "quests"): quests the published data doesn't have yet
 python3 tools/community/import.py "${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}" Objectives.lua || true
 # quest tags and notes from Polestar's forever-db (CC BY 4.0 layer); a failed download keeps the last QuestNotes.lua
