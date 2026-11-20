@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **Creatures no longer glitch through their backgrounds.** A card is a stack of layers (picture window, 3D model, foil, frame), and moving a card (lifting it on hover, the pack reveal's flip) could put its scenery level with or above the model, so the creature showed only through the scenery's see-through parts: missing bodies, floating arms (Ossirian, The Behemoth, Rex Ashil). Every layer now has a fixed place that is put back whenever the card moves or is painted.
+- **No dark doubles behind creatures.** Cards whose creature shares its model with another card (Burning Felguard, Ebonroc...) kept a drawn silhouette behind the model; it's gone (the two cards still differ by their own scenery and facing). A model that's still loading is no longer given scenery behind it either: only a model that really can't be drawn is swapped for the card's own scenery.
+
 ## v1.52.5
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).

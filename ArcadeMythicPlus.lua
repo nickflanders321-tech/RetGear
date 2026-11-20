@@ -135,7 +135,7 @@ local function fxFor(w)
   local st = live[w]
   if st then return st end
   st = { parts = {}, k = 0.45 }
-  local f = CreateFrame("Frame", nil, w); f:SetFrameLevel((w:GetFrameLevel() or 1) + 3)
+  local f = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, f, 3) else f:SetFrameLevel((w:GetFrameLevel() or 1) + 3) end
   if f.SetClipsChildren then f:SetClipsChildren(true) end
   st.f = f
   st.glow = f:CreateTexture(nil, "BACKGROUND"); st.glow:SetTexture(MEDIA .. "Glow"); st.glow:SetBlendMode("ADD"); st.glow:Hide()
@@ -264,7 +264,7 @@ local function sealFor(w)
   local s = seals[w]
   if s then return s end
   local u = UI()
-  s = CreateFrame("Frame", nil, w); s:SetAllPoints(w); s:SetFrameLevel((w:GetFrameLevel() or 1) + 9)
+  s = CreateFrame("Frame", nil, w); s:SetAllPoints(w); if RG.ArcadeLayer then RG.ArcadeLayer(w, s, 9) else s:SetFrameLevel((w:GetFrameLevel() or 1) + 9) end
   s.tex = s:CreateTexture(nil, "OVERLAY")
   s.foot = u.fs(s, "head", 8); s.foot:SetPoint("BOTTOM", w, "BOTTOM", 0, 6); s.foot:SetTextColor(1, 0.91, 0.66)
   seals[w] = s

@@ -248,7 +248,7 @@ local function yearStamp(w, card, finish)
   for y, n in pairs(yrs or {}) do if n > 0 then count = count + 1; if not first or y < first then first = y end end end
   if not first or (w.cw or 0) < 90 then if s then s:Hide() end return end
   if not s then
-    s = CreateFrame("Frame", nil, w)
+    s = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, s, 1) end   -- (its place in the card's stack: Arcade.lua relevel)
     s.bg = s:CreateTexture(nil, "OVERLAY"); s.bg:SetAllPoints(); s.bg:SetColorTexture(0.12, 0.03, 0.05, 0.78)
     s.edge = s:CreateTexture(nil, "OVERLAY"); s.edge:SetHeight(1); s.edge:SetPoint("BOTTOMLEFT"); s.edge:SetPoint("BOTTOMRIGHT"); s.edge:SetColorTexture(1, 0.78, 0.45, 0.9)
     s.t = s:CreateFontString(nil, "OVERLAY"); s.t:SetPoint("CENTER")

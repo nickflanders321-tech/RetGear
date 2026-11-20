@@ -1342,6 +1342,26 @@ function U.ink(w, s)
 end
 
 local function lv(f) local l = f.GetFrameLevel and f:GetFrameLevel(); return type(l) == "number" and l or 1 end
+-- A card is a stack of layers: the picture window (+1: scenery and paintings), the 3D model (+2), the foil (+3), the
+-- frame and text (+4), stamps and tags above. Moving a card (lifting it on hover, the reveal's flip, a new parent) can
+-- change its level, and the game then re-levels its children in a way that can put the scenery level with or above the
+-- model: the model shows only through the scenery's see-through parts (a creature "glitching through" its background).
+-- So every layer is registered with its place in the stack and the whole stack is put back whenever the card's level
+-- is set or the card is painted.
+-- (RG functions, not locals: Arcade.lua is at Lua's limit of 200 locals in one file)
+function RG.ArcadeRelevel(w)
+  local layers = rawget(w, "layers")
+  if not layers then return end
+  local b = lv(w)
+  for fr, off in pairs(layers) do if fr.SetFrameLevel then fr:SetFrameLevel(b + off) end end
+end
+function RG.ArcadeLayer(w, fr, off)
+  local layers = rawget(w, "layers")
+  if not layers then layers = {}; rawset(w, "layers", layers) end
+  layers[fr] = off
+  fr:SetFrameLevel(lv(w) + off)
+  return fr
+end
 -- names and chat text can hold letters our card fonts do not have (Cyrillic, Chinese, Korean...): those use the game's own font
 local WIDE_PATTERN = "[\208-\225\227-\255]"
 -- the game's own fonts that hold those letters: Chinese and Japanese, Korean, and Cyrillic and the rest
@@ -1493,7 +1513,10 @@ local function makeCard(parent, w)
   f.body = f:CreateTexture(nil, "BACKGROUND", nil, 0); f.body:SetTexture(MEDIA .. "Body"); f.body:SetTexCoord(0, 1, 0, CARD_V); f.body:SetAllPoints(f)
   f.slot = f:CreateTexture(nil, "BACKGROUND", nil, 1); f.slot:SetTexture(MEDIA .. "Slot"); f.slot:SetTexCoord(0, 1, 0, CARD_V); f.slot:SetAllPoints(f); f.slot:Hide()
   -- the art window
-  f.artClip = CreateFrame("Frame", nil, f); box(f.artClip, U.art); f.artClip:SetFrameLevel(base + 1)
+  -- (its level, whoever sets it, re-levels the card's layers: relevel above)
+  local setLevel = f.SetFrameLevel
+  f.SetFrameLevel = function(self, l) setLevel(self, l); RG.ArcadeRelevel(self) end
+  f.artClip = CreateFrame("Frame", nil, f); box(f.artClip, U.art); RG.ArcadeLayer(f, f.artClip, 1)
   if f.artClip.SetClipsChildren then f.artClip:SetClipsChildren(true) end
   local aw, ah = (U.art[3] - U.art[1]) * u, (U.art[4] - U.art[2]) * u
   f.aw, f.ah = aw, ah
@@ -1509,12 +1532,12 @@ local function makeCard(parent, w)
   f.iconEdge = f.artClip:CreateTexture(nil, "ARTWORK", nil, 1); f.iconEdge:SetTexture(MEDIA .. "IconRim")   -- (a gold rim round a dark slot: an icon still loading shows as an empty slot, not a gold square)
   f.art = f.artClip:CreateTexture(nil, "ARTWORK", nil, 2); f.art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   -- foil sweeps across the whole card, above the model
-  f.fx = CreateFrame("Frame", nil, f); f.fx:SetAllPoints(f); f.fx:SetFrameLevel(base + 3)
+  f.fx = CreateFrame("Frame", nil, f); f.fx:SetAllPoints(f); RG.ArcadeLayer(f, f.fx, 3)
   if f.fx.SetClipsChildren then f.fx:SetClipsChildren(true) end
   f.foil = f.fx:CreateTexture(nil, "OVERLAY"); f.foil:SetTexture(MEDIA .. "Foil"); f.foil:SetBlendMode("ADD"); f.foil:SetSize(w * 2.2, h * 1.02); f.foil:Hide()
   f.foil:SetPoint("LEFT", f.fx, "LEFT", -w, 0)
   -- frame, text, gem
-  f.top = CreateFrame("Frame", nil, f); f.top:SetAllPoints(f); f.top:SetFrameLevel(base + 4)
+  f.top = CreateFrame("Frame", nil, f); f.top:SetAllPoints(f); RG.ArcadeLayer(f, f.top, 4)
   -- every card shares one frame: the art window's border, the outer edge (its look is the print's finish), the engraved
   -- name plate (tinted by the card's own rarity), then the type line, the rules and the card's number
   f.frameTex = f.top:CreateTexture(nil, "ARTWORK", nil, 0); f.frameTex:SetTexture(MEDIA .. "Frame"); f.frameTex:SetTexCoord(0, 1, 0, CARD_V); f.frameTex:SetAllPoints(f)
@@ -1640,7 +1663,7 @@ local function dressCreature(w, c)
   if not m then return false end
   m.creature = true
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
-  m:SetFrameLevel(lv(w) + 2)
+  RG.ArcadeLayer(w, m, 2)
   local ok
   if id then ok = m.SetDisplayInfo and pcall(m.SetDisplayInfo, m, id)
   else ok = m.SetCreature and pcall(m.SetCreature, m, cid) end
@@ -1744,7 +1767,7 @@ local function dressModel(w, c, finish)
   if not (ri and ri.id) then return false end
   m.cls = c.class; m.creature = false
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
-  m:SetFrameLevel(lv(w) + 2)
+  RG.ArcadeLayer(w, m, 2)
   if (a and a.customRace == false) or not m.SetCustomRace or not m.SetUnit then
     local r = standIn(w, m, c, ri)
     if r == "npc" then return true end
@@ -1841,7 +1864,7 @@ function RG.ArcadePaintMythic(w, card, copies, a)
   local u, my = w.u, card.mythic
   if not rawget(w, "mart") then
     local base = lv(w)
-    w.pclip = CreateFrame("Frame", nil, w); w.pclip:SetAllPoints(w); w.pclip:SetFrameLevel(base + 1)
+    w.pclip = CreateFrame("Frame", nil, w); w.pclip:SetAllPoints(w); RG.ArcadeLayer(w, w.pclip, 1)
     if w.pclip.SetClipsChildren then w.pclip:SetClipsChildren(true) end
     w.prism = w.pclip:CreateTexture(nil, "BACKGROUND"); w.prism:SetPoint("CENTER", w, "CENTER", 0, 0); w.prism:SetSize(w.ch * 1.3, w.ch * 1.3)
     -- the card's rounded shape (where the client has masks; otherwise the edge has square corners)
@@ -1853,7 +1876,7 @@ function RG.ArcadePaintMythic(w, card, copies, a)
         w.prism:AddMaskTexture(mk)
       end)
     end
-    w.mframe = CreateFrame("Frame", nil, w); w.mframe:SetAllPoints(w); w.mframe:SetFrameLevel(base + 2)
+    w.mframe = CreateFrame("Frame", nil, w); w.mframe:SetAllPoints(w); RG.ArcadeLayer(w, w.mframe, 2)
     w.mart = w.mframe:CreateTexture(nil, "BACKGROUND"); w.mart:SetTexCoord(0, 1, 0, CARD_V)
     w.mart:SetPoint("TOPLEFT", w, "TOPLEFT", 3 * u, -3 * u); w.mart:SetPoint("BOTTOMRIGHT", w, "BOTTOMRIGHT", -3 * u, 3 * u)
     w.micon = w.mframe:CreateTexture(nil, "ARTWORK"); w.micon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -1901,6 +1924,7 @@ end
 
 -- card: the card; finish: 1-4 or nil (nothing owned); copies: how many you own
 local function paint(w, card, finish, copies)
+  RG.ArcadeRelevel(w)
   w.card, w.known, w.finish, w.copies = card, finish ~= nil, finish or 1, copies
   anim[w] = nil
   for _, fn in ipairs(RG.ArcadeCardHooks or {}) do pcall(fn, w, nil) end
@@ -2010,23 +2034,22 @@ local function paint(w, card, finish, copies)
   elseif card.kind == 4 then ownScene()
   elseif card.kind == 2 and dressCreature(w, card) then
     w.art:Hide(); w.iconBack:Hide(); w.iconEdge:Hide()
-    if sharedModel(card) then
-      if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
-      setScene(w.scn, card, false); w.spot:Hide()
-    else
-      -- every creature stands on a sky and ridge of its own (no silhouette: the model is the creature), so the models
-      -- from the game's files and the drawn cards share one look
-      if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
-      setScene(w.scn, card, false); w.scn.mo:Hide(); w.scn.cr:Hide(); w.spot:Hide()
-    end
-    -- some creatures have no model this client can draw (the card would show an empty glow): once the game has had a
-    -- moment to load it, a model that still reports no file gets the card's own drawn scenery behind it
+    -- every creature stands on a sky and ridge of its own, never with a drawn silhouette behind it (the model is the
+    -- creature: a silhouette would show as a dark double). Two cards that share a model still differ: each scene is
+    -- seeded by its own card, and they face opposite ways (sharedModel)
+    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+    setScene(w.scn, card, false); w.scn.mo:Hide(); w.scn.cr:Hide(); w.spot:Hide()
+    -- some creatures have no model this client can draw (the card would show an empty glow): once the game has had
+    -- time to load it, a model that reports no file (0) is put away and the card shows its own drawn scenery instead.
+    -- Never both: scenery with a silhouette behind a model that did load is a double. (A client that can't say which
+    -- file a model has, nil, keeps the model.)
     if C_Timer and C_Timer.After then
       local m = rawget(w, "model")
-      C_Timer.After(1.2, function()
-        if w.card ~= card or not m or not m:IsShown() then return end
-        local fid = m.GetModelFileID and m:GetModelFileID()
-        if fid and fid ~= 0 then return end
+      C_Timer.After(2.5, function()
+        if w.card ~= card or not m or not m:IsShown() or not m.GetModelFileID then return end
+        local ok, fid = pcall(m.GetModelFileID, m)
+        if not ok or fid ~= 0 then return end
+        m:Hide()
         if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
         setScene(w.scn, card, false); w.spot:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.art:Hide()
       end)

@@ -352,7 +352,7 @@ local function tagFor(w)
   local t = tags[w]
   if t then return t end
   local u = UI()
-  t = CreateFrame("Frame", nil, w); t:SetFrameLevel((w:GetFrameLevel() or 1) + 8)
+  t = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, t, 8) else t:SetFrameLevel((w:GetFrameLevel() or 1) + 8) end
   t.bg = t:CreateTexture(nil, "ARTWORK"); t.bg:SetAllPoints(); t.bg:SetColorTexture(0.96, 0.82, 0.45, 1)
   t.txt = u.fs(t, "head", 8); t.txt:SetPoint("CENTER", 0, 0); t.txt:SetTextColor(0.16, 0.1, 0.03); t.txt:SetShadowColor(0, 0, 0, 0)
   tags[w] = t

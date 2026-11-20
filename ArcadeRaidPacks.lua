@@ -317,7 +317,7 @@ local function raidFrame(w, card, finish)
   local art = card and finish and frameOf[card.name]
   if not art then if f then f:Hide() end return end
   if not f then
-    f = CreateFrame("Frame", nil, w)
+    f = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, f, 1) end   -- (its place in the card's stack: Arcade.lua relevel)
     f.tex = f:CreateTexture(nil, "OVERLAY", nil, 1); f.tex:SetAllPoints(); f.tex:SetTexCoord(0, 1, 0, CARD_V)
     f.glow = f:CreateTexture(nil, "OVERLAY", nil, 2); f.glow:SetAllPoints(); f.glow:SetTexCoord(0, 1, 0, CARD_V); f.glow:SetBlendMode("ADD")
     f.t = 0

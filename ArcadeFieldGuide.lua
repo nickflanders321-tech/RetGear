@@ -229,7 +229,7 @@ local function stamp(w, card, finish)
   local u = w.u or 1
   if (w.cw or 0) < 90 then if s then s:Hide() end return end
   if not s then
-    s = CreateFrame("Frame", nil, w)
+    s = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, s, 1) end   -- (its place in the card's stack: Arcade.lua relevel)
     s.bg = s:CreateTexture(nil, "OVERLAY"); s.bg:SetAllPoints(); s.bg:SetColorTexture(0.05, 0.04, 0.03, 0.72)
     s.edge = s:CreateTexture(nil, "OVERLAY"); s.edge:SetHeight(1); s.edge:SetPoint("TOPLEFT"); s.edge:SetPoint("TOPRIGHT")
     s.t = s:CreateFontString(nil, "OVERLAY"); s.t:SetPoint("CENTER"); s.t:SetJustifyH("CENTER")

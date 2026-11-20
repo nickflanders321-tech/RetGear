@@ -155,7 +155,7 @@ local function seal(w, card, finish)
   if not (a and a.first and (a.first[card.name] or 0) > 0) or (w.cw or 0) < 70 then if s then s:Hide() end return end
   local u = w.u or 1
   if not s then
-    s = CreateFrame("Frame", nil, w)
+    s = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, s, 1) end   -- (its place in the card's stack: Arcade.lua relevel)
     s.ring = s:CreateTexture(nil, "OVERLAY", nil, 1); s.ring:SetAllPoints(); s.ring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); s.ring:SetVertexColor(0.95, 0.76, 0.3, 1)
     s.core = s:CreateTexture(nil, "OVERLAY", nil, 2); s.core:SetPoint("TOPLEFT", 2, -2); s.core:SetPoint("BOTTOMRIGHT", -2, 2)
     s.core:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); s.core:SetVertexColor(0.16, 0.1, 0.04, 1)
