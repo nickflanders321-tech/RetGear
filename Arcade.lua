@@ -541,7 +541,10 @@ RG.ArcadeDaily = dailyCheck
 -- Packs, selling, duels
 -- ---------------------------------------------------------------------------
 local PITY = 7   -- a pack after this many without a holo or full art always has one
-RG.ARCADE_MYTH_PITY = 30   -- a dungeon's Mythic is in one of its first 30 packs at the latest (counted until you have it)
+-- a dungeon's own Mythic, until you have it: 1 in 10 of that dungeon's packs, and for certain in the 10th of its
+-- packs opened without it (after that, a copy is as rare as any Mythic)
+RG.ARCADE_MYTH_PITY = 10
+RG.ARCADE_MYTH_RATE = 0.1
 local STREAK_BONUS = 7         -- a reward seal for every 7th day in a row you break a seal
 local MANY_MAX = 10            -- most seals "Break all" opens at once
 
@@ -570,7 +573,8 @@ RG.ArcadeFeatured = function() return nil end   -- (packs are no longer themed: 
 local function yesterdayStr() return date and time and date("%Y-%m-%d", time() - 86400) or "yesterday" end
 
 -- a pack's odds, worked out from the same numbers openOne rolls with (shown on the pack screen)
-function RG.ArcadePackOdds(kind)
+-- dn: a dungeon whose own Mythic you don't have yet (its packs: 1 in 10)
+function RG.ArcadePackOdds(kind, dn)
   local def = PACKS[kind or "normal"] or PACKS.normal
   local function share(from, f0)   -- chance a card rolled "at least from" comes out at finish f0 or better
     local all, hit = 0, 0
@@ -583,7 +587,13 @@ function RG.ArcadePackOdds(kind)
   local raider = (byTier[6] and #byTier[6] > 0 and tierWeight > 0) and (TIER[6][2] / tierWeight) * (1 - COLLECTOR_LUCK) or 0
   local function card(from, f0) return raider * share(3, f0) + (1 - raider) * share(from, f0) end
   local function anyOf(f0) return 1 - (1 - card(1, f0)) ^ plain * (1 - card(2, f0)) ^ rare end
-  return { mythic = math.floor(1 / (TIER[7].rate * (def.weight or 1)) + 0.5), holo = anyOf(3), full = anyOf(4), size = def.size, rares = def.rares, pity = PITY }
+  local mrate = TIER[7].rate
+  if dn and RG.ARCADE_SET_MYTHIC and RG.ARCADE_SET_MYTHIC[dn] then
+    local a = WaypathDB and WaypathDB.arcade
+    local c = byKey[RG.ARCADE_SET_MYTHIC[dn]]
+    if c and not (a and owned(a, c.id) > 0) then mrate = RG.ARCADE_MYTH_RATE end
+  end
+  return { mythic = math.floor(1 / (mrate * (def.weight or 1)) + 0.5), holo = anyOf(3), full = anyOf(4), size = def.size, rares = def.rares, pity = PITY }
 end
 -- one seal: pays for it, rolls the five cards, returns got, notes, meta
 local function openOne(a, kind, dn)
@@ -623,7 +633,7 @@ local function openOne(a, kind, dn)
   local mythic
   if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
   local mroll, mw = math.random(), (def.weight or 1)
-  -- a dungeon's own Mythic: by luck, or for certain in the 30th of its packs opened without it
+  -- a dungeon's own Mythic: 1 in 10 of its packs until you have it, and for certain in the 10th opened without it
   local myCard = dn and RG.ARCADE_SET_MYTHIC and byKey[RG.ARCADE_SET_MYTHIC[dn] or ""]
   local myDue
   if myCard and owned(a, myCard.id) == 0 then
@@ -636,6 +646,8 @@ local function openOne(a, kind, dn)
   elseif not a.ring and byKey["The 1 Ring"] and mroll < TIER[7].ring * mw then
     mythic = byKey["The 1 Ring"]
     a.ring = { by = (UnitName and UnitName("player")) or "?", date = today() }
+  elseif meta.mythPityBefore and mroll < RG.ARCADE_MYTH_RATE * mw then
+    mythic = myCard
   elseif mroll < TIER[7].rate * mw and dn and RG.ARCADE_SET_MYTHIC and byKey[RG.ARCADE_SET_MYTHIC[dn] or ""] then
     mythic = byKey[RG.ARCADE_SET_MYTHIC[dn]]   -- a dungeon's pack: that dungeon's own Mythic (ArcadeSetMythics.lua)
   elseif mroll < TIER[7].rate * mw and byTier[7] then
@@ -665,7 +677,7 @@ local function openOne(a, kind, dn)
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
     got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id), upgraded = up }
-    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or (c.dun and TIER[7].rate or (TIER[7].rate / 5))) + 0.5); meta.mythic = c.name end
+    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or ((c == myCard and meta.mythPityBefore) and RG.ARCADE_MYTH_RATE) or (c.dun and TIER[7].rate or (TIER[7].rate / 5))) + 0.5); meta.mythic = c.name end
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
     local r = a.rarest
@@ -2648,7 +2660,10 @@ function RG.ArcadeMythicMoment(g)
   local one = my.one
   local a = store()
   local col = my.glow or { 1, 0.9, 0.6 }
-  m.hint:SetText((one and "The rarest card there is: one per account" or ("About 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5))) .. "   ·   click anywhere to go on")
+  local dunM = RG.ARCADE_SET_MYTHIC_OF and RG.ARCADE_SET_MYTHIC_OF[g.card.key or ""]
+  m.hint:SetText((one and "The rarest card there is: one per account"
+    or (dunM and ("About 1 in " .. math.floor(1 / RG.ARCADE_MYTH_RATE + 0.5) .. " of " .. dunM .. "'s packs, certain by the " .. RG.ARCADE_MYTH_PITY .. "th"))
+    or ("About 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5))) .. "   ·   click anywhere to go on")
   -- the title, a letter at a time (ArcadeMythicPlus.lua names a dungeon's heart, or one of the six, and adds its own entrance)
   local spec = { word = one and "THE 1 RING" or "MYTHIC", sub = nil, pre = nil, extra = 0 }
   for _, fn in ipairs(RG.ArcadeMythicHooks or {}) do pcall(fn, "start", m, g, spec) end
@@ -3153,6 +3168,8 @@ local function showReveal(got, notes, meta)
     else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") .. " worth of opening" } end
     -- the odds of this pack, from the same numbers it rolls with
     local o = RG.ArcadePackOdds(kind)
+    -- (a dungeon pack opened without its own Mythic: 1 in 10)
+    if meta.dungeon and meta.mythPityBefore then o.mythic = math.floor(1 / (RG.ARCADE_MYTH_RATE * (def.weight or 1)) + 0.5) end
     info[#info + 1] = { "Odds", "|cffffe58cMythic 1 in " .. o.mythic .. " packs|r   ·   holo or full art in " .. math.floor(o.holo * 100 + 0.5) .. "%   ·   full art in " .. math.floor(o.full * 100 + 0.5) .. "%" }
   end
   -- a plain pack, jumbo or super jumbo has its own wrapper (picture and colour); gifts, reward packs and several packs
@@ -3569,7 +3586,7 @@ local function build()
     local have, cleared = RG.ArcadeDungeonPacks(dn)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine(dn .. " pack")
-    GameTooltip:AddLine("5 cards from " .. dn .. " only: the place, its bosses, their drops and its elites. " .. ((RG.ArcadePackOdds and ("Mythic 1 in " .. RG.ArcadePackOdds("dungeon").mythic .. " packs.")) or ""), 1, 1, 1, true)
+    GameTooltip:AddLine("5 cards from " .. dn .. " only: the place, its bosses, their drops and its elites. " .. ((RG.ArcadePackOdds and ("Mythic 1 in " .. RG.ArcadePackOdds("dungeon", dn).mythic .. " packs.")) or ""), 1, 1, 1, true)
     GameTooltip:AddLine("Clearing it (three of its bosses) gives two the first time and one more each time after (twice a day). " ..
       (cleared and ("Since you've cleared it, you can also buy them for " .. PACKS.dungeon.price .. " coins.") or "Once you've cleared it, you can also buy them with coins."), 0.8, 0.8, 0.8, true)
     GameTooltip:Show()

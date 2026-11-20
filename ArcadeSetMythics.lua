@@ -119,7 +119,7 @@ end)
 local function mythTip(cd)
   local dn = cd and RG.ARCADE_SET_MYTHIC_OF[cd.key or ""]
   if not dn then return false end
-  local o = RG.ArcadePackOdds and RG.ArcadePackOdds("dungeon")
+  local o = RG.ArcadePackOdds and RG.ArcadePackOdds("dungeon", dn)
   GameTooltip:AddLine("The Mythic of " .. dn .. ": only in its packs" .. (o and o.mythic and (", about 1 in " .. o.mythic) or "") .. ". It doesn't count toward the set, and it can't be traded, crafted or sold.", 1, 0.9, 0.55, true)
   return true
 end
@@ -144,7 +144,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine("Mythic: " .. cc.name, 1, 0.9, 0.55)
       local have = u.owned(u.store(), cc.id) > 0
-      GameTooltip:AddLine(have and "You have it. Click to see it." or ("Not found yet. It only comes from " .. (RG.ARCADE_SET_MYTHIC_OF[cc.key] or "its") .. " packs: 1 in 150 by luck, and for certain in the " .. (RG.ARCADE_MYTH_PITY or 30) .. "th pack you open without it."), 1, 1, 1, true)
+      GameTooltip:AddLine(have and "You have it. Click to see it." or ("Not found yet. It only comes from " .. (RG.ARCADE_SET_MYTHIC_OF[cc.key] or "its") .. " packs: about 1 in " .. math.floor(1 / (RG.ARCADE_MYTH_RATE or 0.1) + 0.5) .. ", and for certain in the " .. (RG.ARCADE_MYTH_PITY or 10) .. "th pack you open without it."), 1, 1, 1, true)
       GameTooltip:Show()
     end)
     btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -155,7 +155,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   -- (not found yet: how many more of this dungeon's packs until it's certain)
   local dn = RG.ARCADE_SET_MYTHIC_OF[c.key or ""]
   local a = u.store()
-  local left = math.max(1, (RG.ARCADE_MYTH_PITY or 30) - ((a and a.mpity and dn and a.mpity[dn]) or 0))
+  local left = math.max(1, (RG.ARCADE_MYTH_PITY or 10) - ((a and a.mpity and dn and a.mpity[dn]) or 0))
   btn:SetText(have and ("|cffffe58cMythic:|r " .. c.name) or ("|cffa89bc9Mythic: certain within " .. left .. " pack" .. (left == 1 and "" or "s") .. "|r"))
   btn:SetEnabled(have)
   btn:Show()

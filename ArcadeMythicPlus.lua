@@ -564,7 +564,7 @@ function RG.ArcadeTrophy(dn)
     if screenOf(dn, hall.bd, W, H) then hall.bd:SetAlpha(0.22); hall.bd:Show() end
     hall.title:SetText("THE HEART OF " .. dn:upper())
     local pull = c and pullOf(a, c)
-    local left = math.max(1, (RG.ARCADE_MYTH_PITY or 30) - ((a and a.mpity and a.mpity[dn]) or 0))
+    local left = math.max(1, (RG.ARCADE_MYTH_PITY or 10) - ((a and a.mpity and a.mpity[dn]) or 0))
     hall.sub:SetText(have and ((c.name or "") .. (pull and ("   ·   found " .. pull.date .. " by " .. pull.by) or "")) or ("Not found yet   ·   certain within " .. left .. " of " .. dn .. "'s packs"))
     hall.spot:ClearAllPoints(); hall.spot:SetPoint("CENTER", hall, "CENTER", 0, -10); hall.spot:SetSize(420, 420); hall.spot:SetVertexColor(1, 0.86, 0.55, have and 0.5 or 0.15); hall.spot:Show()
     hall.bigPl:ClearAllPoints(); hall.bigPl:SetPoint("BOTTOM", hall, "BOTTOM", 0, 18); hall.bigPl:SetSize(300, 150); hall.bigPl:Show()
