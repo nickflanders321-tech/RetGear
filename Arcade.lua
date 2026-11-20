@@ -1683,20 +1683,35 @@ local function placeArt(w, c, full)
   local scr = not e and RG.ARCADE_PLACE_FILE and RG.ARCADE_PLACE_FILE[c.name]
   if not e and not scr then return false end
   local u = w.u
+  local l, r, t, b
   if e then
     local col, row = e[2] % 8, math.floor(e[2] / 8)
     w.art:SetTexture(MEDIA .. "Places" .. e[1])
-    w.art:SetTexCoord(col * 120 / 1024, (col + 1) * 120 / 1024, row * 84 / 1024, (row + 1) * 84 / 1024)
+    l, r, t, b = col * 120 / 1024, (col + 1) * 120 / 1024, row * 84 / 1024, (row + 1) * 84 / 1024
   else
     -- a dungeon or raid: its own loading screen from the game's files, cut to the painting's shape
     w.art:SetTexture(scr[1])
     -- (the top of a loading screen carries the game's logo: the painting is cut from below it)
-    if scr[2] == 1 then w.art:SetTexCoord(0.178, 0.822, 0.22, 1) else w.art:SetTexCoord(0.071, 0.929, 0.22, 1) end
+    if scr[2] == 1 then l, r, t, b = 0.178, 0.822, 0.22, 1 else l, r, t, b = 0.071, 0.929, 0.22, 1 end
   end
-  local pw = (full and 248 or 186) * u; local ph = pw * 84 / 120   -- (Full art: the painting runs to the card's edge)
-  w.art:ClearAllPoints(); w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(pw, ph)
-  w.iconBack:ClearAllPoints(); w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize(pw + 7 * u, ph + 7 * u)
-  w.iconEdge:ClearAllPoints(); w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize(pw + 3 * u, ph + 3 * u)
+  w.art:ClearAllPoints(); w.iconBack:ClearAllPoints(); w.iconEdge:ClearAllPoints()
+  if full then
+    -- Full art: the painting fills the whole picture window to the card's edge, with no border. The window is taller
+    -- for its width than a painting (248 x 210 against 120 x 84), so the painting's sides are trimmed evenly instead
+    -- of stretching it
+    local want, has = w.aw / w.ah, 120 / 84
+    if want < has then local cut = (r - l) * (1 - want / has) / 2; l, r = l + cut, r - cut
+    else local cut = (b - t) * (1 - has / want) / 2; t, b = t + cut, b - cut end
+    w.art:SetTexCoord(l, r, t, b)
+    w.art:SetAllPoints(w.artClip)
+    w.iconBack:Hide(); w.iconEdge:Hide()
+    return true
+  end
+  w.art:SetTexCoord(l, r, t, b)
+  local pw = 186 * u; local ph = pw * 84 / 120
+  w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(pw, ph)
+  w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize(pw + 7 * u, ph + 7 * u)
+  w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize(pw + 3 * u, ph + 3 * u)
   return true
 end
 
