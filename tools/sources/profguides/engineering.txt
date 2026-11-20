@@ -2,9 +2,9 @@ WoW Forever Engineering Leveling Guide 1-300
 WoW Forever Engineering Leveling Guide 1-300
 This WoW Forever Engineering leveling guide will show you the fastest and cheapest way to level your Engineering skill from 1 to 300. You will also find every trainer location and where to train Engineering past 75, 150 and 225.
 1-150
-66x Rough Stone
-72x Copper Bar
-50x Linen Cloth
+52x Rough Stone
+58x Copper Bar
+43x Linen Cloth
 51x Coarse Stone
 5x Silver Bar
 30x Light Leather and 10x Tigerseye
@@ -27,15 +27,15 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 186x Thorium Bar
 20x Runecloth
 Apprentice Engineering (1-50)
-1-30
-66x Rough Blasting Powder - 66 Rough Stone
-30-50
-33x Handful of Copper Bolts - 33 Copper Bar
-50-51
+1-35
+52x Rough Blasting Powder - 52 Rough Stone
+35-55
+26x Handful of Copper Bolts - 26 Copper Bar
+55-56
 1x Arclight Spanner - 6 Copper Bar
 Journeyman Engineering (50-150)
-51-75
-33x Rough Copper Bomb - 33 Copper Bar, 33 Handful of Copper Bolts, 66 Rough Blasting Powder, 33 Linen Cloth
+56-75
+26x Rough Copper Bomb - 26 Copper Bar, 26 Handful of Copper Bolts, 52 Rough Blasting Powder, 26 Linen Cloth
 75-90
 51x Coarse Blasting Powder - 51 Coarse Stone
 90-100

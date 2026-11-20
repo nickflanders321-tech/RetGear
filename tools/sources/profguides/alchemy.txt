@@ -9,10 +9,12 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 60x Briarthorn
 10x Stranglekelp
 40x Firefin Snapper
+152x Empty Vial (vendor)
 150-225
 72x Stranglekelp
 51x Kingsblood
 36x Liferoot
+87x Leaded Vial (vendor)
 225-300
 26x Liferoot
 26x Stranglekelp
@@ -20,6 +22,8 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 44x Sungrass
 25x Blindweed
 47x Stonescale Eel
+73x Leaded Vial (vendor)
+69x Crystal Vial (vendor)
 Apprentice Alchemy (1-55)
 1-10
 9x Elixir of Minor Force - 9 Silverleaf, 9 Empty Vial

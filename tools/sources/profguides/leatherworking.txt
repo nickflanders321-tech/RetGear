@@ -8,14 +8,22 @@ This WoW Forever Leatherworking leveling guide will show you the fastest and che
 147x Medium Leather
 20x Medium Hide
 25x Heavy Hide
+115x Salt (vendor)
+104x Coarse Thread (vendor)
+72x Fine Thread (vendor)
+20x Gray Dye (vendor)
 150-225
 293x Heavy Leather
 10x Iron Buckle
 390x Thick Leather
-225-300
+50x Fine Thread (vendor)
+198x Silken Thread (vendor)
+225-265
+The last step, 265-300, is not in the list because it has a few alternatives. Each one shows what it needs in that step.
 224x Thick Leather
-974x Rugged Leather
-490x Runecloth
+288x Rugged Leather
+36x Black Dye (vendor)
+36x Rune Thread (vendor)
 Apprentice Leatherworking (1-60)
 1-30
 35x Light Leather - 105 Ruined Leather Scraps
@@ -64,7 +72,30 @@ Artisan Leatherworking (205-300)
 235-265
 36x Wicked Leather Gauntlets - 288 Rugged Leather, 36 Black Dye, 36 Rune Thread
 36x Blue Suede Shoes - 288 Rugged Leather, 36 Blue Dye, 36 Rune Thread
+235-255
+20x Wicked Leather Gauntlets
+255-265
+10x Wicked Leather Headband
+235-255
+20x Wicked Leather Gauntlets
+255-265
+10x Charged Scorpid Bracers
 265-300
 49x Runic Leather Headband - 686 Rugged Leather, 490 Runecloth, 49 Rune Thread
-27x Blue Suede Bracers - 270 Rugged Leather, 27 Blue Dye, 27 Rune Thread
+265-275
+10x Wicked Leather Headband
+275-300
+39x Runic Leather Headband
+265-270
+5x Runic Leather Headband
+270-300
+36x Tooled Leather Bracers
+265-275
+10x Runic Leather Headband
+275-300
+27x Blue Suede Bracers
+265-295
+36x Runic Leather Headband
+295-300
+7x Wicked Leather Belt
 20x Blue Suede Hat - 320 Rugged Leather, 80 Blue Dye, 20 Rune Thread

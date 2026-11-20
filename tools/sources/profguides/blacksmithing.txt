@@ -15,15 +15,15 @@ This WoW Forever Blacksmithing leveling guide will show you the fastest and chea
 180x Iron Bar
 30x Green Dye (vendor)
 32x Solid Stone
-100x Steel Bar (100 Iron Bar and 100 Coal if you have Mining 165)
+100x Steel Bar (if you have Mining: 100 Iron Bar + 100 Coal )
 60x Heavy Stone
 436x Mithril Bar
 24x Heavy Leather
 12x Citrine
 225-300
-5x Dense Stone
-224x Mithril Bar
-64x Thick Leather
+16x Dense Stone
+154x Mithril Bar
+44x Thick Leather
 1910x Thorium Bar
 30x Rugged Leather
 67x Star Ruby
@@ -67,10 +67,10 @@ Expert Blacksmithing (150-215)
 Artisan Blacksmithing (215-300)
 215-225
 10x Heavy Mithril Breastplate - 160 Mithril Bar
-225-230
-5x Dense Sharpening Stone - 5 Dense Stone
-230-240
-16x Heavy Mithril Boots - 224 Mithril Bar, 64 Thick Leather
+225-235
+16x Dense Sharpening Stone - 16 Dense Stone
+235-240
+11x Heavy Mithril Boots - 154 Mithril Bar, 44 Thick Leather
 240-245
 5x Imperial Plate Belt - 110 Thorium Bar, 30 Rugged Leather, 5 Aquamarine
 240-255: 27x Dazzling Mithril Rapier - 378 Mithril Bar, 27 Aquamarine, 54 Lesser Moonstone, 54 Moss Agate, 27 Solid Grinding Stone, 54 Mageweave Cloth
@@ -78,10 +78,10 @@ Artisan Blacksmithing (215-300)
 240-255: 17x Thorium Bracers - 204 Thorium Bar, 68 Blue Power Crystal
 215-225
 10x Mithril Spurs - 40 Mithril Bar, 30 Solid Grinding Stone
-225-230
-5x Dense Sharpening Stone - 5 Dense Stone
-230-245
-33x Mithril Spurs - 132 Mithril Bar, 99 Solid Grinding Stone
+225-235
+16x Dense Sharpening Stone - 16 Dense Stone
+235-245
+28x Mithril Spurs - 112 Mithril Bar, 84 Solid Grinding Stone
 245-270
 27x Imperial Plate Bracers - 540 Thorium Bar, 27 Star Ruby
 270-290
