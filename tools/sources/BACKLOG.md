@@ -7,6 +7,12 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
+- Issues #39, #41, #42 (profession guide updates, 2026-11-21): the new Blacksmithing, Tailoring and First Aid routes are written
+  and pass tools/profs/check.py on branch claude/prof-guides-39-42, but they add crafts that Professions/Generated.lua has no recipe
+  yet (Rough Bronze Leggings, Mithril Coif, Small Silk Pack, Heavy Runecloth Bandage), so the audit fails until
+  `sh tools/watch/regenerate.sh` is run (it couldn't run in the 2026-11-21 Claude session: Lua 5.1 was unavailable there).
+  Merge the branch, regenerate, check, release, close the issues.
+
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
 
