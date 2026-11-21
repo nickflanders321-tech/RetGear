@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.55.1
 - **Fix: the interface stayed hidden after turning Immersive fishing off and on.** The fade is the game's own interface transparency, and it was only given back by the fishing HUD's refresh, which doesn't run when the HUD isn't on screen, and a /reload or relog while faded kept it. Now a check every half second gives the interface back whenever Immersive fishing is off (from Settings or `/wp fishmode`) or after the idle time, and a fade left behind by a previous session is cleared when you log in or reload. Also new: a **Restore interface** button on the Fishing page and `/wp showui` bring everything back at once if it ever stays hidden.
 
 ## v1.55.0
