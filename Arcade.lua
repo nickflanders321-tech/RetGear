@@ -1908,6 +1908,13 @@ local function layoutText(w, big, name, text)
       if w.nameB.SetMaxLines then w.nameB:SetMaxLines(2) end
     end
   elseif w.nameB.SetMaxLines then w.nameB:SetMaxLines(1) end
+  -- (and if the game still cuts it short, a little smaller until the whole name fits: 6 at the least)
+  if w.nameB.IsTruncated then
+    for _ = 1, 12 do
+      if sz <= 6 or not w.nameB:IsTruncated() then break end
+      sz = math.max(6, sz - 0.5); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
+    end
+  end
   w.nameB:Show()
   local showType = w.cw >= 120
   local hasText = text and text ~= ""

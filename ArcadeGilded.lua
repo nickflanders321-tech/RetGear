@@ -146,7 +146,20 @@ function RG.ArcadeGildedCheck()
   for _, c in ipairs(u.CARDS) do if RG.ArcadeCanGild(c) then list[#list + 1] = c end end
   local bad, n, i = {}, 0, 0
   local function problem(t) if #bad < 400 then bad[#bad + 1] = t end end
-  local function tex(t) local v = t and t.GetTexture and t:GetTexture(); return type(v) == "string" and v:lower() or tostring(v or "") end
+  -- (which texture a region shows: the game can answer with the file's path or with its file number, so each is
+  -- compared with what the same file gives on a texture of our own)
+  local probe, refs = host:CreateTexture(nil, "ARTWORK"), {}
+  probe:SetSize(1, 1); probe:SetPoint("TOPLEFT"); probe:SetAlpha(0)
+  local function ref(file)
+    if refs[file] == nil then probe:SetTexture(MEDIA .. file); refs[file] = probe:GetTexture() or false end
+    return refs[file]
+  end
+  local function is(t, file)
+    local r, v = ref(file), t and t.GetTexture and t:GetTexture()
+    if r == false or v == nil then return false end
+    if type(r) == "string" and type(v) == "string" then return r:lower() == v:lower() end
+    return r == v
+  end
   local function checkOne(c)
     n = n + 1
     for k, w in ipairs(ws) do
@@ -154,10 +167,11 @@ function RG.ArcadeGildedCheck()
       local ok, err = pcall(u.paint, w, c, 5, 1)
       if not ok then problem(where .. ": " .. tostring(err)) else
         local kind = (c.kind and c.kind >= 1 and c.kind <= 4) and c.kind or 1
-        if not tex(w.body):find("gildedbody") then problem(where .. ": the lacquer body didn't load") end
-        if w.frameTex:IsShown() and not tex(w.frameTex):find("gildedframe" .. kind) then problem(where .. ": its gold frame is the wrong one") end
-        if not tex(w.edge):find("gildededge") then problem(where .. ": the gold edge didn't load") end
-        if not tex(w.plate):find("gildedplate") then problem(where .. ": the gold name plate didn't load") end
+        if not is(w.body, "GildedBody") then problem(where .. ": the lacquer body didn't load") end
+        if w.frameTex:IsShown() and not is(w.frameTex, "GildedFrame" .. kind) then problem(where .. ": its gold frame is the wrong one") end
+        if not is(w.edge, "GildedEdge") then problem(where .. ": the gold edge didn't load") end
+        if not is(w.plate, "GildedPlate") then problem(where .. ": the gold name plate didn't load") end
+        if not is(w.panel, "GildedPanel") then problem(where .. ": the glass text panel didn't load") end
         local nm = w.cw >= 190 and w.name or w.nameB
         if nm.IsTruncated and nm:IsTruncated() then problem(where .. ": its name is cut short") end
         local g = rawget(w, "gild")
@@ -171,7 +185,7 @@ function RG.ArcadeGildedCheck()
         end
         -- and painted again as a Holo, nothing of the gold is left
         pcall(u.paint, w, c, 3, 1)
-        if tex(w.body):find("gilded") or (g and (g:IsShown() or g.corners:IsShown())) then problem(where .. ": the gold stays after the card is drawn as a Holo") end
+        if is(w.body, "GildedBody") or is(w.plate, "GildedPlate") or (g and (g:IsShown() or g.corners:IsShown())) then problem(where .. ": the gold stays after the card is drawn as a Holo") end
         if w.cw >= 190 and w.name.IsTruncated and w.name:IsTruncated() then problem(where .. ": its name is cut short (Holo)") end
       end
     end

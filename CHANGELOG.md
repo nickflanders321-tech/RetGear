@@ -41,6 +41,8 @@
 - The "Gilded Hand" achievement is now called **Golden Hand** (its title, "the Gilded", is the same).
 - A Mythic always counts as your best pull in a pack and on your stats page, above any print of any other card.
 - A long card name on a big card now goes onto two lines instead of being shrunk and cut short.
+- A very long name on a small card (the collection grid, a pack) is no longer cut short: it gets a little smaller until it fits on its two lines (Black Qiraji Resonating Crystal, Atiesh, Greatstaff of the Guardian and a few others).
+- `/wp gildedcheck` no longer reports every card as missing its gold: the game names a texture by its file number, and the check now compares it that way.
 
 ## v1.52.6
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
