@@ -368,7 +368,8 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
   else
     t = tagFor(w)
     local u = w.u or 1
-    t:ClearAllPoints(); t:SetPoint("TOPLEFT", w, "TOPLEFT", 6 * u, -26 * u); t:SetSize(math.max(28, 54 * u), math.max(11, 16 * u))
+    -- (beside the cost, not over it)
+    t:ClearAllPoints(); t:SetPoint("TOPLEFT", w, "TOPLEFT", 47 * u, -7 * u); t:SetSize(math.max(28, 54 * u), math.max(11, 16 * u))
     t.txt:SetText(fresh and "NEW" or "NEMESIS")
     if fresh then t.bg:SetColorTexture(0.96, 0.82, 0.45, 1) else t.bg:SetColorTexture(0.85, 0.25, 0.2, 1) end
     t:Show()

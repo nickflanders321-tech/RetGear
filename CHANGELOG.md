@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased
+- Fixed from the first `/wp textcheck` run:
+  - long card names on small cards (the collection grid, the Album) that the game still cut short: they get a little smaller once the card is on screen, until the whole name fits;
+  - the "NEW" tag sits beside a card's cost instead of over it, and the copies count ("x2") sits under the "1st" seal instead of on it;
+  - a raid's, holiday's or Field Guide's Album heading fits its line;
+  - the Today tab's "jumbo: 2 rares and a holo" and "every 7th day: a reward pack" fit their tiles;
+  - a long card name on a card's page stays clear of the window's X;
+  - a long card name in a Grading desk slot fits (without its print, if it has to).
+  - `/wp textcheck` no longer counts the big card that shows beside the window when you point at one, or the window's text tabs, as problems.
 - **`/wp textcheck`**: goes through every page of the cards window in your game (every tab, every Album set and its pages, the Shop's aisles, the Grading desk, the Guild Ledger and a few card pages) and lists any text that is cut short, runs outside the window, or runs into another text or a button. It puts the window back where it was; copy the list with Ctrl+A, Ctrl+C.
 - The Album's "Mythic: certain within 10 packs" button no longer runs into the page arrow: it's wider, and its words fit it.
 - Any button's words that are too long for it are made a little smaller to fit.

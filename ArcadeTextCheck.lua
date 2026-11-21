@@ -71,9 +71,11 @@ end
 local function scan(root, where, out)
   if not (root and root:IsVisible()) then return end
   local texts, buttons = {}, {}
+  local skip = rawget(root, "insp")   -- (the big card that shows beside the window as you point at one: meant to be outside)
   local function walk(f, depth)
-    if depth > 30 or not f:IsVisible() then return end
-    if rawget(f, "label") and f.IsObjectType and f:IsObjectType("Button") and f:GetWidth() < 420 and f:GetHeight() < 60 then
+    if depth > 30 or not f:IsVisible() or f == skip then return end
+    -- (a button you can see: a box with a backdrop; the window's text tabs are only words)
+    if rawget(f, "label") and f.IsObjectType and f:IsObjectType("Button") and f.GetBackdrop and f:GetBackdrop() and f:GetWidth() < 420 and f:GetHeight() < 60 then
       local L, R, T, B = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
       if L and R and T and B then buttons[#buttons + 1] = { f = f, box = { L, B, R, T } } end
     end

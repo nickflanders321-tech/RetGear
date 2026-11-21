@@ -3506,7 +3506,7 @@ local function openDetail(c)
     tinsert(UISpecialFrames, "WaypathArcadeCard")
     detail.card = makeCard(detail, 230); detail.card:SetPoint("TOPLEFT", 30, -40); detail.card:SetFrameLevel(lv(detail) + 3); detail.card.noTip = true
     local X0 = 290
-    detail.name = fs(detail, "title", 20); detail.name:SetPoint("TOPLEFT", X0, -36); detail.name:SetWidth(320); detail.name:SetJustifyH("LEFT"); detail.name:SetWordWrap(true)
+    detail.name = fs(detail, "title", 20); detail.name:SetPoint("TOPLEFT", X0, -36); detail.name:SetWidth(296); detail.name:SetJustifyH("LEFT"); detail.name:SetWordWrap(true)   -- (296: clear of the X at the top right)
     detail.kind = fs(detail, "head", 12); detail.kind:SetPoint("TOPLEFT", detail.name, "BOTTOMLEFT", 0, -4); detail.kind:SetTextColor(0.825, 0.737, 0.56)
     local rule = detail:CreateTexture(nil, "ARTWORK"); rule:SetTexture(MEDIA .. "Rule"); rule:SetSize(320, 14); rule:SetPoint("TOPLEFT", detail.kind, "BOTTOMLEFT", 0, -6)
     detail.flavor = fs(detail, "body", 14); detail.flavor:SetPoint("TOPLEFT", rule, "BOTTOMLEFT", 0, -6); detail.flavor:SetWidth(320); detail.flavor:SetJustifyH("LEFT"); detail.flavor:SetTextColor(0.86, 0.82, 0.7); detail.flavor:SetSpacing(3)
@@ -3907,6 +3907,7 @@ local function pgTile(i, x, y, wd, ht, value, label, sub, col)
   t.val:ClearAllPoints()
   if ht < 70 then t.val:SetPoint("RIGHT", -14, 4); t.val:SetJustifyH("RIGHT") else t.val:SetPoint("TOPLEFT", 14, -26); t.val:SetJustifyH("LEFT") end
   t.sub:SetWidth(ht < 70 and (wd - 28 - 70) or (wd - 28)); t.sub:SetText(sub or "")
+  if RG.ArcadeFitLine then RG.ArcadeFitLine(t.sub, ht < 70 and (wd - 28 - 70) or (wd - 28), 12, 9) end   -- (a little smaller to fit)
   return t
 end
 local function pgHead(i, y, text, right)
@@ -4067,7 +4068,7 @@ function RG.ArcadeRefresh(keepMsg)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
       local clearedHere = st.dungeon and not st.soon and select(2, RG.ArcadeDungeonPacks(st.name))
       frame.albTitle:SetText((RG.ArcadeSetTag and RG.ArcadeSetTag(st) or "") .. st.name .. (RG.ArcadeSetHeart and RG.ArcadeSetHeart(st) or "") .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
-      if RG.ArcadeFitLine then RG.ArcadeFitLine(frame.albTitle, 430, 14, 10.5) end   -- (a long name a little smaller: ArcadeFit.lua)
+      if RG.ArcadeFitLine then RG.ArcadeFitLine(frame.albTitle, 430, 14, 8.5) end   -- (a long name a little smaller: ArcadeFit.lua)
       frame.albNext:ClearAllPoints()
       frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 430) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)

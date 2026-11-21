@@ -152,7 +152,14 @@ local seals = setmetatable({}, { __mode = "k" })
 local function seal(w, card, finish)
   local s = seals[w]
   local a = card and finish and FIRST[card.name] and store()
-  if not (a and a.first and (a.first[card.name] or 0) > 0) or (w.cw or 0) < 70 then if s then s:Hide() end return end
+  local function countHome(under)
+    -- (the copies count, "x2": under the seal when there is one, else in its usual place)
+    if not w.count then return end
+    local uu = w.u or 1
+    w.count:ClearAllPoints()
+    if under then w.count:SetPoint("TOPRIGHT", under, "BOTTOMRIGHT", 0, -1) else w.count:SetPoint("TOPRIGHT", w, "TOPLEFT", 238 * uu, -28 * uu) end
+  end
+  if not (a and a.first and (a.first[card.name] or 0) > 0) or (w.cw or 0) < 70 then if s then s:Hide() end; countHome(nil) return end
   local u = w.u or 1
   if not s then
     s = CreateFrame("Frame", nil, w); if RG.ArcadeLayer then RG.ArcadeLayer(w, s, 1) end   -- (its place in the card's stack: Arcade.lua relevel)
@@ -166,6 +173,7 @@ local function seal(w, card, finish)
   s:SetSize(sz, sz)
   s:SetFrameLevel((w:GetFrameLevel() or 1) + 7)
   s:ClearAllPoints(); s:SetPoint("TOPRIGHT", rawget(w, "area") or w.artClip, "TOPRIGHT", -3 * u, -3 * u)   -- (the picture above the name)
+  countHome(s)
   local font = (RG.FONTS and (RG.FONTS.semibold or RG.FONTS.medium)) or "Fonts\\FRIZQT__.TTF"
   pcall(s.t.SetFont, s.t, font, math.max(6.5, sz * 0.34), "")
   s.t:SetTextColor(1, 0.86, 0.45); s.t:SetText("1st")

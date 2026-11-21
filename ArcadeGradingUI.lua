@@ -506,7 +506,10 @@ local function paintSlots(a, st)
       local tw = r.open:IsShown() and 70 or (r.t:GetStringWidth() or 0)
       local room = 234 - tw - 10
       r.name:SetWidth(room)
-      if RG.ArcadeFitLine then RG.ArcadeFitLine(r.name, room, 12, 10) end
+      if RG.ArcadeFitLine then RG.ArcadeFitLine(r.name, room, 12, 8.5) end
+      -- (still too long: the name alone; the print shows on the case page)
+      local need = r.name.GetUnboundedStringWidth and r.name:GetUnboundedStringWidth() or 0
+      if need > room + 0.5 then r.name:SetText(c and c.name or "?"); if RG.ArcadeFitLine then RG.ArcadeFitLine(r.name, room, 12, 8) end end
       r:Show()
     elseif i <= GR().SLOTS then
       r.name:SetText("|cff7d776aAn open slot|r"); r.t:SetText(""); r.open:Hide(); r.bar:SetWidth(1); r.name:SetWidth(224)

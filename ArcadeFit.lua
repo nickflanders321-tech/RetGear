@@ -66,22 +66,33 @@ function RG.ArcadeFitBox(t, room)
   shrink(t, "body", 11, function() local h = t:GetStringHeight(); return type(h) ~= "number" or h <= room + 0.5 end)
 end
 
--- the card: its type line, and a big card's rules
-RG.ArcadeCardHooks = RG.ArcadeCardHooks or {}
-table.insert(RG.ArcadeCardHooks, function(w, card, finish)
-  if not card or not finish then return end
+-- the card: its type line, its rules and its name. Done when the card is drawn, and again a moment later: the game
+-- only knows a text is cut short once the card has been laid out on the screen
+local function fitCard(w, card)
   local u = w.u or 1
   local ty = w.type
   if ty and ty:IsShown() and (ty:GetText() or "") ~= "" then
-    shrink(ty, "head", 6, function() return width(ty) <= 226 * u + 0.5 end)
+    shrink(ty, "head", 6, function() return width(ty) <= 226 * u + 0.5 and not (ty.IsTruncated and ty:IsTruncated()) end)
   end
   local tx = w.text
   if (w.cw or 0) >= 120 and tx and tx:IsShown() and tx.IsTruncated and (tx:GetText() or "") ~= "" then
     shrink(tx, "body", (w.cw or 0) >= 190 and math.max(8, 9 * u) or 6, function() return not tx:IsTruncated() end)
   end
-  -- (a big card's two-line name, if the game still cuts it short)
+  -- (a big card's two-line name, and a small card's, if the game still cuts it short)
   local nm = w.name
-  if (w.cw or 0) >= 190 and nm and nm.IsTruncated and (nm:GetText() or "") ~= "" then
+  if (w.cw or 0) >= 190 and nm and nm.IsTruncated and nm:IsShown() and (nm:GetText() or "") ~= "" then
     shrink(nm, "title", 7, function() return not nm:IsTruncated() end)
+  end
+  local nb = w.nameB
+  if nb and nb.IsTruncated and nb:IsShown() and (nb:GetText() or "") ~= "" then
+    shrink(nb, "head", 5.5, function() return not nb:IsTruncated() end)
+  end
+end
+RG.ArcadeCardHooks = RG.ArcadeCardHooks or {}
+table.insert(RG.ArcadeCardHooks, function(w, card, finish)
+  if not card or not finish then return end
+  fitCard(w, card)
+  if C_Timer and C_Timer.After then
+    C_Timer.After(0, function() if w.card == card and w:IsVisible() then fitCard(w, card) end end)
   end
 end)
