@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.55.2
 - **Cards: graded cards come first.** The front page of your collection now lists every card you hold in a grading case before anything else (highest grade first), then your Mythics, then the rest, whatever the sort.
 
 ## v1.55.1
