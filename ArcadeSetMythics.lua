@@ -165,6 +165,8 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   local left = math.max(1, (RG.ARCADE_MYTH_PITY or 10) - ((a and a.mpity and dn and a.mpity[dn]) or 0))
   btn:SetText(have and ("|cffffe58cMythic:|r " .. c.name) or ("|cffa89bc9Mythic: certain within " .. left .. " pack" .. (left == 1 and "" or "s") .. "|r"))
   btn:SetEnabled(have)
+  -- (the words fit the button: ArcadeFit.lua)
+  if RG.ArcadeFitLine and btn.GetFontString and btn:GetFontString() then RG.ArcadeFitLine(btn:GetFontString(), (btn:GetWidth() or 170) - 14, nil, 8) end
   -- (a message on the window's bottom line has the line to itself, as the Album's other buttons give it: the window
   -- shows them again when the message clears)
   local msg = frame.msg and frame.msg.GetText and frame.msg:GetText()

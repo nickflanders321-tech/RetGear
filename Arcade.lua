@@ -2411,7 +2411,10 @@ local function setPlaque(rows)
   for i = 1, 4 do
     local r, row = pq.rows[i], rows[i]
     r.lab:SetShown(row and true or false); r.val:SetShown(row and true or false); r.line:SetShown(row and i > 1 and true or false)
-    if row then r.lab:SetText(string.upper(row[1])); r.val:SetText(row[2]) end
+    if row then
+      r.lab:SetText(string.upper(row[1])); r.val:SetText(row[2])
+      if RG.ArcadeFitLine then RG.ArcadeFitLine(r.val, 540, 13, 10.5) end   -- (a long line a little smaller: ArcadeFit.lua)
+    end
   end
   pq:SetHeight(n * 24 + 10)
   pq:SetShown(n > 0)
@@ -4048,6 +4051,8 @@ function RG.ArcadeRefresh(keepMsg)
           cell.albKind:SetText("MISSING\n" .. kind:upper()); cell.albKind:SetTextColor(1, 0.93, 0.74)
           if st.field and RG.ArcadeFieldLabel then local t, col = RG.ArcadeFieldLabel(c); cell.albKind:SetText(t); cell.albKind:SetTextColor(col[1], col[2], col[3]) end
           if hidden then cell.albKind:SetText("? ? ?\nUNDISCOVERED"); cell.albKind:SetTextColor(0.75, 0.7, 0.95) end
+          -- (in the middle of the card's picture, above its name)
+          cell.albKind:ClearAllPoints(); cell.albKind:SetPoint("CENTER", cell.albTag, "TOP", 0, -111 * cell:GetWidth() / 256)
           cell.albTag:Show(); cell.albKind:Show()
         end
       end
@@ -4055,6 +4060,7 @@ function RG.ArcadeRefresh(keepMsg)
       frame.prev:SetEnabled(view.albumPage > 1); frame.next:SetEnabled(view.albumPage < pages)
       local clearedHere = st.dungeon and not st.soon and select(2, RG.ArcadeDungeonPacks(st.name))
       frame.albTitle:SetText((RG.ArcadeSetTag and RG.ArcadeSetTag(st) or "") .. st.name .. (RG.ArcadeSetHeart and RG.ArcadeSetHeart(st) or "") .. ((st.dungeon and st.lo) and ("|cffa89bc9  ·  " .. (st.lo == st.hi and ("level " .. st.lo) or ("levels " .. st.lo .. "-" .. st.hi)) .. "|r") or "") .. (clearedHere and "  |cff7be08acleared|r" or ""))
+      if RG.ArcadeFitLine then RG.ArcadeFitLine(frame.albTitle, 430, 14, 10.5) end   -- (a long name a little smaller: ArcadeFit.lua)
       frame.albNext:ClearAllPoints()
       frame.albNext:SetPoint("LEFT", frame.albTitle, "LEFT", math.min(frame.albTitle:GetStringWidth() or 300, 430) + 10, 0)
       -- the stages (under the title, where the collection's totals usually are)
@@ -4428,6 +4434,9 @@ function RG.ArcadeResolveCreatures()
   local list = RG.ARCADE_DUNGEON_CREATURE
   if not a or not list or not (CreateFrame and C_Timer and C_Timer.After) or RG.ArcadeResolving then return end
   RG.ARCADE_NPC = RG.ARCADE_NPC or {}
+  -- (what the first version learned can be wrong: its hidden model still held the creature before while the next one
+  -- loaded, and that one's model was taken for the next one's, so several bosses showed the same model. Learned again)
+  if (a.npcDispV or 1) < 2 then a.npcDisp = {}; a.npcDispV = 2 end
   a.npcDisp = a.npcDisp or {}
   for name, cid in pairs(list) do
     local d = a.npcDisp[cid]
@@ -4441,7 +4450,7 @@ function RG.ArcadeResolveCreatures()
   if not ok or not m or not m.SetCreature then return end
   RG.ArcadeResolving = true
   m:SetSize(32, 32); m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -200, 200); m:Show()
-  local i, tries, learned = 0, 0, 0
+  local i, tries, learned, lastDisp = 0, 0, 0, nil
   local function step()
     if InCombatLockdown and InCombatLockdown() then C_Timer.After(10, step) return end
     local cur = todo[i]
@@ -4452,9 +4461,14 @@ function RG.ArcadeResolveCreatures()
       if m.GetModelFileID then okF, fid = pcall(m.GetModelFileID, m) end
       disp = (okD and type(disp) == "number" and disp > 0) and disp or nil
       fid = (okF and type(fid) == "number" and fid > 0) and fid or nil
-      -- not loaded yet (the game is still asking the server about it): look again, three times at most
-      if not disp and not fid and tries < 3 then tries = tries + 1; pcall(m.SetCreature, m, cur[2]); C_Timer.After(1, step) return end
-      if disp then a.npcDisp[cur[2]] = disp; RG.ARCADE_NPC[cur[1]] = disp; learned = learned + 1
+      -- not loaded yet (the game is still asking the server about it): look again, three times at most. The model is
+      -- emptied before each creature, so what it shows is always this one (and one that reads the same as the creature
+      -- just before is looked at again, in case it hadn't loaded yet)
+      local same = disp and disp == lastDisp
+      if (same or (not disp and not fid)) and tries < 3 then
+        tries = tries + 1; if same and m.ClearModel then pcall(m.ClearModel, m) end; pcall(m.SetCreature, m, cur[2]); C_Timer.After(1, step) return
+      end
+      if disp then a.npcDisp[cur[2]] = disp; RG.ARCADE_NPC[cur[1]] = disp; learned = learned + 1; lastDisp = disp
       elseif fid then a.npcDisp[cur[2]] = -1; learned = learned + 1 end
     end
     tries = 0; i = i + 1
@@ -4464,6 +4478,7 @@ function RG.ArcadeResolveCreatures()
       if learned > 0 and RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
       return
     end
+    if m.ClearModel then pcall(m.ClearModel, m) end
     pcall(m.SetCreature, m, cur[2])
     C_Timer.After(0.5, step)
   end

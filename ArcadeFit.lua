@@ -1,31 +1,45 @@
 local _, RG = ...
 -- Waypath Cards: every text fits where it's drawn. Loaded last, so it sees each card after every other file's touches
 -- (a Mythic's type line, a Gilded name...):
---   * a card's type line and, on a big card, its rules are made a little smaller until the whole of them fits
+--   * a card's type line and its rules are made a little smaller until the whole of them fits
 --   * RG.ArcadeFitLine: one line of text made smaller until it fits its width (the window's message line)
 --   * RG.ArcadeFitRow: a list row's left text made smaller until it fits beside the right one (Sets, Trade, Ledger...)
 local function UI() return RG.ArcadeUI end
-local function sizeOf(t) return rawget(t, "fsize") or select(2, t:GetFont()) or 12 end
+local function sizeOf(t)
+  if rawget(t, "fkey") then return rawget(t, "fsize") or 12 end
+  local _, sz = t:GetFont()
+  return sz or 12
+end
 local function width(t)
   local w = t.GetUnboundedStringWidth and t:GetUnboundedStringWidth() or t:GetStringWidth()
   return type(w) == "number" and w or 0
 end
+-- set a text's size, in its own font (one made by the window's fs() keeps its kind of font; any other keeps its face)
+local function resize(t, key, sz)
+  local u = UI()
+  if rawget(t, "fkey") and u and u.setfont then u.setfont(t, rawget(t, "fkey") or key, sz, rawget(t, "fflags"))
+  else
+    local path, _, flags = t:GetFont()
+    if path then t:SetFont(path, sz, flags or "") end
+  end
+  t:SetText(t:GetText() or "")
+end
 -- smaller, half a point at a time, until fits() or the floor
 local function shrink(t, key, floor, fits)
-  local u = UI(); if not (u and u.setfont) then return end
   local sz = sizeOf(t)
   for _ = 1, 24 do
     if fits() or sz <= floor then return end
     sz = math.max(floor, sz - 0.5)
-    u.setfont(t, rawget(t, "fkey") or key, sz, rawget(t, "fflags"))
-    t:SetText(t:GetText() or "")
+    resize(t, key, sz)
   end
 end
 
+-- (size: the text's own size to start from; without one, the size it had the first time it was fitted)
 function RG.ArcadeFitLine(t, maxW, size, floor, key)
   if not t then return end
-  local u = UI()
-  if u and u.setfont and size then u.setfont(t, rawget(t, "fkey") or key or "body", size, rawget(t, "fflags")); t:SetText(t:GetText() or "") end
+  local base = size or rawget(t, "fitBase") or sizeOf(t)
+  rawset(t, "fitBase", base)
+  if sizeOf(t) ~= base then resize(t, key or "body", base) end
   shrink(t, key or "body", floor or 10, function() return width(t) <= maxW + 0.5 end)
 end
 
@@ -62,8 +76,8 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
     shrink(ty, "head", 6, function() return width(ty) <= 226 * u + 0.5 end)
   end
   local tx = w.text
-  if (w.cw or 0) >= 190 and tx and tx:IsShown() and tx.IsTruncated then
-    shrink(tx, "body", math.max(8, 9 * u), function() return not tx:IsTruncated() end)
+  if (w.cw or 0) >= 120 and tx and tx:IsShown() and tx.IsTruncated and (tx:GetText() or "") ~= "" then
+    shrink(tx, "body", (w.cw or 0) >= 190 and math.max(8, 9 * u) or 6, function() return not tx:IsTruncated() end)
   end
   -- (a big card's two-line name, if the game still cuts it short)
   local nm = w.name

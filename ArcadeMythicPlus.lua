@@ -273,7 +273,11 @@ end
 local function layoutSeal(w, s, c)
   local cw, ch = w.cw or w:GetWidth() or 100, w.ch or w:GetHeight() or 140
   local z = math.max(18, cw * 0.24)
-  s.tex:ClearAllPoints(); s.tex:SetPoint("CENTER", w, "BOTTOMRIGHT", -cw * 0.16, ch * (c.mythic and 0.22 or 0.2)); s.tex:SetSize(z, z)
+  s.tex:ClearAllPoints()
+  if c.mythic then s.tex:SetPoint("CENTER", w, "BOTTOMRIGHT", -cw * 0.16, ch * 0.22)
+  -- (a dungeon's Mythic: on the picture's lower left, clear of the rules, the name and the cost)
+  else s.tex:SetPoint("CENTER", w, "TOPLEFT", cw * 0.17, -ch * (172 / 358)) end
+  s.tex:SetSize(z, z)
   s.z = z
 end
 function RG.ArcadeMythicCardHook(w, card, finish)
@@ -508,7 +512,7 @@ local function buildHall(frame)
   local u = UI()
   hall = CreateFrame("Frame", nil, frame); hall:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -146); hall:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 92)
   hall:SetFrameLevel((frame:GetFrameLevel() or 1) + 40); hall:EnableMouse(true)
-  hall.bg = hall:CreateTexture(nil, "BACKGROUND"); hall.bg:SetAllPoints(); hall.bg:SetColorTexture(0.05, 0.04, 0.07, 0.97)
+  hall.bg = hall:CreateTexture(nil, "BACKGROUND"); hall.bg:SetAllPoints(); hall.bg:SetColorTexture(0.05, 0.04, 0.07, 1)
   hall.bd = hall:CreateTexture(nil, "BACKGROUND", nil, 1); hall.bd:SetAllPoints()
   hall.spot = hall:CreateTexture(nil, "BORDER"); hall.spot:SetTexture(MEDIA .. "Glow"); hall.spot:SetBlendMode("ADD")
   hall.title = u.fs(hall, "title", 18); hall.title:SetPoint("TOP", 0, -12); hall.title:SetTextColor(1, 0.92, 0.7)
