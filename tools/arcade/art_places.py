@@ -1,6 +1,7 @@
 """Painted landscapes for the place cards: one original picture per place, drawn by us.
 
-  python3 tools/arcade/art_places.py [preview | add]   (add: only places with no painting yet, existing ones untouched)
+  python3 tools/arcade/art_places.py [preview | add | tall]   (add: only places with no painting yet, existing ones untouched;
+  tall: the Full art paintings, in the card's own shape, into PlacesTallN.tga and ArcadePlacesTall.lua)
 
 Reads the place cards from ArcadeCards.lua, paints each (a sky for the time of day, three hazy mountain
 layers, a lit landmark chosen from the place's name, foreground silhouettes, mist, bloom), packs them into
@@ -17,6 +18,15 @@ ADDON = os.path.join(HERE, "..", "..")
 CW, CH = 120, 84
 SW, SH = CW * 2, CH * 2          # painted at twice the size, then reduced
 COLS, ROWS = 8, 12
+# the layout's vertical frame: H0 is the height the landscape is composed for, OFF how far down it starts. For the
+# normal (wide) paintings they are the painting itself, so nothing moves; the tall ones (Full art prints, "tall")
+# keep the landscape's proportions, set a little above the middle, with a long foreground below it for the text
+H0, OFF, TALL = float(SH), 0.0, False
+def set_tall():
+    """the tall Full art painting: the card's shape (112 x 157, painted at 240 x 336), 9 x 6 cells on a 1024 atlas"""
+    global CW, CH, SW, SH, COLS, ROWS, H0, OFF, TALL
+    CW, CH, SW, SH, COLS, ROWS = 112, 157, 240, 336, 9, 6
+    H0, OFF, TALL = 168.0, 0.12 * 336, True
 
 def seed_of(s): return int(hashlib.md5(s.encode()).hexdigest()[:8], 16)
 def lerp(a, b, t): return a + (b - a) * t
@@ -309,13 +319,13 @@ def paint_place(name, zone):
     night = tm == "night"
     dim = 0.42 if night else (0.8 if tm == "storm" else 1.0)
     cv = Canvas()
-    yy = cv.y / SH
+    yy = (cv.y - OFF) / H0
     kind = kind_for(name, biome, rnd)
     # sky
     g = np.clip(yy / 0.7, 0, 1)
     sky = np.where(g[..., None] < 0.5, mix(top, midc, (g[..., None] / 0.5)), mix(midc, hor, (g[..., None] - 0.5) / 0.5))
     cv.img = sky.astype(np.float32)
-    sx = (0.15 + 0.7 * r()) * SW; sy = (1 - sunh) * SH * 0.62
+    sx = (0.15 + 0.7 * r()) * SW; sy = OFF + (1 - sunh) * H0 * 0.62
     dist = np.sqrt((cv.x - sx) ** 2 + (cv.y - sy) ** 2)
     cv.add(sunc * 0.9, np.exp(-(dist / (SW * 0.20)) ** 2) * 0.55)
     # god rays
@@ -338,8 +348,8 @@ def paint_place(name, zone):
     # far mountains
     mcol = [mix(far, hor, 0.58), mix(far, hor, 0.32), mix(far, np.array([0.05, 0.06, 0.1], np.float32), 0.28)]
     if night: mcol = [c * 0.45 + 0.02 for c in mcol]
-    base = [SH * 0.52, SH * 0.60, SH * 0.67]
-    amp = [SH * 0.22, SH * 0.16, SH * 0.11]
+    base = [OFF + H0 * 0.52, OFF + H0 * 0.60, OFF + H0 * 0.67]
+    amp = [H0 * 0.22, H0 * 0.16, H0 * 0.11]
     if biome in ("plain", "farm", "coast", "swamp"): amp = [a * 0.5 for a in amp]
     if biome in ("snow", "hill", "fire"): amp = [a * 1.2 for a in amp]
     for i in range(3):
@@ -348,7 +358,7 @@ def paint_place(name, zone):
         prof = gaussian_filter1d(prof, 1.2)
         P2 = prof[None, :].repeat(SH, 0)
         mask = gaussian_filter((cv.y >= P2).astype(np.float32), 0.6)
-        depth = np.clip((cv.y - P2) / (SH * 0.3), 0, 1)
+        depth = np.clip((cv.y - P2) / (H0 * 0.3), 0, 1)
         colr = mcol[i][None, None, :] * (1.08 - 0.38 * depth[..., None])
         # lit slopes: brightness follows the ridge slope toward the sun
         slope = np.gradient(prof)
@@ -357,16 +367,16 @@ def paint_place(name, zone):
         colr = colr + (facing[..., None] * 0.12) * mix(sunc, hor, 0.4)[None, None, :] * (0.4 if night else 1)
         rim = np.exp(-np.clip(cv.y - P2, 0, None) / 1.8) * np.clip(1 - np.abs(cv.x - sx) / (SW * 0.8), 0.12, 1)
         colr = colr + sunc[None, None, :] * rim[..., None] * (0.22 if not night else 0.1)
-        if biome in ("snow", "hill") or (i == 0 and amp[i] > SH * 0.2):
-            hi = 1 / (1 + np.exp(-(SH * (0.47 + 0.03 * i) - prof) / 2.5))[None, :]
-            cap = np.exp(-np.clip(cv.y - P2, 0, None) / (SH * 0.045)) * hi
+        if biome in ("snow", "hill") or (i == 0 and amp[i] > H0 * 0.2):
+            hi = 1 / (1 + np.exp(-((OFF + H0 * (0.47 + 0.03 * i)) - prof) / 2.5))[None, :]
+            cap = np.exp(-np.clip(cv.y - P2, 0, None) / (H0 * 0.045)) * hi
             colr = mix(colr, col(236, 244, 255) * (0.5 if night else 1) + sunc * 0.05, np.clip(cap, 0, 1)[..., None] * 0.7)
         cv.over(colr.astype(np.float32), mask)
         fog = np.exp(-((cv.y - (P2 + 14)) / 15.0) ** 2) * 0.30
         cv.over(mix(hor, sunc, 0.2), fog * (cv.y > P2))
     # water
     water = kind in ("port", "lighthouse", "waterfall") or re.search(r"lake|bay|sea|river|coast|shore|isle|island|cove|reef|falls|marsh|swamp", name.lower())
-    wl = SH * 0.71
+    wl = OFF + H0 * 0.71
     if water:
         wm = gaussian_filter((cv.y > wl).astype(np.float32), 0.7)
         refl = cv.img[np.clip((2 * wl - np.arange(SH)).astype(int), 0, SH - 1)]
@@ -377,15 +387,17 @@ def paint_place(name, zone):
         cv.add(sunc, np.clip(sh, 0, 1) * wm * 0.55)
     # ground rise, a road and the landmark
     gx = (0.32 + 0.36 * r()) * SW
-    gy0 = SH * (0.77 if water else 0.73)
+    gy0 = OFF + H0 * (0.77 if water else 0.73)
     hump = 6 * np.exp(-((np.arange(SW) - gx) / (SW * 0.28)) ** 2)
     prof = gy0 + 5 * fbm1(rnd, SW, 4, 0.5) - 2.5 - hump
     prof = gaussian_filter1d(prof, 2.0)
     P2 = prof[None, :].repeat(SH, 0)
     mask = gaussian_filter((cv.y >= P2).astype(np.float32), 0.6)
+    if water and TALL:   # (a tall painting: the water runs down to a shore near the bottom)
+        mask = mask * np.clip((cv.y - (SH * 0.78 + 7 * (fbm1(rnd, SW, 4, 0.5)[None, :] - 0.5))) / 4.0, 0, 1)
     gcol = ground * dim
     tex = (noise2(rnd, SH, SW, (2.2, 3.2)) * 0.05 + noise2(rnd, SH, SW, (0.8, 1.0)) * 0.02)
-    depthg = np.clip((cv.y - P2) / (SH * 0.35), 0, 1)
+    depthg = np.clip((cv.y - P2) / (H0 * (0.9 if TALL else 0.35)), 0, 1)
     colr = (gcol[None, None, :] + tex[..., None]) * (1.05 - 0.5 * depthg[..., None])
     colr = colr + mix(hor, sunc, 0.4)[None, None, :] * np.exp(-np.clip(cv.y - P2, 0, None) / 3.0)[..., None] * 0.16 * dim
     cv.over(colr.astype(np.float32), mask)
@@ -542,6 +554,9 @@ def main():
             print(i, nm, "|", z, "|", tm, kd)
         sheet.save(os.environ.get("PREVIEW", "/tmp/places.png"))
         return
+    if len(sys.argv) > 1 and sys.argv[1] == "tall":
+        tall(places)
+        return
     per = COLS * ROWS
     if len(sys.argv) > 1 and sys.argv[1] == "add":
         # paint only the places that have no painting yet, into the free cells after the last one; every existing
@@ -585,6 +600,29 @@ def main():
     out.append("}")
     open(os.path.join(ADDON, "ArcadePlaces.lua"), "w", encoding="utf-8").write("\n".join(out) + "\n")
     print(len(places), "places in", len(atlases), "atlases")
+
+def tall(places):
+    """the Full art paintings: every place again, in the card's own shape -> Media/Arcade/PlacesTallN.tga and
+    ArcadePlacesTall.lua (repainted whole each time; they're only seen on Full art prints)"""
+    set_tall()
+    per = COLS * ROWS
+    atlases = []; lookup = {}
+    for i, (nm, z) in enumerate(places):
+        a, c = divmod(i, per)
+        while len(atlases) <= a: atlases.append(Image.new("RGB", (1024, 1024), (0, 0, 0)))
+        im, _, _ = paint_place(nm, z)
+        atlases[a].paste(im, ((c % COLS) * CW, (c // COLS) * CH))
+        lookup[nm] = (a + 1, c)
+    for a, im in enumerate(atlases):
+        im.convert("RGBA").save(os.path.join(ADDON, "Media", "Arcade", "PlacesTall%d.tga" % (a + 1)))
+    def q(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    out = ["-- GENERATED by tools/arcade/art_places.py tall: do not edit by hand.", "local _, RG = ...",
+           "-- place card name -> { atlas number, cell } on Media/Arcade/PlacesTallN.tga (%d x %d cells of %d x %d): the" % (COLS, ROWS, CW, CH),
+           "-- tall paintings a Full art print shows over the whole card", "RG.ARCADE_PLACE_TALL = {"]
+    out += ["  [%s] = { %d, %d }," % (q(k), v[0], v[1]) for k, v in sorted(lookup.items())]
+    out.append("}")
+    open(os.path.join(ADDON, "ArcadePlacesTall.lua"), "w", encoding="utf-8").write("\n".join(out) + "\n")
+    print(len(places), "tall places in", len(atlases), "atlases")
 
 if __name__ == "__main__":
     main()

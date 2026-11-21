@@ -257,7 +257,8 @@ local function yearStamp(w, card, finish)
   end
   local u = w.u or 1
   s:SetFrameLevel((w:GetFrameLevel() or 1) + 6)
-  s:ClearAllPoints(); s:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 0, 0); s:SetPoint("TOPRIGHT", w.artClip, "TOPRIGHT", 0, 0)
+  local area = rawget(w, "area") or w.artClip   -- (the picture above the name: a Full art print's is the card's top)
+  s:ClearAllPoints(); s:SetPoint("TOPLEFT", area, "TOPLEFT", 0, 0); s:SetPoint("TOPRIGHT", area, "TOPRIGHT", 0, 0)
   local big = (w.cw or 0) >= 200
   s:SetHeight((big and 20 or 15) * math.max(0.6, u))
   local font = (RG.FONTS and (RG.FONTS.semibold or RG.FONTS.medium)) or "Fonts\\FRIZQT__.TTF"

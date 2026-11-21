@@ -1348,9 +1348,11 @@ local GOLDC = { 0.96, 0.82, 0.45 }
 local GOLDHEX = "|cfff5d273"
 local INK = { 0.17, 0.11, 0.08 }       -- text on parchment
 local KINDCOL = { { 1, 0.6, 0.25 }, { 0.35, 0.9, 0.55 }, { 0.35, 0.65, 1 }, { 0.75, 0.45, 1 } }
--- card layout in card units (256 x 358): the art window (and where the art goes on a Full art print: to the card's
--- edge), the name plate on inspect-size cards and on small ones (taller: a long name takes two lines)
-local U = { art = { 12, 20, 244, 202 }, full = { 4, 4, 252, 214 }, plate = { 14, 208, 242, 238 }, plateS = { 10, 205, 246, 249 } }
+-- card layout in card units (256 x 358): the art window (and a Full art print's picture: the whole card), the name plate on inspect-size cards and on small ones (taller: a long name takes two lines)
+local U = { art = { 12, 20, 244, 202 }, full = { 4, 4, 252, 354 }, plate = { 14, 208, 242, 238 }, plateS = { 10, 205, 246, 249 } }
+-- a Full art print: the picture is the whole card (full); its models and scenery stand in pic, which runs down behind
+-- the name; area is the part of it above the name (an item's icon, the stamps on a card)
+U.pic, U.area = { 4, 4, 252, 250 }, { 4, 20, 252, 206 }
 -- a card's set and its number in it ("THE DEADMINES  ·  07 / 24"), from the album's own sets (dungeons and the Field
 -- Guide first, as the album lists them); cards in no set keep the collection's own number
 do
@@ -1371,7 +1373,7 @@ function U.mix(c, k) return { c[1] + (1 - c[1]) * k, c[2] + (1 - c[2]) * k, c[3]
 U.METAL = { { 0.62, 0.62, 0.66 }, { 0.9, 0.62, 0.38 }, { 0.86, 0.9, 1 }, { 1, 0.8, 0.42 }, { 1, 0.9, 0.52 }, { 1, 0.42, 0.48 }, { 1, 0.95, 0.75 } }
 U.panel, U.panelS = { 12, 240, 244, 324 }, { 8, 251, 248, 320 }
 U.HALO = { [4] = 0.3, [5] = 0.45, [6] = 0.38 }
--- dark text on parchment, light text on a Full art print's glass (the keyword colour and the story's grey follow)
+-- dark text on parchment, light text on a Full art print's dark fade (the keyword colour and the story's grey follow)
 function U.ink(w, s)
   if not w.fullArt or type(s) ~= "string" then return s end
   return (s:gsub("|cff9a3a08", "|cffffe9a8"):gsub("|cff6b5a42", "|cff9a9fad"))
@@ -1390,6 +1392,14 @@ function RG.ArcadeRelevel(w)
   if not layers then return end
   local b = lv(w)
   for fr, off in pairs(layers) do if fr.SetFrameLevel then fr:SetFrameLevel(b + off) end end
+end
+-- a box on a card (card units), kept as an anchor: w.pic and w.area (the picture's parts, set by every paint)
+function RG.ArcadeBox(w, key, b)
+  local f = rawget(w, key)
+  if not f then f = CreateFrame("Frame", nil, w); rawset(w, key, f) end
+  local u = w.u or 1
+  f:ClearAllPoints(); f:SetPoint("TOPLEFT", w, "TOPLEFT", b[1] * u, -b[2] * u); f:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", b[3] * u, -b[4] * u)
+  return f
 end
 function RG.ArcadeLayer(w, fr, off)
   local layers = rawget(w, "layers")
@@ -1585,14 +1595,18 @@ local function makeCard(parent, w)
   f.pill = f.top:CreateTexture(nil, "ARTWORK", nil, 2); f.pill:SetTexture(MEDIA .. "Pill"); box(f.pill, { 184, 6, 246, 22 }); f.pill:Hide()
   -- the Gilded Codex pieces (tools/arcade/art_codex.py): the card's body round the picture window, cut to the kind's
   -- shape (drawn over the picture, so 3D models get the shape too), the kind's crest, the rarity gem on the name
-  -- ribbon, and the text's parchment (a Full art print's smoked glass)
+  -- ribbon, and the text's parchment (a Full art print has none of them: its picture is the whole card)
   f.win = f.top:CreateTexture(nil, "ARTWORK", nil, -1); f.win:SetTexCoord(0, 1, 0, CARD_V); f.win:SetAllPoints(f); f.win:Hide()
   f.panel = f.top:CreateTexture(nil, "BORDER"); f.panel:Hide()
   f.crest = f.top:CreateTexture(nil, "OVERLAY", nil, 1); f.crest:SetTexture(MEDIA .. "Crests"); f.crest:SetSize(30 * u, 30 * u)
   f.crest:SetPoint("CENTER", f, "TOPLEFT", 128 * u, -9 * u); f.crest:Hide()
   f.gem = f.top:CreateTexture(nil, "ARTWORK", nil, 3); f.gem:SetTexture(MEDIA .. "Gem"); f.gem:Hide()
-  -- Full art prints: the picture runs to the card's edge and fades into the card under the name plate
-  f.fade = f.fx:CreateTexture(nil, "ARTWORK"); f.fade:SetTexture(MEDIA .. "Fade"); box(f.fade, { 4, 146, 252, 214 }); f.fade:Hide()
+  -- (the dark the name and text sit on, and a little shade at the top for the cost and the label: FullFade, drawn by
+  -- tools/arcade/art_fullart.py)
+  f.fade = f.fx:CreateTexture(nil, "ARTWORK"); f.fade:SetTexture(MEDIA .. "FullFade"); box(f.fade, { 4, 196, 252, 354 }); f.fade:Hide()
+  f.shade = f.fx:CreateTexture(nil, "ARTWORK"); f.shade:SetTexture(MEDIA .. "FullFade"); f.shade:SetTexCoord(0, 1, 0.16, 0); box(f.shade, { 4, 4, 252, 48 }); f.shade:Hide()
+  -- (below a Full art print's scenery: its ground carries on down the card, under the text)
+  f.floor = f.artClip:CreateTexture(nil, "ARTWORK", nil, 1); f.floor:SetColorTexture(1, 1, 1, 1); f.floor:Hide()
   f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 34, 209, 222, 237 })   -- (clear of the rarity gem at the plate's right)
   f.name:SetJustifyH("CENTER"); f.name:SetJustifyV("MIDDLE"); f.name:SetWordWrap(false); f.name:SetTextColor(0.07, 0.06, 0.1)
   f.type = fs(f.top, "head", 9 * u); box(f.type, { 14, 242, 242, 257 })
@@ -1701,7 +1715,7 @@ local function dressCreature(w, c)
   local m = ensureModel(w)
   if not m then return false end
   m.creature = true
-  m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
+  m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.pic, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.pic, "BOTTOMRIGHT", -2, 2)
   RG.ArcadeLayer(w, m, 2)
   local ok
   if id then ok = m.SetDisplayInfo and pcall(m.SetDisplayInfo, m, id)
@@ -1735,12 +1749,19 @@ local function placeArt(w, c, full)
   end
   w.art:ClearAllPoints(); w.iconBack:ClearAllPoints(); w.iconEdge:ClearAllPoints()
   if full then
-    -- Full art: the painting fills the whole picture window to the card's edge, with no border. The window is taller
-    -- for its width than a painting (248 x 210 against 120 x 84), so the painting's sides are trimmed evenly instead
-    -- of stretching it
-    local want, has = w.aw / w.ah, 120 / 84
-    if want < has then local cut = (r - l) * (1 - want / has) / 2; l, r = l + cut, r - cut
-    else local cut = (b - t) * (1 - has / want) / 2; t, b = t + cut, b - cut end
+    -- Full art: the picture is the whole card, with no border. A painted place has a tall painting of its own, in
+    -- the card's shape (PlacesTallN.tga, 112 x 157: tools/arcade/art_places.py tall). A dungeon's loading screen (and
+    -- a place with no tall painting yet) is cut to the card's shape from the middle: the cut above is 120 x 84 in
+    -- shape, so its sides are trimmed evenly instead of stretching it
+    local tall = e and RG.ARCADE_PLACE_TALL and RG.ARCADE_PLACE_TALL[c.name]
+    if tall then
+      local col, row = tall[2] % 9, math.floor(tall[2] / 9)
+      w.art:SetTexture(MEDIA .. "PlacesTall" .. tall[1])
+      l, r, t, b = col * 112 / 1024, (col + 1) * 112 / 1024, row * 157 / 1024, (row + 1) * 157 / 1024
+    else
+      local want, has = (U.full[3] - U.full[1]) / (U.full[4] - U.full[2]), 120 / 84
+      local cut = (r - l) * (1 - want / has) / 2; l, r = l + cut, r - cut
+    end
     w.art:SetTexCoord(l, r, t, b)
     w.art:SetAllPoints(w.artClip)
     w.iconBack:Hide(); w.iconEdge:Hide()
@@ -1820,7 +1841,7 @@ local function dressModel(w, c, finish)
   local ri = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(c.race)
   if not (ri and ri.id) then return false end
   m.cls = c.class; m.creature = false
-  m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.artClip, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", -2, 2)
+  m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.pic, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.pic, "BOTTOMRIGHT", -2, 2)
   RG.ArcadeLayer(w, m, 2)
   if (a and a.customRace == false) or not m.SetCustomRace or not m.SetUnit then
     local r = standIn(w, m, c, ri)
@@ -1983,22 +2004,25 @@ local function paint(w, card, finish, copies)
   anim[w] = nil
   for _, fn in ipairs(RG.ArcadeCardHooks or {}) do pcall(fn, w, nil) end
   local mdl = rawget(w, "model"); if mdl then mdl:Hide() end
-  w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide()
+  w.pin:Hide(); w.foil:Hide(); w.aura:Hide(); w.rays:Hide(); w.shade:Hide(); w.floor:Hide()
   for _, sp in ipairs(w.sparks) do sp:Hide() end
   -- (a widget that showed a Mythic before goes back to the ordinary pieces)
   if rawget(w, "mart") then
     w.pclip:Hide(); w.mframe:Hide(); w.mtext:Hide(); w.engr:Hide(); w.text:Show()
     if RG.ArcadeRingEngrave then RG.ArcadeRingEngrave(w, nil) end
   end
-  -- the art window: a Full art print's picture runs to the card's edge
+  -- the art window: a Full art print's picture is the whole card (its models and scenery in pic, its icon and the
+  -- card's stamps in area, above the name)
   local full = finish == 4 and card and not card.mythic
   do
     local ab, cu = full and U.full or U.art, w.u
     w.artClip:ClearAllPoints()
     w.artClip:SetPoint("TOPLEFT", w, "TOPLEFT", ab[1] * cu, -ab[2] * cu); w.artClip:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", ab[3] * cu, -ab[4] * cu)
-    w.aw, w.ah = (ab[3] - ab[1]) * cu, (ab[4] - ab[2]) * cu
+    local pb = full and U.pic or ab
+    RG.ArcadeBox(w, "pic", pb); RG.ArcadeBox(w, "area", full and U.area or ab)
+    w.aw, w.ah = (pb[3] - pb[1]) * cu, (pb[4] - pb[2]) * cu
     if rawget(w, "scn") then w.scn.aw, w.scn.ah = w.aw, w.ah end
-    w.fade:SetShown(full and true or false)
+    w.fade:SetShown(full and true or false); w.shade:SetShown(full and true or false)
   end
   -- what the card costs and its attack and health in the Arena (the gems are ArcadeBattle.lua's)
   local def = card and (card.def or (RG.Battle and RG.Battle.defs and RG.Battle.defs[card.key or card.name]))
@@ -2021,14 +2045,14 @@ local function paint(w, card, finish, copies)
   end
   w.art:ClearAllPoints(); w.iconBack:ClearAllPoints(); w.iconEdge:ClearAllPoints()
   local function placeIcon(sz)
-    w.art:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.art:SetSize(sz * u, sz * u)
-    w.iconBack:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconBack:SetSize((sz + 7) * u, (sz + 7) * u)
-    w.iconEdge:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
+    w.art:SetPoint("CENTER", w.area, "CENTER", 0, 3 * u); w.art:SetSize(sz * u, sz * u)
+    w.iconBack:SetPoint("CENTER", w.area, "CENTER", 0, 3 * u); w.iconBack:SetSize((sz + 7) * u, (sz + 7) * u)
+    w.iconEdge:SetPoint("CENTER", w.area, "CENTER", 0, 3 * u); w.iconEdge:SetSize((sz + 3) * u, (sz + 3) * u)
   end
   w.art:SetTexture(iconFor(card)); w.art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   local scene = usesScene(card) and not hasArt(card)   -- drawn scenery only where the game has no art for the card
   if scene then
-    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah, w.pic) end
     setScene(w.scn, card, not finish)
   elseif rawget(w, "scn") then hideScene(w.scn) end
   if not finish then
@@ -2056,31 +2080,32 @@ local function paint(w, card, finish, copies)
   local kc = KINDCOL[card.kind] or KINDCOL[1]
   w.glow:SetVertexColor(kc[1], kc[2], kc[3], 0.55)
   if card.kind ~= 4 and not scene then
-    w.spot:ClearAllPoints(); w.spot:SetPoint("CENTER", w.artClip, "CENTER", 0, 3 * u); w.spot:SetSize(w.ah * 1.7, w.ah * 1.7)
+    w.spot:ClearAllPoints(); w.spot:SetPoint("CENTER", w.area, "CENTER", 0, 3 * u); w.spot:SetSize(w.ah * 1.7, w.ah * 1.7)
     w.spot:SetVertexColor(t[1], t[2], t[3], 0.55 + 0.08 * (card.tier or 1)); w.spot:Show()
   end
   if card.kind == 1 then
     local sl = slotOf(card); local c0, r0 = sl % 4, math.floor(sl / 4)
     w.emb:SetTexCoord(c0 * 0.25, (c0 + 1) * 0.25, r0 * 0.25, r0 * 0.25 + 0.25)
-    w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.artClip, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
+    w.emb:ClearAllPoints(); w.emb:SetPoint("CENTER", w.area, "CENTER", 0, 2 * u); w.emb:SetSize(w.ah * 0.98, w.ah * 0.98)
     w.emb:SetVertexColor(t[1], t[2], t[3], 0.34); w.emb:Show()
   else w.emb:Hide(); if card.kind == 4 or scene then w.spot:Hide() end end
   -- the Gilded Codex frame: the window's shape and crest by kind, the metal and the ribbon's gem by rarity, parchment
-  -- under the text (a Full art print: no window, its picture runs to the edge, and the text sits on smoked glass)
+  -- under the text (a Full art print: no window, its picture is the whole card, the name sits on a smoked band and the
+  -- text on the dark fade)
   local kind = (card.kind and card.kind >= 1 and card.kind <= 4) and card.kind or 1
   w.frameTex:SetTexture(MEDIA .. "Codex" .. kind); tintTex(w.frameTex, U.METAL[card.tier] or U.METAL[1], 1)
   w.win:SetTexture(MEDIA .. "Win" .. kind); w.win:SetShown(not full)
-  w.plate:SetTexture(MEDIA .. "Ribbon"); w.plate:SetVertexColor(1, 1, 1, 1)
+  w.plate:SetTexture(MEDIA .. (full and "FullBand" or "Ribbon")); w.plate:SetVertexColor(1, 1, 1, 1)
   tintTex(w.gem, t, 1); w.gem:Show()
   w.crest:SetTexCoord((kind - 1) / 4, kind / 4, 0, 1); w.crest:SetShown(w.cw >= 90)
   w.fullArt = full and true or false
-  w.panel:SetTexture(MEDIA .. (full and "Glass" or "Panel")); w.panel:Show()
+  w.panel:SetTexture(MEDIA .. "Panel"); w.panel:SetShown(not full)
   tintTex(w.rune, t, fx.rune)
   tintTex(w.aura, t, 1)
   w.art:SetDesaturated(false); w.art:SetVertexColor(1, 1, 1, 1)
   -- no two cards share a picture: when the game cannot give a model (or a painting), the card gets its own drawn scenery
   local function ownScene()
-    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah, w.pic) end
     setScene(w.scn, card, false)
     w.iconBack:Hide(); w.iconEdge:Hide(); w.art:Hide(); w.spot:Hide()
   end
@@ -2091,7 +2116,7 @@ local function paint(w, card, finish, copies)
     -- every creature stands on a sky and ridge of its own, never with a drawn silhouette behind it (the model is the
     -- creature: a silhouette would show as a dark double). Two cards that share a model still differ: each scene is
     -- seeded by its own card, and they face opposite ways (sharedModel)
-    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+    if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah, w.pic) end
     setScene(w.scn, card, false); w.scn.mo:Hide(); w.scn.cr:Hide(); w.spot:Hide()
     -- some creatures have no model this client can draw (the card would show an empty glow): once the game has had
     -- time to load it, a model that reports no file (0) is put away and the card shows its own drawn scenery instead.
@@ -2104,7 +2129,7 @@ local function paint(w, card, finish, copies)
         local ok, fid = pcall(m.GetModelFileID, m)
         if not ok or fid ~= 0 then return end
         m:Hide()
-        if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah) end
+        if not rawget(w, "scn") then w.scn = newScene(w.artClip, w.aw, w.ah, w.pic) end
         setScene(w.scn, card, false); w.spot:Hide(); w.iconBack:Hide(); w.iconEdge:Hide(); w.art:Hide()
       end)
     end
@@ -2114,7 +2139,20 @@ local function paint(w, card, finish, copies)
   elseif scene then
     w.iconBack:Hide(); w.iconEdge:Hide()
     w.art:Hide()
-  else placeIcon(full and 136 or 110) end
+  else placeIcon(full and 150 or 110) end
+  -- the light behind the picture, centred where the picture is; and on a Full art print, the scenery's sky fills the
+  -- card and its ground carries on down under the text
+  w.rays:ClearAllPoints(); w.rays:SetPoint("CENTER", w.area, "CENTER", 0, 0)
+  w.rune:ClearAllPoints(); w.rune:SetPoint("CENTER", w.area, "CENTER", 0, 0)
+  if rawget(w, "scn") then
+    local sc = w.scn
+    sc.sky:SetAllPoints(w.artClip); sc.stars:SetAllPoints(w.artClip); sc.mist:SetAllPoints(w.artClip)
+    if full and sc.sky:IsShown() and sc.fore:IsShown() then
+      local r, g, b = sc.fore:GetVertexColor()
+      w.floor:ClearAllPoints(); w.floor:SetPoint("TOPLEFT", w.pic, "BOTTOMLEFT", 0, 1); w.floor:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", 0, 0)
+      w.floor:SetVertexColor(r or 0.02, g or 0.02, b or 0.03, 1); w.floor:Show()
+    end
+  end
   if fx.rays then tintTex(w.rays, { 1, 0.86, 0.5 }, fx.rays); w.rays:Show() end
   if fx.foil > 0 then w.foil:Show() end
   if fx.aura > 0 then w.aura:Show(); w.aura:SetAlpha(fx.aura) end
@@ -2143,6 +2181,12 @@ local function paint(w, card, finish, copies)
     local short = rules:gsub("%s+", " ")
     layoutText(w, false, card.name, w.cw < 120 and "" or U.ink(w, short))   -- (the grid shows the name and the numbers; the rest is on the inspect card)
   end
+  -- the name: dark on the ribbon, or light on a Full art print's band (a Gilded print's gold: ArcadeGilded.lua)
+  for _, n in ipairs({ w.name, w.nameB }) do
+    if full then n:SetTextColor(0.98, 0.93, 0.77); n:SetShadowColor(0, 0, 0, 1); n:SetShadowOffset(1, -1)
+    else n:SetTextColor(0.07, 0.06, 0.1); n:SetShadowColor(0, 0, 0, 0) end
+  end
+  w.num:SetShadowColor(0, 0, 0, full and 0.9 or 0); w.num:SetShadowOffset(1, -1)
   -- how the print was made: on the label in the corner (the edge says it too)
   local label = w.cw >= 150
   w.pill:SetShown(label)

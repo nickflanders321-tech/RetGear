@@ -238,7 +238,8 @@ local function stamp(w, card, finish)
   end
   s:SetFrameLevel((w:GetFrameLevel() or 1) + 6)
   s:ClearAllPoints()
-  s:SetPoint("BOTTOMLEFT", w.artClip, "BOTTOMLEFT", 0, 0); s:SetPoint("BOTTOMRIGHT", w.artClip, "BOTTOMRIGHT", 0, 0)
+  local area = rawget(w, "area") or w.artClip   -- (the picture above the name: a Full art print's is the card's top)
+  s:SetPoint("BOTTOMLEFT", area, "BOTTOMLEFT", 0, 0); s:SetPoint("BOTTOMRIGHT", area, "BOTTOMRIGHT", 0, 0)
   local big = (w.cw or 0) >= 200
   s:SetHeight((big and 30 or 18) * math.max(0.6, u))
   local witness = (card.text or ""):find("witnessed")

@@ -50,8 +50,15 @@ local function placeBackdrop(w, dn)
     w.smBg = bg
   end
   local aw, ah = w.aw or 1, w.ah or 1
+  if rawget(w, "fullArt") then aw, ah = 248, 350 end   -- (a Full art print: the picture is the whole card)
   local want = aw / math.max(1, ah)   -- the art window's shape: the picture is cropped to it
-  if pl then
+  local tall = rawget(w, "fullArt") and RG.ARCADE_PLACE_TALL and RG.ARCADE_PLACE_TALL[dn]
+  if tall then
+    -- (the place's own tall painting, already the card's shape: ArcadePlacesTall.lua)
+    local col, row = tall[2] % 9, math.floor(tall[2] / 9)
+    bg:SetTexCoord(col * 112 / 1024, (col + 1) * 112 / 1024, row * 157 / 1024, (row + 1) * 157 / 1024)
+    bg:SetTexture(MEDIA .. "PlacesTall" .. tall[1])
+  elseif pl then
     local col, row = pl[2] % 8, math.floor(pl[2] / 8)
     local x0, y0, cw, ch = col * 120 / 1024, row * 84 / 1024, 120 / 1024, 84 / 1024
     local have = 120 / 84

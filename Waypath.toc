@@ -103,6 +103,7 @@ ArcadeHolidays.lua
 ArcadeFirst.lua
 ArcadeArtFix.lua
 ArcadePlaces.lua
+ArcadePlacesTall.lua
 ArcadeGear.lua
 ArcadeClasses.lua
 ArcadeBalance.lua

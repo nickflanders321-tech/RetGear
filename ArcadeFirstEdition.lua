@@ -165,7 +165,7 @@ local function seal(w, card, finish)
   local sz = math.max(16, 30 * math.max(0.55, u))
   s:SetSize(sz, sz)
   s:SetFrameLevel((w:GetFrameLevel() or 1) + 7)
-  s:ClearAllPoints(); s:SetPoint("TOPRIGHT", w.artClip, "TOPRIGHT", -3 * u, -3 * u)
+  s:ClearAllPoints(); s:SetPoint("TOPRIGHT", rawget(w, "area") or w.artClip, "TOPRIGHT", -3 * u, -3 * u)   -- (the picture above the name)
   local font = (RG.FONTS and (RG.FONTS.semibold or RG.FONTS.medium)) or "Fonts\\FRIZQT__.TTF"
   pcall(s.t.SetFont, s.t, font, math.max(6.5, sz * 0.34), "")
   s.t:SetTextColor(1, 0.86, 0.45); s.t:SetText("1st")

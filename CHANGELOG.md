@@ -33,6 +33,11 @@
   - it only comes from packs: it can't be crafted or refunded, and it's never a level 60 gift or a holiday gift. Mythics don't come Gilded.
   - The pack's odds and its tooltip show the Gilded odds.
   - `/wp gildedtour` shows one card of each kind as Holo and Gilded side by side, and the gold back. `/wp gildedcheck` draws every card that can come Gilded at every size and lists anything wrong.
+- **Full art is now the whole card.** A Full art print's picture fills the card from edge to edge, like a full-art trading card: the name sits on a thin smoked band with gold lines, and the text on a dark fade over the picture (no more ribbon or glass box).
+  - Every painted place has a new tall painting of its own, the same scene redrawn for the card's shape; a dungeon or raid shows a tall cut of its loading screen.
+  - Raiders and creatures stand a little taller in the picture, their scenery's sky fills the card and its ground runs on down under the text.
+  - An item's icon is bigger, above the name, on its own glow, rays and rune ring that fill the card.
+  - The "1st" seal, the Field Guide and holiday stamps sit on the picture above the name.
 - The "Gilded Hand" achievement is now called **Golden Hand** (its title, "the Gilded", is the same).
 - A Mythic always counts as your best pull in a pack and on your stats page, above any print of any other card.
 - A long card name on a big card now goes onto two lines instead of being shrunk and cut short.
