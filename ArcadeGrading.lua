@@ -215,8 +215,9 @@ function RG.ArcadeGradeSend(key, f, svc, which)
   g.queue[#g.queue + 1] = { key = key, f = f, svc = svc, sent = t, due = t + sv.secs, cond = cond, free = free }
   if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, "graded", 1) end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
-  return true, c.name .. " is on its way to the Waypoint Grading Guild (" .. sv.name .. ", back in " .. (svc == "express" and "1 hour" or "12 hours") .. ")" ..
-    (free == "first" and ", free" or (free == "week" and ", this week's free grading" or (", " .. sv.price .. " coins"))) .. "."
+  -- (short enough for the window's one message line)
+  return true, c.name .. " is off to the graders: back in " .. (svc == "express" and "1 hour" or "12 hours") ..
+    (free == "first" and ", free." or (free == "week" and ", this week's free one." or (", " .. sv.price .. " coins.")))
 end
 
 -- parcels whose time is up move to the doorstep (unopened); returns how many arrived

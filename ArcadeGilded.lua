@@ -74,7 +74,7 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
   if (w.cw or 0) >= 190 and w.name and not card.mythic then
     local u = w.u or 1
     local wd = w.name.GetUnboundedStringWidth and w.name:GetUnboundedStringWidth() or w.name:GetStringWidth()
-    if type(wd) == "number" and wd > 188 * u + 0.5 then
+    if type(wd) == "number" and wd > 166 * u + 0.5 then
       local f = U()
       f.setfont(w.name, "title", math.max(7.5, 11 * u))   -- (two lines of 11 fit the plate's 28)
       w.name:SetWordWrap(true); if w.name.SetMaxLines then w.name:SetMaxLines(2) end

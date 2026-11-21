@@ -33,6 +33,7 @@ ARMOR = {"WARRIOR": 4, "PALADIN": 4, "HUNTER": 3, "SHAMAN": 3, "ROGUE": 2, "DRUI
 ARMOR_SLOTS = {0, 1, 3, 4, 5, 6, 7, 8}          # head, shoulders, chest, waist, legs, feet, wrists, hands
 MAIN = (0, 1, 3, 5)                              # head, shoulders, chest, legs
 TABARD = 9
+LOOKS = 6                                        # NPCs to choose from per race, sex and class
 
 appearance = {}
 for r in table("ItemModifiedAppearance"): appearance.setdefault(r["ItemID"], r["ItemAppearanceID"])
@@ -81,6 +82,7 @@ def score(cls, s):
     return v
 
 best = {}
+cands = collections.defaultdict(list)    # every dressed NPC of the race and sex, for each class: (score, display)
 for eid, (race, sex) in extra.items():
     if not (1 <= race <= 8 and sex in (0, 1)) or eid not in displays: continue
     s = slots.get(eid, {})
@@ -91,6 +93,7 @@ for eid, (race, sex) in extra.items():
         key = (cls, race, sex)
         cand = (score(cls, s), -did)
         if key not in best or cand > best[key][0]: best[key] = (cand, did)
+        cands[key].append((score(cls, s), did))
 
 with open(os.path.join(ROOT, "ArcadeRaiderLook.lua"), "w", encoding="utf-8", newline="\n") as f:
     f.write("local _, RG = ...\n")
@@ -101,6 +104,26 @@ with open(os.path.join(ROOT, "ArcadeRaiderLook.lua"), "w", encoding="utf-8", new
     for cls in sorted(SETS):
         f.write("  %s = { %s },\n" % (cls, ", ".join('["%d:%d"] = %d' % (r, x, best[(cls, r, x)][1])
                                                 for r in range(1, 9) for x in (0, 1) if (cls, r, x) in best)))
+    f.write("}\n")
+    # (several to choose from, so two raiders of the same race, sex and class don't look the same: every NPC dressed
+    # nearly as well as the best one, best first, up to LOOKS; a raider takes one by its name)
+    f.write("-- the choice for each: RG.ARCADE_RAIDER_LOOKS[class][\"race:sex\"] = { display ids, best dressed first }\n")
+    f.write("RG.ARCADE_RAIDER_LOOKS = {\n")
+    for cls in sorted(SETS):
+        parts = []
+        for r in range(1, 9):
+            for x in (0, 1):
+                k = (cls, r, x)
+                if k not in best: continue
+                top = best[k][0][0]
+                lst = sorted(set(cands[k]), key=lambda v: (-v[0], v[1]))
+                pick = [d for sc, d in lst if sc >= max(1, top - 2)][:LOOKS]
+                # (too few dressed that well: the next best-dressed, as long as they wear something of the class's kind)
+                if len(pick) < 4: pick += [d for sc, d in lst if d not in pick and sc >= 1][:4 - len(pick)]
+                if best[k][1] in pick: pick.remove(best[k][1])
+                pick = [best[k][1]] + pick[:LOOKS - 1]
+                parts.append('["%d:%d"] = { %s }' % (r, x, ", ".join(map(str, pick))))
+        f.write("  %s = { %s },\n" % (cls, ", ".join(parts)))
     f.write("}\n")
 weak = [(k, v[0][0]) for k, v in best.items() if v[0][0] < 3]
 print("raider stand-ins: %d race, sex and class looks; set pieces known: %s; weakest: %s" % (

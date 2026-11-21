@@ -105,6 +105,8 @@ ArcadeArtFix.lua
 ArcadePlaces.lua
 ArcadePlacesTall.lua
 ArcadeGear.lua
+ArcadeGearSets.lua
+ArcadeRaiderPick.lua
 ArcadeClasses.lua
 ArcadeBalance.lua
 ArcadeChanges.lua
@@ -131,6 +133,7 @@ ArcadeGrading.lua
 ArcadeGradingUI.lua
 ArcadeGradingGuild.lua
 ArcadeGilded.lua
+ArcadeFit.lua
 GateOn.lua
 FishMode.lua
 FishTools.lua

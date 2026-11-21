@@ -139,7 +139,7 @@ local function addRaider(name, class, race, sex)
   if #CARDS >= #(RG.ARCADE_DATA or {}) + MAX_RAIDERS + (RG.__rivalCards or 0) then return end
   local cname = class:sub(1, 1) .. class:sub(2):lower()
   local ri = RG.ArcadeRaceInfo(race)
-  local set = RG.ARCADE_GEAR_SET and RG.ARCADE_GEAR_SET[class]
+  local set = RG.ArcadeRaiderSet(name, class)   -- (one of the class's three raid sets, by the raider's name)
   local c = { id = #CARDS + 1, kind = 4, key = "@" .. name, name = name, tier = 6, ref = 0, class = class, race = race, sex = sex,
               text = ((ri and ri.name) and (ri.name .. " ") or "") .. cname .. " in " .. (set and (set .. " ") or "") .. "raid gear",
               icon = "Interface\\Icons\\ClassIcon_" .. cname }
@@ -157,7 +157,7 @@ function RG.ArcadeAddRival(name, class, race, sex, beaten)
   local key = "!" .. name
   local cname = class:sub(1, 1) .. class:sub(2):lower()
   local ri = RG.ArcadeRaceInfo(race)
-  local set = RG.ARCADE_GEAR_SET and RG.ARCADE_GEAR_SET[class]
+  local set = RG.ArcadeRaiderSet(name, class)
   local text = ((ri and ri.name) and (ri.name .. " ") or "") .. cname .. " in " .. (set and (set .. " ") or "") .. "raid gear   ·   beaten " .. (beaten or 1) .. ((beaten or 1) == 1 and " time" or " times")
   local c = byKey[key]
   if c then c.text, c.beaten = text, beaten; return c end
@@ -1331,8 +1331,8 @@ local function ensureModel(w)
         return
       end
       if self.Undress then self:Undress() end
-      for _, id in ipairs((RG.ARCADE_GEAR or {})[self.cls or ""] or {}) do if self.TryOn then self:TryOn("item:" .. id) end end
-      if self.SetFacing then self:SetFacing(0.4) end
+      for _, id in ipairs(self.gear or (RG.ARCADE_GEAR or {})[self.cls or ""] or {}) do if self.TryOn then self:TryOn("item:" .. id) end end
+      if self.SetFacing then self:SetFacing(self.face or 0.4) end
     end)
   end)
   return m
@@ -1607,7 +1607,7 @@ local function makeCard(parent, w)
   f.shade = f.fx:CreateTexture(nil, "ARTWORK"); f.shade:SetTexture(MEDIA .. "FullFade"); f.shade:SetTexCoord(0, 1, 0.16, 0); box(f.shade, { 4, 4, 252, 48 }); f.shade:Hide()
   -- (below a Full art print's scenery: its ground carries on down the card, under the text)
   f.floor = f.artClip:CreateTexture(nil, "ARTWORK", nil, 1); f.floor:SetColorTexture(1, 1, 1, 1); f.floor:Hide()
-  f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 34, 209, 222, 237 })   -- (clear of the rarity gem at the plate's right)
+  f.name = fs(f.top, "title", 16 * u); f.name:SetShadowColor(0, 0, 0, 0); box(f.name, { 45, 209, 211, 237 })   -- (clear of the rarity gem at the plate's right, and as far in on the left)
   f.name:SetJustifyH("CENTER"); f.name:SetJustifyV("MIDDLE"); f.name:SetWordWrap(false); f.name:SetTextColor(0.07, 0.06, 0.1)
   f.type = fs(f.top, "head", 9 * u); box(f.type, { 14, 242, 242, 257 })
   f.type:SetJustifyH("CENTER"); f.type:SetJustifyV("MIDDLE"); f.type:SetWordWrap(false); f.type:SetTextColor(0.85, 0.8, 0.7)
@@ -1815,23 +1815,37 @@ end
 -- On a client that can't change a model's race: a raider of your own race and sex is your own character in their
 -- class's raid set (as above, minus the race change); anyone else is one of the game's own NPCs of exactly their race
 -- and sex, dressed most like their class's raid set (ArcadeRaiderLook.lua, from the game's tables).
-local function standIn(w, m, c, ri)
-  local _, mine = UnitRace("player")
-  local mineInfo = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(mine)
-  local same = mineInfo and mineInfo.id == ri.id and (UnitSex("player") == 3) == (c.sex == 3)
-  if same and m.SetUnit and pcall(m.SetUnit, m, "player") then
-    m.creature = false
-    return true
+-- (every raider, your own race too, is one of several NPCs of their race and sex dressed like their class, chosen by
+-- the raider's name, so raiders of the same race and class don't all look alike; skip: the ones that wouldn't draw)
+local function standIn(w, m, c, ri, skip)
+  local key = ri.id .. ":" .. (c.sex == 3 and 1 or 0)
+  local looks = RG.ARCADE_RAIDER_LOOKS and RG.ARCADE_RAIDER_LOOKS[c.class or ""]
+  local list = looks and looks[key]
+  if not list then local one = RG.ARCADE_RAIDER_LOOK and RG.ARCADE_RAIDER_LOOK[c.class or ""]; one = one and one[key]; list = one and { one } end
+  if not (list and #list > 0 and m.SetDisplayInfo) then return false end
+  local mem = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.badModel
+  local first = RG.ArcadeRaiderPick(c.name, #list)
+  for k = 0, #list - 1 do
+    local d = list[(first - 1 + k + (skip or 0)) % #list + 1]
+    if not (mem and mem[d]) then
+      m.creature = true; m.zoom = 0; m.cam = 1; m.face = RG.ArcadeRaiderFace(c.name); m.look, m.lookSkip = d, skip or 0
+      if pcall(m.SetDisplayInfo, m, d) then
+        if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
+        if m.SetFacing then pcall(m.SetFacing, m, m.face) end
+        m:Show()
+        -- (a stand-in this client can't draw shows nothing: once it has had time to load, the next one instead)
+        if C_Timer and C_Timer.After and (skip or 0) < #list - 1 then
+          C_Timer.After(2.5, function()
+            if w.card ~= c or rawget(w, "model") ~= m or not m:IsShown() or m.look ~= d or not m.GetModelFileID then return end
+            local ok, fid = pcall(m.GetModelFileID, m)
+            if ok and fid == 0 then standIn(w, m, c, ri, (skip or 0) + k + 1) end
+          end)
+        end
+        return "npc"
+      end
+    end
   end
-  local look = RG.ARCADE_RAIDER_LOOK and RG.ARCADE_RAIDER_LOOK[c.class or ""]
-  local d = look and look[ri.id .. ":" .. (c.sex == 3 and 1 or 0)]
-  if not (d and m.SetDisplayInfo) then return false end
-  m.creature = true; m.zoom = 0; m.cam = 1; m.face = 0.4
-  if not pcall(m.SetDisplayInfo, m, d) then return false end
-  if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
-  if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
-  m:Show()
-  return "npc"
+  return false
 end
 local function dressModel(w, c, finish)
   local a = raceAD()
@@ -1841,6 +1855,7 @@ local function dressModel(w, c, finish)
   local ri = RG.ArcadeRaceInfo and RG.ArcadeRaceInfo(c.race)
   if not (ri and ri.id) then return false end
   m.cls = c.class; m.creature = false
+  local _, gear = RG.ArcadeRaiderSet(c.name, c.class); m.gear = gear; m.face = RG.ArcadeRaiderFace(c.name)
   m:ClearAllPoints(); m:SetPoint("TOPLEFT", w.pic, "TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", w.pic, "BOTTOMRIGHT", -2, 2)
   RG.ArcadeLayer(w, m, 2)
   if (a and a.customRace == false) or not m.SetCustomRace or not m.SetUnit then
@@ -1853,12 +1868,12 @@ local function dressModel(w, c, finish)
   end
   pcall(function()
     if m.Undress then m:Undress() end
-    for _, id in ipairs((RG.ARCADE_GEAR or {})[c.class or ""] or {}) do if m.TryOn then m:TryOn("item:" .. id) end end
+    for _, id in ipairs(m.gear or {}) do if m.TryOn then m:TryOn("item:" .. id) end end
   end)
   m.zoom = 0
   if m.SetPortraitZoom then pcall(m.SetPortraitZoom, m, 0) end
   if m.SetPosition then pcall(m.SetPosition, m, 0, 0, 0) end
-  if m.SetFacing then pcall(m.SetFacing, m, 0.4) end
+  if m.SetFacing then pcall(m.SetFacing, m, m.face or 0.4) end
   m:Show()
   return true
 end
@@ -2181,7 +2196,7 @@ local function paint(w, card, finish, copies)
   w.text:SetShown(true)
   if big then
     layoutText(w, true)
-    fitText(w.name, card.name, 186 * u, 16 * u, 8.5, "title")
+    fitText(w.name, card.name, 164 * u, 16 * u, 8.5, "title")
     setfont(w.text, "body", 11.5 * u)
     w.text:SetText(U.ink(w, rules .. (rules ~= "" and story ~= "" and "\n" or "") .. (story ~= "" and ("|cff6b5a42" .. story .. "|r") or "")))
   else
@@ -3400,11 +3415,19 @@ end
 local function say(text)
   if frame and frame:IsShown() and frame.msg then
     frame.msg:SetText(text or "")
-    -- (a note clears itself after a while, so it doesn't follow you to other tabs)
+    -- (a long note is made a little smaller so it all fits on its line: ArcadeFit.lua)
+    if RG.ArcadeFitLine then RG.ArcadeFitLine(frame.msg, 470, 14, 11) end
+    -- (a note clears itself after a while, so it doesn't follow you to other tabs; the Album page then brings back what
+    -- it moved out of the note's way)
     RG.__sayToken = (RG.__sayToken or 0) + 1   -- (an RG field: this file has no room for another top-level local)
     local mine = RG.__sayToken
     if text and text ~= "" and C_Timer and C_Timer.After then
-      C_Timer.After(8, function() if RG.__sayToken == mine and frame and frame.msg then frame.msg:SetText("") end end)
+      C_Timer.After(8, function()
+        if RG.__sayToken == mine and frame and frame.msg then
+          frame.msg:SetText("")
+          if frame:IsShown() and view.mode == "album" and RG.ArcadeRefresh then pcall(RG.ArcadeRefresh, true) end
+        end
+      end)
     end
   elseif RG.Print then RG.Print(text) end
 end
@@ -3752,12 +3775,18 @@ local function build()
     b:SetScript("OnEnter", function(self) self:SetBackdropColor(0.164, 0.147, 0.111, 0.95); self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) end)
     b:SetScript("OnLeave", function(self) self:SetBackdropColor(0.097, 0.087, 0.066, 0.9); self:SetBackdropBorderColor(0.4, 0.33, 0.2, 0.8) end)
     b:SetScript("OnClick", function(self) if self.act then self.act() end end)
+    -- (the left text is made to fit beside the right one: ArcadeFit.lua)
+    for _, t in ipairs({ b.left, b.right }) do
+      local raw = t.SetText
+      t.SetText = function(self, ...) raw(self, ...); if RG.ArcadeFitRow then RG.ArcadeFitRow(b) end end
+    end
     frame.rows[i] = b
   end
 
   -- footer
   frame.msg = fs(frame, "body", 14); frame.msg:SetPoint("BOTTOMLEFT", 40, 60); frame.msg:SetWidth(470)
-  if frame.msg.SetMaxLines then frame.msg:SetMaxLines(1) end   -- (one line, clear of the page arrows and the buttons under it); frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
+  if frame.msg.SetMaxLines then frame.msg:SetMaxLines(1) end   -- (one line, clear of the page arrows and the buttons under it)
+  frame.msg:SetJustifyH("LEFT"); frame.msg:SetTextColor(0.9, 0.84, 0.62)
   frame.prev = gbtn(frame, "<", 36, 24, function() if view.mode == "album" then view.albumPage = math.max(1, (view.albumPage or 1) - 1) elseif view.mode == "sets" then view.setPage = math.max(0, (view.setPage or 0) - 1) elseif view.mode == "trade" then view.tradePage = math.max(0, (view.tradePage or 0) - 1) elseif view.mode == "shop" then view.shopPage = math.max(0, (view.shopPage or 0) - 1) else view.page = view.page - 1 end; RG.ArcadeRefresh(true) end)
   frame.prev:SetPoint("BOTTOM", 230, 58)
   frame.next = gbtn(frame, ">", 36, 24, function() if view.mode == "album" then view.albumPage = (view.albumPage or 1) + 1 elseif view.mode == "sets" then view.setPage = (view.setPage or 0) + 1 elseif view.mode == "trade" then view.tradePage = (view.tradePage or 0) + 1 elseif view.mode == "shop" then view.shopPage = (view.shopPage or 0) + 1 else view.page = view.page + 1 end; RG.ArcadeRefresh(true) end)
@@ -3924,7 +3953,10 @@ local function pgBox(i, y, ht, title, text, col)
   col = col or GOLDC
   b.bar:SetColorTexture(col[1], col[2], col[3], 1)
   b.title:SetText(title or ""); b.title:SetTextColor(col[1], col[2], col[3])
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 20, (title and title ~= "") and -36 or -12); b.text:SetWidth(PGW - 40); b.text:SetText(text or "")
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 20, (title and title ~= "") and -36 or -12); b.text:SetWidth(PGW - 40)
+  setfont(b.text, "body", 13); b.text:SetText(text or "")
+  -- (more text than the box holds: a little smaller until it fits, ArcadeFit.lua)
+  if RG.ArcadeFitBox then RG.ArcadeFitBox(b.text, ht - ((title and title ~= "") and 36 or 12) - 8) end
   return b
 end
 

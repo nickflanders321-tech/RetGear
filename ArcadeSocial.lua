@@ -308,18 +308,18 @@ end)
 -- the Friends' albums page in the Trade tab
 function RG.ArcadeSocialView(ctx)
   local frame, view, PGW = ctx.frame, ctx.view, ctx.PGW
-  ctx.pgBox(1, 196, 86, "Friends' and guildmates' albums", "Guildmates, group members and online friends with Waypath+. Open one to see which of your spares they're missing and which of theirs you're missing, then swap one for one.\n|cff9a96b0Raiders, Mythics, Field Guide and holiday cards can't be traded.|r")
+  ctx.pgBox(1, 196, 104, "Friends' and guildmates' albums", "Guildmates, group members and online friends with Waypath+. Open one to see which of your spares they're missing and which of theirs you're missing, then swap one for one.\n|cff9a96b0Raiders, Mythics, Field Guide and holiday cards can't be traded.|r")
   local names = {}
   for name in pairs(S.peers) do names[#names + 1] = name end
   table.sort(names, function(x, y) return (S.peers[x].own or 0) > (S.peers[y].own or 0) end)
-  local y = 298
+  local y = 314
   local rows = {}
   local sel = view.socialSel and S.peers[view.socialSel] and view.socialSel
   local GOLD, SIL, BRZ = "|cffffd24a", "|cffd8dce4", "|cffd08a4a"
   if sel then
     local p, m = S.peers[sel], S.matches[sel]
     ctx.pgHead(1, y, short(sel) .. "'s album", "|cff9a96b0click to go back|r")
-    rows[#rows + 1] = { left = string.format("%d of %d cards   ·   %s%d gold|r  %s%d silver|r  %s%d bronze|r sets   ·   %d Explorer badges", p.own, p.total, GOLD, p.g, SIL, p.s, BRZ, p.b, p.badges or 0),
+    rows[#rows + 1] = { left = string.format("%d of %d cards   ·   sets: %s%d gold|r, %s%d silver|r, %s%d bronze|r   ·   %d Explorer badges", p.own, p.total, GOLD, p.g, SIL, p.s, BRZ, p.b, p.badges or 0),
       right = "Back", act = function() view.socialSel = nil; RG.ArcadeRefresh(true) end, frac = p.total > 0 and p.own / p.total or 0 }
     if not m then
       rows[#rows + 1] = { left = "Find swaps with " .. short(sel), right = "Compare", act = function()

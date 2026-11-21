@@ -255,7 +255,8 @@ local function timeLeft(secs)
   if m > 0 then return m .. "m" end
   return "a moment"
 end
-local function say(text) local u = U(); local fr = _G.WaypathArcade; if fr and fr.msg then fr.msg:SetText(text or "") elseif RG.Print then RG.Print(text) end end
+-- (the window's message line: it fits the note to its line and clears it after a while, Arcade.lua)
+local function say(text) if RG.ArcadeMsg then RG.ArcadeMsg(text) elseif RG.Print then RG.Print(text) end end
 
 local function buildDesk(frame)
   local u = U()
@@ -274,7 +275,8 @@ local function buildDesk(frame)
     return b
   end
   -- the desk: the card to send (left), the case it will go in (middle), how fast and the slots (right)
-  desk.pick = box(X0, -196, 236, 478, "YOUR COPIES")
+  -- (every box ends above the window's message line, which runs from 652 down)
+  desk.pick = box(X0, -196, 236, 448, "YOUR COPIES")
   desk.pick.hint = u.fs(desk.pick, "body", 12.5); desk.pick.hint:SetPoint("TOPLEFT", 14, -36); desk.pick.hint:SetWidth(208); desk.pick.hint:SetJustifyH("LEFT")
   desk.pick.hint:SetTextColor(0.8, 0.75, 0.64); desk.pick.hint:SetSpacing(2)
   desk.copies = {}
@@ -305,10 +307,10 @@ local function buildDesk(frame)
     RG.ArcadeRefresh(true)
   end, true)
   desk.send:SetPoint("BOTTOMLEFT", 14, 14)
-  desk.slotBox = box(X0 + 236 + 224, -432, 262, 242, "AT THE GRADERS")
+  desk.slotBox = box(X0 + 236 + 224, -432, 262, 212, "AT THE GRADERS")
   desk.slots = {}
   for i = 1, 5 do
-    local r = CreateFrame("Frame", nil, desk.slotBox); r:SetSize(234, 36); r:SetPoint("TOPLEFT", 14, -32 - (i - 1) * 40)
+    local r = CreateFrame("Frame", nil, desk.slotBox); r:SetSize(234, 34); r:SetPoint("TOPLEFT", 14, -32 - (i - 1) * 35)
     r.name = u.fs(r, "body", 12); r.name:SetPoint("TOPLEFT", 0, -2); r.name:SetWidth(150); r.name:SetJustifyH("LEFT"); r.name:SetWordWrap(false)
     r.t = u.fs(r, "head", 11.5); r.t:SetPoint("TOPRIGHT", 0, -2); r.t:SetJustifyH("RIGHT"); r.t:SetTextColor(0.62, 0.83, 1)
     r.barBg = r:CreateTexture(nil, "ARTWORK"); r.barBg:SetColorTexture(0.18, 0.16, 0.13, 1); r.barBg:SetPoint("BOTTOMLEFT", 0, 6); r.barBg:SetSize(234, 5)
@@ -500,9 +502,16 @@ local function paintSlots(a, st)
         local p = math.max(0, math.min(1, (t - (e.q.sent or t)) / total))
         r.t:SetText("back in " .. timeLeft((e.q.due or t) - t)); r.bar:SetWidth(math.max(1, 234 * p)); r.bar:SetColorTexture(0.42, 0.65, 1, 1)
       end
+      -- (the name and print in the room the time or the Open button leaves: a little smaller if it needs, then cut short)
+      local tw = r.open:IsShown() and 70 or (r.t:GetStringWidth() or 0)
+      local room = 234 - tw - 10
+      r.name:SetWidth(room)
+      if RG.ArcadeFitLine then RG.ArcadeFitLine(r.name, room, 12, 10) end
       r:Show()
     elseif i <= GR().SLOTS then
-      r.name:SetText("|cff7d776aAn open slot|r"); r.t:SetText(""); r.open:Hide(); r.bar:SetWidth(1); r:Show()
+      r.name:SetText("|cff7d776aAn open slot|r"); r.t:SetText(""); r.open:Hide(); r.bar:SetWidth(1); r.name:SetWidth(224)
+      if RG.ArcadeFitLine then RG.ArcadeFitLine(r.name, 224, 12, 10) end
+      r:Show()
     else r:Hide() end
   end
   desk.slotBox.h:SetText("AT THE GRADERS  ·  " .. #st.queue .. " OF " .. GR().SLOTS .. " SLOTS")

@@ -49,6 +49,17 @@
 - A Mythic always counts as your best pull in a pack and on your stats page, above any print of any other card.
 - A long card name on a big card now goes onto two lines instead of being shrunk and cut short.
 - A very long name on a small card (the collection grid, a pack) is no longer cut short: it gets a little smaller until it fits on its two lines (Black Qiraji Resonating Crystal, Atiesh, Greatstaff of the Guardian and a few others).
+- **Raiders no longer look alike.** Every raider is now drawn by their own name:
+  - they wear one of their class's three raid sets (tier 1, 2 or 3, such as Lawbringer, Judgement or Redemption), and the card says which;
+  - where the game can't change a model's race, a raider is one of four to six of the game's own characters of their race and sex dressed like their class (it was always the same one, or your own character for your race);
+  - they face a little to the left or right;
+  - a stand-in the game can't draw (an empty picture) is swapped for the next one.
+- **Text that ran over or got cut short, fixed:**
+  - a card's name now stays clear of the rarity gem on the name ribbon (a long name goes onto two lines);
+  - a type line too long for a small card ("Dungeon boss · Mythic") gets a little smaller instead of being cut short, and so do a big card's rules when there are a lot of them;
+  - the message line at the bottom of the window fits its note (a little smaller if needed), clears after a few seconds (the grading desk's never cleared), and no longer runs over the Album's Mythic button;
+  - the grading desk's boxes end above the message line, and a slot's card name no longer runs into its "back in" time;
+  - the Trade tab's notes fit their box, and a collector's row fits beside its Open button (as does every list row).
 - `/wp gildedcheck` no longer reports every card as missing its gold: the game names a texture by its file number, and the check now compares it that way.
 
 ## v1.52.6
