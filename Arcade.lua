@@ -2309,13 +2309,20 @@ local function collectionList(a)
   elseif view.sort == 3 then table.sort(list, function(x, y) if x.tier ~= y.tier then return x.tier > y.tier end return x.name < y.name end)
   elseif view.sort == 4 then table.sort(list, function(x, y) return x.name < y.name end)
   elseif view.sort == 5 then table.sort(list, function(x, y) return power(x, bestFinish(a, x.id) or 1) > power(y, bestFinish(a, y.id) or 1) end) end
-  -- the Mythics you've pulled come first, whatever the sort (in the order the sort put them)
-  local first, rest = {}, {}
-  for _, c in ipairs(list) do
-    if c.tier == 7 and owned(a, c.id) > 0 then first[#first + 1] = c else rest[#rest + 1] = c end
+  -- first the cards you hold in a grading case (the highest grade first), then the Mythics you've pulled, then the rest,
+  -- whatever the sort (each group keeps the order the sort put it in)
+  local graded, first, rest = {}, {}, {}
+  for i, c in ipairs(list) do
+    local b = RG.ArcadeGradeBest and RG.ArcadeGradeBest(c.key or c.name)
+    if b then graded[#graded + 1] = { c = c, g = b.grade, i = i }
+    elseif c.tier == 7 and owned(a, c.id) > 0 then first[#first + 1] = c else rest[#rest + 1] = c end
   end
-  for _, c in ipairs(rest) do first[#first + 1] = c end
-  return first
+  table.sort(graded, function(x, y) if x.g ~= y.g then return x.g > y.g end return x.i < y.i end)
+  local out = {}
+  for _, e in ipairs(graded) do out[#out + 1] = e.c end
+  for _, c in ipairs(first) do out[#out + 1] = c end
+  for _, c in ipairs(rest) do out[#out + 1] = c end
+  return out
 end
 
 local function kit(...)   -- the first SOUNDKIT id this client has
