@@ -2,9 +2,9 @@
 
 ## Unreleased
 - Fixed from the first `/wp textcheck` run:
-  - long card names on small cards (the collection grid, the Album) that the game still cut short: they get a little smaller once the card is on screen, until the whole name fits;
+  - long card names on small cards (the collection grid, the Album) that the game still cut short: their two lines are no longer clipped by the ribbon's height, and they get a little smaller once the card is on screen, until the whole name fits;
   - the "NEW" tag sits beside a card's cost instead of over it, and the copies count ("x2") sits under the "1st" seal instead of on it;
-  - a raid's, holiday's or Field Guide's Album heading fits its line;
+  - a raid's, holiday's or Field Guide's Album heading fits its line (it's fitted after their own pages write it);
   - the Today tab's "jumbo: 2 rares and a holo" and "every 7th day: a reward pack" fit their tiles;
   - a long card name on a card's page stays clear of the window's X;
   - a long card name in a Grading desk slot fits (without its print, if it has to).

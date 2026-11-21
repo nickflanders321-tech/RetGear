@@ -1910,7 +1910,10 @@ local function layoutText(w, big, name, text)
   local bw = (pb[3] - pb[1] - 56) * u   -- (clear of the rarity gem, and the same on the left so the name stays centred)
   local sz = w.cw >= 110 and 10 or 9
   w.nameB:ClearAllPoints()
-  w.nameB:SetPoint("TOPLEFT", w, "TOPLEFT", (pb[1] + 28) * u, -(pb[2] + 1) * u); w.nameB:SetPoint("BOTTOMRIGHT", w, "TOPLEFT", (pb[3] - 28) * u, -(pb[4] - 1) * u)
+  -- (centred on the plate with its width set and its height free: two lines are never cut off by the plate's height;
+  -- the font's own line height runs a little taller than the plate allows at the smallest sizes)
+  w.nameB:SetPoint("CENTER", w, "TOPLEFT", ((pb[1] + pb[3]) / 2) * u, -((pb[2] + pb[4]) / 2) * u); w.nameB:SetWidth((pb[3] - pb[1] - 56) * u)
+  if w.nameB.SetHeight then w.nameB:SetHeight(0) end
   w.nameB:SetWordWrap(false); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
   -- (the game can measure a string as narrower than it draws in a frame not yet shown: an estimate from its letters
   -- is the floor, so a long name never runs off both ends of the ribbon)

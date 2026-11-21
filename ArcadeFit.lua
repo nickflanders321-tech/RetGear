@@ -96,3 +96,10 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
     C_Timer.After(0, function() if w.card == card and w:IsVisible() then fitCard(w, card) end end)
   end
 end)
+
+-- the Album's heading, after every other file's touch (a raid's, a holiday's and a Field Guide's write their own)
+RG.ArcadeAlbumHooks = RG.ArcadeAlbumHooks or {}
+table.insert(RG.ArcadeAlbumHooks, function(st, frame)
+  local t = frame and rawget(frame, "albTitle")
+  if t and t:IsShown() then RG.ArcadeFitLine(t, 430, 14, 8, "head") end
+end)
