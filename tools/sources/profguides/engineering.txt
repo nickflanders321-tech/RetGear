@@ -76,3 +76,5 @@ Artisan Engineering (200-300)
 10x Thorium Grenade - 10 Thorium Widget, 30 Thorium Bar, 30 Dense Blasting Powder, 30 Runecloth
 280-300
 21x Thorium Tube - 126 Thorium Bar
+15x Thorium Shells - 30 Thorium Bar, 15 Dense Blasting Powder
+They use the Dense Blasting Powder you made at 250-260. One craft makes 200 shells, so you can sell them or give them to a hunter.

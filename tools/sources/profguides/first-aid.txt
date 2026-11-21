@@ -12,8 +12,7 @@ This WoW Forever First Aid leveling guide will show you the fastest way to level
 19x Mageweave Cloth
 225-300
 86x Mageweave Cloth
-20x Runecloth
-30x Golden Sansam
+68x Runecloth
 Apprentice First Aid (1-75)
 1-75
 86x Minor Healing Potion - 86 Peacebloom, 86 Mild Spices, 86 Empty Vial
@@ -46,7 +45,8 @@ Artisan First Aid (225-300)
 26x Mageweave Bandage - 26 Mageweave Cloth
 240-260
 30x Heavy Mageweave Bandage - 60 Mageweave Cloth
-260-275
-20x Runecloth Bandage - 20 Runecloth
-275-300
+260-290
+44x Runecloth Bandage - 44 Runecloth
 30x Major Healing Potion - 30 Golden Sansam, 90 Soothing Spices, 30 Crystal Vial
+290-300
+12x Heavy Runecloth Bandage - 24 Runecloth

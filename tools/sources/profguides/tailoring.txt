@@ -3,14 +3,15 @@ WoW Forever Tailoring Leveling Guide 1-300
 This WoW Forever Tailoring leveling guide will show you the fastest and cheapest way to level your Tailoring skill from 1 to 300. You will also find every trainer location and where to train Tailoring past 75, 150 and 225.
 1-150
 60x Linen Cloth
-459x Wool Cloth
-29x Elixir of Wisdom
+171x Wool Cloth
+5x Elixir of Wisdom
 216x Silk Cloth
+30x Heavy Leather
 115x Mageweave Cloth
 150-225
-520x Silk Cloth
-555x Mageweave Cloth
-125x Bolt of Mageweave
+556x Silk Cloth
+605x Mageweave Cloth
+121x Bolt of Mageweave
 115x Runecloth
 225-280
 This list is not final yet, but the skill ranges come from the game data, so it should be pretty close. The 280-300 part is not included here yet.
@@ -31,17 +32,19 @@ Journeyman Tailoring (55-140)
 5x Double-stitched Woolen Shoulders - 15 Bolt of Woolen Cloth, 10 Fine Thread
 100-120
 54x Bolt of Silk Cloth - 216 Silk Cloth
-120-140
-29x Gloves of Meditation - 116 Bolt of Woolen Cloth, 87 Fine Thread, 29 Elixir of Wisdom
+120-125
+5x Gloves of Meditation - 20 Bolt of Woolen Cloth, 15 Fine Thread, 5 Elixir of Wisdom
+125-140
+15x Small Silk Pack - 45 Bolt of Silk Cloth, 30 Heavy Leather, 45 Fine Thread
 Expert Tailoring (140-200)
 140-150
 23x Bolt of Mageweave - 115 Mageweave Cloth
 150-170
 20x Crimson Silk Vest - 80 Bolt of Silk Cloth, 40 Red Dye, 40 Fine Thread
-170-190
-26x Crimson Silk Pantaloons - 104 Bolt of Silk Cloth, 52 Red Dye, 52 Silken Thread
-190-200
-17x Black Mageweave Leggings - 34 Bolt of Mageweave, 51 Silken Thread
+170-185
+17x Crimson Silk Pantaloons - 68 Bolt of Silk Cloth, 34 Red Dye, 34 Silken Thread
+185-200
+22x Black Mageweave Leggings - 44 Bolt of Mageweave, 66 Silken Thread
 Artisan Tailoring (200-300)
 200-205
 5x Black Mageweave Shoulders - 15 Bolt of Mageweave, 10 Heavy Silken Thread
@@ -54,6 +57,7 @@ Artisan Tailoring (200-300)
 24x Runecloth Belt - 72 Bolt of Runecloth, 24 Rune Thread
 240-250
 11x Runecloth Gloves - 44 Bolt of Runecloth, 44 Rugged Leather, 11 Rune Thread
+11x Brightcloth Cloak - 44 Bolt of Runecloth, 22 Gold Bar, 11 Rune Thread
 250-280
 39x Runecloth Cuffs - 195 Bolt of Runecloth, 39 Ironweb Spider Silk, 39 Rune Thread
 19x Runecloth Gloves - 76 Bolt of Runecloth, 76 Rugged Leather, 19 Rune Thread

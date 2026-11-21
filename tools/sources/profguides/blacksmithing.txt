@@ -3,21 +3,22 @@ WoW Forever Blacksmithing Leveling Guide 1-300
 This WoW Forever Blacksmithing leveling guide will show you the fastest and cheapest way to level your Blacksmithing skill from 1 to 300. You will also find every trainer location and where to train Blacksmithing past 75, 150 and 225.
 1-150
 90x Rough Stone
-180x Copper Bar
 5x Silver Bar
 72x Coarse Stone
-290x Bronze Bar
+300x Bronze Bar
 60x Heavy Stone
-58x Medium Leather
+48x Medium Leather
 96x Weak Flux (vendor)
-10x Strong Flux (vendor)
+60x Iron Bar
+10x Green Dye (vendor)
 150-225
 180x Iron Bar
 30x Green Dye (vendor)
 32x Solid Stone
 100x Steel Bar (if you have Mining: 100 Iron Bar + 100 Coal )
 60x Heavy Stone
-436x Mithril Bar
+376x Mithril Bar
+60x Mageweave Cloth
 24x Heavy Leather
 12x Citrine
 225-300
@@ -35,12 +36,12 @@ Apprentice Blacksmithing (1-75)
 30x Rough Grinding Stone - 60 Rough Stone
 50-75
 36x Coarse Grinding Stone - 72 Coarse Stone
-Journeyman Blacksmithing (75-150)
+Journeyman Blacksmithing (75-140)
 75-80
 5x Silver Rod - 5 Silver Bar, 10 Rough Grinding Stone
 Make 5x Runed Copper Belt instead (10 Copper Bar each) if one Silver Bar costs more than 10 Copper Bars.
 80-95
-18x Runed Copper Belt - 180 Copper Bar
+15x Rough Bronze Leggings - 90 Bronze Bar
 95-100
 5x Patterned Bronze Bracers - 25 Bronze Bar, 10 Coarse Grinding Stone
 100-112
@@ -49,13 +50,10 @@ Make 5x Runed Copper Belt instead (10 Copper Bar each) if one Silver Bar costs m
 13x Patterned Bronze Bracers - 65 Bronze Bar, 26 Coarse Grinding Stone
 125-140
 24x Bronze Shortsword - 120 Bronze Bar, 96 Weak Flux, 48 Medium Leather
-Weak Flux and the Strong Flux for the Bronze Warhammers (140-150) are sold by the Blacksmithing Supply vendor right next to the Blacksmithing trainer in every capital city.
 24x Patterned Bronze Bracers - 120 Bronze Bar, 48 Coarse Grinding Stone
-140-150
-10x Bronze Warhammer - 80 Bronze Bar, 10 Strong Flux, 10 Medium Leather
-Expert Blacksmithing (150-215)
-150-175
-30x Green Iron Bracers - 180 Iron Bar, 30 Green Dye
+Expert Blacksmithing (140-215)
+140-175
+40x Green Iron Bracers - 240 Iron Bar, 40 Green Dye
 175-180
 8x Solid Grinding Stone - 32 Solid Stone
 180-195
@@ -66,16 +64,17 @@ Expert Blacksmithing (150-215)
 6x Heavy Mithril Axe - 72 Mithril Bar, 12 Citrine, 6 Solid Grinding Stone, 24 Heavy Leather
 Artisan Blacksmithing (215-300)
 215-225
-10x Heavy Mithril Breastplate - 160 Mithril Bar
+10x Mithril Coif - 100 Mithril Bar, 60 Mageweave Cloth
 225-235
 16x Dense Sharpening Stone - 16 Dense Stone
 235-240
 11x Heavy Mithril Boots - 154 Mithril Bar, 44 Thick Leather
 240-245
 5x Imperial Plate Belt - 110 Thorium Bar, 30 Rugged Leather, 5 Aquamarine
-240-255: 27x Dazzling Mithril Rapier - 378 Mithril Bar, 27 Aquamarine, 54 Lesser Moonstone, 54 Moss Agate, 27 Solid Grinding Stone, 54 Mageweave Cloth
-240-255: 20x Runed Mithril Hammer - 360 Mithril Bar, 40 Core of Earth, 20 Solid Grinding Stone, 80 Thick Leather
-240-255: 17x Thorium Bracers - 204 Thorium Bar, 68 Blue Power Crystal
+If you have the Plans: Dazzling Mithril Rapier , the Plans: Runed Mithril Hammer or the Plans: Thorium Bracers , make these from 240 to 255 instead. All three are world drops.
+27x Dazzling Mithril Rapier
+20x Runed Mithril Hammer
+17x Thorium Bracers
 215-225
 10x Mithril Spurs - 40 Mithril Bar, 30 Solid Grinding Stone
 225-235
@@ -86,5 +85,9 @@ Artisan Blacksmithing (215-300)
 27x Imperial Plate Bracers - 540 Thorium Bar, 27 Star Ruby
 270-290
 20x Imperial Plate Boots - 680 Thorium Bar, 20 Star Ruby, 20 Aquamarine
+22x Radiant Boots
+15x Thorium Leggings from 275
 290-300
 10x Imperial Plate Leggings - 440 Thorium Bar, 20 Star Ruby
+10x Radiant Leggings
+12x Thorium Leggings
