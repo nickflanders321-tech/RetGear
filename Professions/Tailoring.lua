@@ -34,14 +34,14 @@ T.plan = {
   { from = 140, to = 150, craft = "Bolt of Mageweave", n = 23, mats = "5 Mageweave Cloth each. Keep them." },
   { from = 150, to = 170, craft = "Crimson Silk Vest", n = 20, mats = "4 Bolt of Silk Cloth, 2 Red Dye, 2 Fine Thread each" },
   { from = 170, to = 190, craft = "Crimson Silk Pantaloons", n = 26, mats = "4 Bolt of Silk Cloth, 2 Red Dye, 2 Silken Thread each" },
-  { from = 190, to = 200, craft = "Black Mageweave Leggings", n = 19, mats = "2 Bolt of Mageweave, 3 Silken Thread each" },
+  { from = 190, to = 200, craft = "Black Mageweave Leggings", n = 17, mats = "2 Bolt of Mageweave, 3 Silken Thread each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 200, to = 205, craft = "Black Mageweave Shoulders", n = 5, mats = "3 Bolt of Mageweave, 2 Heavy Silken Thread each (only the Artisan trainers teach it)" },
   { from = 205, to = 215, craft = "Bolt of Runecloth", n = 23, mats = "5 Runecloth each. Keep the bolts for the next steps." },
-  { from = 215, to = 225, craft = "Red Mageweave Bag or Runecloth Belt", n = 19, mats = "5 Bolt of Mageweave, 2 Red Dye, 2 Heavy Silken Thread each (or Runecloth Belt: 3 Bolt of Runecloth, 1 Rune Thread; about 10 crafts)" },
+  { from = 215, to = 225, craft = "Red Mageweave Bag or Runecloth Belt", n = 17, mats = "5 Bolt of Mageweave, 2 Red Dye, 2 Heavy Silken Thread each (or Runecloth Belt: 3 Bolt of Runecloth, 1 Rune Thread; about 10 crafts)" },
   { from = 225, to = 240, craft = "Runecloth Belt", n = 24, mats = "3 Bolt of Runecloth, 1 Rune Thread each" },
   { from = 240, to = 250, craft = "Runecloth Gloves", n = 11, mats = "4 Bolt of Runecloth, 4 Rugged Leather, 1 Rune Thread each (pattern: Qia, Everlook)" },
-  { from = 250, to = 280, craft = "Runecloth Cuffs", n = 39, mats = "5 Bolt of Runecloth, 1 Ironweb Spider Silk, 1 Rune Thread each (pattern: Pexmit, Mount Hyjal; Bind on Pickup)" },
+  { from = 250, to = 280, craft = "Runecloth Cuffs", n = 39, mats = "5 Bolt of Runecloth, 1 Ironweb Spider Silk, 1 Rune Thread each (pattern: Pexmit, Mount Hyjal; Bind on Pickup. Without it: 19 Runecloth Gloves, 4 Bolt of Runecloth, 4 Rugged Leather, 1 Rune Thread each, or 21 Runecloth Shoulders, 7 Bolt of Runecloth, 2 Ironweb Spider Silk, 4 Rugged Leather, 1 Rune Thread each)" },
   { from = 280, to = 300, craft = "Runecloth Shoulders or Wizardweave Turban", n = 58, mats = "7 Bolt of Runecloth, 2 Ironweb Spider Silk, 4 Rugged Leather, 1 Rune Thread each (pattern: world drop, look on the Auction House; or Wizardweave Turban: 6 Bolt of Runecloth, 4 Dream Dust, 1 Star Ruby, 1 Rune Thread. With Cenarion Circle reputation and a Loom nearby, Swarmtender's or Venomspew gloves, cord and footpads from 285)" },
 }
 T.mats = { 2589, 2592, 4306, 4338, 14047, 2996, 2997, 4305, 4339, 14048 }

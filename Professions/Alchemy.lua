@@ -35,11 +35,11 @@ A.plan = {
   { from = 165, to = 195, craft = "Mana Potion", n = 36, mats = "1 Stranglekelp, 1 Kingsblood, 1 Leaded Vial each" },
   { from = 195, to = 225, craft = "Nature Protection Potion", n = 36, mats = "1 Liferoot, 1 Stranglekelp, 1 Leaded Vial each (recipe: Bronk in Feralas)" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
-  { from = 225, to = 235, craft = "Nature Protection Potion", n = 26, mats = "1 Liferoot, 1 Stranglekelp, 1 Leaded Vial each" },
+  { from = 225, to = 235, craft = "Nature Protection Potion", n = 23, mats = "1 Liferoot, 1 Stranglekelp, 1 Leaded Vial each" },
   { from = 235, to = 250, craft = "Elixir of Greater Intellect", n = 15, mats = "1 Blindweed, 1 Khadgar's Whisker, 1 Crystal Vial each" },
   { from = 250, to = 260, craft = "Stonescale Oil", n = 47, mats = "1 Stonescale Eel, 1 Leaded Vial each. Keep them for 265. (If the eels are expensive, keep making Elixirs of Greater Intellect instead.)" },
   { from = 260, to = 265, craft = "Elixir of Greater Intellect", n = 10, mats = "1 Blindweed, 1 Khadgar's Whisker, 1 Crystal Vial each" },
-  { from = 265, to = 300, craft = "Elixir of Greater Defense or Superior Mana Potion", n = 47, mats = "2 Stonescale Oil, 1 Sungrass, 1 Crystal Vial each (or 55 Superior Mana Potions: 2 Sungrass, 2 Blindweed, 1 Crystal Vial each, recipe from Algernon, Undercity)" },
+  { from = 265, to = 300, craft = "Elixir of Greater Defense or Superior Mana Potion", n = 44, mats = "2 Stonescale Oil, 1 Sungrass, 1 Crystal Vial each (or 55 Superior Mana Potions: 2 Sungrass, 2 Blindweed, 1 Crystal Vial each, recipe from Algernon, Undercity)" },
 }
 A.mats = { 2447, 765, 785, 2449, 2450, 3820, 3356, 3357, 8836, 8838, 8839, 13466 }
 RG.RegisterProfession("Alchemy", A)

@@ -526,7 +526,7 @@ RG.QDATA = {
 [968]={e={1455,50.8,5.6,"Gerrig Bonegrip"},n="The Powers Below",r=10,l=18,ra="HDNGA"},
 [969]={e={1452,61.9,38.3,"Witch Doctor Mau'ari"},s={1452,61.9,38.3,"Witch Doctor Mau'ari"},n="Luck Be With You",r=55,l=60,nx=975,o={{"i","Frostmaul Shards",{"Kashoch the Reaver","Hailspite"},{{1452,63.4,70.2,1},{1452,65.7,57.6,2},{1452,61.5,40.3,2},{1452,59.9,66.8,0},{1452,63.6,69.9,0}}}}},
 [972]={e={1413,65.8,43.8,"Islen Waterseer"},n="Water Sapta",r=20,l=20,ps={220},uc=96,rep=true,ra="OUTRS",cl="S",cq=true},
-[974]={e={1449,30.9,50.4,"Krakle"},s={1449,30.9,50.4,"Krakle"},n="Finding the Source",r=51,l=55,nx=980,o={{"o","Fire Plume Ridge Hot Spot",{},{{1449,49.7,45.6,0}}}}},
+[974]={e={1449,30.9,50.4,"Krakle"},s={1449,30.9,50.4,"Krakle"},n="Finding the Source",r=51,l=55,nx=980,o={{"o","Find the hottest area of Fire Plume Ridge",{},{{1449,49.7,45.6,0}}}}},
 [975]={e={1452,61.9,38.3,"Witch Doctor Mau'ari"},s={1452,61.9,38.3,"Witch Doctor Mau'ari"},n="Cache of Mau'ari",r=55,l=60,ps={969}},
 [977]={e={1452,60.9,37.6,"Umi Rumplesnicker"},s={1452,60.9,37.6,"Umi Rumplesnicker"},n="Are We There, Yeti?",r=52,l=58,ps={3783},nx=5163,o={{"i","Pristine Yeti Horn",{"Ice Thistle Matriarch","Ice Thistle Patriarch"},{{1452,70.8,38.8,1},{1452,66.7,41.8,1},{1452,70.3,40.6,2},{1452,66.8,44.9,2}}}}},
 [980]={e={1452,31.3,45.2,"Donova Snowden"},s={1449,30.9,50.4,"Krakle"},n="The New Springs",r=51,l=55,ps={974},nx=4842},

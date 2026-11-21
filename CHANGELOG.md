@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## v1.53.0
+- **Profession plans follow wow-professions.com's latest WoW Forever routes** (every step checked against the game's own recipe tables):
+  - Leatherworking 30-185: Cured Light Hide to 50, Embossed Leather Gloves to 60, Embossed Leather Pants to 80, Cured Medium Hide to 95, Fine Leather Belts to 105, Dark Leather Belts to 125, then Cured Heavy Hide, Hillman's Leather Gloves, Barbaric Shoulders, Guardian Gloves and Barbaric Harness to 185 (with the guide's alternatives); 49 Runic Leather Headbands at the end.
+  - Blacksmithing: 16 Dense Sharpening Stones to 235, then 11 Heavy Mithril Boots (or 28 Mithril Spurs to 245).
+  - Cooking: 72 Spotted Yellowtail or Filet of Redgill to 285, then 18 Nightfin Soup to 300 (was 140 fish); where to buy Alterac Swiss for the Artisan quest.
+  - Engineering: Rough Blasting Powder to 35, Copper Bolts to 55, Rough Copper Bombs to 75; 20 Thorium Widgets to 280 and 21 Thorium Tubes to 300.
+  - Tailoring: Runecloth Gloves or Shoulders if you don't have the Runecloth Cuffs pattern.
+  - Fewer crafts needed in Alchemy, Enchanting, First Aid, Engineering and Tailoring steps.
 - **20% more coins from everything.** Every coin source pays 20% more: XP, level-ups, quests, kills, skill-ups, duels and the Arena, dungeon clears, quest lines, gear upgrades, level milestones, set stages, daily goals, weekly and monthly quests, achievements and the season reward (on top of the 20% from launch).
 - **Card grading by the Waypoint Grading Guild.** Send a card to be graded and it comes back in a case with its grade, from 1 (Poor) to 10 (Gem Mint).
   - Every copy has a hidden condition, fixed when you get it: Centering, Corners, Edges and Surface. Nobody sees it until the card comes back. About 1 card in 15 grades a Gem Mint 10. Every print is graded the same way.
