@@ -1,0 +1,3 @@
+-- marks the start (block 3) of the files that "Cards only" mode switches off (see Mode.lua)
+local _, RG = ...
+if RG and RG.GateOn then RG.GateOn() end

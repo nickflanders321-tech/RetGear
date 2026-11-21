@@ -36,8 +36,8 @@ F.plan = {
   { from = 225, to = 225, train = "Artisan: the Triage quest at Hammerfall (level 35)" },
   { from = 225, to = 240, craft = "Mageweave Bandage", n = 26, mats = "1 Mageweave Cloth each" },
   { from = 240, to = 260, craft = "Heavy Mageweave Bandage", n = 30, mats = "2 Mageweave Cloth each" },
-  { from = 260, to = 275, craft = "Runecloth Bandage", n = 20, mats = "1 Runecloth each" },
-  { from = 275, to = 300, craft = "Major Healing Potion", n = 30, mats = "1 Golden Sansam, 3 Soothing Spices, 1 Crystal Vial each" },
+  { from = 260, to = 290, craft = "Runecloth Bandage", n = 44, mats = "1 Runecloth each (or 30 Major Healing Potions: 1 Golden Sansam, 3 Soothing Spices, 1 Crystal Vial each)" },
+  { from = 290, to = 300, craft = "Heavy Runecloth Bandage", n = 12, mats = "2 Runecloth each" },
 }
 F.mats = { 2589, 2592, 4306, 4338, 14047 }
 RG.RegisterProfession("First Aid", F)

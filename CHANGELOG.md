@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.55.0
+- Fixed four "Duplicate File Load Detected" warnings at login on WoW Forever 1.60.1 (reported in #43, with the fix): the second and third blocks of files that "Cards only" mode switches off now start and end with their own marker files, so the game loads every marker and the switch covers those blocks again.
+- Profession plans follow wow-professions.com's updated WoW Forever guides (checked against the game's own recipe tables):
+  - **Blacksmithing:** Rough Bronze Leggings for 80-95 (instead of Runed Copper Belts), Green Iron Bracers all the way from 140 to 175 (no more Bronze Warhammers or Strong Flux), Mithril Coif for 215-225, and the world-drop plans (Dazzling Mithril Rapier, Runed Mithril Hammer, Thorium Bracers), Radiant Boots and Leggings and Thorium Leggings as alternatives from 240;
+  - **Tailoring:** only 5 Gloves of Meditation (120-125), then Small Silk Packs to 140; Crimson Silk Pantaloons to 185 and Black Mageweave Leggings from 185; Brightcloth Cloak as an alternative at 240-250;
+  - **First Aid:** Runecloth Bandages to 290, then Heavy Runecloth Bandages to 300 (Major Healing Potions are the alternative);
+  - **Engineering:** the Thorium Shells the guide adds at 285-300.
+
 ## v1.54.1
 - Fixed from the first `/wp textcheck` run:
   - long card names on small cards (the collection grid, the Album) that the game still cut short: their two lines are no longer clipped by the ribbon's height, and they get a little smaller once the card is on screen, until the whole name fits;
