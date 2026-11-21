@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.54.1
 - Fixed from the first `/wp textcheck` run:
   - long card names on small cards (the collection grid, the Album) that the game still cut short: their two lines are no longer clipped by the ribbon's height, and they get a little smaller once the card is on screen, until the whole name fits;
   - the "NEW" tag sits beside a card's cost instead of over it, and the copies count ("x2") sits under the "1st" seal instead of on it;
