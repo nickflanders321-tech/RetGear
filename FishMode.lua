@@ -55,6 +55,15 @@ local function restoreUI()
 end
 RG.FishModeRestoreUI = restoreUI
 
+-- the rescue: the interface back at full strength right now, whatever state anything is in
+function RG.FishModeRescue()
+  active, peeking, whisper = false, false, nil
+  if fader then fader:SetScript("OnUpdate", nil) end
+  if UIParent then UIParent:SetAlpha(1) end
+  if RG.db then RG.db.fishFaded = nil end
+  if RG.FishHUDRefresh then pcall(RG.FishHUDRefresh, true) end
+end
+
 function RG.FishModeActive() return active end
 
 local function setStatus(text, color) status, statusColor, statusAt = text, color, GetTime() end
@@ -195,6 +204,11 @@ SlashCmdList.WAYPATH = function(msg)
     RG.db.fishImmersive = not RG.Opt("fishImmersive")
     if not RG.db.fishImmersive then RG.FishModeExit() end
     RG.Print("Immersive fishing " .. (RG.db.fishImmersive and (GREEN .. "on|r: the interface fades when you cast Fishing.") or "off."))
+    return
+  end
+  if cmd and (cmd:lower() == "showui" or cmd:lower() == "restoreui") then
+    RG.FishModeRescue()
+    RG.Print("Interface restored.")
     return
   end
   return base(msg)

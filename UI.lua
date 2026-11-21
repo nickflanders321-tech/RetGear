@@ -2469,6 +2469,13 @@ local function renderFish()
     rows[n].onRightClick = function() RG.db.fishHudIdle = not RG.Opt("fishHudIdle"); RG.FishHUDRefresh(true); RG.RefreshUI() end
     rows[n].tip = "Click: Ring, Bar, Column or Off.  Right-click: " .. (RG.Opt("fishHudIdle") and "hide" or "show") .. " the middle button when you're not fishing."
   end
+  if RG.FishModeRescue then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffInterface missing?|r", "If the interface stays hidden after fishing, click to bring everything back. Also /wp showui.", GOLD .. "Restore interface|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_EyeOfNewt")
+    rows[n].onClick = function() RG.FishModeRescue(); RG.RefreshUI() end
+    rows[n].tip = "Click to give the interface back right now.  /wp showui"
+  end
   -- goals: Artisan, the Extravaganza, your camp
   local pg = RG.FishPagle and RG.FishPagle()
   local dst, dmin
