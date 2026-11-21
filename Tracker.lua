@@ -401,7 +401,11 @@ local function line(i)
     end
     if self.onClick then self.onClick() end
   end)
-  b:SetScript("OnEnter", function(self) if self.tip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(self.tip, 1, 1, 1, 1, true); GameTooltip:Show() end end)
+  b:SetScript("OnEnter", function(self)
+    local tip = self.tip
+    if self.tipFn then local ok, t = pcall(self.tipFn); if ok and t then tip = t end end
+    if tip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(tip, 1, 1, 1, 1, true); GameTooltip:Show() end
+  end)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)
   lines[i] = b
   return b
@@ -576,6 +580,7 @@ local function section(n, y, label, key, right)
   end
   local b = line(n)
   b._sig = nil; b._q, b._top = nil, y
+  b._live, b._timer, b._rbase, b.tipFn = nil, nil, nil, nil
   if rawget(b, "_tick") then b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b._tick = nil end
   b.onClick, b.onRightClick, b.tip, b.onDoubleClick, b.menu, b.wpClick = nil, nil, nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
@@ -615,6 +620,7 @@ local function item(n, y, text, opts)
     "\1" .. tostring(opts.rpad) .. tostring(opts.tickAt)
   local spacing = RG.Opt("trackerRoomy") and 8 or 4
   b._q, b._top = opts.quest, y
+  b._live, b._timer, b._rbase, b.tipFn = opts.live, opts.timer, opts.rbase, opts.tipFn
   if b._sig == sig and b._h then
     b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:Show()
     return y + b._h + spacing + (b._prog and 2 or 0)
@@ -704,9 +710,9 @@ local function questTip(q)
   end
   if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
   if q.complete and q.wp then
-    t = t .. "\n\n" .. GOLD .. "Click / right-click:|r arrow to the hand-in\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Shift-click:|r open in your quest log\n" .. GOLD .. "Shift + right-click:|r more options"
+    t = t .. "\n\n" .. GOLD .. "Click / right-click:|r arrow to the hand-in\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Shift-click:|r link it in chat (chat box open), else open your quest log\n" .. GOLD .. "Shift + right-click:|r more options (link, hide)"
   else
-    t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Right-click:|r the arrow follows this quest\n" .. GOLD .. "Click:|r arrow on / off") or "")
+    t = t .. "\n\n" .. GOLD .. "Click:|r open in your quest log" .. (q.wp and ("\n" .. GOLD .. "Right-click:|r the arrow follows this quest\n" .. GOLD .. "Click:|r arrow on / off") or "") .. "\n" .. GOLD .. "Shift-click:|r link it in chat (chat box open)"
   end
   return t
 end
@@ -718,7 +724,11 @@ function RG.RefreshTracker()
   if not tr then build() end
   -- a quest-item button is on screen and a fight is on: the game won't let it be moved or hidden, so the tracker holds still
   -- (it catches up when the fight ends)
-  if RG.TrackerFrozen and RG.TrackerFrozen() then RG.trackerDeferred = true; return end
+  if RG.TrackerFrozen and RG.TrackerFrozen() then
+    RG.trackerDeferred = true
+    if RG.TrackerLiveUpdate then pcall(RG.TrackerLiveUpdate) end
+    return
+  end
   tr:Show()
   -- size and width (Ctrl / Shift + mouse wheel)
   W = RG.db.trackerWidth or 300
@@ -900,7 +910,16 @@ function RG.RefreshTracker()
       -- grouped by zone: the zone you're in first, then the nearest zones
       local here = RG.ZoneName()
       local groups, byZone = {}, {}
+      -- quests you hid from the tracker (right-click > Hide); gone from the list once they leave your log
+      local hiddenQ, hiddenN = RG.db.trackerHidden, 0
+      if hiddenQ then
+        local inLog = {}
+        for _, q in ipairs(quests) do inLog[q.id] = true end
+        for id in pairs(hiddenQ) do if not inLog[id] then hiddenQ[id] = nil end end
+        if next(hiddenQ) == nil then RG.db.trackerHidden = nil; hiddenQ = nil end
+      end
       for _, q in ipairs(quests) do
+        if hiddenQ and hiddenQ[q.id] then hiddenN = hiddenN + 1 else
         local z = q.zone or "Other"
         local g = byZone[z]
         if not g then g = { zone = z, list = {}, here = (z == here) }; byZone[z] = g; groups[#groups + 1] = g end
@@ -908,6 +927,7 @@ function RG.RefreshTracker()
         if q.dist and (not g.dist or q.dist < g.dist) then g.dist = q.dist end
         if q.complete then g.ready = (g.ready or 0) + 1 end
         g.minLevel = math.min(g.minLevel or 99, q.level or 99)
+        end
       end
       table.sort(groups, function(a2, b2)
         if a2.here ~= b2.here then return a2.here end
@@ -948,20 +968,27 @@ function RG.RefreshTracker()
                 local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
                 -- objectives under the quest (a setting); a usable quest item gets a button on the quest's right
                 local objOn = RG.Opt("trackerObjectives") and not q.failed
+                if objOn and RG.Opt("trackerFocus") and RG.TrackerQuestActive and not q.complete then objOn = RG.TrackerQuestActive(q) end   -- only the quest being worked on opens
                 local itm = RG.Opt("trackerItems") and RG.QuestItemFor and RG.QuestItemFor(q) or nil
                 local rpad = itm and 32 or nil
                 n = n + 1
                 local titleN = n
                 local qn = RG.QuestNote(q.id, q.group)
+                local rbase = objOn and ((q.failed and status or "") .. where) or (status .. where)
+                local tm = RG.TrackerTimerText and RG.TrackerTimerText(q.id) or ""   -- a timed quest: the time left, ticking
                 y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. upFront(q.id) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
-                  { single = true, indent = 12, quest = true, rpad = rpad, right = objOn and ((q.failed and status or "") .. where) or (status .. where),
+                  { single = true, indent = 12, quest = true, rpad = rpad, right = tm .. rbase, timer = tm ~= "" and q.id or nil, rbase = rbase,
                     tip = questTip(q), wp = q.wp, progress = (not objOn) and frac or nil,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
                     onClick = function()
+                      -- Shift-click with a chat box open: link the quest in chat
+                      if IsShiftKeyDown and IsShiftKeyDown() and RG.LinkQuestInChat and RG.LinkQuestInChat(q) then return end
                       if q.complete and q.wp and not (IsShiftKeyDown and IsShiftKeyDown()) then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end
                     end,
                     menu = function()
                       local e = {}
+                      e[#e + 1] = { "Link in chat", function() if not (RG.LinkQuestInChat and RG.LinkQuestInChat(q, true)) then RG.Print("Open a chat box first (press Enter), then try again.") end end }
+                      e[#e + 1] = { "Hide from the tracker", function() RG.db.trackerHidden = RG.db.trackerHidden or {}; RG.db.trackerHidden[q.id] = true; RG.RefreshTracker() end }
                       if q.wp then e[#e + 1] = { q.complete and "Arrow to the hand-in" or "Arrow to this quest", function() RG.Follow(q.wp) end } end
                       e[#e + 1] = { "Open in your quest log", function() RG.OpenQuest(q.title, q.id) end }
                       if not q.complete then e[#e + 1] = { "Skip it for now (10 min)", function() if RG.SkipQuest then RG.SkipQuest(q.title) end; RG.RefreshTracker() end } end
@@ -981,23 +1008,27 @@ function RG.RefreshTracker()
                       onClick = function() if q.wp then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end end })
                   return
                 end
-                for _, o in ipairs(q.objs or {}) do
+                for oi, o in ipairs(q.objs or {}) do
                   if o.text and o.text ~= "" then
-                    local text = tostring(o.text)
-                    local have, need = o.numFulfilled, o.numRequired
-                    local a, b2 = text:match("(%d+)/(%d+)%s*$")
-                    if not a then a, b2 = text:match("^(%d+)/(%d+)") end
-                    have, need = have or tonumber(a), (need and need > 0 and need) or tonumber(b2)
-                    local name = (text:gsub(":?%s*%d+/%d+%s*$", ""):gsub("^%d+/%d+%s+", ""))
-                    local f = (need and need > 0) and math.min(1, (have or 0) / need) or (o.finished and 1 or 0)
-                    local done = o.finished or f >= 1
-                    local col = done and GREEN or (f >= 0.67 and "|cffe6e05a") or (f >= 0.34 and "|cffffb347") or "|cffff7a5c"
+                    local name, have, need, done, col = RG.TrackerObjective(o)
                     n = n + 1
                     y = item(n, y, (done and GREY or "|cffe6e6e6") .. name .. "|r",
-                      { single = true, indent = 24, tickAt = done and 10 or nil, rpad = rpad,
+                      { single = true, indent = 24, tickAt = done and 10 or nil, rpad = rpad, live = { q.id, oi },
                         right = (need and need > 0) and (col .. (have or 0) .. "/" .. need .. "|r") or nil,
-                        tip = "|cffffffff" .. name .. "|r" .. ((need and need > 0) and (GREY .. "  " .. (have or 0) .. "/" .. need .. "|r") or "") ..
-                          (done and "" or ("\n\n" .. GOLD .. "Click:|r the arrow to the nearest place for it\n")) .. GOLD .. "Shift-click:|r open in your quest log",
+                        -- hover: where it is (worked out when you point at it, not on every redraw)
+                        tipFn = function()
+                          local t = "|cffffffff" .. name .. "|r" .. ((need and need > 0) and (GREY .. "  " .. (have or 0) .. "/" .. need .. "|r") or "")
+                          if not done then
+                            local wp, src, dist = RG.QuestObjectiveSpot and RG.QuestObjectiveSpot(q.title, name)
+                            if wp then
+                              local zone = C_Map and C_Map.GetMapInfo and wp[1] and C_Map.GetMapInfo(wp[1])
+                              t = t .. "\n" .. GREY .. "Nearest: " .. ((src and src ~= name) and (src .. ", ") or "") .. ((zone and zone.name) and (zone.name .. ", ") or "") ..
+                                (dist and RG.FormatYards and RG.FormatYards(dist) or "") .. "|r"
+                            else t = t .. "\n" .. GREY .. "No place known for it yet.|r" end
+                            t = t .. "\n\n" .. GOLD .. "Click:|r the arrow to the nearest place for it\n"
+                          else t = t .. "\n\n" end
+                          return t .. GOLD .. "Shift-click:|r open in your quest log"
+                        end,
                         onClick = function()
                           if done or (IsShiftKeyDown and IsShiftKeyDown()) then RG.OpenQuest(q.title, q.id) return end
                           local wp = RG.QuestObjectiveSpot and RG.QuestObjectiveSpot(q.title, name)
@@ -1035,6 +1066,10 @@ function RG.RefreshTracker()
             end
           end
         end
+      end
+      if hiddenN > 0 then
+        n = n + 1; y = item(n, y, GREY .. hiddenN .. " hidden|r", { single = true, indent = 12, tip = "You hid " .. hiddenN .. " quest" .. (hiddenN == 1 and "" or "s") .. " from the tracker.\n\n" .. GOLD .. "Click:|r show them again",
+          onClick = function() RG.db.trackerHidden = nil; RG.RefreshTracker() end })
       end
       if hidden > 0 then
         n = n + 1; y = item(n, y, GREY .. "+" .. hidden .. " more in your quest log|r", { single = true, indent = 12, onClick = function() if ToggleQuestLog then ToggleQuestLog() end end })

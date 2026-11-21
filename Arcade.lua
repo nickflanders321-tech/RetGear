@@ -1686,9 +1686,16 @@ function RG.ArcadeModelZoom(c)
 end
 -- how far the camera sits back (1 = the game's own framing): dragons, giants and bosses are far bigger than the frame
 local CAM = { [1] = 1.3, [2] = 2.0, [3] = 1.4, [4] = 1.4, [5] = 1.8, [6] = 1.1, [7] = 1.0, [8] = 1.0, [9] = 1.3 }
+-- (a card whose model needs its own distance: name = camera scale)
+RG.ARCADE_CAMFIX = { ["Atiesh"] = 1.3 }
 function RG.ArcadeCamScale(c)
   local k = CAM[c and c.ref or 7] or 1
   if c and (c.tier or 0) >= 4 then k = k * 1.3 end     -- Legendary NPCs are the raid bosses
+  -- a dragonkin in humanoid form (Arygos, Caelestrasz, Anachronos the Ancient...) is the size of a person, not of a dragon:
+  -- sitting back for a dragon left it small in its frame
+  local up = c and RG.ARCADE_SHAPE and RG.ARCADE_SHAPE[c.name]
+  if up and up >= 1.5 and k > 1.5 then k = 1.5 end
+  if c and RG.ARCADE_CAMFIX[c.name] then k = RG.ARCADE_CAMFIX[c.name] end
   return k * ((RG.db and tonumber(RG.db.cardCam)) or 1)
 end
 function RG.ArcadeApplyCam(m, c)

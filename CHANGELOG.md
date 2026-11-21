@@ -6,6 +6,14 @@
 - **Tracker: it scrolls.** The mouse wheel scrolls the list once it's taller than its cap (60% of the screen to begin with); a thin bar and a "+3 more quests" strip show there's more. Drag the grip in the bottom corner to choose how tall it gets; double-click the grip for the automatic height. Ctrl, Shift and Alt with the wheel still change size, width and see-through. "Move the tracker back" resets the height too.
 - Fixed four "Duplicate File Load Detected" warnings at login on WoW Forever 1.60.1 (reported in #43, with the fix): the second and third blocks of files that "Cards only" mode switches off now start and end with their own marker files, so the game loads every marker and the switch covers those blocks again.
 - Engineering: the plan mentions the Thorium Shells wow-professions.com's updated WoW Forever guide adds from 285 (2 Thorium Bar, 1 Dense Blasting Powder each; one craft makes 200 shells to sell or give to a hunter).
+- **Tracker follow-ups.**
+  - **Live in a fight:** with a quest-item button on the tracker it still holds its layout in combat, but the objective counts now keep updating.
+  - **Only the quest you're working on (new setting, off by default):** the quest you're at, targeting or following shows its objectives; the others fold to one line.
+  - **Timed quests** show their time left (red under a minute), counting down.
+  - **Shift-click a quest** with a chat box open to link it in chat; Shift + right-click also has "Link in chat" and "Hide from the tracker" (a "N hidden" line brings them back).
+  - **Hover an objective** to see the nearest place for it and how far.
+- **Small boss models:** dragonkin who stand like people (Arygos, Caelestrasz, Anachronos the Ancient, Merithra, Lord Victor Nefarius) and Atiesh were framed as if they were dragons, so they looked small in their card; they sit closer now.
+
 
 ## v1.54.1
 - Fixed from the first `/wp textcheck` run:

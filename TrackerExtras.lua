@@ -233,3 +233,96 @@ do
     end)
   end)
 end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- objective rows: one reading of an objective, the quest being worked on, text kept live in a fight, quest timers
+-- ---------------------------------------------------------------------------------------------------------------------
+-- the name without its count, the count, whether it's done, and its colour (red, orange, yellow, green)
+function RG.TrackerObjective(o)
+  local text = tostring(o.text or "")
+  local have, need = o.numFulfilled, o.numRequired
+  local a, b = text:match("(%d+)/(%d+)%s*$")
+  if not a then a, b = text:match("^(%d+)/(%d+)") end
+  have, need = have or tonumber(a), (need and need > 0 and need) or tonumber(b)
+  local name = (text:gsub(":?%s*%d+/%d+%s*$", ""):gsub("^%d+/%d+%s+", ""))
+  local f = (need and need > 0) and math.min(1, (have or 0) / need) or (o.finished and 1 or 0)
+  local done = o.finished or f >= 1
+  local col = done and "|cff59d973" or (f >= 0.67 and "|cffe6e05a") or (f >= 0.34 and "|cffffb347") or "|cffff7a5c"
+  return name, have, need, done, col
+end
+
+-- is this the quest being worked on: the one the arrow follows, one whose objective is the mob you target, one you're at
+-- (its nearest spot is close), else simply the nearest one
+local nearestId, nearestT
+function RG.TrackerQuestActive(q)
+  if not q or q.complete or q.failed then return false end
+  if q.wp and RG.ArrowTarget and RG.ArrowTarget(q.wp) then return true end
+  local tn = UnitExists and UnitExists("target") and UnitName and UnitName("target")
+  if type(tn) == "string" and tn ~= "" and not (UnitIsDead and UnitIsDead("target")) then
+    for _, o in ipairs(q.objs or {}) do
+      if not o.finished and o.text and o.text:find(tn, 1, true) then return true end
+    end
+  end
+  if q.dist and q.dist < 250 then return true end
+  local now = GetTime and GetTime() or 0
+  if nearestT ~= now then
+    nearestT, nearestId = now, nil
+    for _, x in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+      if not x.complete and not x.failed and x.dist and (not nearestId or x.dist < nearestId.dist) then nearestId = x end
+    end
+  end
+  return nearestId ~= nil and nearestId.id == q.id
+end
+
+-- counts change in a fight but the layout holds still: only the words of the objective rows are rewritten
+function RG.TrackerLiveUpdate()
+  local t = tr(); if not (t and t.rowList and C_QuestLog and C_QuestLog.GetQuestObjectives) then return end
+  local cache = {}
+  for _, b in pairs(t.rowList) do
+    local lv = b._live
+    if lv and b:IsShown() and b.text and b.right then
+      local objs = cache[lv[1]]; if not objs then objs = C_QuestLog.GetQuestObjectives(lv[1]) or {}; cache[lv[1]] = objs end
+      local o = objs[lv[2]]
+      if o and o.text then
+        local name, have, need, done, col = RG.TrackerObjective(o)
+        b.text:SetText((done and "|cff8a8a8a" or "|cffe6e6e6") .. name .. "|r")
+        b.right:SetText((need and need > 0) and (col .. (have or 0) .. "/" .. need .. "|r") or "")
+      end
+    end
+  end
+end
+
+-- a timed quest's time left, "4:32" (red under a minute), or "" when it isn't timed
+function RG.TrackerTimerText(id)
+  if not (id and C_QuestLog and C_QuestLog.GetTimeAllowed) then return "" end
+  local ok, total, elapsed = pcall(C_QuestLog.GetTimeAllowed, id)
+  if not ok or not total or total <= 0 then return "" end
+  local left = math.max(0, total - (elapsed or 0))
+  return string.format("%s%d:%02d|r  ", left < 60 and "|cffff5a4d" or "|cffffd100", math.floor(left / 60), math.floor(left % 60))
+end
+if C_Timer and C_Timer.NewTicker then
+  C_Timer.NewTicker(1, function()
+    local t = tr(); if not (t and t.rowList and t:IsShown()) then return end
+    for _, b in pairs(t.rowList) do
+      if b._timer and b:IsShown() and b.right then b.right:SetText(RG.TrackerTimerText(b._timer) .. (b._rbase or "")) end
+    end
+  end)
+end
+
+-- the target changes which quest is being worked on
+do
+  local f = CreateFrame("Frame")
+  pcall(f.RegisterEvent, f, "PLAYER_TARGET_CHANGED")
+  f:SetScript("OnEvent", function() if RG.Opt and RG.Opt("trackerFocus") and RG.QueueTracker then RG.QueueTracker() end end)
+end
+
+-- a quest's link into the chat box that's open (force: open one)
+function RG.LinkQuestInChat(q, force)
+  if not q then return false end
+  local eb = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
+  if not eb and not force then return false end
+  local link = (GetQuestLink and GetQuestLink(q.id)) or (C_QuestLog and C_QuestLog.GetQuestLink and C_QuestLog.GetQuestLink(q.id))
+  if not link then return false end
+  if not eb and ChatFrame_OpenChat then pcall(ChatFrame_OpenChat, ""); eb = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow() end
+  return (ChatEdit_InsertLink and ChatEdit_InsertLink(link)) and true or false
+end

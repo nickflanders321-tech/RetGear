@@ -19,6 +19,7 @@ for _, o in ipairs({
   { key = "compactTracker", label = "Keep the tracker short (fewer lines: quests near you first, a one-line fishing readout)", default = true },
   { key = "trackerRoomy", label = "Roomier tracker (more space between lines)", default = false },
   { key = "trackerObjectives", label = "Tracker: list each quest's objectives under it, coloured by progress (off: one line per quest)", default = true },
+  { key = "trackerFocus", label = "Tracker: only the quest you're working on shows its objectives (the one you're at, targeting or following; the rest are one line)", default = false },
   { key = "trackerItems", label = "Tracker: a button for a quest's usable item (click to use it; frozen while you fight)", default = true },
   { key = "mapClicks",     label = "Let map clicks drive the arrow (quests picked on the map, minimap Ctrl-click, Questie and TomTom pins)", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
@@ -687,8 +688,9 @@ function RG.QuestObjectiveSpot(title, objName)
       end
     end
   end
-  best = best or (any and any.s)
-  if best then return best.wp, best.src end
+  local dist = best and bestD
+  if not best and any then best, dist = any.s, any.d end
+  if best then return best.wp, best.src, dist end
 end
 
 -- Nearest spot on your continent; turnin = true only looks at turn-ins.
