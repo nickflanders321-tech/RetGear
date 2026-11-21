@@ -876,6 +876,38 @@ function RG.ArcadeGiftCards()
   return got
 end
 
+-- the Guild Reserve (ArcadeReserve.lua) draws its cards the way a pack does, and books each pull the way a pack does
+function RG.ArcadePickCard()
+  local a = store(); if not a or #CARDS == 0 then return nil end
+  if not byTier or RG.ArcadePoolsDirty then buildPools(); RG.ArcadePoolsDirty = nil end
+  return rollCard(a)
+end
+-- one card pulled outside a pack: a copy of that print goes into the collection, with what a pack does for each card
+-- (new card, new print, the rarest pull, the daily goals, the sets it finishes); returns the pull and the notes
+function RG.ArcadeAddPull(c, f)
+  local a = store(); if not (a and c and FINISH[f] and CARDS[c.id] == c) then return nil end
+  local key = c.key or c.name
+  local isNew = owned(a, c.id) == 0
+  if isNew then a.fresh = a.fresh or {}; a.fresh[key] = true end
+  local slot = a.cards[key] or {}
+  local newPrint = (not isNew) and (slot[f] or 0) == 0
+  slot[f] = (slot[f] or 0) + 1
+  a.cards[key] = slot
+  local g = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id) }
+  local r = a.rarest
+  if not r or RG.ArcadeRareScore(f, c.tier) > RG.ArcadeRareScore(r.finish, r.tier) then
+    if r then g.record = true end
+    a.rarest = { name = c.name, finish = f, tier = c.tier }
+  end
+  local notes = {}
+  local function note(x) if x then notes[#notes + 1] = x end end
+  if f >= 3 then note(goalProgress(a, "shiny", 1)) end
+  if isNew then note(goalProgress(a, "new5", 1)) end
+  local doneSets = claimSets(a)
+  for _, s in ipairs(doneSets) do notes[#notes + 1] = "Set reward: " .. s end
+  return g, notes
+end
+
 -- reward seals: a guaranteed rare, and a holo or better to finish
 function RG.ArcadeGrantBonus(n)
   local a = store(); if not a then return end

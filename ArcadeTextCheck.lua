@@ -138,6 +138,9 @@ function RG.ArcadeTextCheck()
   for _, sec in ipairs({ "dungeon", "raid", "holiday" }) do add("Shop: " .. sec .. " aisle", function() reset(); v.mode = "shop"; v.shopSection = sec; v.shopPage = 0 end, true) end
   add("Grading desk", function() reset(); v.mode = "shop"; v.shopSection = "grading" end)
   add("Guild Ledger", function() reset(); v.mode = "shop"; v.shopSection = "grading"; v.gradeLedger = true end)
+  for _, tab in ipairs({ "packs", "vault", "market" }) do
+    add("Guild Reserve: " .. tab, function() reset(); v.mode = "shop"; v.shopSection = "reserve"; if RG.ArcadeReserveTab then RG.ArcadeReserveTab(tab) end end)
+  end
   add("Today", function() reset(); v.mode = "today" end)
   add("Feats", function() reset(); v.mode = "feats" end, true)
   add("Trade", function() reset(); v.mode = "trade"; v.tradePage = 0 end, true)

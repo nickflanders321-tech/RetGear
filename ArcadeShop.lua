@@ -364,7 +364,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   if not (RG.ArcadeDunPools and next(RG.ArcadeDunPools)) and RG.ArcadePackOdds then pcall(RG.ArcadePackOdds, "normal") end
   local all = entries(ctx, view)
   local sec = view.shopSection
-  if sec == "grading" then shop:Hide(); return end   -- (the grading desk: ArcadeGradingUI.lua)
+  if sec == "grading" or sec == "reserve" then shop:Hide(); return end   -- (the grading desk: ArcadeGradingUI.lua; the Guild Reserve: ArcadeReserveUI.lua)
   if sec ~= "dungeon" and sec ~= "raid" and sec ~= "holiday" then sec = nil; view.shopSection = nil end
   for _, r in ipairs(shop.rows) do r:Hide() end
   shop.empty:SetText("")

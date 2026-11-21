@@ -128,6 +128,7 @@ local function mark(name, n)
   a.first[name] = (a.first[name] or 0) + (n or 1)
   discover(name, nil, true)
 end
+RG.ArcadeFirstMark = mark   -- (a card that comes some other way than a pack: the Guild Reserve)
 do
   local open = RG.ArcadeOpenPack
   if open then

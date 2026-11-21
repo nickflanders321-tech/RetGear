@@ -660,6 +660,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
     B.sub = U().fs(B, "body", 11.5); B.sub:SetPoint("BOTTOMLEFT", 50, 6); B.sub:SetTextColor(0.8, 0.72, 0.55); B.sub:SetJustifyH("LEFT")
     B.btn = U().gbtn(B, "Open desk", 118, 26, open); B.btn:SetPoint("RIGHT", -10, 0); B.btn:SetActive(true)
     desk.door = B
+    RG.ArcadeGradeBanner = B   -- (the Guild Reserve's button joins it: ArcadeReserveUI.lua)
   end
   local st = RG.ArcadeGradeState()
   if rawget(desk, "door") then
@@ -669,7 +670,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
     elseif nq > 0 then sub = nq .. " parcel" .. (nq == 1 and " is" or "s are") .. " at the guild, back soon."
     else sub = "Send your best cards to be graded: a graded card sells for more." end
     desk.door.sub:SetText(sub)
-    if RG.ArcadeFitLine then RG.ArcadeFitLine(desk.door.sub, 520, 11.5, 9, "body") end
+    if RG.ArcadeFitLine then RG.ArcadeFitLine(desk.door.sub, 410, 11.5, 9, "body") end   -- (room for the two buttons at the right)
     desk.door:SetShown(view.mode == "shop" and view.shopSection == nil)
   end
   local on = view.mode == "shop" and view.shopSection == "grading"
@@ -815,10 +816,10 @@ function RG.ArcadeGradePlay(rec, s, opts)
   opts = opts or {}
   rv.rec, rv.s, rv.opts = rec, s, opts
   local c = cardOf(rec.key)
-  rv.title:SetText("BACK FROM THE GRADERS"); rv.sub:SetText(opts.sub or "A parcel from the Waypoint Grading Guild")
+  rv.title:SetText(opts.reserve and "FROM THE GUILD RESERVE" or "BACK FROM THE GRADERS"); rv.sub:SetText(opts.sub or "A parcel from the Waypoint Grading Guild")
   rv.who:SetText(((UnitName and select(2, pcall(UnitName, "player"))) or ""))
   local express = rec.svc == "express"
-  rv.svcT:SetText(express and "EXPRESS  ·  1 HOUR" or "STANDARD"); rv.stamp:SetShown(express)
+  rv.svcT:SetText(opts.reserve and (string.upper(opts.reserve.name or "") .. "  ·  RESERVE") or (express and "EXPRESS  ·  1 HOUR" or "STANDARD")); rv.stamp:SetShown(express)
   rv:Show()
   function rv:Go(stage)
     self.stage, self.t = stage, 0
@@ -853,6 +854,7 @@ function RG.ArcadeGradePlay(rec, s, opts)
     local first = (not self.opts.demo) and g >= 10 and #RG.ArcadeGradeCases(self.rec.key) <= 1
     self.line:SetText(g >= 10 and ("Flawless." .. (first and ("\nYour first Gem Mint " .. (cardOf(self.rec.key) or {}).name .. ".") or ""))
       or (g >= 8 and (miss and ("\"" .. miss .. "\"") or "A fine copy.") or ("\"This one's seen some roads.\"" .. (miss and ("\n" .. miss) or ""))))
+    if self.opts.note and self.opts.note ~= "" then self.line:SetText((self.line:GetText() or "") .. "\n" .. self.opts.note) end   -- (a Reserve pack: its print, and whether it is new)
     self.rays:SetShown(g >= 10); self.rays:SetVertexColor(1, 0.85, 0.45, g >= 10 and 0.55 or 0)
     if RG.ArcadeSound then RG.ArcadeSound(g >= 10 and "best" or (g >= 8 and "reward" or "pick")) end
     if RG.ArcadeFx and g >= 10 then pcall(RG.ArcadeFx, "best") end
@@ -860,6 +862,15 @@ function RG.ArcadeGradePlay(rec, s, opts)
     local cert = self.rec.id
     local function nextOne() if more > 0 then RG.ArcadeGradeReveal(1) else self:Hide() end end
     if self.opts.demo then setButtons("Close", function() self:Hide() end, nil, nil)
+    elseif self.opts.reserve then
+      -- a Reserve pack: sell it back now (today's price), or keep it (it is in your collection and your Vault already)
+      local v = RG.ArcadeGradeValue(full)
+      local function sellIt() local ok, msg = RG.ArcadeGradeSell(cert); say(msg); self:Hide() end
+      setButtons("Sell back  ·  " .. v, function()
+        if g >= 9 then
+          self.confirm:Ask("Sell your " .. g .. " (" .. RG.ArcadeGradeName(g) .. ") for " .. v .. " coins?\nIt leaves your collection for good.", "Sell it", sellIt)
+        else sellIt() end
+      end, "Keep it", function() self:Hide() end)
     elseif g <= 7 then
       setButtons("Crack the case", function()
         local ok, msg = RG.ArcadeGradeCrack(cert); say(msg); nextOne()

@@ -52,10 +52,8 @@ local function gradeOf(s)
   if mn >= 9.5 and tens >= 3 then return 10 end
   return math.max(1, math.min(9, math.floor(sum / 4), math.floor(mn) + 1))
 end
--- roll a condition: the grade first (so the odds are exactly the table's), then four scores that give it
-local function rollCondition()
-  local x, g = math.random(), 1
-  for k = 10, 1, -1 do x = x - ODDS[k]; if x <= 0 then g = k; break end end
+-- four scores that give a grade
+local function rollFor(g)
   local s = {}
   if g == 10 then
     for i = 1, 4 do s[i] = 10 end
@@ -74,7 +72,14 @@ local function rollCondition()
   for i = 1, 4 do s[i] = math.max(1, g) end   -- (never reached in practice)
   return s
 end
+-- roll a condition: the grade first (so the odds are exactly the table's), then four scores that give it
+local function rollCondition()
+  local x, g = math.random(), 1
+  for k = 10, 1, -1 do x = x - ODDS[k]; if x <= 0 then g = k; break end end
+  return rollFor(g)
+end
 RG.ArcadeGradeOf, RG.ArcadeGradeRoll, RG.ArcadeGradeDecode, RG.ArcadeGradeEncode = gradeOf, rollCondition, decode, encode
+RG.ArcadeGradeRollFor = function(g) return rollFor(math.max(1, math.min(10, math.floor(tonumber(g) or 1)))) end   -- (the Guild Reserve: a grade it has already chosen)
 
 -- the line before the last score: what it needs ("Surface: a 10 makes this Gem Mint. A 9 keeps it Mint.")
 function RG.ArcadeGradeStakes(first3)
@@ -232,31 +237,47 @@ function RG.ArcadeGradeTick()
   return n
 end
 -- open a parcel: its case, with the grade (the reveal shows it first)
-function RG.ArcadeGradeOpen(i)
-  local a = store(); if not a then return nil end
-  local g = G(a)
-  local q = table.remove(g.back, i or 1); if not q then return nil end
-  local s = decode(q.cond) or rollCondition()
+-- a case made from four scores: the grade, the certificate (its number and its check), and the first line of its history.
+-- own: the grading feats and the quests count it (a copy you sent to the graders); a Guild Reserve slab doesn't
+-- (they are for your own luck at the graders: a 10 you bought isn't a Gem Hunter's)
+local function issue(a, g, key, f, s, svc, own)
   local grade = gradeOf(s)
   local cert = g.nextCert; g.nextCert = g.nextCert + 1
   local zone = (GetRealZoneText and select(2, pcall(GetRealZoneText))) or nil
-  local r = { cert = cert, key = q.key, f = q.f, grade = grade, s = encode(s), when = date and date("%d %b %Y") or "", t = now(), svc = q.svc,
+  local r = { cert = cert, key = key, f = f, grade = grade, s = encode(s), when = date and date("%d %b %Y") or "", t = now(), svc = svc,
     by = (UnitName and select(2, pcall(UnitName, "player"))) or "?", where = type(zone) == "string" and zone or nil, owner = meOwner() }
   r.id = r.owner .. "#" .. cert
   r.sig = sign(r)
   r.hist = { { "graded", r.by, r.when } }
   g.cases[#g.cases + 1] = r
-  a.stats = a.stats or {}; a.stats.graded = (a.stats.graded or 0) + 1
-  a.feat = a.feat or {}; a.feat.n = a.feat.n or {}
-  local n = a.feat.n
-  n.graded = (n.graded or 0) + 1
-  if grade >= 10 then n.gem = (n.gem or 0) + 1 end
-  if grade >= 9 then n.grade9 = (n.grade9 or 0) + 1 end
-  if q.f == 4 and grade >= 9 then n.gradeFull = (n.gradeFull or 0) + 1 end
-  local c = cardOf(q.key)
-  if c and c.tier == 7 and grade >= 10 then n.gradeMythic = (n.gradeMythic or 0) + 1 end
-  if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, "gradeOpened", 1) end
+  if own then
+    a.stats = a.stats or {}; a.stats.graded = (a.stats.graded or 0) + 1
+    a.feat = a.feat or {}; a.feat.n = a.feat.n or {}
+    local n = a.feat.n
+    n.graded = (n.graded or 0) + 1
+    if grade >= 10 then n.gem = (n.gem or 0) + 1 end
+    if grade >= 9 then n.grade9 = (n.grade9 or 0) + 1 end
+    if f == 4 and grade >= 9 then n.gradeFull = (n.gradeFull or 0) + 1 end
+    local c = cardOf(key)
+    if c and c.tier == 7 and grade >= 10 then n.gradeMythic = (n.gradeMythic or 0) + 1 end
+    if RG.ArcadeQuestEvent then pcall(RG.ArcadeQuestEvent, "gradeOpened", 1) end
+  end
   if RG.ArcadeGradeShare then pcall(RG.ArcadeGradeShare) end   -- (your guild sees it: ArcadeGradingGuild.lua)
+  return r, s
+end
+function RG.ArcadeGradeOpen(i)
+  local a = store(); if not a then return nil end
+  local g = G(a)
+  local q = table.remove(g.back, i or 1); if not q then return nil end
+  local s = decode(q.cond) or rollCondition()
+  return issue(a, g, q.key, q.f, s, q.svc, true)
+end
+-- a copy that comes already graded (the Guild Reserve, ArcadeReserve.lua): the copy must already be in a.cards;
+-- its case is made the way a parcel's is, from the scores s
+function RG.ArcadeGradeIssue(key, f, s, svc)
+  local a = store(); if not (a and cardOf(key) and f and f >= 1 and f <= 5 and type(s) == "table") then return nil end
+  local r = issue(a, G(a), key, f, s, svc or "reserve", false)
+  conditions(a, key, f)   -- (the case holds that copy: no hidden condition is left for it)
   return r, s
 end
 function RG.ArcadeGradeCases(key, f)

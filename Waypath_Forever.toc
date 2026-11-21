@@ -133,6 +133,8 @@ ArcadeMythicPlus.lua
 ArcadeGrading.lua
 ArcadeGradingUI.lua
 ArcadeGradingGuild.lua
+ArcadeReserve.lua
+ArcadeReserveUI.lua
 ArcadeGilded.lua
 ArcadeFit.lua
 ArcadeTextCheck.lua
