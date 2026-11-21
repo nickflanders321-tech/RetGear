@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.55.0
+- Fixed four "Duplicate File Load Detected" warnings at login on WoW Forever 1.60.1 (reported in #43, with the fix): the second and third blocks of files that "Cards only" mode switches off now start and end with their own marker files, so the game loads every marker and the switch covers those blocks again.
+- Engineering: the plan mentions the Thorium Shells wow-professions.com's updated WoW Forever guide adds from 285 (2 Thorium Bar, 1 Dense Blasting Powder each; one craft makes 200 shells to sell or give to a hunter).
+
 ## v1.54.1
 - Fixed from the first `/wp textcheck` run:
   - long card names on small cards (the collection grid, the Album) that the game still cut short: their two lines are no longer clipped by the ribbon's height, and they get a little smaller once the card is on screen, until the whole name fits;

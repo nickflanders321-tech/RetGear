@@ -135,7 +135,7 @@ ArcadeGradingGuild.lua
 ArcadeGilded.lua
 ArcadeFit.lua
 ArcadeTextCheck.lua
-GateOn.lua
+GateOn2.lua
 FishMode.lua
 FishTools.lua
 FishHUD.lua
@@ -149,9 +149,9 @@ Travel.lua
 NodeData.lua
 Nodes.lua
 Ammo.lua
-GateOff.lua
+GateOff2.lua
 Setup.lua
-GateOn.lua
+GateOn3.lua
 Detect.lua
 Group.lua
 Bags.lua
@@ -165,5 +165,5 @@ UI.lua
 GearPlus.lua
 GearSources.lua
 Compat.lua
-GateOff.lua
+GateOff3.lua
 ModeEnd.lua
