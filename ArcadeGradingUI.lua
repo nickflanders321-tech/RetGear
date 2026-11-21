@@ -646,38 +646,13 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   -- the Shop's storefront: a way in
   local shop = RG.ArcadeShopFrame
   if shop and not rawget(desk, "door") then
-    -- a big brass button with the Guild's gold seal, beside "THE PACK SHOP" (the coins are on the right), glowing
-    -- softly, and more brightly when graded cards are waiting to be opened
-    local d = U().gbtn(shop, "Grading desk", 236, 30, function() view.shopSection = "grading"; view.gradeCert = nil; view.gradeLedger = nil; RG.ArcadeRefresh(true) end, true)
-    d:SetPoint("LEFT", shop.head, "RIGHT", 20, 2)
-    d:SetActive(true)
-    d.label:ClearAllPoints(); d.label:SetPoint("CENTER", 14, 0)
-    d.glow = d:CreateTexture(nil, "BACKGROUND", nil, -1); d.glow:SetTexture(MEDIA .. "Glow"); d.glow:SetBlendMode("ADD")
-    d.glow:SetPoint("TOPLEFT", -26, 22); d.glow:SetPoint("BOTTOMRIGHT", 26, -22); d.glow:SetVertexColor(1, 0.8, 0.35)
-    d.seal = d:CreateTexture(nil, "OVERLAY"); d.seal:SetTexture(MEDIA .. "GradeSeals"); d.seal:SetTexCoord(0, 0.25, 0, 1)   -- (the gold seal)
-    d.seal:SetSize(36, 36); d.seal:SetPoint("CENTER", d, "LEFT", 20, 0)
-    d.t = 0
-    d:SetScript("OnUpdate", function(self, el)
-      self.t = self.t + (el or 0)
-      local hot = (self.waiting or 0) > 0
-      local k = 0.5 + 0.5 * math.sin(self.t * (hot and 4 or 1.6))
-      self.glow:SetAlpha(hot and (0.55 + 0.4 * k) or (0.22 + 0.16 * k))
-    end)
-    d:HookScript("OnEnter", function(self)
-      GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-      GameTooltip:AddLine("The Waypoint Grading Guild", 1, 0.86, 0.5)
-      GameTooltip:AddLine("Send a card to be graded, open the parcels that come back, and see your graded cases and the Guild Ledger.", 1, 1, 1, true)
-      if (self.waiting or 0) > 0 then GameTooltip:AddLine(self.waiting .. " graded card" .. (self.waiting == 1 and " is" or "s are") .. " waiting to be opened.", 0.48, 0.88, 0.54, true) end
-      GameTooltip:Show()
-    end)
-    d:HookScript("OnLeave", function() GameTooltip:Hide() end)
-    desk.door = d
+    desk.door = U().gbtn(shop, "Grading desk", 150, 24, function() view.shopSection = "grading"; view.gradeCert = nil; view.gradeLedger = nil; RG.ArcadeRefresh(true) end)
+    desk.door:SetPoint("LEFT", shop.head, "RIGHT", 18, 0)   -- (beside "THE PACK SHOP"; the coins are on the right)
   end
   local st = RG.ArcadeGradeState()
   if rawget(desk, "door") then
     local n = #st.back
-    desk.door.waiting = n
-    desk.door:SetText(n > 0 and ("GRADING DESK  |cff1f6b2a· " .. n .. "|r") or "GRADING DESK")
+    desk.door:SetText(n > 0 and ("Grading desk  |cff7be08a" .. n .. "|r") or "Grading desk")
     desk.door:SetShown(view.mode == "shop" and view.shopSection == nil)
   end
   local on = view.mode == "shop" and view.shopSection == "grading"
