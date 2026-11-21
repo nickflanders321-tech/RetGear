@@ -37,6 +37,7 @@ local fader
 local function fadeTo(target)
   if not fader then fader = CreateFrame("Frame", nil, WorldFrame or UIParent) end
   local from = UIParent and UIParent:GetAlpha() or 1
+  if target and RG.db then RG.db.fishFaded = true end   -- (remembered, so a fade left behind by a /reload is given back)
   local t = 0
   fader:SetScript("OnUpdate", function(self, dt)
     t = t + dt
@@ -45,6 +46,14 @@ local function fadeTo(target)
     if p >= 1 then self:SetScript("OnUpdate", nil) end
   end)
 end
+
+-- the interface back at full strength, whatever state we're in
+local function restoreUI()
+  if not (RG.db and RG.db.fishFaded) then return end   -- only a fade that was ours
+  if UIParent and (UIParent:GetAlpha() or 1) < 1 then UIParent:SetAlpha(1) end
+  if not (fader and fader:GetScript("OnUpdate")) then RG.db.fishFaded = nil end
+end
+RG.FishModeRestoreUI = restoreUI
 
 function RG.FishModeActive() return active end
 
@@ -154,9 +163,25 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3)
     RG.FishModeExit()
     if event ~= "PLAYER_STARTED_MOVING" then castStart, castEnd = nil, nil end
   elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_LOGOUT" then
-    if active then active = false; if UIParent then UIParent:SetAlpha(1) end end
+    if active then active = false end
+    -- (the fade is the game's own interface alpha, and it survives a /reload: always give it back, even when this
+    -- session never faded it, so a fade left behind by the last one can't leave you with no interface)
+    if fader then fader:SetScript("OnUpdate", nil) end
+    restoreUI()
   end
 end)
+-- every half second, whether or not the fishing HUD is on screen: the option turned off (in Settings or by a command) gives
+-- the interface back, and so does a long wait without a cast (the HUD's own refresh only runs while the HUD is shown)
+local function tick()
+  if active and not RG.Opt("fishImmersive") then RG.FishModeExit() end
+  pcall(RG.FishModeRefresh)
+  if not active and not (fader and fader:GetScript("OnUpdate")) then restoreUI() end
+end
+RG.FishModeTick = tick
+if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(0.5, tick) end
+-- (and once now: a fade a previous session left behind)
+if C_Timer and C_Timer.After then C_Timer.After(2, restoreUI) end
+
 -- Esc (game menu) and Enter (chat) bring the interface back
 if GameMenuFrame and GameMenuFrame.HookScript then GameMenuFrame:HookScript("OnShow", function() RG.FishModeExit() end) end
 if hooksecurefunc and ChatEdit_ActivateChat then pcall(hooksecurefunc, "ChatEdit_ActivateChat", function() RG.FishModeExit() end) end

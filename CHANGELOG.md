@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Fix: the interface stayed hidden after turning Immersive fishing off and on.** The fade is the game's own interface transparency, and it was only given back by the fishing HUD's refresh, which doesn't run when the HUD isn't on screen, and a /reload or relog while faded kept it. Now a check every half second gives the interface back whenever Immersive fishing is off (from Settings or `/wp fishmode`) or after the idle time, and a fade left behind by a previous session is cleared when you log in or reload.
+
 ## v1.55.0
 - **Cards: the Guild Reserve.** Two new packs from the Waypoint Grading Guild, **Summit** (140 coins) and **Pinnacle** (300 coins), in a new "Guild Reserve" button on the Shop's Guild banner (or `/wp reserve`). A pack is one card that comes **already graded and in its case**, the same case as a card you sent to the graders, so it skips the wait. Summit is grade 8 or better, Pinnacle 9 or better; either can be a Rare, Holo, **Full art** or **Gilded** print, or a **Mythic** (1 in 60 and 1 in 18; every Mythic but The 1 Ring). The odds are on the page before you buy, with what a pack sells back for on an average day (about 60% of its price). Opening one plays the grading reveal; then sell it back or keep it. It's coins only, one click to buy.
   - A Reserve case is a case in every way: it sells for its grade, goes on your showcase, can be cracked out of its case, offered to your group, and is shared with your guild. It doesn't count towards the grading feats and quests (those are for cards you sent to the graders), and it counts for sets, the album and First Edition like any pull.
