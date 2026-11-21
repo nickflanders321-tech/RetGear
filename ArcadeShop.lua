@@ -97,7 +97,7 @@ end
 local MEDIA = "Interface\\AddOns\\Waypath\\Media\\Arcade\\"
 local X0, PW = 34, 722                      -- the page's left edge and width in the window
 local CW, CH, CG = 230, 248, 16             -- a display case
-local AH = 168                              -- an aisle banner
+local AH = 154                              -- an aisle banner
 local RH, RP, ROWS = 46, 50, 8              -- a list row, its pitch, rows a page
 local AISLES = { { "dungeon", "Dungeons", "Dungeon packs" }, { "raid", "Raids", "Raid packs" }, { "holiday", "Holidays", "Holiday packs" } }
 local PACKCOL = { { 0.62, 0.52, 1 }, { 1, 0.62, 0.28 }, { 0.3, 0.92, 0.82 } }
@@ -331,8 +331,8 @@ local function buildShop(frame, u, view)
   shop.back:SetPoint("TOPLEFT", X0, -156)
   shop.cases, shop.aisles, shop.rows = {}, {}, {}
   for i = 1, 3 do
-    local c = makeCase(shop, u); c:SetPoint("TOPLEFT", shop, "TOPLEFT", X0 + (i - 1) * (CW + CG), -194); shop.cases[i] = c
-    local b = makeAisle(shop, u); b:SetPoint("TOPLEFT", shop, "TOPLEFT", X0 + (i - 1) * (CW + CG), -454); shop.aisles[i] = b
+    local c = makeCase(shop, u); c:SetPoint("TOPLEFT", shop, "TOPLEFT", X0 + (i - 1) * (CW + CG), -240); shop.cases[i] = c
+    local b = makeAisle(shop, u); b:SetPoint("TOPLEFT", shop, "TOPLEFT", X0 + (i - 1) * (CW + CG), -500); shop.aisles[i] = b
     b:SetScript("OnClick", function(self) view.shopSection = self.key; view.shopPage = 0; RG.ArcadeRefresh(true) end)
   end
   for i = 1, ROWS + 3 do shop.rows[i] = makeRow(shop, u) end

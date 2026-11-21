@@ -649,13 +649,27 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   -- the Shop's storefront: a way in
   local shop = RG.ArcadeShopFrame
   if shop and not rawget(desk, "door") then
-    desk.door = U().gbtn(shop, "Grading desk", 150, 24, function() view.shopSection = "grading"; view.gradeCert = nil; view.gradeLedger = nil; RG.ArcadeRefresh(true) end)
-    desk.door:SetPoint("LEFT", shop.head, "RIGHT", 18, 0)   -- (beside "THE PACK SHOP"; the coins are on the right)
+    -- the guild's banner across the top of the storefront: what the guild is, what's waiting, and the way in
+    local open = function() view.shopSection = "grading"; view.gradeCert = nil; view.gradeLedger = nil; RG.ArcadeRefresh(true) end
+    local B = CreateFrame("Frame", nil, shop, "BackdropTemplate")
+    B:SetSize(722, 40); B:SetPoint("TOPLEFT", shop, "TOPLEFT", 34, -192)
+    B:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    B:SetBackdropColor(0.2, 0.12, 0.06, 0.97); B:SetBackdropBorderColor(0.54, 0.4, 0.19, 0.95)
+    B.seal = B:CreateTexture(nil, "ARTWORK"); B.seal:SetTexture(MEDIA .. "GradeWax"); B.seal:SetTexCoord(0, 0.5, 0, 0.5); B.seal:SetSize(30, 30); B.seal:SetPoint("LEFT", 10, 0)
+    B.title = U().fs(B, "head", 13); B.title:SetPoint("TOPLEFT", 50, -6); B.title:SetTextColor(0.95, 0.88, 0.7); B.title:SetText("Waypoint Grading Guild")
+    B.sub = U().fs(B, "body", 11.5); B.sub:SetPoint("BOTTOMLEFT", 50, 6); B.sub:SetTextColor(0.8, 0.72, 0.55); B.sub:SetJustifyH("LEFT")
+    B.btn = U().gbtn(B, "Open desk", 118, 26, open); B.btn:SetPoint("RIGHT", -10, 0); B.btn:SetActive(true)
+    desk.door = B
   end
   local st = RG.ArcadeGradeState()
   if rawget(desk, "door") then
-    local n = #st.back
-    desk.door:SetText(n > 0 and ("Grading desk  |cff7be08a" .. n .. "|r") or "Grading desk")
+    local nb, nq = #st.back, #st.queue
+    local sub
+    if nb > 0 then sub = "|cff7be08a" .. nb .. " parcel" .. (nb == 1 and " is" or "s are") .. " back|r from the guild: open the desk to see the grades."
+    elseif nq > 0 then sub = nq .. " parcel" .. (nq == 1 and " is" or "s are") .. " at the guild, back soon."
+    else sub = "Send your best cards to be graded: a graded card sells for more." end
+    desk.door.sub:SetText(sub)
+    if RG.ArcadeFitLine then RG.ArcadeFitLine(desk.door.sub, 520, 11.5, 9, "body") end
     desk.door:SetShown(view.mode == "shop" and view.shopSection == nil)
   end
   local on = view.mode == "shop" and view.shopSection == "grading"

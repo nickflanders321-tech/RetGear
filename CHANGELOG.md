@@ -13,6 +13,8 @@
   - **Shift-click a quest** with a chat box open to link it in chat; Shift + right-click also has "Link in chat" and "Hide from the tracker" (a "N hidden" line brings them back).
   - **Hover an objective** to see the nearest place for it and how far.
 - **Small boss models:** dragonkin who stand like people (Arygos, Caelestrasz, Anachronos the Ancient, Merithra, Lord Victor Nefarius) and Atiesh were framed as if they were dragons, so they looked small in their card; they sit closer now.
+- **Settings: groups fold away.** The Settings page shows one group open at a time (the last one you opened is remembered); every group heading is a card that says how many of its settings are on ("26 of 33 on"), and the long groups have sub-headings (Tracker: look, Tracker: what it shows, Quests, Arrow and travel, Reminders and tips; Fishing, Bags and vendors, Auction House...). Searching opens whatever matches.
+- **Grading Guild banner in the Shop.** The small "Grading desk" button is now a banner across the top of the Shop with the guild's wax seal: it says whether parcels are back ("2 parcels are back from the guild") or still at the guild, and has the "Open desk" button. The pack cases and aisles below sit a little lower to make room.
 
 
 ## v1.54.1

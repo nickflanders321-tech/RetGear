@@ -2788,10 +2788,26 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerObjectives", "trackerFocus", "trackerItems", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "routeGuide", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
-  { "Gear and combat", { "tooltip", "tooltipBest", "upgradeToast", "paperdoll", "gearPanel", "questUpgradeMarks", "dungeonHelper", "stoneReminder", "ammoReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
+  -- ("#..." starts a sub-heading inside a group; the page shows one group open at a time)
+  { "Leveling and quests", {
+    "#Tracker: look", "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter",
+    "#Tracker: what it shows", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "trackerProfs",
+    "#Quests", "autoQuest", "newQuests", "autoReward", "rewardPicker", "nameplateAlert", "shareObjective",
+    "#Arrow and travel", "arrow", "mapClicks", "spf", "smartPlan", "travelTips", "fpNudge",
+    "#Leveling route (work in progress)", "routeGuide", "autoArrow", "smartStepOrder",
+    "#Reminders and tips", "levelBanner", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Gear and combat", {
+    "#Item tooltips and scores", "tooltip", "tooltipBest", "paperdoll", "gearPanel", "bagArrows",
+    "#Upgrades", "upgradeToast", "questUpgradeMarks", "dungeonHelper",
+    "#Second spec", "healSet", "specSwap",
+    "#Reminders and tips", "stoneReminder", "ammoReminder", "weaponTips", "levelReport" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts", "fieldGuideToasts" } },
-  { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
+  { "Professions, bags and gold", {
+    "#Gathering alerts", "mineReminder", "oreAlert", "oreAlertAll", "herbAlert",
+    "#Fishing", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip",
+    "#Bags and vendors", "sellJunk", "autoRepair", "bagReminder", "sortButton",
+    "#Auction House", "profitWatch", "autoScan", "ahProgress",
+    "#Professions", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
   { "Interface", { "minimap", "sounds", "quietErrors", "sharePrompt" } },
 }
 local function renderGroup()
@@ -2894,9 +2910,15 @@ local function renderSettings()
   local byKey, used, ordered = {}, {}, {}
   for _, o in ipairs(RG.OPTIONS or {}) do byKey[o.key] = o end
   for _, g in ipairs(SETTING_GROUPS) do
-    local list = {}
-    for _, k in ipairs(g[2]) do if byKey[k] then list[#list + 1] = byKey[k]; used[k] = true end end
-    ordered[#ordered + 1] = { g[1], list }
+    local list, subAt, pending = {}, {}, nil
+    for _, k in ipairs(g[2]) do
+      if k:sub(1, 1) == "#" then pending = k:sub(2)
+      elseif byKey[k] then
+        list[#list + 1] = byKey[k]; used[k] = true
+        if pending then subAt[k] = pending; pending = nil end
+      end
+    end
+    ordered[#ordered + 1] = { g[1], list, subAt = subAt }
   end
   local other = {}
   for _, o in ipairs(RG.OPTIONS or {}) do if not used[o.key] then other[#other + 1] = o end end
@@ -2946,11 +2968,30 @@ local function renderSettings()
       RG.RefreshUI()
     end
   end
+  -- one group open at a time (the last one you opened is remembered); a search opens whatever matches
+  local openName = RG.db.settingsOpen
+  if openName == nil then openName = ordered[1] and ordered[1][1] end
   for _, grp in ipairs(ordered) do
+   local isOpen = (q ~= "") or grp[1] == openName
    if #grp[2] > 0 then
-    n = n + 1; setHeader(getRow(n), grp[1])
+    n = n + 1
+    local hr = getRow(n); setHeader(hr, grp[1])
+    -- the heading is a card: click to open or fold it, and it says how many of its settings are on
+    local onN = 0
+    for _, o in ipairs(grp[2]) do if RG.Opt(o.key) then onN = onN + 1 end end
+    backdrop(hr, T.small, nil, 10); hr.hl:Show()
+    hr.head:ClearAllPoints(); hr.head:SetPoint("LEFT", 12, 0)
+    hr.head:SetText((q == "" and (isOpen and "-  " or "+  ") or "") .. grp[1]:upper()); hr.head:SetTextColor(unpack(isOpen and T.gold or T.dim))
+    font(hr.meta, FONT_NUM, sz(11)); hr.meta:ClearAllPoints(); hr.meta:SetPoint("RIGHT", -12, 0)
+    hr.meta:SetText(GREY .. onN .. " of " .. #grp[2] .. " on|r"); hr.meta:Show()
+    hr.h = math.max(hr.h, sz(34))
+    if q == "" then
+      hr.onClick = function() RG.db.settingsOpen = isOpen and "" or grp[1]; RG.RefreshUI() end
+      hr.tip = isOpen and "Click to fold this group away." or "Click to open this group."
+    end
    end
-   for _, o in ipairs(grp[2]) do
+   for _, o in ipairs(isOpen and grp[2] or {}) do
+    if q == "" and grp.subAt and grp.subAt[o.key] then n = n + 1; setHeader(getRow(n), "|cffc9a227" .. grp.subAt[o.key]:upper() .. "|r") end
     n = n + 1
     local on = RG.Opt(o.key)
     setStep(getRow(n), "", o.label, on, function()
