@@ -7,7 +7,7 @@ brackets and the gold card back. Output in Media/Arcade (card textures: 256x512,
   GildedPlate.tga         512x96, the black name plate with its gold border
   GildedPanel.tga         512x160, the black glass text panel with its gold line
   GildedFlecks.tga        fine gold-leaf flecks (added over the card)
-  GildedBack.tga          the gold card back a Gilded card flips from
+  GildedBack.tga          the gold card back a Gilded card flips from: solid gold leaf, the rune ring engraved in black
 Run: python3 tools/arcade/art_gilded.py
 """
 import math, os, random
@@ -119,30 +119,52 @@ def flecks():
     save(im.filter(ImageFilter.GaussianBlur(0.25)), "GildedFlecks")
 
 def back():
-    big = Image.new("RGBA", (W * S, H * S)); d = ImageDraw.Draw(big)
-    y, x = np.mgrid[0:H * S, 0:W * S].astype(np.float32)
-    k = np.clip(1 - np.sqrt(((x - W * S / 2) / (W * S * 0.6)) ** 2 + ((y - H * S / 2) / (H * S * 0.55)) ** 2), 0, 1)
-    rgb = np.stack([18 + 40 * k, 13 + 29 * k, 6 + 8 * k], -1).astype(np.uint8)
-    m = Image.new("L", (W * S, H * S), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, W * S - 1, H * S - 1], 10 * S, fill=255)
-    big = Image.fromarray(np.dstack([rgb, np.asarray(m)]), "RGBA"); d = ImageDraw.Draw(big)
-    for inset, wd, col in ((2, 4, (217, 169, 62)), (6.5, 1.5, (59, 38, 8)), (8.5, 2, (243, 210, 122))):
-        d.rounded_rectangle([inset * S, inset * S, (W - inset) * S, (H - inset) * S], (10 - inset * 0.5) * S, outline=col + (255,), width=int(wd * S))
-    cx, cy, R = W * S / 2, H * S / 2, 70 * S
-    for i in range(int(R), 0, -S):   # the medallion: a gold disc lit from the top left
-        t = i / R
-        col = (int(122 + 133 * (1 - t) ** 0.6), int(79 + 164 * (1 - t) ** 0.7), int(18 + 174 * (1 - t) ** 1.2))
-        d.ellipse([cx - i - (1 - t) * 18 * S, cy - i - (1 - t) * 22 * S, cx + i - (1 - t) * 18 * S, cy + i - (1 - t) * 22 * S], fill=col + (255,))
-    d.ellipse([cx - R, cy - R, cx + R, cy + R], outline=(59, 38, 8, 255), width=3 * S)
-    d.ellipse([cx - R - 5 * S, cy - R - 5 * S, cx + R + 5 * S, cy + R + 5 * S], outline=(243, 210, 122, 255), width=2 * S)
-    def star(r1, r2, col):
-        pts = []
-        for i in range(8):
-            ang = -math.pi / 2 + i * math.pi / 4; r = r1 if i % 2 == 0 else r2
-            pts.append((cx + math.cos(ang) * r, cy + math.sin(ang) * r))
-        d.polygon(pts, fill=col)
-    star(46 * S, 8 * S, (59, 38, 8, 255)); star(28 * S, 5 * S, (243, 210, 122, 255))
-    im = Image.new("RGBA", (256, 512)); im.paste(big.resize((W, H), Image.LANCZOS), (0, 0))
-    save(im, "GildedBack")
+    """the gold leaf back: the usual Waypath back reversed, solid hammered gold with the rune ring engraved in black
+    round a black medallion holding the Waypath mark, in a gold edge with the Gilded corner brackets"""
+    import sys as _s
+    _s.path.insert(0, HERE)
+    import art as A
+    from art import S as AS, CW as ACW, CH as ACH, TW as ATW, TH as ATH, X as AX
+    cx, cy = ACW / 2, ACH / 2
+    def field(w, h, seed, k=1.0):
+        y, x = np.mgrid[0:h, 0:w].astype(np.float32)
+        t = (x / w * 0.6 + y / h * 0.4)
+        band = 0.5 + 0.5 * np.sin(t * 6.2 * k + 0.8)
+        rng = np.random.default_rng(seed); dents = np.zeros((h, w), np.float32)
+        for _ in range(int(w * h / 3000)):
+            ax, ay, r = rng.uniform(0, w), rng.uniform(0, h), rng.uniform(6, 18)
+            dents += np.exp(-((x - ax) ** 2 + (y - ay) ** 2) / (r * r)) * rng.uniform(-0.1, 0.1)
+        v = np.clip(0.55 + 0.45 * band + dents, 0, 1.2)[..., None]
+        dark = np.array([122, 79, 18], np.float32); mid = np.array([217, 166, 64], np.float32); hi = np.array([255, 243, 192], np.float32)
+        return np.clip(np.where(v < 0.6, dark + (mid - dark) * (v / 0.6), mid + (hi - mid) * np.clip((v - 0.6) / 0.6, 0, 1)), 0, 255)
+    img = Image.fromarray(np.dstack([field(ATW, ATH, 11, 0.8), np.full((ATH, ATW), 255.0)]).astype(np.uint8), "RGBA")
+    d = ImageDraw.Draw(img, "RGBA"); step = AX(40)
+    for k in range(0, 20):   # (faint seams, like laid gold leaf)
+        d.line([(k * step + AX(6), 0), (k * step + AX(6), ACH)], fill=(140, 92, 24, 18), width=1)
+        d.line([(0, k * step + AX(4)), (ACW, k * step + AX(4))], fill=(140, 92, 24, 18), width=1)
+    sg = A.sigil(int(ACW * 0.9), (60, 36, 6), seed=11)          # the usual back's rune ring, engraved
+    hl = Image.new("RGBA", sg.size, (255, 240, 190, 0)); hl.putalpha(sg.split()[3].point(lambda v: int(v * 0.6)))
+    img.alpha_composite(hl, (int(cx - sg.width / 2) + AS, int(cy - sg.height / 2) + AS))
+    img.alpha_composite(sg, (int(cx - sg.width / 2), int(cy - sg.height / 2)))
+    R = ACW * 0.24
+    d.ellipse([cx - R, cy - R, cx + R, cy + R], fill=(24, 15, 6, 255), outline=(255, 240, 190, 255), width=AS * 2)
+    lg = Image.open(os.path.join(HERE, "..", "art", "logo.png")).convert("RGBA"); lg = lg.crop(lg.getbbox())
+    ld = int(ACW * 0.4); lg = lg.resize((ld, ld), Image.LANCZOS)
+    img.alpha_composite(lg, (int(cx - ld / 2), int(cy - ld / 2)))
+    # the edge: gold band, a dark and a pale hairline, and the corner brackets
+    shape = A.card_shape()
+    inner = A.mask_rrect(ATW, ATH, (AX(7), AX(7), ACW - 1 - AX(7), ACH - 1 - AX(7)), AX(8))
+    band = A.sub(shape, inner)
+    img.alpha_composite(Image.fromarray(np.dstack([field(ATW, ATH, 9), np.asarray(band)]).astype(np.uint8), "RGBA"))
+    for ins, col, wd in ((AX(12), (90, 58, 12, 255), 2), (AX(14), (243, 210, 122, 230), 1)):
+        m = A.mask_rrect(ATW, ATH, (ins, ins, ACW - 1 - ins, ACH - 1 - ins), AX(5))
+        img.paste(Image.new("RGBA", (ATW, ATH), col), (0, 0), A.sub(m, m.filter(ImageFilter.MinFilter(AS * wd + 1))))
+    cn = Image.open(os.path.join(OUT, "GildedCorner.tga")).convert("RGBA").resize((AX(62), AX(62)), Image.LANCZOS)
+    o = AX(5)
+    img.alpha_composite(cn, (o, o)); img.alpha_composite(cn.transpose(Image.FLIP_LEFT_RIGHT), (ACW - o - cn.width, o))
+    img.alpha_composite(cn.transpose(Image.FLIP_TOP_BOTTOM), (o, ACH - o - cn.height)); img.alpha_composite(cn.transpose(Image.ROTATE_180), (ACW - o - cn.width, ACH - o - cn.height))
+    final = Image.new("RGBA", (ATW, ATH)); final.paste(img, (0, 0), shape)
+    save(final.resize((256, 512), Image.LANCZOS), "GildedBack")
 
 if __name__ == "__main__":
     body(); frames(); edge(); corner(); plate(512, 96, "GildedPlate"); plate(512, 160, "GildedPanel"); flecks(); back()

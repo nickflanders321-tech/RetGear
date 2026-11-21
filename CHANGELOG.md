@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **A new back for Gilded cards:** solid hammered gold leaf with the Waypath rune ring engraved in black round a black medallion holding the Waypath mark, with the Gilded front's gold corner brackets (it replaces the plain gold coin), so a Gilded card waiting face down in a pack stands out at a glance.
 - **Raiders no longer look alike.** Every raider is now drawn by their own name:
   - they wear one of their class's three raid sets (tier 1, 2 or 3, such as Lawbringer, Judgement or Redemption), and the card says which;
   - where the game can't change a model's race, a raider is one of four to six of the game's own characters of their race and sex dressed like their class (it was always the same one, or your own character for your race);
