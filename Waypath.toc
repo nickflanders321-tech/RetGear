@@ -134,6 +134,7 @@ ArcadeGradingUI.lua
 ArcadeGradingGuild.lua
 ArcadeGilded.lua
 ArcadeFit.lua
+ArcadeTextCheck.lua
 GateOn.lua
 FishMode.lua
 FishTools.lua

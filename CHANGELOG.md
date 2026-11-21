@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`/wp textcheck`**: goes through every page of the cards window in your game (every tab, every Album set and its pages, the Shop's aisles, the Grading desk, the Guild Ledger and a few card pages) and lists any text that is cut short, runs outside the window, or runs into another text or a button. It puts the window back where it was; copy the list with Ctrl+A, Ctrl+C.
 - The Album's "Mythic: certain within 10 packs" button no longer runs into the page arrow: it's wider, and its words fit it.
 - Any button's words that are too long for it are made a little smaller to fit.
 
