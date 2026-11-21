@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- **Tracker: objectives under each quest.** Each quest now lists what you still have to do under its name ("Hillsbrad Farmer slain  9/15"), coloured by progress: red, orange, yellow, then green with a tick once it's done. A quest that's ready says "Ready to hand in" with where. Click an objective and the arrow points to the nearest place for it (Shift-click opens the quest log). Prefer one line per quest? Turn off "Tracker: list each quest's objectives under it" in Settings.
+- **Tracker: quest item buttons.** A quest with a usable item (a horn to blow, a vial to fill) gets a button on its right: click to use it, hover for the item, with its count, a cooldown sweep and a dimmed look when you can't use it right now. Turn it off in Settings ("Tracker: a button for a quest's usable item"). The game won't let an add-on move or hide those buttons during a fight, so while one is on the tracker the tracker holds still in combat (no redraw, no drag, no scrolling) and catches up the moment the fight ends.
+- **Tracker: it scrolls.** The mouse wheel scrolls the list once it's taller than its cap (60% of the screen to begin with); a thin bar and a "+3 more quests" strip show there's more. Drag the grip in the bottom corner to choose how tall it gets; double-click the grip for the automatic height. Ctrl, Shift and Alt with the wheel still change size, width and see-through. "Move the tracker back" resets the height too.
+
 ## v1.54.1
 - Fixed from the first `/wp textcheck` run:
   - long card names on small cards (the collection grid, the Album) that the game still cut short: their two lines are no longer clipped by the ribbon's height, and they get a little smaller once the card is on screen, until the whole name fits;

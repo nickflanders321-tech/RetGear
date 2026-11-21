@@ -1,0 +1,235 @@
+local _, RG = ...
+-- The on-screen tracker's scrolling and quest-item buttons (Tracker.lua lays out the rows; this file draws around them):
+--   * the quest list scrolls (mouse wheel) once it is taller than a cap; a thin bar and a "N more quests" strip show there is
+--     more, and a grip in the bottom corner sets the cap (double-click it for the automatic height)
+--   * a quest with a usable item (a horn to blow, a vial to fill) gets a button beside it: click to use it
+-- Quest-item buttons are secure buttons, which the game won't let an add-on move or hide during a fight. So while one is on
+-- the tracker, the tracker holds still in combat (nothing is laid out again, it can't be dragged or scrolled) and catches
+-- up the moment the fight ends.
+local GOLDC = { 0.788, 0.635, 0.153 }
+local function tr() return _G.WaypathTracker end
+local function fighting() return InCombatLockdown and InCombatLockdown() end
+local function frozen() local t = tr(); return fighting() and t and (t.itemsShown or 0) > 0 end
+RG.TrackerFrozen = frozen
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- height, scrolling
+-- ---------------------------------------------------------------------------------------------------------------------
+-- how tall the quest list may get before it scrolls: yours (the grip), else 60% of the screen
+local function cap()
+  local sc = (RG.db and RG.db.trackerScale) or 1
+  local screen = (UIParent and UIParent.GetHeight and UIParent:GetHeight()) or 768
+  local auto = math.floor(screen * 0.6 / sc)
+  local h = (RG.db and RG.db.trackerMaxH) or auto
+  return math.max(90, math.min(h, math.floor(screen / sc) - 120))
+end
+RG.TrackerCap = cap
+
+local chrome
+local function makeChrome()
+  local t = tr()
+  if chrome or not (t and t.scroll) then return chrome end
+  chrome = {}
+  local lvl = t.scroll:GetFrameLevel() + 20
+  -- the thin bar on the right, beside the rows
+  chrome.bar = CreateFrame("Frame", nil, t); chrome.bar:SetFrameLevel(lvl); chrome.bar:SetWidth(3)
+  chrome.track = chrome.bar:CreateTexture(nil, "BACKGROUND"); chrome.track:SetAllPoints(); chrome.track:SetColorTexture(1, 1, 1, 0.06)
+  chrome.thumb = chrome.bar:CreateTexture(nil, "ARTWORK"); chrome.thumb:SetWidth(3); chrome.thumb:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.75)
+  -- "N more quests" over the bottom of the list
+  chrome.more = CreateFrame("Frame", nil, t); chrome.more:SetFrameLevel(lvl); chrome.more:SetHeight(16)
+  chrome.moreBg = chrome.more:CreateTexture(nil, "BACKGROUND"); chrome.moreBg:SetAllPoints(); chrome.moreBg:SetColorTexture(0.063, 0.11, 0.153, 0.94)
+  chrome.moreText = chrome.more:CreateFontString(nil, "OVERLAY"); chrome.moreText:SetFont("Fonts\\ARIALN.TTF", 11, ""); chrome.moreText:SetPoint("CENTER", 0, 0)
+  chrome.moreText:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  chrome.more:Hide(); chrome.bar:Hide()
+  -- the grip
+  local g = CreateFrame("Button", nil, t); g:SetSize(16, 16); g:SetPoint("BOTTOMRIGHT", t, "BOTTOMRIGHT", -2, 2); g:SetFrameLevel(lvl + 2)
+  g.tex = g:CreateTexture(nil, "OVERLAY"); g.tex:SetAllPoints(); g.tex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up"); g.tex:SetVertexColor(1, 1, 1, 0.45)
+  g:SetScript("OnEnter", function(self)
+    self.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Tracker height", GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:AddLine("Drag up or down: how tall the list gets before it scrolls.", 1, 1, 1, true)
+    GameTooltip:AddLine("Double-click: back to the automatic height.", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  g:SetScript("OnLeave", function(self) if not self.drag then self.tex:SetVertexColor(1, 1, 1, 0.45) end; GameTooltip:Hide() end)
+  g:SetScript("OnMouseDown", function(self)
+    if frozen() then return end
+    local now = GetTime and GetTime() or 0
+    if self.last and now - self.last < 0.35 then   -- double-click: automatic again
+      self.last = nil; RG.db.trackerMaxH = nil; RG.TrackerFit(); return
+    end
+    self.last = now
+    self.drag = true; self.startY = select(2, GetCursorPosition()); self.startH = cap()
+    self:SetScript("OnUpdate", function(s)
+      local t2 = tr(); if not t2 then return end
+      local dy = (s.startY - select(2, GetCursorPosition())) / (t2:GetEffectiveScale() or 1)
+      local sc = RG.db.trackerScale or 1
+      local maxH = math.floor(((UIParent:GetHeight() or 768) / sc)) - 120
+      RG.db.trackerMaxH = math.max(90, math.min(maxH, math.floor(s.startH + dy)))
+      RG.TrackerFit()
+    end)
+  end)
+  g:SetScript("OnMouseUp", function(self) self.drag = nil; self:SetScript("OnUpdate", nil); self.tex:SetVertexColor(1, 1, 1, 0.45) end)
+  chrome.grip = g
+  return chrome
+end
+
+-- the bar, the "more" strip and the grip, for the scroll position now
+function RG.TrackerChrome(show)
+  local t = tr()
+  if not (t and t.scroll) then return end
+  local c = makeChrome(); if not c then return end
+  if show == false then c.bar:Hide(); c.more:Hide(); c.grip:Hide(); return end
+  c.grip:Show()
+  local content, view, v = t.contentH or 0, t.viewH or 0, t.scrollV or 0
+  if content > view + 1 and view > 20 then
+    local thumbH = math.max(14, view * view / content)
+    local room = math.max(0, content - view)
+    local y = room > 0 and (v / room) * (view - thumbH) or 0
+    c.bar:ClearAllPoints(); c.bar:SetPoint("TOPLEFT", t.scroll, "TOPRIGHT", 5, 0); c.bar:SetHeight(view)
+    c.thumb:ClearAllPoints(); c.thumb:SetPoint("TOPLEFT", c.bar, "TOPLEFT", 0, -y); c.thumb:SetHeight(thumbH)
+    c.bar:Show()
+    if content - v - view > 6 then
+      local below = 0
+      for _, b in pairs(t.rowList or {}) do
+        if b._q and b:IsShown() and (b._top or 0) >= v + view - 2 then below = below + 1 end
+      end
+      c.more:ClearAllPoints(); c.more:SetPoint("BOTTOMLEFT", t.scroll, "BOTTOMLEFT", 0, 0); c.more:SetPoint("BOTTOMRIGHT", t.scroll, "BOTTOMRIGHT", 0, 0)
+      c.moreText:SetText(below > 0 and ("+" .. below .. " more quest" .. (below == 1 and "" or "s") .. "  ·  scroll") or "more below  ·  scroll")
+      c.more:Show()
+    else c.more:Hide() end
+  else
+    c.bar:Hide(); c.more:Hide()
+  end
+end
+
+function RG.TrackerScrollTo(v)
+  local t = tr(); if not (t and t.scroll) then return end
+  local room = math.max(0, (t.contentH or 0) - (t.viewH or 0))
+  v = math.max(0, math.min(room, v or 0))
+  t.scrollV = v
+  t.scroll:SetVerticalScroll(v)
+  RG.TrackerChrome()
+end
+
+function RG.TrackerScrollBy(delta)
+  local t = tr(); if not t or frozen() then return end
+  RG.TrackerScrollTo((t.scrollV or 0) - (delta or 0) * 44)
+end
+
+-- the visible height for the content there is (the frame, the scroll area, the scroll position)
+function RG.TrackerFit()
+  local t = tr(); if not (t and t.scroll) then return end
+  if frozen() then return end
+  local content = t.contentH or 10
+  local view = math.min(content, cap())
+  t.viewH = view
+  t.scroll:SetHeight(math.max(10, view))
+  t:SetHeight(60 + view + 14)
+  RG.TrackerScrollTo(t.scrollV or 0)
+end
+
+-- the end of a layout: y is how tall the rows came to
+function RG.TrackerFinish(y)
+  local t = tr(); if not (t and t.scroll) then return end
+  t.contentH = math.max(10, y or 10)
+  t.body:SetHeight(t.contentH)
+  RG.TrackerFit()
+  RG.TrackerChrome(true)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- quest items
+-- ---------------------------------------------------------------------------------------------------------------------
+-- the usable item of a quest in your log (the same list the game's own tracker uses), or nil
+function RG.QuestItemFor(q)
+  if not (q and q.idx and GetQuestLogSpecialItemInfo) then return nil end
+  local ok, link, tex, charges, showWhenComplete = pcall(GetQuestLogSpecialItemInfo, q.idx)
+  if not ok or not link then return nil end
+  if q.complete and not showWhenComplete then return nil end
+  local id = tonumber(tostring(link):match("item:(%d+)"))
+  if not id then return nil end
+  local name = GetItemInfo and GetItemInfo(link) or nil
+  return { link = link, tex = tex or (GetItemIcon and GetItemIcon(id)), id = id, charges = charges, name = name }
+end
+
+local pool, used = {}, 0
+local function refreshOne(b)
+  local id = b.id; if not id then return end
+  local start, dur = 0, 0
+  if GetItemCooldown then start, dur = GetItemCooldown(id); start, dur = start or 0, dur or 0 end
+  local cooling = dur > 1.5 and start > 0
+  if b.cd then
+    if cooling then pcall(b.cd.SetCooldown, b.cd, start, dur) elseif b.cd.Clear then pcall(b.cd.Clear, b.cd) end
+  end
+  local n = b.charges and b.charges > 0 and b.charges or (GetItemCount and GetItemCount(id)) or 0
+  b.count:SetText(n > 1 and tostring(n) or "")
+  local usable = true
+  if IsUsableItem then local ok, u = pcall(IsUsableItem, id); if ok and u == false then usable = false end end
+  b.icon:SetDesaturated(not usable); b.icon:SetVertexColor(usable and 1 or 0.55, usable and 1 or 0.55, usable and 1 or 0.55)
+  if usable and not cooling then b.bg:SetColorTexture(1, 0.82, 0, 0.95) else b.bg:SetColorTexture(0.42, 0.36, 0.13, 0.9) end
+end
+local function makeButton()
+  local t = tr()
+  local ok, b = pcall(CreateFrame, "Button", nil, t.body, "SecureActionButtonTemplate")
+  if not ok or not b then return nil end
+  b:SetSize(26, 26)
+  b:RegisterForClicks("AnyUp", "AnyDown")
+  b:SetAttribute("type", "item")
+  b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints(); b.bg:SetColorTexture(0.42, 0.36, 0.13, 0.9)
+  b.icon = b:CreateTexture(nil, "ARTWORK"); b.icon:SetPoint("TOPLEFT", 1, -1); b.icon:SetPoint("BOTTOMRIGHT", -1, 1); b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  b.count = b:CreateFontString(nil, "OVERLAY"); b.count:SetFont("Fonts\\ARIALN.TTF", 11, "OUTLINE"); b.count:SetPoint("BOTTOMRIGHT", -2, 2)
+  local okc, cd = pcall(CreateFrame, "Cooldown", nil, b, "CooldownFrameTemplate")
+  if okc and cd then cd:SetAllPoints(b.icon); b.cd = cd end
+  b:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    if self.link then GameTooltip:SetHyperlink(self.link) end
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("Click: use it" .. (self.questName and (" for " .. self.questName) or ""), GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  pool[#pool + 1] = b
+  return b
+end
+
+function RG.TrackerItemBegin()
+  if fighting() then return end
+  used = 0
+end
+-- put a quest's item button on its row; false when it can't be done now (in a fight, or no room in the pool)
+function RG.TrackerItemPlace(row, itm, q)
+  if not (row and itm) then return false end
+  if fighting() then RG.trackerDeferred = true; return false end
+  used = used + 1
+  local b = pool[used] or makeButton()
+  if not b then used = used - 1; return false end
+  b.id, b.link, b.charges, b.questName = itm.id, itm.link, itm.charges, q and q.title
+  local what = itm.name or itm.link
+  if b._what ~= what then b:SetAttribute("item", what); b._what = what end
+  b:ClearAllPoints(); b:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 3)
+  b:SetFrameLevel((row:GetFrameLevel() or 1) + 4)
+  if itm.tex then b.icon:SetTexture(itm.tex) end
+  b:Show()
+  refreshOne(b)
+  return true
+end
+function RG.TrackerItemEnd()
+  local t = tr(); if not t or fighting() then return end
+  for i = used + 1, #pool do pool[i]:Hide() end
+  t.itemsShown = used
+end
+-- cooldowns, counts and the "can't use it here" look follow the game
+do
+  local f = CreateFrame("Frame")
+  local queued
+  for _, e in ipairs({ "BAG_UPDATE_COOLDOWN", "SPELL_UPDATE_COOLDOWN", "BAG_UPDATE", "ZONE_CHANGED_NEW_AREA", "PLAYER_REGEN_ENABLED" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function()
+    if queued or not (C_Timer and C_Timer.After) then return end
+    queued = true
+    C_Timer.After(0.2, function()
+      queued = nil
+      for i = 1, used do local b = pool[i]; if b and b:IsShown() then pcall(refreshOne, b) end end
+    end)
+  end)
+end

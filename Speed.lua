@@ -18,6 +18,8 @@ for _, o in ipairs({
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
   { key = "compactTracker", label = "Keep the tracker short (fewer lines: quests near you first, a one-line fishing readout)", default = true },
   { key = "trackerRoomy", label = "Roomier tracker (more space between lines)", default = false },
+  { key = "trackerObjectives", label = "Tracker: list each quest's objectives under it, coloured by progress (off: one line per quest)", default = true },
+  { key = "trackerItems", label = "Tracker: a button for a quest's usable item (click to use it; frozen while you fight)", default = true },
   { key = "mapClicks",     label = "Let map clicks drive the arrow (quests picked on the map, minimap Ctrl-click, Questie and TomTom pins)", default = true },
   { key = "bagReminder",   label = "Warn me before my bags fill up", default = true },
 }) do table.insert(RG.OPTIONS, o) end
@@ -654,7 +656,7 @@ buildMyQuests = function()
           n = { dist = d, wp = lw, label = lw[4] }
         end
       end
-      out[#out + 1] = { id = info.questID, title = info.title, level = level, complete = complete, failed = info.isFailed,
+      out[#out + 1] = { id = info.questID, idx = i, title = info.title, level = level, complete = complete, failed = info.isFailed,
         prog = prog, objs = objs, zone = zone, dist = n and n.dist, wp = n and n.wp, label = n and n.label,
         group = (info.suggestedGroup or 0) > 1 }
     end
@@ -666,6 +668,27 @@ buildMyQuests = function()
     return (a.level or 0) < (b.level or 0)
   end)
   return out
+end
+
+-- The nearest known spot for one objective of a quest in your log (the tracker's objective rows: click for the arrow).
+-- Returns the waypoint and where it comes from (a mob or an object), or nil.
+function RG.QuestObjectiveSpot(title, objName)
+  local c, px, py = playerWorld()
+  if not c or not title then return nil end
+  local best, bestD, any
+  for _, s in ipairs(RG.QuestSpots()) do
+    if not s.turnin and s.quest == title and s.wp then
+      local c2, x, y = toWorld(s.wp[1], s.wp[2], s.wp[3])
+      if c2 == c then
+        local d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2)
+        local match = objName and (s.label == objName or (s.label and objName:find(s.label, 1, true)) or (s.src and objName:find(s.src, 1, true)))
+        if match and (not best or d < bestD) then best, bestD = s, d end
+        if not any or d < any.d then any = { s = s, d = d } end
+      end
+    end
+  end
+  best = best or (any and any.s)
+  if best then return best.wp, best.src end
 end
 
 -- Nearest spot on your continent; turnin = true only looks at turn-ins.

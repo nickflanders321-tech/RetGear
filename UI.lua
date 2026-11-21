@@ -2788,7 +2788,7 @@ local function renderFish()
 end
 
 local SETTING_GROUPS = {
-  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "routeGuide", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
+  { "Leveling and quests", { "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerObjectives", "trackerItems", "trackerCombatFold", "trackerInter", "mapClicks", "spf", "fishTracker", "trackerProfs", "levelBanner", "autoQuest", "newQuests", "routeGuide", "autoArrow", "smartStepOrder", "smartPlan", "shareObjective", "autoReward", "rewardPicker", "nameplateAlert", "arrow", "travelTips", "fpNudge", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
   { "Gear and combat", { "tooltip", "tooltipBest", "upgradeToast", "paperdoll", "gearPanel", "questUpgradeMarks", "dungeonHelper", "stoneReminder", "ammoReminder", "healSet", "specSwap", "bagArrows", "weaponTips", "levelReport" } },
   { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts", "fieldGuideToasts" } },
   { "Professions, bags and gold", { "mineReminder", "oreAlert", "oreAlertAll", "herbAlert", "sellJunk", "autoRepair", "bagReminder", "sortButton", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip", "profitWatch", "autoScan", "ahProgress", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
@@ -3002,7 +3002,7 @@ local function renderSettings()
   n = n + 1; setHeader(getRow(n), "Actions")
   action("Run setup again", "Help level, professions, automation and extras, in six short pages", function() if RG.ShowSetup then RG.ShowSetup() end end)
   action("Reset ticked tasks", "Untick every route task you ticked by hand", function() RG.db.stepsDone = {}; RG.RefreshUI(); if RG.RefreshTracker then RG.RefreshTracker() end; RG.Print("Ticked tasks reset.") end)
-  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() RG.db.trackerPos = nil; RG.db.trackerScale = nil; RG.db.trackerWidth = nil; if WaypathTracker then WaypathTracker:ClearAllPoints(); WaypathTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
+  action("Move the tracker back", "Puts the on-screen tracker back on the right side at its normal size", function() RG.db.trackerPos = nil; RG.db.trackerScale = nil; RG.db.trackerWidth = nil; RG.db.trackerMaxH = nil; if WaypathTracker then WaypathTracker:ClearAllPoints(); WaypathTracker:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end; if RG.RefreshTracker then RG.RefreshTracker() end end)
   action("Abandon grey quests", "Drops quests too low to give useful XP (asks first)", function() if RG.AbandonGreyQuests then RG.AbandonGreyQuests() end end)
   action("Swap to 2nd spec gear / back", "Swap between your 2nd spec's set and your main gear (pick the spec on the 2nd Spec tab)", function() if RG.SwapGear then RG.SwapGear() end end)
   action("Show Waypath+ errors", (RG.db.errors and #RG.db.errors or 0) .. " caught. Opens a window you can copy from", function() if RG.ShowErrors then RG.ShowErrors() end end)

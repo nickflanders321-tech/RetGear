@@ -416,7 +416,7 @@ local function build()
   -- (a place saved by its middle or bottom made the tracker grow upwards, over whatever sits above it: pin its top)
   if pos and not tostring(pos[1]):find("^TOP") and C_Timer and C_Timer.After then C_Timer.After(0, function() pcall(RG.TrackerSavePos) end) end
   tr:RegisterForDrag("LeftButton")
-  tr:SetScript("OnDragStart", function(self) if not RG.Opt("trackerLocked") then self:StartMoving() end end)
+  tr:SetScript("OnDragStart", function(self) if not RG.Opt("trackerLocked") and not (RG.TrackerFrozen and RG.TrackerFrozen()) then self:StartMoving() end end)
   -- Ctrl + mouse wheel: size  ·  Shift + mouse wheel: width
   tr:EnableMouseWheel(true)
   tr:SetScript("OnMouseWheel", function(self, delta)
@@ -426,7 +426,11 @@ local function build()
       RG.db.trackerAlpha = math.max(0.15, math.min(0.95, (RG.db.trackerAlpha or 0.5) + delta * 0.05))
     elseif IsShiftKeyDown and IsShiftKeyDown() then
       RG.db.trackerWidth = math.max(240, math.min(460, (RG.db.trackerWidth or 300) + delta * 20))
-    else return end
+    else
+      -- the mouse wheel on its own: scroll the list
+      if RG.TrackerScrollBy then RG.TrackerScrollBy(delta) end
+      return
+    end
     RG.RefreshTracker()
   end)
   tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); RG.TrackerSavePos() end)
@@ -470,12 +474,12 @@ local function build()
       GameTooltip:AddLine("Click: arrow to it  ·  Right-click: skip to the next stop", GOLDC[1], GOLDC[2], GOLDC[3], true)
     else GameTooltip:SetText("Waypath+ tracker", GOLDC[1], GOLDC[2], GOLDC[3]) end
     GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag the panel to move it", 0.8, 0.8, 0.8)
-    GameTooltip:AddLine("Ctrl / Shift / Alt + mouse wheel: size, width, see-through", 0.8, 0.8, 0.8)
+    GameTooltip:AddLine("Mouse wheel: scroll the list  ·  Ctrl / Shift / Alt + wheel: size, width, see-through", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   head:SetScript("OnLeave", function() GameTooltip:Hide() end)
   head:RegisterForDrag("LeftButton")
-  head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") then tr:StartMoving() end end)
+  head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") and not (RG.TrackerFrozen and RG.TrackerFrozen()) then tr:StartMoving() end end)
   head:SetScript("OnDragStop", function() tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
   -- hover the header for the tracker's controls
   local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(1, 1); hint:Hide()
@@ -485,6 +489,7 @@ local function build()
     GameTooltip:AddLine("Ctrl + mouse wheel: bigger or smaller", 1, 1, 1)
     GameTooltip:AddLine("Shift + mouse wheel: wider or narrower", 1, 1, 1)
     GameTooltip:AddLine("Alt + mouse wheel: more or less see-through", 1, 1, 1)
+    GameTooltip:AddLine("Mouse wheel on the list: scroll  ·  corner grip: how tall it gets", 1, 1, 1)
     GameTooltip:AddLine("Click a gold heading to fold it", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
@@ -531,8 +536,12 @@ local function build()
   tr.pct = RG.NewText(tr, "GameFontHighlightSmall"); tr.pct:Hide()
 
   local sep = tr:CreateTexture(nil, "ARTWORK"); sep:SetHeight(1); sep:SetPoint("TOPLEFT", 0, -50); sep:SetPoint("TOPRIGHT", 0, -50); sep:SetColorTexture(0.122, 0.176, 0.224, 1); tr.sep = sep
-  tr.body = CreateFrame("Frame", nil, tr); tr.body:SetPoint("TOPLEFT", 12, -60); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
+  -- the rows live on a scroll child: the list scrolls once it is taller than its cap (TrackerExtras.lua)
+  tr.scroll = CreateFrame("ScrollFrame", nil, tr); tr.scroll:SetPoint("TOPLEFT", 12, -60); tr.scroll:SetWidth(W - 24); tr.scroll:SetHeight(10)
+  tr.body = CreateFrame("Frame", nil, tr.scroll); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
+  tr.scroll:SetScrollChild(tr.body)
   lines = {}
+  tr.rowList = lines
 end
 
 -- Sections fold with a click on their header (remembered between sessions).
@@ -566,7 +575,8 @@ local function section(n, y, label, key, right)
     return y, true
   end
   local b = line(n)
-  b._sig = nil
+  b._sig = nil; b._q, b._top = nil, y
+  if rawget(b, "_tick") then b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b._tick = nil end
   b.onClick, b.onRightClick, b.tip, b.onDoubleClick, b.menu, b.wpClick = nil, nil, nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
   local isFolded = folded(key)
@@ -584,6 +594,8 @@ local function section(n, y, label, key, right)
   local lab = label:find("|", 1, true) and label or label:upper()
   b.text:SetText((key and ("|cff8a8a8a" .. (isFolded and "+ " or "- ") .. "|r") or "") .. "|cffb4b4b4" .. lab .. "|r")
   tfont(b.right, fontSize(11)); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
+  b.right:ClearAllPoints(); b.right:SetPoint("TOPRIGHT", 0, -1)
+  if rawget(b, "pbg") then b.pbg:Hide(); b.pbar:Hide() end
   b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
   return y + 24, isFolded
 end
@@ -599,16 +611,19 @@ local function item(n, y, text, opts)
   -- and measuring it is the costly part of a tracker refresh, and this skips it.
   local sig = tostring(text) .. "\1" .. tostring(opts.right) .. "\1" .. indent .. "\1" .. W .. "\1" .. fontSize(13) .. "\1" ..
     (opts.single and "s" or "") .. tostring(opts.box) .. (RG.trInterBad and "a" or "") .. (RG.Opt("trackerInter") and "i" or "") ..
-    "\1" .. tostring(opts.progress and math.floor(opts.progress * 40)) .. (RG.Opt("trackerRoomy") and "r" or "")
+    "\1" .. tostring(opts.progress and math.floor(opts.progress * 40)) .. (RG.Opt("trackerRoomy") and "r" or "") ..
+    "\1" .. tostring(opts.rpad) .. tostring(opts.tickAt)
   local spacing = RG.Opt("trackerRoomy") and 8 or 4
+  b._q, b._top = opts.quest, y
   if b._sig == sig and b._h then
     b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:Show()
     return y + b._h + spacing + (b._prog and 2 or 0)
   end
   tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
+  b.right:ClearAllPoints(); b.right:SetPoint("TOPRIGHT", -(opts.rpad or 0), -1)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
   b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(13))
-  local avail = W - 24 - indent - rw
+  local avail = W - 24 - indent - rw - (opts.rpad or 0)
   b.text:SetWidth(avail)
   b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
   local multi = not opts.single and tostring(text):find("\n", 1, true)   -- text with its own line breaks lays itself out
@@ -629,7 +644,16 @@ local function item(n, y, text, opts)
     if b.text.SetMaxLines then b.text:SetMaxLines(0) end
     b.text:SetText(text)
   end
-  if opts.box ~= nil then
+  if b._tick and not opts.tickAt then
+    b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b._tick = nil
+  end
+  if opts.tickAt then
+    -- a small green tick (a finished objective)
+    b._tick = true
+    b.box:Show(); b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); b.box:SetVertexColor(0.35, 0.85, 0.45, 1)
+    b.box:SetSize(10, 10); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", opts.tickAt, -2)
+    b.check:SetSize(10, 10); b.check:Show()
+  elseif opts.box ~= nil then
     b.box:Show(); b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\" .. (opts.box and "Disc" or "Ring"))
     if opts.box then b.box:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1) else b.box:SetVertexColor(0.42, 0.42, 0.42, 1) end
     b.check:SetShown(opts.box and true or false)
@@ -692,10 +716,13 @@ function RG.RefreshTracker()
   if not RG.db or not RG.db then return end
   if not RG.Opt("tracker") then if tr then tr:Hide() end return end
   if not tr then build() end
+  -- a quest-item button is on screen and a fight is on: the game won't let it be moved or hidden, so the tracker holds still
+  -- (it catches up when the fight ends)
+  if RG.TrackerFrozen and RG.TrackerFrozen() then RG.trackerDeferred = true; return end
   tr:Show()
   -- size and width (Ctrl / Shift + mouse wheel)
   W = RG.db.trackerWidth or 300
-  tr:SetWidth(W); tr.body:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
+  tr:SetWidth(W); tr.body:SetWidth(W - 24); tr.scroll:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
   tr:SetBackdropColor(0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85)
   -- pairs, not ipairs: a folded section leaves a gap in the list, and ipairs stops at the first gap (old rows stayed on screen)
   -- rows are not hidden first: every row up to the last one is placed again below, and the rest are hidden at the end
@@ -732,7 +759,8 @@ function RG.RefreshTracker()
     if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
   if RG.db.trackerCollapsed or (RG.trackerInCombat and RG.Opt("trackerCombatFold")) then
-    tr.body:Hide(); tr.min.t:SetText("+"); tr.sep:Hide()
+    tr.scroll:Hide(); if RG.TrackerChrome then RG.TrackerChrome(false) end
+    tr.min.t:SetText("+"); tr.sep:Hide()
     if rawget(tr, "nextLine") then tr.nextLine:Hide() end
     tr:SetHeight(54)
     do return end
@@ -762,9 +790,10 @@ function RG.RefreshTracker()
     return
   end
   if rawget(tr, "nextLine") then tr.nextLine:Hide() end
-  tr.body:Show(); tr.min.t:SetText("-"); tr.sep:Show()
+  tr.scroll:Show(); tr.min.t:SetText("-"); tr.sep:Show()
 
   local n, y = 0, 0
+  if RG.TrackerItemBegin then RG.TrackerItemBegin() end
   hints, skipped, moreOpen = {}, 0, RG.db.trackerMore == true
   -- bank alt: just the shopping list for your main
   if RG.IsAlt and RG.IsAlt() then
@@ -788,7 +817,8 @@ function RG.RefreshTracker()
       n = n + 1
       y = item(n, y, (RG.ItemInfo(e.id) or ("item " .. e.id)) .. "  x" .. e.need .. (e.toBuy > 0 and (GREY .. "  (buy " .. e.toBuy .. ")|r") or (GREEN .. "  (in your bags)|r")) .. "\n" .. GREY .. e.quest .. "|r", { onClick = function() if RG.ShowTab then RG.ShowTab("mail") end end })
     end
-    tr.body:SetHeight(math.max(10, y)); tr:SetHeight(42 + y + 40)
+    if RG.TrackerItemEnd then RG.TrackerItemEnd() end
+    if RG.TrackerFinish then RG.TrackerFinish(y) end
     return
   end
   local compact = RG.Opt and RG.Opt("compactTracker")
@@ -916,10 +946,16 @@ function RG.RefreshTracker()
                 elseif q.failed then status = "|cffff3333failed|r"
                 else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
                 local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
+                -- objectives under the quest (a setting); a usable quest item gets a button on the quest's right
+                local objOn = RG.Opt("trackerObjectives") and not q.failed
+                local itm = RG.Opt("trackerItems") and RG.QuestItemFor and RG.QuestItemFor(q) or nil
+                local rpad = itm and 32 or nil
                 n = n + 1
+                local titleN = n
                 local qn = RG.QuestNote(q.id, q.group)
                 y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. upFront(q.id) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
-                  { single = true, indent = 12, right = status .. where, tip = questTip(q), wp = q.wp, progress = frac,
+                  { single = true, indent = 12, quest = true, rpad = rpad, right = objOn and ((q.failed and status or "") .. where) or (status .. where),
+                    tip = questTip(q), wp = q.wp, progress = (not objOn) and frac or nil,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
                     onClick = function()
                       if q.complete and q.wp and not (IsShiftKeyDown and IsShiftKeyDown()) then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end
@@ -936,6 +972,41 @@ function RG.RefreshTracker()
                       if q.wp then RG.Follow(q.wp)
                       else RG.Print("No location known for " .. q.title .. " yet. Click it to open the quest.") end
                     end })
+                if itm and RG.TrackerItemPlace then RG.TrackerItemPlace(lines[titleN], itm, q) end
+                if not objOn then return end
+                if q.complete then
+                  n = n + 1
+                  y = item(n, y, GREEN .. "Ready to hand in|r" .. ((q.label and q.label ~= "") and (GREY .. " at " .. q.label .. "|r") or ""),
+                    { single = true, indent = 24, tickAt = 10, rpad = rpad, tip = GREEN .. "Done: ready to hand in|r\n\n" .. GOLD .. "Click:|r arrow to the hand-in",
+                      onClick = function() if q.wp then RG.Follow(q.wp) else RG.OpenQuest(q.title, q.id) end end })
+                  return
+                end
+                for _, o in ipairs(q.objs or {}) do
+                  if o.text and o.text ~= "" then
+                    local text = tostring(o.text)
+                    local have, need = o.numFulfilled, o.numRequired
+                    local a, b2 = text:match("(%d+)/(%d+)%s*$")
+                    if not a then a, b2 = text:match("^(%d+)/(%d+)") end
+                    have, need = have or tonumber(a), (need and need > 0 and need) or tonumber(b2)
+                    local name = (text:gsub(":?%s*%d+/%d+%s*$", ""):gsub("^%d+/%d+%s+", ""))
+                    local f = (need and need > 0) and math.min(1, (have or 0) / need) or (o.finished and 1 or 0)
+                    local done = o.finished or f >= 1
+                    local col = done and GREEN or (f >= 0.67 and "|cffe6e05a") or (f >= 0.34 and "|cffffb347") or "|cffff7a5c"
+                    n = n + 1
+                    y = item(n, y, (done and GREY or "|cffe6e6e6") .. name .. "|r",
+                      { single = true, indent = 24, tickAt = done and 10 or nil, rpad = rpad,
+                        right = (need and need > 0) and (col .. (have or 0) .. "/" .. need .. "|r") or nil,
+                        tip = "|cffffffff" .. name .. "|r" .. ((need and need > 0) and (GREY .. "  " .. (have or 0) .. "/" .. need .. "|r") or "") ..
+                          (done and "" or ("\n\n" .. GOLD .. "Click:|r the arrow to the nearest place for it\n")) .. GOLD .. "Shift-click:|r open in your quest log",
+                        onClick = function()
+                          if done or (IsShiftKeyDown and IsShiftKeyDown()) then RG.OpenQuest(q.title, q.id) return end
+                          local wp = RG.QuestObjectiveSpot and RG.QuestObjectiveSpot(q.title, name)
+                          if wp then
+                            if RG.ArrowTarget and RG.ArrowTarget(wp) and RG.ArrowTo then RG.ArrowTo(wp) else RG.Follow(wp) end
+                          else RG.OpenQuest(q.title, q.id) end
+                        end })
+                  end
+                end
             end
             if g.here then
               -- the zone you're in: every quest you're still doing is listed, whatever the limit; three or more ready
@@ -1313,8 +1384,8 @@ function RG.RefreshTracker()
   -- safety net: whatever the layout above did, no row past the last one it placed may stay on screen
   tr.rowCount = n
   for i, b in pairs(lines) do if i > n then b:Hide() end end
-  tr.body:SetHeight(math.max(10, y))
-  tr:SetHeight(60 + y + 14)
+  if RG.TrackerItemEnd then RG.TrackerItemEnd() end
+  if RG.TrackerFinish then RG.TrackerFinish(y) else tr.body:SetHeight(math.max(10, y)); tr:SetHeight(60 + y + 14) end
 end
 
 -- Where the tracker is: always by its top-right corner, so folding and unfolding grows and shrinks it downwards
@@ -1358,7 +1429,8 @@ fade:SetScript("OnEvent", function(_, event)
   RG.trackerInCombat = event == "PLAYER_REGEN_DISABLED"
   if not tr then return end
   if event == "PLAYER_REGEN_DISABLED" and RG.Opt("trackerFade") then tr:SetAlpha(0.35) else tr:SetAlpha(1) end
-  if RG.Opt("trackerCombatFold") and not RG.db.trackerCollapsed then RG.RefreshTracker() end
+  if RG.trackerDeferred and event == "PLAYER_REGEN_ENABLED" then RG.trackerDeferred = nil; RG.RefreshTracker()
+  elseif RG.Opt("trackerCombatFold") and not RG.db.trackerCollapsed then RG.RefreshTracker() end
 end)
 
 -- Refresh on the things that change the tracker, at most a few times a second.
@@ -1387,6 +1459,7 @@ end
 local function avoidQuestie()
   local q = _G.Questie_BaseFrame
   if not (tr and tr:IsShown() and q and q.IsShown and q:IsShown()) then return end
+  if RG.TrackerFrozen and RG.TrackerFrozen() then return end
   local ok, hit = pcall(overlap, tr, q)
   if not (ok and hit) then return end
   -- you dragged ours onto Questie's on purpose: leave it there
