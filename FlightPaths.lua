@@ -32,7 +32,7 @@ RG.FLIGHTS = {
   { "Thelsamar", "Loch Modan", 1432, 33.9, 51.0, "A", 1572, "Thorgrum Borrelson" },
   { "Nighthaven", "Moonglade", 1450, 48.1, 67.3, "A", 10897, "Sindrayl" },
   { "Nighthaven", "Moonglade", 1450, 32.1, 66.6, "H", 12740, "Faustron" },
-  { "Mount Hyjal", "Mount Hyjal", 2482, 55.0, 82.8, "N", 260626, "Bluebell" },
+  { "Mount Hyjal", "Mount Hyjal", 2482, 55.0, 82.7, "N", 260626, "Bluebell" },
   { "Orgrimmar", "Orgrimmar", 1454, 45.1, 63.9, "H", 3310, "Doras" },
   { "Lakeshire", "Redridge Mountains", 1433, 25.5, 59.4, "A", 931, "Ariena Stormfeather" },
   { "Farholde Keep", "Riverglades", 2548, 60.6, 81.5, "A", 257087, "Gretchen Mayberry" },
