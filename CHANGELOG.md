@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- The Shop's **Grading desk** button is bigger and easier to spot: a solid brass button with the Guild's gold seal and a soft glow, which pulses brighter (with the count) when graded cards are waiting to be opened.
 - The Album's "Mythic: certain within 10 packs" button no longer runs into the page arrow: it's wider, and its words fit it.
 - Any button's words that are too long for it are made a little smaller to fit.
 
