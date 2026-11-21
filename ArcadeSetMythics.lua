@@ -143,7 +143,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   local c = key and u and u.byKey[key]
   if not c then if btn then btn:Hide() end return end
   if not btn then
-    btn = u.gbtn(frame.albOpen, "Mythic", 190, 24, function() local cc = frame.albOpen.mythCard; if cc and RG.ArcadeOpenDetail then RG.ArcadeOpenDetail(cc) end end)
+    btn = u.gbtn(frame.albOpen, "Mythic", 210, 24, function() local cc = frame.albOpen.mythCard; if cc and RG.ArcadeOpenDetail then RG.ArcadeOpenDetail(cc) end end)
     btn:SetPoint("RIGHT", frame.prev, "LEFT", -14, 0)
     btn:SetScript("OnEnter", function(self)
       local cc = frame.albOpen.mythCard
@@ -166,7 +166,8 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   btn:SetText(have and ("|cffffe58cMythic:|r " .. c.name) or ("|cffa89bc9Mythic: certain within " .. left .. " pack" .. (left == 1 and "" or "s") .. "|r"))
   btn:SetEnabled(have)
   -- (the words fit the button: ArcadeFit.lua)
-  if RG.ArcadeFitLine and btn.GetFontString and btn:GetFontString() then RG.ArcadeFitLine(btn:GetFontString(), (btn:GetWidth() or 170) - 14, nil, 8) end
+  -- (the button is 210 wide on the page, ArcadeMythicPlus.lua; its words are on btn.label)
+  if RG.ArcadeFitLine and rawget(btn, "label") then RG.ArcadeFitLine(btn.label, 210 - 16, nil, 8) end
   -- (a message on the window's bottom line has the line to itself, as the Album's other buttons give it: the window
   -- shows them again when the message clears)
   local msg = frame.msg and frame.msg.GetText and frame.msg:GetText()

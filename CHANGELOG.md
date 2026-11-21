@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- The Album's "Mythic: certain within 10 packs" button no longer runs into the page arrow: it's wider, and its words fit it.
+- Any button's words that are too long for it are made a little smaller to fit.
+
 ## v1.54.0
 - **A new back for Gilded cards:** solid hammered gold leaf with the Waypath rune ring engraved in black round a black medallion holding the Waypath mark, with the Gilded front's gold corner brackets (it replaces the plain gold coin), so a Gilded card waiting face down in a pack stands out at a glance.
 - **Raiders no longer look alike.** Every raider is now drawn by their own name:

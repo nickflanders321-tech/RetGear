@@ -638,7 +638,7 @@ table.insert(RG.ArcadeAlbumHooks, function(st, frame)
   local mb = rawget(frame.albOpen, "mythBtn")
   if mb and not rawget(mb, "mpHooked") then
     mb.mpHooked = true
-    mb:SetWidth(170)
+    mb:SetWidth(210)   -- (room for "Mythic: certain within 10 packs" at its own size, clear of Trophies)
     mb:SetScript("OnClick", function() local cc = frame.albOpen.mythCard; local dn = cc and dungeonOf(cc); if dn then RG.ArcadeTrophy(dn) end end)
   end
   if mb then mb:SetEnabled(true) end

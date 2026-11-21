@@ -1469,7 +1469,14 @@ local function gbtn(parent, label, w, h, fn, big)
     elseif hover then self:SetBackdropBorderColor(GOLDC[1], GOLDC[2], GOLDC[3], 1); self.label:SetTextColor(1, 0.95, 0.78)
     else self:SetBackdropBorderColor(0.65, 0.48, 0.23, 0.95); self.label:SetTextColor(0.95, 0.88, 0.7) end
   end
-  function b:SetText(t) self.label:SetText(t) end
+  -- (words wider than the button are made a little smaller until they fit, 8 at the least)
+  function b:SetText(t)
+    local sz = big and 15 or 12.5
+    if self.label.fsize ~= sz then setfont(self.label, "head", sz) end
+    self.label:SetText(t)
+    local room = (self:GetWidth() or w) - 12
+    while sz > 8 and (self.label:GetStringWidth() or 0) > room do sz = sz - 0.5; setfont(self.label, "head", sz); self.label:SetText(t) end
+  end
   function b:SetEnabled(on) self.enabled = on and true or false; self:Paint(false) end
   function b:SetActive(on) self.active = on and true or false; self:Paint(false) end
   b:SetScript("OnEnter", function(self) self:Paint(true) end)
