@@ -22,6 +22,8 @@ local RANGE = 90       -- yards: close enough to see it on the minimap and walk 
 local SPOT_COOLDOWN = 3 * 3600 -- a node you were told about stays quiet this long (longer than a play session)
 local SAME_NODE = 40   -- yards: spawn points this close are the same vein or patch
 local GLOBAL_COOLDOWN = 20
+local GATHER_QUIET = 600 -- seconds a spot stays quiet after you gather there (nodes respawn in about 5 minutes in the databases we checked; Forever may differ)
+local GATHER_NEAR = 12  -- yards: spawn points this close to where you gathered count as that node
 
 -- Parse a map's spots once: { {x, y, mask}, ... }
 local parsed = {}
@@ -117,6 +119,8 @@ local function check()
   local px, py = pos.x * 100, pos.y * 100
   if RG.IsSecret and (RG.IsSecret(px) or RG.IsSecret(py)) then return end
   local best, bestD, bestKind, bestNames, bestMask
+  local gathered = RG.db.nodeGathered
+  if gathered then for k, t in pairs(gathered) do if time() - t > GATHER_QUIET then gathered[k] = nil end end end
   for _, kind in ipairs(KINDS) do
     local skill = RG.Opt(kind.opt) and RG.Skill and RG.Skill(kind.prof)
     local spots = skill and spotsFor(kind, map)
@@ -124,7 +128,7 @@ local function check()
       local mask, names = wanted(kind, skill)
       if mask > 0 then
         for _, s in ipairs(spots) do
-          if band(s[3], mask) > 0 then
+          if band(s[3], mask) > 0 and not (gathered and gathered[kind.key .. map .. ":" .. s[1] .. ":" .. s[2]]) then
             local dx, dy = (s[1] - px) / 100 * size[1], (s[2] - py) / 100 * size[2]
             local d = math.sqrt(dx * dx + dy * dy)
             if d <= RANGE and (not bestD or d < bestD) then best, bestD, bestKind, bestNames, bestMask = s, d, kind, names, mask end
@@ -157,6 +161,65 @@ local function check()
   if UIErrorsFrame then UIErrorsFrame:AddMessage(msg, 0.95, 0.75, 0.3) end
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
   if RG.QueueTracker then RG.QueueTracker() end
+end
+
+-- Gathering a node: the spot you took it from is empty now, so stop pointing at it.
+-- UNIT_SPELLCAST_SENT gives the node's name; only a cast that SUCCEEDS (same castGUID) counts.
+local pendingCast = {}
+local function markGathered(name)
+  if not (RG.db and C_Map and C_Map.GetBestMapForUnit) then return end
+  local map = C_Map.GetBestMapForUnit("player")
+  local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+  local size = map and mapSize(map)
+  if not pos or not size then return end
+  local px, py = pos.x * 100, pos.y * 100
+  if RG.IsSecret and (RG.IsSecret(px) or RG.IsSecret(py)) then return end
+  for _, kind in ipairs(KINDS) do
+    local bit
+    for i, o in ipairs(kind.types() or {}) do if o[1] == name then bit = 2 ^ (i - 1) end end
+    local spots = bit and spotsFor(kind, map)
+    if spots then
+      local best, bestD
+      for _, s in ipairs(spots) do
+        if band(s[3], bit) > 0 then
+          local dx, dy = (s[1] - px) / 100 * size[1], (s[2] - py) / 100 * size[2]
+          local d = math.sqrt(dx * dx + dy * dy)
+          if d <= 30 and (not bestD or d < bestD) then best, bestD = s, d end
+        end
+      end
+      if best then
+        RG.db.nodeGathered = RG.db.nodeGathered or {}
+        local wall = time()
+        for _, s in ipairs(spots) do
+          local dx, dy = (s[1] - best[1]) / 100 * size[1], (s[2] - best[2]) / 100 * size[2]
+          if dx * dx + dy * dy <= GATHER_NEAR * GATHER_NEAR then RG.db.nodeGathered[kind.key .. map .. ":" .. s[1] .. ":" .. s[2]] = wall end
+        end
+        pcall(check)
+      end
+      return
+    end
+  end
+end
+RG.NodeGathered = markGathered
+
+if CreateFrame then
+  local f = CreateFrame("Frame")
+  f:RegisterEvent("UNIT_SPELLCAST_SENT")
+  f:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+  f:RegisterEvent("UNIT_SPELLCAST_FAILED")
+  f:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+  f:SetScript("OnEvent", function(_, ev, unit, a, b)
+    if unit ~= "player" then return end
+    if ev == "UNIT_SPELLCAST_SENT" then
+      -- (unit, target, castGUID, spellID)
+      if type(a) == "string" and b then pendingCast[b] = a end
+    else
+      -- SUCCEEDED/FAILED/INTERRUPTED: (unit, castGUID, spellID)
+      local name = pendingCast[a]
+      pendingCast[a] = nil
+      if name and ev == "UNIT_SPELLCAST_SUCCEEDED" then pcall(markGathered, name) end
+    end
+  end)
 end
 
 check = RG.PerfWrap("nodes", check)
