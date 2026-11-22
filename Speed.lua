@@ -236,7 +236,7 @@ local function learnedFor(qid, key)
   for _, p in ipairs(com or {}) do out[#out + 1] = p end
   return out
 end
-function RG.QuestSpots()
+local function buildQuestSpots()
   local spots = {}
   if not (RG.QDATA and C_QuestLog and C_QuestLog.GetNumQuestLogEntries) then return spots end
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
@@ -299,6 +299,23 @@ function RG.QuestSpots()
     end
   end
   return spots
+end
+-- Building the list (every spawn point of every open objective) made hundreds of tables each time and it was asked for several
+-- times a second (the tracker, the map pins, the guide). It only changes with the quest log, the zone or what players have
+-- learned, so it is kept for a few seconds and dropped at once on those events. Callers only read it.
+local spotsCache, spotsT
+function RG.ForgetQuestSpots() spotsCache = nil end
+function RG.QuestSpots()
+  local now = GetTime and GetTime()
+  if spotsCache and now and spotsT and now - spotsT < 3 and now >= spotsT then return spotsCache end
+  local out = buildQuestSpots()
+  spotsCache, spotsT = out, now
+  return out
+end
+do
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "QUEST_TURNED_IN", "UNIT_QUEST_LOG_CHANGED", "ZONE_CHANGED_NEW_AREA", "QUEST_POI_UPDATE" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function() spotsCache = nil end)
 end
 do   -- the learning itself
   local last, queued = {}, false

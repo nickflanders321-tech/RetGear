@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Quest tracker, arrow and map pins: much less garbage.** The list of every spot for your open quest objectives was rebuilt from scratch each time the tracker, the map pins or the guide asked for it (several times a second, hundreds of small tables each time). It is now built once and kept for a few seconds, and dropped immediately when your quest log or zone changes.
 - **Fishing HUD: far lighter.** The HUD used to run its animation on every frame and rebuild all its buttons four times a second even when nothing was happening (about 16 ms of CPU per second and 700 KB of garbage per second, which the game's memory cleanup showed as micro-stutter). It now only animates while something moves (buttons opening, the swirl, a cast's timer) and rebuilds less often while settled.
 - **/wp perf now shows which part of Waypath+ costs the time.** After its ten seconds it lists the busiest recurring tasks (the gathering-node scan, learned paths, the tracker and what it does inside, fishing, pace, card effects), and which events ask the tracker to refresh with milliseconds per second, calls per second and the garbage each makes. The report opens in a small window with the text selected, so it can be copied (Ctrl+C) and pasted. Nothing is measured, and nothing slows down, unless you run it.
 
