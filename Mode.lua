@@ -94,6 +94,32 @@ function RG.PerfSample()
   if not (C_Timer and C_Timer.After) then return end
   if perf.on then RG.Print("Already measuring...") return end
   perf.on = true; perf.ms, perf.kb, perf.n, perf.q = {}, {}, {}, {}
+  -- the game's own profiler (only with the script profiler on): every function Waypath+ shares and every frame it names, before and after
+  local function snapshot()
+    local fnT, frT = {}, {}
+    if GetFunctionCPUUsage then
+      for k, v in pairs(RG) do if type(v) == "function" then local ok, ms = pcall(GetFunctionCPUUsage, v, false); if ok and type(ms) == "number" then fnT[k] = ms end end end
+    end
+    if GetFrameCPUUsage then
+      for k, v in pairs(_G) do
+        if type(k) == "string" and k:find("^Waypath") and type(v) == "table" and v.GetObjectType then
+          local ok, ms = pcall(GetFrameCPUUsage, v, false); if ok and type(ms) == "number" then frT[k] = ms end
+        end
+      end
+    end
+    return fnT, frT
+  end
+  local fn0, fr0 = snapshot()
+  -- every frame on screen, ours or not (a frame without a name is shown by its parent's): for the CPU nobody has labelled
+  local function allFrames()
+    local t = {}
+    if GetFrameCPUUsage and EnumerateFrames then
+      local f = EnumerateFrames()
+      while f do local ok, ms = pcall(GetFrameCPUUsage, f, false); if ok and type(ms) == "number" and ms > 0 then t[f] = ms end; f = EnumerateFrames(f) end
+    end
+    return t
+  end
+  local af0 = allFrames()
   local cpu0 = GetAddOnCPUUsage and pcall(UpdateAddOnCPUUsage) and GetAddOnCPUUsage("Waypath") or nil
   RG.Print("Measuring Waypath+ for 10 seconds: play as you normally would...")
   C_Timer.After(10, function()
@@ -111,6 +137,29 @@ function RG.PerfSample()
     for i = 1, math.min(12, #rows) do
       local r = rows[i]
       out[#out + 1] = string.format("%-16s %.3f ms/s  ·  %.1f calls/s  ·  %.1f KB/s of garbage", r[1], r[2], r[3], r[4])
+    end
+    local fn1, fr1 = snapshot()
+    local prof = {}
+    for k, ms in pairs(fn1) do local d = (ms - (fn0[k] or 0)) / 10; if d > 0.01 then prof[#prof + 1] = { "RG." .. k, d } end end
+    for k, ms in pairs(fr1) do local d = (ms - (fr0[k] or 0)) / 10; if d > 0.01 then prof[#prof + 1] = { "frame " .. k, d } end end
+    table.sort(prof, function(a, b) return a[2] > b[2] end)
+    if #prof > 0 then
+      out[#out + 1] = "the game's own profiler, own time (ms/s):"
+      for i = 1, math.min(10, #prof) do out[#out + 1] = string.format("  %-34s %.3f", prof[i][1], prof[i][2]) end
+    end
+    local af1, all = allFrames(), {}
+    for f, ms in pairs(af1) do
+      local d = (ms - (af0[f] or 0)) / 10
+      if d > 0.05 then
+        local nm = f.GetName and f:GetName()
+        if not nm then local pf = f.GetParent and f:GetParent(); nm = "(unnamed, in " .. ((pf and pf.GetName and pf:GetName()) or "?") .. ")" end
+        all[#all + 1] = { nm, d }
+      end
+    end
+    table.sort(all, function(a, b) return a[2] > b[2] end)
+    if #all > 0 then
+      out[#out + 1] = "busiest frames of any add-on (ms/s):"
+      for i = 1, math.min(8, #all) do out[#out + 1] = string.format("  %-34s %.3f", all[i][1], all[i][2]) end
     end
     local qs = {}
     for ev, n in pairs(perf.q or {}) do qs[#qs + 1] = { ev, n } end
