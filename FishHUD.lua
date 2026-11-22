@@ -775,6 +775,7 @@ local function step(_, dt)
   local ok, err = pcall(RG.FishHUDRefresh)
   if not ok and not refreshFailed then refreshFailed = true; if RG.RecordError then RG.RecordError(err) end end
 end
+step = RG.PerfWrap("fishHUD", step)
 driver:SetScript("OnUpdate", step)
 RG.__fishHudStep = step   -- (tests)
 

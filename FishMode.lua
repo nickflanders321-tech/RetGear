@@ -221,6 +221,7 @@ local function tick()
   pcall(RG.FishModeRefresh)
   if not active and not (fader and fader:GetScript("OnUpdate")) then restoreUI() end
 end
+tick = RG.PerfWrap("fishMode", tick)
 RG.FishModeTick = tick
 if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(0.5, tick) end
 -- (and once now: a fade a previous session left behind)

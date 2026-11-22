@@ -257,6 +257,7 @@ f:SetScript("OnEvent", function(_, event)
       local ok, n = pcall(RG.TrailImport, RG.SHARED_TRAIL)
       if ok then WaypathDB.sharedTrailV = RG.SHARED_TRAIL_V end
     end
+    sample = RG.PerfWrap("trailSample", sample)
     if C_Timer and C_Timer.NewTicker then
       C_Timer.NewTicker(1, function() local ok, err = pcall(sample); if not ok and RG.RecordError then RG.RecordError("Path: " .. tostring(err)) end end)
       C_Timer.NewTicker(120, function() if dirty > 0 then dirty = 0; pcall(save) end end)

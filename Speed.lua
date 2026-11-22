@@ -1347,6 +1347,7 @@ local barQueued
 local function queueBar() if barQueued then return end; barQueued = true; C_Timer.After(0.5, function() barQueued = nil; refreshBar() end) end
 f:SetScript("OnEvent", function(_, event, a1, a2)
   if event == "PLAYER_LOGIN" then
+    paceTick = RG.PerfWrap("pace", paceTick)
     C_Timer.NewTicker(30, paceTick)
     C_Timer.NewTicker(5, function() if not combat() and RG.QueueTracker then RG.QueueTracker() end end)
     C_Timer.After(3, function() refreshBar(); refreshArrow() end)

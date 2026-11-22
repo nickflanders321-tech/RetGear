@@ -2,6 +2,24 @@
 -- you're wearing, and adds an upgrade line to every item tooltip.
 local ADDON, RG = ...
 _G.Waypath = RG
+-- /wp perf's breakdown: RG.PerfWrap("name", fn) returns fn itself that, only while /wp perf is measuring, adds up the milliseconds
+-- it took and the kilobytes it allocated (garbage the game has to collect, which is what feels like micro-stutter).
+-- Wrap the callback of every recurring timer and per-frame handler with it.
+RG.Perf = RG.Perf or { on = false, ms = {}, kb = {}, n = {} }
+function RG.PerfWrap(name, fn)
+  local P = RG.Perf
+  local stop, mem = debugprofilestop, collectgarbage
+  local function fin(t0, k0, ...)
+    local ms, k1 = stop() - t0, mem("count")
+    P.ms[name] = (P.ms[name] or 0) + ms; P.n[name] = (P.n[name] or 0) + 1
+    if k1 > k0 then P.kb[name] = (P.kb[name] or 0) + (k1 - k0) end
+    return ...
+  end
+  return function(...)
+    if not P.on or not stop then return fn(...) end
+    return fin(stop(), mem("count"), fn(...))
+  end
+end
 if RG.PruneQuests then RG.PruneQuests() end   -- drop quests this race or class can never take (Objectives.lua has loaded)
 -- The version from the .toc (the release build fills it in; "dev" when run from a checkout)
 do

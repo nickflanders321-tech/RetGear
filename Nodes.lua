@@ -146,6 +146,7 @@ local function check()
   if RG.QueueTracker then RG.QueueTracker() end
 end
 
+check = RG.PerfWrap("nodes", check)
 if C_Timer and C_Timer.NewTicker then
   C_Timer.NewTicker(2, function() if RG.db and not RG.CardsOnly() then pcall(check) end end)
 end

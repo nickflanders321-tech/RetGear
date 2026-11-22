@@ -301,12 +301,12 @@ function RG.TrackerTimerText(id)
   return string.format("%s%d:%02d|r  ", left < 60 and "|cffff5a4d" or "|cffffd100", math.floor(left / 60), math.floor(left % 60))
 end
 if C_Timer and C_Timer.NewTicker then
-  C_Timer.NewTicker(1, function()
+  C_Timer.NewTicker(1, RG.PerfWrap("trackerTimers", function()
     local t = tr(); if not (t and t.rowList and t:IsShown()) then return end
     for _, b in pairs(t.rowList) do
       if b._timer and b:IsShown() and b.right then b.right:SetText(RG.TrackerTimerText(b._timer) .. (b._rbase or "")) end
     end
-  end)
+  end))
 end
 
 -- the target changes which quest is being worked on

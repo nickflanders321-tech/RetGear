@@ -1472,6 +1472,7 @@ end)
 local pending
 -- (Progress counts keep updating during a fight: the tracker only re-lays-out lines that changed, so that stays cheap.)
 local function queue() if RG.CardsOnly and RG.CardsOnly() then return end; if pending then return end; pending = true; C_Timer.After(0.4, function() pending = nil; RG.RefreshTracker() end) end
+RG.RefreshTracker = RG.PerfWrap("trackerRefresh", RG.RefreshTracker)
 RG.QueueTracker = queue
 local ev = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "TAXIMAP_OPENED", "SKILL_LINES_CHANGED", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "TRAINER_SHOW" }) do pcall(ev.RegisterEvent, ev, e) end
@@ -1519,6 +1520,7 @@ local function hookDrag()
     if RG.db then RG.db.trackerOverQuestie = (ok and hit) or nil end
   end)
 end
+avoidQuestie = RG.PerfWrap("questieAvoid", avoidQuestie)
 if C_Timer and C_Timer.NewTicker then
   C_Timer.NewTicker(3, function() pcall(hookDrag); pcall(avoidQuestie) end)
 end

@@ -53,8 +53,7 @@ if CreateFrame then
   end)
 end
 -- /wp perf: memory now, and the add-on's CPU time when the game's script profiler is on
-local perf = { on = false, ms = {} }
-RG.Perf = perf
+local perf = RG.Perf
 
 -- Turn the mode on or off for this character. Everything the guide put on screen goes away at once.
 function RG.SetCardsOnly(on)
@@ -94,7 +93,7 @@ end
 function RG.PerfSample()
   if not (C_Timer and C_Timer.After) then return end
   if perf.on then RG.Print("Already measuring...") return end
-  perf.on = true
+  perf.on = true; perf.ms, perf.kb, perf.n = {}, {}, {}
   local cpu0 = GetAddOnCPUUsage and pcall(UpdateAddOnCPUUsage) and GetAddOnCPUUsage("Waypath") or nil
   RG.Print("Measuring Waypath+ for 10 seconds: play as you normally would...")
   C_Timer.After(10, function()
@@ -104,5 +103,14 @@ function RG.PerfSample()
     if cpu0 and UpdateAddOnCPUUsage then pcall(UpdateAddOnCPUUsage); local ok, c = pcall(GetAddOnCPUUsage, "Waypath"); if ok and c then cpu = (c - cpu0) / 10 end end
     RG.Print(string.format("Memory %s%s", mem and string.format("%.1f MB", mem / 1024) or "?",
       (cpu and cpu > 0) and string.format("  ·  %.2f ms of CPU per second (a frame at 60 fps has 16.7 ms)", cpu) or "  ·  CPU time needs the game's script profiler (/console scriptProfile 1, then /reload)"))
+    -- which recurring tasks cost the time: milliseconds per second, calls per second, and garbage made per second
+    local rows = {}
+    for k, ms in pairs(perf.ms) do rows[#rows + 1] = { k, ms / 10, (perf.n[k] or 0) / 10, (perf.kb[k] or 0) / 10 } end
+    table.sort(rows, function(a, b) if a[2] ~= b[2] then return a[2] > b[2] end return a[4] > b[4] end)
+    if #rows == 0 then RG.Print("  nothing recurring ran in those ten seconds.") end
+    for i = 1, math.min(7, #rows) do
+      local r = rows[i]
+      RG.Print(string.format("  %-16s %.3f ms/s  ·  %.1f calls/s  ·  %.1f KB/s of garbage", r[1], r[2], r[3], r[4]))
+    end
   end)
 end
