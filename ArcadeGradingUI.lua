@@ -86,14 +86,14 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
     if r and r.f == finish and (w.cw or 0) >= 90 and (w.cw or 0) <= 130 then
       local sl = rawget(w, "slab")
       if not sl then
-        sl = RG.ArcadeMakeCase(w:GetParent() or UIParent, 80)
+        sl = RG.ArcadeMakeCase(w:GetParent() or UIParent, 76)
         w.slab = sl
         -- (it is the window's child, not the card's, so the card can fade out under it without fading the case)
         w:HookScript("OnHide", function(self) local x = rawget(self, "slab"); if x then x:Hide() end end)
         local function follow(self) local x = rawget(self, "slab"); if x and x:IsShown() then x:SetFrameLevel((self:GetFrameLevel() or 1) + 1) end end
         w:HookScript("OnEnter", follow); w:HookScript("OnLeave", follow)
       end
-      sl:ClearAllPoints(); sl:SetPoint("TOPLEFT", w, "TOPLEFT", (w.cw - sl:GetWidth()) / 2, 4)
+      sl:ClearAllPoints(); sl:SetPoint("TOPLEFT", w, "TOPLEFT", (w.cw - sl:GetWidth()) / 2, 2)
       sl:SetRec(r)
       sl:SetFrameLevel((w:GetFrameLevel() or 1) + 1)
       sl:Show()
@@ -150,7 +150,7 @@ local function makeCase(parent, cw)
   local f = CreateFrame("Frame", nil, parent)
   f:SetSize(CASE_W * k, CASE_H * k)
   f.k, f.cw, f.small = k, cw, cw < SMALL
-  f.grid = cw <= 90   -- the collection grid's slab: a seal with the grade and two words, no name
+  f.grid = cw <= 90   -- the collection grid's slab: a seal with the grade, no words
   f.bg = f:CreateTexture(nil, "BACKGROUND"); f.bg:SetTexture(MEDIA .. "GradeCase"); f.bg:SetTexCoord(0, 1, 0, CASE_V); f.bg:SetAllPoints(f)
   f.card = u.makeCard(f, cw)
   f.card.noTip = true; f.card.hover = false; f.card:EnableMouse(false)
@@ -181,15 +181,17 @@ local function makeCase(parent, cw)
   L.g = u.fs(L, "title", (f.small and 30 or 26) * k, "OVERLAY", nil); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, f.small and 0 or 3 * k)
   L.w = u.fs(L, "head", 7 * k); L.w:SetPoint("TOP", L.g, "BOTTOM", 0, 0); L.w:SetTextColor(1, 0.95, 0.82)
   if f.grid then
-    u.setfont(L.guild, "head", 7); L.guild:ClearAllPoints(); L.guild:SetPoint("LEFT", L, "LEFT", 8, 2); L.guild:SetJustifyH("LEFT"); L.guild:SetText("GRADING\nGUILD")
-    L.seal:SetSize(30, 30); L.seal:ClearAllPoints(); L.seal:SetPoint("RIGHT", L, "RIGHT", -3, 0)
-    u.setfont(L.g, "title", 15, "OUTLINE"); L.g:ClearAllPoints(); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, 0)
-    L.halo:SetSize(44, 44)
+    -- the grid's slab: just the seal with the grade, centred on the label; and the card's pieces (a 3D model above all)
+    -- kept inside the card's window
+    L.seal:SetSize(26, 26); L.seal:ClearAllPoints(); L.seal:SetPoint("CENTER", L, "CENTER", 0, 0)
+    u.setfont(L.g, "title", 14, "OUTLINE"); L.g:ClearAllPoints(); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, 0)
+    L.halo:SetSize(40, 40)
+    if f.card.SetClipsChildren then f.card:SetClipsChildren(true) end
   end
   function f:Layout(lines)
     L.name:ClearAllPoints()
     if self.grid then
-      L.name:Hide(); L.meta:Hide(); L.cert:Hide(); L.w:Hide(); L.guild:Show()
+      L.name:Hide(); L.meta:Hide(); L.cert:Hide(); L.w:Hide(); L.guild:Hide()
       return
     end
     L.name:Show()
@@ -253,6 +255,27 @@ local function makeCase(parent, cw)
   return f
 end
 RG.ArcadeMakeCase = makeCase
+
+-- the collection grid's hover: a graded copy of the card under the mouse is shown in its case, full size beside the window
+function RG.ArcadeGradeInspect(win, cell, toRight)
+  if not (cell.card and RG.ArcadeGradeShown) then return nil end
+  local r = RG.ArcadeGradeShown(cell.card.key or cell.card.name)
+  if not (r and r.f == cell.finish) then
+    if rawget(win, "inspCase") then win.inspCase:Hide() end
+    return nil
+  end
+  if not rawget(win, "inspCase") then
+    win.inspCase = makeCase(win, 200)
+    win.inspCase:SetFrameLevel((win:GetFrameLevel() or 1) + 40)
+  end
+  local ic = win.inspCase
+  ic:ClearAllPoints()
+  if toRight then ic:SetPoint("TOPLEFT", win, "TOPRIGHT", 8, -90) else ic:SetPoint("TOPRIGHT", win, "TOPLEFT", -8, -90) end
+  ic:SetRec(r)
+  ic:Show()
+  return ic
+end
+function RG.ArcadeGradeInspectHide(win) local ic = rawget(win, "inspCase"); if ic then ic:Hide() end end
 
 -- ---------------------------------------------------------------------------
 -- A confirmation inside a window (no game popups): two buttons over a dimmed panel

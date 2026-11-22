@@ -3843,16 +3843,19 @@ local function build()
       ins:ClearAllPoints()
       local right = frame:GetRight() or 0
       local sw = UIParent and UIParent:GetWidth() or 1920
-      if right + 250 < sw then ins:SetPoint("TOPLEFT", frame, "TOPRIGHT", 8, -150) else ins:SetPoint("TOPRIGHT", frame, "TOPLEFT", -8, -150) end
-      ins:Show()
+      local toRight = right + 250 < sw
+      if toRight then ins:SetPoint("TOPLEFT", frame, "TOPRIGHT", 8, -150) else ins:SetPoint("TOPRIGHT", frame, "TOPLEFT", -8, -150) end
+      -- a graded copy is shown in its case, as the Vault shows it (ArcadeGradingUI.lua)
+      local sc = RG.ArcadeGradeInspect and RG.ArcadeGradeInspect(frame, self, toRight)
+      if sc then ins:Hide() else ins:Show() end
     end)
-    c:HookScript("OnLeave", function() if frame.insp then frame.insp:Hide() end end)
+    c:HookScript("OnLeave", function() if frame.insp then frame.insp:Hide() end; if RG.ArcadeGradeInspectHide then RG.ArcadeGradeInspectHide(frame) end end)
     cells[i] = c
   end
   frame.cells = cells
   frame.insp = makeCard(frame, 230); frame.insp:SetFrameLevel(lv(frame) + 40); frame.insp.noTip = true; frame.insp.hover = false; frame.insp:EnableMouse(false); frame.insp:Hide()
   frame:HookScript("OnHide", function()
-    frame.insp:Hide()
+    frame.insp:Hide(); if RG.ArcadeGradeInspectHide then RG.ArcadeGradeInspectHide(frame) end
     -- (a pack screen left open goes with the window: its cards are already in your collection)
     if reveal and reveal:IsShown() then reveal:Hide() end
   end)

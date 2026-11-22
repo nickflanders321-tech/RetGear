@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **Cards: the grid's graded slabs are tidier.** The slab's label is just the grade seal (the cramped "Grading Guild" words are gone), 3D models stay inside the card's window instead of poking out over the label, and the slabs no longer touch the row below.
+- **Cards: hover a graded card in the grid** and the full-size preview beside the window shows it in its case, as the Vault does.
+
 ## v1.57.0
 - **Cards: graded cards show in their case in the collection grid.** A card you hold in a grading case now sits in its Guild slab in the grid, with the grade seal and the Grading Guild label, instead of just a small seal.
 - **Cards: three new sorts.** The Sort button also cycles Graded (your cased cards first, highest grade first), Full art (cards you own as Full art first) and Gilded (cards you own as Gilded first).
