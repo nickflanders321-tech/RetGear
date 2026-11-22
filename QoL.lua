@@ -69,7 +69,8 @@ local function backdrop(f, bg, edge, radius)
   RG.Round(f, bg[1] * 0.4 + 0.035, bg[2] * 0.4 + 0.065, bg[3] * 0.4 + 0.095, bg[4] or 1, radius or 8)   -- deep ink whatever tint was asked for
 end
 -- The window: a deep rounded panel.
-function RG.DialogBackdrop(f) RG.Round(f, 0.063, 0.11, 0.153, 0.97, 10) end
+-- fully opaque: at .97 a nameplate or unit name behind the window showed through as ghost text
+function RG.DialogBackdrop(f) RG.Round(f, 0.063, 0.11, 0.153, 1, 10) end
 -- Window title, top left. (Returns nil for the old banner texture, then the text.)
 function RG.DialogHeader(f, text)
   local t = f:CreateFontString(nil, "OVERLAY"); RG.Font(t, "display", 17); t:SetPoint("TOPLEFT", 18, -14); t:SetText(text); t:SetTextColor(0.937, 0.902, 0.824)

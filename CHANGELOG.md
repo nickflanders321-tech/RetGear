@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+- **Immersive fishing can keep other add-ons' frames visible.** The fade took every frame with it, including other add-ons' meters (a catch-percentage bar, say). Point the mouse at the frame and type `/wp fishkeep` (or `/wp fishkeep FrameName`) and it stays while the rest fades; type it again to undo, `/wp fishkeep list` to see them, `/wp fishkeep clear` to forget them. Protected game frames are left alone, and only the frame's fade is changed. A tip on the Fishing page says how.
+- **Arena:** the rank line on the lobby ("Peak Scout III · Launch Season") has its own line, no longer printed over the rank name. The gold Waypath splash no longer sits over the "Keep these cards" prompt: the prompt waits until the splash has faded.
+- **Tracker:** a quest whose reward is an upgrade showed the gain as "+9.95625"; it now reads "+9.9" (or "+12" from ten up), in the tracker, route and quest tooltips.
+- **Sidebar tooltips** (Gear, Professions, Journey and the other narrow-sidebar tabs) open to the left of the sidebar instead of over the top of the page.
+- **Windows are fully opaque**, so a nameplate or unit name behind the window no longer shows through as ghost text (most visible on Settings).
+- **Tidier lines:** the "Turn-in run" line fits the tracker, long Fishing readout lines wrap instead of being cut off, and a wrapped "+2 more here" in the quest plan keeps clear of the rating pill.
+
 ## v1.56.0
 - Profession plans follow wow-professions.com's updated WoW Forever guides (checked against the game's own recipe tables):
   - **Blacksmithing:** Rough Bronze Leggings for 80-95 (instead of Runed Copper Belts), Green Iron Bracers all the way from 140 to 175 (no more Bronze Warhammers or Strong Flux), Mithril Coif for 215-225, and the world-drop plans (Dazzling Mithril Rapier, Runed Mithril Hammer, Thorium Bracers), Radiant Boots and Leggings and Thorium Leggings as alternatives from 240;

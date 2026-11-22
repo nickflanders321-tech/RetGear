@@ -843,7 +843,7 @@ function RG.RefreshTracker()
       for i, l in ipairs(fl) do
         if not compact or i <= 2 then   -- compact: your skill and the one thing to know; the rest is on the Fishing page
           n = n + 1
-          y = item(n, y, l[1], { single = true, right = l[2], onClick = l[3], tip = l[4] })
+          y = item(n, y, l[1], { single = l[2] ~= nil, right = l[2], onClick = l[3], tip = l[4] })   -- no right-hand text: let a long line wrap instead of cutting it short
         end
       end
     end
@@ -903,7 +903,7 @@ function RG.RefreshTracker()
       local running = RG.TurnInRunActive and RG.TurnInRunActive()
       if readyWp >= 2 or running then
         n = n + 1
-        y = item(n, y, (running and (GREEN .. "Turn-in run on|r" .. GREY .. ": " .. readyWp .. " left (click to stop)|r") or (GREEN .. "Turn-in run|r" .. GREY .. ": " .. readyWp .. " quests ready, nearest first|r")),
+        y = item(n, y, (running and (GREEN .. "Turn-in run on|r" .. GREY .. ": " .. readyWp .. " left (click to stop)|r") or (GREEN .. "Turn-in run|r" .. GREY .. ": " .. readyWp .. " ready, nearest first|r")),
           { single = true, indent = 2, tip = "Click: the arrow takes you to each ready quest in turn, nearest first, and moves on as you hand them in.",
             onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
       end

@@ -1211,8 +1211,13 @@ local function makeBoard()
     g.sub:ClearAllPoints(); g.sub:SetPoint("CENTER", win, "BOTTOMLEFT", x, y - 140)
     g.back:ClearAllPoints(); g.back:SetPoint("CENTER", win, "BOTTOMLEFT", x, y - 190)
   end
+  -- the opening-hand panel, its prompt and its button sit out the VS splash: they used to show through the
+  -- dimmed splash and print on top of the logo and the "VS the computer" line
+  local function mullAlpha(k)
+    for _, f in ipairs({ win.mullPanel, win.mullBtn }) do if f and f.SetAlpha then f:SetAlpha(k) end end
+  end
   tick(function(dt)
-    if not vs:IsShown() then return end
+    if not vs:IsShown() then if win.mullPanel and win.mullPanel:GetAlpha() < 1 then mullAlpha(1) end return end
     vs.t = (vs.t or 0) + dt
     local t = vs.t
     local e = math.min(1, t / 0.55); e = 1 - (1 - e) * (1 - e) * (1 - e)    -- ease out
@@ -1225,7 +1230,8 @@ local function makeBoard()
     vs.a.glow:SetAlpha(pulse * e); vs.b.glow:SetAlpha(pulse * e)
     local fade = t > 2.2 and math.max(0, 1 - (t - 2.2) / 0.5) or 1
     vs:SetAlpha(fade)
-    if t > 2.7 then vs:Hide(); vs:SetAlpha(1) end
+    mullAlpha(1 - fade)
+    if t > 2.7 then vs:Hide(); vs:SetAlpha(1); mullAlpha(1) end
   end)
   function ui.showVS()
     local me, foe = game.p[ME], game.p[3 - ME]
@@ -1240,7 +1246,7 @@ local function makeBoard()
     S.foeRankLabel = S.pvp and S.foeRating and RG.Rank.info(S.foeRating).label or (not S.pvp and RG.Rank.info(RG.Rank.AI[S.level] or 1000).label)
     dress(vs.a, me, true); dress(vs.b, foe, false)
     vs.tag:SetText(S.pvp and "FRIENDLY DUEL" or ("VS THE COMPUTER  -  " .. string.upper(LEVELS[S.level] or "")))
-    vs.t = 0; vs:SetAlpha(1); vs:Show()
+    vs.t = 0; vs:SetAlpha(1); mullAlpha(0); vs:Show()
   end
 end
 
@@ -1673,11 +1679,12 @@ local function buildMenu()
   local function rl(txt, y) local f = U.fs(rb, "head", 11); f:SetPoint("TOPLEFT", 14, y); f:SetTextColor(U.GOLDC[1], U.GOLDC[2], U.GOLDC[3]); f:SetText(txt) end
   rl("RANKED LADDER", -10)
   local lb = U.gbtn(rb, "Leaderboard", 96, 20, function() if RG.Leaderboard then RG.Leaderboard() end end); lb:SetPoint("TOPRIGHT", -10, -7)
-  menu.rankName = U.fs(rb, "title", 20); menu.rankName:SetPoint("TOPLEFT", 14, -26)
-  menu.rankSub = U.fs(rb, "body", 11); menu.rankSub:SetPoint("TOPRIGHT", -14, -32); menu.rankSub:SetTextColor(0.825, 0.737, 0.56)
-  menu.rankBg = rb:CreateTexture(nil, "ARTWORK"); menu.rankBg:SetColorTexture(0.02, 0.02, 0.06, 1); menu.rankBg:SetSize(242, 10); menu.rankBg:SetPoint("TOPLEFT", 14, -58)
+  menu.rankName = U.fs(rb, "title", 20); menu.rankName:SetPoint("TOPLEFT", 14, -24)
+  -- the rank's sub line gets a line of its own: beside the 20-pt rank name it printed on top of it
+  menu.rankSub = U.fs(rb, "body", 11); menu.rankSub:SetPoint("TOPLEFT", 14, -47); menu.rankSub:SetWidth(242); menu.rankSub:SetJustifyH("LEFT"); if menu.rankSub.SetWordWrap then menu.rankSub:SetWordWrap(false) end; menu.rankSub:SetTextColor(0.825, 0.737, 0.56)
+  menu.rankBg = rb:CreateTexture(nil, "ARTWORK"); menu.rankBg:SetColorTexture(0.02, 0.02, 0.06, 1); menu.rankBg:SetSize(242, 10); menu.rankBg:SetPoint("TOPLEFT", 14, -64)
   menu.rankBar = rb:CreateTexture(nil, "OVERLAY"); menu.rankBar:SetTexture(U.WHITE); menu.rankBar:SetHeight(10); menu.rankBar:SetPoint("TOPLEFT", menu.rankBg, "TOPLEFT", 0, 0); menu.rankBar:SetWidth(2)
-  menu.rankPts = U.fs(rb, "body", 11); menu.rankPts:SetPoint("TOPLEFT", 14, -72); menu.rankPts:SetTextColor(0.85, 0.8, 0.7)
+  menu.rankPts = U.fs(rb, "body", 11); menu.rankPts:SetPoint("TOPLEFT", 14, -77); menu.rankPts:SetTextColor(0.85, 0.8, 0.7)
   rl("VS THE COMPUTER", -92); menu.rec = U.fs(rb, "body", 12); menu.rec:SetPoint("TOPRIGHT", -14, -92)
   rl("PLAYER DUELS", -108); menu.rec2 = U.fs(rb, "body", 12); menu.rec2:SetPoint("TOPRIGHT", -14, -108)
   menu.rec3 = U.fs(rb, "body", 11); menu.rec3:SetPoint("TOPLEFT", 14, -126)

@@ -10,7 +10,7 @@ local GetItemInfo = function(...) return RG.ItemInfo(...) end   -- the game has 
 -- ---------------------------------------------------------------------------
 -- Cartographer: deep ink panels, brass accent, parchment text
 local T = {
-  bg      = { 0.063, 0.11, 0.153, 0.97 },
+  bg      = { 0.063, 0.11, 0.153, 1 },
   side    = { 0.047, 0.086, 0.125, 1 },  -- the sidebar
   panel   = { 0.082, 0.133, 0.176, 1 },
   raised  = { 0.106, 0.165, 0.212, 1 },
@@ -282,7 +282,7 @@ local function setItem(r, id, link, title, sub, right, right2, accent, quality, 
   local rightW = math.max(kind and r.pill:GetWidth() or 0, r.meta:IsShown() and r.meta:GetStringWidth() or 0)
   local leftX = (small and 40 or 14) + size + 14
   -- long text wraps and the row grows to fit it (nothing is cut off with "...")
-  local th = fitText(r.title, math.max(120, CW - leftX - rightW - 26))
+  local th = fitText(r.title, math.max(120, CW - leftX - rightW - (rightW > 0 and 40 or 26)))   -- wider berth: a wrapped last word sat tight against the pill
   local hasSub = sub and sub ~= ""
   -- small rows centre the pill, so the second line has to stay clear of it too
   local shh = fitText(r.sub, math.max(120, CW - leftX - (small and rightW or (r.meta:IsShown() and r.meta:GetStringWidth() or 0)) - 26))
@@ -2476,6 +2476,12 @@ local function renderFish()
     rows[n].onClick = function() RG.FishModeRescue(); RG.RefreshUI() end
     rows[n].tip = "Click to give the interface back right now.  /wp showui"
   end
+  if RG.FishModeRescue then
+    n = n + 1
+    setItem(getRow(n), nil, nil, "|cffffffffA meter disappears while you fish?|r", "Point at it and type /wp fishkeep: it stays visible with the rest faded. Type it again to undo; /wp fishkeep list shows them.", GOLD .. "Keep a frame|r", "", nil, nil, true)
+    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Spyglass_02")
+    rows[n].tip = "Immersive fishing fades the whole interface, other add-ons' frames too.  Hover the frame, then type /wp fishkeep (or /wp fishkeep FrameName).  /wp fishkeep clear forgets them all."
+  end
   -- goals: Artisan, the Extravaganza, your camp
   local pg = RG.FishPagle and RG.FishPagle()
   local dst, dmin
@@ -3113,7 +3119,7 @@ local FOOTERS = {
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
   plan = "Click a stop for the arrow  ·  right-click skips it for 10 minutes  ·  /wp next  ·  /wp goto adds a goal",
   flights = "Click a flight path for the arrow  ·  fly there once to learn it  ·  /wp fp points at the nearest one you haven't learned",
-  fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off",
+  fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off  ·  /wp fishkeep: keep another add-on's meter visible",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
   mail  = "Click an item to search the AH for it  ·  /wp main makes the current character your main",
   cards = "Click a row to play, open a pack or browse your collection  ·  /wp arena  ·  /wp cards",
@@ -3411,7 +3417,8 @@ local function buildSidebar()
       scroll:SetVerticalScroll(0); saveTab(); RG.RefreshUINow()
     end)
     b:SetScript("OnEnter", function(self)
-      if sideWidth() ~= SIDE_W then GameTooltip:SetOwner(self, "ANCHOR_RIGHT"); GameTooltip:SetText(sec.label)
+      -- out to the left of the narrow sidebar: to the right it sat on top of the page content
+      if sideWidth() ~= SIDE_W then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(sec.label)
         if sec.key == "journey" and turnInsReady() > 0 then GameTooltip:AddLine(turnInsReady() .. " ready to hand in", 1, 1, 1) end
         if sec.key == "cards" and packsWaiting() > 0 then GameTooltip:AddLine(packsWaiting() .. " packs to open", 1, 1, 1) end
         GameTooltip:Show() end

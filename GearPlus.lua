@@ -593,12 +593,19 @@ function RG.QuestUpgrade(qid)
   qCache[qid] = best
   return best or nil
 end
+-- a gain as a short number: "12", "9.9", never "9.95625"
+local function gainTxt(v)
+  v = tonumber(v) or 0
+  if v >= 10 then return string.format("%d", math.floor(v + 0.5)) end
+  local t = string.format("%.1f", v)
+  return (t:gsub("%.0$", ""))
+end
 -- "  ^+12" for a quest line (green arrow, main spec; the 2nd spec's gain in its colour)
 function RG.QuestUpgradeTag(qid)
   if not RG.Opt("questUpgradeMarks") then return "" end
   local ok, u = pcall(RG.QuestUpgrade, qid)
   if not (ok and u) then return "" end
-  return "  " .. UP_ICON .. (u.d and (GREEN .. "+" .. u.d .. "|r") or "") .. (u.d2 and ((u.d and " " or "") .. "|cffF58CBA+" .. u.d2 .. "|r") or "")
+  return "  " .. UP_ICON .. (u.d and (GREEN .. "+" .. gainTxt(u.d) .. "|r") or "") .. (u.d2 and ((u.d and " " or "") .. "|cffF58CBA+" .. gainTxt(u.d2) .. "|r") or "")
 end
 -- the tooltip line: which reward, and what it adds
 function RG.QuestUpgradeTip(qid)
@@ -606,7 +613,7 @@ function RG.QuestUpgradeTip(qid)
   local ok, u = pcall(RG.QuestUpgrade, qid)
   if not (ok and u) then return "" end
   return "\n" .. GREEN .. "Reward upgrade:|r " .. (u.link or ("|cffffffff" .. (u.name or ("item " .. u.id)) .. "|r"))
-    .. (u.d and (GREEN .. " +" .. u.d .. "|r") or "") .. (u.d2 and (" |cffF58CBA+" .. u.d2 .. " for your 2nd spec|r") or "")
+    .. (u.d and (GREEN .. " +" .. gainTxt(u.d) .. "|r") or "") .. (u.d2 and (" |cffF58CBA+" .. gainTxt(u.d2) .. " for your 2nd spec|r") or "")
 end
 table.insert(RG.OPTIONS, { key = "questUpgradeMarks", label = "Mark quests whose reward is an upgrade (tracker, route, quest log)", default = true })
 

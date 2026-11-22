@@ -33,11 +33,44 @@ local whisper, whisperAt
 -- The fade (the display itself is the fishing HUD, FishHUD.lua: it sits on the game world, so it stays when the
 -- interface fades)
 -- ---------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
+-- Frames that stay while the rest fades (other add-ons' meters, say a catch-percentage bar). The fade is UIParent's
+-- alpha, so a frame under it fades with it; SetIgnoreParentAlpha lets a chosen frame keep its own. Only frames that
+-- aren't protected, and only the alpha: nothing is hidden or moved, and no game global is written.
+-- ---------------------------------------------------------------------------
+local kept = {}   -- frames we set, so they go back the way they were
+local function keepList() return (RG.db and RG.db.fishKeep) or {} end
+local function keepApply(on)
+  if on then
+    for name in pairs(keepList()) do
+      local f = _G[name]
+      if type(f) == "table" and f.SetIgnoreParentAlpha and not kept[f] and not (f.IsProtected and f:IsProtected()) then
+        if pcall(f.SetIgnoreParentAlpha, f, true) then kept[f] = true end
+      end
+    end
+  else
+    for f in pairs(kept) do pcall(f.SetIgnoreParentAlpha, f, false); kept[f] = nil end
+  end
+end
+-- the frame under the mouse: the highest named frame below UIParent (what the add-on called its meter)
+local function frameUnderMouse()
+  local f
+  if GetMouseFoci then local t = GetMouseFoci(); f = t and t[1] elseif GetMouseFocus then f = GetMouseFocus() end
+  local pick
+  while f and f ~= UIParent and f ~= WorldFrame do
+    local ok, name = pcall(f.GetName, f)
+    if ok and name and name ~= "" then pick = name end
+    f = f.GetParent and f:GetParent() or nil
+  end
+  return pick
+end
+
 local fader
 local function fadeTo(target)
   if not fader then fader = CreateFrame("Frame", nil, WorldFrame or UIParent) end
   local from = UIParent and UIParent:GetAlpha() or 1
   if target and RG.db then RG.db.fishFaded = true end   -- (remembered, so a fade left behind by a /reload is given back)
+  keepApply(target)
   local t = 0
   fader:SetScript("OnUpdate", function(self, dt)
     t = t + dt
@@ -51,6 +84,7 @@ end
 local function restoreUI()
   if not (RG.db and RG.db.fishFaded) then return end   -- only a fade that was ours
   if UIParent and (UIParent:GetAlpha() or 1) < 1 then UIParent:SetAlpha(1) end
+  keepApply(false)
   if not (fader and fader:GetScript("OnUpdate")) then RG.db.fishFaded = nil end
 end
 RG.FishModeRestoreUI = restoreUI
@@ -60,6 +94,7 @@ function RG.FishModeRescue()
   active, peeking, whisper = false, false, nil
   if fader then fader:SetScript("OnUpdate", nil) end
   if UIParent then UIParent:SetAlpha(1) end
+  keepApply(false)
   if RG.db then RG.db.fishFaded = nil end
   if RG.FishHUDRefresh then pcall(RG.FishHUDRefresh, true) end
 end
@@ -204,6 +239,37 @@ SlashCmdList.WAYPATH = function(msg)
     RG.db.fishImmersive = not RG.Opt("fishImmersive")
     if not RG.db.fishImmersive then RG.FishModeExit() end
     RG.Print("Immersive fishing " .. (RG.db.fishImmersive and (GREEN .. "on|r: the interface fades when you cast Fishing.") or "off."))
+    return
+  end
+  if cmd and cmd:lower() == "fishkeep" then
+    local arg = (msg or ""):match("^%s*%S+%s+(%S+)")
+    RG.db.fishKeep = RG.db.fishKeep or {}
+    if arg and arg:lower() == "clear" then
+      RG.db.fishKeep = {}; keepApply(false)
+      RG.Print("Fishing mode keeps no other frames visible now.")
+    elseif arg and arg:lower() == "list" then
+      local names = {}
+      for n in pairs(RG.db.fishKeep) do names[#names + 1] = n end
+      table.sort(names)
+      RG.Print(#names > 0 and ("Kept visible while you fish: " .. table.concat(names, ", ")) or "No frames kept yet. Point at one and type /wp fishkeep.")
+    else
+      -- /wp fishkeep <FrameName>, or just /wp fishkeep with the mouse over the frame; the same again takes it off
+      local name = arg or frameUnderMouse()
+      local f = name and _G[name]
+      if not name then
+        RG.Print("Point the mouse at the frame to keep (another add-on's meter, say) and type /wp fishkeep, or give its name: /wp fishkeep <FrameName>. /wp fishkeep list, /wp fishkeep clear.")
+      elseif type(f) ~= "table" or not f.SetIgnoreParentAlpha then
+        RG.Print("There's no frame called " .. name .. ".")
+      elseif f.IsProtected and f:IsProtected() then
+        RG.Print(name .. " is part of the game's own protected interface and can't be kept visible.")
+      elseif RG.db.fishKeep[name] then
+        RG.db.fishKeep[name] = nil; if f.SetIgnoreParentAlpha then pcall(f.SetIgnoreParentAlpha, f, false); kept[f] = nil end
+        RG.Print(name .. " will fade with the rest again.")
+      else
+        RG.db.fishKeep[name] = true
+        RG.Print(GREEN .. name .. "|r will stay visible while you fish. /wp fishkeep list shows them all.")
+      end
+    end
     return
   end
   if cmd and (cmd:lower() == "showui" or cmd:lower() == "restoreui") then
