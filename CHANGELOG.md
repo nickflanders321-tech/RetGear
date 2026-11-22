@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.57.6
 - **Alerts go quiet where you just gathered.** When you successfully mine or pick a node, that spot (and spawn points within 12 yards) stops alerting and stops showing as the nearest node for 10 minutes, so you are not sent back to a node you just emptied. The game gives addons no way to see whether a node is up, so a spot you have not gathered at can still be empty (someone else took it). Nodes respawn in about 5 minutes in the public databases we checked; WoW Forever may differ.
 - **Gathering alerts name every kind it could be.** Most ore spawn points are shared by several veins (about two thirds of them can be two to six different ones), but the alert only named the best one, so "Silver Vein" often turned out to be Copper or Tin. It now lists every vein or herb you want that can spawn there ("Tin, Silver or Gold spot 40 yd ahead"). The `/wp node` pin and the tracker reminder use the same wording.
 
