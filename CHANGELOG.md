@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **/wp perf now shows which part of Waypath+ costs the time.** After its ten seconds it lists the busiest recurring tasks (the gathering-node scan, learned paths, the tracker, fishing, pace) with milliseconds per second, calls per second and the garbage each makes. Nothing is measured, and nothing slows down, unless you run it.
+- **/wp perf now shows which part of Waypath+ costs the time.** After its ten seconds it lists the busiest recurring tasks (the gathering-node scan, learned paths, the tracker, fishing, pace) with milliseconds per second, calls per second and the garbage each makes. The report opens in a small window with the text selected, so it can be copied (Ctrl+C) and pasted. Nothing is measured, and nothing slows down, unless you run it.
 
 ## v1.57.3
 - **Gear upgrades: more sources.** The gear-list generator can now also read wowsims' item database (MIT) as a second opinion on where an item drops; 22 more genuine dungeon boss drops join the upgrade lists. PvP, raid and reputation items stay out.

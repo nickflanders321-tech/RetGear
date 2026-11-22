@@ -213,7 +213,7 @@ end
 
 -- a small window for copying a trail out or pasting one in
 local box
-function RG.ShowTrailBox(mode)
+function RG.ShowTrailBox(mode, title, text)
   if not box then
     box = CreateFrame("Frame", "WaypathTrailBox", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
     box:SetSize(560, 380); box:SetPoint("CENTER"); box:SetFrameStrata("DIALOG"); box:SetMovable(true); box:EnableMouse(true)
@@ -236,6 +236,11 @@ function RG.ShowTrailBox(mode)
       else box.note:SetText("|cffff6060" .. tostring(why) .. "|r") end
     end)
     if UISpecialFrames then table.insert(UISpecialFrames, "WaypathTrailBox") end
+  end
+  if mode == "text" then   -- any text to copy (the /wp perf report)
+    box.title:SetText(title or "Copy this"); box.eb:SetText(text or ""); box.go:Hide(); box.note:SetText("Ctrl+A, then Ctrl+C to copy")
+    box:Show(); box.eb:SetFocus(); box.eb:HighlightText()
+    return
   end
   if mode == "export" then
     box.title:SetText("Your learned paths (" .. #nodes .. " points)  ·  Ctrl+A, Ctrl+C to copy")

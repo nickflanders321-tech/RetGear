@@ -101,16 +101,18 @@ function RG.PerfSample()
     local mem, cpu
     if UpdateAddOnMemoryUsage and GetAddOnMemoryUsage then pcall(UpdateAddOnMemoryUsage); local ok, kb = pcall(GetAddOnMemoryUsage, "Waypath"); if ok then mem = kb end end
     if cpu0 and UpdateAddOnCPUUsage then pcall(UpdateAddOnCPUUsage); local ok, c = pcall(GetAddOnCPUUsage, "Waypath"); if ok and c then cpu = (c - cpu0) / 10 end end
-    RG.Print(string.format("Memory %s%s", mem and string.format("%.1f MB", mem / 1024) or "?",
-      (cpu and cpu > 0) and string.format("  ·  %.2f ms of CPU per second (a frame at 60 fps has 16.7 ms)", cpu) or "  ·  CPU time needs the game's script profiler (/console scriptProfile 1, then /reload)"))
+    local out = { "Waypath+ " .. tostring(RG.VERSION), string.format("Memory %s%s", mem and string.format("%.1f MB", mem / 1024) or "?",
+      (cpu and cpu > 0) and string.format("  ·  %.2f ms of CPU per second (a frame at 60 fps has 16.7 ms)", cpu) or "  ·  CPU not measured (needs /console scriptProfile 1, then /reload)") }
     -- which recurring tasks cost the time: milliseconds per second, calls per second, and garbage made per second
     local rows = {}
     for k, ms in pairs(perf.ms) do rows[#rows + 1] = { k, ms / 10, (perf.n[k] or 0) / 10, (perf.kb[k] or 0) / 10 } end
     table.sort(rows, function(a, b) if a[2] ~= b[2] then return a[2] > b[2] end return a[4] > b[4] end)
-    if #rows == 0 then RG.Print("  nothing recurring ran in those ten seconds.") end
+    if #rows == 0 then out[#out + 1] = "nothing recurring ran in those ten seconds." end
     for i = 1, math.min(7, #rows) do
       local r = rows[i]
-      RG.Print(string.format("  %-16s %.3f ms/s  ·  %.1f calls/s  ·  %.1f KB/s of garbage", r[1], r[2], r[3], r[4]))
+      out[#out + 1] = string.format("%-16s %.3f ms/s  ·  %.1f calls/s  ·  %.1f KB/s of garbage", r[1], r[2], r[3], r[4])
     end
+    for _, l in ipairs(out) do RG.Print(l) end
+    if RG.ShowTrailBox then pcall(RG.ShowTrailBox, "text", "Waypath+ performance report", table.concat(out, "\n")) end
   end)
 end
