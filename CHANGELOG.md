@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.57.1
 - **Cards: the grid's graded slabs are tidier.** The slab's label is the Grading Guild name in two small lines and the grade seal, and the slabs no longer touch the row below. The creature heads that poked out over the top came from the bare card under each slab (a 3D model ignores its parent's fade); it is now put away properly.
 - **Cards: hover a graded card in the grid** and the full-size preview beside the window shows it in its case, as the Vault does.
 
