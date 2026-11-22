@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **Less stutter from the quest planner.** Planning your next quest stop compared every spot with every other spot in every round; it now works out each spot's neighbours once (same plan, about three times faster), and the "quests just around you" ranking finds neighbours through a grid instead of comparing every quest with every other.
+- **Fishing HUD: bags read once.** Every item it looks for (lures, bait, camp items) used to read every bag slot again, with a new closure and game table per slot, several times per refresh. The bags are now read once, kept for half a second and dropped the moment they change.
+
 ## v1.57.4
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - **Quest tracker, arrow and map pins: much less garbage.** The list of every spot for your open quest objectives was rebuilt from scratch each time the tracker, the map pins or the guide asked for it (several times a second, hundreds of small tables each time). It is now built once and kept for a few seconds, and dropped immediately when your quest log or zone changes.

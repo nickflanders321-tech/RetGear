@@ -262,13 +262,59 @@ end
 local function planFromTasks(tasks, px, py)
   local stops, total = {}, 0
   local pending = {}
-  for _, t in ipairs(tasks) do t.done = false; pending[#pending + 1] = t end
+  local now = GetTime and GetTime() or 0
+  -- (what a task is worth and whether you skipped it do not change while planning: worked out once, not per spot and per round)
+  for _, t in ipairs(tasks) do
+    t.done = false; pending[#pending + 1] = t
+    t._w = taskWeight(t)
+    t._sk = (skipUntil[taskKey(t)] or 0) > now or (skipQuest[t.title] or 0) > now
+  end
+  local R2 = R_NEAR * R_NEAR
+  -- is (ax,ay) within R_NEAR of (bx,by)? Squared, and only the borderline cases take the square root, so the answers are the same
+  local function near(ax, ay, bx, by)
+    local dx, dy = ax - bx, ay - by
+    local d2 = dx * dx + dy * dy
+    if d2 < R2 * 0.999999999 then return true end
+    if d2 > R2 * 1.000000001 then return false end
+    return math.sqrt(d2) <= R_NEAR
+  end
+  -- which tasks have a spot close to each spot, in task order: found once, since only "is that task still ready" changes between rounds
+  -- (spots are filed in a grid of R_NEAR-yard cells so only the neighbouring cells are compared)
+  local cells, nearTasks = {}, {}
+  for i, t in ipairs(tasks) do
+    t._i = i
+    for _, p in ipairs(t.pts) do
+      local k = math.floor(p.x / R_NEAR) * 65536 + math.floor(p.y / R_NEAR)
+      local c = cells[k]; if not c then c = {}; cells[k] = c end
+      c[#c + 1] = { p, t }
+    end
+  end
+  local stamp, mark = 0, {}
+  for _, t in ipairs(tasks) do
+    for _, p in ipairs(t.pts) do
+      stamp = stamp + 1
+      local list = {}
+      local gx, gy = math.floor(p.x / R_NEAR), math.floor(p.y / R_NEAR)
+      for ix = gx - 1, gx + 1 do
+        for iy = gy - 1, gy + 1 do
+          local c = cells[ix * 65536 + iy]
+          if c then
+            for _, e in ipairs(c) do
+              local u = e[2]
+              if mark[u] ~= stamp and near(p.x, p.y, e[1].x, e[1].y) then mark[u] = stamp; list[#list + 1] = u end
+            end
+          end
+        end
+      end
+      if #list > 1 then table.sort(list, function(a, b) return a._i < b._i end) end
+      nearTasks[p] = list
+    end
+  end
   local function ready(t)
     if t.done then return false end
     if t.deps then for _, d in ipairs(t.deps) do if not d.done then return false end end end
     return true
   end
-  local now = GetTime and GetTime() or 0
   local cx, cy = px, py
   local guard = 0
   while guard < 60 do
@@ -276,18 +322,12 @@ local function planFromTasks(tasks, px, py)
     local best, bestCost, bestPt
     for _, t in ipairs(pending) do
       if ready(t) then
-        local skipped = (skipUntil[taskKey(t)] or 0) > now or (skipQuest[t.title] or 0) > now
+        local w, extra = t._w, t._sk and 20000 or 0
         for _, p in ipairs(t.pts) do
           local d = dist(cx, cy, p.x, p.y)
           local cover = 0
-          for _, u in ipairs(pending) do
-            if ready(u) then
-              for _, q in ipairs(u.pts) do
-                if dist(p.x, p.y, q.x, q.y) <= R_NEAR then cover = cover + 1 break end
-              end
-            end
-          end
-          local cost = (d + 40) / math.max(1, cover) / taskWeight(t) + (skipped and 20000 or 0)
+          for _, u in ipairs(nearTasks[p]) do if ready(u) then cover = cover + 1 end end
+          local cost = (d + 40) / math.max(1, cover) / w + extra
           if not bestCost or cost < bestCost then best, bestCost, bestPt = t, cost, p end
         end
       end
@@ -295,13 +335,7 @@ local function planFromTasks(tasks, px, py)
     if not best then break end
     local items = {}
     local snapshot = {}
-    for _, u in ipairs(pending) do
-      if ready(u) then
-        for _, q in ipairs(u.pts) do
-          if dist(bestPt.x, bestPt.y, q.x, q.y) <= R_NEAR then snapshot[#snapshot + 1] = u break end
-        end
-      end
-    end
+    for _, u in ipairs(nearTasks[bestPt]) do if ready(u) then snapshot[#snapshot + 1] = u end end
     for _, u in ipairs(snapshot) do u.done = true; items[#items + 1] = u end
     table.sort(items, function(a, b)
       if a.act ~= b.act then return ACT_RANK[a.act] < ACT_RANK[b.act] end

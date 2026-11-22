@@ -159,23 +159,47 @@ end
 
 -- What's in your bags, by name: { id, name, icon, count } for the first item whose name passes test(lowercase name).
 -- (WoW Forever's campfires and camp objects are items you carry and use)
-local function bagFind(test)
+-- (the bags are read once and kept until they change or for half a second: every name looked for used to read every slot again,
+-- a fresh closure and a game table per slot, several times per refresh)
+local bagSnap, bagSnapT
+local function describe(info)
+  local id = info and info.itemID
+  if not id or (RG.IsSecret and RG.IsSecret(id)) then return nil end
+  local name = info.itemName or (type(info.hyperlink) == "string" and info.hyperlink:match("%[(.-)%]")) or (RG.ItemInfo and RG.ItemInfo(id))
+  if type(name) ~= "string" or (RG.IsSecret and RG.IsSecret(name)) then return nil end
+  return { id = id, name = name, low = name:lower(), fileIcon = info.iconFileID }
+end
+local function bagItems()
+  local now = GetTime and GetTime() or 0
+  if bagSnap and bagSnapT and now >= bagSnapT and now - bagSnapT < 0.5 then return bagSnap end
   local C = C_Container
   local slotsOf = (C and C.GetContainerNumSlots) or _G.GetContainerNumSlots
   local infoOf = C and C.GetContainerItemInfo
-  if not (slotsOf and infoOf) then return nil end
-  for bag = 0, 4 do
-    for slot = 1, (slotsOf(bag) or 0) do
-      -- (one slot the client won't describe is skipped, never the whole search)
-      local ok, hit = pcall(function()
-        local info = infoOf(bag, slot)
-        local id = info and info.itemID
-        if not id or (RG.IsSecret and RG.IsSecret(id)) then return nil end
-        local name = info.itemName or (type(info.hyperlink) == "string" and info.hyperlink:match("%[(.-)%]")) or (RG.ItemInfo and RG.ItemInfo(id))
-        if type(name) ~= "string" or (RG.IsSecret and RG.IsSecret(name)) then return nil end
-        if test(name:lower()) then return { id = id, name = name, icon = itemIcon(id) or info.iconFileID, count = count(id) } end
-      end)
-      if ok and hit then return hit end
+  local list = {}
+  if slotsOf and infoOf then
+    for bag = 0, 4 do
+      for slot = 1, (slotsOf(bag) or 0) do
+        -- (one slot the client won't describe is skipped, never the whole search)
+        local ok, info = pcall(infoOf, bag, slot)
+        if ok and info then
+          local ok2, row = pcall(describe, info)
+          if ok2 and row then list[#list + 1] = row end
+        end
+      end
+    end
+  end
+  bagSnap, bagSnapT = list, now
+  return list
+end
+local function hitOf(e) return { id = e.id, name = e.name, icon = itemIcon(e.id) or e.fileIcon, count = count(e.id) } end
+local function bagFind(test)
+  local C = C_Container
+  if not (((C and C.GetContainerNumSlots) or _G.GetContainerNumSlots) and C and C.GetContainerItemInfo) then return nil end
+  for _, e in ipairs(bagItems()) do
+    local ok, match = pcall(test, e.low)
+    if ok and match then
+      local ok2, hit = pcall(hitOf, e)
+      if ok2 and hit then return hit end
     end
   end
 end
@@ -798,6 +822,7 @@ end
 local ev = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "TRADE_SKILL_SHOW", "TRADE_SKILL_CLOSE", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "SPELLS_CHANGED" }) do pcall(ev.RegisterEvent, ev, e) end
 ev:SetScript("OnEvent", function(_, event)
+  if event == "BAG_UPDATE_DELAYED" or event == "PLAYER_EQUIPMENT_CHANGED" then bagSnap = nil end
   if not RG.db then return end
   if event == "TRADE_SKILL_SHOW" then
     local ok, line = pcall(function() return GetTradeSkillLine and GetTradeSkillLine() end)

@@ -512,12 +512,27 @@ function RG.NearbyNewQuests(max, valued)
   -- rank by what the quest is worth for the distance: yellow and orange quests first, grey ones last,
   -- quests that open a chain or sit in a busy hub (several givers close together) a little higher
   local W = { [0] = 0.12, [1] = 0.3, [2] = 0.6, [3] = 0.9, [4] = 1.0 }
+  -- (neighbours within 150 yards are found through a grid of 150-yard cells, not by comparing every quest with every other)
+  local cells = {}
+  for _, o in ipairs(out) do
+    local k = math.floor(o.x / 150) * 65536 + math.floor(o.y / 150)
+    local c = cells[k]; if not c then c = {}; cells[k] = c end
+    c[#c + 1] = o
+  end
   for _, q in ipairs(out) do
     local rank = 2
     if RG.QuestWorth and q.lvl then local _, _, _, r = RG.QuestWorth(q.lvl, nil, q.id); rank = r or 2 end
     local hub = 0
-    for _, o in ipairs(out) do
-      if o ~= q and (o.x - q.x) ^ 2 + (o.y - q.y) ^ 2 <= 150 * 150 then hub = hub + 1 end
+    local gx, gy = math.floor(q.x / 150), math.floor(q.y / 150)
+    for ix = gx - 1, gx + 1 do
+      for iy = gy - 1, gy + 1 do
+        local c = cells[ix * 65536 + iy]
+        if c then
+          for _, o in ipairs(c) do
+            if o ~= q and (o.x - q.x) ^ 2 + (o.y - q.y) ^ 2 <= 150 * 150 then hub = hub + 1 end
+          end
+        end
+      end
     end
     q.rank = rank
     q.score = (W[rank] or 0.6) * (1 + 0.12 * math.min(hub, 4)) / (q.dist + 250)
