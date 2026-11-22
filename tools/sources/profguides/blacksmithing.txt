@@ -3,12 +3,10 @@ WoW Forever Blacksmithing Leveling Guide 1-300
 This WoW Forever Blacksmithing leveling guide will show you the fastest and cheapest way to level your Blacksmithing skill from 1 to 300. You will also find every trainer location and where to train Blacksmithing past 75, 150 and 225.
 1-150
 90x Rough Stone
-5x Silver Bar
-72x Coarse Stone
+20x Silver Bar
+132x Coarse Stone
 300x Bronze Bar
 60x Heavy Stone
-48x Medium Leather
-96x Weak Flux (vendor)
 60x Iron Bar
 10x Green Dye (vendor)
 150-225
@@ -22,13 +20,14 @@ This WoW Forever Blacksmithing leveling guide will show you the fastest and chea
 24x Heavy Leather
 12x Citrine
 225-300
+The last two steps, 270-300, are not in this list because they have a few alternatives. You will need an extra 508 to 1,120 Thorium Bar for them, and some Star Ruby , Aquamarine , Heart of Fire or Red Power Crystal , depending on which recipes you pick. I recommend buying these when you get there.
 16x Dense Stone
 154x Mithril Bar
 44x Thick Leather
-1910x Thorium Bar
+790x Thorium Bar
 30x Rugged Leather
-67x Star Ruby
-25x Aquamarine
+27x Star Ruby
+5x Aquamarine
 Apprentice Blacksmithing (1-75)
 1-25
 30x Rough Sharpening Stone - 30 Rough Stone
@@ -49,8 +48,9 @@ Make 5x Runed Copper Belt instead (10 Copper Bar each) if one Silver Bar costs m
 112-125
 13x Patterned Bronze Bracers - 65 Bronze Bar, 26 Coarse Grinding Stone
 125-140
-24x Bronze Shortsword - 120 Bronze Bar, 96 Weak Flux, 48 Medium Leather
-24x Patterned Bronze Bracers - 120 Bronze Bar, 48 Coarse Grinding Stone
+15x Silvered Bronze Gauntlets - 120 Bronze Bar, 15 Silver Bar, 30 Coarse Grinding Stone
+Make 30x Coarse Grinding Stone for these (60 Coarse Stone). They don't give skill points any more.
+15x Bronze Warhammer - 120 Bronze Bar, 15 Strong Flux, 15 Medium Leather
 Expert Blacksmithing (140-215)
 140-175
 40x Green Iron Bracers - 240 Iron Bar, 40 Green Dye
@@ -81,6 +81,14 @@ If you have the Plans: Dazzling Mithril Rapier , the Plans: Runed Mithril Hammer
 16x Dense Sharpening Stone - 16 Dense Stone
 235-245
 28x Mithril Spurs - 112 Mithril Bar, 84 Solid Grinding Stone
+240-280
+240-280
+245-285
+255-295
+270-300
+270-300
+275-300
+280-300
 245-270
 27x Imperial Plate Bracers - 540 Thorium Bar, 27 Star Ruby
 270-290
