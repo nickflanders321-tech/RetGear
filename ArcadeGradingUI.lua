@@ -233,6 +233,16 @@ local function makeCase(parent, cw)
     if s and RG.ArcadeGradeWear then off = RG.ArcadeGradeWear(s).centering or 0 end
     self.card:ClearAllPoints(); self.card:SetPoint("TOPLEFT", self, "TOPLEFT", (20 + off * 1.2) * k, -(104 + off * 0.8) * k)
     u.paint(self.card, c, rec.f, nil)
+    -- the grid's little slab: no live 3D model (it draws over the label and past the card's window at this size); the card
+    -- shows its scenery and the creature's silhouette instead, and the full-size preview beside the window has the model
+    if self.grid then
+      local m = rawget(self.card, "model")
+      if m and m:IsShown() then
+        m:Hide()
+        local scn = rawget(self.card, "scn")
+        if scn and scn.cr and c.kind == 2 then scn.cr:Show() elseif self.card.art then self.card.art:Show() end
+      end
+    end
     nameIn(c.name)
     local set = (u.setOf and u.setOf(c)) or ""
     local FN = u.FINISH[rec.f] and u.FINISH[rec.f][1] or ""

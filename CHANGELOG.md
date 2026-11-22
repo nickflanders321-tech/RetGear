@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **Cards: the grid's graded slabs are tidier.** The slab's label is just the grade seal (the cramped "Grading Guild" words are gone), 3D models stay inside the card's window instead of poking out over the label, and the slabs no longer touch the row below.
+- **Cards: the grid's graded slabs are tidier.** The slab's label is just the grade seal (the cramped "Grading Guild" words are gone), the little slabs show a creature's scenery and silhouette instead of the live 3D model (which poked out over the label; the full-size hover preview still has it), and the slabs no longer touch the row below.
 - **Cards: hover a graded card in the grid** and the full-size preview beside the window shows it in its case, as the Vault does.
 
 ## v1.57.0
