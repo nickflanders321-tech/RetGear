@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.57.0
 - **Cards: graded cards show in their case in the collection grid.** A card you hold in a grading case now sits in its Guild slab in the grid, with the grade seal and the Grading Guild label, instead of just a small seal.
 - **Cards: three new sorts.** The Sort button also cycles Graded (your cased cards first, highest grade first), Full art (cards you own as Full art first) and Gilded (cards you own as Gilded first).
 - **Cards: the 3D art no longer comes out zoomed in on a pulled card.** A creature's camera was fixed from the size the card had while it sprang up or was dealt (a quarter size or scaled to the row), so the finished card showed the middle of the creature. The camera is now set again once the card has stopped changing size, and each time it is shown.
