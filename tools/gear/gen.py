@@ -448,11 +448,29 @@ def ws_extra(iid):
         elif "drop" in x and x["drop"].get("npcId") and x["drop"].get("difficulty") in (1, None): ex["drops"].append(int(x["drop"]["npcId"]))
     return ex if any(ex.values()) else None
 
+# boss_loot.json (next to this script): boss drops of WoW Forever's newest dungeons that neither QuestieDB nor wowsims
+# has a source for yet, taken from a published loot table and checked item by item against the game's own item data
+# (every name must be exactly one item). {dungeon: {boss: [item names]}}
+BOSS_LOOT = {}
+_bl = os.path.join(os.path.dirname(os.path.abspath(__file__)), "boss_loot.json")
+if os.path.exists(_bl):
+    _byname = defaultdict(list)
+    for _i, _d in items.items(): _byname[_d["name"].lower()].append(_i)
+    for _dn, _bosses in json.load(open(_bl, encoding="utf-8")).items():
+        for _b, _names in _bosses.items():
+            for _n in _names:
+                _ids = _byname.get(_n.lower(), [])
+                if len(_ids) != 1: sys.exit("boss_loot.json: %r matches %d items" % (_n, len(_ids)))
+                BOSS_LOOT.setdefault(_ids[0], (_dn, _b))
+
 def sources(iid, ally=False):
     out = _sources(iid, ally)
     if not out and WS:
         ex = ws_extra(iid)
         if ex: out = _sources(iid, ally, ex)
+    if not out and int(iid) in BOSS_LOOT:
+        dn, b = BOSS_LOOT[int(iid)]
+        if not (ally and dn in HORDE_FAR_A): out = [{"how": "Dungeon", "lvl": 0, "src": b, "zone": dn}]
     return out
 
 def _sources(iid, ally=False, ex=None):

@@ -39,3 +39,5 @@ and Intellect; specs can narrow the class's weapons (daggers for Assassination a
 
 Hand-written entries in each class's `guide` table (tips, Forever-only items, crafts) take
 priority over generated ones.
+
+`boss_loot.json` (read automatically): boss drops of the newest dungeons that QuestieDB and wowsims have no source for; `{dungeon: {boss: [item names]}}`. Every name must match exactly one game item.

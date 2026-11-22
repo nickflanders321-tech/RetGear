@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **Gear upgrades: more sources.** The gear-list generator can now also read wowsims' item database (MIT) as a second opinion on where an item drops; 22 more genuine dungeon boss drops join the upgrade lists. PvP, raid and reputation items stay out.
+- **Gear upgrades: the newest dungeons are in.** The Drowned City, Krol'dok Stronghold (Horde only), Alcaz Prison, Blackmaw Hold, The Shaper's Terrace, Excavation Site: Wetlands and City of Dalaran had boss gear that no database knew a source for, so it never showed as an upgrade. 107 boss drops, checked against a published loot table, now join the lists.
 
 ## v1.57.2
 - **Grading Desk: the list of your cases no longer runs under its page arrows.** With a full page of cases, the arrows and "1 / 2" sat on top of the last row and the note beneath it; the list now starts higher and ends above them.
