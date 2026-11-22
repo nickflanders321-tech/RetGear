@@ -97,7 +97,9 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
       sl:SetRec(r)
       sl:SetFrameLevel((w:GetFrameLevel() or 1) + 1)
       sl:Show()
+      -- (the bare card under the slab: faded out, but a 3D model ignores its parent's fade, so it is put away too)
       w:SetAlpha(0); w.slabOn = true
+      local bm = rawget(w, "model"); if bm then bm:Hide() end
       if bd then bd:Hide() end
       return
     end
@@ -181,9 +183,11 @@ local function makeCase(parent, cw)
   L.g = u.fs(L, "title", (f.small and 30 or 26) * k, "OVERLAY", nil); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, f.small and 0 or 3 * k)
   L.w = u.fs(L, "head", 7 * k); L.w:SetPoint("TOP", L.g, "BOTTOM", 0, 0); L.w:SetTextColor(1, 0.95, 0.82)
   if f.grid then
-    -- the grid's slab: just the seal with the grade, centred on the label; and the card's pieces (a 3D model above all)
-    -- kept inside the card's window
-    L.seal:SetSize(26, 26); L.seal:ClearAllPoints(); L.seal:SetPoint("CENTER", L, "CENTER", 0, 0)
+    -- the grid's slab: "GRADING GUILD" in two small lines, and the seal with the grade
+    u.setfont(L.guild, "head", 6); L.guild:ClearAllPoints(); L.guild:SetPoint("LEFT", L, "LEFT", 7, 0); L.guild:SetWidth(40); L.guild:SetJustifyH("LEFT")
+    if L.guild.SetWordWrap then L.guild:SetWordWrap(true) end
+    L.guild:SetText("GRADING\nGUILD")
+    L.seal:SetSize(26, 26); L.seal:ClearAllPoints(); L.seal:SetPoint("RIGHT", L, "RIGHT", -4, 0)
     u.setfont(L.g, "title", 14, "OUTLINE"); L.g:ClearAllPoints(); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, 0)
     L.halo:SetSize(40, 40)
     if f.card.SetClipsChildren then f.card:SetClipsChildren(true) end
@@ -191,7 +195,7 @@ local function makeCase(parent, cw)
   function f:Layout(lines)
     L.name:ClearAllPoints()
     if self.grid then
-      L.name:Hide(); L.meta:Hide(); L.cert:Hide(); L.w:Hide(); L.guild:Hide()
+      L.name:Hide(); L.meta:Hide(); L.cert:Hide(); L.w:Hide(); L.guild:Show()
       return
     end
     L.name:Show()
@@ -233,16 +237,6 @@ local function makeCase(parent, cw)
     if s and RG.ArcadeGradeWear then off = RG.ArcadeGradeWear(s).centering or 0 end
     self.card:ClearAllPoints(); self.card:SetPoint("TOPLEFT", self, "TOPLEFT", (20 + off * 1.2) * k, -(104 + off * 0.8) * k)
     u.paint(self.card, c, rec.f, nil)
-    -- the grid's little slab: no live 3D model (it draws over the label and past the card's window at this size); the card
-    -- shows its scenery and the creature's silhouette instead, and the full-size preview beside the window has the model
-    if self.grid then
-      local m = rawget(self.card, "model")
-      if m and m:IsShown() then
-        m:Hide()
-        local scn = rawget(self.card, "scn")
-        if scn and scn.cr and c.kind == 2 then scn.cr:Show() elseif self.card.art then self.card.art:Show() end
-      end
-    end
     nameIn(c.name)
     local set = (u.setOf and u.setOf(c)) or ""
     local FN = u.FINISH[rec.f] and u.FINISH[rec.f][1] or ""
