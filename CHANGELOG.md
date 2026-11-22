@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.57.2
 - **Grading Desk: the list of your cases no longer runs under its page arrows.** With a full page of cases, the arrows and "1 / 2" sat on top of the last row and the note beneath it; the list now starts higher and ends above them.
 
 ## v1.57.1
