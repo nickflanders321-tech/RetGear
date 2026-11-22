@@ -84,7 +84,7 @@ local function direction(dx, dy)
 end
 
 -- A spawn point is shared by several nodes (most ore spots can be any of two to six veins), so the alert names every one you
--- could be looking at ("Tin, Silver or Gold"), not just the best one, and says when it could also be a vein you don't want.
+-- could be looking at ("Tin, Silver or Gold"), not just the best one.
 local function nodeLabel(types, names, spotMask, wantedMask)
   local list = {}
   for i = 1, #types do
@@ -95,7 +95,7 @@ local function nodeLabel(types, names, spotMask, wantedMask)
   if #list == 1 then label = list[1]
   elseif #list <= 3 then label = table.concat(list, ", ", 1, #list - 1) .. " or " .. list[#list]
   else label = table.concat(list, ", ", 1, 3) .. " or " .. (#list - 3) .. " more" end
-  return label, band(spotMask, wantedMask) ~= spotMask
+  return label
 end
 
 local lastAlert, nearest = 0, nil
@@ -135,7 +135,7 @@ local function check()
   end
   if not best then return end
   -- name every node type you want that can spawn there
-  local ore, more = nodeLabel(bestKind.types(), bestNames, best[3], bestMask)
+  local ore = nodeLabel(bestKind.types(), bestNames, best[3], bestMask)
   local key = bestKind.key .. map .. ":" .. best[1] .. ":" .. best[2]
   nearest = { ore = ore, dist = bestD, kind = bestKind, wp = { map, best[1], best[2], ore or "Node" }, dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2]) }
   -- one alert per node: a spot you were told about (or any spawn point within SAME_NODE yards of it,
@@ -153,7 +153,7 @@ local function check()
     if dx * dx + dy * dy <= SAME_NODE * SAME_NODE then told[bestKind.key .. map .. ":" .. s[1] .. ":" .. s[2]] = wall end
   end
   told[key] = wall
-  local msg = string.format("%s %s %d yd %s%s: check your minimap", ore or "Node", bestKind.word, math.floor(bestD + 0.5), nearest.dir, more and " (could be another kind)" or "")
+  local msg = string.format("%s %s %d yd %s: check your minimap", ore or "Node", bestKind.word, math.floor(bestD + 0.5), nearest.dir)
   if UIErrorsFrame then UIErrorsFrame:AddMessage(msg, 0.95, 0.75, 0.3) end
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
   if RG.QueueTracker then RG.QueueTracker() end

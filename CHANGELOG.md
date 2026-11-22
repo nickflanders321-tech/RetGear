@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **Gathering alerts name every kind it could be.** Most ore spawn points are shared by several veins (about two thirds of them can be two to six different ones), but the alert only named the best one, so "Silver Vein" often turned out to be Copper or Tin. It now lists every vein or herb you want that can spawn there ("Tin, Silver or Gold spot 40 yd ahead"), and adds "(could be another kind)" when it could also be one you've outgrown. The `/wp node` pin and the tracker reminder use the same wording.
+- **Gathering alerts name every kind it could be.** Most ore spawn points are shared by several veins (about two thirds of them can be two to six different ones), but the alert only named the best one, so "Silver Vein" often turned out to be Copper or Tin. It now lists every vein or herb you want that can spawn there ("Tin, Silver or Gold spot 40 yd ahead"). The `/wp node` pin and the tracker reminder use the same wording.
 
 ## v1.57.5
 - **Less stutter from the quest planner.** Planning your next quest stop compared every spot with every other spot in every round; it now works out each spot's neighbours once (same plan, about three times faster), and the "quests just around you" ranking finds neighbours through a grid instead of comparing every quest with every other.
