@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.57.5
 - **Less stutter from the quest planner.** Planning your next quest stop compared every spot with every other spot in every round; it now works out each spot's neighbours once (same plan, about three times faster), and the "quests just around you" ranking finds neighbours through a grid instead of comparing every quest with every other.
 - **Fishing HUD: bags read once.** Every item it looks for (lures, bait, camp items) used to read every bag slot again, with a new closure and game table per slot, several times per refresh. The bags are now read once, kept for half a second and dropped the moment they change.
 
