@@ -2306,7 +2306,7 @@ local GRIDX, GRIDY = 118, 150
 local WINW, WINH = 790, 730
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
 local SHOWS = { "All", "Owned", "Missing", "Extras", "New" }
-local SORTS = { "Owned", "Collection", "Rarity", "Name", "Power" }
+local SORTS = { "Owned", "Collection", "Rarity", "Name", "Power", "Graded", "Full art", "Gilded" }
 local FNAME = { "Common", "Rare", "Holo", "Full art", "Gilded" }
 
 local function isPinned(a, c)
@@ -2336,8 +2336,18 @@ local function collectionList(a)
   elseif view.sort == 3 then table.sort(list, function(x, y) if x.tier ~= y.tier then return x.tier > y.tier end return x.name < y.name end)
   elseif view.sort == 4 then table.sort(list, function(x, y) return x.name < y.name end)
   elseif view.sort == 5 then table.sort(list, function(x, y) return power(x, bestFinish(a, x.id) or 1) > power(y, bestFinish(a, y.id) or 1) end) end
-  -- first the cards you hold in a grading case (the highest grade first), then the Mythics you've pulled, then the rest,
-  -- whatever the sort (each group keeps the order the sort put it in)
+  -- Full art or Gilded: the cards you own in that print first (the print you asked for decides, so no graded group on top)
+  if view.sort == 7 or view.sort == 8 then
+    local f, yes, no = view.sort == 7 and 4 or 5, {}, {}
+    for _, c in ipairs(list) do
+      local sl = a.cards[c.key or c.name]
+      if sl and (sl[f] or 0) > 0 then yes[#yes + 1] = c else no[#no + 1] = c end
+    end
+    for _, c in ipairs(no) do yes[#yes + 1] = c end
+    return yes
+  end
+  -- first the cards you hold in a grading case (the highest grade first; the Graded sort is just this), then the Mythics you've pulled, then the rest,
+  -- whatever the other sorts (each group keeps the order the sort put it in)
   local graded, first, rest = {}, {}, {}
   for i, c in ipairs(list) do
     local b = RG.ArcadeGradeBest and RG.ArcadeGradeBest(c.key or c.name)

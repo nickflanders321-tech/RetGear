@@ -65,6 +65,7 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
   if not card then
     if wl then wl:Hide() end
     if bd then bd:Hide() end
+    if rawget(w, "slabOn") then local sl = rawget(w, "slab"); if sl then sl:Hide() end; w.slabOn = nil; w:SetAlpha(1) end
     return
   end
   -- a card in a case: its wear
@@ -79,17 +80,31 @@ table.insert(RG.ArcadeCardHooks, function(w, card, finish)
     end
     layer:Show()
   elseif wl then wl:Hide() end
-  -- a card in the collection grid with a graded copy: its seal
-  if rawget(w, "collect") and RG.ArcadeGradeShown then
+  -- a card in the collection grid with a graded copy: in its case (the slab), drawn over the bare card
+  if rawget(w, "collect") and RG.ArcadeGradeShown and RG.ArcadeMakeCase then
     local r = RG.ArcadeGradeShown(card.key or card.name)
-    if r and r.f == finish then
-      local b = gridBadge(w)
-      local kind = RG.ArcadeGradeSeal(r.grade)
-      sealTex(b.seal, kind)
-      b.num:SetText(r.grade); local ink = SEAL_INK[kind]; b.num:SetTextColor(1, 0.98, 0.92)
-      b:Show()
+    if r and r.f == finish and (w.cw or 0) >= 90 and (w.cw or 0) <= 130 then
+      local sl = rawget(w, "slab")
+      if not sl then
+        sl = RG.ArcadeMakeCase(w:GetParent() or UIParent, 80)
+        w.slab = sl
+        -- (it is the window's child, not the card's, so the card can fade out under it without fading the case)
+        w:HookScript("OnHide", function(self) local x = rawget(self, "slab"); if x then x:Hide() end end)
+        local function follow(self) local x = rawget(self, "slab"); if x and x:IsShown() then x:SetFrameLevel((self:GetFrameLevel() or 1) + 1) end end
+        w:HookScript("OnEnter", follow); w:HookScript("OnLeave", follow)
+      end
+      sl:ClearAllPoints(); sl:SetPoint("TOPLEFT", w, "TOPLEFT", (w.cw - sl:GetWidth()) / 2, 4)
+      sl:SetRec(r)
+      sl:SetFrameLevel((w:GetFrameLevel() or 1) + 1)
+      sl:Show()
+      w:SetAlpha(0); w.slabOn = true
+      if bd then bd:Hide() end
       return
     end
+  end
+  if rawget(w, "slabOn") then
+    local sl = rawget(w, "slab"); if sl then sl:Hide() end
+    w.slabOn = nil; w:SetAlpha(1)
   end
   if bd then bd:Hide() end
 end)
@@ -135,6 +150,7 @@ local function makeCase(parent, cw)
   local f = CreateFrame("Frame", nil, parent)
   f:SetSize(CASE_W * k, CASE_H * k)
   f.k, f.cw, f.small = k, cw, cw < SMALL
+  f.grid = cw <= 90   -- the collection grid's slab: a seal with the grade and two words, no name
   f.bg = f:CreateTexture(nil, "BACKGROUND"); f.bg:SetTexture(MEDIA .. "GradeCase"); f.bg:SetTexCoord(0, 1, 0, CASE_V); f.bg:SetAllPoints(f)
   f.card = u.makeCard(f, cw)
   f.card.noTip = true; f.card.hover = false; f.card:EnableMouse(false)
@@ -164,8 +180,19 @@ local function makeCase(parent, cw)
   L.halo:SetPoint("CENTER", L.seal, "CENTER"); L.halo:SetVertexColor(1, 0.85, 0.4, 0.8); L.halo:Hide()
   L.g = u.fs(L, "title", (f.small and 30 or 26) * k, "OVERLAY", nil); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, f.small and 0 or 3 * k)
   L.w = u.fs(L, "head", 7 * k); L.w:SetPoint("TOP", L.g, "BOTTOM", 0, 0); L.w:SetTextColor(1, 0.95, 0.82)
+  if f.grid then
+    u.setfont(L.guild, "head", 7); L.guild:ClearAllPoints(); L.guild:SetPoint("LEFT", L, "LEFT", 8, 2); L.guild:SetJustifyH("LEFT"); L.guild:SetText("GRADING\nGUILD")
+    L.seal:SetSize(30, 30); L.seal:ClearAllPoints(); L.seal:SetPoint("RIGHT", L, "RIGHT", -3, 0)
+    u.setfont(L.g, "title", 15, "OUTLINE"); L.g:ClearAllPoints(); L.g:SetPoint("CENTER", L.seal, "CENTER", 0, 0)
+    L.halo:SetSize(44, 44)
+  end
   function f:Layout(lines)
     L.name:ClearAllPoints()
+    if self.grid then
+      L.name:Hide(); L.meta:Hide(); L.cert:Hide(); L.w:Hide(); L.guild:Show()
+      return
+    end
+    L.name:Show()
     if self.small then
       L.guild:Hide(); L.meta:Hide(); L.cert:Hide(); L.w:Hide()
       L.name:SetPoint("LEFT", L, "LEFT", 12 * k, 0)
@@ -178,6 +205,7 @@ local function makeCase(parent, cw)
     end
   end
   local function nameIn(text)
+    if f.grid then f.lines = 1; f:Layout(1) return end
     local maxW = (276 - 12 - 76) * k
     local size = (f.small and 19 or 15) * k
     local lines = fitName(L.name, text, maxW, size, 6)
