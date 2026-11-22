@@ -83,6 +83,21 @@ local function direction(dx, dy)
   if rel < 30 or rel > 330 then return "ahead" elseif rel < 150 then return "to your left" elseif rel < 210 then return "behind you" else return "to your right" end
 end
 
+-- A spawn point is shared by several nodes (most ore spots can be any of two to six veins), so the alert names every one you
+-- could be looking at ("Tin, Silver or Gold"), not just the best one, and says when it could also be a vein you don't want.
+local function nodeLabel(types, names, spotMask, wantedMask)
+  local list = {}
+  for i = 1, #types do
+    if names[i] and band(spotMask, 2 ^ (i - 1)) > 0 then list[#list + 1] = (names[i]:gsub(" Vein$", ""):gsub(" Deposit$", ""):gsub(" Mineral$", "")) end
+  end
+  if #list == 0 then return nil, false end
+  local label
+  if #list == 1 then label = list[1]
+  elseif #list <= 3 then label = table.concat(list, ", ", 1, #list - 1) .. " or " .. list[#list]
+  else label = table.concat(list, ", ", 1, 3) .. " or " .. (#list - 3) .. " more" end
+  return label, band(spotMask, wantedMask) ~= spotMask
+end
+
 local lastAlert, nearest = 0, nil
 RG.OreNearby = function() return nearest end
 
@@ -101,7 +116,7 @@ local function check()
   if not pos or not size then return end
   local px, py = pos.x * 100, pos.y * 100
   if RG.IsSecret and (RG.IsSecret(px) or RG.IsSecret(py)) then return end
-  local best, bestD, bestKind, bestNames
+  local best, bestD, bestKind, bestNames, bestMask
   for _, kind in ipairs(KINDS) do
     local skill = RG.Opt(kind.opt) and RG.Skill and RG.Skill(kind.prof)
     local spots = skill and spotsFor(kind, map)
@@ -112,17 +127,15 @@ local function check()
           if band(s[3], mask) > 0 then
             local dx, dy = (s[1] - px) / 100 * size[1], (s[2] - py) / 100 * size[2]
             local d = math.sqrt(dx * dx + dy * dy)
-            if d <= RANGE and (not bestD or d < bestD) then best, bestD, bestKind, bestNames = s, d, kind, names end
+            if d <= RANGE and (not bestD or d < bestD) then best, bestD, bestKind, bestNames, bestMask = s, d, kind, names, mask end
           end
         end
       end
     end
   end
   if not best then return end
-  -- name the best node type that can spawn there
-  local ore
-  local types = bestKind.types()
-  for i = #types, 1, -1 do if bestNames[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = bestNames[i]; break end end
+  -- name every node type you want that can spawn there
+  local ore, more = nodeLabel(bestKind.types(), bestNames, best[3], bestMask)
   local key = bestKind.key .. map .. ":" .. best[1] .. ":" .. best[2]
   nearest = { ore = ore, dist = bestD, kind = bestKind, wp = { map, best[1], best[2], ore or "Node" }, dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2]) }
   -- one alert per node: a spot you were told about (or any spawn point within SAME_NODE yards of it,
@@ -140,7 +153,7 @@ local function check()
     if dx * dx + dy * dy <= SAME_NODE * SAME_NODE then told[bestKind.key .. map .. ":" .. s[1] .. ":" .. s[2]] = wall end
   end
   told[key] = wall
-  local msg = string.format("%s %s %d yd %s: check your minimap", ore or "Node", bestKind.word, math.floor(bestD + 0.5), nearest.dir)
+  local msg = string.format("%s %s %d yd %s%s: check your minimap", ore or "Node", bestKind.word, math.floor(bestD + 0.5), nearest.dir, more and " (could be another kind)" or "")
   if UIErrorsFrame then UIErrorsFrame:AddMessage(msg, 0.95, 0.75, 0.3) end
   if RG.Opt("sounds") and PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.MAP_PING or 3175) end
   if RG.QueueTracker then RG.QueueTracker() end
@@ -196,7 +209,7 @@ function RG.PinNextNode()
   local size = map and mapSize(map)
   if not (pos and size) then RG.Print("No gathering data for this spot.") return end
   local px, py = pos.x * 100, pos.y * 100
-  local best, bestD, bestKind, bestNames
+  local best, bestD, bestKind, bestNames, bestMask
   local now = GetTime()
   for _, kind in ipairs(KINDS) do
     local skill = RG.Skill and RG.Skill(kind.prof)
@@ -210,15 +223,14 @@ function RG.PinNextNode()
             local d = math.sqrt(dx * dx + dy * dy)
             local key = kind.key .. map .. ":" .. s[1] .. ":" .. s[2]
             if d <= 30 then visited[key] = now end
-            if not (visited[key] and now - visited[key] < 600) and (not bestD or d < bestD) then best, bestD, bestKind, bestNames = s, d, kind, names end
+            if not (visited[key] and now - visited[key] < 600) and (not bestD or d < bestD) then best, bestD, bestKind, bestNames, bestMask = s, d, kind, names, mask end
           end
         end
       end
     end
   end
   if not best then RG.Print("No more known ore or herb spots nearby that still give you skill.") return end
-  local types, ore = bestKind.types(), nil
-  for i = #types, 1, -1 do if bestNames[i] and band(best[3], 2 ^ (i - 1)) > 0 then ore = bestNames[i]; break end end
+  local ore = nodeLabel(bestKind.types(), bestNames, best[3], bestMask)
   local dir = direction((best[1] - px) * size[1], (best[2] - py) * size[2])
   if not RG.Opt("arrow") then RG.db.arrow = true end
   RG.db.arrowPaused = nil
