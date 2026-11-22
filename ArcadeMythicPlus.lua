@@ -251,6 +251,7 @@ driver:SetScript("OnUpdate", function(_, dt)
     elseif st.card and w.card ~= st.card then st.card = nil; st.f:Hide(); w.mpTC = nil end
   end
 end)
+do local h = driver.GetScript and driver:GetScript("OnUpdate"); if h and RG.PerfWrap then driver:SetScript("OnUpdate", RG.PerfWrap("mythicFx", h)) end end
 local function hoverOn(w)
   local st = live[w]
   if not (st and st.card) then return end

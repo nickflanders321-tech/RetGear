@@ -5,7 +5,7 @@ _G.Waypath = RG
 -- /wp perf's breakdown: RG.PerfWrap("name", fn) returns fn itself that, only while /wp perf is measuring, adds up the milliseconds
 -- it took and the kilobytes it allocated (garbage the game has to collect, which is what feels like micro-stutter).
 -- Wrap the callback of every recurring timer and per-frame handler with it.
-RG.Perf = RG.Perf or { on = false, ms = {}, kb = {}, n = {} }
+RG.Perf = RG.Perf or { on = false, ms = {}, kb = {}, n = {}, q = {} }
 function RG.PerfWrap(name, fn)
   local P = RG.Perf
   local stop, mem = debugprofilestop, collectgarbage

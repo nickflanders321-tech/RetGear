@@ -1574,6 +1574,7 @@ ticker:SetScript("OnUpdate", function(_, dt)
   end
 end)
 RG.ArcadeTicker = ticker
+do local h = ticker.GetScript and ticker:GetScript("OnUpdate"); if h and RG.PerfWrap then ticker:SetScript("OnUpdate", RG.PerfWrap("arcadeFx", h)) end end
 local function cardAnim(w, t)
   local fx = w.fxset
   if not fx then return end

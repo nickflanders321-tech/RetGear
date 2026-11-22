@@ -1478,7 +1478,16 @@ local ev = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "TAXIMAP_OPENED", "SKILL_LINES_CHANGED", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "TRAINER_SHOW" }) do pcall(ev.RegisterEvent, ev, e) end
 ev:SetScript("OnEvent", function(_, event)
   if event == "TRAINER_SHOW" and RG.db then RG.db.trainerDue = nil end
-  if event == "PLAYER_LOGIN" then C_Timer.After(2, RG.RefreshTracker) else queue() end
+  if event == "PLAYER_LOGIN" then
+    -- what /wp perf times inside a refresh (wrapped once the other files have loaded)
+    for _, n in ipairs({ "Objective", "MyQuests", "CurrentRouteEntry", "SmartRankNow", "NearbyNewQuests", "ClassQuests", "XPRate", "StepIsDone", "StepAuto" }) do
+      if type(RG[n]) == "function" then RG[n] = RG.PerfWrap("  in " .. n, RG[n]) end
+    end
+    C_Timer.After(2, RG.RefreshTracker)
+  else
+    if RG.Perf and RG.Perf.on then local q = RG.Perf.q; q[event] = (q[event] or 0) + 1 end   -- (/wp perf: who asks for a refresh)
+    queue()
+  end
 end)
 
 -- Questie's own quest tracker shares the top-right corner: when the two overlap, sit just below

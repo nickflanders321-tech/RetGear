@@ -732,10 +732,18 @@ end
 
 -- every frame: opening and closing, the water, the cast timer; four times a second: everything else
 local driver = CreateFrame("Frame")
-local acc, refreshFailed = 0, false
+local acc, refreshFailed, arcLit, busy = 0, false, 0, true
 local function step(_, dt)
   acc = acc + dt
+  -- Only while something moves (the buttons opening or closing, the swirl, a cast's timer) does this run every frame; settled, it
+  -- just waits, and the slower refresh below runs less often too (a 4-a-second rebuild of every button was most of the cost)
+  local cs, ce
+  busy = false
   if root and root:IsShown() then
+    cs, ce = RG.FishModeCast and RG.FishModeCast()
+    busy = (open ~= target and not inCombat()) or ringBurst > 0 or ringAlpha > 0.01 or cs ~= nil or hubCounting or arcLit > 0
+  end
+  if busy then
     -- open or close a little more (buttons can only move outside a fight)
     if open ~= target and not inCombat() then
       local was = open
@@ -743,10 +751,10 @@ local function step(_, dt)
       ringBurst = 1   -- (the swirl rises with every opening and closing)
       if was ~= open then place() end
     end
-    local info = RG.FishModeInfo and RG.FishModeInfo()
     local left, total = 0, 1
-    if info and info.castStart and info.castEnd and info.castEnd > info.castStart then left, total = math.max(0, info.castEnd - GetTime()), info.castEnd - info.castStart end
+    if cs and ce and ce > cs then left, total = math.max(0, ce - GetTime()), ce - cs end
     local lit = math.ceil(ARCN * left / total)
+    arcLit = lit
     for i = 1, ARCN do if i <= lit then arc[i]:Show() else arc[i]:Hide() end end
     -- the swirl: strong while opening or closing, then it settles; faint while your line is in the water
     local burst = ringBurst
@@ -769,7 +777,7 @@ local function step(_, dt)
       if not hubCounting then hub.icon:SetAlpha(0.5); hubCounting = true end
     elseif hubCounting then hubCounting = false; hub.big:SetText(""); hub.icon:SetAlpha(1) end
   end
-  if acc < 0.25 then return end
+  if acc < (busy and 0.25 or 0.75) then return end
   acc = 0
   if RG.FishModeRefresh then pcall(RG.FishModeRefresh) end
   local ok, err = pcall(RG.FishHUDRefresh)

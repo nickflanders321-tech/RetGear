@@ -121,6 +121,7 @@ tick:SetScript("OnUpdate", function()
     end
   end
 end)
+do local h = tick.GetScript and tick:GetScript("OnUpdate"); if h and RG.PerfWrap then tick:SetScript("OnUpdate", RG.PerfWrap("setMythics", h)) end end
 
 -- where it comes from
 local function mythTip(cd)

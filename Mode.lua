@@ -93,7 +93,7 @@ end
 function RG.PerfSample()
   if not (C_Timer and C_Timer.After) then return end
   if perf.on then RG.Print("Already measuring...") return end
-  perf.on = true; perf.ms, perf.kb, perf.n = {}, {}, {}
+  perf.on = true; perf.ms, perf.kb, perf.n, perf.q = {}, {}, {}, {}
   local cpu0 = GetAddOnCPUUsage and pcall(UpdateAddOnCPUUsage) and GetAddOnCPUUsage("Waypath") or nil
   RG.Print("Measuring Waypath+ for 10 seconds: play as you normally would...")
   C_Timer.After(10, function()
@@ -108,9 +108,17 @@ function RG.PerfSample()
     for k, ms in pairs(perf.ms) do rows[#rows + 1] = { k, ms / 10, (perf.n[k] or 0) / 10, (perf.kb[k] or 0) / 10 } end
     table.sort(rows, function(a, b) if a[2] ~= b[2] then return a[2] > b[2] end return a[4] > b[4] end)
     if #rows == 0 then out[#out + 1] = "nothing recurring ran in those ten seconds." end
-    for i = 1, math.min(7, #rows) do
+    for i = 1, math.min(12, #rows) do
       local r = rows[i]
       out[#out + 1] = string.format("%-16s %.3f ms/s  ·  %.1f calls/s  ·  %.1f KB/s of garbage", r[1], r[2], r[3], r[4])
+    end
+    local qs = {}
+    for ev, n in pairs(perf.q or {}) do qs[#qs + 1] = { ev, n } end
+    table.sort(qs, function(a, b) return a[2] > b[2] end)
+    if #qs > 0 then
+      local t = {}
+      for i = 1, math.min(5, #qs) do t[#t + 1] = qs[i][1] .. " " .. qs[i][2] end
+      out[#out + 1] = "tracker refreshes asked by (10 s): " .. table.concat(t, ", ")
     end
     for _, l in ipairs(out) do RG.Print(l) end
     if RG.ShowTrailBox then pcall(RG.ShowTrailBox, "text", "Waypath+ performance report", table.concat(out, "\n")) end

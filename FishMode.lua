@@ -105,6 +105,10 @@ local function setStatus(text, color) status, statusColor, statusAt = text, colo
 
 -- What the HUD shows: the cast, what just happened, your catches and a whisper while the interface is hidden.
 -- engaged: you cast in the last IDLE_EXIT seconds (or your line is in the water).
+-- (the cast timer's two numbers without building a table: the HUD asks every frame while it animates)
+function RG.FishModeCast()
+  if castStart and castEnd and GetTime() < castEnd then return castStart, castEnd end
+end
 function RG.FishModeInfo()
   local now = GetTime()
   if whisper and now - (whisperAt or 0) > 30 then whisper = nil end

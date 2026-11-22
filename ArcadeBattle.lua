@@ -45,6 +45,7 @@ driver:SetScript("OnUpdate", function(_, dt)
   end
 end)
 RG.BattleDriver = driver
+do local h = driver.GetScript and driver:GetScript("OnUpdate"); if h and RG.PerfWrap then driver:SetScript("OnUpdate", RG.PerfWrap("arenaDriver", h)) end end
 local function after(sec, fn) timers[#timers + 1] = { t = clock + sec, fn = fn } end
 local function tick(fn) ticks[#ticks + 1] = fn end
 
