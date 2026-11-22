@@ -376,7 +376,7 @@ local function buildDesk(frame)
   -- your cases (a list under the desk's title when no card is picked; the page for one)
   desk.cases = {}
   for i = 1, 8 do
-    local b = CreateFrame("Button", nil, desk.pick); b:SetSize(208, 26); b:SetPoint("TOPLEFT", 14, -150 - (i - 1) * 30)
+    local b = CreateFrame("Button", nil, desk.pick); b:SetSize(208, 26); b:SetPoint("TOPLEFT", 14, -112 - (i - 1) * 29)   -- 8 rows end at -341: above the page arrows (-348) and the note under them
     b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints(b); b.bg:SetColorTexture(1, 0.85, 0.5, 0.06)
     b.seal = b:CreateTexture(nil, "ARTWORK"); b.seal:SetTexture(MEDIA .. "GradeSeals"); b.seal:SetSize(22, 22); b.seal:SetPoint("LEFT", 2, 0)
     b.g = u.fs(b, "title", 10.5, "OVERLAY", "OUTLINE"); b.g:SetPoint("CENTER", b.seal, "CENTER", 0, 0)
