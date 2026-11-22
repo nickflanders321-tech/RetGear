@@ -25,6 +25,11 @@ Usage:
   git clone --depth 1 -b data/wago https://github.com/nickflanders321-tech/RetGear.git /tmp/wago   (the client's DB2 tables, .github/workflows/fetch-wago.yml)
   python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json] [--itemdb /tmp/itemdb] [--wago /tmp/wago]
 
+With --wowsims <wowsims/forever assets/database/db.json> (MIT, (c) the wowsims team), what that simulator's item database says about
+where an item comes from fills the gaps in QuestieDB's: a piece QuestieDB lists no source for, but wowsims says drops from a
+5-player dungeon boss or its trash, is sold by a Horde (or Alliance) vendor, or is a quest reward a Horde (Alliance) character can
+take, joins the candidates. QuestieDB's sources always win; PvP, raid and reputation entries are left to the other sources.
+
 With --wago, WoW Forever's own recipes join: the game client's tables say which craft makes which item, which recipe
 item teaches it and the skill it needs (a craft no recipe item teaches is learned from the trainer). Where a recipe
 comes from is QuestieDB's (vendors, drops, quests), including the Merchant's Favor vendors of the Waylaid Crates
@@ -37,6 +42,9 @@ args = sys.argv[1:]
 SPECS_JSON = None
 ITEMDB = None
 WAGO = None
+WOWSIMS = None
+if "--wowsims" in args:
+    i = args.index("--wowsims"); WOWSIMS = args[i + 1]; del args[i:i + 2]
 if "--wago" in args:
     i = args.index("--wago"); WAGO = args[i + 1]; del args[i:i + 2]
 if "--itemdb" in args:
@@ -167,6 +175,16 @@ def _sorted_pairs(kv):
 fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
 FI, FN, FQ = fv["items"], fv["npcs"], fv["quests"]
 FO = fv.get("objects") or {}
+
+WS = {}   # wowsims: item id -> its sources, for the pieces QuestieDB has no source for (see --wowsims above)
+WS_ZONE = {}
+WS_NPC = {}
+if WOWSIMS:
+    _w = json.load(open(WOWSIMS))
+    WS_ZONE = {int(z["id"]): z["name"] for z in _w.get("zones", [])}
+    WS_NPC = {int(n["id"]): n for n in _w.get("npcs", [])}
+    for _it in _w.get("items", []):
+        WS[int(_it["id"])] = _it.get("sources") or []
 
 def L(v):
     """Questie lists can arrive as dicts with string keys."""
@@ -415,10 +433,35 @@ def horde_quest(qid, ally=False):
         if not ok: return None
     return q
 
+def ws_extra(iid):
+    """What wowsims knows about a piece QuestieDB lists no source for (--wowsims): quest ids, NPC ids that drop it (normal
+    difficulty only, a named NPC) and NPC ids that sell it. They go through the very same checks as QuestieDB's own (a Horde
+    (Alliance) quest the class can take, a 5-player dungeon boss, a vendor of your faction that isn't a PvP or reputation
+    quartermaster), so wowsims only widens what is known, never what is allowed. A piece wowsims lists as PvP or a reputation
+    reward is left alone."""
+    srcs = WS.get(iid) or []
+    if not srcs or any("pvp" in x or "rep" in x for x in srcs): return None
+    ex = {"quests": [], "drops": [], "vendors": []}
+    for x in srcs:
+        if "quest" in x and x["quest"].get("id"): ex["quests"].append(int(x["quest"]["id"]))
+        elif "soldBy" in x and x["soldBy"].get("npcId"): ex["vendors"].append(int(x["soldBy"]["npcId"]))
+        elif "drop" in x and x["drop"].get("npcId") and x["drop"].get("difficulty") in (1, None): ex["drops"].append(int(x["drop"]["npcId"]))
+    return ex if any(ex.values()) else None
+
 def sources(iid, ally=False):
+    out = _sources(iid, ally)
+    if not out and WS:
+        ex = ws_extra(iid)
+        if ex: out = _sources(iid, ally, ex)
+    return out
+
+def _sources(iid, ally=False, ex=None):
     other = HORDE_ZONES if ally else ALLIANCE_ZONES
     far = HORDE_FAR_A if ally else HORDE_FAR
     f = FI.get(str(iid))
+    if ex:
+        f = dict(f or {}); f["questRewards"] = L(f.get("questRewards")) + ex["quests"]
+        f["npcDrops"] = L(f.get("npcDrops")) + ex["drops"]; f["vendors"] = L(f.get("vendors")) + ex["vendors"]
     if not f: return []
     out = []
     for qid in L(f.get("questRewards")):
@@ -451,7 +494,8 @@ def sources(iid, ally=False):
             d = DUNGEON.get(z)
             if d:
                 if d in RAIDS or d in far: continue
-                if (n.get("rank") or 0) < 1: continue
+                # (QuestieDB gives some bosses rank 0; a named NPC wowsims lists for the item counts as the boss)
+                if (n.get("rank") or 0) < 1 and not (ex and int(nid) in ex["drops"]): continue
                 out.append({"how": "Dungeon", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": d, "bl": n.get("maxLevel") or 0})
             elif (n.get("rank") or 0) in (1, 2, 4) and len(drops) <= 2 and AREA.get(z) and AREA.get(z) not in other:
                 out.append({"how": "Rare mob", "lvl": n.get("maxLevel") or 0, "src": n["name"], "zone": zone_name(z) or "", "bl": n.get("maxLevel") or 0})
@@ -817,3 +861,42 @@ if SPECS_JSON:
             out.append("}")
     with open(os.path.join(addon_dir, 'Classes', 'SpecGear.lua'), "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
+
+# ---------------------------------------------------------------------------
+# --wowsims: what wowsims lists as a 5-player dungeon boss drop that the guide still has no source for, and why (a report)
+# ---------------------------------------------------------------------------
+if WOWSIMS and os.environ.get("WS_REPORT"):
+    DUNGEON_NAMES = set(DUNGEON.values())
+    import collections
+    why = collections.defaultdict(list)
+    for iid, srcs in WS.items():
+        it = items.get(iid)
+        if not it: continue
+        for x in srcs:
+            if "drop" not in x: continue
+            dr = x["drop"]
+            zn = WS_ZONE.get(dr.get("zoneId")) or ""
+            if zn not in DUNGEON_NAMES or zn in RAIDS: continue
+            if dr.get("difficulty") not in (1, None): continue
+            n = WS_NPC.get(dr.get("npcId"))
+            if sources(iid) or sources(iid, True): continue
+            r = "no npc" if not n else ("npc unknown to QuestieDB" if str(dr["npcId"]) not in FN else
+                 ("npc is trash (rank<1)" if (FN[str(dr["npcId"])].get("rank") or 0) < 1 else "other"))
+            why[r].append("%s (%d) %s | %s | %s | req %s q%s" % (it["name"], iid, it.get("InventoryType"), zn, n and n["name"], it.get("RequiredLevel"), it.get("Quality")))
+    for r, l in why.items():
+        print("== %s: %d" % (r, len(l)), file=sys.stderr)
+        for t in l[:400]: print("   " + t, file=sys.stderr)
+
+# CHECK=<file of item names>: for each name, where the guide's data says it comes from (a loot table from a guide site is checked this way)
+if os.environ.get("CHECK"):
+    CLASS_BIT = -1
+    byname = defaultdict(list)
+    for iid, d in items.items(): byname[d["name"].lower()].append(iid)
+    for ln in open(os.environ["CHECK"], encoding="utf-8"):
+        nm = ln.strip()
+        if not nm: continue
+        ids = byname.get(nm.lower(), [])
+        if not ids: print("MISSING   %s: not in the item data" % nm, file=sys.stderr); continue
+        for iid in ids:
+            sr = sources(iid) or (sources(iid, True) and [dict(x, a=1) for x in sources(iid, True)])
+            print("%-9s %s (%d): %s" % ("ok" if sr else "NO SOURCE", nm, iid, "; ".join("%s %s%s" % (x["how"], x["src"], " (Alliance)" if x.get("a") else "") for x in (sr or [])[:3])), file=sys.stderr)

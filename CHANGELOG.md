@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Gear upgrades: more sources.** The gear-list generator can now also read wowsims' item database (MIT) as a second opinion on where an item drops; 22 more genuine dungeon boss drops join the upgrade lists. PvP, raid and reputation items stay out.
+
 ## v1.57.2
 - **Grading Desk: the list of your cases no longer runs under its page arrows.** With a full page of cases, the arrows and "1 / 2" sat on top of the last row and the note beneath it; the list now starts higher and ends above them.
 
