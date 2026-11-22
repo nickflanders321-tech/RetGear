@@ -714,6 +714,19 @@ function RG.ArcadeGradeDetailRefresh(detail, c, f)
   local free = RG.ArcadeGradeFree(a, key, f)
   detail.gradeBtn:SetEnabled(free > 0)
   detail.gradeBtn:SetText(free > 0 and "Grade a copy" or "None to grade")
+  -- a graded copy of this print is shown in its case (the slab), not as a bare card
+  local r = RG.ArcadeGradeShown(key)
+  if r and r.f == f then
+    if not rawget(detail, "slab") then
+      detail.slab = makeCase(detail, 176); detail.slab:SetPoint("TOPLEFT", detail, "TOPLEFT", 30, -36)
+      detail.slab:SetFrameLevel((detail:GetFrameLevel() or 1) + 3)
+    end
+    detail.slab:SetRec(r)
+    detail.card:Hide()
+  else
+    if rawget(detail, "slab") then detail.slab:Hide() end
+    detail.card:Show()
+  end
   local n = #RG.ArcadeGradeCases(key)
   detail.gradeCases:SetEnabled(n > 0)
   detail.gradeCases:SetText(n > 0 and ("Cases  ·  " .. n) or "No cases")

@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- **Cards: the 3D art no longer comes out zoomed in on a pulled card.** A creature's camera was fixed from the size the card had while it sprang up or was dealt (a quarter size or scaled to the row), so the finished card showed the middle of the creature. The camera is now set again once the card has stopped changing size, and each time it is shown.
+- **Cards: a graded copy shows in its case.** The card's page in your collection shows the case (the slab with the grade and certificate plate) for a graded print instead of a bare card.
 - **Immersive fishing can keep other add-ons' frames visible.** The fade took every frame with it, including other add-ons' meters (a catch-percentage bar, say). Point the mouse at the frame and type `/wp fishkeep` (or `/wp fishkeep FrameName`) and it stays while the rest fades; type it again to undo, `/wp fishkeep list` to see them, `/wp fishkeep clear` to forget them. Protected game frames are left alone, and only the frame's fade is changed. A tip on the Fishing page says how.
 - **Arena:** the rank line on the lobby ("Peak Scout III · Launch Season") has its own line, no longer printed over the rank name. The gold Waypath splash no longer sits over the "Keep these cards" prompt: the prompt waits until the splash has faded.
 - **Tracker:** a quest whose reward is an upgrade showed the gain as "+9.95625"; it now reads "+9.9" (or "+12" from ten up), in the tracker, route and quest tooltips.

@@ -1367,6 +1367,33 @@ local function ensureModel(w)
       if self.SetFacing then self:SetFacing(self.face or 0.4) end
     end)
   end)
+  -- A model's camera is fixed from the size it had when it loaded. A pulled card springs up from a quarter of its size (and a
+  -- dealt one is scaled to the row), so a model that loaded small then showed the zoomed-in middle of the creature on the
+  -- finished card. Whenever the model's size on screen has changed and settled, its camera is set again.
+  local lastFit, settle, acc = nil, 0, 0
+  m:HookScript("OnShow", function() lastFit, settle = nil, 0.3 end)   -- (shown again: once more when it has settled)
+  m:HookScript("OnUpdate", function(self, dt)
+    acc = acc + dt
+    if acc < 0.1 then return end
+    acc = 0
+    local es = self.GetEffectiveScale and self:GetEffectiveScale()
+    local wd = self.GetWidth and self:GetWidth()
+    if type(es) ~= "number" or type(wd) ~= "number" then return end
+    local key = es * wd
+    if lastFit == nil then lastFit = key return end
+    if math.abs(key - lastFit) > 0.5 then lastFit, settle = key, 0.25 return end   -- still changing: wait until it stops
+    if settle > 0 then
+      settle = settle - 0.1
+      if settle <= 0 and self.creature then
+        pcall(function()
+          if self.SetPortraitZoom and self.zoom then self:SetPortraitZoom(self.zoom) end
+          if RG.ArcadeApplyCam then RG.ArcadeApplyCam(self) end
+          if self.SetPosition then self:SetPosition(0, 0, 0) end
+          if self.SetFacing then self:SetFacing(self.face or 0.5) end
+        end)
+      end
+    end
+  end)
   return m
 end
 -- ---------------------------------------------------------------------------
