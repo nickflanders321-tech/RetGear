@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.56.0
+- Profession plans follow wow-professions.com's updated WoW Forever guides (checked against the game's own recipe tables):
+  - **Blacksmithing:** Rough Bronze Leggings for 80-95 (instead of Runed Copper Belts), Green Iron Bracers all the way from 140 to 175 (no more Bronze Warhammers or Strong Flux), Mithril Coif for 215-225, and the world-drop plans (Dazzling Mithril Rapier, Runed Mithril Hammer, Thorium Bracers), Radiant Boots and Leggings and Thorium Leggings as alternatives from 240;
+  - **Tailoring:** only 5 Gloves of Meditation (120-125), then Small Silk Packs to 140; Crimson Silk Pantaloons to 185 and Black Mageweave Leggings from 185; Brightcloth Cloak as an alternative at 240-250;
+  - **First Aid:** Runecloth Bandages to 290, then Heavy Runecloth Bandages to 300 (Major Healing Potions are the alternative).
+  - The Professions tab counts the materials for the new crafts too.
+
 ## v1.55.2
 - **Cards: graded cards come first.** The front page of your collection now lists every card you hold in a grading case before anything else (highest grade first), then your Mythics, then the rest, whatever the sort.
 

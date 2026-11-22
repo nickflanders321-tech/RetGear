@@ -7,12 +7,6 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
-- Issues #39, #41, #42 (profession guide updates, 2026-11-21): the new Blacksmithing, Tailoring and First Aid routes are written
-  and pass tools/profs/check.py on branch claude/prof-guides-39-42, but they add crafts that Professions/Generated.lua has no recipe
-  yet (Rough Bronze Leggings, Mithril Coif, Small Silk Pack, Heavy Runecloth Bandage), so the audit fails until
-  `sh tools/watch/regenerate.sh` is run (it couldn't run in the 2026-11-21 Claude session: Lua 5.1 was unavailable there).
-  Merge the branch, regenerate, check, release, close the issues.
-
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
 
@@ -131,6 +125,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.56.0: issues #39, #41, #42: the updated Blacksmithing, Tailoring and First Aid routes (branch claude/prof-guides-39-42)
+  merged onto main, Professions/Generated.lua regenerated, audit, cross-check and tools/profs/check.py pass.
 
 - v1.45.0: Mount Hyjal route notes and Elderwild hub for both factions (item 1, Hyjal part); four camp blueprint sources from QuestieDB
   (item 10, partial); Blizzard's November 13-14 hotfixes applied (dungeon XP 12-level rule on the dungeon cards, Wild Growth for
