@@ -225,6 +225,49 @@ function RG.ArcadeGradeSend(key, f, svc, which)
     (free == "first" and ", free." or (free == "week" and ", this week's free one." or (", " .. sv.price .. " coins.")))
 end
 
+-- A batch: several copies picked from the collection and sent together (kept for this session only).
+-- It can't hold more than the free slots, nor more copies of a print than you have ungraded.
+local batch = {}
+function RG.ArcadeGradeBatchList() return batch end
+function RG.ArcadeGradeBatchCap()
+  local a = store(); if not a then return 0 end
+  return math.max(0, SLOTS - #G(a).queue)
+end
+function RG.ArcadeGradeBatchAdd(key, f)
+  local a = store(); local c = cardOf(key)
+  if not (a and c and f and f >= 1 and f <= 5) then return false, "Pick a card first." end
+  local inB = 0
+  for _, e in ipairs(batch) do if e.key == key and e.f == f then inB = inB + 1 end end
+  if RG.ArcadeGradeFree(a, key, f) - inB < 1 then return false, inB > 0 and "Every ungraded copy of that print is already in the batch." or "You have no ungraded copy of that print." end
+  local cap = RG.ArcadeGradeBatchCap()
+  if #batch >= cap then return false, cap == 0 and "All " .. SLOTS .. " grading slots are busy." or ("The batch is full: only " .. cap .. " slot" .. (cap == 1 and " is" or "s are") .. " free.") end
+  batch[#batch + 1] = { key = key, f = f }
+  return true, c.name .. " added to the batch (" .. #batch .. ")."
+end
+function RG.ArcadeGradeBatchRemove(i) table.remove(batch, i) end
+function RG.ArcadeGradeBatchClear() for i = #batch, 1, -1 do batch[i] = nil end end
+-- what sending the batch costs in coins with a service, and how many of it are free
+function RG.ArcadeGradeBatchCost(svc)
+  local sv = SERVICE[svc]; if not sv then return 0, 0 end
+  local n = #batch
+  local first, weekly = RG.ArcadeGradeFreeLeft()
+  local free = 0
+  if svc == "standard" then free = math.min(n, first); if weekly and n > free then free = free + 1 end end
+  return (n - free) * sv.price, free
+end
+-- send them one after another; the ones that went leave the batch, a failure stops it and keeps the rest
+function RG.ArcadeGradeBatchSend(svc)
+  local sent, why = 0, nil
+  while #batch > 0 do
+    local e = batch[1]
+    local ok, msg = RG.ArcadeGradeSend(e.key, e.f, svc, 1)
+    if not ok then why = msg; break end
+    table.remove(batch, 1); sent = sent + 1
+  end
+  if sent == 0 then return false, why or "The batch is empty." end
+  return true, sent .. " card" .. (sent > 1 and "s are" or " is") .. " off to the graders." .. (why and ("  " .. why) or "")
+end
+
 -- parcels whose time is up move to the doorstep (unopened); returns how many arrived
 function RG.ArcadeGradeTick()
   local a = store(); if not a then return 0 end

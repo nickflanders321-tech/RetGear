@@ -336,7 +336,11 @@ local function buildDesk(frame)
   desk.pick.hint:SetTextColor(0.8, 0.75, 0.64); desk.pick.hint:SetSpacing(2)
   desk.copies = {}
   for i = 1, 8 do
-    local b = u.gbtn(desk.pick, "", 208, 26, function() sel.copy = i; RG.ArcadeRefresh(true) end)
+    local b = u.gbtn(desk.pick, "", 208, 26, function()
+      local v = RG.ArcadeView
+      if v and v.gradeBatch then RG.ArcadeGradeBatchRemove(i) else sel.copy = i end
+      RG.ArcadeRefresh(true)
+    end)
     b:SetPoint("TOPLEFT", 14, -36 - (i - 1) * 30); desk.copies[i] = b
   end
   desk.pick.foot = u.fs(desk.pick, "body", 11.5); desk.pick.foot:SetPoint("BOTTOMLEFT", 14, 14); desk.pick.foot:SetWidth(208); desk.pick.foot:SetJustifyH("LEFT")
@@ -356,12 +360,29 @@ local function buildDesk(frame)
   end
   desk.freeLine = u.fs(desk.svcBox, "body", 11.5); desk.freeLine:SetPoint("TOPLEFT", 14, -140); desk.freeLine:SetWidth(234); desk.freeLine:SetJustifyH("LEFT"); desk.freeLine:SetTextColor(0.62, 0.83, 1)
   desk.send = u.gbtn(desk.svcBox, "Send to the graders", 234, 30, function()
+    local v = RG.ArcadeView
+    if v and v.gradeBatch then
+      local ok, msg = RG.ArcadeGradeBatchSend(sel.svc); say(msg)
+      if ok and RG.ArcadeSound then RG.ArcadeSound("pick") end
+      if #RG.ArcadeGradeBatchList() == 0 then v.gradeBatch = false end
+      RG.ArcadeRefresh(true); return
+    end
     if not (sel.key and sel.f) then return end
     local ok, msg = RG.ArcadeGradeSend(sel.key, sel.f, sel.svc, sel.copy); say(msg)
     if ok then sel.copy = 1; if RG.ArcadeSound then RG.ArcadeSound("pick") end end
     RG.ArcadeRefresh(true)
   end, true)
   desk.send:SetPoint("BOTTOMLEFT", 14, 14)
+  -- the batch: a button at the top right of the copies box opens it (and closes it), and one under the copies adds
+  desk.bView = u.gbtn(desk.pick, "Batch", 72, 20, function()
+    local v = RG.ArcadeView; if not v then return end
+    v.gradeBatch = not v.gradeBatch; RG.ArcadeRefresh(true)
+  end); desk.bView:SetPoint("TOPRIGHT", -8, -8)
+  desk.bAdd = u.gbtn(desk.pick, "Add this copy to the batch", 208, 26, function()
+    if not (sel.key and sel.f) then return end
+    local ok, msg = RG.ArcadeGradeBatchAdd(sel.key, sel.f); say(msg)
+    RG.ArcadeRefresh(true)
+  end); desk.bAdd:SetPoint("BOTTOMLEFT", 14, 96)
   desk.slotBox = box(X0 + 236 + 224, -432, 262, 212, "AT THE GRADERS")
   desk.slots = {}
   for i = 1, 5 do
@@ -643,6 +664,41 @@ local function paintDesk(view, a)
   end
   desk.page:Hide()
   for _, w in ipairs({ desk.pick, desk.svcBox, desk.slotBox }) do w:Show() end
+  local batch = RG.ArcadeGradeBatchList()
+  if view.gradeBatch then
+    -- the batch: every copy picked from the collection, sent together
+    for _, b in ipairs(desk.copies) do b:Hide() end
+    for _, b in ipairs(desk.cases) do b:Hide() end
+    desk.casePrev:Hide(); desk.caseNext:Hide(); desk.casePageT:SetText("")
+    desk.case:Hide(); desk.caseNote:Hide(); desk.bAdd:Hide()
+    local cap = RG.ArcadeGradeBatchCap()
+    desk.pick.h:SetText("YOUR BATCH  ·  " .. #batch .. " OF " .. cap)
+    desk.pick.hint:SetText("")
+    for i, b in ipairs(desk.copies) do
+      local e = batch[i]
+      if e then
+        local cc = cardOf(e.key)
+        b:SetText((cc and cc.name or "?") .. "  |cffa89bc9" .. (u.FINISH[e.f] and u.FINISH[e.f][1] or "") .. "|r   |cffff9a8ax|r"); b:SetActive(false); b:Show()
+      end
+    end
+    desk.bView:SetText("Back"); desk.bView:Show()
+    local first, weekly = RG.ArcadeGradeFreeLeft()
+    for key, b in pairs(desk.svc) do
+      local sv = GR().SERVICE[key]
+      b:SetText(sv.name); b.sub:SetText(key == "express" and "Back in 1 hour" or "Back in 12 hours")
+      local isFree = key == "standard" and (first > 0 or weekly)
+      b.price:SetText(isFree and "|cff7be08aFREE|r" or (GOLD .. sv.price .. " coins|r"))
+      b:SetActive(sel.svc == key)
+    end
+    local cost, free = RG.ArcadeGradeBatchCost(sel.svc)
+    desk.freeLine:SetText(#batch == 0 and "Add cards from their collection page, then send them all at once." or
+      ((free > 0 and (free .. " free  ·  ") or "") .. "Total " .. cost .. " coins" .. ((a.coins or 0) < cost and "  |cffff9a8a(you have " .. (a.coins or 0) .. ")|r" or "")))
+    desk.send:SetEnabled(#batch > 0 and (a.coins or 0) >= cost and cap > 0)
+    desk.send:SetText(#batch > 0 and ("Send " .. #batch .. " to the graders") or "Nothing in the batch")
+    paintSlots(a, st)
+    return
+  end
+  desk.bView:SetText(#batch > 0 and ("Batch " .. #batch) or "Batch"); desk.bView:Show()
   -- the card to send
   local c = sel.key and cardOf(sel.key)
   local free = c and RG.ArcadeGradeFree(a, sel.key, sel.f) or 0
@@ -651,17 +707,19 @@ local function paintDesk(view, a)
   for _, b in ipairs(desk.cases) do b:Hide() end
   desk.casePrev:Hide(); desk.caseNext:Hide(); desk.casePageT:SetText("")
   if c then
-    desk.pick.h:SetText("YOUR COPIES  ·  " .. c.name:upper()); desk.pick.hint:SetText("")
+    desk.pick.h:SetText("COPIES  ·  " .. (#c.name > 14 and (c.name:sub(1, 13):upper() .. "…") or c.name:upper())); desk.pick.hint:SetText("")
     sel.copy = math.max(1, math.min(sel.copy or 1, free))
     for i, b in ipairs(desk.copies) do
       if i <= math.min(free, #desk.copies) then
         b:SetText("Copy " .. i .. "   |cffa89bc9" .. (u.FINISH[sel.f] and u.FINISH[sel.f][1] or "") .. "  ·  not graded|r"); b:SetActive(i == sel.copy); b:Show()
       end
     end
+    desk.bAdd:Show()
     desk.case:SetPending(c, sel.f); desk.case:Show()
     desk.caseNote:SetText("Centering ?  ·  Corners ?  ·  Edges ?  ·  Surface ?"); desk.caseNote:Show()
   else
     sel.key = nil
+    desk.bAdd:Hide()
     desk.pick.h:SetText("YOUR CASES")
     desk.case:Hide(); desk.caseNote:Hide()
     local cases = RG.ArcadeGradeCases()
@@ -742,7 +800,7 @@ function RG.ArcadeGradeDesk(key, f, cert)
   local v = RG.ArcadeView
   if not v then if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end; v = RG.ArcadeView end
   if not v then return end
-  v.mode = "shop"; v.shopSection = "grading"; v.gradeCert = cert; v.gradeLedger = nil
+  v.mode = "shop"; v.shopSection = "grading"; v.gradeCert = cert; v.gradeLedger = nil; v.gradeBatch = false
   if key then sel.key, sel.f, sel.copy = key, f, 1 end
   RG.ArcadeRefresh(true)
 end
@@ -772,6 +830,13 @@ function RG.ArcadeGradeDetailBuild(detail)
     else go() end
   end)
   detail.gradeSell:SetPoint("TOPLEFT", detail, "TOPLEFT", 30, -402)
+  -- add a copy of the print shown to the batch the desk sends together
+  detail.gradeBatch = u.gbtn(detail, "Add to batch", 230, 26, function()
+    local c = detail.data; if not c then return end
+    local ok, msg = RG.ArcadeGradeBatchAdd(c.key or c.name, detail.finish); say(msg)
+    if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
+  end)
+  detail.gradeBatch:SetPoint("TOPLEFT", detail, "TOPLEFT", 30, -432)
 end
 function RG.ArcadeGradeDetailRefresh(detail, c, f)
   if not detail.gradeBtn then return end
@@ -796,6 +861,11 @@ function RG.ArcadeGradeDetailRefresh(detail, c, f)
   local n = #RG.ArcadeGradeCases(key)
   detail.gradeCases:SetEnabled(n > 0)
   detail.gradeCases:SetText(n > 0 and ("Cases  ·  " .. n) or "No cases")
+  if detail.gradeBatch then
+    local nb = #RG.ArcadeGradeBatchList()
+    detail.gradeBatch:SetText("Add to batch" .. (nb > 0 and ("  ·  " .. nb .. " in it") or ""))
+    detail.gradeBatch:SetEnabled(free > 0)
+  end
   if detail.gradeSell then
     -- the case shown for this print (the one you pinned, else the best), sold at its Vault price
     local sr = r and r.f == f and r or RG.ArcadeGradeCases(key, f)[1]
