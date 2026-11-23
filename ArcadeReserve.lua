@@ -2,7 +2,7 @@ local _, RG = ...
 -- Waypath Cards: the Guild Reserve and the Guild market (the rules; ArcadeReserveUI.lua draws them).
 --   * the Reserve: two kinds of pack from the Waypoint Grading Guild, Summit and Pinnacle. A pack is one card that
 --     comes already graded and in its case (the same case as a card you sent to the graders: ArcadeGrading.lua), so it
---     skips the wait. Its print is rolled from a table (Rare, Holo, Full art or Gilded) and a Mythic can come instead;
+--     skips the wait. Its print is rolled from a table (Full art or Gilded; no Rare or Holo) and a Mythic can come instead;
 --     its grade is rolled from a table with a floor (Summit: 8 or better; Pinnacle: 9 or better). The odds are shown
 --     before you buy, and a pack costs coins, never anything else.
 --   * the Guild market: every day the guild prices the cases anew (the same prices for every player, worked out from
@@ -25,12 +25,12 @@ local function cardOf(key) local u = U(); return u and u.byKey and u.byKey[key] 
 -- grades: the chance of each grade (adds up to 1); prints: { finish, chance } (Rare 2, Holo 3, Full art 4, Gilded 5);
 -- mythic: the chance that the card is a Mythic instead (always its Full art print, the grade from the same table)
 local TIERS = {
-  { key = "summit", name = "Summit", price = 140, floor = 8, mythic = 1 / 60, col = { 0.9, 0.78, 0.45 },
+  { key = "summit", name = "Summit", price = 100, floor = 8, mythic = 1 / 60, col = { 0.9, 0.78, 0.45 },
     grades = { [10] = 0.14, [9] = 0.36, [8] = 0.50 },
-    prints = { { 2, 0.10 }, { 3, 0.50 }, { 4, 0.33 }, { 5, 0.07 } } },
-  { key = "pinnacle", name = "Pinnacle", price = 300, floor = 9, mythic = 1 / 18, col = { 1, 0.9, 0.55 },
+    prints = { { 4, 0.94 }, { 5, 0.06 } } },
+  { key = "pinnacle", name = "Pinnacle", price = 200, floor = 9, mythic = 1 / 18, col = { 1, 0.9, 0.55 },
     grades = { [10] = 0.32, [9] = 0.68 },
-    prints = { { 3, 0.20 }, { 4, 0.55 }, { 5, 0.25 } } },
+    prints = { { 4, 0.80 }, { 5, 0.20 } } },
 }
 local byKey = {}
 for _, t in ipairs(TIERS) do byKey[t.key] = t end
