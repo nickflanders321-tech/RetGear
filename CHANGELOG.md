@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.58.1
 - **Guild Reserve: cheaper packs, better prints.** Summit now costs 100 coins (was 140) and Pinnacle 200 (was 300). Packs no longer hold Rare or Holo prints: a card is a Full art, a Gilded, or a Mythic (Summit about 92% Full art and 6% Gilded; Pinnacle about 76% and 19%; Mythic odds unchanged at 1 in 60 and 1 in 18). Grade floors are unchanged. The page shows the exact odds and what a pack sells back for.
 - **Sell a graded card from its collection page.** A new "Sell graded" button under the card sells the graded copy shown there (your pinned one, else the best) at today's Vault price. Grades 9 and 10 ask you to confirm first.
 - **Grade several cards at once.** Every card's collection page has an "Add to batch" button, and "Grade a copy" now puts that copy in the batch and opens it, so going back to the collection for another card adds to it. The desk's **Batch** button shows what you've picked (click a card to take it out), the total (free gradings first, then coins) and sends them all with one button; "One card" shows the old single-card view. A batch holds up to 5 cards even while every grading slot is busy; "Send" sends as many as there are free slots and the rest wait in the batch. It is kept for the session, not between logins.
