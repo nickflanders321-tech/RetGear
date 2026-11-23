@@ -30,7 +30,7 @@ L.plan = {
   { from = 95,  to = 105, craft = "Fine Leather Belt", n = 22, mats = "6 Light Leather, 2 Coarse Thread each. Keep 20." },
   { from = 105, to = 125, craft = "Dark Leather Belt", n = 20, mats = "1 Fine Leather Belt, 1 Cured Medium Hide, 2 Fine Thread, 1 Gray Dye each (or 16 Dark Leather Pants, 12 Medium Leather, 1 Gray Dye, 1 Fine Thread each, then 5 Hillman's Leather Gloves)" },
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
-  { from = 125, to = 130, craft = "Heavy Leather", n = 7, mats = "5 Medium Leather each" },
+  { from = 125, to = 130, craft = "Heavy Leather", n = 8, mats = "5 Medium Leather each" },
   { from = 130, to = 143, craft = "Cured Heavy Hide", n = 25, mats = "1 Heavy Hide, 3 Salt each. Keep them for the shoulders and gloves. (No Heavy Hides? Make 21 Hillman's Leather Gloves from 130 to 150 instead)" },
   { from = 143, to = 150, craft = "Hillman's Leather Gloves", n = 8, mats = "14 Medium Leather, 4 Fine Thread each" },
   { from = 150, to = 165, craft = "Barbaric Shoulders", n = 15, mats = "8 Heavy Leather, 1 Cured Heavy Hide, 2 Fine Thread each (or 15 Barbaric Leggings, 10 Heavy Leather, 1 Moss Agate, 2 Fine Thread each)" },

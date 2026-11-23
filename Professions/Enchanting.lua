@@ -41,8 +41,10 @@ E.plan = {
   { from = 201, to = 220, craft = "Lesser Wizard Oil", n = 25, mats = "1 Vision Dust, 2 Stranglethorn Seed, 1 Leaded Vial each" },
   { from = 220, to = 225, craft = "Enchant Cloak - Greater Defense", n = 5, mats = "1 Vision Dust each" },
   { from = 225, to = 250, craft = "Enchant Gloves - Agility", n = 34, mats = "1 Vision Dust each" },
-  { from = 250, to = 265, craft = "Lesser Mana Oil", n = 20, mats = "1 Dream Dust, 1 Purple Lotus, 1 Crystal Vial each (formula: Kania, Silithus)" },
-  { from = 265, to = 299, craft = "Enchant Shield - Greater Stamina", n = 40, mats = "6 Dream Dust each (formula: an Enchanting supplier in a capital city; Daniel Bartlett in Undercity for the Horde)" },
+  { from = 250, to = 270, craft = "Lesser Mana Oil", n = 26, mats = "1 Dream Dust, 1 Purple Lotus, 1 Crystal Vial each (formula: Kania, Silithus. Or 23 Enchant Bracer - Greater Strength, 1 Dream Dust, 2 Lesser Nether Essence each)" },
+  { from = 270, to = 275, craft = "Enchant Shield - Greater Stamina", n = 5, mats = "6 Dream Dust each (formula: an Enchanting supplier in a capital city; Daniel Bartlett in Undercity for the Horde)" },
+  { from = 275, to = 295, craft = "Wizard Oil", n = 26, mats = "3 Illusion Dust, 2 Firebloom, 1 Crystal Vial each (formula: Kania, Silithus)" },
+  { from = 295, to = 299, craft = "Enchant Shield - Greater Stamina", n = 8, mats = "6 Dream Dust each" },
   { from = 299, to = 300, craft = "Runed Arcanite Rod", n = 1, mats = "1 Arcanite Rod, 1 Golden Pearl, 10 Illusion Dust, 4 Greater Eternal Essence, 4 Small Brilliant Shard, 2 Large Brilliant Shard (Lorelae Wintersong, Moonglade)" },
 }
 E.mats = { 10940, 10938, 10939, 11083, 11137, 11176, 16204 }

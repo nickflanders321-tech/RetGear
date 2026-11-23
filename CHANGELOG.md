@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.59.0
+- **Profession plans follow wow-professions.com's updated WoW Forever guides.**
+  - Cooking: a simpler, fish-based route. Brilliant Smallfish or Slitherskin Mackerel to 50, Longjaw Mud Snapper or Rainbow Fin Albacore to 100, 53 Bristle Whisker Catfish to 150, 28 Goblin Deviled Clams to 175, Roast Raptor or Mithril Headed Trout to 225, then Spotted Yellowtail or Filet of Redgill and Nightfin Soup.
+  - Enchanting 250-299: 26 Lesser Mana Oil to 270 (or Enchant Bracer - Greater Strength), 5 Enchant Shield - Greater Stamina, 26 Wizard Oil to 295, then 8 more shield enchants.
+  - Tailoring: 37 Bolts of Woolen Cloth at 55-80, and Azure Silk Hood (2 Bolt of Silk Cloth, 2 Blue Dye, 1 Fine Thread) at 120-125 in place of Gloves of Meditation, so no Elixir of Wisdom is needed.
+  - Leatherworking 125-130: 8 Heavy Leather. Alchemy 225-235: 26 Nature Protection Potions, and a clearer note for skipping Stonescale Oil.
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.58.1
 - **Guild Reserve: cheaper packs, better prints.** Summit now costs 100 coins (was 140) and Pinnacle 200 (was 300). Packs no longer hold Rare or Holo prints: a card is a Full art, a Gilded, or a Mythic (Summit about 92% Full art and 6% Gilded; Pinnacle about 76% and 19%; Mythic odds unchanged at 1 in 60 and 1 in 18). Grade floors are unchanged. The page shows the exact odds and what a pack sells back for.
 - **Sell a graded card from its collection page.** A new "Sell graded" button under the card sells the graded copy shown there (your pinned one, else the best) at today's Vault price. Grades 9 and 10 ask you to confirm first.
