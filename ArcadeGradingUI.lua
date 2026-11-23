@@ -673,8 +673,9 @@ local function paintDesk(view, a)
     desk.case:Hide(); desk.caseNote:Hide(); desk.bAdd:Hide()
     local cap = RG.ArcadeGradeBatchCap()
     desk.pick.h:SetText("YOUR BATCH")
-    desk.pick.hint:SetText(#batch > 0 and (#batch .. " of " .. cap .. " free slot" .. (cap == 1 and "" or "s") .. ". Click a card to take it out.") or
-      (cap == 0 and "All the grading slots are busy: a batch can go when one comes back." or "Nothing here yet. Open a card in your collection and press |cffffd36bAdd to batch|r, up to " .. cap .. " card" .. (cap == 1 and "" or "s") .. "."))
+    local sf = RG.ArcadeGradeSlotsFree()
+    desk.pick.hint:SetText(#batch > 0 and (#batch .. " of " .. cap .. " cards  ·  " .. sf .. " slot" .. (sf == 1 and "" or "s") .. " free now. Click a card to take it out.") or
+      ("Nothing here yet. Open a card in your collection and press |cffffd36bAdd to batch|r, up to " .. cap .. " cards. They wait here until a slot is free."))
     for i, b in ipairs(desk.copies) do
       local e = batch[i]
       if e then
@@ -695,8 +696,10 @@ local function paintDesk(view, a)
     local cost, free = RG.ArcadeGradeBatchCost(sel.svc)
     desk.freeLine:SetText(#batch == 0 and "Add cards from their collection page, then send them all at once." or
       ((free > 0 and (free .. " free  ·  ") or "") .. "Total " .. cost .. " coins" .. ((a.coins or 0) < cost and "  |cffff9a8a(you have " .. (a.coins or 0) .. ")|r" or "")))
-    desk.send:SetEnabled(#batch > 0 and (a.coins or 0) >= cost and cap > 0)
-    desk.send:SetText(#batch > 0 and ("Send " .. #batch .. " to the graders") or "Nothing in the batch")
+    local sf2 = RG.ArcadeGradeSlotsFree()
+    local goes = math.min(#batch, sf2)
+    desk.send:SetEnabled(goes > 0 and (a.coins or 0) >= cost)
+    desk.send:SetText(#batch == 0 and "Nothing in the batch" or (goes == 0 and "Waiting for a free slot" or ("Send " .. goes .. (goes < #batch and (" of " .. #batch) or "") .. " to the graders")))
     paintSlots(a, st)
     return
   end
@@ -719,7 +722,7 @@ local function paintDesk(view, a)
     end
     desk.bAdd:Show()
     local room = RG.ArcadeGradeBatchCap() - #batch
-    desk.bAdd:SetText(room > 0 and "Add this copy to the batch" or "No free slot for the batch"); desk.bAdd:SetEnabled(room > 0)
+    desk.bAdd:SetText(room > 0 and "Add this copy to the batch" or "The batch is full"); desk.bAdd:SetEnabled(room > 0)
     desk.case:SetPending(c, sel.f); desk.case:Show()
     desk.caseNote:SetText("Centering ?  ·  Corners ?  ·  Edges ?  ·  Surface ?"); desk.caseNote:Show()
     if RG.ArcadeFitLine then RG.ArcadeFitLine(desk.caseNote, 214, 11.5, 8, "body") end

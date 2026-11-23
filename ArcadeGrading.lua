@@ -229,7 +229,9 @@ end
 -- It can't hold more than the free slots, nor more copies of a print than you have ungraded.
 local batch = {}
 function RG.ArcadeGradeBatchList() return batch end
-function RG.ArcadeGradeBatchCap()
+-- a batch holds up to SLOTS cards, even while the slots are busy: it waits there and goes as slots come free
+function RG.ArcadeGradeBatchCap() return SLOTS end
+function RG.ArcadeGradeSlotsFree()
   local a = store(); if not a then return 0 end
   return math.max(0, SLOTS - #G(a).queue)
 end
@@ -240,7 +242,7 @@ function RG.ArcadeGradeBatchAdd(key, f)
   for _, e in ipairs(batch) do if e.key == key and e.f == f then inB = inB + 1 end end
   if RG.ArcadeGradeFree(a, key, f) - inB < 1 then return false, inB > 0 and "Every ungraded copy of that print is already in the batch." or "You have no ungraded copy of that print." end
   local cap = RG.ArcadeGradeBatchCap()
-  if #batch >= cap then return false, cap == 0 and "All " .. SLOTS .. " grading slots are busy." or ("The batch is full: only " .. cap .. " slot" .. (cap == 1 and " is" or "s are") .. " free.") end
+  if #batch >= cap then return false, "The batch is full: it holds up to " .. cap .. " cards." end
   batch[#batch + 1] = { key = key, f = f }
   return true, c.name .. " added to the batch (" .. #batch .. ")."
 end
@@ -249,7 +251,7 @@ function RG.ArcadeGradeBatchClear() for i = #batch, 1, -1 do batch[i] = nil end 
 -- what sending the batch costs in coins with a service, and how many of it are free
 function RG.ArcadeGradeBatchCost(svc)
   local sv = SERVICE[svc]; if not sv then return 0, 0 end
-  local n = #batch
+  local n = math.min(#batch, RG.ArcadeGradeSlotsFree())   -- (what goes now: the rest wait for a free slot)
   local first, weekly = RG.ArcadeGradeFreeLeft()
   local free = 0
   if svc == "standard" then free = math.min(n, first); if weekly and n > free then free = free + 1 end end
@@ -258,14 +260,15 @@ end
 -- send them one after another; the ones that went leave the batch, a failure stops it and keeps the rest
 function RG.ArcadeGradeBatchSend(svc)
   local sent, why = 0, nil
-  while #batch > 0 do
+  if RG.ArcadeGradeSlotsFree() == 0 and #batch > 0 then return false, "All " .. SLOTS .. " grading slots are busy. The batch waits here for one to come back." end
+  while #batch > 0 and RG.ArcadeGradeSlotsFree() > 0 do
     local e = batch[1]
     local ok, msg = RG.ArcadeGradeSend(e.key, e.f, svc, 1)
     if not ok then why = msg; break end
     table.remove(batch, 1); sent = sent + 1
   end
   if sent == 0 then return false, why or "The batch is empty." end
-  return true, sent .. " card" .. (sent > 1 and "s are" or " is") .. " off to the graders." .. (why and ("  " .. why) or "")
+  return true, sent .. " card" .. (sent > 1 and "s are" or " is") .. " off to the graders." .. (why and ("  " .. why) or (#batch > 0 and ("  " .. #batch .. " still waiting for a free slot.") or ""))
 end
 
 -- parcels whose time is up move to the doorstep (unopened); returns how many arrived
