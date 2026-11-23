@@ -683,7 +683,7 @@ local function paintDesk(view, a)
         b:ClearAllPoints(); b:SetPoint("TOPLEFT", 14, -76 - (i - 1) * 30); b:Show()
       end
     end
-    desk.bView:SetText("Back"); desk.bView:Show()
+    desk.bView:SetText("One card"); desk.bView:Show()
     local first, weekly = RG.ArcadeGradeFreeLeft()
     for key, b in pairs(desk.svc) do
       local sv = GR().SERVICE[key]
@@ -807,7 +807,13 @@ function RG.ArcadeGradeDesk(key, f, cert)
   if not v then if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end; v = RG.ArcadeView end
   if not v then return end
   v.mode = "shop"; v.shopSection = "grading"; v.gradeCert = cert; v.gradeLedger = nil; v.gradeBatch = false
-  if key then sel.key, sel.f, sel.copy = key, f, 1 end
+  if key then
+    sel.key, sel.f, sel.copy = key, f, 1
+    -- "Grade a copy" puts that copy in the batch and shows the batch, so going back to the collection for another card adds to it
+    -- (the one-card view is still a click away: Back)
+    local ok, msg = RG.ArcadeGradeBatchAdd(key, f)
+    if ok then v.gradeBatch = true elseif msg then say(msg) end
+  end
   RG.ArcadeRefresh(true)
 end
 
