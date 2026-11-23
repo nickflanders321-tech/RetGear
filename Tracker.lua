@@ -429,7 +429,7 @@ local function build()
     elseif IsAltKeyDown and IsAltKeyDown() then
       RG.db.trackerAlpha = math.max(0.15, math.min(0.95, (RG.db.trackerAlpha or 0.5) + delta * 0.05))
     elseif IsShiftKeyDown and IsShiftKeyDown() then
-      RG.db.trackerWidth = math.max(240, math.min(460, (RG.db.trackerWidth or 300) + delta * 20))
+      RG.db.trackerWidth = math.max(240, math.min(560, (RG.db.trackerWidth or 300) + delta * 20))
     else
       -- the mouse wheel on its own: scroll the list
       if RG.TrackerScrollBy then RG.TrackerScrollBy(delta) end

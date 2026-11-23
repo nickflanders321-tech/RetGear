@@ -26,6 +26,7 @@ end
 RG.TrackerCap = cap
 
 local chrome
+function RG.TrackerGrip() return chrome and chrome.grip end
 local function makeChrome()
   local t = tr()
   if chrome or not (t and t.scroll) then return chrome end
@@ -46,9 +47,10 @@ local function makeChrome()
   g.tex = g:CreateTexture(nil, "OVERLAY"); g.tex:SetAllPoints(); g.tex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up"); g.tex:SetVertexColor(1, 1, 1, 0.45)
   g:SetScript("OnEnter", function(self)
     self.tex:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
-    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Tracker height", GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Tracker size", GOLDC[1], GOLDC[2], GOLDC[3])
     GameTooltip:AddLine("Drag up or down: how tall the list gets before it scrolls.", 1, 1, 1, true)
-    GameTooltip:AddLine("Double-click: back to the automatic height.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Drag sideways: how wide it is.", 1, 1, 1, true)
+    GameTooltip:AddLine("Double-click: back to the automatic size.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   g:SetScript("OnLeave", function(self) if not self.drag then self.tex:SetVertexColor(1, 1, 1, 0.45) end; GameTooltip:Hide() end)
@@ -56,12 +58,16 @@ local function makeChrome()
     if frozen() then return end
     local now = GetTime and GetTime() or 0
     if self.last and now - self.last < 0.35 then   -- double-click: automatic again
-      self.last = nil; RG.db.trackerMaxH = nil; RG.TrackerFit(); return
+      self.last = nil; RG.db.trackerMaxH = nil; RG.db.trackerWidth = nil; RG.TrackerFit(); if RG.RefreshTracker then RG.RefreshTracker() end; return
     end
     self.last = now
-    self.drag = true; self.startY = select(2, GetCursorPosition()); self.startH = cap()
+    self.drag = true; self.startX, self.startY = GetCursorPosition(); self.startH = cap(); self.startW = RG.db.trackerWidth or 300
     self:SetScript("OnUpdate", function(s)
       local t2 = tr(); if not t2 then return end
+      -- width: the grip sits on the side the tracker can grow towards (the left one when it is pinned by its right edge)
+      local dx = (GetCursorPosition() - s.startX) / (t2:GetEffectiveScale() or 1)
+      local w = math.max(240, math.min(560, math.floor(s.startW + (s.leftSide and -dx or dx))))
+      if math.abs(w - (RG.db.trackerWidth or 300)) >= 4 then RG.db.trackerWidth = w; if RG.RefreshTracker then RG.RefreshTracker() end end
       local dy = (s.startY - select(2, GetCursorPosition())) / (t2:GetEffectiveScale() or 1)
       local sc = RG.db.trackerScale or 1
       local maxH = math.floor(((UIParent:GetHeight() or 768) / sc)) - 120
@@ -80,6 +86,16 @@ function RG.TrackerChrome(show)
   if not (t and t.scroll) then return end
   local c = makeChrome(); if not c then return end
   if show == false then c.bar:Hide(); c.more:Hide(); c.grip:Hide(); return end
+  do
+    local pos = RG.db and RG.db.trackerPos
+    local left = (pos and tostring(pos[1]) or "TOPRIGHT"):find("RIGHT") and true or false
+    if c.grip.leftSide ~= left then
+      c.grip.leftSide = left
+      c.grip:ClearAllPoints()
+      c.grip:SetPoint(left and "BOTTOMLEFT" or "BOTTOMRIGHT", t, left and "BOTTOMLEFT" or "BOTTOMRIGHT", left and 2 or -2, 2)
+      if left then c.grip.tex:SetTexCoord(1, 0, 0, 1) else c.grip.tex:SetTexCoord(0, 1, 0, 1) end
+    end
+  end
   c.grip:Show()
   local content, view, v = t.contentH or 0, t.viewH or 0, t.scrollV or 0
   if content > view + 1 and view > 20 then

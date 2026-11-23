@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Tracker: drag the grip sideways to change its width.** The grip in the bottom corner already set how tall the tracker gets; it now also sets how wide (240 to 560), so you no longer need Shift + mouse wheel. It sits on the side the tracker can grow towards (the bottom-left corner when the tracker is pinned by its right edge, as it is by default), and double-clicking it puts both width and height back to automatic.
+
 ## v1.60.0
 - **Mount Hyjal starts at level 57** (was 58), as every guide and WoW Forever's own quest data now agree. The zone has about twice as many steps as before (70 Horde quests, 77 Alliance). The Horde note names Thark Gorax at the road in from Winterspring and Ketharas, and both notes name the Summit of Eternity's inn and flight master and the elites to bring a group for. Your finished Hyjal steps carry over.
 - **Every camp blueprint now has a source.** Alchemy Laboratory (Ras Frostwhisper, Scholomance), Master Forge (Golem Lord Argelmach, Blackrock Depths), Arcane Forge (Nanaya, The Shaper's Terrace), Anarchist's Workbench (Ezra Grimm, Stratholme), Sewing Machine (Vectus, Scholomance), Loom (Baroness Anastari, Stratholme), Seed Hybridizer (Tendris Warpwood, Dire Maul West) and Plague Doctor's Laboratory (Doctor Theolen Krastinov, Scholomance).
