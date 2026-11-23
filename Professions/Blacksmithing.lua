@@ -29,7 +29,7 @@ B.stones = {
 B.plan = {
   { from = 1,   to = 25,  craft = "Rough Sharpening Stone", n = 30, mats = "1 Rough Stone each. Buy a Blacksmith Hammer when you learn the profession." },
   { from = 25,  to = 50,  craft = "Rough Grinding Stone", n = 30, mats = "2 Rough Stone each. Keep 10 for the Silver Rods at 75." },
-  { from = 50,  to = 75,  craft = "Coarse Grinding Stone", n = 36, mats = "2 Coarse Stone each. Keep all 36 for the bracers at 95 and 112; if you're not at 75 yet, make a few more (they give skill-ups up to 90)." },
+  { from = 50,  to = 75,  craft = "Coarse Grinding Stone", n = 36, mats = "2 Coarse Stone each. Keep all 36 for the bracers at 95 and 112 (the gauntlets at 125 need 30 more); if you're not at 75 yet, make a few more (they give skill-ups up to 90)." },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 75,  to = 80,  craft = "Silver Rod", n = 5, mats = "1 Silver Bar, 2 Rough Grinding Stone each (or Runed Copper Belt, 10 Copper Bar each, if a Silver Bar costs more than 10 Copper Bars)" },
   { from = 80,  to = 95,  craft = "Rough Bronze Leggings", n = 15, mats = "6 Bronze Bar each" },
@@ -37,7 +37,7 @@ B.plan = {
   { from = 100, to = 112, craft = "Heavy Grinding Stone", n = 20, mats = "3 Heavy Stone each. Keep all 20 for the Golden Scale Bracers at 180." },
   { from = 112, to = 125, craft = "Patterned Bronze Bracers", n = 13, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each" },
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
-  { from = 125, to = 140, craft = "Bronze Shortsword", n = 24, mats = "5 Bronze Bar, 4 Weak Flux, 2 Medium Leather each (sells for twice what the bracers do; or Patterned Bronze Bracers if you disenchant)" },
+  { from = 125, to = 140, craft = "Silvered Bronze Gauntlets", n = 15, mats = "8 Bronze Bar, 1 Silver Bar, 2 Coarse Grinding Stone each (make 30 more Coarse Grinding Stone for these, 60 Coarse Stone: they no longer give skill-ups; or 15 Bronze Warhammer: 8 Bronze Bar, 1 Strong Flux, 1 Medium Leather each)" },
   { from = 140, to = 175, craft = "Green Iron Bracers", n = 40, mats = "6 Iron Bar, 1 Green Dye each" },
   { from = 175, to = 180, craft = "Solid Grinding Stone", n = 8, mats = "4 Solid Stone each. Keep 6 for the Heavy Mithril Axes at 210." },
   { from = 180, to = 195, craft = "Golden Scale Bracers", n = 20, mats = "5 Steel Bar, 2 Heavy Grinding Stone each (the 20 stones from 100, and 20 more)" },
