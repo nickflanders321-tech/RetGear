@@ -9,21 +9,21 @@ This WoW Forever Blacksmithing leveling guide will show you the fastest and chea
 60x Heavy Stone
 60x Iron Bar
 10x Green Dye (vendor)
-150-215
+150-210
 180x Iron Bar
 30x Green Dye (vendor)
 32x Solid Stone
 100x Steel Bar (if you have Mining: 100 Iron Bar + 100 Coal )
 60x Heavy Stone
-276x Mithril Bar
+204x Mithril Bar
+210-245
+1x Plans: Mithril Spurs
+172x Mithril Bar
+484x Solid Stone
+16x Dense Stone
+326x Mithril Bar
 24x Heavy Leather
 12x Citrine
-215-245
-1x Plans: Mithril Spurs
-152x Mithril Bar
-456x Solid Stone
-16x Dense Stone
-254x Mithril Bar
 60x Mageweave Cloth
 16x Dense Stone
 44x Thick Leather
@@ -58,7 +58,7 @@ If one Silver Bar costs more than 10 Copper Bars, make 5x Runed Copper Belt inst
 15x Silvered Bronze Gauntlets - 120 Bronze Bar, 15 Silver Bar, 30 Coarse Grinding Stone
 Make 30x Coarse Grinding Stone for these (60 Coarse Stone).
 15x Bronze Warhammer - 120 Bronze Bar, 15 Strong Flux, 15 Medium Leather
-Expert Blacksmithing (140-215)
+Expert Blacksmithing (140-210)
 140-175
 40x Green Iron Bracers - 240 Iron Bar, 40 Green Dye
 175-180
@@ -67,9 +67,9 @@ Expert Blacksmithing (140-215)
 20x Golden Scale Bracers - 100 Steel Bar, 40 Heavy Grinding Stone
 195-210
 17x Mithril Plate Pants - 204 Mithril Bar
+Artisan Blacksmithing (210-300)
 210-215
 6x Heavy Mithril Axe - 72 Mithril Bar, 12 Citrine, 6 Solid Grinding Stone, 24 Heavy Leather
-Artisan Blacksmithing (215-300)
 215-225
 10x Mithril Coif - 100 Mithril Bar, 60 Mageweave Cloth
 225-235
@@ -82,8 +82,8 @@ If you have the Plans: Dazzling Mithril Rapier , the Plans: Runed Mithril Hammer
 27x Dazzling Mithril Rapier
 20x Runed Mithril Hammer
 17x Thorium Bracers
-215-225
-10x Mithril Spurs - 40 Mithril Bar, 30 Solid Grinding Stone
+210-225
+15x Mithril Spurs - 60 Mithril Bar, 45 Solid Grinding Stone
 225-235
 16x Dense Sharpening Stone - 16 Dense Stone
 235-245

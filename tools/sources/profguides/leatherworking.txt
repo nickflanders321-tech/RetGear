@@ -4,12 +4,12 @@ This WoW Forever Leatherworking leveling guide will show you the fastest and che
 1-150
 105x Ruined Leather Scraps
 247x Light Leather
-20x Light Hide
+10x Light Hide
 152x Medium Leather
 20x Medium Hide
 25x Heavy Hide
-115x Salt (vendor)
-104x Coarse Thread (vendor)
+105x Salt (vendor)
+124x Coarse Thread (vendor)
 72x Fine Thread (vendor)
 20x Gray Dye (vendor)
 150-225
@@ -31,16 +31,17 @@ Pattern: Runic Leather Headband (265) - (Binds when picked up)
 Apprentice Leatherworking (1-60)
 1-30
 35x Light Leather - 105 Ruined Leather Scraps
-30-50
-20x Cured Light Hide - 20 Light Hide, 20 Salt
-24x Light Armor Kit - 24 Light Leather
-5x Embossed Leather Gloves - 15 Light Leather, 10 Coarse Thread
-50-60
-10x Embossed Leather Gloves - 30 Light Leather, 20 Coarse Thread
+30-40
+10x Cured Light Hide - 10 Light Hide, 10 Salt
+14x Light Armor Kit - 14 Light Leather
+40-60
+20x Embossed Leather Gloves - 60 Light Leather, 40 Coarse Thread
 Journeyman Leatherworking (60-130)
-60-80
-20x Embossed Leather Pants - 20 Cured Light Hide, 120 Light Leather, 40 Coarse Thread
-24x Embossed Leather Gloves - 72 Light Leather, 48 Coarse Thread
+60-70
+10x Embossed Leather Gloves - 30 Light Leather, 20 Coarse Thread
+70-80
+10x Embossed Leather Pants - 10 Cured Light Hide, 60 Light Leather, 20 Coarse Thread
+14x Embossed Leather Gloves - 42 Light Leather, 28 Coarse Thread
 80-95
 20x Cured Medium Hide - 20 Medium Hide, 20 Salt
 19x Fine Leather Belt - 114 Light Leather, 38 Coarse Thread
@@ -55,7 +56,7 @@ Journeyman Leatherworking (60-130)
 Expert Leatherworking (130-205)
 130-143
 25x Cured Heavy Hide - 25 Heavy Hide, 75 Salt
-If you don't have Heavy Hides, skip them and make Hillman's Leather Gloves from 130 to 150 instead:
+If Heavy Hides are hard to get or cost more than that leather, skip them and make Hillman's Leather Gloves from 130 to 150 instead:
 21x Hillman's Leather Gloves - 294 Medium Leather, 84 Fine Thread
 143-150
 8x Hillman's Leather Gloves - 112 Medium Leather, 32 Fine Thread
