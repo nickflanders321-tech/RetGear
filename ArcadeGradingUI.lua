@@ -672,13 +672,15 @@ local function paintDesk(view, a)
     desk.casePrev:Hide(); desk.caseNext:Hide(); desk.casePageT:SetText("")
     desk.case:Hide(); desk.caseNote:Hide(); desk.bAdd:Hide()
     local cap = RG.ArcadeGradeBatchCap()
-    desk.pick.h:SetText("YOUR BATCH  ·  " .. #batch .. " OF " .. cap)
-    desk.pick.hint:SetText("")
+    desk.pick.h:SetText("YOUR BATCH")
+    desk.pick.hint:SetText(#batch > 0 and (#batch .. " of " .. cap .. " free slot" .. (cap == 1 and "" or "s") .. ". Click a card to take it out.") or
+      (cap == 0 and "All the grading slots are busy: a batch can go when one comes back." or "Nothing here yet. Open a card in your collection and press |cffffd36bAdd to batch|r, up to " .. cap .. " card" .. (cap == 1 and "" or "s") .. "."))
     for i, b in ipairs(desk.copies) do
       local e = batch[i]
       if e then
         local cc = cardOf(e.key)
-        b:SetText((cc and cc.name or "?") .. "  |cffa89bc9" .. (u.FINISH[e.f] and u.FINISH[e.f][1] or "") .. "|r   |cffff9a8ax|r"); b:SetActive(false); b:Show()
+        b:SetText((cc and cc.name or "?") .. "  |cffa89bc9" .. (u.FINISH[e.f] and u.FINISH[e.f][1] or "") .. "|r   |cffff9a8ax|r"); b:SetActive(false)
+        b:ClearAllPoints(); b:SetPoint("TOPLEFT", 14, -76 - (i - 1) * 30); b:Show()
       end
     end
     desk.bView:SetText("Back"); desk.bView:Show()
@@ -707,16 +709,20 @@ local function paintDesk(view, a)
   for _, b in ipairs(desk.cases) do b:Hide() end
   desk.casePrev:Hide(); desk.caseNext:Hide(); desk.casePageT:SetText("")
   if c then
-    desk.pick.h:SetText("COPIES  ·  " .. (#c.name > 14 and (c.name:sub(1, 13):upper() .. "…") or c.name:upper())); desk.pick.hint:SetText("")
+    desk.pick.h:SetText("YOUR COPIES"); desk.pick.hint:SetText("")
     sel.copy = math.max(1, math.min(sel.copy or 1, free))
     for i, b in ipairs(desk.copies) do
       if i <= math.min(free, #desk.copies) then
+        b:ClearAllPoints(); b:SetPoint("TOPLEFT", 14, -36 - (i - 1) * 30)
         b:SetText("Copy " .. i .. "   |cffa89bc9" .. (u.FINISH[sel.f] and u.FINISH[sel.f][1] or "") .. "  ·  not graded|r"); b:SetActive(i == sel.copy); b:Show()
       end
     end
     desk.bAdd:Show()
+    local room = RG.ArcadeGradeBatchCap() - #batch
+    desk.bAdd:SetText(room > 0 and "Add this copy to the batch" or "No free slot for the batch"); desk.bAdd:SetEnabled(room > 0)
     desk.case:SetPending(c, sel.f); desk.case:Show()
     desk.caseNote:SetText("Centering ?  ·  Corners ?  ·  Edges ?  ·  Surface ?"); desk.caseNote:Show()
+    if RG.ArcadeFitLine then RG.ArcadeFitLine(desk.caseNote, 214, 11.5, 8, "body") end
   else
     sel.key = nil
     desk.bAdd:Hide()
@@ -864,7 +870,7 @@ function RG.ArcadeGradeDetailRefresh(detail, c, f)
   if detail.gradeBatch then
     local nb = #RG.ArcadeGradeBatchList()
     detail.gradeBatch:SetText("Add to batch" .. (nb > 0 and ("  ·  " .. nb .. " in it") or ""))
-    detail.gradeBatch:SetEnabled(free > 0)
+    detail.gradeBatch:SetEnabled(free > 0 and RG.ArcadeGradeBatchCap() > nb)
   end
   if detail.gradeSell then
     -- the case shown for this print (the one you pinned, else the best), sold at its Vault price
