@@ -58,6 +58,11 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Undercity; Alliance: Sefira Everbright, Daythor Brellan, Hnaz Blunderflame, Johun "Punchy" Dillas, breadcrumb Unsealing Blackthorne
    Pact from Mathias Shaw). Still open: the other ~85 Hyjal quests (they appear as QuestieDB adds them; check the hubs then: the
    night elf village by the World Tree and the Shrine of Aviana), and whether Elderwild has a flight master or inn.
+   2026-11-23 (v1.60.0): QuestieDB's Forever data (tree 9f55c12) plus Polestar's fixes now give Horde 37 steps / 70 quests and Alliance
+   41 / 77 (of about 100). The window starts at 57 (was 58; all six guides start at 55-57 and many Horde quests are level 57; MOVED_STEPS
+   keeps progress). The Horde note names Thark Gorax (80, 71; Farsight Guided) and Ketharas (73, 82) on the road in; both notes name the
+   Summit of Eternity's inn (Sebelia) and flight master (Fayran Elthas) and the group elites. Still open: the remaining ~30 quests, and
+   Polestar's level for Final Death (Horde, 57) vs Bind on Forever's 59.
 2. **Dungeon steps need an in-game check:** Excavation Site, City of Dalaran, Gnomeregan,
    Razorfen Downs and the Temple of Atal'Hakkar got steps in v0.55.0 from Forever beta
    guides (entrances, bosses, quest order). Confirm the Dalaran Horde key chain
@@ -100,6 +105,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
    Wiki agrees), Iron Oven (Quartermaster Zigris, LBRS), Fishing Hut (Jammal'an the Prophet, Sunken Temple), Molten Foundry (Ambassador
    Flamelash, BRD). Still unknown: Alchemy Laboratory, Master Forge, Arcane Forge, Anarchist's Workbench, Sewing Machine, Loom, Seed
    Hybridizer, Plague Doctor's Laboratory.
+   **Done (v1.60.0):** QuestieDB's Forever item data now names every one: Alchemy Laboratory (Ras Frostwhisper, Scholomance), Master Forge
+   (Golem Lord Argelmach, BRD), Arcane Forge (Nanaya, The Shaper's Terrace per Warcraft Wiki; no spawn in the data), Anarchist's Workbench
+   (Ezra Grimm, Stratholme), Sewing Machine (Vectus, Scholomance), Loom (Baroness Anastari, Stratholme), Seed Hybridizer (Tendris Warpwood,
+   Dire Maul West), Plague Doctor's Laboratory (Doctor Theolen Krastinov, Scholomance). Give Nanaya a pin once the data has her spawn.
 
 11. **Dungeon quests not in QuestieDB yet:** Ancient Gurubashi Idol (Mazu'kon, Mulgore), A Token of Vengeance, Tome of
    Twilight and Eye of Mugg (Krom'rosh) are in Mmonster's guides but not in the Forever quest data, so they're only named
@@ -121,10 +130,15 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 - Shen'dralas, 2026-11-06: eXputer (2026-10-28) reports guides split between 40-45 and 45-53. Ours stays 38-43
   until launch quest data is in QuestieDB.
 - Mount Hyjal: guides 55-60 (Mmonster, wowforeverleveling.com), 56-60 (ForeverChanges quest levels, minimum 54), 60 (Skycoach); ours
-  58-60. The Horde quests in the data are levels 57-60, so 58 stays for now; consider 57 once more Hyjal quests are in the data (2026-11-16).
+  58-60. The Horde quests in the data are levels 57-60, so 58 stays for now; consider 57 once more Hyjal quests are in the data (2026-11-16). **Settled 2026-11-23:** Polestar (56-58, November 21) and Bind on Forever (55-60) agree, the data has 70 Horde quests from level 57: the window is 57-60 since v1.60.0.
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
+
+- v1.60.0: item 10 (camp blueprints) done: all eight missing sources from QuestieDB's Forever item data; item 1 (Mount Hyjal) moved on:
+  window 57-60, 70 Horde quests, Horde road-in givers, Summit inn and flight master. Blizzard's November 16-20 hotfixes applied to
+  Camp.lua (Fishing Rack lures for everyone, Seed Hybridizer failure chance). New: Agamaggan's Blood (93604) is no longer a dungeon quest
+  (November 17 hotfix) but the quest data still files it under Razorfen Downs, so it stays in that list until QuestieDB moves it.
 
 - v1.56.0: issues #39, #41, #42: the updated Blacksmithing, Tailoring and First Aid routes (branch claude/prof-guides-39-42)
   merged onto main, Professions/Generated.lua regenerated, audit, cross-check and tools/profs/check.py pass.

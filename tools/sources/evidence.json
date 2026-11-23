@@ -14,7 +14,9 @@
     "overgear": {"url": "https://overgear.com/guides/how-to-get/wow-forever/how-to-get-to-riverglades/", "date": "2026-11-05", "build": "launch (Riverglades only)"},
     "warcraftwiki": {"url": "https://warcraft.wiki.gg/wiki/Riverglades", "date": "2026-11-06", "build": "launch (Riverglades only)"},
     "foreverchanges": {"url": "https://foreverchanges.pro/quests/mount-hyjal", "date": "2026-11-16", "build": "live 1.60.1.70938 (Mount Hyjal quest levels 56-60)"},
-    "wowforeverleveling": {"url": "https://wowforeverleveling.com/guides/mount-hyjal-wow-forever", "date": "2026-11-04", "build": "client Group Finder (Mount Hyjal only)"}
+    "wowforeverleveling": {"url": "https://wowforeverleveling.com/guides/mount-hyjal-wow-forever", "date": "2026-11-04", "build": "client Group Finder (Mount Hyjal only)"},
+    "polestar": {"url": "https://polestar.guide/guides/50-60/mount-hyjal", "date": "2026-11-21", "build": "live (Mount Hyjal only, both factions 56-58)"},
+    "bindonforever": {"url": "https://bindonforever.com/zones/mount-hyjal", "date": "2026-11-17", "build": "client files 1.60.1.70959 (Mount Hyjal Group Finder range)"}
   },
   "zones": {
     "Stonetalon Mountains":  {"foreverera": [15, 27], "wowhandbook": [15, 25], "endgametools": [13, 32], "wowforeverbuilds": [25, 30], "decarebia": [15, 25], "mobalytics": [15, 27], "wow4ever": [15, 25]},
@@ -50,6 +52,6 @@
     "Shen'Dralas":           {"leprestore": [40, 50], "skycoach": [40, 45]},
     "Shen'dralas":           {"leprestore": [40, 50], "skycoach": [40, 45]},
     "Alterac Mountains":     {"foreverera": [30, 40], "wowhandbook": [27, 39], "endgametools": [28, 44], "mobalytics": [30, 40]},
-    "Mount Hyjal":           {"mmonster": [55, 60], "skycoach": [60, 60], "foreverchanges": [56, 60], "wowforeverleveling": [55, 60]}
+    "Mount Hyjal":           {"mmonster": [55, 60], "skycoach": [60, 60], "foreverchanges": [56, 60], "wowforeverleveling": [55, 60], "polestar": [56, 58], "bindonforever": [55, 60]}
   }
 }

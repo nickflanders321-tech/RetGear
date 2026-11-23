@@ -56,7 +56,7 @@ ALLIANCE_ZONES = [
     ('Dustwallow Marsh', 35, 45, [15]), ('Thousand Needles', 30, 42, [400]), ('Desolace', 31, 41, [405]),
     ('Arathi Highlands', 33, 40, [45]), ('Stranglethorn Vale', 32, 48, [33]), ('Swamp of Sorrows', 35, 42, [8]),
     ('Badlands', 37, 44, [3]), ('Alterac Mountains', 33, 40, [36]), ("Shen'Dralas", 38, 43, SHENDRALAS),
-    ('Riverglades', 36, 44, RIVERGLADES), ('Mount Hyjal', 58, 60, HYJAL),
+    ('Riverglades', 36, 44, RIVERGLADES), ('Mount Hyjal', 57, 60, HYJAL),
     ('Feralas', 41, 48, [357]), ('The Hinterlands', 43, 49, [47]), ('Searing Gorge', 45, 50, [51]),
     ('Tanaris', 41, 50, [440]), ("Un'Goro Crater", 50, 55, [490]), ('Felwood', 50, 56, [361]),
     ('Burning Steppes', 50, 58, [46]), ('Blasted Lands', 50, 58, [4]), ('Western Plaguelands', 51, 58, [28]),
@@ -78,7 +78,7 @@ HORDE_ZONES = [
     ('Winterspring', 55, 60, [618], 0), ('Western & Eastern Plaguelands', 52, 60, [28, 139], 0),
     ('Azshara', 50, 58, [16], 0), ('Silithus', 55, 60, [1377], 0),
     # new WoW Forever zones: their quests arrive with the launch data, and the steps build themselves then
-    ('Riverglades', 36, 44, RIVERGLADES, 0), ("Shen'dralas", 38, 43, SHENDRALAS, 0), ('Mount Hyjal', 58, 60, HYJAL, 0),
+    ('Riverglades', 36, 44, RIVERGLADES, 0), ("Shen'dralas", 38, 43, SHENDRALAS, 0), ('Mount Hyjal', 57, 60, HYJAL, 0),
 ]
 HORDE_ANCHORS = {
     406: [('Sun Rock Retreat', 'Innkeeper Jayka')], 267: [('Tarren Mill', 'Innkeeper Shay')],

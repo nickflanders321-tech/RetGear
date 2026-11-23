@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.60.0
+- **Mount Hyjal starts at level 57** (was 58), as every guide and WoW Forever's own quest data now agree. The zone has about twice as many steps as before (70 Horde quests, 77 Alliance). The Horde note names Thark Gorax at the road in from Winterspring and Ketharas, and both notes name the Summit of Eternity's inn and flight master and the elites to bring a group for. Your finished Hyjal steps carry over.
+- **Every camp blueprint now has a source.** Alchemy Laboratory (Ras Frostwhisper, Scholomance), Master Forge (Golem Lord Argelmach, Blackrock Depths), Arcane Forge (Nanaya, The Shaper's Terrace), Anarchist's Workbench (Ezra Grimm, Stratholme), Sewing Machine (Vectus, Scholomance), Loom (Baroness Anastari, Stratholme), Seed Hybridizer (Tendris Warpwood, Dire Maul West) and Plague Doctor's Laboratory (Doctor Theolen Krastinov, Scholomance).
+- Camping follows the November 16-19 hotfixes: the Fishing Rack gives lures to everyone at the camp, and combining seeds in the Seed Hybridizer can now fail (Scarce Herb Seeds can't go in).
+- Quest, map and card data updated from WoW Forever's latest game data.
+
 ## v1.59.0
 - **Profession plans follow wow-professions.com's updated WoW Forever guides.**
   - Cooking: a simpler, fish-based route. Brilliant Smallfish or Slitherskin Mackerel to 50, Longjaw Mud Snapper or Rainbow Fin Albacore to 100, 53 Bristle Whisker Catfish to 150, 28 Goblin Deviled Clams to 175, Roast Raptor or Mithril Headed Trout to 225, then Spotted Yellowtail or Filet of Redgill and Nightfin Soup.

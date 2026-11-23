@@ -90,7 +90,7 @@ end
 -- Saved settings
 -- ---------------------------------------------------------------------------
 -- Route entries that moved level: carry hand-ticked steps over to the new key.
-local MOVED_STEPS = { ["Arathi Highlands|30"] = "Arathi Highlands|33" }
+local MOVED_STEPS = { ["Arathi Highlands|30"] = "Arathi Highlands|33", ["Mount Hyjal|58"] = "Mount Hyjal|57" }
 -- Coming from RetGear (the old name): take over its saved progress once. Its
 -- saved data is only readable while the old RetGear folder is still installed,
 -- so this runs on the first login with both, then turns RetGear off.
