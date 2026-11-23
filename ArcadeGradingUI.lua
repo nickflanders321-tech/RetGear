@@ -761,6 +761,17 @@ function RG.ArcadeGradeDetailBuild(detail)
     detail:Hide(); RG.ArcadeGradeDesk(nil, nil, r and r.id)
   end)
   detail.gradeCases:SetPoint("LEFT", detail.gradeBtn, "RIGHT", 4, 0)
+  -- sell the graded copy shown here, at today's Vault price (the same price as the Vault and the desk)
+  detail.gradeSell = u.gbtn(detail, "Sell graded", 230, 26, function()
+    local r = detail.gradeRec; if not r then return end
+    local v = RG.ArcadeGradeValue(r)
+    local function go() local ok, msg = RG.ArcadeGradeSell(r.id); say(msg); if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end end
+    if r.grade >= 9 then
+      detail.confirm = detail.confirm or confirmBox(detail)
+      detail.confirm:Ask("Sell your " .. r.grade .. " (" .. RG.ArcadeGradeName(r.grade) .. ") for " .. v .. " coins?\nIt leaves your collection for good.", "Sell it", go)
+    else go() end
+  end)
+  detail.gradeSell:SetPoint("TOPLEFT", detail, "TOPLEFT", 30, -402)
 end
 function RG.ArcadeGradeDetailRefresh(detail, c, f)
   if not detail.gradeBtn then return end
@@ -785,6 +796,17 @@ function RG.ArcadeGradeDetailRefresh(detail, c, f)
   local n = #RG.ArcadeGradeCases(key)
   detail.gradeCases:SetEnabled(n > 0)
   detail.gradeCases:SetText(n > 0 and ("Cases  ·  " .. n) or "No cases")
+  if detail.gradeSell then
+    -- the case shown for this print (the one you pinned, else the best), sold at its Vault price
+    local sr = r and r.f == f and r or RG.ArcadeGradeCases(key, f)[1]
+    detail.gradeRec = sr
+    if sr then
+      detail.gradeSell:SetText("Sell graded " .. sr.grade .. "  ·  " .. RG.ArcadeGradeValue(sr) .. " coins")
+      detail.gradeSell:SetEnabled(RG.ArcadeGradeValid and RG.ArcadeGradeValid(sr) and true or false)
+    else
+      detail.gradeSell:SetText("No graded copy to sell"); detail.gradeSell:SetEnabled(false)
+    end
+  end
 end
 
 -- ---------------------------------------------------------------------------
