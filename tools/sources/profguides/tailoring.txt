@@ -3,29 +3,32 @@ WoW Forever Tailoring Leveling Guide 1-300
 This WoW Forever Tailoring leveling guide will show you the fastest and cheapest way to level your Tailoring skill from 1 to 300. You will also find every trainer location and where to train Tailoring past 75, 150 and 225.
 1-150
 60x Linen Cloth
-171x Wool Cloth
-5x Elixir of Wisdom
-216x Silk Cloth
+111x Wool Cloth
+220x Silk Cloth
 30x Heavy Leather
 115x Mageweave Cloth
 150-225
-556x Silk Cloth
+592x Silk Cloth
 605x Mageweave Cloth
 121x Bolt of Mageweave
 115x Runecloth
 225-280
-This list is not final yet, but the skill ranges come from the game data, so it should be pretty close. The 280-300 part is not included here yet.
+This list stops at 280, because the recipe for 280-300 depends on which pattern you can get.
 1440x Runecloth
 44x Rugged Leather
 39x Ironweb Spider Silk
+Pattern: Runecloth Gloves (230) - (Binds when picked up)
+Pattern: Runecloth Cuffs (250) - (Binds when picked up)
 Apprentice Tailoring (1-55)
+You will need 28 Coarse Thread for the 1-55 part. You can buy the threads and dyes from the Tailoring Supply vendor near your trainer. There is none next to the trainer in Tirisfal Glades, but you can buy the Coarse Thread a short walk away, in Brill from Abigail Shiel .
 1-30
 30x Bolt of Linen Cloth - 60 Linen Cloth
 30-55
 28x Linen Belt - 28 Bolt of Linen Cloth, 28 Coarse Thread
 Journeyman Tailoring (55-140)
+You will need 82 Fine Thread and 10 Blue Dye for the 55-140 part.
 55-80
-45x Bolt of Woolen Cloth - 135 Wool Cloth
+37x Bolt of Woolen Cloth - 111 Wool Cloth
 80-95
 22x Woolen Cape - 22 Bolt of Woolen Cloth, 22 Fine Thread
 95-100
@@ -33,10 +36,11 @@ Journeyman Tailoring (55-140)
 100-120
 54x Bolt of Silk Cloth - 216 Silk Cloth
 120-125
-5x Gloves of Meditation - 20 Bolt of Woolen Cloth, 15 Fine Thread, 5 Elixir of Wisdom
+5x Azure Silk Hood - 10 Bolt of Silk Cloth, 10 Blue Dye, 5 Fine Thread
 125-140
 15x Small Silk Pack - 45 Bolt of Silk Cloth, 30 Heavy Leather, 45 Fine Thread
 Expert Tailoring (140-200)
+You will need 40 Fine Thread , 74 Red Dye and 100 Silken Thread for the 140-200 part.
 140-150
 23x Bolt of Mageweave - 115 Mageweave Cloth
 150-170
@@ -46,6 +50,7 @@ Expert Tailoring (140-200)
 185-200
 22x Black Mageweave Leggings - 44 Bolt of Mageweave, 66 Silken Thread
 Artisan Tailoring (200-300)
+You will need 44 Heavy Silken Thread , 34 Red Dye and 132 Rune Thread for the 200-300 part. Alliance players can't buy Rune Thread in Theramore , so buy it before you go.
 200-205
 5x Black Mageweave Shoulders - 15 Bolt of Mageweave, 10 Heavy Silken Thread
 205-215
@@ -65,22 +70,22 @@ Artisan Tailoring (200-300)
 280-300
 280-300
 58x Runecloth Shoulders
-406x Bolt of Runecloth , 116x Ironweb Spider Silk , 232x Rugged Leather
+406x Bolt of Runecloth , 116x Ironweb Spider Silk , 232x Rugged Leather , 58x Rune Thread
 280-300
 58x Wizardweave Turban
-348x Bolt of Runecloth , 232x Dream Dust , 58x Star Ruby
+348x Bolt of Runecloth , 232x Dream Dust , 58x Star Ruby , 58x Rune Thread
 280-290
 42x Runecloth Headband
-168x Bolt of Runecloth , 84x Ironweb Spider Silk
+168x Bolt of Runecloth , 84x Ironweb Spider Silk , 42x Rune Thread
 280-290
 42x Runecloth Cuffs
-210x Bolt of Runecloth , 42x Ironweb Spider Silk
+210x Bolt of Runecloth , 42x Ironweb Spider Silk , 42x Rune Thread
 285-290
 5x Swarmtender's Gloves or Venomspew Gloves
-20x Bolt of Runecloth , 5x Small Brilliant Shard , 15x Essence of Water or Essence of Air
+20x Bolt of Runecloth , 5x Small Brilliant Shard , 15x Essence of Water or Essence of Air , 30x Rune Thread
 290-295
 5x Swarmtender's Cord or Venomspew Cord
-30x Bolt of Runecloth , 5x Small Brilliant Shard , 15x Essence of Water or Essence of Air
+30x Bolt of Runecloth , 5x Small Brilliant Shard , 15x Essence of Water or Essence of Air , 30x Rune Thread
 295-300
 18x Swarmtender's Footpads or Venomspew Footpads
-90x Bolt of Runecloth , 18x Small Brilliant Shard , 54x Essence of Water or Essence of Air
+90x Bolt of Runecloth , 18x Small Brilliant Shard , 54x Essence of Water or Essence of Air , 108x Rune Thread

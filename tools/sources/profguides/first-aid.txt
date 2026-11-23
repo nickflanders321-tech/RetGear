@@ -13,6 +13,9 @@ This WoW Forever First Aid leveling guide will show you the fastest way to level
 225-300
 86x Mageweave Cloth
 68x Runecloth
+Expert First Aid - Under Wraps (125)
+Manual: Heavy Silk Bandage (180)
+Manual: Mageweave Bandage (210)
 Apprentice First Aid (1-75)
 1-75
 86x Minor Healing Potion - 86 Peacebloom, 86 Mild Spices, 86 Empty Vial

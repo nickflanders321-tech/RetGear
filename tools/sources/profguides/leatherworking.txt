@@ -5,7 +5,7 @@ This WoW Forever Leatherworking leveling guide will show you the fastest and che
 105x Ruined Leather Scraps
 247x Light Leather
 20x Light Hide
-147x Medium Leather
+152x Medium Leather
 20x Medium Hide
 25x Heavy Hide
 115x Salt (vendor)
@@ -13,17 +13,21 @@ This WoW Forever Leatherworking leveling guide will show you the fastest and che
 72x Fine Thread (vendor)
 20x Gray Dye (vendor)
 150-225
-293x Heavy Leather
+292x Heavy Leather
 10x Iron Buckle
 390x Thick Leather
 50x Fine Thread (vendor)
 198x Silken Thread (vendor)
 225-265
-The last step, 265-300, is not in the list because it has a few alternatives. Each one shows what it needs in that step.
 224x Thick Leather
 288x Rugged Leather
 36x Black Dye (vendor)
 36x Rune Thread (vendor)
+265-300
+This step has a few alternatives, so there is no list for it. You will need 410 to 686 Rugged Leather and 50 to 490 Runecloth for it, depending on which recipe you pick. I recommend buying these when you get there.
+Pattern: Barbaric Leggings (145) - (Binds when picked up)
+Pattern: Wicked Leather Gauntlets (235) - (Binds when picked up)
+Pattern: Runic Leather Headband (265) - (Binds when picked up)
 Apprentice Leatherworking (1-60)
 1-30
 35x Light Leather - 105 Ruined Leather Scraps
@@ -47,7 +51,7 @@ Journeyman Leatherworking (60-130)
 16x Dark Leather Pants - 192 Medium Leather, 16 Gray Dye, 16 Fine Thread
 5x Hillman's Leather Gloves - 70 Medium Leather, 20 Fine Thread
 125-130
-7x Heavy Leather - 35 Medium Leather
+8x Heavy Leather - 40 Medium Leather
 Expert Leatherworking (130-205)
 130-143
 25x Cured Heavy Hide - 25 Heavy Hide, 75 Salt

@@ -9,25 +9,32 @@ This WoW Forever Blacksmithing leveling guide will show you the fastest and chea
 60x Heavy Stone
 60x Iron Bar
 10x Green Dye (vendor)
-150-225
+150-215
 180x Iron Bar
 30x Green Dye (vendor)
 32x Solid Stone
 100x Steel Bar (if you have Mining: 100 Iron Bar + 100 Coal )
 60x Heavy Stone
-376x Mithril Bar
-60x Mageweave Cloth
+276x Mithril Bar
 24x Heavy Leather
 12x Citrine
-225-300
-The last two steps, 270-300, are not in this list because they have a few alternatives. You will need an extra 508 to 1,120 Thorium Bar for them, and some Star Ruby , Aquamarine , Heart of Fire or Red Power Crystal , depending on which recipes you pick. I recommend buying these when you get there.
+215-245
+1x Plans: Mithril Spurs
+152x Mithril Bar
+456x Solid Stone
 16x Dense Stone
-154x Mithril Bar
+254x Mithril Bar
+60x Mageweave Cloth
+16x Dense Stone
 44x Thick Leather
-790x Thorium Bar
+130x Thorium Bar
 30x Rugged Leather
-27x Star Ruby
 5x Aquamarine
+245-270
+560x Thorium Bar
+27x Star Ruby
+270-300
+This step has a few options, so there is no list for it. You will need 508 to 1,220 Thorium Bar for it, and some Star Ruby , Aquamarine , Heart of Fire or Red Power Crystal , depending on which recipes you pick. I recommend buying these when you get there.
 Apprentice Blacksmithing (1-75)
 1-25
 30x Rough Sharpening Stone - 30 Rough Stone
@@ -38,7 +45,7 @@ Apprentice Blacksmithing (1-75)
 Journeyman Blacksmithing (75-140)
 75-80
 5x Silver Rod - 5 Silver Bar, 10 Rough Grinding Stone
-Make 5x Runed Copper Belt instead (10 Copper Bar each) if one Silver Bar costs more than 10 Copper Bars.
+If one Silver Bar costs more than 10 Copper Bars, make 5x Runed Copper Belt instead (10 Copper Bar each).
 80-95
 15x Rough Bronze Leggings - 90 Bronze Bar
 95-100
@@ -49,7 +56,7 @@ Make 5x Runed Copper Belt instead (10 Copper Bar each) if one Silver Bar costs m
 13x Patterned Bronze Bracers - 65 Bronze Bar, 26 Coarse Grinding Stone
 125-140
 15x Silvered Bronze Gauntlets - 120 Bronze Bar, 15 Silver Bar, 30 Coarse Grinding Stone
-Make 30x Coarse Grinding Stone for these (60 Coarse Stone). They don't give skill points any more.
+Make 30x Coarse Grinding Stone for these (60 Coarse Stone).
 15x Bronze Warhammer - 120 Bronze Bar, 15 Strong Flux, 15 Medium Leather
 Expert Blacksmithing (140-215)
 140-175
@@ -91,11 +98,16 @@ If you have the Plans: Dazzling Mithril Rapier , the Plans: Runed Mithril Hammer
 280-300
 245-270
 27x Imperial Plate Bracers - 540 Thorium Bar, 27 Star Ruby
+270-300
 270-290
-20x Imperial Plate Boots - 680 Thorium Bar, 20 Star Ruby, 20 Aquamarine
 22x Radiant Boots
-15x Thorium Leggings from 275
 290-300
-10x Imperial Plate Leggings - 440 Thorium Bar, 20 Star Ruby
 10x Radiant Leggings
-12x Thorium Leggings
+270-275
+11x Imperial Plate Bracers
+275-300
+27x Thorium Leggings
+270-290
+20x Imperial Plate Boots
+290-300
+10x Imperial Plate Leggings

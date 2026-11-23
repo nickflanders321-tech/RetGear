@@ -26,6 +26,9 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 88x Dense Stone
 186x Thorium Bar
 20x Runecloth
+Schematic: Thorium Widget (260)
+Schematic: Thorium Grenade (260)
+Schematic: Thorium Tube (275) - (Binds when picked up)
 Apprentice Engineering (1-50)
 1-35
 52x Rough Blasting Powder - 52 Rough Stone

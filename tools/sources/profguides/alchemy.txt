@@ -24,6 +24,9 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 47x Stonescale Eel
 73x Leaded Vial (vendor)
 69x Crystal Vial (vendor)
+Recipe: Nature Protection Potion (190) - (Binds when picked up)
+Recipe: Elixir of Superior Defense (265)
+Recipe: Superior Mana Potion (260)
 Apprentice Alchemy (1-55)
 1-10
 9x Elixir of Minor Force - 9 Silverleaf, 9 Empty Vial
@@ -54,7 +57,7 @@ Artisan Alchemy (225-300)
 15x Elixir of Greater Intellect - 15 Blindweed, 15 Khadgar's Whisker, 15 Crystal Vial
 250-260
 47x Stonescale Oil - 47 Stonescale Eel, 47 Leaded Vial
-If Stonescale Eel is expensive, skip this and keep making the Elixir of Greater Intellect until 265 (about 21), then make the Superior Mana Potions under 265-300.
+If Stonescale Eel is expensive, skip this step and make around 21 more Elixirs of Greater Intellect until 265. After that, make the Superior Mana Potions from the 265-300 step.
 260-265
 10x Elixir of Greater Intellect - 10 Blindweed, 10 Khadgar's Whisker, 10 Crystal Vial
 265-300

@@ -29,12 +29,20 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 26x Purple Lotus
 52x Crystal Vial (vendor)
 52x Firebloom
-1x Arcanite Rod
 1x Golden Pearl
 88x Illusion Dust
 4x Greater Eternal Essence
 4x Small Brilliant Shard
 2x Large Brilliant Shard
+1x Arcanite Rod
+Formula: Enchant 2H Weapon - Lesser Intellect (100)
+Only if you level 70-150 with Lesser Magic Essence
+Formula: Minor Mana Oil (150)
+Formula: Lesser Wizard Oil (200)
+Formula: Lesser Mana Oil (250)
+Formula: Wizard Oil (275)
+Formula: Enchant Shield - Greater Stamina (265) - (Binds when picked up)
+Formula: Runed Arcanite Rod (290) - (Binds when picked up)
 Apprentice Enchanting (1-70)
 1-2
 1x Runed Copper Rod - 1 Copper Rod, 1 Mote of Magic
@@ -86,6 +94,7 @@ Artisan Enchanting (225-300)
 34x Enchant Gloves - Agility - 34 Vision Dust
 250-270
 26x Lesser Mana Oil - 26 Dream Dust, 26 Purple Lotus, 26 Crystal Vial
+23x Enchant Bracer - Greater Strength - 23 Dream Dust, 46 Lesser Nether Essence
 270-275
 5x Enchant Shield - Greater Stamina - 30 Dream Dust
 275-295
