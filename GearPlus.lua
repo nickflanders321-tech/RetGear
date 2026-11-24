@@ -46,9 +46,11 @@ local function pickFor(slot, gs, cands, lvl, skip)
   end
   return nowBest, nextUp
 end
+local statusKeep
 function RG.GearStatus()
   local now = GetTime and GetTime() or 0
-  if statusCache and statusT and now - statusT < 2 then return statusCache end
+  if statusCache and statusT and now - statusT < (statusKeep or 5) then return statusCache end
+  local t0 = debugprofilestop and debugprofilestop()
   local lvl = UnitLevel("player") or 1
   local cands = RG.GearCandidates and RG.GearCandidates() or {}
   local out, atBest, counted = {}, 0, 0
@@ -79,6 +81,8 @@ function RG.GearStatus()
     end
   end
   statusCache, statusT = { slots = out, atBest = atBest, total = counted }, now
+  -- a slow pass (a big guide, many addons) is not repeated for a while: opening the window must never freeze the game
+  statusKeep = (t0 and debugprofilestop() - t0 > 300) and 30 or 5
   return statusCache
 end
 function RG.GearStatusInvalidate() statusCache = nil end
@@ -257,7 +261,7 @@ function RG.UpdateGearPanel()
     and not RG.OtherCharacterTab()
   if not want then if panel then panel:Hide() end return end
   if not panel then makePanel() else RG.PlaceGearPanel() end
-  RG.GearStatusInvalidate()
+  -- (no invalidate here: equipment, level and bag events do that; clearing it on every open made each open a full recompute)
   local st = RG.GearStatus()
   panel.sub:SetText(WHITE .. st.atBest .. " of " .. st.total .. "|r" .. GREY .. " slots at their best for your level|r")
   -- the bar: gold while slots are missing their best, turning green as they reach it
@@ -498,22 +502,26 @@ ev:SetScript("OnEvent", function(_, event, a1)
     end
     -- show with the gear tab: when the Character window opens, and when you switch back to its gear
     -- tab from reputation or skills; once more a moment later, after the window and its side tabs settle
+    -- the three ways the window opens (OnShow, the C key's ToggleCharacter, tab switches) share one refresh
+    local queued = false
     local function opened()
-      refresh()
-      if C_Timer then C_Timer.After(0.15, refresh) end
+      if queued then return end
+      if not C_Timer then refresh() return end
+      queued = true
+      C_Timer.After(0.1, function() queued = false; refresh() end)
     end
     if CharacterFrame then
       CharacterFrame:HookScript("OnShow", opened)
       CharacterFrame:HookScript("OnHide", function() if panel then panel:Hide() end end)
     end
     -- the game's own "open the Character window" call too (C key, the micro button), in case OnShow is missed
-    if hooksecurefunc and ToggleCharacter then pcall(hooksecurefunc, "ToggleCharacter", function() if C_Timer then C_Timer.After(0, refresh) else refresh() end end) end
+    if hooksecurefunc and ToggleCharacter then pcall(hooksecurefunc, "ToggleCharacter", opened) end
     -- switching tabs inside the open window: hide on reputation, skills, honor or currency, show again after
     for _, name in ipairs(OTHER_TABS_LIST) do
       local f = _G[name]
       if f and f.HookScript then
         f:HookScript("OnShow", function() if panel then panel:Hide() end end)
-        f:HookScript("OnHide", function() if C_Timer then C_Timer.After(0, refresh) else refresh() end end)
+        f:HookScript("OnHide", opened)
       end
     end
     baganator()

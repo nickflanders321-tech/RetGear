@@ -437,7 +437,7 @@ local function build()
     end
     RG.RefreshTracker()
   end)
-  tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); RG.TrackerSavePos() end)
+  tr:SetScript("OnDragStop", function(self) if InCombatLockdown() then return end self:StopMovingOrSizing(); RG.TrackerSavePos() end)
   -- Edit Mode / /wp move shows it with the other pop-ups (it keeps its own saved place, by its top-right corner)
   if RG.RegisterMover then
     RG.RegisterMover(tr, "tracker", "Tracker", nil, nil, { own = {
@@ -484,7 +484,7 @@ local function build()
   head:SetScript("OnLeave", function() GameTooltip:Hide() end)
   head:RegisterForDrag("LeftButton")
   head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") and not (RG.TrackerFrozen and RG.TrackerFrozen()) then tr:StartMoving() end end)
-  head:SetScript("OnDragStop", function() tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
+  head:SetScript("OnDragStop", function() if InCombatLockdown() then return end tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
   -- hover the header for the tracker's controls
   local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(1, 1); hint:Hide()
   hint:SetScript("OnEnter", function(self)
@@ -1426,7 +1426,7 @@ end
 -- Where the tracker is: always by its top-right corner, so folding and unfolding grows and shrinks it downwards
 -- (the game's own drag can leave it anchored by its middle or bottom).
 function RG.TrackerSavePos()
-  if not tr then return end
+  if not tr or InCombatLockdown() then return end
   local top, right = tr:GetTop(), tr:GetRight()
   if not (top and right) then return end
   tr:ClearAllPoints(); tr:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", right, top)

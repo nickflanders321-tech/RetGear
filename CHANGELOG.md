@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Opening the Character window no longer freezes the game, and the tracker no longer trips the game's combat lock.** The gear panel threw away its saved results every time the window opened and ran three times in a row, which could run past the game's time limit and show "script ran too long". It now keeps its results until your gear or bags change, runs once per open, and waits longer after a slow pass. Separately, once the tracker has a quest-item button it is protected by the game in a fight, and moving, resizing or refreshing it then produced thousands of "action blocked" errors; it now holds still in combat and catches up when the fight ends, including dragging and the resize grip.
 - **Achievement banners wait until the pack is turned over.** Opening a pack could show an achievement banner ("Mythic Hands", a set, a trophy) while its cards were still face down, which gave away what was in it. A banner now waits until every card is turned over and any Mythic moment has finished, then shows. Nothing is lost: it is only held back.
 - **A dungeon boss's model no longer shows through its backdrop in the Mythic moment.** The card springs up from a quarter of its size, and while it does the game can re-level its layers so the dungeon picture ends up level with the 3D boss; the layers are now put back in order as the moment begins, half way and when the card lands. Not seen in the game after the change yet: if you still see it, tell me.
 

@@ -9,7 +9,9 @@ local _, RG = ...
 local GOLDC = { 0.788, 0.635, 0.153 }
 local function tr() return _G.WaypathTracker end
 local function fighting() return InCombatLockdown and InCombatLockdown() end
-local function frozen() local t = tr(); return fighting() and t and (t.itemsShown or 0) > 0 end
+-- (a quest-item button makes the whole tracker protected for the game, shown or not: once one exists, it holds still in a fight)
+local hasButtons = false
+local function frozen() local t = tr(); return fighting() and t and (hasButtons or (t.itemsShown or 0) > 0) and true or false end
 RG.TrackerFrozen = frozen
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -63,7 +65,7 @@ local function makeChrome()
     self.last = now
     self.drag = true; self.startX, self.startY = GetCursorPosition(); self.startH = cap(); self.startW = RG.db.trackerWidth or 300
     self:SetScript("OnUpdate", function(s)
-      local t2 = tr(); if not t2 then return end
+      local t2 = tr(); if not t2 or frozen() then return end
       -- width: the grip sits on the side the tracker can grow towards (the left one when it is pinned by its right edge)
       local dx = (GetCursorPosition() - s.startX) / (t2:GetEffectiveScale() or 1)
       local w = math.max(240, math.min(560, math.floor(s.startW + (s.leftSide and -dx or dx))))
@@ -189,6 +191,7 @@ local function makeButton()
   local t = tr()
   local ok, b = pcall(CreateFrame, "Button", nil, t.body, "SecureActionButtonTemplate")
   if not ok or not b then return nil end
+  hasButtons = true
   b:SetSize(26, 26)
   b:RegisterForClicks("AnyUp", "AnyDown")
   b:SetAttribute("type", "item")
