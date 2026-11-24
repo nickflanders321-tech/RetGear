@@ -44,7 +44,7 @@ B.plan = {
   { from = 195, to = 210, craft = "Mithril Plate Pants", n = 17, mats = "12 Mithril Bar each" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 210, to = 215, craft = "Heavy Mithril Axe", n = 6, mats = "12 Mithril Bar, 2 Citrine, 1 Solid Grinding Stone, 4 Heavy Leather each" },
-  { from = 215, to = 225, craft = "Mithril Coif", n = 10, mats = "10 Mithril Bar, 6 Mageweave Cloth each (or 10 Mithril Spurs if you have the plans: 4 Mithril Bar, 3 Solid Grinding Stone each)" },
+  { from = 215, to = 225, craft = "Mithril Coif", n = 10, mats = "10 Mithril Bar, 6 Mageweave Cloth each (or, with the Plans: Mithril Spurs, 15 Mithril Spurs from 210 to 225 instead of the axes and coifs: 4 Mithril Bar, 3 Solid Grinding Stone each)" },
   { from = 225, to = 235, craft = "Dense Sharpening Stone", n = 16, mats = "1 Dense Stone each" },
   { from = 235, to = 240, craft = "Heavy Mithril Boots", n = 11, mats = "14 Mithril Bar, 4 Thick Leather each (or with the Mithril Spurs plans: 28 Mithril Spurs from 235 to 245 instead of the boots and the belt)" },
   { from = 240, to = 245, craft = "Imperial Plate Belt", n = 5, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine each (plans: Derotain Mudsipper, Tanaris, level 50 quest; he gives the next three plans too, so bring about 250 Thorium Bar. With the world-drop plans for Dazzling Mithril Rapier, Runed Mithril Hammer or Thorium Bracers, make those from 240 to 255 instead: 27 Rapiers, 20 Hammers or 17 Bracers)" },
