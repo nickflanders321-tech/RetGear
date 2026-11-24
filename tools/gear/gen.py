@@ -520,6 +520,8 @@ def _sources(iid, ally=False, ex=None):
         for nid in drops:
             n = FN.get(str(nid))
             if not n: continue
+            # (QuestieDB lists a supply officer's or quartermaster's wares as drops too: that is a purchase, shown below)
+            if int(nid) in set(int(v) for v in L(f.get("vendors"))) and re.search(r"Supply Officer|Quartermaster", n.get("sub") or ""): continue
             z = n.get("zone")
             d = DUNGEON.get(z)
             if d:
@@ -552,7 +554,7 @@ def _sources(iid, ally=False, ex=None):
         fac = (n.get("faction") or ("AH" if (rep_rank and not n.get("sub")) else "")) if n else ""
         if not (n and ("A" if ally else "H") in fac and (zone_name(n.get("zone")) or "") not in other): continue
         # PvP: ranks and battleground reputations are not leveling gear
-        if re.search(r"Legionnaire|Battlemaster|Supply Officer|Frostwolf|Warsong|Defilers|League of Arathor|Stormpike|Silverwing", sub): continue
+        if re.search(r"Legionnaire|Battlemaster|Warsong|Defilers|League of Arathor|Silverwing", sub): continue
         if rep_rank or re.search(r"Quartermaster", sub):
             # a reputation reward: bought once you're friendly enough with them
             if not rep_rank: continue
@@ -737,6 +739,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         tier = None
         if int(d.get("itemset") or 0) == T0_SETS.get(C["tok"]): tier = "Tier 0"
         elif d["name"] in T05_NAMES.get(C["bit"], ()) and any(x["how"] in ("Quest", "Vendor") and any(g in (x.get("src") or "") for g in T05_GIVERS + ("Ironforge Guard", "Kor'kron Elite")) for x in src): tier = "Tier 0.5"   # (named by a quest only your class can take; the vendors sell every class's set)
+        av = any(x["how"] == "Reputation" and re.search(r"Stormpike|Frostwolf", x["zone"] or "") for x in src)   # Alterac Valley's reputation vendors
         real = None
         if any(x["how"] == "Vendor" and x["src"] == PIX for x in src):
             real = REAL_PRICE.get(slot) if 272000 <= iid < 273000 else 0
@@ -758,7 +761,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         if slot in ARMOR_INV.values() and stat_only <= 1.0: continue
         if lvl < max(5, lvl_from - 2): continue
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "A": a0, "B": a1 - a0, "q": int(d["Quality"]),
-                            "tier": tier, "real": real,
+                            "tier": tier, "real": real, "av": av,
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
                             "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"), "onah": any(x["how"] == "BoE" for x in src),
                             "mf": s0.get("mf"),
@@ -808,9 +811,9 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
                     if top["id"] not in by_id and top["id"] not in extra and top["lvl"] >= lvl_from - 2:
                         extra[top["id"]] = dict(top, alt=True)
             picked += list(extra.values())
-            # 6) Tier 0 and 0.5 sets whole, and everything Pix Xizzix sells for Tarnished Undermine Real
+            # 6) Tier 0 and 0.5 sets whole, everything Pix Xizzix sells for Tarnished Undermine Real, and everything Alterac Valley's reputation vendors sell
             for c in all_c:
-                if (c.get("tier") or c.get("real") is not None) and c["id"] not in by_id and c["id"] not in extra and c["lvl"] >= lvl_from - 2:
+                if (c.get("tier") or c.get("av") or c.get("real") is not None) and c["id"] not in by_id and c["id"] not in extra and c["lvl"] >= lvl_from - 2:
                     extra[c["id"]] = dict(c, alt=True)
                     picked.append(extra[c["id"]])
             # 5) every piece a Waylaid Crate recipe makes (bought with Merchant's Favor): the game shows the ones that are
