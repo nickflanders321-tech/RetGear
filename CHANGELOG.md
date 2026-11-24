@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Card model look-ups wait until you are out of the dungeon.** Waypath+ asks the game for a few dungeon bosses' 3D models (for their cards); that no longer happens inside a dungeon or while one is loading, in case it was behind crashes on entering. Not confirmed as the cause: if you still crash, send the details.
+
 ## v1.60.1
 - **Tracker: drag the grip sideways to change its width.** The grip in the bottom corner already set how tall the tracker gets; it now also sets how wide (240 to 560), so you no longer need Shift + mouse wheel. It sits on the side the tracker can grow towards (the bottom-left corner when the tracker is pinned by its right edge, as it is by default), and double-clicking it puts both width and height back to automatic.
 

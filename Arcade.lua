@@ -4544,6 +4544,7 @@ function RG.ArcadeResolveCreatures()
   for name, cid in pairs(list) do if not RG.ARCADE_NPC[name] and not a.npcDisp[cid] then todo[#todo + 1] = { name, cid } end end
   table.sort(todo, function(x, y) return x[2] < y[2] end)
   if #todo == 0 then return end
+  if IsInInstance and IsInInstance() then C_Timer.After(30, function() pcall(RG.ArcadeResolveCreatures) end) return end
   local ok, m = pcall(CreateFrame, "DressUpModel", nil, UIParent)
   if not ok or not m or not m.SetCreature then return end
   RG.ArcadeResolving = true
@@ -4551,6 +4552,9 @@ function RG.ArcadeResolveCreatures()
   local i, tries, learned, lastDisp = 0, 0, 0, nil
   local function step()
     if InCombatLockdown and InCombatLockdown() then C_Timer.After(10, step) return end
+    -- never ask the game for creature models inside an instance: that is while it is loading the dungeon and its
+    -- creatures (the model loads here are done out in the world, or later)
+    if IsInInstance and IsInInstance() then C_Timer.After(30, step) return end
     local cur = todo[i]
     if cur then
       local okD, disp = false, nil

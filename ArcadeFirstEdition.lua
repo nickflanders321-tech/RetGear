@@ -90,6 +90,7 @@ local function wantModel(id)
     for _, cid in pairs(RG.ARCADE_DUNGEON_CREATURE or {}) do modelCids[cid] = true end
   end
   if not modelCids[id] then return end
+  if IsInInstance and IsInInstance() then return end   -- (not while a dungeon is loading around you)
   local a = store()
   local nd = a and a.npcDisp
   if nd and nd[id] then return end
