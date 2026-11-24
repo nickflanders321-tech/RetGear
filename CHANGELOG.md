@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.62.0
 - **Tier sets and everything Pix Xizzix sells are now in the gear lists, for every class.**
   - **Why they were missing:** the list builder threw out any plate or mail piece with no level requirement before judging it, and Tier 0.5's pieces (Soulforge, Heroism, Beastmaster's, the Five Thunders' and the others) have none. Warriors, Paladins, Hunters and Shamans lost the whole set. The upgrade-path rule also hid most of what the other classes could buy.
   - **Tier 0 (your class's own dungeon set) and Tier 0.5 (the Anthion Harmon, Mokvar and Deliana questline and vendors)** are listed whole, every piece you can get, and marked as a set piece in the list and the pre-raid checklist. Two Blackrock Spire bosses that were missing from the data (Gizrul the Slavener and Gyth) now count, so the Druid, Shaman and other Tier 0 shoulders appear. The Mage's Tier 0 shoulders are the one gap: the data has no source for them.
