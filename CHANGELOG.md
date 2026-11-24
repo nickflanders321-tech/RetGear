@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.60.2
 - **Card model look-ups wait until you are out of the dungeon.** Waypath+ asks the game for a few dungeon bosses' 3D models (for their cards); that no longer happens inside a dungeon or while one is loading, in case it was behind crashes on entering. Not confirmed as the cause: if you still crash, send the details.
 - **No chat-channel calls as a loading screen starts.** The card-board and Arena-match features left their shared chat channel the instant a loading screen began (zoning into a dungeon, say); they now leave a few seconds after it, once you're back in the world. Also a precaution for glitches on dungeon loading screens, not a confirmed cause.
 
