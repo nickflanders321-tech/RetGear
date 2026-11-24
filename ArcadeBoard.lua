@@ -274,7 +274,9 @@ f:SetScript("OnEvent", function(_, ev, prefix, text, channel, sender)
   elseif ev == "GROUP_ROSTER_UPDATE" then
     env.after(6, shareNear)
   elseif ev == "PLAYER_LEAVING_WORLD" then
-    leaveCh(); sessionEnd = 0
+    -- (not a chat-channel call right as a loading screen starts: leave a few seconds after it, once the world is back)
+    sessionEnd = 0
+    if C_Timer and C_Timer.After then C_Timer.After(8, leaveCh) else leaveCh() end
   end
 end)
 local acc = 0

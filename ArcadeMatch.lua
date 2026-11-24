@@ -209,7 +209,13 @@ end)
 -- a search must not outlive a logout or a loading screen
 local g = CreateFrame("Frame")
 g:RegisterEvent("PLAYER_LEAVING_WORLD")
-g:SetScript("OnEvent", function() if M.searching then M.stop(true) end end)
+-- (the channel is left a few seconds after the loading screen, not as it starts)
+g:SetScript("OnEvent", function()
+  if not M.searching then return end
+  M.searching = false
+  if C_Timer and C_Timer.After then C_Timer.After(8, function() if not M.searching then pcall(env.leave) end end)
+  else pcall(env.leave) end
+end)
 
 local base = SlashCmdList and SlashCmdList.WAYPATH
 if base then
