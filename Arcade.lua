@@ -2791,6 +2791,14 @@ local function stripSet(r, sc, dx, dy, rot, alpha)
   end
 end
 
+-- true while a pack is being opened and a card is still face down (or a Mythic's moment is playing): what the pack won
+-- (an achievement banner, say) waits for this to be over, or it would give the cards away before they are turned
+function RG.ArcadeRevealPending()
+  if not (reveal and reveal.IsShown and reveal:IsShown() and reveal.got) then return false end
+  if (reveal.flipped or 0) < #reveal.got then return true end
+  local m = rawget(reveal, "myth")
+  return (m and m:IsShown()) and true or false
+end
 -- A Mythic turns over. A white flash and two shockwaves, the table shakes, sparks fly out, and the card springs up to
 -- the middle at full size while the title drops in letter by letter, rays in every colour turn behind it and embers
 -- rise. The 1 Ring then engraves its opener's name round its band, a letter at a time, each with a glint and a chime.

@@ -29,8 +29,14 @@ local function hash(s) local h = 0; for i = 1, #s do h = (h * 31 + s:byte(i)) % 
 -- A banner at the top of the screen: an achievement, a finished quest, a trophy
 -- ---------------------------------------------------------------------------
 local banner, queue = nil, {}
+local waiting = false
 local function showNext()
   if not banner or banner:IsShown() or #queue == 0 then return end
+  -- never over a pack that is still being turned over: an achievement would name what is face down
+  if RG.ArcadeRevealPending and RG.ArcadeRevealPending() and C_Timer and C_Timer.After then
+    if not waiting then waiting = true; C_Timer.After(0.5, function() waiting = false; showNext() end) end
+    return
+  end
   local b = table.remove(queue, 1)
   banner.kind:SetText(b[1]); banner.name:SetText(b[2]); banner.sub:SetText(b[3] or "")
   banner.medal:SetVertexColor(b[4] and b[4][1] or 1, b[4] and b[4][2] or 0.82, b[4] and b[4][3] or 0.4)

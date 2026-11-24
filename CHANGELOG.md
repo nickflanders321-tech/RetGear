@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Achievement banners wait until the pack is turned over.** Opening a pack could show an achievement banner ("Mythic Hands", a set, a trophy) while its cards were still face down, which gave away what was in it. A banner now waits until every card is turned over and any Mythic moment has finished, then shows. Nothing is lost: it is only held back.
+
 ## v1.61.0
 - **Profession plans follow wow-professions.com's updated WoW Forever guides.**
   - Leatherworking 30-80: 10 Cured Light Hide to 40 (or 14 Light Armor Kits), Embossed Leather Gloves from 40 to 70, then 10 Embossed Leather Pants to 80.
