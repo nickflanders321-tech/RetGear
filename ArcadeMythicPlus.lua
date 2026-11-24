@@ -382,10 +382,21 @@ table.insert(RG.ArcadeMythicHooks, function(event, m, g, a1, a2, a3)
       spec.sub = "M Y T H I C   ·   O N E   O F   S I X"
       spec.extra = EXTRA_S
     end
-    p.endAt = nil
+    p.endAt = nil; p.relv = 0
   elseif event == "tick" then
     local e, t, st = a1, a2, a3
     p.endAt = st.endAt
+    -- the card springs up from a quarter of its size and the game can re-level a scaled card's children, which puts the
+    -- backdrop level with or over its 3D creature (the creature seen only through the picture): the stack is put back
+    -- as soon as the moment begins, when the card is half grown and when it has landed
+    if m.card and RG.ArcadeRelevel then
+      local stage = (e >= 0.8 and 3) or (e >= 0.35 and 2) or (e >= 0.03 and 1) or 0
+      if stage > (p.relv or 0) then
+        p.relv = stage
+        m.card:SetFrameLevel((m:GetFrameLevel() or 1) + 2)
+        pcall(RG.ArcadeRelevel, m.card)
+      end
+    end
     local W, H = m:GetWidth() or 760, m:GetHeight() or 640
     if type(W) ~= "number" or W <= 0 then W, H = 760, 640 end
     local skip = e >= st.endAt

@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **Achievement banners wait until the pack is turned over.** Opening a pack could show an achievement banner ("Mythic Hands", a set, a trophy) while its cards were still face down, which gave away what was in it. A banner now waits until every card is turned over and any Mythic moment has finished, then shows. Nothing is lost: it is only held back.
+- **A dungeon boss's model no longer shows through its backdrop in the Mythic moment.** The card springs up from a quarter of its size, and while it does the game can re-level its layers so the dungeon picture ends up level with the 3D boss; the layers are now put back in order as the moment begins, half way and when the card lands. Not seen in the game after the change yet: if you still see it, tell me.
 
 ## v1.61.0
 - **Profession plans follow wow-professions.com's updated WoW Forever guides.**
