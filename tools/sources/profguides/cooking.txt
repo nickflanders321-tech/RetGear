@@ -14,6 +14,7 @@ Fishing and Cooking Leveling Guide 1-300
 225-300
 12x Giant Egg
 10x Zesty Clam Meat
+20x Alterac Swiss (vendor)
 72x Raw Spotted Yellowtail
 72x Raw Redgill
 18x Raw Nightfin Snapper

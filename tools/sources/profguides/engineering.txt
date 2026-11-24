@@ -2,25 +2,27 @@ WoW Forever Engineering Leveling Guide 1-300
 WoW Forever Engineering Leveling Guide 1-300
 This WoW Forever Engineering leveling guide will show you the fastest and cheapest way to level your Engineering skill from 1 to 300. You will also find every trainer location and where to train Engineering past 75, 150 and 225.
 1-150
-52x Rough Stone
-58x Copper Bar
-43x Linen Cloth
+56x Rough Stone
+62x Copper Bar
+45x Linen Cloth
 51x Coarse Stone
 5x Silver Bar
 30x Light Leather and 10x Tigerseye
 80x Bronze Bar
 25x Weak Flux (vendor)
 10x Moss Agate
-30x Heavy Stone
+40x Heavy Stone
 15x Wool Cloth
 150-225
 30x Bronze Bar
 45x Wool Cloth
 15x Medium Leather
 4x Steel Bar
-120x Solid Stone
-74x Mithril Bar
-20x Mageweave Cloth
+62x Solid Stone
+75x Mithril Bar
+21x Mageweave Cloth
+10x Iron Bar
+10x Silk Cloth
 225-300
 84x Mithril Bar
 88x Dense Stone
@@ -31,14 +33,14 @@ Schematic: Thorium Grenade (260)
 Schematic: Thorium Tube (275) - (Binds when picked up)
 Apprentice Engineering (1-50)
 1-35
-52x Rough Blasting Powder - 52 Rough Stone
+56x Rough Blasting Powder - 56 Rough Stone
 35-55
-26x Handful of Copper Bolts - 26 Copper Bar
+28x Handful of Copper Bolts - 28 Copper Bar
 55-56
 1x Arclight Spanner - 6 Copper Bar
 Journeyman Engineering (50-150)
 56-75
-26x Rough Copper Bomb - 26 Copper Bar, 26 Handful of Copper Bolts, 52 Rough Blasting Powder, 26 Linen Cloth
+28x Rough Copper Bomb - 28 Copper Bar, 28 Handful of Copper Bolts, 56 Rough Blasting Powder, 28 Linen Cloth
 75-90
 51x Coarse Blasting Powder - 51 Coarse Stone
 90-100
@@ -51,22 +53,23 @@ Journeyman Engineering (50-150)
 125-135
 10x Standard Scope - 10 Bronze Tube, 10 Moss Agate
 135-150
-30x Heavy Blasting Powder - 30 Heavy Stone
+40x Heavy Blasting Powder - 40 Heavy Stone
 15x Whirring Bronze Gizmo - 30 Bronze Bar, 15 Wool Cloth
 Expert Engineering (150-200)
 150-160
 15x Bronze Framework - 30 Bronze Bar, 15 Medium Leather, 15 Wool Cloth
 160-175
 15x Explosive Sheep - 30 Heavy Blasting Powder, 15 Whirring Bronze Gizmo, 15 Bronze Framework, 30 Wool Cloth
-175-194
-60x Solid Blasting Powder - 120 Solid Stone
-194-195
+175-190
+31x Solid Blasting Powder - 62 Solid Stone
+190-195
 1x Gyromatic Micro-Adjustor - 4 Steel Bar
+10x Iron Grenade - 10 Iron Bar, 10 Heavy Blasting Powder, 10 Silk Cloth
 195-200
 6x Mithril Tube - 18 Mithril Bar
 Artisan Engineering (200-300)
 200-215
-20x Unstable Trigger - 20 Mithril Bar, 20 Mageweave Cloth, 20 Solid Blasting Powder
+21x Unstable Trigger - 21 Mithril Bar, 21 Mageweave Cloth, 21 Solid Blasting Powder
 215-238
 40x Mithril Casing - 120 Mithril Bar
 238-250
