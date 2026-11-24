@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.61.0
+- **Profession plans follow wow-professions.com's updated WoW Forever guides.**
+  - Leatherworking 30-80: 10 Cured Light Hide to 40 (or 14 Light Armor Kits), Embossed Leather Gloves from 40 to 70, then 10 Embossed Leather Pants to 80.
+  - Engineering: 56 Rough Blasting Powder, 28 Copper Bolts and 28 Rough Copper Bombs; 40 Heavy Blasting Powder (10 go into Iron Grenades at 191-195); 31 Solid Blasting Powder to 190; 21 Unstable Triggers.
+  - Blacksmithing: with the Mithril Spurs plans, make 15 Spurs from 210 to 225 instead of the axes and coifs.
+  - Cooking: the Alterac Swiss for the Artisan quest can also come from the Auction House.
+- Quest, map and gear data updated from WoW Forever's latest game data.
+
 ## v1.60.2
 - **Card model look-ups wait until you are out of the dungeon.** Waypath+ asks the game for a few dungeon bosses' 3D models (for their cards); that no longer happens inside a dungeon or while one is loading, in case it was behind crashes on entering. Not confirmed as the cause: if you still crash, send the details.
 - **No chat-channel calls as a loading screen starts.** The card-board and Arena-match features left their shared chat channel the instant a loading screen began (zoning into a dungeon, say); they now leave a few seconds after it, once you're back in the world. Also a precaution for glitches on dungeon loading screens, not a confirmed cause.
