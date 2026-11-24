@@ -174,6 +174,17 @@ def _sorted_pairs(kv):
     return dict(sorted(kv, key=k))
 fv = json.load(open(json_path), object_pairs_hook=_sorted_pairs)
 FI, FN, FQ = fv["items"], fv["npcs"], fv["quests"]
+# Tier 0.5: the item names each class gets from Anthion Harmon / Mokvar / Deliana's class-only quests (the vendors sell the same names, for every class)
+T05_NAMES = defaultdict(set)
+_giver_ids = {16012, 16013, 16016}
+for _iid, _it in FI.items():
+    for _q in _it.get("questRewards") or []:
+        _qq = FQ.get(str(_q)) or {}
+        _st = [x for g_ in (_qq.get("start") or []) for x in (g_ if isinstance(g_, list) else [g_])]
+        if _qq.get("classes") and _giver_ids & set(_st) and _it.get("class") == 4: T05_NAMES[int(_qq["classes"])].add(_it["name"])
+# two Blackrock Spire bosses QuestieDB has no zone for: Gizrul the Slavener (Halycon's lair, Lower) and Gyth (Rend's mount, Upper); they drop Tier 0 shoulders
+for _nid in ("10268", "10339"):
+    if _nid in FN and not FN[_nid].get("zone"): FN[_nid]["zone"] = 1583
 FO = fv.get("objects") or {}
 
 WS = {}   # wowsims: item id -> its sources, for the pieces QuestieDB has no source for (see --wowsims above)
@@ -382,7 +393,8 @@ def eligible(d, C):
             if sub in (1, 2, 3, 4) and inv != 16:
                 lvl_from = C["armor"].get(sub)
                 if lvl_from is None: return None
-                if lvl_from > 1 and int(d["RequiredLevel"]) < lvl_from: return None
+                # (a piece with no level requirement is judged by its item level, as pick() does: Tier 0.5's plate and mail has none)
+                if lvl_from > 1 and (int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)) < lvl_from: return None
             elif sub not in (0, 1): return None
             slot = ARMOR_INV[inv]
         else: return None
@@ -679,6 +691,13 @@ def craft_source(iid, ally=False):
 # ---------------------------------------------------------------------------
 def lua_str(s): return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 ORDER = {"Quest": 0, "Dungeon": 1, "Vendor": 2, "Chest": 3, "Rare mob": 4, "Reputation": 5, "Crafted": 6, "BoE": 7}
+# Tier sets: Tier 0 is each class's own dungeon set (item sets 181-189); Tier 0.5 is the Anthion Harmon / Mokvar / Deliana questline's
+# and vendors' sets. Both are listed whole (every piece the class can get), not only where they beat the route's other gear.
+T0_SETS = {"MAGE": 181, "PRIEST": 182, "WARLOCK": 183, "ROGUE": 184, "DRUID": 185, "HUNTER": 186, "SHAMAN": 187, "PALADIN": 188, "WARRIOR": 189}
+T05_GIVERS = ("Anthion Harmon", "Mokvar", "Deliana")
+# Pix Xizzix (Booty Bay) sells for Tarnished Undermine Real; WoW Forever's prices (every piece is listed, none is cut)
+REAL_PRICE = {"Waist": 100, "Relic": 50, "Ring": 75, "Back": 75, "Trinket": 125}
+PIX = "Pix Xizzix"
 EXTRA = ("Crafted", "BoE")   # only listed when clearly better than what your route gives
 src_cache = {}
 # The Gear tab's "best from each source" view: every source falls in one of these groups
@@ -715,7 +734,17 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         if craft and src: src.append(dict(craft))       # also craftable: shown as another source
         if not src and craft: src = [dict(craft)]
         if not src: continue
+        tier = None
+        if int(d.get("itemset") or 0) == T0_SETS.get(C["tok"]): tier = "Tier 0"
+        elif d["name"] in T05_NAMES.get(C["bit"], ()) and any(x["how"] in ("Quest", "Vendor") and any(g in (x.get("src") or "") for g in T05_GIVERS + ("Ironforge Guard", "Kor'kron Elite")) for x in src): tier = "Tier 0.5"   # (named by a quest only your class can take; the vendors sell every class's set)
+        real = None
+        if any(x["how"] == "Vendor" and x["src"] == PIX for x in src):
+            real = REAL_PRICE.get(slot) if 272000 <= iid < 273000 else 0
         req = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
+        # Pix Xizzix's belts and cloaks have no level in the client's item table but need level 60 (QuestieDB and the vendor lists agree)
+        if real is not None and not int(d["RequiredLevel"]) and int((FI.get(str(iid)) or {}).get("reqLevel") or 0): req = int(FI[str(iid)]["reqLevel"])
+        # (a set piece with no level requirement but a high item level, like Tier 0.5's legs, is a level 60 piece)
+        if req > 60 and tier and not int(d["RequiredLevel"]): req = 60
         if req > 60: continue
         src.sort(key=lambda x: ORDER.get(x["how"], 9))
         s0 = src[0]
@@ -729,6 +758,7 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
         if slot in ARMOR_INV.values() and stat_only <= 1.0: continue
         if lvl < max(5, lvl_from - 2): continue
         cands[slot].append({"id": iid, "name": d["name"], "slot": slot, "lvl": lvl, "score": sc, "A": a0, "B": a1 - a0, "q": int(d["Quality"]),
+                            "tier": tier, "real": real,
                             "how": s0["how"], "src": s0["src"], "zone": s0["zone"], "q": s0.get("q"), "bl": s0.get("bl"),
                             "prof": s0.get("prof"), "sk": s0.get("sk"), "boe": s0.get("boe"), "onah": any(x["how"] == "BoE" for x in src),
                             "mf": s0.get("mf"),
@@ -778,6 +808,11 @@ def pick(C, lvl_from=5, ally=False, only_slots=None, alts=True):
                     if top["id"] not in by_id and top["id"] not in extra and top["lvl"] >= lvl_from - 2:
                         extra[top["id"]] = dict(top, alt=True)
             picked += list(extra.values())
+            # 6) Tier 0 and 0.5 sets whole, and everything Pix Xizzix sells for Tarnished Undermine Real
+            for c in all_c:
+                if (c.get("tier") or c.get("real") is not None) and c["id"] not in by_id and c["id"] not in extra and c["lvl"] >= lvl_from - 2:
+                    extra[c["id"]] = dict(c, alt=True)
+                    picked.append(extra[c["id"]])
             # 5) every piece a Waylaid Crate recipe makes (bought with Merchant's Favor): the game shows the ones that are
             #    upgrades to players of that profession, so none of them is cut here
             for c in all_c:
@@ -802,6 +837,8 @@ def entry(c):
         also.append("{ how = %s, src = %s, zone = %s%s%s }" % (lua_str(x["how"]), lua_str(x["src"]), lua_str(x.get("zone") or ""),
                     (", q = %d" % x["q"]) if x.get("q") else "", (", bl = %d" % x["bl"]) if x.get("bl") else ""))
     if also: extra += ", also = { " + ", ".join(also) + " }"
+    if c.get("tier"): extra += ", tier = %s" % lua_str(c["tier"])
+    if c.get("real"): extra += ", real = %d" % c["real"]
     if c.get("alt"): extra += ", alt = true"
     if c.get("ws"): extra += ", ws = %s" % lua_str(c["ws"])
     # the name too: the game never sends some items' details (the list shows this name instead of "Loading item")

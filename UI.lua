@@ -600,6 +600,7 @@ local function gearHowPill(g, now)
   local st = g.prof and RG.CraftState(g)
   if st == "make" then return GREEN .. "You can make it|r" end
   if st == "learn" then return GOLD .. "Learn the recipe|r" end
+  if price and g.real then return GOLD .. "Buy|r " .. price end   -- (Pix Xizzix's Tarnished Undermine Real pieces, not the Auction House)
   if price then return GOLD .. "AH|r " .. price end
   if not now then return GREY .. "Level " .. g.lvl .. "|r" end
   return GREEN .. "Usable now|r"
@@ -851,10 +852,12 @@ local function renderGear()
   end
   setBar(scoreRow, (RG.SCORE_NAME or "Upgrade score"):gsub(" score$", "") .. " gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
   -- pre-raid checklist: the level 52+ picks from the gear guide, one row per item
-  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · best dungeon and quest pieces, level 52 to 60")
+  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · the best piece for each slot from dungeons, quests, tier sets, crafting and Pix Xizzix, level 52 to 60")
   for _, slot in ipairs(GUIDE_SLOTS) do
     local best = {}
-    for _, g in ipairs(RG.GUIDE) do if g.id and g.slot == slot and g.lvl >= 52 then best[#best + 1] = g end end
+    for _, list in ipairs({ RG.GUIDE, RG.GUIDE_ALT or {} }) do
+      for _, g in ipairs(list) do if g.id and g.slot == slot and g.lvl >= 52 and (list == RG.GUIDE or not g.ws) then best[#best + 1] = g end end
+    end
     table.sort(best, function(a, b) return (a.score or 999) > (b.score or 999) end)
     for i = 1, math.min((slot == "Ring" or slot == "Trinket") and 2 or 1, #best) do
       local g = best[i]
@@ -862,7 +865,7 @@ local function renderGear()
       local name, link2, quality = itemName(g.id)
       local own = RG.OwnState(g.id)
       local pill = own == "equipped" and (GREEN .. "Equipped|r") or (own == "owned" and (GOLD .. "In your bags|r") or (GREY .. "Not yet|r"))
-      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or ""), pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
+      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or "") .. (g.tier and (GOLD .. "  ·  " .. g.tier .. " set|r") or ""), pill, (g.real and g.real > 0) and (GREY .. g.real .. " Reals|r") or (g.ah and RG.PriceText(g.id) or ""), own == "equipped" and "green" or nil, quality)
     end
   end
   return n

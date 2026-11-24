@@ -274,11 +274,14 @@ function RG.GearGroupOf(g) return GROUP[g.how] or "Other" end
 function RG.GearSourceText(g)
   local t = g.src or ""
   if g.zone and g.zone ~= "" then t = t .. ", " .. g.zone end
+  if g.tier then t = t .. "  (" .. g.tier .. " set)" end
   return t
 end
 -- its price, if it's bought: the Auction House listing, the list entry's Auction House price, or the materials
 function RG.GearPriceText(g)
   local money = RG.Money or function(c) return math.floor(c / 10000) .. "g" end
+  -- Pix Xizzix's pieces cost Tarnished Undermine Real, not gold
+  if g.real and g.real > 0 and not g.live then return GREY .. g.real .. " Tarnished Undermine Real|r" end
   if g.live == "ah" and g.price then
     local age = g.seenAt and (time() - g.seenAt) or 0
     return money(g.price) .. (age > 6 * 3600 and (GREY .. "  (" .. math.floor(age / 3600) .. "h ago)|r") or "")
