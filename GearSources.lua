@@ -266,8 +266,8 @@ end
 
 -- The source group a list entry falls in (the Gear tab's "best from each source" view)
 local GROUP = { Quest = "Quest", Dungeon = "Dungeon", Chest = "Dungeon", Crafted = "Crafted", Craft = "Crafted", BoE = "Auction House", AH = "Auction House",
-  Bags = "Your bags", Vendor = "Vendor", Reputation = "Reputation", ["Rare mob"] = "Rare mob", Drop = "Rare mob" }
-RG.SOURCE_GROUPS = { "Your bags", "Quest", "Dungeon", "Crafted", "Auction House", "Vendor", "Reputation", "Rare mob", "Other" }
+  Bags = "Your bags", Vendor = "Vendor", Reputation = "Reputation", ["Rare mob"] = "Rare mob", Drop = "Rare mob", Raid = "Raid" }
+RG.SOURCE_GROUPS = { "Your bags", "Quest", "Dungeon", "Raid", "Crafted", "Auction House", "Vendor", "Reputation", "Rare mob", "Other" }
 function RG.GearGroupOf(g) return GROUP[g.how] or "Other" end
 
 -- A short "where from" line for any entry (the panel and the lists use it)

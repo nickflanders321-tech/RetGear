@@ -327,7 +327,7 @@ local function plus(m)
   if p then return p end
   p = {}
   -- behind the card: the dungeon's picture, the flames, the pillar, the footsteps
-  p.back = CreateFrame("Frame", nil, m); p.back:SetAllPoints(m); p.back:SetFrameLevel((m:GetFrameLevel() or 1) + 1)
+  p.back = CreateFrame("Frame", nil, m); p.back:SetAllPoints(m); if p.back.SetClipsChildren then pcall(p.back.SetClipsChildren, p.back, true) end; p.back:SetFrameLevel((m:GetFrameLevel() or 1) + 1)
   p.bd = p.back:CreateTexture(nil, "BACKGROUND"); p.bd:SetPoint("CENTER")
   p.dim = p.back:CreateTexture(nil, "BORDER"); p.dim:SetAllPoints(m); p.dim:SetColorTexture(0, 0, 0, 0.45)
   p.pillar = p.back:CreateTexture(nil, "ARTWORK"); p.pillar:SetTexture(MEDIA .. "Glow"); p.pillar:SetBlendMode("ADD"); p.pillar:SetPoint("CENTER")

@@ -37,6 +37,7 @@ Classes\Druid.lua
 Classes\DruidGear.lua
 Classes\Specs.lua
 Classes\SpecGear.lua
+Classes\RaidGear.lua
 Races\Undead.lua
 Races\Durotar.lua
 Races\Tauren.lua
@@ -167,6 +168,8 @@ Levels.lua
 UI.lua
 GearPlus.lua
 GearSources.lua
+RaidGear.lua
+RaidUI.lua
 Compat.lua
 GateOff3.lua
 ModeEnd.lua

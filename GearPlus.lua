@@ -108,6 +108,18 @@ function RG.GearBySource(gs, slot)
       end
     end
   end
+  -- the raid's best piece for the slot (level 58+; not in the candidate list, so the Gear check above stays what you can get without a raid)
+  if RG.RaidShown and RG.RaidShown() then
+    for _, g in ipairs(RG.RaidList()) do
+      if g.slot == gs then
+        local d = RG.GuideDelta(g, PAIR[slot or 0] and slot or nil)
+        if d then
+          local cur = best.Raid
+          if not cur or d > cur.d then best.Raid = { g = g, d = d, own = RG.OwnState(g.id), now = true } end
+        end
+      end
+    end
+  end
   return best
 end
 

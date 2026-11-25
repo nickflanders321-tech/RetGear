@@ -18,6 +18,7 @@ local function lists()
   for _, l in pairs(((RG.SPEC_HAND or {})[cls]) or {}) do out[#out + 1] = l end
   for _, l in pairs(((RG.SPEC_GEAR or {})[cls]) or {}) do out[#out + 1] = l end
   out[#out + 1] = (RG.CLASS_GEAR or {})[cls] or {}
+  out[#out + 1] = (RG.RAID_GEAR or {})[cls] or {}
   return out
 end
 -- Hand-written entries (with notes) win over generated ones.
@@ -132,6 +133,16 @@ local function describe(src, lvl)
     if ew then line("Entrance", GREY .. at(ew) .. "|r"); out.wp = ew; out.wpText = "Show the " .. dun .. " entrance on my map" end
     if dq and dq.prep and dq.prep < (dq.go or 0) then line("Get ready", GREY .. "pick up its quests from level " .. dq.prep .. "|r") end
     if dq and dq.note then line("Tip", GREY .. dq.note .. "|r") end
+  elseif how == "Raid" then
+    local boss, tok = RG.RaidBossOf(src.src)
+    out.title = tok and "Raid token" or "Raid drop"
+    out.icon = 136058
+    line("Raid", "|cffA58BD8" .. (src.zone or "?") .. "|r")
+    line(tok and "Token drops from" or "Drops from", WHITE .. (boss or "?") .. "|r")
+    if tok then line("Token", GOLD .. tok .. "|r" .. GREY .. "  ·  turn it in for this piece|r") end
+    if src.tier then line("Set", GOLD .. src.tier .. " set piece|r") end
+    local ew = RG.WAYPOINTS and RG.WAYPOINTS.dungeons and RG.WAYPOINTS.dungeons[src.zone or ""]
+    if ew then line("Entrance", GREY .. at(ew) .. "|r"); out.wp = ew; out.wpText = "Show the " .. src.zone .. " entrance on my map" end
   elseif how == "Chest" then
     local dun = dungeonOf(src.zone) or src.zone
     out.title = "In a dungeon chest"

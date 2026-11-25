@@ -734,6 +734,7 @@ local function pullScore(g) return RG.ArcadeRareScore(g.finish, g.card.tier) + (
 
 function RG.ArcadeOpenPack(kind, dn)
   local a = store(); if not a or #CARDS == 0 then return nil, "No cards loaded." end
+  RG.__packHold = (GetTime and GetTime() or 0) + 20
   dailyCheck()
   local got, notes, meta = openOne(a, kind, dn)
   if not got then return nil, notes end
@@ -763,6 +764,7 @@ function RG.ArcadeOpenMany()
   dailyCheck()
   local n = RG.ArcadeSealsReady()
   if n < 2 then return RG.ArcadeOpenPack() end
+  RG.__packHold = (GetTime and GetTime() or 0) + 20
   local all, notes, many = {}, {}, { count = 0, new = 0, newPrint = 0, value = 0, bonus = 0 }
   local last
   for _ = 1, n do
@@ -2768,6 +2770,9 @@ function RG.ArcadeShowPull(sender, card, finish)
   if not (card and finish and FNAME[finish]) then return end
   if InCombatLockdown and InCombatLockdown() then return end
   if RG.db and RG.db.arcadeToasts == false then return end
+  if RG.ArcadeRevealPending and RG.ArcadeRevealPending() and C_Timer and C_Timer.After then
+    C_Timer.After(1, function() RG.ArcadeShowPull(sender, card, finish) end); return   -- (not over a pack being turned)
+  end
   local now = GetTime and GetTime() or 0
   RG.__pullAt = RG.__pullAt or {}
   if RG.__pullAt[sender or "?"] and now - RG.__pullAt[sender or "?"] < 20 then return end   -- one card per friend every 20 seconds
@@ -2794,6 +2799,8 @@ end
 -- true while a pack is being opened and a card is still face down (or a Mythic's moment is playing): what the pack won
 -- (an achievement banner, say) waits for this to be over, or it would give the cards away before they are turned
 function RG.ArcadeRevealPending()
+  -- (from the moment a pack is rolled until its screen is up: what it earns would be on screen before its cards)
+  if RG.__packHold and GetTime and GetTime() < RG.__packHold then return true end
   if not (reveal and reveal.IsShown and reveal:IsShown() and reveal.got) then return false end
   if (reveal.flipped or 0) < #reveal.got then return true end
   local m = rawget(reveal, "myth")
@@ -2808,7 +2815,9 @@ function RG.ArcadeMythicMoment(g)
   local m = rawget(reveal, "myth")
   if not m then
     m = CreateFrame("Button", nil, reveal); m:SetAllPoints(reveal); m:SetFrameLevel(lv(reveal) + 60)
-    m.veil = m:CreateTexture(nil, "BACKGROUND"); m.veil:SetAllPoints(m); m.veil:SetColorTexture(0.01, 0.01, 0.03, 0.92)
+    m.veil = m:CreateTexture(nil, "BACKGROUND"); m.veil:SetAllPoints(m); m.veil:SetColorTexture(0.01, 0.01, 0.03, 1)
+    -- (nothing the moment draws may spill past the pack screen, or the game world shows round it)
+    if m.SetClipsChildren then pcall(m.SetClipsChildren, m, true) end
     m.rays = m:CreateTexture(nil, "BORDER"); m.rays:SetTexture(MEDIA .. "Rays"); m.rays:SetBlendMode("ADD"); m.rays:SetSize(900, 900); m.rays:SetPoint("CENTER", 0, 0)
     m.rays2 = m:CreateTexture(nil, "BORDER"); m.rays2:SetTexture(MEDIA .. "Rays"); m.rays2:SetBlendMode("ADD"); m.rays2:SetSize(640, 640); m.rays2:SetPoint("CENTER", 0, 0)
     m.halo = m:CreateTexture(nil, "ARTWORK"); m.halo:SetTexture(MEDIA .. "Glow"); m.halo:SetBlendMode("ADD"); m.halo:SetSize(620, 620); m.halo:SetPoint("CENTER", 0, 0)
@@ -3329,6 +3338,7 @@ local function showReveal(got, notes, meta)
     end)
   end
   reveal.got, reveal.flipped, reveal.notes, reveal.meta, reveal.record = got, 0, notes, meta, false
+  RG.__packHold = nil   -- (the screen's own check takes over from here)
   meta = meta or {}
   -- what kind of pack this is: a pack, a jumbo, a super jumbo (a reward pack is a jumbo with extra promises), or several at once
   local kind = (meta.kind and PACKS[meta.kind]) and meta.kind or "normal"
@@ -3903,7 +3913,7 @@ local function build()
   frame.buyNow = function(many, dn)
     local got, free, notes, meta
     if many == true then got, free, notes, meta = RG.ArcadeOpenMany() else got, free, notes, meta = RG.ArcadeOpenPack(type(many) == "string" and many or nil, dn) end
-    if not got then say(free or "") return end
+    if not got then RG.__packHold = nil; say(free or "") return end
     if meta and meta.bonus then playSound(nil, nil, "reward") end
     showReveal(got, notes, meta); RG.ArcadeRefresh(true)
   end

@@ -37,6 +37,12 @@ scored with that spec's weights and weapon model. Tanks (`model = "tank"`) get o
 shields and value Stamina, armor, Defense, dodge, parry and block; healers value +healing, mp5
 and Intellect; specs can narrow the class's weapons (daggers for Assassination and Subtlety).
 
+Without a class filter it also writes `Classes/RaidGear.lua`: raid loot (cMaNGOS loot tables, including
+references and chests), tier set pieces with their tokens, and the raid and boss order. It unions all of
+the class's specs from `--specs`; add `--sims /tmp/wowsims` to keep the wowsims preset raid items.
+Raid armor below the class's best type is dropped for damage and tank specs (kept, flagged `low = true`, for healer and caster
+specs, which the add-on shows only to a caster main spec; a piece a non-caster sim set wears is exempt). The class gear files are unchanged by this.
+
 Hand-written entries in each class's `guide` table (tips, Forever-only items, crafts) take
 priority over generated ones.
 

@@ -23,7 +23,7 @@ Usage:
   lua5.1 specs_dump.lua <Waypath+ folder> /tmp/specs.json
   git clone --depth 1 -b data/itemdb https://github.com/nickflanders321-tech/RetGear.git /tmp/itemdb   (LibItemDB, MIT)
   git clone --depth 1 -b data/wago https://github.com/nickflanders321-tech/RetGear.git /tmp/wago   (the client's DB2 tables, .github/workflows/fetch-wago.yml)
-  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json] [--itemdb /tmp/itemdb] [--wago /tmp/wago]
+  python3 gen.py /tmp/classic.sql /tmp/forever_gear.json /tmp/qdb <Waypath+ folder> [Class ...] [--specs /tmp/specs.json] [--itemdb /tmp/itemdb] [--wago /tmp/wago] [--sims /tmp/wowsims]
 
 With --wowsims <wowsims/forever assets/database/db.json> (MIT, (c) the wowsims team), what that simulator's item database says about
 where an item comes from fills the gaps in QuestieDB's: a piece QuestieDB lists no source for, but wowsims says drops from a
@@ -43,6 +43,23 @@ SPECS_JSON = None
 ITEMDB = None
 WAGO = None
 WOWSIMS = None
+SIMS = None   # the wowsims/forever checkout: its gear presets (a class's sim "best" sets) keep their raid pieces on the raid lists
+if "--sims" in args:
+    i = args.index("--sims"); SIMS = args[i + 1]; del args[i:i + 2]
+# a piece of armor below the class's best type (leather for a Warrior, cloth for a Hunter) loses armor: damage and tank specs skip it, healer
+# and caster specs keep it, and so does any piece a damage or tank spec's own wowsims set (--sims) wears
+CASTER_SPECS = {("paladin", "holy"), ("shaman", "elemental"), ("shaman", "restoration"), ("druid", "balance"), ("druid", "restoration")}
+CASTER_CLASSES = {"priest", "mage", "warlock"}
+import glob, json, os
+from collections import defaultdict
+SIM_LOW = defaultdict(set)   # class token -> item ids that a non-caster spec's sim set wears
+if SIMS:
+    for _f in glob.glob(os.path.join(SIMS, "ui", "specs", "*", "*", "gear_sets", "*.gear.json")):
+        _p = _f.replace("\\", "/").split("/")
+        _cls, _spec = _p[-4], _p[-3]
+        if _spec == "shared" or _cls in CASTER_CLASSES or (_cls, _spec) in CASTER_SPECS: continue
+        for _it in json.load(open(_f)).get("items", []):
+            if _it.get("id"): SIM_LOW[_cls.upper()].add(int(_it["id"]))
 if "--wowsims" in args:
     i = args.index("--wowsims"); WOWSIMS = args[i + 1]; del args[i:i + 2]
 if "--wago" in args:
@@ -135,6 +152,85 @@ if "VendorTemplateId" in ccol:
 for it, ents in list(VEND.items()):
     for e in list(ents):
         if e in VTEMPLATE: ents |= VTEMPLATE[e]
+# raid loot (cMaNGOS): which raid boss (or raid trash) drops which item, and the kill order within each raid
+RAID_MAPS = {409: "Molten Core", 469: "Blackwing Lair", 249: "Onyxia's Lair", 309: "Zul'Gurub", 509: "Ruins of Ahn'Qiraj",
+             531: "Temple of Ahn'Qiraj", 533: "Naxxramas"}
+RAID_BOSSES = {
+    "Molten Core": ["Lucifron", "Magmadar", "Gehennas", "Garr", "Shazzrah", "Baron Geddon", "Sulfuron Harbinger", "Golemagg the Incinerator", "Majordomo Executus", "Ragnaros"],
+    "Onyxia's Lair": ["Onyxia"],
+    "Blackwing Lair": ["Razorgore the Untamed", "Vaelastrasz the Corrupt", "Broodlord Lashlayer", "Firemaw", "Ebonroc", "Flamegor", "Chromaggus", "Nefarian"],
+    "Zul'Gurub": ["High Priestess Jeklik", "High Priest Venoxis", "High Priestess Mar'li", "Bloodlord Mandokir", "Gri'lek", "Hazza'rah", "Renataki", "Wushoolay",
+                  "High Priest Thekal", "High Priestess Arlokk", "Jin'do the Hexxer", "Hakkar"],
+    "Ruins of Ahn'Qiraj": ["Kurinnaxx", "General Rajaxx", "Moam", "Buru the Gorger", "Ayamiss the Hunter", "Ossirian the Unscarred"],
+    "Temple of Ahn'Qiraj": ["The Prophet Skeram", "Battleguard Sartura", "Fankriss the Unyielding", "Princess Yauj", "Vem", "Lord Kri", "Viscidus", "Princess Huhuran",
+                            "Emperor Vek'lor", "Emperor Vek'nilash", "Ouro", "C'Thun"],
+    "Naxxramas": ["Anub'Rekhan", "Grand Widow Faerlina", "Maexxna", "Noth the Plaguebringer", "Heigan the Unclean", "Loatheb", "Instructor Razuvious",
+                  "Gothik the Harvester", "The Four Horsemen", "Patchwerk", "Grobbulus", "Gluth", "Thaddius", "Sapphiron", "Kel'Thuzad"],
+}
+RAID_EXTRA_IDS = {11502, 11583, 15517, 14515, 15082, 15083, 15084, 15085, 15989}   # bosses the game summons or brings in by script: no spawn in the raid's map (Ragnaros, Nefarian, Ouro, Arlokk, the Edge of Madness, Sapphiron)
+_cc = columns(sql, "creature_template")
+_ct = {int(r[_cc.index("Entry")]): dict(zip(_cc, r)) for r in rows(sql, "creature_template")}
+_spawn = defaultdict(set)   # creature id -> raid maps it spawns in
+_cr = columns(sql, "creature")
+for r in rows(sql, "creature"):
+    dd = dict(zip(_cr, r))
+    if int(dd["map"]) in RAID_MAPS: _spawn[int(dd["id"])].add(int(dd["map"]))
+_loot = {}
+for _t in ("creature_loot_template", "reference_loot_template", "gameobject_loot_template"):
+    _lc = columns(sql, _t)
+    _loot[_t] = defaultdict(list)
+    for r in rows(sql, _t):
+        dd = dict(zip(_lc, r))
+        _loot[_t][int(dd["entry"])].append((int(dd["item"]), int(dd["mincountOrRef"]), dd.get("comments") or ""))
+def _resolve(entry, tbl="creature_loot_template", seen=None):
+    seen = set() if seen is None else seen
+    out = set()
+    for item, ref, cmt in _loot[tbl].get(entry, []):
+        # (the "NPC LOOT" references are the world's random blue and green pool every boss rolls on: Master's Hat from Onyxia is not Onyxia's gear)
+        if cmt.startswith("NPC LOOT"): continue
+        if ref < 0:
+            if -ref in seen: continue
+            seen.add(-ref); out |= _resolve(-ref, "reference_loot_template", seen)
+        else: out.add(item)
+    return out
+RAID_SRC = defaultdict(list)   # item id -> [(raid, boss or None for trash)]
+_byname = defaultdict(list)
+for _e, _d in _ct.items():
+    if int(_d.get("LootId") or 0) and (_e in _spawn or _e in RAID_EXTRA_IDS): _byname[_d["Name"]].append(_e)
+RAID_BOSS_IDS = {}
+for _raid, _names in RAID_BOSSES.items():
+    for _n in _names:
+        ids_ = [e for e in _byname.get(_n, []) if e in RAID_EXTRA_IDS or any(RAID_MAPS[m] == _raid for m in _spawn[e])]
+        if not ids_ and _n in ("The Four Horsemen", "Majordomo Executus"): continue
+        if not ids_: print("raid boss without loot: %s (%s)" % (_n, _raid), file=sys.stderr); continue
+        for e in ids_:
+            RAID_BOSS_IDS[e] = (_raid, _n)
+            for it in _resolve(int(_ct[e]["LootId"])):
+                if (_raid, _n) not in RAID_SRC[it]: RAID_SRC[it].append((_raid, _n))
+# bosses that leave a chest instead of a corpse's loot: Naxxramas's Four Horsemen, Molten Core's Majordomo Executus
+for _go, (_raid, _n) in {181366: ("Naxxramas", "The Four Horsemen"), 16719: ("Molten Core", "Majordomo Executus")}.items():
+    for it in _resolve(_go, "gameobject_loot_template"):
+        if (_raid, _n) not in RAID_SRC[it]: RAID_SRC[it].append((_raid, _n))
+for _e, _m in _spawn.items():
+    if _e in RAID_BOSS_IDS or _e not in _ct or not int(_ct[_e].get("LootId") or 0) or int(_ct[_e]["Rank"]) >= 3: continue
+    for it in _resolve(int(_ct[_e]["LootId"])):
+        for m in _m:
+            if (RAID_MAPS[m], None) not in RAID_SRC[it]: RAID_SRC[it].append((RAID_MAPS[m], None))
+# (wowsims/forever's database says Fankriss the Unyielding drops Pauldrons of the Unrelenting; cMaNGOS lists no source for it)
+for it, srcs in {21639: [("Temple of Ahn'Qiraj", "Fankriss the Unyielding")]}.items():
+    for x in srcs:
+        if x not in RAID_SRC[it]: RAID_SRC[it].append(x)
+# tier tokens: a quest turns the item in for a set piece (Naxxramas's "Desecrated ..." items, Ahn'Qiraj's Qiraji drops)
+_qc = columns(sql, "quest_template")
+RAID_TOKEN = defaultdict(list)   # set piece id -> [token item ids]
+for r in rows(sql, "quest_template"):
+    dd = dict(zip(_qc, r))
+    rew = {int(dd["RewItemId%d" % k] or 0) for k in range(1, 5)} | {int(dd["RewChoiceItemId%d" % k] or 0) for k in range(1, 7)}
+    req = [int(dd["ReqItemId%d" % k] or 0) for k in range(1, 5) if int(dd["ReqItemId%d" % k] or 0)]
+    for it in rew:
+        if it:
+            for t in req:
+                if t not in RAID_TOKEN[it]: RAID_TOKEN[it].append(t)
 del sql
 print("items %d, spells %d, trainer crafts %d, vendor items %d" % (len(items), len(spells), len(TRAINER), len(VEND)), file=sys.stderr)
 
@@ -366,6 +462,13 @@ ARMOR_INV = {1: "Head", 2: "Neck", 3: "Shoulder", 5: "Chest", 20: "Chest", 6: "W
 MODEL_SLOTS = {"2H": {"2H"}, "DW": {"Main Hand", "Off Hand"}, "ranged": {"Ranged", "2H"},
                "caster": {"2H", "Main Hand", "Off Hand", "Ranged"}, "feral": {"2H"}, "tank": {"Main Hand", "Off Hand"}}
 
+RAID_RULE = False
+def lower_armor(d, C, sub, eff):
+    """Is this armor a lower type than the class could wear at that item level, for a spec that should skip it?"""
+    if C["model"] == "caster": return False
+    if int(d["entry"]) in SIM_LOW.get(C["tok"], ()): return False
+    return any(t > sub and (lv or 1) <= max(1, eff) for t, lv in C["armor"].items())
+
 def eligible(d, C):
     cls, sub, inv = int(d["class"]), int(d["subclass"]), int(d["InventoryType"])
     slots = MODEL_SLOTS[C["model"]]
@@ -394,7 +497,12 @@ def eligible(d, C):
                 lvl_from = C["armor"].get(sub)
                 if lvl_from is None: return None
                 # (a piece with no level requirement is judged by its item level, as pick() does: Tier 0.5's plate and mail has none)
-                if lvl_from > 1 and (int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)) < lvl_from: return None
+                eff = int(d["RequiredLevel"]) or max(1, int(d["ItemLevel"]) - 5)
+                if lvl_from > 1 and eff < lvl_from: return None
+                # level 60 raid gear only: a lower armor type than the class wears (leather for a Warrior, cloth for a Hunter) loses armor,
+                # so damage and tank specs skip it; healer and caster specs keep cloth and leather spell gear. (Levelling lists keep
+                # lower types: mail and plate pieces are scarce, and early armor values are small.)
+                if RAID_RULE and lower_armor(d, C, sub, eff): return None
             elif sub not in (0, 1): return None
             slot = ARMOR_INV[inv]
         else: return None
@@ -843,10 +951,112 @@ def entry(c):
     if c.get("tier"): extra += ", tier = %s" % lua_str(c["tier"])
     if c.get("real"): extra += ", real = %d" % c["real"]
     if c.get("alt"): extra += ", alt = true"
+    if c.get("tk"): extra += ", tk = %d" % c["tk"]
+    if c.get("low"): extra += ", low = true"
     if c.get("ws"): extra += ", ws = %s" % lua_str(c["ws"])
     # the name too: the game never sends some items' details (the list shows this name instead of "Loading item")
     return "  { id = %d, slot = %s, lvl = %d, how = %s, src = %s, zone = %s, score = %d%s, name = %s, gen = true },\n" % (
         c["id"], lua_str(c["slot"]), c["lvl"], lua_str(c["how"]), lua_str(c["src"]), lua_str(c["zone"] or ""), round(c["score"]), extra, lua_str(c["name"]))
+
+# ---------------------------------------------------------------------------
+# Raid gear: boss drops (and the tokens Naxxramas and Ahn'Qiraj's tier sets are bought with), for level 60
+# ---------------------------------------------------------------------------
+# class token -> (tier label, set name, item set id): the game's own item sets (cMaNGOS item_template.itemset)
+TIER_SETS = {
+    "Tier 0": {"WARRIOR": ("Battlegear of Valor", 189), "PALADIN": ("Lightforge Armor", 188), "HUNTER": ("Beastmaster's Garb", 186), "ROGUE": ("Shadowcraft Armor", 184),
+               "PRIEST": ("Devout Raiment", 182), "SHAMAN": ("The Elements", 187), "MAGE": ("Magister's Regalia", 181), "WARLOCK": ("Dreadmist Raiment", 183), "DRUID": ("Wildheart Raiment", 185)},
+    "Tier 1": {"WARRIOR": ("Battlegear of Might", 209), "PALADIN": ("Lawbringer Armor", 208), "HUNTER": ("Giantstalker Armor", 206), "ROGUE": ("Nightslayer Armor", 204),
+               "PRIEST": ("Vestments of Prophecy", 202), "SHAMAN": ("Earthfury", 207), "MAGE": ("Arcanist Regalia", 201), "WARLOCK": ("Felheart Raiment", 203), "DRUID": ("Cenarion Raiment", 205)},
+    "Tier 2": {"WARRIOR": ("Battlegear of Wrath", 218), "PALADIN": ("Judgement Armor", 217), "HUNTER": ("Dragonstalker Armor", 215), "ROGUE": ("Bloodfang Armor", 213),
+               "PRIEST": ("Vestments of Transcendence", 211), "SHAMAN": ("The Ten Storms", 216), "MAGE": ("Netherwind Regalia", 210), "WARLOCK": ("Nemesis Raiment", 212), "DRUID": ("Stormrage Raiment", 214)},
+    "Tier 2.5": {"WARRIOR": ("Conqueror's Battlegear", 496), "PALADIN": ("Avenger's Battlegear", 505), "HUNTER": ("Striker's Garb", 509), "ROGUE": ("Deathdealer's Embrace", 497),
+                 "PRIEST": ("Vestments of the Oracle", 507), "SHAMAN": ("Stormcaller's Garb", 501), "MAGE": ("Enigma Vestments", 503), "WARLOCK": ("Doomcaller's Attire", 499), "DRUID": ("Genesis Raiment", 493)},
+    "Tier 3": {"WARRIOR": ("Dreadnaught's Battlegear", 523), "PALADIN": ("Redemption Armor", 528), "HUNTER": ("Cryptstalker Armor", 530), "ROGUE": ("Bonescythe Armor", 524),
+               "PRIEST": ("Garb of Faith", 525), "SHAMAN": ("The Earthshatterer", 527), "MAGE": ("Frostfire Regalia", 526), "WARLOCK": ("Plagueheart Raiment", 529), "DRUID": ("Dreamwalker Raiment", 521)},
+}
+SET_TIER = {v[1]: t for t, cl in TIER_SETS.items() for v in cl.values()}
+TIER_RAID = {"Tier 1": "Molten Core", "Tier 2": "Blackwing Lair", "Tier 2.5": "Temple of Ahn'Qiraj", "Tier 3": "Naxxramas"}
+
+def raid_sources(iid):
+    """(raid, boss or None, token item name or None) for every place the item comes from: its own drop, or the token it is bought with"""
+    d = items[iid]
+    own = RAID_SRC.get(iid, [])
+    tier = SET_TIER.get(int(d.get("itemset") or 0))
+    out = []
+    if own:
+        # (raid trash is only listed for epic gear and tier set pieces: the rest of its drops are blues nobody farms)
+        for raid, boss in own:
+            if boss is None and not (tier or int(d["Quality"]) >= 4): continue
+            out.append((raid, boss, None, None))
+    if not out:
+        best, trash = [], []
+        for t in RAID_TOKEN.get(iid, []):
+            if t not in items: continue
+            if re.search(r"^Wartorn|Scarab$|^Idol of|Idol$", items[t]["name"]): continue   # (crafting scraps and Ahn'Qiraj's scarab and idol trade-ins are not the token)
+            for raid, boss in RAID_SRC.get(t, []):
+                (best if boss else trash).append((raid, boss, items[t]["name"], t))
+        out = best or trash
+    # (nothing from the Ahn'Qiraj scarab and idol trash for a tier piece that a boss's token also buys)
+    seen, res = set(), []
+    for x in out:
+        if x not in seen: seen.add(x); res.append(x)
+    return res
+
+def raid_entries(C, model=None, ws=None):
+    """Level 60 raid gear for the class (default weapon setup, or the weapons of another setup when ws is given)"""
+    global CLASS_BIT
+    CLASS_BIT = C["bit"]
+    global RAID_RULE
+    C2 = C if model is None else dict(C, model=model, shield=(ws == "SB"))
+    out = []
+    for iid, d in items.items():
+        if iid not in RAID_SRC and iid not in RAID_TOKEN: continue
+        RAID_RULE = True
+        try: slot = eligible(d, C2)
+        finally: RAID_RULE = False
+        if not slot: continue
+        if ws and slot not in WEAPON_SLOTS: continue
+        if int(d["Quality"]) < 3: continue
+        srcs = raid_sources(iid)
+        if not srcs: continue
+        sc, st, stat_only = score(d, slot, C2, 60)
+        if sc <= 0: continue
+        if slot in ARMOR_INV.values() and stat_only <= 1.0: continue
+        raid, boss, tokn, tokid = srcs[0]
+        tier = SET_TIER.get(int(d.get("itemset") or 0))
+        if tier and TIER_SETS[tier].get(C["tok"], (None, 0))[1] != int(d["itemset"]): tier = None
+        also = []
+        for r2, b2, t2, _t in srcs[1:4]:
+            also.append({"how": "Raid", "src": (b2 or "Raid trash") + ((" (" + t2 + ")") if t2 else ""), "zone": r2})
+        req = min(60, int(d["RequiredLevel"]) or 60)
+        low = False
+        if int(d["class"]) == 4 and int(d["subclass"]) in (1, 2, 3, 4) and slot in ARMOR_INV.values() and int(d["InventoryType"]) != 16:
+            low = any(t > int(d["subclass"]) and (lv or 1) <= 60 for t, lv in C["armor"].items()) and int(d["entry"]) not in SIM_LOW.get(C["tok"], ())
+        out.append({"id": iid, "name": d["name"], "slot": slot, "lvl": max(req, 58), "score": sc, "how": "Raid", "low": low or None,
+                    "src": (boss or "Raid trash") + ((" (" + tokn + ")") if tokn else ""), "zone": raid, "tier": tier, "also": also, "ws": ws, "alt": True, "tk": tokid})
+    out.sort(key=lambda c: (c["zone"], c["slot"], -c["score"]))
+    return out
+
+RAID_KEEP = set()
+if SIMS:
+    for _f in glob.glob(os.path.join(SIMS, "ui", "specs", "*", "*", "gear_sets", "*.gear.json")):
+        for _it in json.load(open(_f)).get("items", []):
+            if _it.get("id"): RAID_KEEP.add(int(_it["id"]))
+RAID_OUT = {}
+RAID_SPECS = json.load(open(SPECS_JSON)) if SPECS_JSON else {}
+def prune_raid(lst):
+    """Keep what could matter: every piece of the class's own tier sets, and per slot (and weapon setup) the best few
+    pieces within 60% of the slot's best score (the Gear tab weighs each against what you wear)"""
+    keep, by = [], defaultdict(list)
+    for c in lst:
+        if c.get("tier") or c["id"] in RAID_KEEP: keep.append(c)
+        else: by[(c["slot"], c.get("ws"))].append(c)
+    for k, cs in by.items():
+        cs.sort(key=lambda c: -c["score"])
+        top = cs[0]["score"]
+        keep += [c for c in cs[:10] if c["score"] >= top * 0.6]
+    keep.sort(key=lambda c: (c["zone"], c["slot"], -c["score"]))
+    return keep
 
 CLASSES = {}
 for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
@@ -863,6 +1073,25 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
             ws = [dict(c, ws=setup) for c in pick(C2, ally=ally, only_slots=WEAPON_SLOTS) if c["slot"] in MODEL_SLOTS[C2["model"]]]
             lst += ws
             lst.sort(key=lambda c: (c["lvl"], c["slot"]))
+    # level 60: the raid gear (for both factions), for the class's own weapon setup and every other setup's weapons
+    raid = raid_entries(C)
+    for setup in SETUPS.get(C["tok"], ()):
+        raid += raid_entries(C, SETUP_MODEL[setup], setup)
+    RAID_OUT[C["tok"]] = prune_raid(raid)
+    # every other spec of the class (Feral druids want other pieces than Balance): a piece joins when it is one of that spec's best too
+    for sp in RAID_SPECS.get(C["tok"], []):
+        if sp.get("main"): continue
+        S = dict(C)
+        S["w"] = {k: float(v) for k, v in (sp.get("weights") or {}).items()}
+        S["model"] = sp.get("model") or C["model"]
+        if sp.get("weapons"): S["weapons"] = set(sp["weapons"])
+        S["shield"] = bool(sp.get("shield"))
+        S["kind"] = sp.get("kind")
+        have = {(c["id"], c.get("ws")) for c in RAID_OUT[C["tok"]]}
+        more = [c for c in prune_raid(raid_entries(S)) if (c["id"], c.get("ws")) not in have]
+        RAID_OUT[C["tok"]] += more
+    RAID_OUT[C["tok"]].sort(key=lambda c: (c["zone"], c["slot"], -c["score"]))
+    print("%-8s raid pieces %d of %d" % (C["name"], len(RAID_OUT[C["tok"]]), len(raid)), file=sys.stderr)
     cnt = defaultdict(int)
     for c in picked: cnt[c["slot"]] += 1
     print("%-8s %-14s picked %3d (Alliance %3d): %s" % (C["name"], C["spec"], len(picked), len(picked_a), dict(sorted(cnt.items()))), file=sys.stderr)
@@ -881,6 +1110,39 @@ for path in sorted(glob.glob(os.path.join(addon_dir, 'Classes', '*.lua'))):
         f.write("RG.CLASS_GEAR_A.%s = {\n" % C["tok"])
         for c in picked_a: f.write(entry(c))
         f.write("}\n")
+
+# ---------------------------------------------------------------------------
+# Classes/RaidGear.lua: level 60 raid gear per class, the raids' boss order, and every class's tier sets
+# ---------------------------------------------------------------------------
+if not ONLY:
+    SLOT_ORDER = ["Head", "Shoulder", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring"]
+    RAID_SIZE = {"Molten Core": 40, "Onyxia's Lair": 40, "Blackwing Lair": 40, "Zul'Gurub": 20, "Ruins of Ahn'Qiraj": 20, "Temple of Ahn'Qiraj": 40, "Naxxramas": 40}
+    out = ["-- GENERATED by tools/gear/gen.py: do not edit by hand.",
+           "-- Level 60 raid gear for every class (drops from the cMaNGOS loot tables; Naxxramas's and Ahn'Qiraj's tier pieces are bought",
+           "-- with the token a boss drops), the raids' boss order, and each class's tier sets (the game's own item sets).",
+           "-- Scored with Classes/<Class>.lua's weights; the same list serves both factions.",
+           "local _, RG = ...",
+           "RG.RAID_ORDER = {"]
+    for raid, bosses in RAID_BOSSES.items():
+        out.append("  { raid = %s, size = %d, bosses = { %s } }," % (lua_str(raid), RAID_SIZE[raid], ", ".join(lua_str(b) for b in bosses)))
+    out.append("}")
+    out.append("RG.RAID_GEAR = RG.RAID_GEAR or {}")
+    out.append("RG.TIER_SETS = RG.TIER_SETS or {}")
+    for tok in sorted(RAID_OUT):
+        out.append("RG.RAID_GEAR.%s = {" % tok)
+        for c in RAID_OUT[tok]: out.append(entry(c).rstrip("\n"))
+        out.append("}")
+        out.append("RG.TIER_SETS.%s = {" % tok)
+        for tier, cl in TIER_SETS.items():
+            if tok not in cl: continue
+            name, sid = cl[tok]
+            ps = [i for i, d in items.items() if int(d.get("itemset") or 0) == sid and int(d["class"]) == 4]
+            ps.sort(key=lambda i: (SLOT_ORDER.index(ARMOR_INV.get(int(items[i]["InventoryType"]), "Ring")) if ARMOR_INV.get(int(items[i]["InventoryType"])) in SLOT_ORDER else 99, i))
+            out.append("  { tier = %s, name = %s,%s ids = { %s } }," % (lua_str(tier), lua_str(name),
+                       (" raid = %s," % lua_str(TIER_RAID[tier])) if tier in TIER_RAID else "", ", ".join(str(i) for i in ps)))
+        out.append("}")
+    with open(os.path.join(addon_dir, "Classes", "RaidGear.lua"), "w", encoding="utf-8") as f: f.write("\n".join(out) + "\n")
+    print("wrote Classes/RaidGear.lua", file=sys.stderr)
 
 # ---------------------------------------------------------------------------
 # 2nd specs: gear to collect from level 30 for every other spec

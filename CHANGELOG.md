@@ -3,6 +3,16 @@
 ## v1.62.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
+## Unreleased
+- **Cards: a pack reveal is no longer spoiled or glitchy.** An achievement or quest banner (or a friend's pull) earned by a pack now waits from the moment the pack is rolled until every card is turned and any Mythic moment is over, so it can't name what is still face down. The Mythic screen's dungeon picture is clipped to the pack screen and its veil is fully opaque, so the game world and the pack screen's text no longer show through round or behind it.
+- **A new Raid & tier tab in Gear (level 58 and up, every class).**
+  - **Tier sets:** a grid like the Dungeon Journal's: one row per tier (0, 0.5, 1, 2, 2.5 and 3), one icon per slot (head to ring). A coloured border shows what you have: green worn, blue in your bags or bank, gold with its token in your bags, grey not yet. The boss or quest sits under each icon, and a green percentage on a grey icon is how much it would upgrade you. Hover for the item, click for where it drops, Shift-click to link, Ctrl-click to preview. Click a row to see that set's bonuses and the next piece worth getting.
+  - **Upgrades:** your best next raid upgrade, the best raid piece for each slot and the route to it. Click a slot to see every route to it (raid, dungeon, vendor, battleground, crafting), ranked by gain.
+  - **Raids:** Molten Core, Onyxia, Blackwing Lair, Zul'Gurub, AQ20, AQ40 and Naxxramas boss by boss, with the drops that upgrade you, the token each boss gives, the kill order for the most upgrades and a check mark for bosses you have killed this week.
+  - Loot comes from the game's loot tables and the wowsims sets for your spec. Tier 1 and 2 pieces drop from bosses; Tier 2.5 and 3 are bought with tokens. Raid items also show in the source groups and the item-source popup. The Gear tab itself is unchanged.
+  - **Right armor only:** every raid and tier piece was checked against the game's item data for your class (class restriction, armor type, weapon type, relics). Armor below your class's best type (leather for a Warrior, cloth for a Hunter) is not offered to damage and tank specs; Holy, Restoration, Elemental and Balance keep their cloth and leather spell gear, and so does anything a damage spec's own simulator set wears.
+  - Gaps: Majordomo and the Four Horsemen loot comes from chests, and the Mage's Tier 0 shoulders have no source. Set bonus text is read from the game's tooltips.
+
 ## v1.62.0
 - **Tier sets and everything Pix Xizzix sells are now in the gear lists, for every class.**
   - **Why they were missing:** the list builder threw out any plate or mail piece with no level requirement before judging it, and Tier 0.5's pieces (Soulforge, Heroism, Beastmaster's, the Five Thunders' and the others) have none. Warriors, Paladins, Hunters and Shamans lost the whole set. The upgrade-path rule also hid most of what the other classes could buy.
