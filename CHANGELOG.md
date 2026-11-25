@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.62.2
+- Engineering 280-300: the Thorium Shells step now matches the updated WoW Forever guide (its extra note about the shells was dropped).
+- Quest, gear and card data updated from WoW Forever's latest game data.
+
 ## v1.62.1
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
