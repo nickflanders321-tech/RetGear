@@ -1080,8 +1080,26 @@ function RG.ZoneName()
     if ok and iid and INSTANCE_EN[iid] then res = INSTANCE_EN[iid] end
   elseif C_Map and C_Map.GetBestMapForUnit then
     if not mapToZone then
+      -- ZONE_MAPS also names places inside a zone (Ratchet, Auberdine, Valanaar...) with the zone's map: for each map,
+      -- the route's zone name wins, then the map's own name, then the first alphabetically (pairs() order is random,
+      -- and a player anywhere in the Barrens used to be "in Ratchet", which no route entry is)
       mapToZone = {}
-      for z, m in pairs(RG.ZONE_MAPS or {}) do mapToZone[m] = z end
+      local routeZone = {}
+      for _, r in ipairs(RG.ROUTE or {}) do routeZone[r.zone] = true end
+      local function rank(z, m)
+        if routeZone[z] then return 0 end
+        local info = C_Map.GetMapInfo and C_Map.GetMapInfo(m)
+        if info and info.name == z then return 1 end
+        return 2
+      end
+      for z, m in pairs(RG.ZONE_MAPS or {}) do
+        local cur = mapToZone[m]
+        if not cur then mapToZone[m] = z
+        else
+          local a, b = rank(z, m), rank(cur, m)
+          if a < b or (a == b and z < cur) then mapToZone[m] = z end
+        end
+      end
       for m, z in pairs(CITY_EN) do mapToZone[m] = z end
     end
     local m = C_Map.GetBestMapForUnit("player")

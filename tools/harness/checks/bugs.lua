@@ -144,6 +144,17 @@ return {
     end,
   },
   {
+    name = "zone-name-is-the-zone",
+    about = "standing anywhere in a zone, the add-on names the zone, not a place inside it (Ratchet, Valanaar...)",
+    race = "Orc", class = "WARRIOR", level = 20,
+    run = function(T)
+      for _, z in ipairs({ { 1413, "The Barrens" }, { 2548, "Riverglades" }, { 1439, "Darkshore" }, { 2482, "Mount Hyjal" } }) do
+        T.go({ z[1], 50, 50 })
+        T.eq(T.RG.ZoneName(), z[2], "on map " .. z[1] .. ", RG.ZoneName()")
+      end
+    end,
+  },
+  {
     name = "chain-start-in-route",
     about = "every quest in a step can be reached: its earlier quests are in the route (Undead, Barrens)",
     race = "Scourge", class = "PALADIN", level = 20,
