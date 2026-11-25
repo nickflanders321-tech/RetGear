@@ -9,6 +9,13 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
+- Request (feature, asked for and approved by the owner on 2026-11-25, to build after the route fixes): an optional detailed view of the current
+  step that explains it better: the quests and objectives in it, where to go, and a 3D model of the mob (or the item's
+  icon / the object) so it's easier to find in the world. Our own look, not a copy of another add-on's.
+- Request (feature, asked for and approved by the owner on 2026-11-25, to build after the route fixes): item drop rates on a step's tooltip in the
+  tracker and in the detailed view above ("Gnoll Paw: 35% from Riverpaw Gnoll"). The rates are in Polestar forever-db's
+  item sources (data/item_source.jsonl, CC BY 4.0; tools/routes/gen.py and tools/objectives/gen.py read it already for
+  quest-start items) and cMaNGOS's creature_loot_template; Objectives.lua's item objectives would carry them.
 
 1. **Mount Hyjal still has no quests (Riverglades done in v1.31.0, Shen'dralas in v1.32.0):** QuestieDB's Forever data has only one
    Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship
