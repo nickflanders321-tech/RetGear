@@ -978,7 +978,8 @@ G.IsModifiedClick = function(what) if what == "DRESSUP" then return W.mods.ctrl 
 G.GetBindingKey = function() return nil end
 G.GetBindingAction = function() return "" end
 G.GetAddOnMetadata = function(name, field) if name == "Waypath" and field == "Version" then return me.version end end
-G.IsAddOnLoaded = function(name) return name == "Waypath" end
+W.otherAddons = {}   -- other add-ons a check says are loaded (e.g. the old "RetGear")
+G.IsAddOnLoaded = function(name) return name == "Waypath" or W.otherAddons[name] == true end
 G.GetItemCount = function() return 0 end
 G.GetItemInfo = function() return nil end             -- nothing is in the item cache at login
 G.GetItemInfoInstant = function(id)
@@ -1183,6 +1184,43 @@ function W.loadFile(root, path, addonName, ns)
   if not chunk then addError(W.short(err), path, "") return false end
   setfenv(chunk, E)
   return W.call("loading " .. path, chunk, addonName, ns)
+end
+
+-- Every piece of text showing on a frame and everything inside it (font strings, in creation order), for checks.
+function W.visibleTexts(f, out)
+  out = out or {}
+  local st = f and S[f]
+  if not st or not visible(f) then return out end
+  for _, r in ipairs(st.regions) do
+    local rs = S[r]
+    if rs and rs.type == "FontString" and rs.shown and rs.text and rs.text ~= "" then out[#out + 1] = rs.text end
+  end
+  for _, c in ipairs(st.children) do W.visibleTexts(c, out) end
+  return out
+end
+
+-- Lua source for a value (tables, strings, numbers, booleans; functions and cycles are left out)
+function W.serialize(v)
+  local seen = {}
+  local function ser(x, ind)
+    local t = type(x)
+    if t == "string" then return string.format("%q", x) end
+    if t == "number" or t == "boolean" or t == "nil" then return tostring(x) end
+    if t ~= "table" or seen[x] then return "nil" end
+    seen[x] = true
+    local keys = {}
+    for k in pairs(x) do if type(k) == "string" or type(k) == "number" then keys[#keys + 1] = k end end
+    table.sort(keys, function(a, b) if type(a) == type(b) then return a < b end return type(a) == "number" end)
+    local parts = {}
+    for _, k in ipairs(keys) do
+      local kv = type(k) == "number" and ("[" .. k .. "]") or ("[" .. string.format("%q", k) .. "]")
+      local val = x[k]
+      if type(val) ~= "function" and type(val) ~= "userdata" and type(val) ~= "thread" then parts[#parts + 1] = ind .. "  " .. kv .. " = " .. ser(val, ind .. "  ") .. ",\n" end
+    end
+    seen[x] = nil
+    return "{\n" .. table.concat(parts) .. ind .. "}"
+  end
+  return ser(v, "")
 end
 
 -- Slash commands: what the game does when you type "/wp next" in chat.

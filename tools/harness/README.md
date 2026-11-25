@@ -154,6 +154,49 @@ data has neither. So the levels the bot reaches are approximate. A problem that 
 (travel between them takes a flat 5 minutes). There are no mob drops, dungeons or Auction House, and quest rewards
 are only the ones the gear lists know.
 
+Note: the bot follows the leveling route (`RG.CurrentRouteEntry`, `RG.NextStep`...), which in game is the
+"Leveling route (WIP)" setting, `routeGuide`. That setting is off by default, so its problems reach the players
+who switch it on.
+
+## Hand-written checks (`--checks`)
+
+```sh
+lua5.1 tools/harness/run.lua --checks                        # all of them (~15 seconds)
+lua5.1 tools/harness/run.lua --checks --only reload          # those whose name contains "reload"
+lua5.1 tools/harness/run.lua --checks --verbose              # also why each known bug fails
+```
+
+Small, exact tests in the simulated world, for what the bot can't judge. They live in `checks/*.lua`, and
+`checks.lua` describes the format. Each check runs in a fresh game of its own. A check with a `reload` part runs a
+second time, as a `/reload`: it uses the first run's saved data (`WaypathDB`) and the same world (quests done,
+level, bags).
+
+- `checks/tracker.lua`:
+  - an accepted quest is on the tracker with its progress;
+  - progress and "hand in" show on the tracker;
+  - the arrow goes to the objective, then to the hand-in;
+  - walking closer lowers the distance shown.
+- `checks/reload.lua`:
+  - hand-ticked steps, settings and quest progress survive a `/reload`;
+  - an old RetGear install's data moves into `WaypathDB`, once.
+- `checks/bugs.lua`: one check per bug the bot found, each marked `known` with the reason. A known bug that fails
+  shows as `KNOWN`, not a failure. Once it passes, it shows as `FIXED?`: remove its `known` line, and from then on
+  it guards against the bug coming back.
+
+A check gets a `T` with:
+
+- **Quests:** `T.accept(id)`, `T.work(id)`, `T.handIn(id)`, `T.complete(id)`.
+- **The character:** `T.setLevel(n)`, `T.go({map, x, y})`.
+- **Items:** `T.give(itemID)`, `T.equip(itemID)`.
+- **Reading the screen:** `T.tracker()` and `T.trackerFind(pattern)` (the tracker's text), `T.arrow()` (where the
+  map pin is).
+- **Commands:** `T.slash("/wp ...")`.
+- **Time:** `T.step(seconds)`.
+- **Assertions:** `T.ok(cond, msg)`, `T.eq(got, want, msg)`.
+- **The internals:** `T.RG`, `T.Wd` (the world) and `T.Inv` (bags and gear), for anything else.
+
+The runner exits 1 when a check fails (not for known bugs).
+
 ## Checking the harness itself
 
 `selftest/` is a tiny fake add-on with planted bugs. Each one is marked `EXPECT` in `Bad.lua`.

@@ -346,6 +346,19 @@ function Inv.attach(RG)
   for _, list in pairs(rewards) do table.sort(list) end
 end
 
+function Inv.snapshot()
+  local b = {}
+  for bag = 0, 4 do for s = 1, BAG_SIZES[bag] do local e = bags[bag][s]; if e then b[#b + 1] = { bag, s, e.id, e.count } end end end
+  local q = {}
+  for slot, id in pairs(equip) do q[#q + 1] = { slot, id } end
+  return { bags = b, equip = q }
+end
+function Inv.restore(t)
+  if not t then return end
+  for _, x in ipairs(t.bags or {}) do bags[x[1]][x[2]] = { id = x[3], count = x[4] }; cached[x[3]] = true end
+  for _, x in ipairs(t.equip or {}) do equip[x[1]] = x[2]; cached[x[2]] = true end
+end
+
 -- the score of what's equipped, by the add-on's own scoring (RG.Score)
 function Inv.gearScore(RG)
   local total, n = 0, 0

@@ -374,4 +374,22 @@ function Wd.attach(rg)
 end
 function Wd.quest(id) return Q[id] end
 
+-- What the game's servers keep across a /reload (quests done, the log, level, place, money, the map pin).
+function Wd.snapshot()
+  local done = {}
+  for id in pairs(S.done) do done[#done + 1] = id end
+  local wp = S.waypoint and { m = S.waypoint.uiMapID, x = S.waypoint.position and S.waypoint.position.x, y = S.waypoint.position and S.waypoint.position.y }
+  return { done = done, log = S.log, xp = S.xp, level = me.level, map = S.map, x = S.x, y = S.y, money = S.money, waypoint = wp }
+end
+function Wd.restore(t)
+  if not t then return end
+  S.done = {}
+  for _, id in ipairs(t.done or {}) do S.done[id] = true end
+  S.log = t.log or {}
+  for _, e in ipairs(S.log) do for _, o in ipairs(e.objs or {}) do o.mobs, o.spots = o.mobs or {}, o.spots or {} end end
+  S.xp, me.level, S.money = t.xp or 0, t.level or me.level, t.money or 0
+  S.map, S.x, S.y = t.map or S.map, t.x or S.x, t.y or S.y
+  if t.waypoint and t.waypoint.m then S.waypoint = G.UiMapPoint.CreateFromCoordinates(t.waypoint.m, t.waypoint.x, t.waypoint.y) end
+end
+
 return Wd

@@ -17,9 +17,12 @@ local Wd = require("world")
 local P = require("play")
 local I = require("items")
 local Inv = require("inventory")
+local C = require("checks")
 
 local opts = { toc = "Waypath.toc", seconds = 15 }
-local FLAGS = { chat = true, verbose = true, login_only = true, play = true }
+local FLAGS = { chat = true, verbose = true, login_only = true, play = true, checks = true }
+-- --checks [--only NAME]: every hand-written check in checks/*.lua, each in a fresh game (checks.lua)
+--   (--check-one FILE --name NAME --phase run|reload [--world FILE] [--save-world FILE]: one of them; the runner uses it)
 -- --play: instead of the drive, a bot plays the route in a simulated world (world.lua, play.lua)
 --   [--until-level 20] [--max-actions 4000]
 -- --coverage FILE: note every line of the add-on that runs, and write which lines never did (slower: a line hook)
@@ -38,6 +41,19 @@ local function readFile(p) local f = io.open(p, "rb"); if not f then return nil 
 local toc = readFile(ROOT .. "/" .. opts.toc)
 if not toc then io.stderr:write("can't find " .. opts.toc .. ": run this from the repo root\n") os.exit(2) end
 local version = (readFile(ROOT .. "/VERSION") or "?"):gsub("%s+", "")
+
+-- the check runner: each check in a process of its own
+if opts.checks then os.exit(C.runAll(HERE, opts.only, opts.verbose) and 0 or 1) end
+-- one check: it says which character it wants
+local check
+if opts.check_one then
+  local list = dofile(opts.check_one)
+  for _, c in ipairs(list) do if c.name == opts.name then check = c end end
+  if not check then io.stderr:write("no check named " .. tostring(opts.name) .. " in " .. opts.check_one .. "\n") os.exit(2) end
+  opts.play = true
+  opts.race, opts.class, opts.faction, opts.level = opts.race or check.race, opts.class or check.class, opts.faction or check.faction, opts.level or check.level
+  for _, a in ipairs(check.addons or {}) do W.otherAddons[a] = true end
+end
 
 local ok, err = pcall(W.setup, { class = opts.class, race = opts.race, faction = opts.faction, level = opts.level,
   map = opts.map, money = opts.money, version = version })
@@ -91,10 +107,19 @@ for _, f in ipairs(luaFiles) do
   if W.loadFile(ROOT, f, "Waypath", RG) then loaded = loaded + 1 end
 end
 if opts.play then Wd.attach(RG); if withItems then Inv.attach(RG) end end
+-- a second login (a check's /reload): the world as the first one left it
+if opts.world then
+  local chunk = loadfile(opts.world)
+  local env = {}
+  if chunk then setfenv(chunk, env); chunk() end
+  Wd.restore(env.world)
+  if withItems then Inv.restore(env.inv) end
+end
 
 -- the login: saved variables arrive, then the game's login events in the order it sends them
 W.phase = "login"
 W.setSaved("WaypathDB", saved)
+if check and opts.phase ~= "reload" then for k, v in pairs(check.saved or {}) do W.setSaved(k, v) end end
 local errorsBefore = {}   -- what /wp errors already had (from --sv), so only new ones are reported
 for _, e in ipairs(saved and saved.errors or {}) do errorsBefore[tostring(e.msg)] = e.count or 1 end
 local function fire(ev, ...) W.context = ev; W.fire(ev, ...) end
@@ -102,7 +127,7 @@ fire("ADDON_LOADED", "Waypath")
 fire("VARIABLES_LOADED")
 fire("SPELLS_CHANGED")
 fire("PLAYER_LOGIN")
-fire("PLAYER_ENTERING_WORLD", not opts.sv, false)
+fire("PLAYER_ENTERING_WORLD", not opts.sv, opts.sv ~= nil)
 fire("QUEST_LOG_UPDATE")
 fire("BAG_UPDATE_DELAYED")
 fire("ZONE_CHANGED_NEW_AREA")
@@ -115,7 +140,29 @@ local FPS = 10
 local function step(s) W.step(s, FPS) end
 local stats = { commands = 0, handlers = 0 }
 local played
-if opts.play then
+if check then
+  -- one check: run it, print its results for the runner (CHECK lines), keep what a /reload needs
+  local T = C.makeT(W, Wd, withItems and Inv or nil, I, RG)
+  W.phase = "check " .. check.name
+  local fn = opts.phase == "reload" and check.reload or check.run
+  W.call("the check " .. check.name, fn, T)
+  if opts.save_world then
+    local fh = assert(io.open(opts.save_world, "wb"))
+    fh:write("world = " .. W.serialize(Wd.snapshot()) .. "\ninv = " .. W.serialize(withItems and Inv.snapshot() or {}) .. "\n")
+    fh:close()
+  end
+  if opts.save_sv then
+    local fh = assert(io.open(opts.save_sv, "wb"))
+    fh:write("WaypathDB = " .. W.serialize(W.getSaved("WaypathDB")) .. "\n")
+    fh:close()
+  end
+  for _, r in ipairs(T.results) do io.stdout:write(string.format("CHECK\t%s\t%s\n", r.ok and "pass" or "fail", (tostring(r.msg):gsub("[\t\n]", " ")))) end
+  local first = W.errors[1]
+  io.stdout:write(string.format("CHECK-LUA\t%d\t%s\n", #W.errors, first and (first.msg .. " at " .. first.where .. ", during " .. tostring(first.context)):gsub("[\t\n]", " ") or ""))
+  io.stdout:write(string.format("CHECK-TAINT\t%d\t\n", #W.taint))
+  io.stdout:write("CHECK-DONE\t\t\n")
+  os.exit(0)
+elseif opts.play then
   played = P.run(W, Wd, RG, opts, withItems and Inv or nil, I)
   W.phase = "logout"
   D.logout(W)
