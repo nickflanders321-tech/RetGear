@@ -29,6 +29,8 @@ ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB +
 # Horde races: Orc, Undead, Tauren, Troll, Skyborne (Windshaper)
 RACES = [(2, 'O'), (16, 'U'), (32, 'T'), (128, 'R'), (8589934592, 'S'), (1, 'H'), (4, 'D'), (8, 'N'), (64, 'G'), (4294967296, 'A')]
 HORDE = sum(b for b, _ in RACES)   # every playable race, both factions
+HORDE_BITS = 2 | 16 | 32 | 128 | 8589934592      # Orc, Undead, Tauren, Troll, Skyborne (Horde)
+ALLY_BITS = 1 | 4 | 8 | 64 | 4294967296           # Human, Dwarf, Night Elf, Gnome, Skyborne (Alliance)
 CLASSES = [(1, 'W'), (2, 'P'), (4, 'H'), (8, 'R'), (16, 'I'), (64, 'S'), (128, 'M'), (256, 'L'), (1024, 'D')]
 ALL_CLASSES = sum(b for b, _ in CLASSES)
 
@@ -250,7 +252,18 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     # who gives it (NPC only; item-started quests show up by themselves)
     start = None
     givers = at(starts, 1) or []
-    if givers and all((at(D['npcs'].get(str(i)) or [], 3) or 'AH') == 'A' for i in givers): continue   # Alliance-only quest giver
+    # a quest only one faction's NPCs hand out is that faction's: its race letters say so (Alliance quests used to be
+    # left out here, from when the add-on was Horde-only; Horde ones carried no letters, so Alliance characters were
+    # told they could take them). The add-on drops the other faction's quests at load (RG.PruneQuests).
+    gfac = None
+    if givers:
+        facs = {(at(D['npcs'].get(str(i)) or [], 3) or 'AH') for i in givers}
+        if facs == {'A'}: gfac = ALLY_BITS
+        elif facs == {'H'}: gfac = HORDE_BITS
+    if gfac:
+        eff = (races or HORDE) & gfac
+        if not eff: continue                      # e.g. an Alliance giver for a Horde-race quest: nobody can take it
+        ra = ''.join(c for b, c in RACES if eff & b)
     for i in givers:
         n, sp = spawns_of('npc', i)
         pts = rep_points(sp, zone, 1)
