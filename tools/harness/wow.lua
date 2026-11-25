@@ -105,8 +105,10 @@ end
 
 -- An API table (C_Timer, C_Map...): members we don't model are generic functions. Writing to it is taint. The
 -- table handed out is an empty proxy (the members live in `t`), so every write is seen, not only new keys.
+W.apis = {}          -- the members behind each API table (the simulated world fills these in, which isn't taint)
 local function apiTable(tname, t)
   t = t or {}
+  W.apis[tname] = t
   return setmetatable({}, {
     __index = function(_, k)
       local v = t[k]

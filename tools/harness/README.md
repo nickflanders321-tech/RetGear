@@ -86,6 +86,48 @@ A clean run means nothing the harness can reach throws a Lua error or writes to 
 - The taint check sees writes made with `=` and `SetScript`. It can't see the game's own secure-code rules, so
   something it doesn't flag can still be blocked in combat.
 
+## The bot: playing the route (`--play`)
+
+```sh
+lua5.1 tools/harness/run.lua --play                          # Undead Paladin, level 1 to 20 (a few seconds)
+lua5.1 tools/harness/run.lua --play --until-level 60 --race Human --class MAGE    # the whole route (~3 minutes)
+lua5.1 tools/harness/run.lua --play --verbose                # also: every quest it took, did and handed in
+```
+
+`--play` replaces the drive with a bot that levels a fresh character by doing only what Waypath+ says. It runs in a
+simulated world (`world.lua`) that knows where the player is, the quest log, the quests done, XP and levels.
+
+Each turn, the bot asks the guide for the zone (`RG.CurrentRouteEntry`), the step (`RG.NextStep`), and what to do
+with each of the step's quests (`RG.StepQuestLines`). It then walks to the guide's waypoint and does what the guide
+says: hand in, pick up, or work on the objectives. A step with no quests (a flight path, the hearthstone...) it
+walks to and ticks, as a player would. At NPCs it goes through the real quest-dialog events, so the add-on's own
+auto-accept and auto hand-in do the clicking.
+
+The world keeps the game's rules, using the add-on's quest data (`Objectives.lua`). You have to be at the giver to
+accept, near an objective to make progress, and at the finisher to hand in. Required level, earlier quests in a
+chain, race and class, and a full quest log stop an accept.
+
+It reports:
+
+- **Guide problems** (a failure), grouped by cause:
+  - a quest the guide says to pick up that the game won't give;
+  - a waypoint that isn't where the objective is;
+  - the guide pointing at the same thing with nothing changing;
+  - a step that isn't done but has nothing left to do;
+  - a step whose quests are all blocked by an earlier quest. Each of these says why that earlier quest never got
+    done: it isn't in the route, it comes later in the route, the guide skipped it as grey, the guide hides it, or
+    its step counted as done without it.
+- **Knock-on effects:** quests blocked only because the bot had to skip something earlier. These are listed with
+  `--verbose` and not counted.
+- **Levels ground:** where the route ran out of quests for the character's level.
+
+`--until-level` (default 20) and `--max-actions` (default 4000) set when it stops.
+
+What it can't judge: the world's objective counts (6 kills, 4 items) and its XP are made up, because the quest
+data has neither. So the levels the bot reaches are approximate. A problem that depends on the character's level
+(for example a quest gone grey) may not happen to a real player. Zone sizes are a guess, and zones aren't connected
+(travel between them takes a flat 5 minutes). Items, gear and money rewards aren't modelled yet.
+
 ## Checking the harness itself
 
 `selftest/` is a tiny fake add-on with planted bugs. Each one is marked `EXPECT` in `Bad.lua`.

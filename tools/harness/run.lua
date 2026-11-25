@@ -13,9 +13,13 @@ local HERE = arg[0]:match("^(.*)[/\\]") or "."
 package.path = HERE .. "/?.lua;" .. package.path
 local W = require("wow")
 local D = require("drive")
+local Wd = require("world")
+local P = require("play")
 
 local opts = { toc = "Waypath.toc", seconds = 15 }
-local FLAGS = { chat = true, verbose = true, login_only = true }
+local FLAGS = { chat = true, verbose = true, login_only = true, play = true }
+-- --play: instead of the drive, a bot plays the route in a simulated world (world.lua, play.lua)
+--   [--until-level 20] [--max-actions 4000]
 -- --coverage FILE: note every line of the add-on that runs, and write which lines never did (slower: a line hook)
 local i = 1
 while arg[i] do
@@ -67,6 +71,7 @@ if opts.coverage then
   end, "l")
 end
 
+if opts.play then Wd.install(W) end
 W.seal()
 local RG = {}
 local loaded = 0
@@ -74,6 +79,7 @@ W.phase = "loading"
 for _, f in ipairs(luaFiles) do
   if W.loadFile(ROOT, f, "Waypath", RG) then loaded = loaded + 1 end
 end
+if opts.play then Wd.attach(RG) end
 
 -- the login: saved variables arrive, then the game's login events in the order it sends them
 W.phase = "login"
@@ -97,7 +103,12 @@ W.advance(tonumber(opts.seconds) or 15)
 local FPS = 10
 local function step(s) W.step(s, FPS) end
 local stats = { commands = 0, handlers = 0 }
-if not opts.login_only then
+local played
+if opts.play then
+  played = P.run(W, Wd, RG, opts)
+  W.phase = "logout"
+  D.logout(W)
+elseif not opts.login_only then
   local cmds, extra = D.commands(W, luaFiles)
   if opts.cmd then
     cmds, extra = {}, {}
@@ -172,7 +183,64 @@ local me = W.me
 local out = io.stdout
 out:write(string.format("Waypath+ %s harness: %s %s (%s), level %d, %s. %d/%d files ran without an error.\n",
   version, W.RACES[me.race][1], W.CLASSES[me.class][1], me.race, me.level, me.faction, loaded, #luaFiles))
-if opts.login_only then
+local playProblems = 0
+if played then
+  local st = Wd.state.stats
+  local nSteps = 0; for _ in pairs(played.steps) do nSteps = nSteps + 1 end
+  out:write(string.format("Played from level %d to %d in %d actions (%.1f hours of game time), through %d route steps.\n",
+    played.startLevel, played.endLevel, played.actions, st.seconds / 3600, nSteps))
+  out:write(string.format("Quests: %d accepted (%d by the add-on's auto-accept), %d handed in (%d by its auto hand-in). %d kills.\n",
+    st.accepted, st.autoAccepted, st.handedIn, st.autoHandedIn, st.kills))
+  out:write(string.format("XP: %d from quests, %d from kills (made-up numbers: see world.lua). Steps ticked by hand: %d hand-written, %d to get past a problem.\n",
+    st.questXP, st.killXP, played.ticked, played.tickedHand))
+  if #played.ground > 0 then
+    out:write(string.format("\nLevels the bot had to grind (%d): the route had nothing to do\n", #played.ground))
+    for _, g in ipairs(played.ground) do out:write(string.format("  at level %d: %s\n", g.level, g.why)) end
+  end
+  local KIND = {
+    ["grey-prereq"] = "a quest needs one the guide skipped as grey",
+    order = "a quest comes before the one it needs",
+    ["not-in-route"] = "a quest needs one that isn't in the route",
+    earlier = "a quest needs one from a step that counted as done without it",
+    ["hidden-prereq"] = "a quest needs one the guide hides as never available",
+    other = "blocked for another reason",
+    empty = "a step that isn't done has nothing left to do",
+    stuck = "the guide kept pointing at something that didn't change",
+    pickup = "the guide said pick up a quest the game wouldn't give",
+    turnin = "the guide said hand in a quest that couldn't be",
+    waypoint = "a waypoint that isn't where the objective is",
+    ["no-waypoint"] = "no waypoint for a quest pick-up",
+  }
+  if #played.problems > 0 then
+    local byKind, kinds = {}, {}
+    for _, p in ipairs(played.problems) do
+      if not byKind[p.kind] then byKind[p.kind] = {}; kinds[#kinds + 1] = p.kind end
+      table.insert(byKind[p.kind], p)
+    end
+    table.sort(kinds, function(a, b) return #byKind[a] > #byKind[b] end)
+    out:write(string.format("\nGuide problems (%d):", #played.problems))
+    for _, k in ipairs(kinds) do out:write(string.format("  %d %s;", #byKind[k], k)) end
+    out:write("\n")
+    for _, k in ipairs(kinds) do
+      out:write(string.format("\n  %s (%d):\n", KIND[k] or k, #byKind[k]))
+      for _, p in ipairs(byKind[k]) do
+        out:write(string.format("    %s\n        at level %d, %s%s\n", p.text, p.level, tostring(p.where), p.count > 1 and (" (" .. p.count .. " times)") or ""))
+      end
+    end
+  end
+  if #played.info > 0 then
+    out:write(string.format("\nKnock-on effects (%d): quests blocked only because the bot had skipped what they need (not counted as problems)%s\n",
+      #played.info, opts.verbose and ":" or "; --verbose lists them"))
+    if opts.verbose then
+      for _, p in ipairs(played.info) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end
+    end
+  end
+  if opts.verbose then
+    out:write("\nWhat the bot did:\n")
+    for _, l in ipairs(played.log) do out:write("  " .. l .. "\n") end
+  end
+  playProblems = #played.problems
+elseif opts.login_only then
   out:write(string.format("Login only: %d frames made, %d timer callbacks run, %d chat lines.\n", W.counts.frames, W.counts.timers, #W.chat))
 else
   out:write(string.format("%d slash commands, %d handlers exercised, %d events fired, %d OnUpdate calls, %d timer callbacks, %d frames made, %d chat lines.\n",
@@ -286,7 +354,8 @@ if opts.save_sv then
   out:write("\nSaved WaypathDB to " .. opts.save_sv .. "\n")
 end
 
-local bad = #W.errors + #logged + #W.taint
-out:write(bad == 0 and "\nPASS: no Lua errors, no taint writes.\n"
-  or string.format("\nFAIL: %d Lua error(s), %d caught by the add-on, %d taint write(s).\n", #W.errors, #logged, #W.taint))
+local bad = #W.errors + #logged + #W.taint + playProblems
+out:write(bad == 0 and ("\nPASS: no Lua errors, no taint writes" .. (played and ", no guide problems" or "") .. ".\n")
+  or string.format("\nFAIL: %d Lua error(s), %d caught by the add-on, %d taint write(s)%s.\n", #W.errors, #logged, #W.taint,
+    played and (", " .. playProblems .. " guide problem(s)") or ""))
 os.exit(bad == 0 and 0 or 1)
