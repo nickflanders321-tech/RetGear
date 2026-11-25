@@ -832,7 +832,7 @@ function RG.RefreshTracker()
     return
   end
   local compact = RG.Opt and RG.Opt("compactTracker")
-  local MAXQ = compact and 6 or 10
+  local MAXQ = compact and 14 or 40   -- (the list scrolls, so this is generous; ready quests never count)
   -- 0. fishing: shows while you hold a pole or caught something in the last 10 minutes
   local fl, fright = nil, nil
   if RG.FishTrackerLines then fl, fright = RG.FishTrackerLines() end
@@ -1039,30 +1039,26 @@ function RG.RefreshTracker()
                   end
                 end
             end
-            if g.here then
-              -- the zone you're in: every quest you're still doing is listed, whatever the limit; three or more ready
-              -- to hand in fold into one line (the turn-in run takes you round them), so they don't push the rest out
-              local readyL, active = {}, {}
-              for _, q in ipairs(g.list) do if q.complete then readyL[#readyL + 1] = q else active[#active + 1] = q end end
-              if #readyL >= 3 then
-                local names = {}
-                for _, q in ipairs(readyL) do names[#names + 1] = q.title end
-                n = n + 1
-                y = item(n, y, GREEN .. #readyL .. " ready to turn in|r" .. GREY .. ": " .. table.concat(names, ", ") .. "|r",
-                  { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. ((RG.TurnInPlanText and ("\n\n" .. GOLD .. "Plan:|r " .. RG.TurnInPlanText())) or "") .. "\n\n" .. GOLD .. "Click:|r the turn-in run: this zone first, then the others by how quickly you get there",
-                    onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
-                shownQ = shownQ + 1
-              else
-                for _, q in ipairs(readyL) do shownQ = shownQ + 1; questLine(q) end
-              end
-              for k, q in ipairs(active) do
-                if k > (compact and 8 or 15) then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
-              end
+            -- ready-to-hand-in quests never count towards the limit and three or more fold into one line (the turn-in run
+            -- takes you round them), so they can't push the quests you're still doing out of the list
+            local readyL, active = {}, {}
+            for _, q in ipairs(g.list) do if q.complete then readyL[#readyL + 1] = q else active[#active + 1] = q end end
+            if #readyL >= 3 then
+              local names = {}
+              for _, q in ipairs(readyL) do names[#names + 1] = q.title end
+              n = n + 1
+              y = item(n, y, GREEN .. #readyL .. " ready to turn in|r" .. GREY .. ": " .. table.concat(names, ", ") .. "|r",
+                { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. ((RG.TurnInPlanText and ("\n\n" .. GOLD .. "Plan:|r " .. RG.TurnInPlanText())) or "") .. "\n\n" .. GOLD .. "Click:|r the turn-in run: this zone first, then the others by how quickly you get there",
+                  onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
             else
-              for _, q in ipairs(g.list) do
-                if shownQ >= MAXQ then hidden = hidden + 1
-                else shownQ = shownQ + 1; questLine(q) end
-              end
+              for _, q in ipairs(readyL) do questLine(q) end
+            end
+            for k, q in ipairs(active) do
+              if g.here then
+                -- the zone you're in: every quest you're still doing is listed, whatever the limit
+                if k > 15 then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
+              elseif shownQ >= MAXQ then hidden = hidden + 1
+              else shownQ = shownQ + 1; questLine(q) end
             end
           end
         end
