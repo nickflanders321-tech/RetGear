@@ -3,6 +3,7 @@
 # Fetches both into tools/audit/.cache (ignored by git), dumps our route for every race through the harness, and
 # writes the report. Run from the repo root:  sh tools/audit/compare_guides.sh [report.md]
 set -e
+OUT="${1:-/dev/stdout}"   # (kept apart: the loop below reuses $1)
 C=tools/audit/.cache
 mkdir -p "$C/routes"
 if [ -d "$C/polestar/.git" ]; then git -C "$C/polestar" pull -q --depth 1 || true
@@ -17,4 +18,4 @@ for r in "Orc Orc Horde" "Troll Troll Horde" "Scourge Scourge Horde" "Tauren Tau
   set -- $r
   lua5.1 tools/harness/run.lua --race "$2" --faction "$3" --class WARRIOR --dump-route "$C/routes/$1.json" > /dev/null
 done
-python3 tools/audit/compare_guides.py "$C/routes" "$C/polestar" "$C/wfg/RXP_WoWForeverGuide" > "${1:-/dev/stdout}"
+python3 tools/audit/compare_guides.py "$C/routes" "$C/polestar" "$C/wfg/RXP_WoWForeverGuide" > "$OUT"
