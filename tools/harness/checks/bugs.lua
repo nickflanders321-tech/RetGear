@@ -110,6 +110,40 @@ return {
     end,
   },
   {
+    name = "next-step-looks-further",
+    about = "when the next few steps of a zone all have to wait, the guide finds a later one with something to do",
+    race = "Human", class = "MAGE", level = 58,
+    run = function(T)
+      local r = T.entry("Eastern Plaguelands")
+      T.ok(r, "Eastern Plaguelands is on the Alliance route")
+      if not r then return end
+      local key = r.zone .. "|" .. r.from
+      -- the earlier steps done, except the ones whose quests wait on Winterspring's Kel'Theril chain
+      local waiting = { [5246] = true, [5247] = true, [5248] = true }
+      local open = {}
+      for i, ids in pairs(T.RG.STEP_QUESTS[key] or {}) do
+        local hold = false
+        for _, id in ipairs(ids) do if waiting[id] then hold = true end end
+        if hold then open[#open + 1] = i else for _, id in ipairs(ids) do T.Wd.state.done[id] = true end end
+      end
+      table.sort(open)
+      T.ok(#open > 0, "a Plaguelands step holds the Kel'Theril follow-ups")
+      if #open == 0 then return end
+      -- keep three more steps after the first waiting one open, but waiting too, and one further on with work
+      local steps = T.RG.STEPS[key] or {}
+      local work
+      for i = open[#open] + 1, #steps do work = work or i end
+      if work then for _, id in ipairs(T.RG.STEP_QUESTS[key][work] or {}) do T.Wd.state.done[id] = nil end end
+      T.W.fire("QUEST_LOG_UPDATE"); T.RG.ForgetNextStep(); T.step(2)
+      local pick = T.RG.NextStep(r)
+      local acts = {}
+      for _, l in ipairs(T.RG.StepQuestLines(r, pick) or {}) do acts[#acts + 1] = l.act end
+      local doable = false
+      for _, a in ipairs(acts) do if a ~= "later" then doable = true end end
+      T.ok(doable or not work, string.format("the guide picks a step with something to do (step %d: %s)", pick or 0, table.concat(acts, ", ")))
+    end,
+  },
+  {
     name = "chain-start-in-route",
     about = "every quest in a step can be reached: its earlier quests are in the route (Undead, Barrens)",
     race = "Scourge", class = "PALADIN", level = 20,

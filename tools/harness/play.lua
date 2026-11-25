@@ -211,7 +211,7 @@ function P.run(W, Wd, RG, opts, Inv, I)
   local function missingStarter(id, depth)
     depth = depth or 0
     local d = RG.QDATA[id]
-    if not d or depth > 3 then return nil end
+    if not d or depth > 8 then return nil end
     local missing = {}
     for _, p in ipairs(d.pg or {}) do if not S.done[p] and not Wd.entry(p) then missing[#missing + 1] = p end end
     if d.ps and #d.ps > 0 then
@@ -221,11 +221,10 @@ function P.run(W, Wd, RG, opts, Inv, I)
     end
     for _, p in ipairs(missing) do
       local pd = RG.QDATA[p]
-      if pd and not pd.s then
-        if Wd.canAccept(p) then return p end
-        local deeper = missingStarter(p, depth + 1)   -- (its own earlier quest may start the same way)
-        if deeper then return deeper end
-      end
+      if pd and not pd.s and Wd.canAccept(p) then return p end
+      -- further up the chain: Book Return waits on Shhh!, which waits on ... Nibbled-On Book, found on the way
+      local deeper = pd and missingStarter(p, depth + 1)
+      if deeper then return deeper end
     end
   end
   local function doFound(p)

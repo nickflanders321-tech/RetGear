@@ -78,6 +78,19 @@ function RG.NextStep(r)
     -- keep last time's pick unless the new one is clearly better
     local held = stepHold[key]
     if held and held ~= pick and score[held] and score[held] - score[pick] < 1 then pick = held end
+    -- every one of the next few has to wait (Fragments of the Past waits on Winterspring's Troubled Spirits of
+    -- Kel'Theril): the first open step further on that has something to do now, if there is one
+    if score[pick] >= 10 then
+      local last = open[#open]
+      for i = last + 1, #steps do
+        if not RG.StepIsDone(r, i) then
+          for _, l in ipairs(RG.StepQuestLines and RG.StepQuestLines(r, i, quests) or {}) do
+            if l.act ~= "later" then pick = i break end
+          end
+          if pick == i then break end
+        end
+      end
+    end
   end
   stepHold[key] = pick
   stepMemo[key] = pick or false
