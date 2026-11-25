@@ -9,6 +9,13 @@ Builds `Routes/Generated.lua` from QuestieDB's merged WoW Forever data (see `too
   (and the follow-ups handed out on the spot), and moves on, picking up any quests that fall
   behind your level first. Each step lists its quest IDs, so it ticks itself off when they're
   all turned in, and has a waypoint for the stop.
+- **Whole quest chains.** Every quest in a step must have what it needs first on the way. Suppose a quest's earlier
+  quest isn't on that race's route yet. For example, an Undead skips the Barrens at 12-20, so Serena Bloodfeather in
+  the shared Barrens leg needs Harpy Lieutenants, which only the other races met. Then the earlier quest (and its own
+  earlier quests) joins the leg. If the earlier quest can't be done on a questing route at all (a dungeon or raid
+  quest, or one the data doesn't have), the quest is left out instead. The run lists every quest it left out, and
+  why, as `left out: ...` lines. A quest whose earlier quest the data marks for other races only is kept and listed as
+  `check the data: ...`: those race marks have been wrong before (see BACKLOG.md, Open questions).
 - **Dungeon quests** for every dungeon on the route: quests filed under the dungeon, or whose
   objectives are mostly inside it, with the giver and a waypoint. Race- and class-only quests
   keep their letters so each character only sees its own.

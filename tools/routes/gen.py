@@ -213,34 +213,104 @@ def anchor_points(zones):
 
 def lstr(s): return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
+# The quests each race letter's route has listed so far (legs are built in LEGS order: each race's own legs come
+# before the shared ones), so a leg can tell whether a quest's earlier quests were already on the way.
+COVERED = {}
+WARNINGS = set()   # quests kept although their earlier quest is marked for other races (printed at the end)
+LEFT_OUT = []      # quests left out because what they need first can't be had on a questing route (printed at the end)
+HORDE_LETTERS, ALLY_LETTERS = 'OURTS', 'HDNGA'
+def covered(letter, qid):
+    """Is quest qid on this route before the leg being built? For a shared leg (X, F): on every race's route."""
+    if letter in ('X', 'F'):
+        races = HORDE_LETTERS if letter == 'X' else ALLY_LETTERS
+        return all(qid in COVERED.get(r, ()) or qid in COVERED.get(letter, ()) for r in races)
+    shared = 'F' if letter in ALLY_LETTERS else 'X'
+    return qid in COVERED.get(letter, ()) or qid in COVERED.get(shared, ())
+
+def make_quest(qid, q, letter, zones):
+    """A quest record for a leg, or None when this race can't take it from a quest giver (other race or faction,
+    a class or repeatable quest, item- or object-started). Zone and level are the caller's to check."""
+    name, starts, ends, rl, ql, races, objs, z, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
+    races = int(races or 0)
+    ally = letter in 'HDNGAF'
+    if classes: return None
+    if letter in ('F', 'X'):
+        shared = ALLY_ALL if letter == 'F' else HORDE_ALL
+        if races and (races & shared) != shared: return None      # a quest for some races only isn't shared
+    elif races and not (races & RACE_BITS[letter]): return None
+    if (sflags or 0) & 1: return None            # repeatable
+    ql = ql if (ql and ql > 0) else (rl or 1)
+    if (horde_only if ally else alliance_only)(at(starts, 1)): return None
+    giver = None
+    for i in (at(starts, 1) or []):
+        gname, sp = npc(i)
+        p = first_point(sp, zones)
+        if p: giver = (gname, p); break
+    if not giver: return None                    # item- or object-started: picked up on the way
+    return dict(id=int(qid), name=name, lvl=ql, req=rl or 1, giver=giver, pre=list(preG or []) + list(preS or []),
+                preG=list(preG or []), preS=list(preS or []))
+
 def build(letter, zone_name, lo, hi, zones, qmin=0):
-    bit = RACE_BITS[letter]
     ally = letter in 'HDNGAF'
     FACTION[0] = 'Alliance' if ally else 'Horde'
     quests = {}
     for qid, q in D['quests'].items():
-        name, starts, ends, rl, ql, races, objs, z, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
-        races = int(races or 0)
-        if z not in zones or classes: continue
-        if letter in ('F', 'X'):
-            shared = ALLY_ALL if letter == 'F' else HORDE_ALL
-            if races and (races & shared) != shared: continue      # a quest for some races only isn't shared
-        elif races and not (races & bit): continue
-        if (sflags or 0) & 1: continue           # repeatable
+        z, rl, ql = at(q, 8), at(q, 4), at(q, 5)
+        if z not in zones: continue
         ql = ql if (ql and ql > 0) else (rl or 1)
         if not (lo - 1 <= ql <= hi + 1) or ql < qmin: continue
-        giver = None
-        if (horde_only if ally else alliance_only)(at(starts, 1)): continue
-        for i in (at(starts, 1) or []):
-            gname, sp = npc(i)
-            p = first_point(sp, zones)
-            if p: giver = (gname, p); break
-        if not giver: continue                   # item- or object-started: picked up on the way
-        quests[int(qid)] = dict(id=int(qid), name=name, lvl=ql, req=rl or 1, giver=giver, pre=list(preG or []) + list(preS or []))
+        rec = make_quest(qid, q, letter, zones)
+        if rec: quests[int(qid)] = rec
     if not quests: return []
     if lo == 1:  # a starting zone: only quests handed out in the zone itself
         home = {ui.get(z) for z in zones}
         quests = {k: q for k, q in quests.items() if ui.get(q['giver'][1][0]) in home}
+    # Every quest's earlier quests must be on the way. One this route hasn't listed before (an Undead skips the
+    # Barrens at 12-20, so Serena Bloodfeather in the shared Barrens leg needs Harpy Lieutenants, which only the
+    # other races met) joins this leg, and its own earlier quests with it; a quest whose earlier quest can't be
+    # taken here (another race's, a class quest, started by an item) is left out, since it could never be done.
+    dropped, why = set(), {}
+    def reachable(p, dep):
+        """Can quest p be had some other way (started by an item or an object on the way, a class quest)?
+        Not a dungeon or raid quest (a questing step mustn't wait for one), nor one the data doesn't have.
+        One marked for other races only still counts (with a warning): the data's race marks have been wrong
+        in a starting zone (Zephras Isle), and leaving a whole chain out on that alone would be worse."""
+        if p in dropped: why[dep] = '%s (%d) is left out too' % (at(D['quests'].get(str(p)), 1), p); return False
+        raw = D['quests'].get(str(p))
+        if not raw: why[dep] = 'quest %d isn\'t in the data' % p; return False
+        if dungeon_quest(raw): why[dep] = '%s (%d) is a dungeon or raid quest' % (at(raw, 1), p); return False
+        races = int(at(raw, 6) or 0)
+        mask = (HORDE_ALL if letter == 'X' else ALLY_ALL) if letter in ('X', 'F') else RACE_BITS[letter]
+        if races and not (races & mask):
+            WARNINGS.add('%s %s: %s (%d) needs %s (%d), which the data gives only to other races' % (letter, zone_name, D['quests'][str(dep)] and at(D['quests'][str(dep)], 1), dep, at(raw, 1), p))
+        return True
+    def add(p):
+        if p in quests: return True
+        if p in dropped: return False
+        raw = D['quests'].get(str(p))
+        rec = raw and not dungeon_quest(raw) and make_quest(p, raw, letter, zones)
+        if not rec: return False
+        quests[p] = rec
+        return True
+    def have(p): return p in quests or covered(letter, p)
+    changed = True
+    while changed:
+        changed = False
+        for qid in list(quests):
+            q = quests.get(qid)
+            if not q: continue
+            ok = True
+            for p in q['preG']:
+                if not have(p):
+                    if add(p): changed = True
+                    elif not reachable(p, qid): ok = False
+            if q['preS'] and not any(have(p) for p in q['preS']):
+                if any(add(p) for p in q['preS']): changed = True
+                elif not any(reachable(p, qid) for p in q['preS']): ok = False
+            if not ok:
+                del quests[qid]; dropped.add(qid); changed = True
+                LEFT_OUT.append('%s %s: %s (%d), needs %s' % (letter, zone_name, q['name'], qid, why.get(qid, '?')))
+    if not quests: return []
     # chain depth so follow-ups come after what unlocks them
     depth = {}
     def d(qid, seen=()):
@@ -378,6 +448,26 @@ def in_dungeon(objs, areas):
             zs = zones_of('npc', n); total += 1; hits += bool(zs and zs <= areas)
     return total > 0 and hits * 2 >= total
 
+_DUNGEON_AREAS = []
+# instances by QuestieDB's area names (some aren't marked "dungeon area" in the map data, e.g. SUNKEN_TEMPLE, the raids)
+INSTANCE_NAMES = ('RAGEFIRE_CHASM', 'WAILING_CAVERNS', 'THE_DEADMINES', 'THE_STOCKADE', 'SHADOWFANG_KEEP', 'BLACKFATHOM_DEEPS',
+    'GNOMEREGAN', 'RAZORFEN_KRAUL', 'SCARLET_MONASTERY', 'RAZORFEN_DOWNS', 'ULDAMAN', 'ZUL_FARRAK', 'MARAUDON', 'SUNKEN_TEMPLE',
+    'THE_TEMPLE_OF_ATAL_HAKKAR', 'BLACKROCK_DEPTHS', 'BLACKROCK_SPIRE', 'DIRE_MAUL', 'STRATHOLME', 'SCHOLOMANCE', 'MOLTEN_CORE',
+    'ONYXIAS_LAIR', 'BLACKWING_LAIR', 'ZUL_GURUB', 'RUINS_OF_AHN_QIRAJ', 'AHN_QIRAJ', 'NAXXRAMAS')
+def dungeon_quest(raw):
+    """A dungeon or raid quest: filed under one (built on first use: the dungeon lists and sub-areas are read below).
+    Only where it's filed counts: judging by its objectives (in_dungeon) wrongly caught ordinary quests."""
+    if not _DUNGEON_AREAS:
+        areas = set()
+        for _, a in DUNGEONS + ALLY_DUNGEONS: areas |= set(a)
+        for m in re.finditer(r'\[(\d+)\]\s*=\s*(\d+),\s*--\s*Referenced dungeon area', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read()):
+            areas.add(int(m.group(1)))
+        areas |= {ENUM[n] for n in INSTANCE_NAMES if n in ENUM}
+        areas |= {a for a in SUBAREAS if SUBAREAS[a] in areas}
+        _DUNGEON_AREAS.append(areas)
+    z = at(raw, 8)
+    return isinstance(z, int) and z in _DUNGEON_AREAS[0]
+
 def dungeon_quests(areas, ally=False):
     FAC = ALLY_ALL if ally else HORDE_ALL
     FACTION[0] = 'Alliance' if ally else 'Horde'
@@ -411,6 +501,7 @@ by_race = {}
 for leg in LEGS:
     letter, zone_name, lo, hi, zones = leg[:5]
     steps = build(letter, zone_name, lo, hi, zones, leg[5] if len(leg) > 5 else 0)
+    for _, ids, _ in steps: COVERED.setdefault(letter, set()).update(ids)
     by_race.setdefault(letter, []).append((zone_name, lo, steps))
     total += len(steps)
     print('%s %-18s %2d-%2d: %2d steps, %3d quests' % (letter, zone_name, lo, hi, len(steps), sum(len(s[1]) for s in steps)), file=sys.stderr)
@@ -501,4 +592,6 @@ emit_dungeons('RG.GEN_DUNGEONS', DUNGEONS, False)
 emit_dungeons('RG.GEN_DUNGEONS_A', ALLY_DUNGEONS, True)
 os.makedirs(OUT + 'Routes', exist_ok=True)
 open(OUT + 'Routes/Generated.lua', 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
+for w in LEFT_OUT: print('left out: ' + w, file=sys.stderr)
+for w in sorted(WARNINGS): print('check the data: ' + w, file=sys.stderr)
 print('%d steps written' % total, file=sys.stderr)

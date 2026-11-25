@@ -131,6 +131,16 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
   until launch quest data is in QuestieDB.
 - Mount Hyjal: guides 55-60 (Mmonster, wowforeverleveling.com), 56-60 (ForeverChanges quest levels, minimum 54), 60 (Skycoach); ours
   58-60. The Horde quests in the data are levels 57-60, so 58 stays for now; consider 57 once more Hyjal quests are in the data (2026-11-16). **Settled 2026-11-23:** Polestar (56-58, November 21) and Bind on Forever (55-60) agree, the data has 70 Horde quests from level 57: the window is 57-60 since v1.60.0.
+- Zephras Isle (Horde Skyborne start), 2026-11-25: QuestieDB's Forever data gives The Grand Skyseer (92700) and Confront
+  Lorthuna (92646) to Tauren only (races 32, `ra="T"` in Objectives.lua), yet Skyborne quests in the same zone need them
+  first: A Grand Adventure (92708), The Broken Construct (93735), Unwelcome Spirits (93736), The Fate of Zephras (93836).
+  Either the race mark is wrong (Skyborne should have them) or those four can never be taken by a Skyborne character. The
+  route generator keeps them and lists them under "check the data" when it runs. Check in game whether a Horde Skyborne
+  is offered The Grand Skyseer. The same list (14 lines on the 2026-11-23 data) also has: Theldurin the Lost (687,
+  Horde) needs Myzrael's Allies (653), and The Stone Circle (3444) needs The Sunken Temple (3445), both marked for the
+  other faction; and the Alliance Desolace and Shen'dralas steps' Facing the Truth (93041), Checking Things Out (93122),
+  Long-Term Solutions (93072) and Threat of Starvation (93129) need Nerlokh's and Bristleback Retreat quests (93035,
+  93037, 93062, 93066) that the data gives only to the Horde.
 - Add guide disagreements here (what each source says, and the date).
 
 ## Done
