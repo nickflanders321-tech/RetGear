@@ -15,6 +15,8 @@ local W = require("wow")
 local D = require("drive")
 local Wd = require("world")
 local P = require("play")
+local I = require("items")
+local Inv = require("inventory")
 
 local opts = { toc = "Waypath.toc", seconds = 15 }
 local FLAGS = { chat = true, verbose = true, login_only = true, play = true }
@@ -71,7 +73,16 @@ if opts.coverage then
   end, "l")
 end
 
-if opts.play then Wd.install(W) end
+local withItems = false
+if opts.play then
+  Wd.install(W)
+  -- items: LibItemDB's tables from the data/itemdb branch (cached in tools/harness/.cache/itemdb)
+  local cache = HERE .. "/.cache/itemdb"
+  local ok, why = I.ensure(cache)
+  if ok then ok, why = I.load(cache, W.G) end
+  if ok then Inv.install(W, Wd, I); withItems = true
+  else io.stderr:write("(no items: " .. tostring(why) .. ")\n") end
+end
 W.seal()
 local RG = {}
 local loaded = 0
@@ -79,7 +90,7 @@ W.phase = "loading"
 for _, f in ipairs(luaFiles) do
   if W.loadFile(ROOT, f, "Waypath", RG) then loaded = loaded + 1 end
 end
-if opts.play then Wd.attach(RG) end
+if opts.play then Wd.attach(RG); if withItems then Inv.attach(RG) end end
 
 -- the login: saved variables arrive, then the game's login events in the order it sends them
 W.phase = "login"
@@ -105,7 +116,7 @@ local function step(s) W.step(s, FPS) end
 local stats = { commands = 0, handlers = 0 }
 local played
 if opts.play then
-  played = P.run(W, Wd, RG, opts)
+  played = P.run(W, Wd, RG, opts, withItems and Inv or nil, I)
   W.phase = "logout"
   D.logout(W)
 elseif not opts.login_only then
@@ -193,6 +204,17 @@ if played then
     st.accepted, st.autoAccepted, st.handedIn, st.autoHandedIn, st.kills))
   out:write(string.format("XP: %d from quests, %d from kills (made-up numbers: see world.lua). Steps ticked by hand: %d hand-written, %d to get past a problem.\n",
     st.questXP, st.killXP, played.ticked, played.tickedHand))
+  if withItems then
+    local is = Inv.stats
+    out:write(string.format("Items: %d quest rewards (%d had a choice: %d picked by the add-on, %d by the bot), %d quest item stacks. %d swaps to upgrades, %d sold (%d by the add-on)%s.\n",
+      is.rewards, is.pickedByAddon + is.pickedByBot, is.pickedByAddon, is.pickedByBot, is.questItems, is.equipped, is.sold, is.soldByAddon,
+      is.bagFull > 0 and (", bags full " .. is.bagFull .. " times") or ""))
+    if #played.gear.score > 0 then
+      local t = {}
+      for _, g in ipairs(played.gear.score) do t[#t + 1] = string.format("%d: %.0f (%d slots)", g.level, g.score, g.slots) end
+      out:write("Gear score by the add-on's own scoring, at level " .. table.concat(t, ", ") .. ".\n")
+    end
+  end
   if #played.ground > 0 then
     out:write(string.format("\nLevels the bot had to grind (%d): the route had nothing to do\n", #played.ground))
     for _, g in ipairs(played.ground) do out:write(string.format("  at level %d: %s\n", g.level, g.why)) end
@@ -210,6 +232,8 @@ if played then
     turnin = "the guide said hand in a quest that couldn't be",
     waypoint = "a waypoint that isn't where the objective is",
     ["no-waypoint"] = "no waypoint for a quest pick-up",
+    ["flip-flop"] = "gear scoring that contradicts itself (an item and the one it replaced both called upgrades)",
+    downgrade = "an \"upgrade\" that made the whole outfit worse",
   }
   if #played.problems > 0 then
     local byKind, kinds = {}, {}
@@ -234,6 +258,26 @@ if played then
     if opts.verbose then
       for _, p in ipairs(played.info) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end
     end
+  end
+  if opts.verbose and withItems then
+    out:write("\nEquipped at the end:")
+    for slot = 1, 19 do
+      local id = Inv.equip[slot]
+      if id then
+        local it = I.get(id)
+        local d = RG.Compare and RG.Compare(it.link, slot)
+        out:write(string.format("  %d %s;", slot, it.name))
+      end
+    end
+    out:write("\nIn the bags:")
+    for _, x in ipairs(Inv.bagItems()) do
+      local it = I.get(x.id)
+      if it and Inv.EQUIP[it.loc] then
+        local d = RG.Compare and RG.Compare(it.link)
+        out:write(string.format("  %s (%s%s);", it.name, it.loc:gsub("INVTYPE_", ""), d and string.format(", %+.0f", d) or ", can't use"))
+      end
+    end
+    out:write("\n")
   end
   if opts.verbose then
     out:write("\nWhat the bot did:\n")

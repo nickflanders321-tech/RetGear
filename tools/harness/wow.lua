@@ -528,14 +528,34 @@ function Methods:GetBackdrop() return S[self].backdrop end
 -- chat frames
 function Methods:AddMessage(msg) W.chat[#W.chat + 1] = tostring(msg) end
 -- tooltips (their lines also go into the <name>TextLeftN font strings: see syncLines)
-function Methods:SetOwner(owner) local st = S[self]; st.owner = owner; st.lines = {}; syncLines(self) end
+function Methods:SetOwner(owner) local st = S[self]; st.owner = owner; st.lines = {}; st.item = nil; syncLines(self) end
 function Methods:GetOwner() return S[self].owner end
 function Methods:IsOwned(f) return S[self].owner == f end
-function Methods:ClearLines() S[self].lines = {}; syncLines(self) end
+function Methods:ClearLines() S[self].lines = {}; S[self].item = nil; syncLines(self) end
 function Methods:AddLine(t) local st = S[self]; st.lines = st.lines or {}; st.lines[#st.lines + 1] = { tostring(t) }; syncLines(self) end
 function Methods:AddDoubleLine(a, b) local st = S[self]; st.lines = st.lines or {}; st.lines[#st.lines + 1] = { tostring(a), tostring(b) }; syncLines(self) end
 function Methods:NumLines() return #(S[self].lines or {}) end
-function Methods:GetItem() return nil end
+-- an item on a tooltip: with the simulated world's items (W.itemTooltip), its lines go in and the game's item
+-- callbacks run (OnTooltipSetItem and TooltipDataProcessor's item post-calls); without them it stays empty
+local function showItem(tt, link)
+  local st = S[tt]
+  st.lines, st.item = {}, nil
+  if not (link and W.itemTooltip) then syncLines(tt) return end
+  local name, full, id, lines = W.itemTooltip(link)
+  if not name then syncLines(tt) return end
+  st.item = { name = name, link = full, id = id }
+  for _, l in ipairs(lines) do st.lines[#st.lines + 1] = { l.leftText, l.rightText } end
+  syncLines(tt)
+  runScript(tt, "OnTooltipSetItem")
+  for _, pc in ipairs(W.tooltipPostCalls and W.tooltipPostCalls() or {}) do
+    if pc.type == 0 then W.call("TooltipDataProcessor item post-call", pc.fn, tt, { type = 0, id = id, hyperlink = full, lines = lines }) end
+  end
+end
+function Methods:SetHyperlink(link) showItem(self, link) end
+function Methods:SetBagItem(b, s) showItem(self, W.bagItemLink and W.bagItemLink(b, s)) end
+function Methods:SetInventoryItem(u, slot) showItem(self, W.inventoryItemLink and W.inventoryItemLink(u, slot)) end
+function Methods:SetItemByID(id) showItem(self, id) end
+function Methods:GetItem() local it = S[self].item; if it then return it.name, it.link, it.id end end
 function Methods:GetUnit() return nil end
 function Methods:GetSpell() return nil end
 -- animations
@@ -1014,6 +1034,10 @@ G.ITEM_QUALITY_COLORS = {}
 for q, hex in pairs({ [0] = "9d9d9d", "ffffff", "1eff00", "0070dd", "a335ee", "ff8000", "e6cc80", "00ccff" }) do
   local r, g, b = tonumber(hex:sub(1, 2), 16) / 255, tonumber(hex:sub(3, 4), 16) / 255, tonumber(hex:sub(5, 6), 16) / 255
   G.ITEM_QUALITY_COLORS[q] = { r = r, g = g, b = b, hex = "|cff" .. hex, color = G.CreateColor(r, g, b) }
+end
+G.GetItemQualityColor = function(q)
+  local c = G.ITEM_QUALITY_COLORS[q] or G.ITEM_QUALITY_COLORS[1]
+  return c.r, c.g, c.b, c.hex:sub(3)
 end
 G.RAID_CLASS_COLORS = {}
 for k in pairs(CLASSES) do

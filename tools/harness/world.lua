@@ -146,9 +146,12 @@ local function removeFromLog(id)
   if i then table.remove(S.log, i) end
 end
 
-local function turnIn(id)
+-- hooks for inventory.lua (items): a reward chosen at hand-in, an objective done, the reward window opening
+Wd.hooks = {}
+local function turnIn(id, choice)
   local e = entry(id)
   local d = Q[id]
+  if Wd.hooks.turnIn then Wd.hooks.turnIn(id, choice, e) end
   local xp = questXP(e and e.level or (d and d.l), me.level)
   local money = math.max(0, (d and d.l or 1) * 25)
   removeFromLog(id)
@@ -201,6 +204,7 @@ function Wd.work(id)
             secs = secs + 8
           end
         end
+        if Wd.hooks.objective then Wd.hooks.objective(e, o, o.need - o.have) end
         o.have = o.need
         moved = moved + 1
         W.context = "UI_INFO_MESSAGE (" .. o.label .. ")"
@@ -223,7 +227,11 @@ function Wd.handIn(id)
   W.context = "QUEST_PROGRESS (" .. tostring(e.title) .. ")"
   fire("QUEST_PROGRESS")
   if S.dialog and S.dialog.stage == "progress" then G.CompleteQuest() end
-  if S.dialog and S.dialog.stage == "complete" and not S.dialog.rewarded then G.GetQuestReward(1)
+  -- the reward window is open: give the add-on a moment (it may be waiting for the rewards' item data)
+  if S.dialog and S.dialog.stage == "complete" and not S.dialog.rewarded then W.step(1.5, 10) end
+  if S.dialog and S.dialog.stage == "complete" and not S.dialog.rewarded then
+    S.dialog.botPicked = true
+    G.GetQuestReward(Wd.hooks.pickReward and Wd.hooks.pickReward(id) or 1)
   elseif S.dialog and S.dialog.rewarded then S.stats.autoHandedIn = S.stats.autoHandedIn + 1 end
   S.dialog = nil
   fire("QUEST_FINISHED")
@@ -312,14 +320,19 @@ function Wd.install(w)
     local dlg = S.dialog
     if not (dlg and dlg.stage == "progress") then return end
     dlg.stage = "complete"
+    if Wd.hooks.rewardWindow then Wd.hooks.rewardWindow(dlg.id) end
     W.context = "QUEST_COMPLETE"
     fire("QUEST_COMPLETE")
   end
-  G.GetQuestReward = function()
+  G.GetQuestReward = function(choice)
     local dlg = S.dialog
     if not (dlg and dlg.stage == "complete") or dlg.rewarded then return end
+    -- with reward choices, the game won't hand in until one is picked
+    local n = G.GetNumQuestChoices()
+    if n > 1 and not (tonumber(choice) and choice >= 1 and choice <= n) then return end
     dlg.rewarded = true
-    turnIn(dlg.id)
+    dlg.pickedBy = dlg.botPicked and "bot" or "add-on"
+    turnIn(dlg.id, tonumber(choice))
   end
   G.GetNumQuestChoices = function() return 0 end
   G.GetNumQuestRewards = function() return 0 end

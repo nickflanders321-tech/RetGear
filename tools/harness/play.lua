@@ -12,7 +12,7 @@ local P = {}
 local WALK = 7          -- yards per second (running, no mount)
 local OTHER_ZONE = 300  -- seconds to get to another zone (the world doesn't know how far apart zones are)
 
-function P.run(W, Wd, RG, opts)
+function P.run(W, Wd, RG, opts, Inv, I)
   local S = Wd.state
   local me = W.me
   local untilLevel = tonumber(opts.until_level) or 20
@@ -129,8 +129,86 @@ function P.run(W, Wd, RG, opts)
       (why and (" (the guide says it's blocked: " .. tostring(why) .. ")") or "")
   end
 
+  -- Gear: equip what the add-on calls an upgrade (RG.Compare), and check it doesn't contradict itself
+  R.gear = { equips = {}, score = {} }
+  local equipCount, noFlip = {}, {}
+  local function gearUp()
+    if not Inv then return end
+    for _ = 1, 20 do
+      local did = false
+      for _, x in ipairs(Inv.bagItems()) do
+        local it = I.get(x.id)
+        if it and Inv.EQUIP[it.loc] and it.req <= me.level and not noFlip[x.id] then
+          local d, slot = RG.Compare(it.link)
+          if d and d > 0.5 then
+            local before = Inv.gearScore(RG)
+            local beforeEquip = {}
+            for s2, id2 in pairs(Inv.equip) do beforeEquip[s2] = id2 end
+            local ok, eslot, old = Inv.equipFrom(x.bag, x.slot, slot)
+            if ok then
+              did = true
+              equipCount[x.id] = (equipCount[x.id] or 0) + 1
+              note(string.format("equips %s (+%.0f)%s", it.name, d, old and (" over " .. I.get(old).name) or ""))
+              -- the whole outfit, by the add-on's own scoring, must not get worse (a shield taking off a two-hander...)
+              local after = Inv.gearScore(RG)
+              if after < before - 0.5 then
+                local lost = {}
+                for s2, id2 in pairs(beforeEquip) do if Inv.equip[s2] ~= id2 and s2 ~= eslot then lost[#lost + 1] = I.get(id2).name end end
+                problem("downgrade", string.format("the add-on called %s a +%.0f upgrade, but putting it on lowered the score of everything worn from %.0f to %.0f%s",
+                  it.name, d, before, after, #lost > 0 and (" (it took off " .. table.concat(lost, ", ") .. ")") or ""), "level " .. me.level)
+              end
+              R.gear.equips[#R.gear.equips + 1] = { level = me.level, name = it.name, delta = d }
+              wait(1)
+              if equipCount[x.id] > 1 then
+                problem("flip-flop", "the bot equipped " .. it.name .. " (" .. x.id .. ") more than once: the add-on keeps calling items it replaced upgrades again", "level " .. me.level)
+                noFlip[x.id] = true
+              end
+              if old then
+                local od = RG.Compare(I.get(old).link, eslot)
+                if od and od > 0.5 then
+                  problem("flip-flop", string.format("right after %s replaced %s, the add-on calls %s an upgrade again (+%.0f)", it.name, I.get(old).name, I.get(old).name, od), "level " .. me.level)
+                  noFlip[old] = true
+                end
+              end
+              break   -- the bags changed: look again
+            end
+          end
+        end
+      end
+      if not did then break end
+    end
+  end
+  -- a vendor visit: the add-on gets its turn first (selling junk), then the bot sells what isn't an upgrade
+  local handedAtVendor = 0
+  local function vendor()
+    if not Inv then return end
+    Inv.visitVendor(function(x)
+      local it = I.get(x.id)
+      if not it or it.classID == 12 then return false end
+      if it.quality == 0 then return true end
+      if Inv.EQUIP[it.loc] and it.req <= me.level then
+        local d = RG.Compare(it.link)
+        return not d or d <= 0
+      end
+      return false
+    end)
+  end
+  local lastLevel, lastHanded = me.level, 0
+
   local lastSig, same = nil, 0
   while me.level < untilLevel and R.actions < maxActions do
+    -- after a hand-in or a level-up: put on upgrades; every 10 hand-ins (or with full bags), a vendor
+    if Inv and (S.stats.handedIn ~= lastHanded or me.level ~= lastLevel) then
+      if me.level ~= lastLevel and me.level % 10 == 0 then
+        local sc, n = Inv.gearScore(RG)
+        R.gear.score[#R.gear.score + 1] = { level = me.level, score = sc, slots = n }
+      end
+      lastHanded, lastLevel = S.stats.handedIn, me.level
+      W.phase = "gear (level " .. me.level .. ")"
+      gearUp()
+      local freeSlots = 56 - #Inv.bagItems()
+      if S.stats.handedIn - handedAtVendor >= 10 or freeSlots < 8 then handedAtVendor = S.stats.handedIn; vendor() end
+    end
     R.actions = R.actions + 1
     W.phase = "playing (level " .. me.level .. ")"
     local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()

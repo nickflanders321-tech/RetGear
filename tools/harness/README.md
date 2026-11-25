@@ -123,10 +123,36 @@ It reports:
 
 `--until-level` (default 20) and `--max-actions` (default 4000) set when it stops.
 
+**Items and gear.** The world has bags (a backpack and four 10-slot bags), equipped gear, and the client's item
+cache: as in the game, `GetItemInfo` answers a moment after an item is first asked about. Item facts come from
+LibItemDB's WoW Forever tables (`items.lua`), copied out of the `data/itemdb` branch into
+`tools/harness/.cache/itemdb` on the first `--play` run. Run `git fetch origin data/itemdb` if that fails; without
+them the bot plays with no items.
+
+- **Quest rewards:** there is no reward table in the repo, so a quest offers the items the class gear lists
+  (`RG.CLASS_GEAR`, `RG.CLASS_GEAR_A`, every class) name as its reward. The add-on's own auto-reward picks; if it
+  doesn't, the bot takes the choice `RG.Compare` scores best.
+- **Quest items:** an item objective puts the items in the bags, and they go at hand-in.
+- **Equipping:** after each hand-in and level-up, the bot equips whatever `RG.Compare` calls an upgrade.
+- **Selling:** every 10 hand-ins (or with full bags) it visits a vendor. The add-on gets its turn first, then the
+  bot sells grey items and gear that isn't an upgrade.
+- **Tooltips:** item tooltips (`SetHyperlink`, `SetBagItem`, `C_TooltipInfo`) carry the item's lines, so the
+  add-on's tooltip hooks and stat parsing run on real items.
+
+Gear adds two guide problems:
+
+- **downgrade:** an item the add-on called an upgrade made the whole outfit worse by the add-on's own scoring,
+  for example a shield that takes off a two-hander;
+- **flip-flop:** an item and the one it replaced are both called upgrades.
+
+The report also gives the add-on's score for everything worn at levels 10, 20, ... (`--verbose` lists the
+gear worn at the end).
+
 What it can't judge: the world's objective counts (6 kills, 4 items) and its XP are made up, because the quest
 data has neither. So the levels the bot reaches are approximate. A problem that depends on the character's level
 (for example a quest gone grey) may not happen to a real player. Zone sizes are a guess, and zones aren't connected
-(travel between them takes a flat 5 minutes). Items, gear and money rewards aren't modelled yet.
+(travel between them takes a flat 5 minutes). There are no mob drops, dungeons or Auction House, and quest rewards
+are only the ones the gear lists know.
 
 ## Checking the harness itself
 
