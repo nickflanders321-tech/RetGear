@@ -5,7 +5,9 @@ For each leg (race, zone, level range) it takes every quest that race can do the
 (no class quests; those have their own tracker section), orders them by level and
 quest chain, and groups them by quest hub so each step is one stop: "At Razor Hill,
 pick up: A, B, C". Each step carries its quest IDs (it ticks itself off when all of
-them are turned in) and a waypoint for the hub.
+them are turned in) and a waypoint for the hub. Quests from an item that only sometimes
+drops ride along in the step where they're handed in without being named: the add-on
+shows them once you have them.
 
 Usage: python3 gen.py <QuestieDB checkout> <forever.json from tools/objectives/dump.lua> [Waypath+ folder]
 """
@@ -29,10 +31,21 @@ if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
         _q = D['quests'].get(_k)
         if _v.get('remove'): D['quests'].pop(_k, None); continue
         _st = _v.get('set') or {}
-        if _q is None or 'races' not in _st: continue
-        if isinstance(_q, dict): _q['6'] = _st['races']
-        else:
-            _q = list(_q) + [None] * max(0, 6 - len(_q)); _q[5] = _st['races']; D['quests'][_k] = _q
+        for _f, _i in (('races', 6), ('classes', 10)):     # who can take it (a class quest stays out of the route)
+            if _q is None or _f not in _st: continue
+            if isinstance(_q, dict): _q[str(_i)] = _st[_f]
+            else:
+                _q = list(_q) + [None] * max(0, _i - len(_q)); _q[_i - 1] = _st[_f]; D['quests'][_k] = _q
+# How often an item drops, from forever-db's item sources (CC BY 4.0): (item, 'npc' or 'object', id) -> percent.
+# A quest that starts from an item that always drops (or lies in a chest) goes in the route like any other: the step
+# sends you to the mob or the object. One that only sometimes drops goes in the step where it's handed in, and the
+# add-on shows it only once you have it (Objectives.lua's si; keep SURE_DROP the same in tools/objectives/gen.py).
+CHANCE = {}
+SURE_DROP = 90
+if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
+    for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
+        _r = json.loads(_line)
+        if _r.get('chance') is not None: CHANCE[(_r['item'], _r['kind'], _r['id'])] = _r['chance']
 OUT = (sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')).rstrip('/') + '/'
 ui = {int(a): int(b) for a, b in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read())}
 def areas_of(uimap, also=()):
@@ -146,6 +159,9 @@ ANCHORS = {
 for _z, _a in HORDE_ANCHORS.items(): ANCHORS.setdefault(_z, []).extend(_a)
 CITIES = {1637: 'Orgrimmar', 1638: 'Thunder Bluff', 1497: 'Undercity', 1519: 'Stormwind City', 1537: 'Ironforge', 1657: 'Darnassus'}   # a giver anywhere in a capital = that city
 HUB_RADIUS = 10.0     # map units: givers this close to an anchor belong to that hub
+START_RADIUS = 15.0   # map units: a quest filed elsewhere belongs to a starting zone when its giver is this close to the hub
+CAMPING = -666        # QuestieDB's category for Forever's Camping quests (The Great Outdoors, Camping 101: ...)
+CAPITAL = {'O': 1637, 'R': 1637, 'T': 1638, 'S': 1638, 'U': 1497, 'H': 1519, 'D': 1537, 'G': 1537, 'N': 1657}
 MAX_PER_STEP = 8
 
 def at(a, i):
@@ -227,9 +243,32 @@ def covered(letter, qid):
     shared = 'F' if letter in ALLY_LETTERS else 'X'
     return qid in COVERED.get(letter, ()) or qid in COVERED.get(shared, ())
 
+def starter(q, zones):
+    """Where a quest that no NPC hands out begins: an object you click, or an item from a mob or a chest. A dict
+    (src = the mob or object, point, item = what starts it, sure = it always drops), or None when nothing is known."""
+    starts = at(q, 2)
+    for oid in (at(starts, 2) or []):
+        e = D['objects'].get(str(oid)) or []
+        sp = at(e, 2)
+        p = isinstance(sp, dict) and first_point(sp, zones)
+        if p: return dict(src=at(e, 1) or '?', point=p, item=at(e, 1) or '?', sure=True)
+    for iid in (at(starts, 3) or []):
+        it = D['items'].get(str(iid))
+        if not it: continue
+        best = None
+        for kind, sid in [('npc', n) for n in (at(it, 2) or [])] + [('object', o) for o in (at(it, 3) or [])]:
+            e = D['npcs' if kind == 'npc' else 'objects'].get(str(sid)) or []
+            sp = at(e, 2)
+            p = isinstance(sp, dict) and first_point(sp, zones)
+            if not p: continue
+            ch = CHANCE.get((int(iid), kind, int(sid)), 0)
+            if not best or ch > best[0]: best = (ch, at(e, 1) or '?', p)
+        if best: return dict(src=best[1], point=best[2], item=at(it, 1) or '?', sure=best[0] >= SURE_DROP)
+    return None
+
 def make_quest(qid, q, letter, zones):
-    """A quest record for a leg, or None when this race can't take it from a quest giver (other race or faction,
-    a class or repeatable quest, item- or object-started). Zone and level are the caller's to check."""
+    """A quest record for a leg, or None when this race can't take it (other race or faction, a class or repeatable
+    quest, or one that starts from an item or object nobody knows the place of). Zone and level are the caller's to check."""
     name, starts, ends, rl, ql, races, objs, z, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
     races = int(races or 0)
     ally = letter in 'HDNGAF'
@@ -241,30 +280,62 @@ def make_quest(qid, q, letter, zones):
     if (sflags or 0) & 1: return None            # repeatable
     ql = ql if (ql and ql > 0) else (rl or 1)
     if (horde_only if ally else alliance_only)(at(starts, 1)): return None
-    giver = None
+    giver, start = None, None
     for i in (at(starts, 1) or []):
         gname, sp = npc(i)
         p = first_point(sp, zones)
         if p: giver = (gname, p); break
-    if not giver: return None                    # item- or object-started: picked up on the way
+    if not giver and not at(starts, 1):          # starts from an object or an item
+        start = starter(q, zones)
+        if start: giver = (start['src'], start['point'])
+    if not giver: return None
+    ends = [i for i in (at(ends, 1) or []) if npc(i)[1]]
     return dict(id=int(qid), name=name, lvl=ql, req=rl or 1, giver=giver, pre=list(preG or []) + list(preS or []),
-                preG=list(preG or []), preS=list(preS or []))
+                preG=list(preG or []), preS=list(preS or []), start=start,
+                maybe=bool(start and not start['sure']), ender=ends[0] if ends else None)
+
+def owner_lo(letter, z):
+    """The lowest starting level of the legs on this race's route that take quests filed under zone z (None: no leg)."""
+    shared = 'F' if letter in ALLY_LETTERS + 'F' else 'X'
+    los = [l[2] for l in LEGS if l[0] in (letter, shared) and z in l[4]]
+    return min(los) if los else None
+
+def homeless(letter, z, ql):
+    """A quest no leg of this race's route would take by where it's filed: one filed under a theme instead of a zone
+    (Forever's Camping quests), or under a zone whose leg starts well above its level (Wayward Weapons is filed under
+    Durotar at level 2, but Gornek hands it out in the Valley of Trials). It goes where its giver stands."""
+    if z == CAMPING: return True
+    if not isinstance(z, int) or z <= 0: return False
+    lo = owner_lo(letter, z)
+    return lo is not None and ql < lo - 1
 
 def build(letter, zone_name, lo, hi, zones, qmin=0):
     ally = letter in 'HDNGAF'
     FACTION[0] = 'Alliance' if ally else 'Horde'
+    maps = {ui.get(z) for z in zones}
+    # the race's capital, for its own legs up to level 20 (Orgrimmar's Hidden Enemies, Meal Appeal...)
+    city = CAPITAL.get(letter) if lo > 1 and hi <= 20 else None
+    anchors = anchor_points(zones)
     quests = {}
     for qid, q in D['quests'].items():
         z, rl, ql = at(q, 8), at(q, 4), at(q, 5)
-        if z not in zones: continue
         ql = ql if (ql and ql > 0) else (rl or 1)
         if not (lo - 1 <= ql <= hi + 1) or ql < qmin: continue
+        loose = z not in zones and ((city and z == city) or homeless(letter, z, ql))
+        if z not in zones and not loose: continue
+        if loose and (covered(letter, int(qid)) or dungeon_quest(q)): continue    # (already on the way: an earlier leg took it)
         rec = make_quest(qid, q, letter, zones)
-        if rec: quests[int(qid)] = rec
+        if not rec: continue
+        if loose and z != city:
+            # where its giver stands: on this leg's map, and in a starting zone near its hub (Brakk's Camping quests are
+            # in Razor Hill, on the same map as the Valley of Trials, but they belong to the Durotar leg)
+            gz, gx, gy = rec['giver'][1]
+            if ui.get(gz) not in maps: continue
+            if lo == 1 and not any(ui.get(az) == ui.get(gz) and math.hypot(ax - gx, ay - gy) <= START_RADIUS for _, (az, ax, ay) in anchors): continue
+        quests[int(qid)] = rec
     if not quests: return []
     if lo == 1:  # a starting zone: only quests handed out in the zone itself
-        home = {ui.get(z) for z in zones}
-        quests = {k: q for k, q in quests.items() if ui.get(q['giver'][1][0]) in home}
+        quests = {k: q for k, q in quests.items() if ui.get(q['giver'][1][0]) in maps}
     # Every quest's earlier quests must be on the way. One this route hasn't listed before (an Undead skips the
     # Barrens at 12-20, so Serena Bloodfeather in the shared Barrens leg needs Harpy Lieutenants, which only the
     # other races met) joins this leg, and its own earlier quests with it; a quest whose earlier quest can't be
@@ -321,7 +392,6 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
         depth[qid] = v
         return v
     for qid in quests: d(qid)
-    anchors = anchor_points(zones)
     def hub_of(q):
         gz, gx, gy = q['giver'][1]
         best = None
@@ -334,13 +404,15 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
         return q['giver'][0], q['giver'][1]
     # Walk the zone like a player would: go to the hub with the most quests you can
     # take now, take everything there (and follow-ups handed out on the spot), move on.
+    # (quests from an item that only sometimes drops aren't walked to: they join a step further down)
+    walked = {k: q for k, q in quests.items() if not q['maybe']}
     done, steps, L = set(), [], lo
     def ready(q):
         return (q['id'] not in done and q['req'] <= L + 1 and q['lvl'] <= L + 3
-                and all(p in done or p not in quests for p in q['pre']))
+                and all(p in done or p not in walked for p in q['pre']))
     last_point = None
-    while len(done) < len(quests):
-        cands = [q for q in quests.values() if ready(q)]
+    while len(done) < len(walked):
+        cands = [q for q in walked.values() if ready(q)]
         if not cands:
             if L > hi + 3: break
             L += 1; continue
@@ -361,22 +433,42 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
             qs.sort(key=lambda q: (q['lvl'], depth[q['id']], q['id']))
             for q in qs: done.add(q['id'])
             taken += qs
-            qs = [q for q in quests.values() if ready(q) and hub_of(q)[0] == label]
+            qs = [q for q in walked.values() if ready(q) and hub_of(q)[0] == label]
         for i in range(0, len(taken), MAX_PER_STEP):
             steps.append({'hub': label, 'point': point, 'q': taken[i:i + MAX_PER_STEP]})
         last_point = point
         L = max(L, min(hi, sorted(q['lvl'] for q in taken)[len(taken) // 2]))
+    # A quest from an item that only sometimes drops joins the step where it's handed in (the add-on shows it once
+    # you have it), or the one nearest its drop. Only steps at or after its level, if any.
+    for q in sorted((q for q in quests.values() if q['maybe']), key=lambda q: (q['lvl'], q['id'])):
+        if not steps: break
+        target = q['giver'][1]
+        if q['maybe'] and q['ender']:
+            _, sp = npc(q['ender'])
+            target = (sp and first_point(sp, zones)) or target
+        def far(i, q=q, target=target):
+            pz, px, py = steps[i]['point']
+            lvl = min(x['lvl'] for x in steps[i]['q'] if not x['maybe'])
+            return (ui.get(pz) != ui.get(target[0]), lvl < q['lvl'] - 2, round(math.hypot(px - target[1], py - target[2]) / 5), i)
+        steps[min(range(len(steps)), key=far)]['q'].append(q)
     out = []
     for s in steps:
         names = []
         for q in s['q']:
+            if q['maybe']: continue      # (not named: it only shows once you have it)
+            if q['start']: q = dict(q, name='%s (starts from %s)' % (q['name'], q['start']['item']))
             if q['name'] not in names: names.append(q['name'])   # chain parts share a name
-        givers = []
-        for q in s['q']:
+        # quests named alike say their shared part once ("Camping 101: Cooking, Mining, Skinning")
+        for i in range(len(names) - 1, 0, -1):
+            pre = names[i - 1].split(': ')[0] if ': ' in names[i - 1] else None
+            if pre and names[i].startswith(pre + ': '):
+                names[i] = names[i][len(pre) + 2:]
+        givers, shown = [], [q for q in s['q'] if not q['maybe']]
+        for q in shown:
             if q['giver'][0] not in givers: givers.append(q['giver'][0])
-        lv = sorted({q['lvl'] for q in s['q']})
+        lv = sorted({q['lvl'] for q in shown})
         lvtxt = ('level %d' % lv[0]) if len(lv) == 1 else ('levels %d-%d' % (lv[0], lv[-1]))
-        if s['hub'] == s['q'][0]['giver'][0] and len(givers) == 1:
+        if s['hub'] == shown[0]['giver'][0] and len(givers) == 1:
             text = '%s (%s): %s.' % (s['hub'], lvtxt, ', '.join(names))
         else:
             who = ', '.join(givers[:3]) + (' and others' if len(givers) > 3 else '')
@@ -521,9 +613,9 @@ lines.append('}')
 # On launch day a brand-new zone shows up in the route within an hour of its quest data, without a code change.
 # ---------------------------------------------------------------------------
 AUTO_MIN = 12
-covered = set()
-for leg in LEGS: covered |= {ui.get(z) for z in leg[4]} | set(leg[4])
-for _, areas in DUNGEONS + ALLY_DUNGEONS: covered |= {ui.get(a) for a in areas} | set(areas)
+listed = set()   # (not "covered": build() still calls covered())
+for leg in LEGS: listed |= {ui.get(z) for z in leg[4]} | set(leg[4])
+for _, areas in DUNGEONS + ALLY_DUNGEONS: listed |= {ui.get(a) for a in areas} | set(areas)
 SKIP_MAPS = set()
 for m in re.finditer(r'\[(\d+)\]\s*=\s*(\d+),\s*--\s*Referenced dungeon area', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read()):
     SKIP_MAPS.add(int(m.group(2)))
@@ -534,7 +626,7 @@ for qid, q in D['quests'].items():
     z, ql, races, classes, sflags = at(q, 8), at(q, 5), int(at(q, 6) or 0), at(q, 10), at(q, 9)
     if not isinstance(z, int) or z <= 0 or classes or (sflags or 0) & 1: continue
     m = ui.get(z)
-    if not m or m in covered or z in covered or m in SKIP_MAPS: continue
+    if not m or m in listed or z in listed or m in SKIP_MAPS: continue
     if not ql or ql < 10 or ql > 60: continue
     for letter, mask in (('X', HORDE_ALL), ('F', ALLY_ALL)):
         if races and not races & mask: continue

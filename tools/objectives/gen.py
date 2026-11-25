@@ -95,6 +95,14 @@ def cluster_points(sp, prefer_zone, maxzones=2, per_zone=4):
     return out
 # drop chances: creature entry -> loot id -> {item: chance %}
 DROP = {}
+# How often an item drops, from forever-db's item sources (CC BY 4.0): (item, 'npc' or 'object', id) -> percent.
+# Read before the cMaNGOS tables: it knows Forever's own items too. SURE_DROP: the same as tools/routes/gen.py's.
+CHANCE = {}
+SURE_DROP = 90
+if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
+    for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
+        _r = json.loads(_line)
+        if _r.get('chance') is not None: CHANCE[(_r['item'], _r['kind'], _r['id'])] = _r['chance']
 if SQL:
     print('reading drop chances...', file=sys.stderr)
     sqltxt = open(SQL, encoding='utf-8', errors='replace').read()
@@ -268,6 +276,31 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         n, sp = spawns_of('npc', i)
         pts = rep_points(sp, zone, 1)
         if pts: start = (pts[0], n); break
+    # where a quest no NPC hands out begins: an object to click, or an item from a mob or a chest (si; sure = it
+    # always drops there, so the route can send you; otherwise the add-on shows the quest once you have it)
+    si = None
+    if not givers:
+        for oid in (at(starts, 2) or []):
+            n, sp = spawns_of('obj', oid)
+            pts = rep_points(sp, zone, 2)
+            if pts: si = ('o', n or '?', [], [p + (0,) for p in pts], 1); break
+        for iid in ([] if si else (at(starts, 3) or [])):
+            it = D['items'].get(str(iid))
+            if not it: continue
+            srcs = []
+            for kind, sid in [('npc', n) for n in (at(it, 2) or [])] + [('object', o) for o in (at(it, 3) or [])]:
+                ch = CHANCE.get((int(iid), kind, int(sid)))
+                if ch is None and kind == 'npc': ch = DROP.get(sid, {}).get(int(iid))
+                srcs.append((-(ch or 0), kind, sid))
+            srcs.sort(key=lambda x: x[0])
+            mobs, pts = [], []
+            for _, kind, sid in srcs[:3]:
+                n, sp = spawns_of('npc' if kind == 'npc' else 'obj', sid)
+                if not n: continue
+                if kind == 'npc' and n not in mobs: mobs.append(n)
+                for p in cluster_points(sp, zone, 2, 2): pts.append(p + (len(mobs) if kind == 'npc' else 0,))
+            if pts:
+                si = ('i', at(it, 1) or '?', mobs, pts[:4], 1 if srcs and -srcs[0][0] >= SURE_DROP else 0); break
     if not objs and not end and not start and not name: continue
     nq += 1; nobj += len(objs)
     parts = []
@@ -301,6 +334,9 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         if isinstance(startWith, int) and startWith > 0: parts.append('sw=%d' % startWith)
         dis = [disabledBy] if isinstance(disabledBy, int) else [x for x in (disabledBy.values() if isinstance(disabledBy, dict) else disabledBy or []) if isinstance(x, int)]
         if dis: parts.append('dq={%s}' % ','.join(str(x) for x in dis))
+    if si and not ((sflags or 0) & 1):
+        parts.append('si={%s,%s,{%s},{%s},%d}' % (lstr(si[0]), lstr(si[1]), ','.join(lstr(m) for m in si[2]),
+                     ','.join('{%d,%.1f,%.1f,%d}' % p for p in si[3]), si[4]))
     if (sflags or 0) & 1: parts.append('rep=true')
     if ra: parts.append('ra="%s"' % ra)
     if cl: parts.append('cl="%s"' % cl)
@@ -323,7 +359,8 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '--   mx = max level, uc = gone once this is done, sw = only once this is taken or done, dq = {not while these are in your log},',
         '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
-        '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... } }',
+        '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... },',
+        '--   si = {o/i, object or item that starts it, {mob names}, {{uiMapID, x, y, mob#}, ...}, 1 = always drops there / 0 = only sometimes} }',
         'local _, RG = ...', 'RG.QDATA = {']
 open(RET + 'Objectives.lua', 'w', encoding='utf-8').write('\n'.join(head) + '\n' + ',\n'.join(out) + '\n}\n')
 print(f'{nq} quests, {nobj} objectives, {npts} points', file=sys.stderr)

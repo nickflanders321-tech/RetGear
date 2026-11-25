@@ -184,7 +184,7 @@ function RG.CurrentRouteEntry() local ok, r = pcall(currentEntry); return ok and
 -- next. Returns the list (hand-ins first, then pick-ups, then quests in your
 -- log, then ones that open later), how many are done, how many count, and the
 -- step's place and level range. nil for hand-written steps.
---   { id, name, act = "turnin"|"pickup"|"doing"|"later", npc, wp, prog }
+--   { id, name, act = "turnin"|"pickup"|"doing"|"later", npc, wp, prog, how = how a quest without a giver starts }
 local ACT_ORDER = { turnin = 1, pickup = 2, doing = 3, later = 4 }
 -- A quest's kind and note (QuestNotes.lua, from Polestar's forever-db, CC BY 4.0): a short coloured tag for the line and
 -- a sentence for its tooltip. nil when there is nothing to say.
@@ -250,6 +250,16 @@ function RG.StepQuestLines(entry, i, myQuests)
           -- what's still in the way: an earlier quest, your level, a profession, reputation...
           if why then
             l.act, l.npc = "later", why
+          elseif not d.s and d.si and d.si[4] and d.si[4][1] then
+            -- it starts from an object you click or an item that always drops there (one that only sometimes drops
+            -- never gets here: QuestBlocked leaves it out until you have it)
+            local si, p = d.si, d.si[4][1]
+            local from = (si[1] == "i" and si[3] and si[3][p[4]] or si[3][1]) or si[2]
+            l.act, l.npc = "pickup", from
+            l.how = si[1] == "o" and ("Click " .. si[2] .. " to start this quest.")
+              or (si[3] and #si[3] > 0) and ("Kill " .. from .. " and loot " .. si[2] .. ": it starts this quest.")
+              or ("Pick up " .. si[2] .. " here: it starts this quest.")
+            l.wp = { p[1], p[2], p[3], from }
           else
             l.act, l.npc = "pickup", d.s and d.s[4]
             l.noGiver = not d.s
@@ -1201,7 +1211,7 @@ function RG.RefreshTracker()
           else rt = GREY .. l.npc .. "|r" end
           local tip
           if l.act == "turnin" then tip = "Done: take it back to " .. (l.npc or "the quest giver") .. "."
-          elseif l.act == "pickup" then tip = "Get this quest from " .. (l.npc or "the quest giver") .. "."
+          elseif l.act == "pickup" then tip = l.how or ("Get this quest from " .. (l.npc or "the quest giver") .. ".")
           elseif l.act == "doing" then tip = "In your quest log: finish its objectives."
           else tip = "Not open yet: it becomes available " .. l.npc .. "." end
           if l.wp then tip = tip .. "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map" end

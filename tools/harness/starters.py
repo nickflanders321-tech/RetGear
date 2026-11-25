@@ -19,7 +19,7 @@ def at(a, i):
     return a[i - 1] if 0 < i <= len(a) else None
 
 def spots(spawns, limit):
-    """[(uiMapID, x, y)] from a {zone: [[x, y], ...]} spawn table (the first few in each zone)."""
+    """[(uiMapID, x, y)] from a {zone: [[x, y], ...]} spawn table (up to limit in each zone)."""
     out = []
     if not isinstance(spawns, dict): return out
     for z, pts in spawns.items():
@@ -37,7 +37,7 @@ for qid, q in D['quests'].items():
     kind, item, where = None, None, []
     for o in objs:
         e = D['objects'].get(str(o))
-        if e: where += spots(at(e, 2), 3)
+        if e: where += spots(at(e, 2), 40)       # every spawn: the add-on may send you to any of them
     if objs: kind = 'o'
     for it in items:
         e = D['items'].get(str(it))
@@ -45,11 +45,11 @@ for qid, q in D['quests'].items():
         item, kind = int(it), kind or 'i'
         for n in (at(e, 2) or [])[:4]:          # the mobs that drop it
             ne = D['npcs'].get(str(n))
-            if ne: where += spots(at(ne, 2), 2)
+            if ne: where += spots(at(ne, 2), 40)
         for o in (at(e, 3) or [])[:4]:          # or the objects it's found in
             oe = D['objects'].get(str(o))
-            if oe: where += spots(at(oe, 2), 2)
-    rows.append((int(qid), kind, item, where[:8]))
+            if oe: where += spots(at(oe, 2), 40)
+    rows.append((int(qid), kind, item, where[:120]))
 
 rows.sort()
 with open(OUT, 'w', encoding='utf-8') as f:

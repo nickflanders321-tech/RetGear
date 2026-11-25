@@ -1516,7 +1516,7 @@ local function renderRoute()
               local sub
               if l.act == "turnin" then sub = GREEN .. "Done: take it to " .. (l.npc or "the quest giver") .. "|r"
               elseif l.act == "pickup" and l.npc and l.npc == place then sub = ""   -- (the step above already names the giver)
-              elseif l.act == "pickup" then sub = GREY .. (l.npc and ("Get it from " .. l.npc) or "Starts from an item or object") .. "|r"
+              elseif l.act == "pickup" then sub = GREY .. (l.how or (l.npc and ("Get it from " .. l.npc)) or "Starts from an item or object") .. "|r"
               elseif l.act == "doing" then sub = GREY .. "In your quest log" .. (l.prog and (": " .. l.prog) or "") .. "|r"
               else sub = GREY .. "Opens " .. l.npc .. "|r" end
               setItem(qr, nil, nil, VERB[l.act] .. RG.LevelTag(l.level) .. (l.act == "later" and GREY or "|cffffffff") .. l.name .. "|r", sub, nil, "", nil, nil, true)
