@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.62.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.62.0
 - **Tier sets and everything Pix Xizzix sells are now in the gear lists, for every class.**
   - **Why they were missing:** the list builder threw out any plate or mail piece with no level requirement before judging it, and Tier 0.5's pieces (Soulforge, Heroism, Beastmaster's, the Five Thunders' and the others) have none. Warriors, Paladins, Hunters and Shamans lost the whole set. The upgrade-path rule also hid most of what the other classes could buy.
