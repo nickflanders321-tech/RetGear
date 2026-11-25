@@ -1199,6 +1199,18 @@ function W.visibleTexts(f, out)
   return out
 end
 
+-- JSON for a value (arrays, string-keyed tables, strings, numbers, booleans), for the audit tools
+function W.json(v)
+  local t = type(v)
+  if t == "string" then return '"' .. v:gsub('[%c"\\]', function(c) return string.format("\\u%04x", c:byte()) end) .. '"' end
+  if t == "number" or t == "boolean" then return tostring(v) end
+  if t ~= "table" then return "null" end
+  if #v > 0 or next(v) == nil then local p = {}; for i, x in ipairs(v) do p[i] = W.json(x) end return "[" .. table.concat(p, ",") .. "]" end
+  local p = {}
+  for k, x in pairs(v) do p[#p + 1] = W.json(tostring(k)) .. ":" .. W.json(x) end
+  return "{" .. table.concat(p, ",") .. "}"
+end
+
 -- Lua source for a value (tables, strings, numbers, booleans; functions and cycles are left out)
 function W.serialize(v)
   local seen = {}

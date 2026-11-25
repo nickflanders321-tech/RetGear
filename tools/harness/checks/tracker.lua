@@ -75,7 +75,10 @@ return {
         local lines, seen = T.tracker(), false
         for _, t in ipairs(lines) do
           if t:find("Hand in to", 1, true) then seen = true
-          elseif seen then local n = t:match("(%d+) yd"); if n then return tonumber(n), t end end
+          elseif seen then
+            local n, k = t:match("([%d%.]+)(k?) yd")   -- "543 yd", or "1.1k yd" from 1000 up
+            if n then return tonumber(n) * (k == "k" and 1000 or 1), t end
+          end
         end
       end
       local far, l1 = yards()

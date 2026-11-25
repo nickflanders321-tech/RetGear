@@ -59,14 +59,32 @@ Wd.killXP = killXP
 -- ---------------------------------------------------------------------------
 -- Places and moving
 -- ---------------------------------------------------------------------------
+-- The game's maps (maps.lua from the client's UiMap tables, loaded by run.lua when tools/harness/.cache/maps.lua
+-- exists): real names, parents and world positions. Without them every zone is ZONE_YARDS big and on its own.
+Wd.mapsData = nil
 local function mapName(m)
+  local md = Wd.mapsData and Wd.mapsData.maps[m]
+  if md then return md[1] end
   if zoneName[m] then return zoneName[m] end
-  local info = m and Wd.mapInfo and Wd.mapInfo[m]
-  return info and info.name or ("Map " .. tostring(m))
+  return "Map " .. tostring(m)
 end
 Wd.mapName = mapName
--- yards between two points on one map (nil on different maps: the world doesn't know how zones sit together)
+-- where a map point (x, y 0-1) is in the world: continent, world x, world y (nil without map data)
+local function worldPos(m, x, y)
+  local a = Wd.mapsData and Wd.mapsData.at[m]
+  if not a then return nil end
+  local fu, fv = (x - a[2]) / (a[4] - a[2]), (y - a[3]) / (a[5] - a[3])
+  return a[1], a[8] - fv * (a[8] - a[6]), a[9] - fu * (a[9] - a[7])
+end
+Wd.worldPos = worldPos
+-- yards between two points (nil on different continents, or different maps without map data)
 function Wd.yards(m1, x1, y1, m2, x2, y2)
+  local c1, ax, ay = worldPos(m1, x1, y1)
+  local c2, bx, by = worldPos(m2, x2, y2)
+  if c1 and c2 then
+    if c1 ~= c2 then return nil end
+    return math.sqrt((bx - ax) ^ 2 + (by - ay) ^ 2)
+  end
   if m1 ~= m2 then return nil end
   local dx, dy = (x2 - x1) * ZONE_YARDS[1], (y2 - y1) * ZONE_YARDS[2]
   return math.sqrt(dx * dx + dy * dy)
@@ -367,10 +385,14 @@ function Wd.install(w)
   CM.GetPlayerMapPosition = function(m, u) if u == "player" and m == S.map then return G.CreateVector2D(S.x, S.y) end end
   CM.GetWorldPosFromMapPos = function(m, pos)
     if not (m and pos) then return nil end
+    local c, wx, wy = worldPos(m, pos.x, pos.y)
+    if c then return c, G.CreateVector2D(wx, wy) end
     return m, G.CreateVector2D(pos.x * ZONE_YARDS[1], pos.y * ZONE_YARDS[2])
   end
   CM.GetMapInfo = function(m)
     if not m then return nil end
+    local md = Wd.mapsData and Wd.mapsData.maps[m]
+    if md then return { mapID = m, name = md[1], parentMapID = md[2], mapType = md[3] } end
     if m == 1414 or m == 1415 or m == 947 then return { mapID = m, name = m == 1415 and "Eastern Kingdoms" or "Kalimdor", mapType = 2, parentMapID = 947 } end
     return { mapID = m, name = mapName(m), mapType = 3, parentMapID = 1414 }
   end

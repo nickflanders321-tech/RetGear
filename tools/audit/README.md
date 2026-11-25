@@ -49,11 +49,23 @@ route for every race through the harness (`run.lua --dump-route`).
 
 - **Polestar's 1-60 guides** (github.com/fitzforge/polestar, GPL-3.0). Every step lists the quest IDs it takes, so
   quests are compared by ID: which ones Polestar does that we don't, and the reverse.
+- **RestedXP's own free Forever guides** (github.com/RestedXP/RXPGuides, `Guides/forever`, CC BY-NC-SA 4.0). These
+  cover each race's start to about level 22, compared by quest ID with RestedXP's race and class tags applied.
 - **The community RestedXP-format guide** (github.com/craigory1591/wow-forever-guide). It has no licence, so only
   facts are read from it: the level bracket of each zone, and the quest titles its steps name.
 
-Journey and RestedXP publish no route lists (their routes live inside their addons), so they aren't compared. Nothing
-from these guides is copied into Waypath+: the report only says where we differ.
+Journey isn't compared: its Terms of Service forbid extracting its route data or collecting it with scripts. Nothing
+from any of these guides is copied into Waypath+: the report only says where we differ.
+
+The comparison is for Warriors (every race has them). For each race the report gives:
+
+- the zone table, with each guide's levels;
+- quests each guide does that our route doesn't;
+- the class quests each guide weaves into its route, and when the bot did ours;
+- each route's zone path, counting how often it goes back to a zone it had left.
+
+With `BOT=1 sh tools/audit/compare_guides.sh report.md`, the bot plays every race to 60 first, about 4 minutes each.
+The report then uses the bot's actual path and class quests rather than just the route's zone list.
 
 The report has one table per race: zone, our level window, theirs, and a flag when we start a zone 4+ levels away
 from every guide that goes there, or go where neither does. Our window is when the guide will send you to a zone;

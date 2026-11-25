@@ -123,6 +123,23 @@ It reports:
 
 `--until-level` (default 20) and `--max-actions` (default 4000) set when it stops.
 
+**Maps.** `sh tools/harness/maps.sh` builds `.cache/maps.lua` from the client's UiMap and UiMapAssignment tables
+(wago.tools, for the build the `data/wago` branch has). It gives each map its real name and parent, so `RG.ZoneName`
+and the guide's zone checks behave as in game. Map points become world positions, so distances are real yards, also
+between zones, and travel between zones takes the walking time (capped at 10 minutes, standing in for flights).
+Without the cache, every zone is 3,500 yards wide and unconnected.
+
+**Class quests.** The tracker lists class quests beside the route ("Class quests: pick up now", `RG.ClassQuests`).
+The bot does each one when the tracker says so and the quest is within 3 levels of its own. The world can't make a
+quest harder for being above you, so this is the bot standing in for a player's judgement. It notes:
+
+- when each class quest was listed and when it was done;
+- which ones the tracker called "pick up now" 4 or more levels before the quest's level.
+
+**The zone path.** The bot records the zones it goes through, with levels (`--play-dump FILE` writes the path and
+the class quests as JSON). The report counts how often it goes back to a zone it had left, which shows how much the
+guide mixes zones.
+
 **Quests that start from an object or item.** The route only lists quests handed out by an NPC. Some quests start
 from an object instead (a crate, a corpse, a letter) or from an item that drops. When a step's quests all wait on
 one of those, the bot goes where it starts, takes it, does it and hands it in, as a player who came across it would.

@@ -10,7 +10,7 @@
 local P = {}
 
 local WALK = 7          -- yards per second (running, no mount)
-local OTHER_ZONE = 300  -- seconds to get to another zone (the world doesn't know how far apart zones are)
+local OTHER_ZONE = 600  -- seconds to get to another continent (or anywhere, without the maps cache)
 
 function P.run(W, Wd, RG, opts, Inv, I)
   local S = Wd.state
@@ -35,14 +35,27 @@ function P.run(W, Wd, RG, opts, Inv, I)
     W.step(framed, 1)
     if secs > framed then W.advance(secs - framed) end
   end
+  -- the zones the bot goes through, in order, with the levels it was there ({ zone, from, to }): how much it mixes zones
+  R.path = {}
+  local function notePlace()
+    local z = Wd.mapName(S.map)
+    local last = R.path[#R.path]
+    if last and last.zone == z then last.to = me.level
+    else R.path[#R.path + 1] = { zone = z, from = me.level, to = me.level } end
+  end
   -- walk to a waypoint { uiMapID, x 0-100, y 0-100 }
   local function walk(wp)
     if not wp or not wp[1] then return end
     local tx, ty = wp[2] / 100, wp[3] / 100
     if wp[1] ~= S.map then
+      notePlace()
+      -- to another zone: the real distance on one continent (flights cap it at 10 minutes), a boat or zeppelin otherwise
+      local d = Wd.yards(S.map, S.x, S.y, wp[1], tx, ty)
       W.context = "travelling to " .. Wd.mapName(wp[1])
       Wd.setPos(wp[1], tx, ty)
-      wait(OTHER_ZONE)
+      notePlace()
+      wait(d and math.min(d / WALK, 600) or OTHER_ZONE)
+      R.travel = (R.travel or 0) + (d and math.min(d / WALK, 600) or OTHER_ZONE)
       return
     end
     local d = Wd.yards(S.map, S.x, S.y, wp[1], tx, ty) or 0
@@ -246,8 +259,45 @@ function P.run(W, Wd, RG, opts, Inv, I)
     return true
   end
 
+  -- Class quests: the tracker lists them beside the route ("Class quests: pick up now", RG.ClassQuests); a player
+  -- following it does them when it says so. The bot does the same, and notes when each one became available and
+  -- when it was handed in.
+  R.classQuests = {}
+  local cqSeen, cqSkip = {}, {}
+  local function doClassQuests()
+    if not RG.ClassQuests then return end
+    local moment = S.stats.handedIn .. ":" .. me.level   -- (a quest it couldn't take is tried again after the next change)
+    for _, q in ipairs(RG.ClassQuests(5)) do
+      if not cqSeen[q.id] then cqSeen[q.id] = { id = q.id, name = q.name, lvl = q.lvl, req = q.req, listed = me.level } end
+      local rec = cqSeen[q.id]
+      -- "pick up now" for a quest well above your level (Brutal Armor, level 30, at 20): noted; the bot, like a
+      -- player, waits until it's within 3 levels (the world can't make a quest harder for being above you)
+      if q.now and q.lvl and q.lvl > me.level + 3 then rec.tooHigh = rec.tooHigh or me.level end
+      if q.now and (not q.lvl or q.lvl <= me.level + 3) and cqSkip[q.id] ~= moment and not S.done[q.id] then
+        rec.now = rec.now or me.level
+        W.phase = "class quest " .. tostring(q.name)
+        walk(q.wp)
+        local ok, why = Wd.accept(q.id)
+        if not ok then cqSkip[q.id] = moment; rec.failed = why
+        else
+          note("class quest: " .. tostring(q.name))
+          local d = RG.QDATA[q.id]
+          for _ = 1, 8 do local sp = Wd.objectiveSpot(q.id); if not sp then break end; walk(sp); local _, secs = Wd.work(q.id); wait(math.max(secs, 5)) end
+          Wd.work(q.id)
+          if d and d.e then walk(d.e) end
+          local handed = Wd.handIn(q.id)
+          if handed then rec.done = me.level; rec.failed = nil; R.classQuests[#R.classQuests + 1] = rec else cqSkip[q.id] = moment; rec.failed = "couldn't hand it in" end
+          wait(5)
+        end
+        return true
+      end
+    end
+  end
+
   local lastSig, same = nil, 0
   while me.level < untilLevel and R.actions < maxActions do
+    -- the tracker's class quests come first when it says "pick up now"
+    if doClassQuests() then R.actions = R.actions + 1 end
     -- after a hand-in or a level-up: put on upgrades; every 10 hand-ins (or with full bags), a vendor
     if Inv and (S.stats.handedIn ~= lastHanded or me.level ~= lastLevel) then
       if me.level ~= lastLevel and me.level % 10 == 0 then
@@ -364,6 +414,10 @@ function P.run(W, Wd, RG, opts, Inv, I)
     end
   end
   R.endLevel = me.level
+  notePlace()
+  R.classSeen = {}
+  for _, rec in pairs(cqSeen) do R.classSeen[#R.classSeen + 1] = rec end
+  table.sort(R.classSeen, function(a, b) return (a.req or 0) < (b.req or 0) end)
   -- cascades are reported, but only the first cause counts as a failure
   R.info = {}
   local keep = {}

@@ -93,6 +93,9 @@ local withItems = false
 if opts.play then
   Wd.install(W)
   -- where quests that start from an object or item begin (sh tools/harness/starters.sh builds it)
+  -- the game's maps: names, parents, world positions (sh tools/harness/maps.sh builds it)
+  local mf = loadfile(HERE .. "/.cache/maps.lua")
+  if mf then Wd.mapsData = mf() else io.stderr:write("(no maps cache: zones are 3500 yards and unconnected; sh tools/harness/maps.sh builds it)\n") end
   local sf = loadfile(HERE .. "/.cache/starters.lua")
   if sf then Wd.starters = sf() or {} else io.stderr:write("(no starters cache: quests that start from an item or object are found anywhere; sh tools/harness/starters.sh builds it)\n") end
   -- items: LibItemDB's tables from the data/itemdb branch (cached in tools/harness/.cache/itemdb)
@@ -140,16 +143,7 @@ W.advance(tonumber(opts.seconds) or 15)
 
 -- --dump-route FILE: the route this character gets, as JSON (tools/audit/compare_guides.py reads it), then stop
 if opts.dump_route then
-  local function js(v)
-    local t = type(v)
-    if t == "string" then return '"' .. v:gsub('[%c"\\]', function(c) return string.format("\\u%04x", c:byte()) end) .. '"' end
-    if t == "number" or t == "boolean" then return tostring(v) end
-    if t ~= "table" then return "null" end
-    if #v > 0 or next(v) == nil then local p = {}; for i, x in ipairs(v) do p[i] = js(x) end return "[" .. table.concat(p, ",") .. "]" end
-    local p = {}
-    for k, x in pairs(v) do p[#p + 1] = js(tostring(k)) .. ":" .. js(x) end
-    return "{" .. table.concat(p, ",") .. "}"
-  end
+  local js = W.json
   local entries = {}
   for _, r in ipairs(RG.ROUTE or {}) do
     local key = r.zone .. "|" .. r.from
@@ -161,7 +155,7 @@ if opts.dump_route then
     entries[#entries + 1] = { zone = r.zone, from = r.from, to = r.to, kind = r.kind or "zone", steps = #steps, quests = quests }
   end
   local names = {}
-  for id, d in pairs(RG.QDATA or {}) do if d.n then names[tostring(id)] = { d.n, d.l or d.r or 0 } end end
+  for id, d in pairs(RG.QDATA or {}) do if d.n then names[tostring(id)] = { d.n, d.l or d.r or 0, d.cq and 1 or 0, d.r or 1 } end end
   local fh = assert(io.open(opts.dump_route, "wb"))
   fh:write(js({ race = W.me.race, faction = W.me.faction, class = W.me.class, route = entries, quests = names }))
   fh:close()
@@ -200,6 +194,16 @@ elseif opts.play then
   played = P.run(W, Wd, RG, opts, withItems and Inv or nil, I)
   W.phase = "logout"
   D.logout(W)
+  -- --play-dump FILE: the bot's zone path and class quests, as JSON (tools/audit/compare_guides.py reads it)
+  if opts.play_dump then
+    local done = {}
+    for id in pairs(Wd.state.done) do done[#done + 1] = id end
+    table.sort(done)
+    local fh = assert(io.open(opts.play_dump, "wb"))
+    fh:write(W.json({ race = W.me.race, faction = W.me.faction, class = W.me.class, path = played.path,
+      classDone = played.classQuests, classSeen = played.classSeen, done = done }))
+    fh:close()
+  end
 elseif not opts.login_only then
   local cmds, extra = D.commands(W, luaFiles)
   if opts.cmd then
@@ -286,6 +290,14 @@ if played then
   out:write(string.format("XP: %d from quests, %d from kills (made-up numbers: see world.lua). Steps ticked by hand: %d hand-written, %d to get past a problem.\n",
     st.questXP, st.killXP, played.ticked, played.tickedHand))
   out:write(string.format("Quests found on the way (they start from an item or object): %d.\n", played.found or 0))
+  do
+    local late, n = 0, #played.classQuests
+    for _, c in ipairs(played.classQuests) do if c.done and c.req and c.done - c.req >= 3 then late = late + 1 end end
+    local zones, seen, back = #played.path, {}, 0
+    for _, p in ipairs(played.path) do if seen[p.zone] then back = back + 1 end seen[p.zone] = true end
+    out:write(string.format("Class quests done from the tracker: %d (%d of them 3+ levels after they opened). Zone path: %d stretches, %d of them back in a zone it had left.\n",
+      n, late, zones, back))
+  end
   if withItems then
     local is = Inv.stats
     out:write(string.format("Items: %d quest rewards (%d had a choice: %d picked by the add-on, %d by the bot), %d quest item stacks. %d swaps to upgrades, %d sold (%d by the add-on)%s.\n",
