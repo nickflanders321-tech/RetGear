@@ -92,6 +92,9 @@ end
 local withItems = false
 if opts.play then
   Wd.install(W)
+  -- where quests that start from an object or item begin (sh tools/harness/starters.sh builds it)
+  local sf = loadfile(HERE .. "/.cache/starters.lua")
+  if sf then Wd.starters = sf() or {} else io.stderr:write("(no starters cache: quests that start from an item or object are found anywhere; sh tools/harness/starters.sh builds it)\n") end
   -- items: LibItemDB's tables from the data/itemdb branch (cached in tools/harness/.cache/itemdb)
   local cache = HERE .. "/.cache/itemdb"
   local ok, why = I.ensure(cache)
@@ -251,6 +254,7 @@ if played then
     st.accepted, st.autoAccepted, st.handedIn, st.autoHandedIn, st.kills))
   out:write(string.format("XP: %d from quests, %d from kills (made-up numbers: see world.lua). Steps ticked by hand: %d hand-written, %d to get past a problem.\n",
     st.questXP, st.killXP, played.ticked, played.tickedHand))
+  out:write(string.format("Quests found on the way (they start from an item or object): %d.\n", played.found or 0))
   if withItems then
     local is = Inv.stats
     out:write(string.format("Items: %d quest rewards (%d had a choice: %d picked by the add-on, %d by the bot), %d quest item stacks. %d swaps to upgrades, %d sold (%d by the add-on)%s.\n",
@@ -282,6 +286,7 @@ if played then
     ["no-waypoint"] = "no waypoint for a quest pick-up",
     ["flip-flop"] = "gear scoring that contradicts itself (an item and the one it replaced both called upgrades)",
     downgrade = "an \"upgrade\" that made the whole outfit worse",
+    starter = "a step waits on a quest that starts from an item or object the bot couldn't take",
   }
   if #played.problems > 0 then
     local byKind, kinds = {}, {}
@@ -301,7 +306,7 @@ if played then
     end
   end
   if #played.info > 0 then
-    out:write(string.format("\nNot counted (%d): quests blocked only because the bot skipped what they need, or because what they need starts from an item or object (the bot can't pick those up)%s\n",
+    out:write(string.format("\nNot counted (%d): quests blocked only because the bot skipped what they need, or because what they need starts from an item or object it couldn't take yet%s\n",
       #played.info, opts.verbose and ":" or "; --verbose lists them"))
     if opts.verbose then
       for _, p in ipairs(played.info) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end

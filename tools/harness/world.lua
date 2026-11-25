@@ -167,10 +167,25 @@ end
 
 -- Talk to the giver: the quest window opens (QUEST_DETAIL); the add-on may accept on its own (auto-accept),
 -- otherwise the player presses Accept. Returns true, or false and why.
+-- Quests that start from an object or an item (no NPC giver): where they begin (starters.lua, from QuestieDB), loaded
+-- by run.lua when tools/harness/.cache/starters.lua exists. One with no known place is "found on the way" anywhere.
+Wd.starters = {}
+function Wd.starterSpot(id)
+  local st = Wd.starters[id]
+  return st and st.s and st.s[1] or nil
+end
 function Wd.accept(id)
   local d = Q[id]
   if not d then return false, "the game has no quest " .. tostring(id) end
   if d.s and not near(d.s, NEAR_NPC) then return false, "not at the quest giver" end
+  if not d.s then
+    local st = Wd.starters[id]
+    if st and st.s and #st.s > 0 then
+      local here = false
+      for _, sp in ipairs(st.s) do if near(sp, NEAR_OBJ) then here = true end end
+      if not here then return false, "not where it starts (" .. (st.k == "o" and "an object" or "a dropped item") .. ")" end
+    end
+  end
   local ok, why = Wd.canAccept(id)
   if not ok then return false, why end
   S.dialog = { id = id, stage = "detail" }

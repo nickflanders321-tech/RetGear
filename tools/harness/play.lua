@@ -111,7 +111,7 @@ function P.run(W, Wd, RG, opts, Inv, I)
     if botTicked[p] then return "cascade", "needs " .. pname .. ", which the bot skipped at " .. botTicked[p] end
     local at = questAt[p]
     -- one that starts from an item or object (no quest giver): a player finds it on the way, the bot can't
-    if not at and not pd.s then return "item-start", "needs " .. pname .. ", which starts from an item or object (the bot can't pick those up)" end
+    if not at and not pd.s then return "item-start", "needs " .. pname .. ", which starts from an item or object the bot couldn't take yet" end
     if not at then return "not-in-route", "needs " .. pname .. ", which isn't in the route" end
     -- in this same step and blocked too: it follows from that quest's own problem
     if at.key == key and at.i == i then return "cascade", "needs " .. pname .. ", in this same step and blocked itself" end
@@ -205,6 +205,48 @@ function P.run(W, Wd, RG, opts, Inv, I)
   end
   local lastLevel, lastHanded = me.level, 0
 
+  -- Quests that start from an object or an item aren't in the route (no giver to send you to): a player comes across
+  -- them. When the step's quests wait on one, the bot goes where it starts, takes it, does it and hands it in.
+  R.found = 0
+  local function missingStarter(id, depth)
+    depth = depth or 0
+    local d = RG.QDATA[id]
+    if not d or depth > 3 then return nil end
+    local missing = {}
+    for _, p in ipairs(d.pg or {}) do if not S.done[p] and not Wd.entry(p) then missing[#missing + 1] = p end end
+    if d.ps and #d.ps > 0 then
+      local any = false
+      for _, p in ipairs(d.ps) do if S.done[p] or Wd.entry(p) then any = true end end
+      if not any then for _, p in ipairs(d.ps) do missing[#missing + 1] = p end end
+    end
+    for _, p in ipairs(missing) do
+      local pd = RG.QDATA[p]
+      if pd and not pd.s then
+        if Wd.canAccept(p) then return p end
+        local deeper = missingStarter(p, depth + 1)   -- (its own earlier quest may start the same way)
+        if deeper then return deeper end
+      end
+    end
+  end
+  local function doFound(p)
+    local pd = RG.QDATA[p]
+    walk(Wd.starterSpot(p))
+    local ok, why = Wd.accept(p)
+    if not ok then return false, why end
+    R.found = R.found + 1
+    note("finds " .. tostring(pd.n) .. " (starts from " .. ((Wd.starters[p] or {}).k == "i" and "a dropped item" or "an object") .. ")")
+    for _ = 1, 8 do
+      local sp = Wd.objectiveSpot(p)
+      if not sp then break end
+      walk(sp); local _, secs = Wd.work(p); wait(math.max(secs, 5))
+    end
+    Wd.work(p)
+    if pd.e then walk(pd.e) end
+    Wd.handIn(p)
+    wait(5)
+    return true
+  end
+
   local lastSig, same = nil, 0
   while me.level < untilLevel and R.actions < maxActions do
     -- after a hand-in or a level-up: put on upgrades; every 10 hand-ins (or with full bags), a vendor
@@ -264,7 +306,15 @@ function P.run(W, Wd, RG, opts, Inv, I)
               why[#why + 1] = tostring(x.name) .. ": " .. tostring(x.npc)
               if not tostring(x.npc):lower():find("level") then levelOnly = false end
             end
-            if levelOnly then grind("the step's quests need a higher level (" .. table.concat(why, "; ") .. ")")
+            local starter
+            for _, x in ipairs(lines) do starter = starter or missingStarter(x.id) end
+            if starter then
+              local ok, why2 = doFound(starter)
+              if not ok then
+                problem("starter", "the step waits on " .. tostring(RG.QDATA[starter].n) .. " (" .. starter .. "), which starts from an item or object, but the bot couldn't take it: " .. tostring(why2), where)
+                tick(key, i, text, true); R.tickedHand = R.tickedHand + 1
+              end
+            elseif levelOnly then grind("the step's quests need a higher level (" .. table.concat(why, "; ") .. ")")
             else
               -- one problem per blocked quest, by cause; a cascade (the bot skipped the prerequisite) isn't the guide's fault
               for _, x in ipairs(lines) do

@@ -123,6 +123,12 @@ It reports:
 
 `--until-level` (default 20) and `--max-actions` (default 4000) set when it stops.
 
+**Quests that start from an object or item.** The route only lists quests handed out by an NPC. Some quests start
+from an object instead (a crate, a corpse, a letter) or from an item that drops. When a step's quests all wait on
+one of those, the bot goes where it starts, takes it, does it and hands it in, as a player who came across it would.
+`sh tools/harness/starters.sh` builds where they start (`.cache/starters.lua`, from QuestieDB: a few minutes the first
+time). Without it, the bot finds them wherever it stands.
+
 **Items and gear.** The world has bags (a backpack and four 10-slot bags), equipped gear, and the client's item
 cache: as in the game, `GetItemInfo` answers a moment after an item is first asked about. Item facts come from
 LibItemDB's WoW Forever tables (`items.lua`), copied out of the `data/itemdb` branch into
