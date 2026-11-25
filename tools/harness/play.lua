@@ -110,13 +110,23 @@ function P.run(W, Wd, RG, opts, Inv, I)
     local pname = tostring(pd.n or ("quest " .. p)) .. " (" .. p .. ")"
     if botTicked[p] then return "cascade", "needs " .. pname .. ", which the bot skipped at " .. botTicked[p] end
     local at = questAt[p]
+    -- one that starts from an item or object (no quest giver): a player finds it on the way, the bot can't
+    if not at and not pd.s then return "item-start", "needs " .. pname .. ", which starts from an item or object (the bot can't pick those up)" end
     if not at then return "not-in-route", "needs " .. pname .. ", which isn't in the route" end
     -- in this same step and blocked too: it follows from that quest's own problem
     if at.key == key and at.i == i then return "cascade", "needs " .. pname .. ", in this same step and blocked itself" end
     local here = routeOrder[key] or 999
     if at.o > here or (at.o == here and at.i > i) then return "order", "needs " .. pname .. ", which comes later in the route (" .. at.key .. " step " .. at.i .. ")" end
-    if RG.QuestIsGrey and pd.l and RG.QuestIsGrey(pd.l) then
-      return "grey-prereq", "needs " .. pname .. " (" .. at.key .. " step " .. at.i .. "), which the guide skipped because it had gone grey (quest level " .. pd.l .. ")"
+    -- why the guide counts that earlier step as done (its own words)
+    local stepWhy
+    for _, rr in ipairs(RG.ROUTE or {}) do
+      if rr.zone .. "|" .. rr.from == at.key then local d2, w2 = RG.StepIsDone(rr, at.i); stepWhy = d2 and tostring(w2 or "done") or "not done" end
+    end
+    if stepWhy and stepWhy:lower():find("grey") then
+      return "grey-prereq", "needs " .. pname .. " (" .. at.key .. " step " .. at.i .. "), which the guide skipped as grey (it says: " .. stepWhy .. ")"
+    end
+    if stepWhy == "not done" then
+      return "skipped-step", "needs " .. pname .. " (" .. at.key .. " step " .. at.i .. "), whose step isn't done, but the guide moved on to this one"
     end
     -- what the guide itself thinks of the prerequisite
     local isDone = function(q) return S.done[q] == true end
@@ -308,7 +318,7 @@ function P.run(W, Wd, RG, opts, Inv, I)
   -- cascades are reported, but only the first cause counts as a failure
   R.info = {}
   local keep = {}
-  for _, p in ipairs(R.problems) do if p.kind == "cascade" then R.info[#R.info + 1] = p else keep[#keep + 1] = p end end
+  for _, p in ipairs(R.problems) do if p.kind == "cascade" or p.kind == "item-start" then R.info[#R.info + 1] = p else keep[#keep + 1] = p end end
   R.problems = keep
   return R
 end

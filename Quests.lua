@@ -171,6 +171,54 @@ do   -- (and again whenever something a step can depend on changes, even within 
     "ZONE_CHANGED_NEW_AREA", "PLAYER_XP_UPDATE" }) do pcall(f.RegisterEvent, f, e) end
   f:SetScript("OnEvent", function() stepMemoAt = nil end)
 end
+-- A grey quest is optional, unless a quest still to do in your route needs it first (Gordo's Task opens Doom Weed):
+-- skipping it would leave that one blocked for good, so it stays on the list. A chain of grey quests leading to one
+-- that isn't grey stays whole. The step check, the tracker and the zone ranking all ask this, so they agree.
+local needers   -- quest id -> { [id of a quest in your route that needs it first] = true }
+local function buildNeeders()
+  needers = {}
+  local function add(p, id) needers[p] = needers[p] or {}; needers[p][id] = true end
+  for _, list in pairs(RG.STEP_QUESTS or {}) do
+    for _, ids in pairs(list) do
+      for _, id in ipairs(ids) do
+        local d = RG.QDATA and RG.QDATA[id]
+        if d then
+          for _, p in ipairs(d.pg or {}) do add(p, id) end
+          for _, p in ipairs(d.ps or {}) do add(p, id) end
+        end
+      end
+    end
+  end
+end
+local function noneDone() return false end
+function RG.GreyButNeeded(id, isDone, seen)
+  if not RG.QDATA then return false end
+  if not needers then buildNeeders() end
+  local list = needers[id]
+  if not list then return false end
+  isDone = isDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or noneDone
+  seen = seen or {}
+  if seen[id] then return false end
+  seen[id] = true
+  for dep in pairs(list) do
+    local d = RG.QDATA[dep]
+    if d and not d.rep and not isDone(dep) and (not RG.QuestForMe or RG.QuestForMe(d)) then
+      -- one of several "any of these first" quests isn't needed once another of them is done
+      local needed = false
+      for _, p in ipairs(d.pg or {}) do if p == id then needed = true end end
+      if not needed then
+        needed = true
+        for _, p in ipairs(d.ps or {}) do if p ~= id and isDone(p) then needed = false end end
+      end
+      if needed then
+        local _, never = RG.QuestBlocked(dep, d, isDone)   -- (one you can never take doesn't keep anything open)
+        if not never and (not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) or RG.GreyButNeeded(dep, isDone, seen)) then return true end
+      end
+    end
+  end
+  return false
+end
+
 function stepAuto(entry, text)
   local key = entry and (entry.zone .. "|" .. entry.from)
   local sq = key and RG.STEP_QUESTS and RG.STEP_QUESTS[key]
@@ -185,7 +233,14 @@ function stepAuto(entry, text)
           local ok = (rq and rq.rep) or (isDone and isDone(id)) or RG.HideProfQuest(id)
           -- nor do grey quests (too far below you to be worth the time): optional
           -- (one you already took still counts until you hand it in or drop it)
-          if not ok and rq and RG.QuestIsGrey and RG.QuestIsGrey(rq.l) and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then ok = true; skipped = skipped + 1 end
+          local onIt = C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)
+          if not ok and rq and RG.QuestIsGrey and RG.QuestIsGrey(rq.l) and not onIt and not RG.GreyButNeeded(id, isDone) then ok = true; skipped = skipped + 1 end
+          -- nor does one you can never take now (the other branch, a breadcrumb whose quest you already have...):
+          -- the tracker leaves those out, so the step mustn't wait for them
+          if not ok and rq and not onIt and RG.QuestBlocked then
+            local _, never = RG.QuestBlocked(id, rq, isDone)
+            if never then ok = true end
+          end
           -- one of a pair of either/or quests counts for both
           local d = not ok and RG.QDATA and RG.QDATA[id]
           if d and d.x and isDone then for _, x in ipairs(d.x) do if isDone(x) then ok = true break end end end

@@ -1,5 +1,6 @@
--- Regression checks for bugs the bot found (run.lua --play). Each is marked `known` until it's fixed: a known bug
--- that fails is expected; once it passes, the runner says "FIXED?" and the `known` line should go.
+-- Regression checks for bugs the bot found (run.lua --play). A new one is marked `known` until it's fixed (a known
+-- bug that fails is expected; once it passes, the runner says "FIXED?" and the `known` line should go). All of the
+-- ones below are fixed: they now guard against the bugs coming back.
 
 -- the step (route entry, index) that holds a quest
 local function stepOf(T, qid)
@@ -23,7 +24,6 @@ return {
   {
     name = "shield-over-two-hander",
     about = "a shield isn't called an upgrade when it would take off a better two-hander",
-    known = "RG.Compare (Core.lua compareRaw) scores an off-hand against the empty off-hand slot and ignores the two-hander it takes off",
     race = "Orc", class = "WARRIOR", level = 30,
     run = function(T)
       T.give(BRUTE_HAMMER); T.equip(BRUTE_HAMMER)
@@ -38,7 +38,6 @@ return {
   {
     name = "two-hander-over-shield",
     about = "after a shield has taken a two-hander off, the two-hander is an upgrade again",
-    known = "with a shield worn, RG.Compare gives a two-hander no score of its own (it came out at -0.7 for a 180-point weapon)",
     race = "Orc", class = "WARRIOR", level = 30,
     run = function(T)
       -- as the bot met it: the two-hander worn first, then the shield (which takes it off)
@@ -54,7 +53,6 @@ return {
   {
     name = "breadcrumb-step-completes",
     about = "a step whose only quest is a breadcrumb that's gone (its follow-up already taken) counts as done",
-    known = "Quests.lua stepAuto doesn't excuse a breadcrumb the tracker hides as gone, so the step never completes",
     race = "Tauren", class = "WARRIOR", level = 26,
     run = function(T)
       local r, i = stepOf(T, 4542)   -- Message to Freewind Post, a breadcrumb for 4841
@@ -69,7 +67,6 @@ return {
   {
     name = "grey-prerequisite-kept",
     about = "a quest that went grey isn't skipped while a later step still needs it",
-    known = "stepAuto and StepQuestLines skip grey quests even when a later quest needs them (Gordo's Task -> Doom Weed)",
     race = "Scourge", class = "PALADIN", level = 12,
     run = function(T)
       local r, i = stepOf(T, 5481)   -- Gordo's Task (level 5); Doom Weed (5482) needs it
@@ -77,12 +74,44 @@ return {
       T.ok(r and r2, "Gordo's Task and Doom Weed are both in the route")
       if not (r and r2) then return end
       T.ok(not T.RG.StepIsDone(r, i), "Gordo's Task's step isn't done while Doom Weed, later in the route, needs it")
+      local act
+      for _, l in ipairs(T.RG.StepQuestLines(r, i) or {}) do if l.id == 5481 then act = l.act end end
+      T.eq(act, "pickup", "the tracker offers Gordo's Task to pick up")
+      -- and once Doom Weed (and what follows it) is done, the grey quest is optional again
+      markDone(T, { 5482, 99142 })
+      T.ok(not T.RG.GreyButNeeded(5481), "with Doom Weed done, nothing needs Gordo's Task any more")
+    end,
+  },
+  {
+    name = "next-step-has-something-to-do",
+    about = "the guide's next step is one with something to do, not one whose quests all have to wait",
+    race = "Scourge", class = "PALADIN", level = 11,
+    run = function(T)
+      local r, i = stepOf(T, 5481)   -- Gordo's Task: the step before the Brill step whose Doom Weed needs it
+      T.ok(r, "Gordo's Task is in the route")
+      if not r then return end
+      -- the earlier Tirisfal steps done, and the Brill step after it done except Doom Weed (which needs Gordo's Task);
+      -- standing in Brill, where that next step's waypoint is
+      local sq = T.RG.STEP_QUESTS[r.zone .. "|" .. r.from]
+      for j = 1, i - 1 do for _, id in ipairs(sq[j] or {}) do T.Wd.state.done[id] = true end end
+      for _, id in ipairs(sq[i + 1] or {}) do if id ~= 5482 then T.Wd.state.done[id] = true end end
+      T.W.fire("QUEST_LOG_UPDATE")
+      T.go({ 1420, 61.7, 52.0 })
+      T.step(2)
+      -- the guide had picked the Brill step while it still had quests to do (it keeps its pick unless another is clearly better)
+      T.RG.ForgetNextStep()
+      T.ok(not T.RG.StepIsDone(r, i), "Gordo's Task's step is still open")
+      local pick = T.RG.NextStep(r)
+      local acts = {}
+      for _, l in ipairs(T.RG.StepQuestLines(r, pick) or {}) do acts[#acts + 1] = l.act end
+      local doable = false
+      for _, a in ipairs(acts) do if a ~= "later" then doable = true end end
+      T.ok(doable, string.format("the next step (%s step %d) has something to do now (its quests: %s)", r.zone, pick or 0, table.concat(acts, ", ")))
     end,
   },
   {
     name = "chain-start-in-route",
     about = "every quest in a step can be reached: its earlier quests are in the route (Undead, Barrens)",
-    known = "the shared Barrens steps list Serena Bloodfeather (876), which needs Harpy Lieutenants (875): that's only in the Orc/Troll/Tauren route",
     race = "Scourge", class = "PALADIN", level = 20,
     run = function(T)
       local r, i = stepOf(T, 876)

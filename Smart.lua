@@ -83,7 +83,7 @@ local function workOf(r, logIds)
         if logIds[id] then inLog = inLog + 1; doable = true
         elseif not doable and not isDone(id) then
           local d = RG.QDATA and RG.QDATA[id]
-          if d and not d.rep and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) and not (RG.QuestBlocked and RG.QuestBlocked(id, d, isDone, function(q) return logIds[q] or false end, true)) then doable = true end
+          if d and not d.rep and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l) and not (RG.GreyButNeeded and RG.GreyButNeeded(id, isDone))) and not (RG.QuestBlocked and RG.QuestBlocked(id, d, isDone, function(q) return logIds[q] or false end, true)) then doable = true end
         end
       end
       if doable then open = open + 1 end

@@ -801,12 +801,22 @@ local function compareRaw(link, onlySlot, parts)
   for _, slot in ipairs(slots) do
     local pn, po = parts and {} or nil, parts and {} or nil
     local old = wornLink(slot)
+    -- the weapon remembered while your hand is empty (wornLink) is this very item: compare it against nothing,
+    -- not against itself (a shield had taken a two-hander off, and the two-hander then looked like no upgrade)
+    if old and old == link and not GetInventoryItemLink("player", slot) then old = nil end
     local oldScore, oldHit = 0, 0
     if old then oldHit = RG.GetStats(old).HIT; oldScore = RG.Score(old, nil, slot, nil, nil, po) end
     -- Two-hander replaces main hand and off hand together.
     if loc == "INVTYPE_2HWEAPON" then
       local off = wornLink(17)
       if off then oldScore = oldScore + RG.Score(off, nil, 17, nil, nil, po); oldHit = oldHit + RG.GetStats(off).HIT end
+    end
+    -- Anything in the off hand takes a two-hander off: it replaces that too.
+    if slot == 17 then
+      local main = wornLink(16)
+      if main and main ~= link and RG.EquipLoc(main) == "INVTYPE_2HWEAPON" then
+        oldScore = oldScore + RG.Score(main, nil, 16, nil, nil, po); oldHit = oldHit + RG.GetStats(main).HIT
+      end
     end
     local hitWithout = curHit - oldHit
     local newScore = RG.Score(link, math.max(0, cap - hitWithout), slot, nil, nil, pn)

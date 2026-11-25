@@ -272,6 +272,7 @@ if played then
     ["not-in-route"] = "a quest needs one that isn't in the route",
     earlier = "a quest needs one from a step that counted as done without it",
     ["hidden-prereq"] = "a quest needs one the guide hides as never available",
+    ["skipped-step"] = "the guide moved past an open step whose quest a later one needs",
     other = "blocked for another reason",
     empty = "a step that isn't done has nothing left to do",
     stuck = "the guide kept pointing at something that didn't change",
@@ -300,7 +301,7 @@ if played then
     end
   end
   if #played.info > 0 then
-    out:write(string.format("\nKnock-on effects (%d): quests blocked only because the bot had skipped what they need (not counted as problems)%s\n",
+    out:write(string.format("\nNot counted (%d): quests blocked only because the bot skipped what they need, or because what they need starts from an item or object (the bot can't pick those up)%s\n",
       #played.info, opts.verbose and ":" or "; --verbose lists them"))
     if opts.verbose then
       for _, p in ipairs(played.info) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end

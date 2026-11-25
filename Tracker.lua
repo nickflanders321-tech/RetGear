@@ -57,11 +57,15 @@ function RG.NextStep(r)
     for rank, i in ipairs(open) do
       local s = rank   -- the guide's order
       local ql = RG.StepQuestLines and RG.StepQuestLines(r, i, quests)
-      local turnin, doing = false, false
+      local turnin, doing, now = false, false, false
       for _, l in ipairs(ql or {}) do
         if l.act == "turnin" then turnin = true elseif l.act == "doing" then doing = true end
+        if l.act ~= "later" then now = true end
       end
       if turnin then s = s - 3 elseif doing then s = s - 2 end
+      -- every quest in it has to wait (for an earlier step's quest, a level...): any step with something to do
+      -- now comes first, even one further on or further away (Gordo's Task before the Brill step that needs it)
+      if ql and #ql > 0 and not now then s = s + 10 end
       local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
       if wp and px and wp[1] == here then
         local dx, dy = (wp[2] / 100) - px, (wp[3] / 100) - py
@@ -217,7 +221,7 @@ function RG.StepQuestLines(entry, i, myQuests)
       local q = byId[id]
       local why, never
       -- grey and not in your log: optional, so it's left out (a grey one you already have still shows)
-      if not done and not q and RG.QuestIsGrey and RG.QuestIsGrey(d.l) then done = true end
+      if not done and not q and RG.QuestIsGrey and RG.QuestIsGrey(d.l) and not (RG.GreyButNeeded and RG.GreyButNeeded(id, isDone)) then done = true end
       if not done and not q then why, never = RG.QuestBlocked(id, d, isDone) end
       if never then done = true end   -- the other branch, a later step, or not for you: nothing to do here
       total = total + 1
