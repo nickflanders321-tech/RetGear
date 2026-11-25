@@ -18,11 +18,11 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 45x Wool Cloth
 15x Medium Leather
 4x Steel Bar
-62x Solid Stone
+122x Solid Stone
 75x Mithril Bar
 21x Mageweave Cloth
-10x Iron Bar
-10x Silk Cloth
+3x Iron Bar
+3x Silk Cloth
 225-300
 84x Mithril Bar
 88x Dense Stone
@@ -60,11 +60,11 @@ Expert Engineering (150-200)
 15x Bronze Framework - 30 Bronze Bar, 15 Medium Leather, 15 Wool Cloth
 160-175
 15x Explosive Sheep - 30 Heavy Blasting Powder, 15 Whirring Bronze Gizmo, 15 Bronze Framework, 30 Wool Cloth
-175-190
-31x Solid Blasting Powder - 62 Solid Stone
-190-195
+175-193
+61x Solid Blasting Powder - 122 Solid Stone
+193-195
 1x Gyromatic Micro-Adjustor - 4 Steel Bar
-10x Iron Grenade - 10 Iron Bar, 10 Heavy Blasting Powder, 10 Silk Cloth
+3x Iron Grenade - 3 Iron Bar, 3 Heavy Blasting Powder, 3 Silk Cloth
 195-200
 6x Mithril Tube - 18 Mithril Bar
 Artisan Engineering (200-300)
