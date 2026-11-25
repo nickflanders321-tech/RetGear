@@ -40,3 +40,22 @@ written out as Equip: text (the way the game shows spell power twice), stats onl
 in text. Each must equal the item's true stats (LibItemDB's walk of the client). Then `RG.ScoreStats` (tooltips and
 upgrade arrows) must equal tools/gear/gen.py's `score()` (the gear lists) for every class's and spec's weights, every
 weapon model and levels 10, 30, 47 and 60. tools/watch/regenerate.sh runs it; any difference stops the release.
+
+# Other route guides
+
+`sh tools/audit/compare_guides.sh [report.md]` compares Waypath+'s route, race by race, with other public route
+guides. It runs `compare_guides.py` after fetching the guides into `tools/audit/.cache` (ignored by git) and dumping our
+route for every race through the harness (`run.lua --dump-route`).
+
+- **Polestar's 1-60 guides** (github.com/fitzforge/polestar, GPL-3.0). Every step lists the quest IDs it takes, so
+  quests are compared by ID: which ones Polestar does that we don't, and the reverse.
+- **The community RestedXP-format guide** (github.com/craigory1591/wow-forever-guide). It has no licence, so only
+  facts are read from it: the level bracket of each zone, and the quest titles its steps name.
+
+Journey and RestedXP publish no route lists (their routes live inside their addons), so they aren't compared. Nothing
+from these guides is copied into Waypath+: the report only says where we differ.
+
+The report has one table per race: zone, our level window, theirs, and a flag when we start a zone 4+ levels away
+from every guide that goes there, or go where neither does. Our window is when the guide will send you to a zone;
+theirs is when their route is there, so only start levels are compared. A difference marks where to look, not
+necessarily a mistake.

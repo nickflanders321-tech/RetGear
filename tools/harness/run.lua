@@ -138,6 +138,37 @@ fire("PLAYER_MONEY")
 W.context = "the first seconds after login"
 W.advance(tonumber(opts.seconds) or 15)
 
+-- --dump-route FILE: the route this character gets, as JSON (tools/audit/compare_guides.py reads it), then stop
+if opts.dump_route then
+  local function js(v)
+    local t = type(v)
+    if t == "string" then return '"' .. v:gsub('[%c"\\]', function(c) return string.format("\\u%04x", c:byte()) end) .. '"' end
+    if t == "number" or t == "boolean" then return tostring(v) end
+    if t ~= "table" then return "null" end
+    if #v > 0 or next(v) == nil then local p = {}; for i, x in ipairs(v) do p[i] = js(x) end return "[" .. table.concat(p, ",") .. "]" end
+    local p = {}
+    for k, x in pairs(v) do p[#p + 1] = js(tostring(k)) .. ":" .. js(x) end
+    return "{" .. table.concat(p, ",") .. "}"
+  end
+  local entries = {}
+  for _, r in ipairs(RG.ROUTE or {}) do
+    local key = r.zone .. "|" .. r.from
+    local quests, steps = {}, RG.STEPS and RG.STEPS[key] or {}
+    for i = 1, #steps do for _, id in ipairs(RG.STEP_QUESTS and RG.STEP_QUESTS[key] and RG.STEP_QUESTS[key][i] or {}) do
+      local d = RG.QDATA and RG.QDATA[id]
+      if d and (not RG.QuestForMe or RG.QuestForMe(d)) then quests[#quests + 1] = id end
+    end end
+    entries[#entries + 1] = { zone = r.zone, from = r.from, to = r.to, kind = r.kind or "zone", steps = #steps, quests = quests }
+  end
+  local names = {}
+  for id, d in pairs(RG.QDATA or {}) do if d.n then names[tostring(id)] = { d.n, d.l or d.r or 0 } end end
+  local fh = assert(io.open(opts.dump_route, "wb"))
+  fh:write(js({ race = W.me.race, faction = W.me.faction, class = W.me.class, route = entries, quests = names }))
+  fh:close()
+  io.stdout:write("route written to " .. opts.dump_route .. " (" .. #entries .. " entries)\n")
+  os.exit(0)
+end
+
 -- after login: drive everything (drive.lua)
 local FPS = 10
 local function step(s) W.step(s, FPS) end
