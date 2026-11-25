@@ -1,5 +1,5 @@
--- Route content checks: quests other guides do that the route used to leave out, and quests that start from an item
--- or an object (tools/routes/gen.py builds them).
+-- Route content checks: quests other guides do that the route used to leave out, quests that start from an item or
+-- an object, and class quests carried in the route's steps (tools/routes/gen.py builds all of them).
 
 -- the step (route entry, index) that holds a quest
 local function stepOf(T, qid)
@@ -79,6 +79,53 @@ return {
       T.RG.ForgetNextStep()
       local l = lineOf(T, r, i, id)
       T.ok(l and (l.act == "doing" or l.act == "turnin"), "now the step shows it (" .. tostring(l and l.act) .. ")")
+    end,
+  },
+  {
+    name = "class-quest-in-step",
+    about = "a class quest is carried by the step at its giver's hub, for its own class",
+    race = "Orc", class = "WARRIOR", level = 1,
+    run = function(T)
+      local r, i = stepOf(T, 2383)   -- Simple Parchment: Warriors, from Frang in the Valley of Trials
+      T.ok(r, name(T, 2383) .. " is in the route")
+      if not r then return end
+      T.complete(788)   -- Cutting Teeth comes first
+      T.RG.ForgetNextStep()
+      local l = lineOf(T, r, i, 2383)
+      T.ok(l and l.act == "pickup", "after Cutting Teeth, a Warrior is told to pick it up (" .. tostring(l and l.act) .. ")")
+      T.ok(not T.RG.STEPS[r.zone .. "|" .. r.from][i]:find("Simple Parchment", 1, true), "the step's text doesn't name it (other classes read it too)")
+      local listed = false
+      for _, q in ipairs(T.RG.ClassQuests() or {}) do if q.id == 2383 then listed = true end end
+      T.ok(not listed, "and the Class quests list doesn't show it twice")
+    end,
+  },
+  {
+    name = "other-class-quest-ignored",
+    about = "another class's quest in a step neither shows nor holds the step open",
+    race = "Orc", class = "MAGE", level = 1,
+    run = function(T)
+      local r, i = stepOf(T, 2383)   -- Simple Parchment (Warriors only)
+      T.ok(r, name(T, 2383) .. " is in the route")
+      if not r then return end
+      T.ok(not lineOf(T, r, i, 2383), "a Mage isn't shown the Warrior quest")
+      -- everything else in the step done: the step is done
+      local others = {}
+      for _, id in ipairs(T.RG.STEP_QUESTS[r.zone .. "|" .. r.from][i]) do if id ~= 2383 then others[#others + 1] = id end end
+      for _, id in ipairs(others) do T.Wd.state.done[id] = true end
+      T.W.fire("QUEST_LOG_UPDATE"); T.step(2)
+      T.ok(T.RG.StepIsDone(r, i), "the step is done once the Mage's own quests in it are")
+    end,
+  },
+  {
+    name = "class-quest-not-early",
+    about = "the Class quests list doesn't say \"pick up now\" for a quest well above your level",
+    race = "Orc", class = "WARRIOR", level = 20,
+    run = function(T)
+      local early = {}
+      for _, q in ipairs(T.RG.ClassQuests() or {}) do
+        if q.now and q.lvl and q.lvl > 23 then early[#early + 1] = q.name .. " (level " .. q.lvl .. ")" end
+      end
+      T.ok(#early == 0, "nothing more than 3 levels above you is \"pick up now\"" .. (#early > 0 and (": " .. table.concat(early, ", ")) or ""))
     end,
   },
 }

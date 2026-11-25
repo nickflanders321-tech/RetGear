@@ -452,9 +452,21 @@ local function offeredOnMap()
 end
 
 -- Your class quests from the quest database (every class, including Forever's
--- new ones): the ones you can take now, then the next ones coming up (up to
--- 3 levels ahead), lowest level first. Raid tier-set turn-ins are left out.
+-- new ones) that the route's steps don't already carry: the ones to take now, then the next ones coming up (up to
+-- 3 levels ahead), lowest level first. Raid tier-set turn-ins are left out. A quest counts as "now" once it is
+-- near your level (no more than 3 above you), even if the giver would hand it out sooner: Brutal Armor (level 30)
+-- can be taken at 20, but it's no use until the late 20s.
 local classCache, classDirty = nil, true
+local inRoute   -- quest id -> true for every quest in this character's route steps
+local function routeHas(id)
+  if not inRoute then
+    inRoute = {}
+    for _, list in pairs(RG.STEP_QUESTS or {}) do
+      for _, ids in pairs(list) do for _, q in ipairs(ids) do inRoute[q] = true end end
+    end
+  end
+  return inRoute[id]
+end
 function RG.ClassQuests(max)
   if classDirty or not classCache then
     classDirty = false
@@ -466,7 +478,8 @@ function RG.ClassQuests(max)
       end
       local lvl = UnitLevel("player")
       for id, d in pairs(RG.QDATA) do
-        if d.cq and d.s and d.n and (d.r or 1) < 58 and (d.r or 1) <= lvl + 3 and (d.l or 1) >= lvl - 8 and not inLog[id] and not done(id) and RG.QuestForMe(d) then
+        local from = math.max(d.r or 1, (d.l or 1) - 3)
+        if d.cq and d.s and d.n and (d.r or 1) < 58 and from <= lvl + 3 and (d.l or 1) >= lvl - 8 and not inLog[id] and not done(id) and RG.QuestForMe(d) and not routeHas(id) then
           local ok = true
           if d.x then for _, p in ipairs(d.x) do if done(p) or inLog[p] then ok = false break end end end
           if ok and d.pg then for _, p in ipairs(d.pg) do if not (done(p) or inLog[p]) then ok = false break end end end
@@ -477,7 +490,7 @@ function RG.ClassQuests(max)
             if why and not why:find("^at level") then ok = false end
           end
           if ok then
-            list[#list + 1] = { id = id, name = d.n, lvl = d.l, req = d.r or 1, now = lvl >= (d.r or 1), giver = d.s[4],
+            list[#list + 1] = { id = id, name = d.n, lvl = d.l, req = from, now = lvl >= from, giver = d.s[4],
               wp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n } }
           end
         end

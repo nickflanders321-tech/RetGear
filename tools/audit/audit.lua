@@ -166,7 +166,8 @@ for _, race in ipairs(RACE_ORDER) do
         end
         for _, id in ipairs((RG.STEP_QUESTS[key] or {})[i] or {}) do
           local d = RG.QDATA[id]
-          if d and not RG.QuestForMe(d) then badQuest = badQuest + 1; fail(combo, key .. " step " .. i .. " names quest " .. id .. " this character can't take") end
+          -- (another class's quests ride along in steps: the add-on shows each character only its own class's)
+          if d and d.ra and not d.ra:find(RG.RACE_LETTER, 1, true) then badQuest = badQuest + 1; fail(combo, key .. " step " .. i .. " names quest " .. id .. " this character can't take") end
         end
       end
       for _, text in ipairs(texts) do

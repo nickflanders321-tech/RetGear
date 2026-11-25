@@ -230,7 +230,10 @@ function stepAuto(entry, text)
         for _, id in ipairs(sq[i]) do
           -- repeatable quests are never marked done by the game: they don't hold a step open
           local rq = RG.QDATA and RG.QDATA[id]
-          local ok = (rq and rq.rep) or (isDone and isDone(id)) or RG.HideProfQuest(id)
+          -- nor do another class's quests (steps carry every class's; each character sees only its own, and the
+          -- others are dropped from the quest data at login: RG.PruneQuests)
+          local ok = (rq and rq.rep) or (isDone and isDone(id)) or RG.HideProfQuest(id) or (RG.QDATA and not rq)
+            or (rq and RG.QuestForMe and not RG.QuestForMe(rq))
           -- nor do grey quests (too far below you to be worth the time): optional
           -- (one you already took still counts until you hand it in or drop it)
           local onIt = C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)
