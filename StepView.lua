@@ -18,39 +18,46 @@ local function pct(c)
   if c >= 10 then return string.format("%d%%", math.floor(c + 0.5)) end
   return (string.format("%.1f", c):gsub("%.0$", "")) .. "%"
 end
--- "80% from Riverpaw Gnoll, Riverpaw Mongrel and 2 more", or "Burning Blade Fanatic 20%, Burning Blade Apprentice 5%"
+-- "from Riverpaw Gnoll, Riverpaw Mongrel and 2 more · 80%", or "from Burning Blade Fanatic · 20%, Burning Blade Apprentice · 5%";
+-- without chances (a quest the loot tables don't have yet), just who drops it: "from Angerclaw Bear, Angerclaw Grizzly and 1 more"
+local function names(list)
+  local n = {}
+  for i = 1, math.min(2, #list) do n[i] = list[i][1] end
+  return table.concat(n, #list == 2 and " and " or ", ") .. (#list > 2 and (" and " .. (#list - 2) .. " more") or "")
+end
 local function dropPhrase(mobs, chances)
-  if not (mobs and chances) then return nil end
+  if not mobs then return nil end
   local list = {}
+  if not chances then
+    for _, name in ipairs(mobs) do list[#list + 1] = { name } end
+    return #list > 0 and ("from " .. names(list)) or nil
+  end
   for i, name in ipairs(mobs) do if chances[i] and chances[i] > 0 then list[#list + 1] = { name, chances[i] } end end
   if #list == 0 then return nil end
   table.sort(list, function(a, b) return a[2] > b[2] end)
   local same = true
   for _, x in ipairs(list) do if pct(x[2]) ~= pct(list[1][2]) then same = false end end
-  if same then
-    local names = {}
-    for i = 1, math.min(2, #list) do names[i] = list[i][1] end
-    local more = #list > 2 and (" and " .. (#list - 2) .. " more") or ""
-    return pct(list[1][2]) .. " from " .. table.concat(names, #list == 2 and " and " or ", ") .. more
-  end
+  if same then return "from " .. names(list) .. " · " .. pct(list[1][2]) end
   local parts = {}
-  for i = 1, math.min(3, #list) do parts[i] = list[i][1] .. " " .. pct(list[i][2]) end
-  return table.concat(parts, ", ") .. (#list > 3 and (", " .. (#list - 3) .. " more") or "")
+  for i = 1, math.min(3, #list) do parts[i] = list[i][1] .. " · " .. pct(list[i][2]) end
+  return "from " .. table.concat(parts, ", ") .. (#list > 3 and (", " .. (#list - 3) .. " more") or "")
 end
 RG.DropPhrase = dropPhrase
--- The quest's items and how they drop: { { item = name, text = phrase }, ... } (only objectives with known rates).
+-- The quest's items and how they drop: { { item = name, text = phrase, rate = true when the chances are known }, ... }
+-- (objectives with known rates, or at least known mobs that drop them).
 -- label: just the objective with that name (the quest log's wording may differ a little: a match either way counts).
 function RG.DropInfo(id, label)
   local d = id and RG.QDATA and RG.QDATA[id]
   if not d then return {} end
   local out, want = {}, label and label:lower()
   for _, o in ipairs(d.o or {}) do
-    if o[1] == "i" and o[7] then
+    -- (no chances: only when the item's sources are mobs, o[5] their NPC ids; an item from a chest isn't "dropped")
+    if o[1] == "i" and (o[7] or (o[5] and #o[5] > 0)) then
       local name = tostring(o[2] or "?")
       local l = name:lower()
       if not want or l == want or want:find(l, 1, true) or l:find(want, 1, true) then
         local text = dropPhrase(o[3], o[7])
-        if text then out[#out + 1] = { item = name, text = text } end
+        if text then out[#out + 1] = { item = name, text = text, rate = o[7] and true or nil } end
       end
     end
   end
@@ -68,7 +75,7 @@ function RG.DropTip(id, label)
   if #info == 0 then return "" end
   local t = {}
   for _, x in ipairs(info) do
-    t[#t + 1] = "|cffe6e6e6" .. x.item .. (x.starts and " (starts the quest)" or "") .. ":|r " .. GREY .. x.text .. "|r"
+    t[#t + 1] = "|cffe6e6e6" .. x.item .. (x.starts and " (starts the quest)" or "") .. ":|r " .. GREY .. "drops " .. x.text .. "|r"
   end
   return "\n\n" .. GOLD .. "Drops:|r\n" .. table.concat(t, "\n")
 end
@@ -302,10 +309,16 @@ local function cardInfo()
     local h, n = prog:match("(%d+)/(%d+)")
     info.done = h and n and tonumber(h) >= tonumber(n)
   end
-  -- where (the zone, and the place's name when it says more than the quest's)
+  -- a quest with several objectives (bear organs and wolf organs): each on its own line with its own progress
+  if it and it.act == "doing" and it.id and RG.QuestObjectiveLines then
+    local ls = RG.QuestObjectiveLines(it.id)
+    if #ls > 1 then info.lines = ls end
+  end
+  -- where (the zone, and the place's name when it says more than the quest's; an objective's spot is named after the
+  -- objective, which the lines above already say)
   local zone = obj.wp and zoneName(obj.wp[1])
   local place = obj.wp and obj.wp[4]
-  if place and (place == info.title or place == zone or obj.kind == "route" or ("Head to " .. place) == info.title) then place = nil end
+  if place and (place == info.title or place == zone or obj.kind == "route" or ("Head to " .. place) == info.title or (it and it.act == "doing")) then place = nil end
   info.where = zone and (zone .. (place and (": " .. place) or "")) or place
   -- why: the planner's reason, without the distance and the "also here" list (said elsewhere), for what it follows
   local why = obj.why and (obj.why:match("^(.-)%s+·%s+") or obj.why) or ""
@@ -362,10 +375,23 @@ function RG.RefreshStepView()
   f.chip:SetWidth(math.max(18, (f.verb:GetStringWidth() or 20) + 8))
   f.title:SetText(info.title or "")
   f.dist:SetText(info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
-  f.obj:SetText(info.line or "")
-  f.prog:SetText(info.prog or "")
-  if info.done then f.prog:SetTextColor(0.35, 0.85, 0.45) else f.prog:SetTextColor(0.94, 0.94, 0.94) end
-  local h = (info.line and info.line ~= "") and 46 or 30
+  -- the objective and its progress; a quest with several, one line each
+  local lines = info.lines or ((info.line and info.line ~= "") and { { text = info.line, prog = info.prog, done = info.done } }) or {}
+  f.objs = f.objs or { { f.obj, f.prog } }
+  for k = 1, math.max(#lines, #f.objs) do
+    local pair, l = f.objs[k], lines[k]
+    if l and not pair then
+      local p = newText(f, 12, "semibold"); p:SetPoint("TOPRIGHT", -8, -27 - (k - 1) * 18); p:SetJustifyH("RIGHT")
+      local o = newText(f, 12); o:SetPoint("TOPLEFT", 8, -27 - (k - 1) * 18); o:SetPoint("RIGHT", p, "LEFT", -6, 0); o:SetWordWrap(false)
+      o:SetTextColor(0.8, 0.82, 0.85)
+      pair = { o, p }; f.objs[k] = pair
+    end
+    if pair then
+      pair[1]:SetText(l and l.text or ""); pair[2]:SetText(l and l.prog or "")
+      if l and l.done then pair[2]:SetTextColor(0.35, 0.85, 0.45) else pair[2]:SetTextColor(0.94, 0.94, 0.94) end
+    end
+  end
+  local h = #lines > 0 and (46 + (#lines - 1) * 18) or 30
   -- the details
   -- (the picture isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made
   -- it flash once a second)
@@ -375,8 +401,13 @@ function RG.RefreshStepView()
     local body = {}
     if info.where then body[#body + 1] = info.where end
     if info.it and info.it.act ~= "turnin" and RG.DropInfo then
-      for _, x in ipairs(RG.DropInfo(info.it.id, info.it.act == "doing" and info.it.label or nil)) do
-        body[#body + 1] = (x.starts and (x.item .. ": ") or "Drops ") .. x.text
+      -- (several objectives: the drops of each one still to do; else the one the stop is for)
+      local done = {}
+      for _, l in ipairs(info.lines or {}) do if l.done and l.label then done[l.label:lower()] = true end end
+      for _, x in ipairs(RG.DropInfo(info.it.id, (info.it.act == "doing" and not info.lines) and info.it.label or nil)) do
+        if not done[x.item:lower()] and not (x.starts and info.it.act == "doing") then
+          body[#body + 1] = (x.starts and (x.item .. " (starts the quest): drops ") or "Drops ") .. x.text
+        end
       end
     end
     if info.also then body[#body + 1] = info.also end

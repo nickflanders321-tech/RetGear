@@ -157,6 +157,41 @@ function RG.QuestRequirements(id)
   return out
 end
 
+-- One objective as the current step says it: "Kill 15 Hillsbrad Farmers", "9/15" (the progress nil when there's none)
+function RG.ObjectiveLine(okind, label, have, need)
+  local verb = ({ k = "Kill", i = "Collect", o = "Use" })[okind or ""] or "Get"
+  label = tostring(label or "?")
+  local many = need and need > 1
+  if many and verb == "Kill" and not label:find("s$") then label = label .. "s" end
+  return verb .. " " .. (many and (need .. " ") or "") .. label, (have and need and need > 0) and (have .. "/" .. need) or nil
+end
+-- Every objective of a quest in your log, in the quest log's order, each with its own progress:
+-- { { text = "Collect 8 Putrescent Bear Organs", prog = "4/8", done, label, okind }, ... } (the database's name for the
+-- thing when it has one; an objective of another kind, a reputation say, keeps the game's words)
+function RG.QuestObjectiveLines(id)
+  local out = {}
+  if not (id and C_QuestLog and C_QuestLog.GetQuestObjectives) then return out end
+  local objs = C_QuestLog.GetQuestObjectives(id) or {}
+  local qd = RG.QDATA and RG.QDATA[id]
+  for _, o in ipairs(objs) do
+    if o.text and o.text ~= "" then
+      local okind, label
+      for k, d in ipairs((qd and qd.o) or {}) do
+        if RG.MatchObjective(objs, qd.o, k) == o then okind, label = d[1], d[2] break end
+      end
+      if not label then
+        okind = (o.type == "monster" and "k") or (o.type == "item" and "i") or (o.type == "object" and "o") or nil
+        label = RG.ObjKey and RG.ObjKey(o.text) or o.text
+        if okind == "k" then label = label:gsub("%s+slain$", "") end
+      end
+      local text, prog
+      if okind then text, prog = RG.ObjectiveLine(okind, label, o.numFulfilled, o.numRequired) else text = o.text end
+      out[#out + 1] = { text = text, prog = prog, done = o.finished and true or false, label = label, okind = okind }
+    end
+  end
+  return out
+end
+
 -- ===========================================================================
 -- The planner: your quest log (and the route's next pick-ups) as an ordered trip
 -- ===========================================================================
@@ -174,8 +209,9 @@ local function buildTasks()
   local byTitle = {}
   for _, q in ipairs(quests) do byTitle[q.title] = q end
   -- what the tracker follows decides what the plan may pick (Smart.lua):
-  --   zone quests: only what's in that zone (the arrow never leaves it); the guide: only the quests of the route's
-  --   zone you're on (a zone of hand-written steps, with no quest list: all of yours); your quest log: only your quests
+  --   zone quests: only what's in that zone (the arrow never leaves it); the guide: only the quests of the step the
+  --   tracker shows you're on, so the current step and the route agree (a zone of hand-written steps, with no quest
+  --   list: all of yours); your quest log: only your quests
   local mode = RG.RouteMode and RG.RouteMode() or "log"
   local zoneName = mode == "zone" and RG.FollowZone and RG.FollowZone() or nil
   local function inZone(wp) return not zoneName or (wp and RG.MapZone and RG.MapZone(wp[1]) == zoneName) end
@@ -185,7 +221,10 @@ local function buildTasks()
     local sq = r0 and RG.STEP_QUESTS and RG.STEP_QUESTS[r0.zone .. "|" .. r0.from]
     if sq then
       routeIds = {}
-      for _, ids in pairs(sq) do for _, id in ipairs(ids) do routeIds[id] = true end end
+      local cur = RG.NextStep and RG.NextStep(r0)
+      -- (the step's quest lines, not just its list: they add a quest you've finished that one of the step's waits on)
+      for _, l in ipairs(cur and RG.StepQuestLines and RG.StepQuestLines(r0, cur, quests) or {}) do routeIds[l.id] = true end
+      for _, id in ipairs(cur and sq[cur] or {}) do routeIds[id] = true end
     end
   end
   -- preobtaining a dungeon's quests (DungeonPrep.lua): only its chains, and its own quests are picked up and kept
@@ -273,20 +312,14 @@ local function buildTasks()
       elseif not p and q.complete then elsewhere = elsewhere + 1 end
     end
   end
-  -- the route's next pick-ups, so a giver on your way gets bundled with the rest
+  -- the route's next pick-ups (the step the tracker shows you're on), so a giver on your way gets bundled with the rest
   local r = mode ~= "log" and mode ~= "prep" and opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
-  if r and RG.STEPS and RG.StepQuestLines then
-    local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
-    for i = 1, #steps do
-      if not RG.StepIsDone(r, i) then
-        local ql = RG.StepQuestLines(r, i, quests)
-        for _, l in ipairs(ql or {}) do
-          if l.act == "pickup" and l.wp and not byTitle[l.name] and inZone(l.wp) then
-            local p = pt(l.wp)
-            if p then tasks[#tasks + 1] = { act = "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
-          end
-        end
-        break
+  local cur = r and RG.STEPS and RG.StepQuestLines and RG.NextStep and RG.NextStep(r)
+  if cur then
+    for _, l in ipairs(RG.StepQuestLines(r, cur, quests) or {}) do
+      if l.act == "pickup" and l.wp and not byTitle[l.name] and inZone(l.wp) then
+        local p = pt(l.wp)
+        if p then tasks[#tasks + 1] = { act = "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
       end
     end
   end
@@ -532,11 +565,8 @@ local function buildObjective()
     if it.act == "turnin" then obj.qline = "Hand in" .. ((it.label and it.label ~= "") and (" to " .. it.label) or "")
     elseif it.act == "pickup" then obj.qline = "Pick up" .. ((it.label and it.label ~= "") and (" from " .. it.label) or "")
     else
-      local verb = ({ k = "Kill", i = "Collect", o = "Use" })[it.okind or ""] or "Get"
-      local label = tostring(it.label or it.title)
-      local many = it.need and it.need > 1
-      if many and verb == "Kill" and not label:find("s$") then label = label .. "s" end
-      obj.qline = verb .. " " .. (many and (it.need .. " ") or "") .. label .. ((it.have and it.need and it.need > 0) and ("  " .. it.have .. "/" .. it.need) or "")
+      local text, prog = RG.ObjectiveLine(it.okind, it.label or it.title, it.have, it.need)
+      obj.qline = text .. (prog and ("  " .. prog) or "")
     end
     obj.id = it.id
     obj.level, obj.group = it.level, it.group

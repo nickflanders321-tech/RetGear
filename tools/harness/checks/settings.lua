@@ -123,7 +123,8 @@ return {
       T.ok(has("^[%-%+] quests"), "my quest log shows your quests: " .. table.concat(T.tracker(), " | "))
       T.ok(not has("^[%-%+] route · "), "and not the route")
       RG.SetRouteMode("zone", true); T.step(2)
-      T.ok(has("^[%-%+] route · valley of trials"), "zone quests shows the route of the zone you're in: " .. table.concat(T.tracker(), " | "))
+      T.ok(has("^[%-%+] steps · valley of trials"), "zone quests shows the steps of the zone you're in, nearest first: " .. table.concat(T.tracker(), " | "))
+      T.ok(has("^hand in your place in the world"), "the step the current step shows is in that list")
       -- the menu at the top: Professions, then back
       local tr = T.W.G.WaypathTracker
       T.ok(tr and tr.modeBtn and tr.modeBtn:IsVisible(), "the menu button is at the top")

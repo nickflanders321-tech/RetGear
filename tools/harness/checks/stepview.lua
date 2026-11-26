@@ -37,6 +37,7 @@ return {
     about = "the current step explains the quest you're doing, how often its item drops and what to look for",
     race = "Human", class = "MAGE", level = 12,
     run = function(T)
+      T.RG.SetRouteMode("log", true)   -- (the card follows your quest log here, not a route step)
       local ok = T.accept(102)   -- Patrolling Westfall
       T.ok(ok, "Patrolling Westfall accepted")
       T.go(T.Wd.objectiveSpot(102))   -- out among the gnolls
@@ -48,7 +49,7 @@ return {
       local all = texts(T, f)
       T.ok(all:find("Patrolling Westfall", 1, true), "it names the quest")
       T.ok(all:find("Gnoll Paw", 1, true), "and the item to collect")
-      T.ok(all:find("Drops %d+%% from"), "and how often it drops")
+      T.ok(all:find("Drops from [^\n]- · %d+%%"), "and how often it drops (\"Drops from <mob> · <rate>\")")
       T.ok(f.pic and f.pic:IsShown(), "with a picture of what to look for")
       -- the distance shows once (in the header)
       local _, n = all:gsub("%d+ yd", "")
@@ -57,8 +58,54 @@ return {
       T.RG.db.trackerCollapsed = true; T.RG.RefreshTracker(); T.step(1)
       T.ok(f:IsShown(), "with the tracker folded, the current step is still there")
       T.ok(not f.pic:IsShown(), "without its picture")
-      T.ok(not texts(T, f):find("Drops %d+%% from"), "or its drop rates")
+      T.ok(not texts(T, f):find("Drops from"), "or its drop rates")
       T.RG.db.trackerCollapsed = nil
+    end,
+  },
+  {
+    name = "step-view-every-objective",
+    about = "a quest with several objectives shows each one with its own progress, and how each one's item drops",
+    race = "Human", class = "MAGE", level = 12,
+    run = function(T)
+      T.RG.SetRouteMode("log", true)
+      T.Wd.state.done[36] = true   -- (Westfall Stew needs quest 36 first)
+      local ok, why = T.accept(38)   -- Westfall Stew: Stringy Vulture Meat, Murloc Eye, Goretusk Snout, Okra
+      T.ok(ok, "Westfall Stew accepted (" .. tostring(why) .. ")")
+      T.go(T.Wd.objectiveSpot(38))
+      T.RG.Objective(true); T.RG.RefreshStepView(); T.step(1)
+      local f = T.W.G.WaypathStepView
+      T.ok(f and f:IsShown(), "the current step is on screen")
+      if not (f and f:IsShown()) then return end
+      local all = texts(T, f)
+      local n = 0
+      for _, item in ipairs({ "Stringy Vulture Meat", "Murloc Eye", "Goretusk Snout" }) do
+        if all:find(item, 1, true) then n = n + 1 end
+      end
+      T.eq(n, 3, "every objective is on the card")
+      local _, progs = all:gsub("\n%d+/%d+", "")
+      T.ok(progs >= 3, "each with its own progress (" .. progs .. " counts)")
+      local _, drops = all:gsub("Drops from", "")
+      T.ok(drops >= 2, "and a drop line for each item still to collect (" .. drops .. ")")
+    end,
+  },
+  {
+    name = "guide-card-is-the-step",
+    about = "the ordered guide: the current step is always one of the quests of the step the route highlights, even with a closer quest of another step in your log",
+    race = "Human", class = "MAGE", level = 12,
+    run = function(T)
+      local RG = T.RG
+      RG.SetRouteMode("guide", true)
+      T.accept(102)   -- Patrolling Westfall: in your log, its gnolls right here
+      T.go(T.Wd.objectiveSpot(102))
+      RG.ForgetNextStep(); local obj = RG.Objective(true); T.step(1)
+      local r = RG.CurrentRouteEntry()
+      local cur = r and RG.NextStep(r)
+      T.ok(cur, "the route has a step you're on")
+      if not (obj and cur) then return end
+      local ids = {}
+      for _, l in ipairs(RG.StepQuestLines(r, cur) or {}) do ids[l.id] = true end
+      local onStep = (obj.id and ids[obj.id]) or (obj.kind == "route" and obj.key:find("#" .. cur .. "$"))
+      T.ok(onStep, "the current step (" .. tostring(obj.qtitle or obj.text) .. ") belongs to the highlighted step " .. cur)
     end,
   },
   {
@@ -66,13 +113,13 @@ return {
     about = "the current step's Skip moves on from it",
     race = "Human", class = "MAGE", level = 12,
     run = function(T)
-      T.accept(102)   -- Patrolling Westfall
+      T.accept(102)   -- Patrolling Westfall (the guide's step has more to do besides)
       T.go(T.Wd.objectiveSpot(102))
       T.RG.Objective(true); T.RG.RefreshStepView(); T.step(1)
       local f = T.W.G.WaypathStepView
       T.ok(f and f.skip and f.skip:IsShown(), "there's a Skip button")
       local before = T.RG.Objective(true)
-      T.ok(before and before.qtitle == "Patrolling Westfall", "the view is on Patrolling Westfall (" .. tostring(before and before.qtitle) .. ")")
+      T.ok(before and before.stop, "the view is on a stop (" .. tostring(before and before.qtitle) .. ")")
       T.RG.StepViewSkip(); T.step(1)
       local after = T.RG.Objective(true)
       T.ok(not after or after.key ~= before.key, "after Skip it's on something else (" .. tostring(after and after.text) .. ")")

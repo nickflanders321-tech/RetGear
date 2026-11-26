@@ -1167,12 +1167,17 @@ function RG.RefreshTracker()
     local key = r.zone .. "|" .. r.from
     local steps = RG.STEPS[key] or {}
     local cur = RG.NextStep(r)
+    -- zone quests: the steps are the planner's stops, nearest first (the current step is the one the card shows); the
+    -- route's own steps only when there's nothing to plan (a hand-written step, say)
+    local zstops = view == "zone" and RG.GuidePlan and (RG.GuidePlan() or {}).stops or nil
+    if zstops and #zstops == 0 then zstops = nil end
     local right
-    if #steps == 0 then right = GOLD .. "new zone|r"
+    if zstops then right = GREY .. #zstops .. " to do|r"
+    elseif #steps == 0 then right = GOLD .. "new zone|r"
     elseif cur then right = GREY .. "step " .. cur .. " of " .. #steps .. "|r"
     else right = GREEN .. "done|r" end
     local isFolded
-    n = n + 1; y, isFolded = section(n, y, "Route · " .. r.zone, "route", right)
+    n = n + 1; y, isFolded = section(n, y, (zstops and "Steps · " or "Route · ") .. r.zone, "route", right)
     if isFolded then y = gap(y) return end
     -- the smart zone order's other good zones (the ordered guide)
     if view == "guide" and RG.SmartAlternatives and RG.db.smart ~= false then
@@ -1224,7 +1229,54 @@ function RG.RefreshTracker()
           onRightClick = wp and function() RG.Follow(wp) end or nil })
       return ql, wp, sk, full
     end
-    if cur then
+    -- what's left to do once the zone's steps are listed: the way there, and (zone quests) where to go after
+    local function afterSteps()
+      if RG.TravelSummary then
+        local tip = RG.TravelSummary(r.zone)
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { single = true, indent = 2, wp = destWp(r), tip = GOLD .. "Getting there:|r " .. tip .. "\n\nThe quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
+      end
+      if view == "zone" then
+        local names = {}
+        for _, o in ipairs(nextZones(r, 2)) do names[#names + 1] = o.r.zone end
+        if #names > 0 then
+          n = n + 1; y = item(n, y, GREY .. "When it's done: " .. table.concat(names, " or ") .. "|r", { single = true, indent = 2,
+            tip = "Zone quests keeps to " .. r.zone .. ". When it's done, go to one of these (or pick one at the top of the tracker) and it follows you there." })
+        end
+      end
+    end
+    if zstops then
+      -- zone quests: the planner's stops, the one the current step shows opened up into everything at that stop
+      local okO, o = pcall(RG.Objective or function() end)
+      local curStop = okO and o and o.stop or nil
+      local shownS = 0
+      for i, st in ipairs(zstops) do
+        if shownS < 6 then
+          shownS = shownS + 1
+          local it = st.items[1]
+          local isCur = (curStop and st == curStop) or (not curStop and i == 1)
+          local text = RG.PrepStepText(it)
+          n = n + 1
+          y = item(n, y, (isTarget(st.wp) and ARROW or "") .. (isCur and "|cffffffff" or "|cffd6d6d6") .. text .. "|r",
+            { single = true, indent = 22, step = { n = i, state = isCur and "cur" or "todo" }, band = isCur, wp = st.wp,
+              right = st.pd and (GREY .. RG.FormatYards(math.floor(st.pd)) .. "|r") or nil,
+              tip = "|cffffffff" .. text .. "|r\n" .. GREY .. tostring(it.title) .. (st.wp and st.wp[4] and st.wp[4] ~= it.title and (", " .. st.wp[4]) or "") .. "|r" ..
+                (RG.DropTip and it.act ~= "turnin" and RG.DropTip(it.id, it.act == "doing" and it.label or nil) or "") ..
+                "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r skip this stop for an hour (/wp undo brings it back)",
+              onRightClick = function() if RG.SkipStop then RG.SkipStop(st); if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end; RG.RefreshTracker() end end })
+          if isCur and #st.items > 1 then
+            for k = 2, math.min(#st.items, 5) do
+              local x = st.items[k]
+              n = n + 1
+              y = item(n, y, GREY .. RG.PrepStepText(x) .. "|r" .. ((x.act == "doing" and x.title ~= it.title) and (GREY .. "  ·  " .. tostring(x.title) .. "|r") or ""), { single = true, indent = 26, band = true })
+            end
+          end
+        end
+      end
+      if #zstops > shownS then
+        n = n + 1; y = item(n, y, GREY .. "+" .. (#zstops - shownS) .. " more step" .. ((#zstops - shownS) == 1 and "" or "s") .. "|r", { single = true, indent = 22 })
+      end
+      afterSteps()
+    elseif cur then
       -- the step done just before it (where you are in the zone)
       for i = cur - 1, 1, -1 do if RG.StepIsDone(r, i) then stepRow(i, "done") break end end
       local qlines, wp, sk, full = stepRow(cur, "cur")
@@ -1285,19 +1337,7 @@ function RG.RefreshTracker()
       if more > 0 then
         n = n + 1; y = item(n, y, GREY .. "+" .. more .. " more step" .. (more == 1 and "" or "s") .. " on the Route tab|r", { single = true, indent = 22, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
       end
-      if RG.TravelSummary then
-        local tip = RG.TravelSummary(r.zone)
-        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { single = true, indent = 2, wp = destWp(r), tip = GOLD .. "Getting there:|r " .. tip .. "\n\nThe quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
-      end
-      -- zone quests: where to go once this zone is done
-      if view == "zone" then
-        local names = {}
-        for _, o in ipairs(nextZones(r, 2)) do names[#names + 1] = o.r.zone end
-        if #names > 0 then
-          n = n + 1; y = item(n, y, GREY .. "When it's done: " .. table.concat(names, " or ") .. "|r", { single = true, indent = 2,
-            tip = "Zone quests keeps to " .. r.zone .. ". When it's done, go to one of these (or pick one at the top of the tracker) and it follows you there." })
-        end
-      end
+      afterSteps()
     elseif #steps == 0 then
       n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
     elseif view == "zone" then
