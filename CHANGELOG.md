@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.62.4
+- Engineering 175-195 now matches the updated WoW Forever guide: 61 Solid Blasting Powder to 193 (enough for the triggers at 200 and the bombs at 238), then the Gyromatic Micro-Adjustor and only 3 Iron Grenades.
+- Checked against WoW Forever build 1.60.1.71139: no changes needed.
+- Quest and card data updated from WoW Forever's latest game data.
+
 ## v1.62.3
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 - Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
