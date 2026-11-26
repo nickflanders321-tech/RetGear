@@ -2,14 +2,13 @@ local _, RG = ...
 -- Waypath+ current step and drop rates.
 --   * Drop rates: how often a quest's items drop and from what (Objectives.lua carries them, from Polestar forever-db's
 --     item sources and the cMaNGOS loot tables). Shown in the tracker's tooltips (RG.DropTip) and on the current step.
---   * The current step: a card under the tracker's header that says what to do right now (it follows RG.Objective).
---     With step details on (Settings, the tracker's header, or /wp details): where, how often its items drop, a 3D
---     model of the mob (or the item's icon, or the quest giver) to look for, why it's next and what comes after.
+--   * The current step: a card under the tracker's header that says what to do right now (it follows RG.Objective):
+--     where, how often its items drop, a 3D model of the mob (or the item's icon, or the quest giver) to look for,
+--     why it's next and what comes after.
 -- Models are only asked for out in the world: never inside an instance (as the card game does, see v1.60.2).
 local GOLD, GREY, GREEN = RG.COLORS.GOLD, RG.COLORS.GREY, RG.COLORS.GREEN
 local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
 
-table.insert(RG.OPTIONS, { key = "stepView", label = "Step details: under the current step on the tracker, the mob, item or quest giver to look for, how often its items drop and why it's next", default = true })
 
 -- ---------------------------------------------------------------------------------------------------------------------
 -- Drop rates
@@ -117,10 +116,10 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 -- The current step: a card under the tracker's header (it's part of the tracker, not a window of its own)
 -- ---------------------------------------------------------------------------------------------------------------------
--- Always: what to do (Do / Hand in / Pick up / Go), the quest, how far, and its objective with the progress.
--- With step details on (Settings, the button in the tracker's header, the menu at its top, or /wp details): where it
--- is, how often its items drop, a picture of the mob, item or quest giver to look for, why it's next, what comes after
--- and a Skip button. In the professions view it shows the profession step you're on (RG.ProfFocus).
+-- What to do (Do / Hand in / Pick up / Go), the quest, how far, and its objective with the progress; then where it is,
+-- how often its items drop, a picture of the mob, item or quest giver to look for, why it's next, what comes after and
+-- a Skip button. Folded, the tracker keeps only the first two lines. In the professions view it shows the profession
+-- step you're on (RG.ProfFocus).
 local MODEL = 58
 local f, model
 local cardH = 0
@@ -155,8 +154,6 @@ local function skipMenu()
       end
     end
   end
-  local on = RG.Opt("stepView")
-  e[#e + 1] = { (on and "Hide" or "Show") .. " the step details", function() RG.db.stepView = not on; if RG.RefreshTracker then RG.RefreshTracker() end end }
   if RG.ShowMenu then RG.ShowMenu(e, "Current step") end
 end
 RG.StepViewSkip = skipNow
@@ -207,7 +204,7 @@ local function build()
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Skip this step", 1, 0.93, 0.74)
     GameTooltip:AddLine("Click: skip it (a stop of your quests for an hour; a route step until /wp undo)", 1, 1, 1, true)
-    GameTooltip:AddLine("Right-click: more (never suggest these quests again, hide the details)", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Right-click: more (never suggest these quests again)", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.14); GameTooltip:Hide() end)
@@ -352,7 +349,7 @@ function RG.RefreshStepView()
   end
   local W = (t:GetWidth() or 300) - 16
   local folded = RG.db.trackerCollapsed or (RG.trackerInCombat and RG.Opt("trackerCombatFold"))
-  local details = RG.Opt("stepView") and not folded
+  local details = not folded
   -- the top: what to do, the quest, how far
   f.verb:SetText(info.verb:upper())
   f.verb:SetTextColor(info.col[1], info.col[2], info.col[3])
@@ -426,16 +423,4 @@ do
     if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(1, tick) end
     tick()
   end)
-end
-
-local base = SlashCmdList.WAYPATH
-SlashCmdList.WAYPATH = function(msg)
-  local cmd = (msg or ""):lower():match("^%s*(%S*)")
-  if cmd == "details" or cmd == "stepview" then
-    RG.db.stepView = not (RG.Opt and RG.Opt("stepView"))
-    RG.Print("Step details " .. (RG.db.stepView and "on: under the current step on the tracker, the mob to look for, how often its items drop and why it's next." or "off."))
-    if RG.RefreshTracker then RG.RefreshTracker() end
-    return
-  end
-  return base(msg)
 end

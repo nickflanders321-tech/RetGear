@@ -34,10 +34,9 @@ return {
   },
   {
     name = "step-view-shows-step",
-    about = "with step details on, the current step explains the quest you're doing, how often its item drops and what to look for",
+    about = "the current step explains the quest you're doing, how often its item drops and what to look for",
     race = "Human", class = "MAGE", level = 12,
     run = function(T)
-      T.RG.db.stepView = true
       local ok = T.accept(102)   -- Patrolling Westfall
       T.ok(ok, "Patrolling Westfall accepted")
       T.go(T.Wd.objectiveSpot(102))   -- out among the gnolls
@@ -54,11 +53,12 @@ return {
       -- the distance shows once (in the header)
       local _, n = all:gsub("%d+ yd", "")
       T.eq(n, 1, "the distance is shown once")
-      -- details off: the step stays, the picture and the drop rates go
-      T.RG.db.stepView = false; T.RG.RefreshTracker(); T.step(1)
-      T.ok(f:IsShown(), "with details off, the current step is still there")
+      -- the tracker folded: the step stays, its picture and drop rates fold away
+      T.RG.db.trackerCollapsed = true; T.RG.RefreshTracker(); T.step(1)
+      T.ok(f:IsShown(), "with the tracker folded, the current step is still there")
       T.ok(not f.pic:IsShown(), "without its picture")
       T.ok(not texts(T, f):find("Drops %d+%% from"), "or its drop rates")
+      T.RG.db.trackerCollapsed = nil
     end,
   },
   {
@@ -66,7 +66,6 @@ return {
     about = "the current step's Skip moves on from it",
     race = "Human", class = "MAGE", level = 12,
     run = function(T)
-      T.RG.db.stepView = true
       T.accept(102)   -- Patrolling Westfall
       T.go(T.Wd.objectiveSpot(102))
       T.RG.Objective(true); T.RG.RefreshStepView(); T.step(1)

@@ -2919,7 +2919,6 @@ local SETTING_TEXT = {
   trackerObjectives = { "Each quest's objectives", "Listed under the quest, coloured by progress. Off: one line per quest." },
   trackerFocus = { "Objectives for one quest only", "Only the quest you're at, targeting or following lists its objectives." },
   trackerItems = { "Quest item buttons", "A button beside a quest whose item you use (a horn, a vial)." },
-  stepView = { "Step details", "Under the current step: the mob, item or quest giver to look for, how often its items drop and why it's next. Also the button in the tracker's header." },
   trackerProfs = { "Profession steps", "Your professions' next step and the materials you're short of." },
   fishTracker = { "Fishing panel", "Your skill, lure and catches on the tracker while you fish." },
   dungeonHelper = { "Dungeon upgrades", "In a dungeon, the upgrades it can drop for you, by boss." },
@@ -3034,7 +3033,7 @@ local COVERED = { trackerInter = true, trackerRoomy = true, compactTracker = tru
 -- the categories, in order; "#..." is a heading, "@..." a control from SPECIAL, anything else an option's switch
 local SETTING_CATS = {
   { "look", "Look", { "#Colours", "@accent", "#Sizes", "@arrowSize", "@trackerSize", "@trackerAlpha", "@textSize", "#Text", "@font", "@spacing" } },
-  { "tracker", "Tracker", { "#What it shows", "tracker", "stepView", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "dungeonHelper",
+  { "tracker", "Tracker", { "#What it shows", "tracker", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "dungeonHelper",
     "#How it behaves", "@length", "@fight", "trackerLocked" } },
   { "route", "Route & quests", { "#Leveling route", "routeGuide", "@routeStyle", "smart", "@dungeons", "smartStepOrder", "profQuests",
     "#Quests", "autoQuest", "autoReward", "rewardPicker", "newQuests", "nameplateAlert", "questUpgradeMarks", "shareObjective" } },

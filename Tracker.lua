@@ -615,7 +615,7 @@ local function build()
     f:SetScript("OnDragStop", function() if InCombatLockdown() then return end tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
   end
   RG.TrackerDragFrom = dragFrom
-  local mb = CreateFrame("Button", nil, tr); mb:SetHeight(22); mb:SetPoint("TOPLEFT", 30, -6); mb:SetPoint("TOPRIGHT", -98, -6)
+  local mb = CreateFrame("Button", nil, tr); mb:SetHeight(22); mb:SetPoint("TOPLEFT", 30, -6); mb:SetPoint("TOPRIGHT", -76, -6)
   mb.text = mb:CreateFontString(nil, "OVERLAY"); mb.text:SetPoint("LEFT", 2, 0); mb.text:SetJustifyH("LEFT"); mb.text:SetWordWrap(false)
   if not mb.text:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(mb.text, 14) end
   mb.text:SetTextColor(0.937, 0.902, 0.824); mb.text:SetShadowColor(0, 0, 0, 0.8); mb.text:SetShadowOffset(1, -1)
@@ -626,7 +626,7 @@ local function build()
   mb:SetScript("OnClick", function(self) if RG.TrackerModeMenu then RG.TrackerModeMenu(self) end end)
   mb:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("What the tracker follows", GOLDC[1], GOLDC[2], GOLDC[3])
-    GameTooltip:AddLine("Click: the ordered guide, one zone's quests, your quest log or your professions, and whether dungeon quests and step details show.", 1, 1, 1, true)
+    GameTooltip:AddLine("Click: the ordered guide, one zone's quests, your quest log or your professions, and whether dungeon quests show.", 1, 1, 1, true)
     GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move the tracker", 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Mouse wheel: scroll the list  ·  Ctrl / Shift / Alt + wheel: size, width, see-through", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
@@ -678,22 +678,6 @@ local function build()
   end)
   ab:SetScript("OnLeave", function() GameTooltip:Hide() end)
   tr.arrowBtn = ab
-  -- step details on/off (the mob, drops and why under the current step)
-  local dbt = CreateFrame("Button", nil, tr); dbt:SetSize(20, 20); dbt:SetPoint("TOPRIGHT", -74, -8)
-  dbt.icon = dbt:CreateTexture(nil, "OVERLAY"); dbt.icon:SetSize(13, 13); dbt.icon:SetPoint("CENTER"); dbt.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Report")
-  dbt:SetScript("OnClick", function(self)
-    RG.db.stepView = not RG.Opt("stepView")
-    RG.RefreshTracker()
-    if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
-  end)
-  dbt:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:SetText("Step details: " .. (RG.Opt("stepView") and "on" or "off"))
-    GameTooltip:AddLine("Under the current step: the mob, item or quest giver to look for, how often its items drop and why it's next. Click to " .. (RG.Opt("stepView") and "hide" or "show") .. " them.", 1, 1, 1, true)
-    GameTooltip:Show()
-  end)
-  dbt:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  tr.detailsBtn = dbt
 
   -- thin XP bar along the bottom, with the pace and time to level above it
   local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(2); xpBg:SetPoint("BOTTOMLEFT", 8, 6); xpBg:SetPoint("BOTTOMRIGHT", -8, 6)
@@ -953,10 +937,6 @@ function RG.RefreshTracker()
     local on = RG.Opt("arrow")
     tr.arrowBtn.icon:SetDesaturated(not on)
     if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
-  end
-  if tr.detailsBtn then
-    local on = RG.Opt("stepView")
-    if on then tr.detailsBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.detailsBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
   local quests = RG.MyQuests and RG.MyQuests() or {}
   -- the line under the header: what it's following right now (click: more)
@@ -1706,7 +1686,7 @@ function RG.TrackerModeMenu(anchor)
     local on = view == v
     return { (on and DOT or RING) .. (on and GOLD or "|cffffffff") .. name .. "|r" .. GREY .. "   " .. about .. "|r", function() RG.SetTrackerView(v) end }
   end
-  local dun, det = RG.DungeonQuestsOn(), RG.Opt("stepView")
+  local dun = RG.DungeonQuestsOn()
   RG.ShowMenu({
     { "Leveling", head = true },
     pick("guide", "Ordered guide", "the route, zone by zone"),
@@ -1720,7 +1700,6 @@ function RG.TrackerModeMenu(anchor)
       RG.db.dungeonQuests = not dun
       if RG.RouteChanged then RG.RouteChanged() end
     end },
-    { (det and BOX_ON or BOX_OFF) .. "Step details" .. GREY .. "   the mob, drops and why|r", function() RG.db.stepView = not det; RG.RefreshTracker() end },
   }, nil, anchor)
 end
 
