@@ -32,10 +32,25 @@ return {
         for _, t in ipairs(RG.PrepPlan().quests) do if t.id == withChain.id then again = t end end
         T.ok(again and again.state ~= "skipped", "and bringing it back brings the chain back")
       end
+      -- the chains as one tree: a quest several chains share is one line
+      local seen, dup = {}, nil
+      for _, row in ipairs(RG.PrepTree()) do
+        if seen[row.first.id] then dup = row.first.name end
+        seen[row.first.id] = true
+      end
+      T.ok(not dup, "every quest is on one line of the tree (" .. tostring(dup) .. " came twice)")
+      -- the steps: in the Badlands, the trip starts with something from the chains
+      T.go({ 1418, 6.0, 47.0 }); T.step(2)
+      RG.Objective(true)
+      local stops = (RG.GuidePlan() or {}).stops or {}
+      T.ok(#stops > 0, "there are steps to take (" .. #stops .. ")")
+      local w = RG.PrepWork()
+      local first = stops[1] and stops[1].items[1]
+      T.ok(first and first.id and (w.full[first.id] or w.keep[first.id]), "the first step is one of the chains (" .. tostring(first and RG.PrepStepText(first)) .. ")")
       -- the tracker: the dungeon picker and the quests
       RG.RefreshTracker(); T.step(1)
       T.ok(T.trackerFind("Selected Dungeon: Blackrock Depths"), "the line under the header says which dungeon: " .. table.concat(T.tracker(), " | "))
-      T.ok(T.trackerFind("Quests · Blackrock Depths") or T.trackerFind("QUESTS · BLACKROCK DEPTHS"), "and the tracker lists its quests")
+      T.ok(T.trackerFind("STEPS · BLACKROCK DEPTHS") and T.trackerFind("CHAINS"), "and the tracker lists the steps and the chains")
       -- the planner only picks from the chains: whatever the current step is, it's one of them (or how it stands)
       local obj = RG.Objective(true)
       local work = RG.PrepWork()

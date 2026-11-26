@@ -132,7 +132,7 @@ function RG.PrepPlan(name)
         local skippedFrom, afterRun = false, false
         for _, x in ipairs(order) do
           local xd = qd(x)
-          local s = { id = x, name = xd and xd.n or "?", level = xd and xd.l, target = x == id }
+          local s = { id = x, name = xd and xd.n or "?", level = xd and xd.l, target = x == id, pre = prereqs(x) }
           local why, nv = RG.QuestBlocked(x, xd)
           -- (an earlier quest that's itself done inside a dungeon: what comes after it waits for the run)
           local inside = x ~= id and needsInside(x)
@@ -187,9 +187,11 @@ function RG.PrepForget() memo = nil end
 function RG.PrepWork()
   local plan = RG.PrepPlan()
   local work = { full = {}, keep = {}, pickups = {}, plan = plan }
+  local picked = {}   -- (a quest several chains share is picked up once)
   for _, t in ipairs(plan.quests) do
     for _, s in ipairs(t.chain) do
-      if s.state == "have" or s.state == "ready" or s.state == "pickup" then
+      if (s.state == "have" or s.state == "ready" or s.state == "pickup") and not picked[s.id] then
+        picked[s.id] = true
         -- (the dungeon's own quests, and earlier ones done inside a dungeon, are kept, not done; a finished one is handed in)
         local inside = not s.target and needsInside(s.id)
         if (s.target or inside) and s.state ~= "ready" then work.keep[s.id] = true else work.full[s.id] = true end
@@ -245,4 +247,51 @@ RG.PREP_STATE = {
 function RG.PrepStateText(s)
   if s.state == "level" and s.why then return GREY .. s.why:gsub("^at ", "") .. "|r" end
   return RG.PREP_STATE[s.state] or ""
+end
+
+-- The chains as one tree, for the tracker: a quest several of the dungeon's quests need (Disharmony of Flame, before
+-- Commander Gor'shak and The Last Element) is one line with its branches under it. A run of quests in the same state
+-- that comes after the run (or later) is one line: "What Is Going On? › The Eastern Kingdom › The Royal Rescue".
+--   { { depth, last (the last of its branch), text, s = the last step on the line, first = its first step, t = a target }, ... }
+local MERGE = { after = true, wait = true, level = true, skipped = true }
+function RG.PrepTree(plan)
+  plan = plan or RG.PrepPlan()
+  -- every quest of every chain once, with the target it belongs to (the first that needs it)
+  local nodes, order = {}, {}
+  for _, t in ipairs(plan.quests) do
+    for _, st in ipairs(t.chain) do
+      if not nodes[st.id] then nodes[st.id] = { s = st, t = t, kids = {} }; order[#order + 1] = nodes[st.id] end
+    end
+  end
+  -- under the first quest it needs; a second one it needs is said on its line
+  local roots = {}
+  for _, nd in ipairs(order) do
+    local parents = {}
+    for _, p in ipairs(nd.s.pre or {}) do if nodes[p] then parents[#parents + 1] = nodes[p] end end
+    if #parents == 0 then roots[#roots + 1] = nd
+    else
+      table.insert(parents[1].kids, nd)
+      if parents[2] then nd.also = parents[2].s.name end
+    end
+  end
+  local rows = {}
+  local function emit(node, depth, last)
+    local names, n = { node.s.name }, node
+    while #n.kids == 1 and MERGE[node.s.state] and n.kids[1].s.state == node.s.state and not n.kids[1].also do
+      n = n.kids[1]; names[#names + 1] = n.s.name
+    end
+    if #names > 3 then names = { names[1], (#names - 2) .. " more", names[#names] } end
+    rows[#rows + 1] = { depth = depth, last = last, text = table.concat(names, " › "), s = n.s, first = node.s, t = node.t, also = node.also }
+    for i, k in ipairs(n.kids) do emit(k, depth + 1, i == #n.kids) end
+  end
+  for i, r in ipairs(roots) do emit(r, 0, i == #roots) end
+  return rows
+end
+
+-- What a step of the trip says: "Pick up Commander Gor'shak", "Kill Overmaster Pyron 0/1", "Hand in Disharmony of Flame"
+function RG.PrepStepText(it, keep)
+  if it.act == "turnin" then return "Hand in " .. tostring(it.title) end
+  if it.act == "pickup" then return "Pick up " .. tostring(it.title) .. (keep and keep[it.id] and (GREY .. "  · keep|r") or "") end
+  local verb = ({ k = "Kill", i = "Collect", o = "Use" })[it.okind or ""] or "Do"
+  return verb .. " " .. tostring(it.label or it.title) .. ((it.need and it.need > 0) and ("  " .. (it.have or 0) .. "/" .. it.need) or "")
 end

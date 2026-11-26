@@ -367,7 +367,10 @@ function RG.RefreshStepView()
   if info.done then f.prog:SetTextColor(0.35, 0.85, 0.45) else f.prog:SetTextColor(0.94, 0.94, 0.94) end
   local h = (info.line and info.line ~= "") and 46 or 30
   -- the details
-  f.pic:Hide(); f.picName:SetText(""); f.body:Hide(); f.line:Hide(); f.skip:Hide(); f.foot:SetText("")
+  -- (the picture isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made
+  -- it flash once a second)
+  local picShown = false
+  f.picName:SetText(""); f.body:Hide(); f.line:Hide(); f.skip:Hide(); f.foot:SetText("")
   if details then
     local body = {}
     if info.where then body[#body + 1] = info.where end
@@ -385,7 +388,8 @@ function RG.RefreshStepView()
     local shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
     local x = 8
     if shown then
-      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(h - 2)); f.pic:Show()
+      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(h - 2))
+      picShown = true
       f.picName:SetText(look.name or "")
       x = 8 + MODEL + 8
     end
@@ -402,6 +406,7 @@ function RG.RefreshStepView()
       h = h + 26
     end
   end
+  if f.pic:IsShown() ~= picShown then f.pic:SetShown(picShown) end
   f.wp, f.prof = info.wp, info.prof
   f.tipTitle = info.title
   if frozen and lastH and lastH > 0 then h = lastH end
