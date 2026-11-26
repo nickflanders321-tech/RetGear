@@ -170,6 +170,7 @@ local function skipNow()
     else afterSkip((obj.qtitle or "this stop") .. " for an hour") end
   else RG.Print("Nothing here to skip.") end
 end
+RG.SkipCurrentStep = skipNow   -- (the main window's Route page has a Skip step button too)
 local function skipMenu()
   local obj = RG.Objective and RG.Objective()
   local e = {}

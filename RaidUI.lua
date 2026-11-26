@@ -499,7 +499,7 @@ local function viewRaids(K, n, sc)
     end
     local cleared = RG.RaidCleared(raid.raid, b)
     n = n + 1
-    K.setItem(K.getRow(n), nil, nil, (cleared and (GOLD .. "✓ |r") or "") .. ((#l > 0) and (WHITE .. b .. "|r") or (GREY .. b .. "|r")),
+    K.setItem(K.getRow(n), nil, nil, (cleared and "|TInterface\\AddOns\\Waypath\\Media\\Check:12:12|t " or "") .. ((#l > 0) and (WHITE .. b .. "|r") or (GREY .. b .. "|r")),
       (#l > 0) and (GREY .. table.concat(names, GREY .. "  ·  |r") .. (#l > 3 and (GREY .. "  +" .. (#l - 3) .. " more") or "") .. "|r") or (GREY .. "Nothing for you|r"),
       (#l > 0) and (GREEN .. #l .. (#l == 1 and " upgrade|r" or " upgrades|r")) or "", cleared and (GOLD .. "Cleared this week|r") or "", nil, nil, true)
     K.rows[n].icon:SetTexture(#l > 0 and "Interface\\Icons\\INV_Misc_Head_Dragon_01" or "Interface\\Icons\\INV_Misc_QuestionMark")
@@ -507,7 +507,7 @@ local function viewRaids(K, n, sc)
     if first then K.rows[n].onClick = function() RG.ShowItemSource(first.g, { note = GREEN .. pctText(first) .. "|r" .. GREY .. " over " .. wornName(first.slot) .. "|r" }) end end
     K.rows[n].tip = first and "Click for the best piece it drops for you." or nil
   end
-  n = n + 1; note(K, n, GREY .. "Drops come from the game's loot tables. A ✓ means you killed it this week (your saved raid lockouts).|r")
+  n = n + 1; note(K, n, GREY .. "Drops come from the game's loot tables. A tick means you killed it this week (your saved raid lockouts).|r")
   return n
 end
 
