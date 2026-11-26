@@ -555,7 +555,7 @@ local function build()
     end
     RG.RefreshTracker()
   end)
-  tr:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); RG.TrackerSavePos() end)
+  tr:SetScript("OnDragStop", function(self) if InCombatLockdown() then return end self:StopMovingOrSizing(); RG.TrackerSavePos() end)
   -- Edit Mode / /wp move shows it with the other pop-ups (it keeps its own saved place, by its top-right corner)
   if RG.RegisterMover then
     RG.RegisterMover(tr, "tracker", "Tracker", nil, nil, { own = {
@@ -602,7 +602,7 @@ local function build()
   head:SetScript("OnLeave", function() GameTooltip:Hide() end)
   head:RegisterForDrag("LeftButton")
   head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") and not (RG.TrackerFrozen and RG.TrackerFrozen()) then tr:StartMoving() end end)
-  head:SetScript("OnDragStop", function() tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
+  head:SetScript("OnDragStop", function() if InCombatLockdown() then return end tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
   -- hover the header for the tracker's controls
   local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(1, 1); hint:Hide()
   hint:SetScript("OnEnter", function(self)
@@ -951,7 +951,7 @@ function RG.RefreshTracker()
     return
   end
   local compact = RG.Opt and RG.Opt("compactTracker")
-  local MAXQ = compact and 6 or 10
+  local MAXQ = compact and 14 or 40   -- (the list scrolls, so this is generous; ready quests never count)
   -- 0. fishing: shows while you hold a pole or caught something in the last 10 minutes
   local fl, fright = nil, nil
   if RG.FishTrackerLines then fl, fright = RG.FishTrackerLines() end
@@ -1159,30 +1159,26 @@ function RG.RefreshTracker()
                   end
                 end
             end
-            if g.here then
-              -- the zone you're in: every quest you're still doing is listed, whatever the limit; three or more ready
-              -- to hand in fold into one line (the turn-in run takes you round them), so they don't push the rest out
-              local readyL, active = {}, {}
-              for _, q in ipairs(g.list) do if q.complete then readyL[#readyL + 1] = q else active[#active + 1] = q end end
-              if #readyL >= 3 then
-                local names = {}
-                for _, q in ipairs(readyL) do names[#names + 1] = q.title end
-                n = n + 1
-                y = item(n, y, GREEN .. #readyL .. " ready to turn in|r" .. GREY .. ": " .. table.concat(names, ", ") .. "|r",
-                  { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. ((RG.TurnInPlanText and ("\n\n" .. GOLD .. "Plan:|r " .. RG.TurnInPlanText())) or "") .. "\n\n" .. GOLD .. "Click:|r the turn-in run: this zone first, then the others by how quickly you get there",
-                    onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
-                shownQ = shownQ + 1
-              else
-                for _, q in ipairs(readyL) do shownQ = shownQ + 1; questLine(q) end
-              end
-              for k, q in ipairs(active) do
-                if k > (compact and 8 or 15) then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
-              end
+            -- ready-to-hand-in quests never count towards the limit and three or more fold into one line (the turn-in run
+            -- takes you round them), so they can't push the quests you're still doing out of the list
+            local readyL, active = {}, {}
+            for _, q in ipairs(g.list) do if q.complete then readyL[#readyL + 1] = q else active[#active + 1] = q end end
+            if #readyL >= 3 then
+              local names = {}
+              for _, q in ipairs(readyL) do names[#names + 1] = q.title end
+              n = n + 1
+              y = item(n, y, GREEN .. #readyL .. " ready to turn in|r" .. GREY .. ": " .. table.concat(names, ", ") .. "|r",
+                { single = true, indent = 12, tip = GREEN .. "Ready to turn in:|r\n" .. table.concat(names, "\n") .. ((RG.TurnInPlanText and ("\n\n" .. GOLD .. "Plan:|r " .. RG.TurnInPlanText())) or "") .. "\n\n" .. GOLD .. "Click:|r the turn-in run: this zone first, then the others by how quickly you get there",
+                  onClick = function() if RG.TurnInRun then RG.TurnInRun() end end })
             else
-              for _, q in ipairs(g.list) do
-                if shownQ >= MAXQ then hidden = hidden + 1
-                else shownQ = shownQ + 1; questLine(q) end
-              end
+              for _, q in ipairs(readyL) do questLine(q) end
+            end
+            for k, q in ipairs(active) do
+              if g.here then
+                -- the zone you're in: every quest you're still doing is listed, whatever the limit
+                if k > 15 then hidden = hidden + 1 else shownQ = shownQ + 1; questLine(q) end
+              elseif shownQ >= MAXQ then hidden = hidden + 1
+              else shownQ = shownQ + 1; questLine(q) end
             end
           end
         end
@@ -1574,7 +1570,7 @@ end
 -- Where the tracker is: always by its top-right corner, so folding and unfolding grows and shrinks it downwards
 -- (the game's own drag can leave it anchored by its middle or bottom).
 function RG.TrackerSavePos()
-  if not tr then return end
+  if not tr or InCombatLockdown() then return end
   local top, right = tr:GetTop(), tr:GetRight()
   if not (top and right) then return end
   tr:ClearAllPoints(); tr:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", right, top)

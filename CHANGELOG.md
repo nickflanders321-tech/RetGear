@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.61.0
+## v1.63.0
 - **The route has the quests other guides do and it used to miss.** WoW Forever's Camping quests (The Adventurer, The Great Outdoors, Camping 101 for your professions), starting-area quests filed under the next zone (Wayward Weapons, Grace of An'she and Mu'sha, A Light in the Darkness, Nature's Call), your capital's early quests (Hidden Enemies, Meal Appeal and the rest of Orgrimmar's), and quests that start from an object or an item.
 - **Quests that start from an item.** When the item always drops (Gazz'uz's Eye of Burning Shadow) or lies in a chest (the Aged Envelope in Benedict's Chest), the step sends you there: "Kill Gazz'uz and loot Eye of Burning Shadow: it starts this quest." When it only sometimes drops, the quest waits in the step where it's handed in and shows up once you have it.
 - **Class quests along the route.** Your class quests now come up in the route's steps, at the hub where their giver stands (Simple Parchment in the Valley of Trials, Path of Defense at the Crossroads), so you pick them up as you pass. Only your class sees them, and the steps don't wait on other classes' quests. The tracker's Class quests list keeps the ones the route doesn't pass, and says "pick up now" only once a quest is within 3 levels of you (no more Brutal Armor, a level-30 quest, at 20).
@@ -8,6 +8,58 @@
 - **New: step view** (Settings > Tracker: what it shows, or `/wp stepview`). An optional panel that explains the step you're on: the quest and what to do for it ("Collect Gnoll Paw 0/4"), where and how far, how often its items drop, and a 3D model of the mob or quest giver to look for (the item's icon when there's no mob). Click it for the arrow, drag it anywhere. Its **Skip** button moves on when you don't want to do a step (a stop of your quests for an hour, a route step until `/wp undo`); right-click for more (never suggest these quests again, hide the view).
 - **New route style: stay in the zone you're in** (`/wp route zone`, or Route style in `/wp setup`). The route then works only on the zone you're standing in and never sends you to another one; hand-ins elsewhere still get the arrow. Once the zone has nothing left for you, the tracker says so and lists the best zones to go to next, without moving the arrow. Fly somewhere else and the route follows you there. `/wp route smart` or `guided` switch back.
 - **Drop rates.** Hover a quest, one of its objectives or a route step on the tracker to see how often its items drop and from what ("Gnoll Paw: 80% from Riverpaw Taskmaster, Riverpaw Mongrel and 2 more"). From the community's drop data (Polestar forever-db) and the cMaNGOS loot tables.
+
+## v1.62.4
+- Engineering 175-195 now matches the updated WoW Forever guide: 61 Solid Blasting Powder to 193 (enough for the triggers at 200 and the bombs at 238), then the Gyromatic Micro-Adjustor and only 3 Iron Grenades.
+- Checked against WoW Forever build 1.60.1.71139: no changes needed.
+- Quest and card data updated from WoW Forever's latest game data.
+
+## v1.62.3
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
+## v1.62.2
+- Engineering 280-300: the Thorium Shells step now matches the updated WoW Forever guide (its extra note about the shells was dropped).
+- Quest, gear and card data updated from WoW Forever's latest game data.
+
+## v1.62.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
+## Unreleased
+- **More micro-stutter fixes.** The quest tracker keeps each quest's nearest spot for two seconds instead of walking every known quest spot on every refresh (most of its memory garbage). The fishing HUD refreshes less often while it is closed and idle (every 1.2 s shown, every 3 s hidden; events still refresh it at once). The quest planner behind the tracker's top line keeps its grouped quest spots until the spot list changes instead of regrouping every known spot on each pass (in a test with 3,000 spots: about 12 times faster and 16 times less garbage per pass). Each quest-log update used to rebuild every spawn point of every open objective (hundreds of small tables and strings, most of the tracker's memory garbage); the database's spots are now made once and only their progress is refreshed. A quest spot's world position is worked out once instead of by asking the game on every quest-log update (about 20 times fewer game calls in a test), and the planner keeps one spot per 6-yard square of an objective. The Cards collection no longer builds and sorts a list of graded copies for every card it draws.
+- **Less hitching when the quest log changes.** /wp perf showed the tracker spending about 94 ms on each refresh, over a third of it in "do I know this flight path" lookups that the travel planner and the route ranking make hundreds of times in one pass, each one lower-casing every flight path you know. The answer is now kept until your list of flight paths changes (same results, a fraction of the time and almost no garbage).
+- **Tracker: finished quests no longer push your other quests out.** Quests ready to hand in used to count against the tracker's quest limit, so a handful of them hid the quests you were still doing behind "+N more in your quest log". They no longer count, three or more in any zone fold into one "ready to turn in" line, and the limit is much higher. The list scrolls with the mouse wheel when it is taller than the tracker.
+- **Cards: a pack reveal is no longer spoiled or glitchy.** An achievement or quest banner (or a friend's pull) earned by a pack now waits from the moment the pack is rolled until every card is turned and any Mythic moment is over, so it can't name what is still face down. The Mythic screen's dungeon picture is clipped to the pack screen and its veil is fully opaque, so the game world and the pack screen's text no longer show through round or behind it.
+- **A new Raid & tier tab in Gear (level 58 and up, every class).**
+  - **Tier sets:** a grid like the Dungeon Journal's: one row per tier (0, 0.5, 1, 2, 2.5 and 3), one icon per slot (head to ring). A coloured border shows what you have: green worn, blue in your bags or bank, gold with its token in your bags, grey not yet. The boss or quest sits under each icon, and a green percentage on a grey icon is how much it would upgrade you. Hover for the item, click for where it drops, Shift-click to link, Ctrl-click to preview. Click a row to see that set's bonuses and the next piece worth getting.
+  - **Upgrades:** your best next raid upgrade, the best raid piece for each slot and the route to it. Click a slot to see every route to it (raid, dungeon, vendor, battleground, crafting), ranked by gain.
+  - **Raids:** Molten Core, Onyxia, Blackwing Lair, Zul'Gurub, AQ20, AQ40 and Naxxramas boss by boss, with the drops that upgrade you, the token each boss gives, the kill order for the most upgrades and a check mark for bosses you have killed this week.
+  - Loot comes from the game's loot tables and the wowsims sets for your spec. Tier 1 and 2 pieces drop from bosses; Tier 2.5 and 3 are bought with tokens. Raid items also show in the source groups and the item-source popup. The Gear tab itself is unchanged.
+  - **Right armor only:** every raid and tier piece was checked against the game's item data for your class (class restriction, armor type, weapon type, relics). Armor below your class's best type (leather for a Warrior, cloth for a Hunter) is not offered to damage and tank specs; Holy, Restoration, Elemental and Balance keep their cloth and leather spell gear, and so does anything a damage spec's own simulator set wears.
+  - Gaps: Majordomo and the Four Horsemen loot comes from chests, and the Mage's Tier 0 shoulders have no source. Set bonus text is read from the game's tooltips.
+
+## v1.62.0
+- **Tier sets and everything Pix Xizzix sells are now in the gear lists, for every class.**
+  - **Why they were missing:** the list builder threw out any plate or mail piece with no level requirement before judging it, and Tier 0.5's pieces (Soulforge, Heroism, Beastmaster's, the Five Thunders' and the others) have none. Warriors, Paladins, Hunters and Shamans lost the whole set. The upgrade-path rule also hid most of what the other classes could buy.
+  - **Tier 0 (your class's own dungeon set) and Tier 0.5 (the Anthion Harmon, Mokvar and Deliana questline and vendors)** are listed whole, every piece you can get, and marked as a set piece in the list and the pre-raid checklist. Two Blackrock Spire bosses that were missing from the data (Gizrul the Slavener and Gyth) now count, so the Druid, Shaman and other Tier 0 shoulders appear. The Mage's Tier 0 shoulders are the one gap: the data has no source for them.
+  - **Tarnished Undermine Real:** every piece Pix Xizzix sells that your class can use is listed with its price in Reals (belts 100, rings and cloaks 75, relics 50, trinkets 125). WoW Forever's Pix has no Tier 1 or Tier 2 sets: those are from Season of Discovery, so there is nothing to add for them.
+  - **Alterac Valley's reputation gear** from the Stormpike and Frostwolf Supply Officers is listed for every class: the weapons (Frostbite, Stormstrike Hammer, The Unstoppable Force, The Immovable Object and the rest), belts, cloaks, pendants and rings, each with the reputation level it takes. The list builder used to skip these vendors, and wrongly showed their wares as dungeon drops. The PvP rank sets you buy with honor rank are not in WoW Forever's vendor data, so they are not listed.
+  - **Pre-raid checklist** now picks the best piece for each slot from everything in the lists (dungeons, quests, tier sets, crafting and Pix Xizzix), not only dungeon and quest pieces.
+
+## v1.61.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+- **Opening the Character window no longer freezes the game, and the tracker no longer trips the game's combat lock.** The gear panel threw away its saved results every time the window opened and ran three times in a row, which could run past the game's time limit and show "script ran too long". It now keeps its results until your gear or bags change, runs once per open, and waits longer after a slow pass. Separately, once the tracker has a quest-item button it is protected by the game in a fight, and moving, resizing or refreshing it then produced thousands of "action blocked" errors; it now holds still in combat and catches up when the fight ends, including dragging and the resize grip.
+- **Achievement banners wait until the pack is turned over.** Opening a pack could show an achievement banner ("Mythic Hands", a set, a trophy) while its cards were still face down, which gave away what was in it. A banner now waits until every card is turned over and any Mythic moment has finished, then shows. Nothing is lost: it is only held back.
+- **A dungeon boss's model no longer shows through its backdrop in the Mythic moment.** The card springs up from a quarter of its size, and while it does the game can re-level its layers so the dungeon picture ends up level with the 3D boss; the layers are now put back in order as the moment begins, half way and when the card lands. Not seen in the game after the change yet: if you still see it, tell me.
+
+## v1.61.0
+- **Profession plans follow wow-professions.com's updated WoW Forever guides.**
+  - Leatherworking 30-80: 10 Cured Light Hide to 40 (or 14 Light Armor Kits), Embossed Leather Gloves from 40 to 70, then 10 Embossed Leather Pants to 80.
+  - Engineering: 56 Rough Blasting Powder, 28 Copper Bolts and 28 Rough Copper Bombs; 40 Heavy Blasting Powder (10 go into Iron Grenades at 191-195); 31 Solid Blasting Powder to 190; 21 Unstable Triggers.
+  - Blacksmithing: with the Mithril Spurs plans, make 15 Spurs from 210 to 225 instead of the axes and coifs.
+  - Cooking: the Alterac Swiss for the Artisan quest can also come from the Auction House.
+- Quest, map and gear data updated from WoW Forever's latest game data.
 
 ## v1.60.2
 - **Card model look-ups wait until you are out of the dungeon.** Waypath+ asks the game for a few dungeon bosses' 3D models (for their cards); that no longer happens inside a dungeon or while one is loading, in case it was behind crashes on entering. Not confirmed as the cause: if you still crash, send the details.

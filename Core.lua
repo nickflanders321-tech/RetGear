@@ -1130,13 +1130,21 @@ function RG.MatchObjective(objs, qdo, k)
   return nil
 end
 -- Do we know a flight path whose name contains this text? nil = never seen a flight master yet.
+local fpMemo, fpMemoFor, fpMemoVer
 function RG.KnowsFP(part)
   -- nil = we can't tell yet (no flight master visited since Waypath+ was installed); a character
   -- Waypath+ has followed from level 1 starts with an empty, complete list (fpsAll)
-  if not RG.db.fps or (not next(RG.db.fps) and not RG.db.fpsAll) then return nil end
-  part = part:lower()
-  for name in pairs(RG.db.fps) do if name:lower():find(part, 1, true) then return true end end
-  return false
+  local fps = RG.db.fps
+  if not fps or (not next(fps) and not RG.db.fpsAll) then return nil end
+  -- (the travel planner asks this hundreds of times in one pass: the answer is kept until the list of known paths changes)
+  if fpMemoFor ~= fps or fpMemoVer ~= RG.fpVer then fpMemo, fpMemoFor, fpMemoVer = {}, fps, RG.fpVer end
+  local hit = fpMemo[part]
+  if hit ~= nil then return hit end
+  local p = part:lower()
+  hit = false
+  for name in pairs(fps) do if name:lower():find(p, 1, true) then hit = true; break end end
+  fpMemo[part] = hit
+  return hit
 end
 function RG.Skill(name) local p = RG.Professions()[name]; return p and p.rank or nil end
 -- Crafted gear in the gear guide (generated entries carry prof and sk, hand-written ones bs):
@@ -1335,12 +1343,12 @@ f:SetScript("OnEvent", function(_, event, arg1)
     end
     if nodes then
       for _, n in ipairs(nodes) do
-        if n.name and n.state ~= (Enum.FlightPathState and Enum.FlightPathState.Unreachable or 2) then RG.db.fps[n.name] = true end
+        if n.name and n.state ~= (Enum.FlightPathState and Enum.FlightPathState.Unreachable or 2) then RG.db.fps[n.name] = true; RG.fpVer = (RG.fpVer or 0) + 1 end
       end
     elseif NumTaxiNodes and TaxiNodeName then
       for i = 1, NumTaxiNodes() do
         local t = TaxiNodeGetType and TaxiNodeGetType(i)
-        if t ~= "NONE" then RG.db.fps[TaxiNodeName(i)] = true end
+        if t ~= "NONE" then RG.db.fps[TaxiNodeName(i)] = true; RG.fpVer = (RG.fpVer or 0) + 1 end
       end
     end
     if RG.RefreshUI then RG.RefreshUI() end

@@ -330,12 +330,17 @@ function RG.ArcadeGradeCases(key, f)
   local a = store(); if not a then return {} end
   local out = {}
   for _, r in ipairs(G(a).cases) do if (not key or r.key == key) and (not f or r.f == f) then out[#out + 1] = r end end
-  table.sort(out, function(x, y) if x.grade ~= y.grade then return x.grade > y.grade end return x.cert < y.cert end)
+  if #out > 1 then table.sort(out, function(x, y) if x.grade ~= y.grade then return x.grade > y.grade end return x.cert < y.cert end) end
   return out
 end
 function RG.ArcadeGradeBest(key)
+  -- (asked once per card when the collection is drawn: it walks the cases itself instead of building and sorting a list each time;
+  -- the same pick as the sorted list: the highest grade, then the lowest cert)
+  local a = store(); if not a then return nil end
   local best
-  for _, r in ipairs(RG.ArcadeGradeCases(key)) do if not best or r.grade > best.grade then best = r end end
+  for _, r in ipairs(G(a).cases) do
+    if (not key or r.key == key) and (not best or r.grade > best.grade or (r.grade == best.grade and r.cert < best.cert)) then best = r end
+  end
   return best
 end
 function RG.ArcadeGradeState()

@@ -266,19 +266,22 @@ end
 
 -- The source group a list entry falls in (the Gear tab's "best from each source" view)
 local GROUP = { Quest = "Quest", Dungeon = "Dungeon", Chest = "Dungeon", Crafted = "Crafted", Craft = "Crafted", BoE = "Auction House", AH = "Auction House",
-  Bags = "Your bags", Vendor = "Vendor", Reputation = "Reputation", ["Rare mob"] = "Rare mob", Drop = "Rare mob" }
-RG.SOURCE_GROUPS = { "Your bags", "Quest", "Dungeon", "Crafted", "Auction House", "Vendor", "Reputation", "Rare mob", "Other" }
+  Bags = "Your bags", Vendor = "Vendor", Reputation = "Reputation", ["Rare mob"] = "Rare mob", Drop = "Rare mob", Raid = "Raid" }
+RG.SOURCE_GROUPS = { "Your bags", "Quest", "Dungeon", "Raid", "Crafted", "Auction House", "Vendor", "Reputation", "Rare mob", "Other" }
 function RG.GearGroupOf(g) return GROUP[g.how] or "Other" end
 
 -- A short "where from" line for any entry (the panel and the lists use it)
 function RG.GearSourceText(g)
   local t = g.src or ""
   if g.zone and g.zone ~= "" then t = t .. ", " .. g.zone end
+  if g.tier then t = t .. "  (" .. g.tier .. " set)" end
   return t
 end
 -- its price, if it's bought: the Auction House listing, the list entry's Auction House price, or the materials
 function RG.GearPriceText(g)
   local money = RG.Money or function(c) return math.floor(c / 10000) .. "g" end
+  -- Pix Xizzix's pieces cost Tarnished Undermine Real, not gold
+  if g.real and g.real > 0 and not g.live then return GREY .. g.real .. " Tarnished Undermine Real|r" end
   if g.live == "ah" and g.price then
     local age = g.seenAt and (time() - g.seenAt) or 0
     return money(g.price) .. (age > 6 * 3600 and (GREY .. "  (" .. math.floor(age / 3600) .. "h ago)|r") or "")

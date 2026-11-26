@@ -55,7 +55,7 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 -- Sections in the sidebar, each with its pages as tabs along the top. (The Group page is gone.)
 local SECTIONS = {
   { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "plan", "flights" } },
-  { key = "equip",   label = "Gear",    icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Gear", tabs = { "guide", "gear", "spec", "heal" } },
+  { key = "equip",   label = "Gear",    icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Gear", tabs = { "guide", "gear", "raid", "spec", "heal" } },
   { key = "economy", label = "Professions", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Economy", tabs = { "prof", "fish", "ah", "gold", "mail" } },
   { key = "cards",   label = "Cards",   icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Cards", tabs = { "cards" } },
 }
@@ -63,7 +63,7 @@ local GROUPS, PARENT = {}, {}
 for _, sec in ipairs(SECTIONS) do GROUPS[sec.key] = sec.tabs; for _, t in ipairs(sec.tabs) do PARENT[t] = sec.key end end
 -- old section names still work (/wp money, minimap menu entries...)
 local ALIAS = { money = "economy", spec2 = "equip", group = "journey" }
-local SUBLABEL = { route = "Route", plan = "Quest plan", flights = "Flight paths", guide = "Gear guide", gear = "What I wear", spec = "2nd spec",
+local SUBLABEL = { route = "Route", plan = "Quest plan", flights = "Flight paths", guide = "Gear guide", gear = "What I wear", raid = "Raid & tier", spec = "2nd spec",
   heal = "2nd spec gear", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt",
   cards = "Cards", settings = "Settings" }
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -593,6 +593,7 @@ RG.GuideSlotFor = guideSlotFor
 local function gearHowPill(g, now)
   if g.live == "bags" then return GREEN .. "In your bags|r" end
   if g.live == "bank" then return GOLD .. "In your bank|r" end
+  if g.how == "Raid" then return GOLD .. "Raid|r" end
   local price = RG.GearPriceText and RG.GearPriceText(g)
   if g.live == "ah" then return GOLD .. "Buy|r " .. (price or "") end
   if g.live == "craft" then return GREEN .. "You can make it|r" end
@@ -600,11 +601,15 @@ local function gearHowPill(g, now)
   local st = g.prof and RG.CraftState(g)
   if st == "make" then return GREEN .. "You can make it|r" end
   if st == "learn" then return GOLD .. "Learn the recipe|r" end
+  if price and g.real then return GOLD .. "Buy|r " .. price end   -- (Pix Xizzix's Tarnished Undermine Real pieces, not the Auction House)
   if price then return GOLD .. "AH|r " .. price end
   if not now then return GREY .. "Level " .. g.lvl .. "|r" end
   return GREEN .. "Usable now|r"
 end
 RG.GearHowPill = gearHowPill
+-- (the raid gear section, RaidUI.lua, draws with these)
+RG.UIKit = { getRow = getRow, rows = rows, setItem = setItem, setHeader = setHeader, setBar = setBar, setStep = setStep, itemName = itemName,
+  slotLabel = GUIDE_SLOT_LABEL, state = state, T = T, sz = sz, font = font, FONT_BODY = FONT_BODY, FONT_NUM = FONT_NUM, FONT_SEMI = FONT_SEMI, backdrop = backdrop }
 local function renderGear()
   local n, total = 0, 0
   local hit, cap = RG.CurrentHit(), RG.db.hitCap
@@ -676,7 +681,10 @@ local function renderGear()
   for _, g in ipairs(cands) do
     if g.id and g.lvl <= lvl + 8 and (g.lvl >= lvl - 15 or g.live) and not (not g.live and RG.OwnState(g.id)) then
       local d, slot, new, old = RG.GuideDelta(g)
-      if d == nil then loading = loading + 1
+      if d == nil then
+        -- (only an item the game hasn't sent yet is "loading"; one this spec can't wear just has no score)
+        local _, wait = RG.RaidDelta and RG.RaidDelta(g)
+        if wait then loading = loading + 1 end
       elseif d > 0.5 then
         local key = g.link or g.id
         if not seenUp[key] then
@@ -851,10 +859,12 @@ local function renderGear()
   end
   setBar(scoreRow, (RG.SCORE_NAME or "Upgrade score"):gsub(" score$", "") .. " gear score", total, math.max(total, 1), T.gold, string.format("%s%.0f|r", GOLD, total))
   -- pre-raid checklist: the level 52+ picks from the gear guide, one row per item
-  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · best dungeon and quest pieces, level 52 to 60")
+  n = n + 1; setHeader(getRow(n), "Pre-raid checklist · the best piece for each slot from dungeons, quests, tier sets, crafting and Pix Xizzix, level 52 to 60")
   for _, slot in ipairs(GUIDE_SLOTS) do
     local best = {}
-    for _, g in ipairs(RG.GUIDE) do if g.id and g.slot == slot and g.lvl >= 52 then best[#best + 1] = g end end
+    for _, list in ipairs({ RG.GUIDE, RG.GUIDE_ALT or {} }) do
+      for _, g in ipairs(list) do if g.id and g.slot == slot and g.lvl >= 52 and (list == RG.GUIDE or not g.ws) then best[#best + 1] = g end end
+    end
     table.sort(best, function(a, b) return (a.score or 999) > (b.score or 999) end)
     for i = 1, math.min((slot == "Ring" or slot == "Trinket") and 2 or 1, #best) do
       local g = best[i]
@@ -862,7 +872,7 @@ local function renderGear()
       local name, link2, quality = itemName(g.id)
       local own = RG.OwnState(g.id)
       local pill = own == "equipped" and (GREEN .. "Equipped|r") or (own == "owned" and (GOLD .. "In your bags|r") or (GREY .. "Not yet|r"))
-      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or ""), pill, g.ah and RG.PriceText(g.id) or "", own == "equipped" and "green" or nil, quality)
+      setItem(getRow(n), g.id, link2, name .. GREY .. "   " .. (GUIDE_SLOT_LABEL[g.slot] or g.slot) .. "|r", g.src .. ((g.zone and g.zone ~= "") and (GREY .. "  ·  " .. g.zone .. "|r") or "") .. (g.tier and (GOLD .. "  ·  " .. g.tier .. " set|r") or ""), pill, (g.real and g.real > 0) and (GREY .. g.real .. " Reals|r") or (g.ah and RG.PriceText(g.id) or ""), own == "equipped" and "green" or nil, quality)
     end
   end
   return n
@@ -3091,6 +3101,13 @@ local function renderCards()
   return n
 end
 
+-- the Raid & tier page (RaidUI.lua draws it with the row helpers above); it only exists from level 58
+local function renderRaid()
+  local n = 0
+  if RG.RaidRender then n = RG.RaidRender(n, RG.UIKit) end
+  return n
+end
+
 local TITLES = {
   route = { "Leveling route", "Your path from your starting zone to 60" },
   guide = { "Gear guide", "Upgrades for your spec by level, and where they come from" },
@@ -3108,6 +3125,7 @@ local TITLES = {
   group = { "Group play", "How grouping is going, your class duties, shared quests and finding a group" },
   spec  = { "2nd spec", "Pick any spec of your class: its stats, how to play it and its gear" },
   heal  = { "2nd spec gear", "Gear to start collecting for your 2nd spec, and where to find it" },
+  raid  = { "Raid & tier", "Your best raid upgrades, every tier set and the way to each piece" },
 }
 local FOOTERS = {
   route = "Click a zone to open its tasks  ·  steps tick themselves  ·  Shift-click to skip one  ·  finished steps are hidden",
@@ -3126,6 +3144,7 @@ local FOOTERS = {
   group = "Click a quest to share it  ·  click a suggestion to post LFG  ·  /wp lfg Scarlet Monastery posts your own",
   spec  = "Dual spec unlocks at level 40 at your class trainer  ·  /wp spec",
   heal  = "Pieces in your 2nd set are never sold  ·  the list updates twice a week  ·  /wp heal",
+  raid  = "Click a piece for where it drops  ·  Shift-click to link  ·  Ctrl-click to preview  ·  tokens are read from your bags",
 }
 
 -- ---------------------------------------------------------------------------
@@ -3226,12 +3245,15 @@ end
 function RG.RefreshUINow()
   if not frame or not frame:IsShown() then return end
   for _, r in pairs(rows) do r:Hide() end
+  -- the Raid & tier page opens at level 58; below that (or with nothing for your class) its tab is hidden
+  if state.tab == "raid" and not (RG.RaidShown and RG.RaidShown()) then state.tab = "guide" end
   updateHeader()
   for _, r in pairs(rows) do r:SetWidth(CW) end
   local n
   local okRender, errRender = pcall(function()
   if state.tab == "guide" then n = renderGuide()
   elseif state.tab == "gear" then n = renderGear()
+  elseif state.tab == "raid" then n = renderRaid()
   elseif state.tab == "route" then n = renderRoute()
   elseif state.tab == "prof" then n = renderProf()
   elseif state.tab == "settings" then n = renderSettings()
@@ -3290,10 +3312,14 @@ function RG.RefreshUINow()
     for _, sub in ipairs(subs) do
       local b = frame.subBtns[sub]
       local on = sub == state.tab
-      font(b.text, on and FONT_SEMI or FONT_BODY, sz(12.5)); b.text:SetTextColor(unpack(on and T.text or T.dim))
-      b:SetWidth(b.text:GetStringWidth() + 4); b.line:SetShown(on)
-      b:ClearAllPoints(); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -8); b:Show()
-      x = x + b:GetWidth() + 22
+      if sub == "raid" and not (RG.RaidShown and RG.RaidShown()) then
+        b:Hide()
+      else
+        font(b.text, on and FONT_SEMI or FONT_BODY, sz(12.5)); b.text:SetTextColor(unpack(on and T.text or T.dim))
+        b:SetWidth(b.text:GetStringWidth() + 4); b.line:SetShown(on)
+        b:ClearAllPoints(); b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -8); b:Show()
+        x = x + b:GetWidth() + 22
+      end
     end
   elseif subs then state.lastSub[parentOf(state.tab)] = state.tab end
   -- page tools sit on the title line, right side

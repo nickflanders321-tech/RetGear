@@ -801,7 +801,8 @@ local function step(_, dt)
       if not hubCounting then hub.icon:SetAlpha(0.5); hubCounting = true end
     elseif hubCounting then hubCounting = false; hub.big:SetText(""); hub.icon:SetAlpha(1) end
   end
-  if acc < (busy and 0.25 or 0.75) then return end
+  -- settled (closed, nothing happening): a slower refresh; hidden altogether: slower still (events still refresh it at once)
+  if acc < (busy and 0.25 or ((root and root:IsShown()) and 1.2 or 3)) then return end
   acc = 0
   if RG.FishModeRefresh then pcall(RG.FishModeRefresh) end
   local ok, err = pcall(RG.FishHUDRefresh)

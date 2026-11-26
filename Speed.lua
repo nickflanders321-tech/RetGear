@@ -191,6 +191,17 @@ local function toWorld(map, x, y)
   if not ok or not wp then return nil end
   return cont, wp.x, wp.y
 end
+-- the world position of a map spot never changes, so it is worked out once per spot (each lookup asked the game and made a vector
+-- and a table: thousands of them on every quest-log update were most of the tracker's memory garbage). A failed lookup is not kept.
+local wpW = setmetatable({}, { __mode = "k" })
+local function wpWorld(wp)
+  local e = wpW[wp]
+  if e then return e[1], e[2], e[3] end
+  local c, x, y = toWorld(wp[1], wp[2], wp[3])
+  if c then wpW[wp] = { c, x, y } end
+  return c, x, y
+end
+RG.WpWorld = wpWorld
 local function playerWorld()
   local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
   local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
@@ -236,6 +247,7 @@ local function learnedFor(qid, key)
   for _, p in ipairs(com or {}) do out[#out + 1] = p end
   return out
 end
+local dbSpots = {}   -- [questId * 64 + objective number] = the spots the database gives for it (see below)
 local function buildQuestSpots()
   local spots = {}
   if not (RG.QDATA and C_QuestLog and C_QuestLog.GetNumQuestLogEntries) then return spots end
@@ -253,11 +265,24 @@ local function buildQuestSpots()
         local game = RG.MatchObjective(objs, qd.o, k)
         if not (game and game.finished) then
           -- spots let go of beside Questie (memory, below): Questie's own spawns for this objective
-          local list = d[4] or (RG.QuestieObjectiveSpots and RG.QuestieObjectiveSpots(qid, d[2])) or {}
-          for _, p in ipairs(list) do
-            local src = (type(p[4]) == "number" and d[3][p[4]]) or (type(p[4]) == "string" and p[4]) or d[2]
-            spots[#spots + 1] = { quest = info.title, label = d[2], src = src, have = game and game.numFulfilled, need = game and game.numRequired, okind = d[1],
-              wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
+          -- (the database's spawn points of an objective never change while you play: their tables are made once and reused, only the
+          -- progress on them is refreshed; this was most of the memory garbage of every quest-log update)
+          local mk = qid * 64 + k
+          local memo = dbSpots[mk]
+          if not (memo and memo.title == info.title) then
+            local list = d[4] or (RG.QuestieObjectiveSpots and RG.QuestieObjectiveSpots(qid, d[2])) or {}
+            memo = { title = info.title, n = #list }
+            for _, p in ipairs(list) do
+              local src = (type(p[4]) == "number" and d[3][p[4]]) or (type(p[4]) == "string" and p[4]) or d[2]
+              memo[#memo + 1] = { quest = info.title, label = d[2], src = src, okind = d[1],
+                wp = { p[1], p[2], p[3], (d[1] == "i" and (d[2] .. " (" .. src .. ")") or d[2]) } }
+            end
+            if #memo > 0 then dbSpots[mk] = memo end   -- (an empty answer may only mean Questie has not loaded yet: asked again)
+          end
+          local have, need = game and game.numFulfilled, game and game.numRequired
+          for _, sp in ipairs(memo) do
+            sp.have, sp.need = have, need
+            spots[#spots + 1] = sp
           end
           -- and where players actually got it done
           if game and game.text then
@@ -642,7 +667,7 @@ local myqCache, myqT
 do
   local f = CreateFrame("Frame")
   for _, e in ipairs({ "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "QUEST_TURNED_IN", "UNIT_QUEST_LOG_CHANGED" }) do pcall(f.RegisterEvent, f, e) end
-  f:SetScript("OnEvent", function() myqCache = nil; if RG.ForgetNextStep then RG.ForgetNextStep() end end)
+  f:SetScript("OnEvent", function() myqCache = nil; RG.__nearC = nil; if RG.ForgetNextStep then RG.ForgetNextStep() end end)
 end
 local buildMyQuests
 function RG.MyQuests()
@@ -658,15 +683,21 @@ buildMyQuests = function()
   if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return out end
   local c, px, py = playerWorld()
   local near = {}
-  if c then
+  -- (the nearest spot of every quest means walking every known quest spot, which made most of this function's garbage: it is kept
+  -- for two seconds while you stay on the same continent, and dropped at once when your quest log changes)
+  local nc, nnow = RG.__nearC, GetTime and GetTime() or 0
+  if c and nc and nc.c == c and nnow - nc.t < 2 and nc.spots == RG.QuestSpots() then
+    near = nc.near
+  elseif c then
     for _, sp in ipairs(RG.QuestSpots()) do
-      local c2, x, y = toWorld(sp.wp[1], sp.wp[2], sp.wp[3])
+      local c2, x, y = wpWorld(sp.wp)
       if c2 == c then
         local dd = math.sqrt((x - px) ^ 2 + (y - py) ^ 2)
         local cur = near[sp.quest]
         if not cur or dd < cur.dist then near[sp.quest] = { dist = dd, wp = sp.wp, label = sp.label } end
       end
     end
+    RG.__nearC = { c = c, t = nnow, near = near, spots = RG.QuestSpots() }
   end
   local zone
   for i = 1, C_QuestLog.GetNumQuestLogEntries() do
