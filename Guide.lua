@@ -205,6 +205,7 @@ local function buildTasks()
   local c, px, py = RG.PlayerWorld()
   if not c then return nil end
   local tasks, elsewhere = {}, 0
+  local off = {}   -- (preobtaining dungeon quests: the tasks on another continent, { act, title, id, label, wp, ... })
   local quests = RG.MyQuests and RG.MyQuests() or {}
   local byTitle = {}
   for _, q in ipairs(quests) do byTitle[q.title] = q end
@@ -264,7 +265,7 @@ local function buildTasks()
         local k = sp.quest .. "\0" .. tostring(sp.label)
         local g = groups[k]
         if not g then
-          g = { quest = sp.quest, label = sp.label, pts = {}, have = sp.have, need = sp.need, okind = sp.okind }
+          g = { quest = sp.quest, label = sp.label, pts = {}, have = sp.have, need = sp.need, okind = sp.okind, wp0 = sp.wp }
           groups[k] = g; order[#order + 1] = g
         end
         local p = pt(sp.wp)
@@ -280,7 +281,7 @@ local function buildTasks()
     end
     objGroups = { spots = spots, c = c, order = order }
   end
-  local objOf = {}
+  local objOf, offOf = {}, {}
   for _, g in ipairs(order) do
     local q = byTitle[g.quest]
     local pts = g.pts
@@ -296,7 +297,13 @@ local function buildTasks()
       tasks[#tasks + 1] = t
       objOf[g.quest] = objOf[g.quest] or {}
       table.insert(objOf[g.quest], t)
-    else elsewhere = elsewhere + 1 end
+    else
+      elsewhere = elsewhere + 1
+      if prep and g.wp0 then
+        offOf[g.quest] = true
+        off[#off + 1] = { act = "doing", title = g.quest, id = q and q.id, label = g.label, wp = g.wp0, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
+      end
+    end
   end
   -- hand-ins: ready quests now, the rest after their objectives
   for _, q in ipairs(quests) do
@@ -310,6 +317,7 @@ local function buildTasks()
         tasks[#tasks + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], pts = { p }, level = q.level, group = q.group,
           deps = (not q.complete) and objOf[q.title] or nil }
       elseif not p and q.complete then elsewhere = elsewhere + 1 end
+      if not p and prep and (q.complete or objOf[q.title] or offOf[q.title]) then off[#off + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], wp = ewp, level = q.level, group = q.group } end
     end
   end
   -- the route's pick-ups, so a giver on your way gets bundled with the rest: the guide, those of the step the tracker
@@ -336,7 +344,8 @@ local function buildTasks()
     for _, pk in ipairs(prep.pickups) do
       if not byTitle[pk.name] then
         local p = pt(pk.wp)
-        if p then tasks[#tasks + 1] = { act = "pickup", title = pk.name, id = pk.id, label = pk.label, pts = { p }, level = pk.level } end
+        if p then tasks[#tasks + 1] = { act = "pickup", title = pk.name, id = pk.id, label = pk.label, pts = { p }, level = pk.level }
+        else off[#off + 1] = { act = "pickup", title = pk.name, id = pk.id, label = pk.label, wp = pk.wp, level = pk.level } end
       end
     end
   end
@@ -356,7 +365,34 @@ local function buildTasks()
     end
   end
   end
-  return tasks, elsewhere, c, px, py
+  return tasks, elsewhere, c, px, py, prep and off or nil
+end
+
+-- Preobtaining a dungeon's quests: its steps on another continent come after the ones on yours, in the order of the
+-- dungeon's chains (each quest picked up, done, then handed in), so there's always a step to go and do (the arrow shows
+-- the way across). Steps at the same spot are one stop.
+local OFF_ACT = { pickup = 1, doing = 2, turnin = 3 }
+local function offStops(off)
+  if not off or #off == 0 then return {} end
+  local order = RG.PrepOrder and RG.PrepOrder() or {}
+  for i, t in ipairs(off) do t._i = i end
+  table.sort(off, function(a, b)
+    local oa, ob = order[a.id] or 9999, order[b.id] or 9999
+    if oa ~= ob then return oa < ob end
+    if a.act ~= b.act then return OFF_ACT[a.act] < OFF_ACT[b.act] end
+    return a._i < b._i
+  end)
+  local stops = {}
+  for _, t in ipairs(off) do
+    t.pts = {}
+    local last = stops[#stops]
+    if last and last.wp and t.wp and last.wp[1] == t.wp[1] and math.abs(last.wp[2] - t.wp[2]) < 1 and math.abs(last.wp[3] - t.wp[3]) < 1 then
+      last.items[#last.items + 1] = t
+    else
+      stops[#stops + 1] = { items = { t }, wp = t.wp, act = t.act, key = taskKey(t), off = true }
+    end
+  end
+  return stops
 end
 
 -- how much a task is worth to you: XP-giving quests of your level first, grey ones last
@@ -559,7 +595,11 @@ local function stopWhy(stop, prev)
     for i = 2, math.min(#stop.items, 4) do names[#names + 1] = itemText(stop.items[i], true) end
     bits[#bits + 1] = "also here: " .. table.concat(names, ", ") .. (#stop.items > 4 and ", ..." or "")
   end
-  if stop.pd then bits[#bits + 1] = RG.FormatYards(math.floor(stop.pd)) .. " away" end
+  if stop.pd then bits[#bits + 1] = RG.FormatYards(math.floor(stop.pd)) .. " away"
+  elseif stop.off then
+    local z = stop.wp and RG.MapZone and RG.MapZone(stop.wp[1])
+    bits[#bits + 1] = (z and (z .. ", ") or "") .. "on another continent: the arrow shows the way"
+  end
   return table.concat(bits, "  ·  ")
 end
 
@@ -590,6 +630,8 @@ local function manualStop(stops, c, px, py)
   if d then
     if not m.best or d < m.best - 25 then m.best, m.bestT = d, now end
     if d <= MANUAL_THERE then m.bestT = now end
+  elseif c2 and c and c2 ~= c then
+    m.bestT = now   -- (on another continent: held until you get to that continent, where how close you get counts)
   end
   if now - m.t > MANUAL_HOLD and now - (m.bestT or m.t) > MANUAL_IDLE then manual = nil; cache.obj = nil return nil end
   -- the stop at that spot, or with a task at it (a quest's objective spot, its giver), else the stop nearest it
@@ -599,7 +641,7 @@ local function manualStop(stops, c, px, py)
     for _, it in ipairs(s.items) do
       for _, p in ipairs(it.pts or {}) do if sameSpot(p.wp, m.wp) then m.matched = true return i, d end end
     end
-    if mx and c2 == c then
+    if mx and c2 == c and s.x then
       local sd = dist(s.x, s.y, mx, my)
       if sd <= 120 and (not nearD or sd < nearD) then nearI, nearD = i, sd end
     end
@@ -619,11 +661,12 @@ local function buildObjective()
   -- your own goals come first
   local g = RG.db and RG.db.goals and RG.db.goals[1]
   -- planner
-  local tasks, elsewhere, c, px, py = buildTasks()
+  local tasks, elsewhere, c, px, py, off = buildTasks()
   if tasks then
     plan.stops, plan.total = planFromTasks(tasks, px, py)
     plan.elsewhere = elsewhere or 0
     plan.eta = plan.total / RUN
+    for _, st in ipairs(offStops(off)) do plan.stops[#plan.stops + 1] = st end
   end
   cache.plan = plan
   -- in a dungeon the arrow rests; the quest log carries the objectives

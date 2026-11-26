@@ -122,6 +122,8 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Open questions
 
+- Blackrock Depths: Attunement to the Core (7848, Lothos Riftwaker in Blackrock Mountain; its Core Fragment is inside BRD) isn't in our quest data (Objectives.lua comes from QuestieDB's Forever data), so Preobtain Dungeon Quests can't list it. Check whether QuestieDB's Forever data has it under another ID before adding it (2026-11-26). Also, two hand-written Horde dungeon quests match no quest in the data, so they never show: "Into the Scarlet Monastery" (Scarlet Monastery) and "Power in Uldaman" (Uldaman).
+
 - Guides disagree on Thousand Needles (Forever Era 25-35, Decarebia 20-30, Endgame Tools 23-40) and Arathi Highlands (all say 30-40, but Forever's own quest data starts at 33). Our windows: Horde TN 26-35, Arathi 33-40 (2026-10-16).
 - Blizzard's October 8 beta notes raise the Desolace Valley of Bones Gelkis and Magram quests to level 35 (was 30); QuestieDB's Forever data still says 30 (2026-10-19). The Desolace route note mentions it; follow the quest data until it changes.
 - Searing Gorge (guides 43-53, ours 48-54) and Horde Azshara (guides 45-55, ours 50-58): Forever's own quest data backs our windows (Searing Gorge quests: a quarter below 48, median 50; Azshara median 57), so they stay (2026-10-19).

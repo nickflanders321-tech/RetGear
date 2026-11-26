@@ -2306,12 +2306,13 @@ local function renderDungeons()
   for _, t in ipairs(pl.quests) do
     local before = #t.chain - 1
     local sub = (t.state == "have" and "In your log: keep it for the run") or (t.state == "after" and "Comes after a quest you can only do inside the dungeon")
+      or (t.state == "inside" and ((t.why and (t.why:gsub("^%l", string.upper)) or "Starts inside the dungeon") .. ": pick it up during the run"))
       or (t.state == "skipped" and "Skipped, with its chain") or (before > 0 and (before .. " quest" .. (before == 1 and "" or "s") .. " before it")) or "Pick it up before you go"
     n = n + 1
     local r = getRow(n)
     setItem(r, nil, nil, RG.LevelTag(t.level) .. (t.state == "skipped" and GREY or "|cffffffff") .. t.name .. "|r", sub, RG.PrepStateText(t), "", t.state == "have" and "green" or nil)
     r.icon:SetTexture(QI[t.state] or "Interface\\GossipFrame\\AvailableQuestIcon"); r.icon:SetTexCoord(0, 1, 0, 1)
-    r.icon:SetDesaturated(t.state == "skipped" or t.state == "after")
+    r.icon:SetDesaturated(t.state == "skipped" or t.state == "after" or t.state == "inside")
     r.onClick = function() RG.PrepSkipMenu(t) end
     r.onRightClick = r.onClick
     r.tip = "|cffffffff" .. t.name .. "|r\n" .. sub .. ".\n\n" .. GOLD .. "Click:|r " .. (t.state == "skipped" and "bring it back" or "skip it and its chain")

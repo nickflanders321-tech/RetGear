@@ -304,15 +304,21 @@ local dungeons = {}
 for name, dq in pairs(H.dungeons or {}) do
   local copy = {}
   for k, v in pairs(dq) do copy[k] = v end
-  local list, seen = {}, {}
+  local list, seen, extra = {}, {}, {}
   for _, q in ipairs(dq.quests or {}) do list[#list + 1] = q; seen[(q[1]:gsub("%s*%(.-%)$", ""))] = true end
   for _, g in ipairs(((faction == "Alliance" and RG.GEN_DUNGEONS_A) or RG.GEN_DUNGEONS or {})[name] or {}) do
-    if not seen[g.n] and g.g ~= "" and forMe(g) and g.l <= (dq.go or 0) + 12 and g.r <= (dq.go or 60) + 2 then
-      seen[g.n] = true
-      list[#list + 1] = { g.n, g.g, g.at, wp = g.w, id = g.id }
+    if not seen[g.n] and forMe(g) and g.l <= (dq.go or 0) + 12 and g.r <= (dq.go or 60) + 2 then
+      if g.g ~= "" then
+        seen[g.n] = true
+        list[#list + 1] = { g.n, g.g, g.at, wp = g.w, id = g.id }
+      else
+        -- no one outside gives it (it starts inside the dungeon, or from an item or a poster): only the preobtain
+        -- plan lists these (DungeonPrep.lua), so the leveling guide's dungeon lists don't change
+        extra[#extra + 1] = { g.n, "", g.at, id = g.id }
+      end
     end
   end
-  copy.quests = list
+  copy.quests, copy.extra = list, extra
   dungeons[name] = copy
 end
 RG.DUNGEON_QUESTS = dungeons

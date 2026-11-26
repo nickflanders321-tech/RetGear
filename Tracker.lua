@@ -1086,9 +1086,9 @@ function RG.RefreshTracker()
       tip = GOLD .. "My quest log|r: only the quests you have. Pick up a quest and it joins the plan." ..
         (RG.Opt("routeGuide") and "" or ("\n" .. GREY .. "The ordered guide and zone quests need the leveling route: pick one in the menu above and it's turned on.|r")) .. "\n\n" .. GOLD .. "Click:|r open your quest log"
     elseif view == "dungeon" then
-      local pl = RG.PrepPlan and RG.PrepPlan() or { total = 0, obtained = 0, skipped = 0 }
+      local pl = RG.PrepPlan and RG.PrepPlan() or { total = 0, obtained = 0, can = 0 }
       left = "Selected Dungeon: |cffffffff" .. tostring(pl.name or "none") .. "|r"
-      right = pl.total > 0 and (pl.obtained .. "/" .. (pl.total - pl.skipped)) or nil
+      right = pl.total > 0 and (pl.obtained .. "/" .. (pl.can or pl.total)) or nil
       click = function(self) if RG.TrackerDungeonMenu then RG.TrackerDungeonMenu(self) end end
       tip = GOLD .. "Preobtain Dungeon Quests|r: every quest for the dungeon you pick, and the quests that lead to them, before you run it. The dungeon's own quests are picked up and kept for the run.\n\n" .. GOLD .. "Click:|r pick a dungeon"
       drop = true
@@ -1843,72 +1843,76 @@ function RG.RefreshTracker()
     end
     y = gap(y)
   end
-  -- 5a. preobtain dungeon quests (DungeonPrep.lua): the steps to take, in the planner's order (the one you're on opened
-  -- up into what's at that stop), then the chains as one tree
+  -- 5a. preobtain dungeon quests (DungeonPrep.lua): every quest once, one per line, in the order you can do them (the
+  -- ones you can work on now in the planner's order, so the first is the current step; then the ones they open, and so
+  -- on). Click a quest to go and do it (one that waits: the quest it waits on).
   if view == "dungeon" and RG.PrepPlan then
     local pl = RG.PrepPlan()
     local work = RG.PrepWork()
     local gp = RG.GuidePlan and RG.GuidePlan()
     local stops = gp and gp.stops or {}
-    local okO, cur = pcall(RG.Objective or function() end)
-    cur = okO and cur and cur.stop or nil
+    local okO, curObj = pcall(RG.Objective or function() end)
+    curObj = okO and curObj or nil
+    local curIds = {}
+    if curObj and curObj.stop then for _, it in ipairs(curObj.stop.items or {}) do if it.id then curIds[it.id] = true end end end
+    if curObj and curObj.id then curIds[curObj.id] = true end
+    local rows, skipped = RG.PrepList(pl, stops, work)
+    local nowN = 0
+    for _, r in ipairs(rows) do if r.g == "now" then nowN = nowN + 1 end end
     local isFolded
-    n = n + 1; y, isFolded = section(n, y, "Steps · " .. tostring(pl.name or "no dungeon"), "prepsteps", #stops > 0 and (GREY .. #stops .. " to do|r") or nil)
+    n = n + 1; y, isFolded = section(n, y, "Quests · " .. tostring(pl.name or "no dungeon"), "prepquests",
+      pl.total > 0 and (GREY .. (nowN > 0 and (nowN .. " to do now") or (pl.obtained .. "/" .. pl.can .. " in your log")) .. "|r") or nil)
     if not isFolded then
       if pl.total == 0 then
         n = n + 1; y = item(n, y, GREY .. "Nothing to collect for " .. tostring(pl.name or "this dungeon") .. ". Pick another dungeon above.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("dungeons") end end })
-      elseif #stops == 0 then
+      elseif nowN == 0 then
         n = n + 1
         y = item(n, y, pl.ready and (GREEN .. "Ready for " .. pl.name .. ": every quest you can get before the run is in your log.|r")
           or (GREY .. "Nothing to go and do right now: " .. pl.waiting .. " wait for a level or an earlier quest.|r"), { indent = 2 })
       end
-      local shownS = 0
-      for i, st in ipairs(stops) do
-        if shownS < 6 then
-          shownS = shownS + 1
-          local it = st.items[1]
-          local isCur = (cur and st == cur) or (not cur and i == 1)
-          local zone = st.wp and RG.MapZone and RG.MapZone(st.wp[1])
-          n = n + 1
-          y = item(n, y, (isTarget(st.wp) and ARROW or "") .. (isCur and "|cffffffff" or "|cffd6d6d6") .. RG.PrepStepText(it, work.keep) .. "|r",
-            { single = true, indent = 22, step = { n = i, state = isCur and "cur" or "todo" }, band = isCur, wp = st.wp,
-              right = GREY .. (zone or "") .. "|r",
-              tip = "|cffffffff" .. RG.PrepStepText(it, work.keep) .. "|r\n" .. GREY .. tostring(it.title) .. (st.wp and st.wp[4] and (", " .. st.wp[4]) or "") .. (zone and (", " .. zone) or "") .. "|r" ..
-                (work.keep[it.id] and ("\n" .. GREY .. "One of " .. tostring(pl.name) .. "'s quests: keep it for the run.|r") or "") ..
-                "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r skip this stop for an hour (/wp undo brings it back)",
-              onRightClick = function() if RG.SkipStop then RG.SkipStop(st); if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end; RG.RefreshTracker() end end })
-          -- the step you're on: everything at that stop
-          if isCur and #st.items > 1 then
-            for k = 2, math.min(#st.items, 5) do
-              n = n + 1
-              y = item(n, y, GREY .. RG.PrepStepText(st.items[k], work.keep) .. "|r", { single = true, indent = 26, band = true })
-            end
-          end
+      local byId = {}
+      for _, r in ipairs(rows) do byId[r.s.id] = r end
+      for _, r in ipairs(rows) do
+        local st = r.s
+        local isCur = curIds[st.id] and r.g == "now"
+        local goal = RG.PrepRowGoal(r, rows)
+        local wp = goal and goal.stop and goal.stop.stop.wp
+        local col = (r.g == "now" and "|cffffffff") or (r.g == "have" and GREEN) or "|cff9a9a9a"
+        local zone = r.stop and r.stop.stop.wp and RG.MapZone and RG.MapZone(r.stop.stop.wp[1])
+        -- the tooltip: what's next for it, or why it waits
+        local lines = { "|cffffffff" .. st.name .. "|r" .. (st.level and (GREY .. "  (level " .. st.level .. ")|r") or "") }
+        if r.stop then lines[#lines + 1] = RG.PrepStepText(r.stop.item) .. (zone and (GREY .. ", " .. zone .. "|r") or "") end
+        if r.g == "have" then lines[#lines + 1] = GREY .. "In your log: one of " .. tostring(pl.name) .. "'s quests, kept for the run.|r"
+        elseif r.g == "after" then lines[#lines + 1] = GREY .. "Comes after a quest you can only do inside " .. tostring(pl.name) .. ".|r"
+        elseif r.g == "inside" then lines[#lines + 1] = GREY .. (st.why and (st.why:gsub("^%l", string.upper)) or "Starts inside the dungeon") .. ": pick it up during the run.|r"
+        elseif st.why then lines[#lines + 1] = GREY .. (st.why:gsub("^%l", string.upper)) .. ".|r" end
+        if #r.before > 0 then
+          local names = {}
+          for _, p in ipairs(r.before) do names[#names + 1] = byId[p] and byId[p].s.name or "?" end
+          lines[#lines + 1] = GREY .. "First: " .. table.concat(names, ", ") .. "|r"
         end
-      end
-      if #stops > shownS then
-        n = n + 1; y = item(n, y, GREY .. "+" .. (#stops - shownS) .. " more step" .. ((#stops - shownS) == 1 and "" or "s") .. "|r", { single = true, indent = 22 })
-      end
-    end
-    y = gap(y)
-    -- the chains: one tree (a quest several chains share is listed once, with its branches under it)
-    n = n + 1; y, isFolded = section(n, y, "Chains", "prepchains", pl.total > 0 and (GREY .. pl.obtained .. "/" .. (pl.total - pl.skipped) .. " in your log|r") or nil)
-    if not isFolded then
-      for _, row in ipairs(RG.PrepTree(pl)) do
-        local st = row.s
-        if st.state ~= "skipped" then
-          local col = (st.state == "have" and GREEN) or ((st.state == "pickup" or st.state == "ready") and "|cffffd100") or GREY
-          local mark = row.depth > 0 and (GREY .. (row.last and "└ " or "├ ") .. "|r") or ""
-          n = n + 1
-          y = item(n, y, mark .. (row.depth == 0 and (RG.LevelTag(row.first.level)) or "") .. col .. row.text .. "|r" .. (row.also and (GREY .. "  (also after " .. row.also .. ")|r") or ""),
-            { single = true, indent = 2 + row.depth * 12, right = RG.PrepStateText(st),
-              tip = "|cffffffff" .. row.text .. "|r\n" .. GREY .. ((st.state == "after" and "Comes after a quest you can only do inside " .. tostring(pl.name) .. ".")
-                or (st.state == "have" and "In your log.") or (st.why and st.why) or "") .. "|r\n\n" .. GOLD .. "Right-click:|r skip it and the rest of its chain (or bring it back)",
-              onRightClick = function() RG.PrepSkipMenu(row.t, row.first) end })
+        if (work.keep[st.id] or st.target) and r.g ~= "have" and r.g ~= "after" and r.g ~= "inside" then
+          lines[#lines + 1] = GREY .. "One of " .. tostring(pl.name) .. "'s quests: pick it up and keep it for the run.|r"
         end
+        lines[#lines + 1] = ""
+        if goal and goal ~= r then lines[#lines + 1] = GOLD .. "Click:|r go and do " .. goal.s.name .. " first"
+        elseif goal then lines[#lines + 1] = GOLD .. "Click:|r make it the current step"
+        elseif r.g == "have" or st.state == "have" or st.state == "ready" then lines[#lines + 1] = GOLD .. "Click:|r open it in your quest log" end
+        lines[#lines + 1] = GOLD .. "Right-click:|r skip it and the rest of its chain (or bring it back)"
+        n = n + 1
+        y = item(n, y, ((wp and isTarget(wp) and r.g == "now") and ARROW or "") .. RG.LevelTag(st.level) .. col .. st.name .. "|r",
+          { single = true, indent = 2, band = isCur, right = RG.PrepRowAction(r), tip = table.concat(lines, "\n"),
+            onClick = function()
+              if wp then
+                if RG.Follow then RG.Follow(wp) end
+                if RG.SyncObjective and RG.Objective then RG.SyncObjective(RG.Objective(true)) end
+                RG.RefreshTracker()
+              elseif (st.state == "have" or st.state == "ready") and RG.OpenQuest then RG.OpenQuest(st.name, st.id) end
+            end,
+            onRightClick = function() RG.PrepSkipMenu(r.t, st) end })
       end
-      if pl.skipped > 0 then
-        n = n + 1; y = item(n, y, GREY .. pl.skipped .. " skipped  ·  bring back|r", { single = true, indent = 2,
+      if skipped > 0 then
+        n = n + 1; y = item(n, y, GREY .. skipped .. " skipped  ·  bring back|r", { single = true, indent = 2,
           tip = "Quests you skipped, with their chains. Journey > Dungeon quests brings them back.\n\n" .. GOLD .. "Click:|r open it",
           onClick = function() if RG.ShowTab then RG.ShowTab("dungeons") end end })
       end
