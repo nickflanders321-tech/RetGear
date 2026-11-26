@@ -51,6 +51,14 @@ return {
       T.ok(all:find("Gnoll Paw", 1, true), "and the item to collect")
       T.ok(all:find("Drops from [^\n]- · %d+%%"), "and how often it drops (\"Drops from <mob> · <rate>\")")
       T.ok(f.pic and f.pic:IsShown(), "with a picture of what to look for")
+      T.ok(all:find("Bring back %d+ Gnoll Paw for Patrolling Westfall"), "and how to do it, in the quest log's words")
+      T.ok(not (all:find("Zone quests:", 1, true) or all:find("The guide:", 1, true) or all:find("My quest log", 1, true) or all:find("You picked it", 1, true)),
+        "not what the header already says")
+      -- a quest you picked yourself: the card still says how to do it, not that you picked it
+      T.RG.ArrowTo(T.Wd.objectiveSpot(102)); T.RG.Objective(true); T.RG.RefreshStepView(); T.step(1)
+      local picked = texts(T, f)
+      T.ok(picked:find("Bring back", 1, true) and not picked:find("You picked it", 1, true), "picked yourself: still how to do it")
+      T.RG.PickManually(nil)
       -- the distance shows once (in the header)
       local _, n = all:gsub("%d+ yd", "")
       T.eq(n, 1, "the distance is shown once")

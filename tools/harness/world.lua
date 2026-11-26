@@ -310,6 +310,16 @@ function Wd.install(w)
   QL.IsComplete = function(id) local e = entry(id); return e and complete(e) or false end
   QL.IsOnQuest = function(id) return entry(id) ~= nil end
   QL.GetQuestObjectives = objectives
+  -- the quest log's selected entry, and its text (the objectives summary: made up from the objectives here)
+  G.SelectQuestLogEntry = function(i) S.selected = i end
+  G.GetQuestLogSelection = function() return S.selected or 0 end
+  G.GetQuestLogQuestText = function(i)
+    local e = S.log[i or S.selected or 0]
+    if not e then return "", "" end
+    local what = {}
+    for _, o in ipairs(e.objs) do what[#what + 1] = o.need .. " " .. o.label end
+    return "The story of " .. e.title .. ".", "Bring back " .. table.concat(what, " and ") .. " for " .. e.title .. "."
+  end
   QL.IsQuestFlaggedCompleted = function(id) return S.done[id] == true end
   QL.GetAllCompletedQuestIDs = function() local t = {}; for id in pairs(S.done) do t[#t + 1] = id end table.sort(t) return t end
   QL.GetTitleForQuestID = function(id) local d = Q and Q[id]; return d and d.n end

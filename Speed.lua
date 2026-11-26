@@ -260,6 +260,13 @@ local function buildQuestSpots()
     elseif qid then
       local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(qid) or {}
       local used = {}
+      -- (where players made progress is filed under the objective's words: two objectives with the same words, Valuable
+      -- Vantages' three "Credit"s, can't tell theirs apart, so neither uses them: the spot where you did one would send
+      -- you back there for the others)
+      local twice, seenKey = {}, {}
+      for _, o in ipairs(objs) do
+        if o.text then local k = objKey(o.text); if seenKey[k] then twice[k] = true end; seenKey[k] = true end
+      end
       for k, d in ipairs((qd and qd.o) or {}) do
         -- (by text, or by position on clients in other languages)
         local game = RG.MatchObjective(objs, qd.o, k)
@@ -287,7 +294,7 @@ local function buildQuestSpots()
           -- and where players actually got it done
           if game and game.text then
             local key = objKey(game.text); used[key] = true
-            for _, p in ipairs(learnedFor(qid, key)) do
+            for _, p in ipairs(twice[key] and {} or learnedFor(qid, key)) do
               spots[#spots + 1] = { quest = info.title, label = d[2], src = d[2], have = game.numFulfilled, need = game.numRequired, okind = d[1], learned = true,
                 wp = { p[1], p[2], p[3], d[2] } }
             end
@@ -301,7 +308,7 @@ local function buildQuestSpots()
           if not used[key] then
             local kind = (o.type == "monster" and "k") or (o.type == "item" and "i") or (o.type == "object" and "o") or nil
             local any = false
-            for _, p in ipairs(learnedFor(qid, key)) do
+            for _, p in ipairs(twice[key] and {} or learnedFor(qid, key)) do
               any = true
               spots[#spots + 1] = { quest = info.title, label = key, src = key, have = o.numFulfilled, need = o.numRequired, okind = kind, learned = true,
                 wp = { p[1], p[2], p[3], key } }

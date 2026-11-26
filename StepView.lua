@@ -249,6 +249,7 @@ local function build()
   f:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine(self.tipTitle or "The current step", 1, 0.93, 0.74, true)
+    if self.tipText then GameTooltip:AddLine(self.tipText, 0.8, 0.82, 0.85, true) end
     GameTooltip:AddLine("Click: the arrow to it" .. (self.prof and "" or "  ·  Right-click: skip it"), 1, 1, 1, true)
     if not self.prof then GameTooltip:AddLine("Skipped something by mistake? /wp undo brings back the last skip.", 0.8, 0.8, 0.8, true) end
     GameTooltip:Show()
@@ -305,6 +306,46 @@ local function zoneName(map)
 end
 local function plain(t) return ((t or ""):gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
 
+-- How to do a quest in your log, in the game's own words: the objectives summary of its quest log entry ("Fill the
+-- Hardened Flasket at the moonwell..."). The game only gives it for the selected entry: it's selected for a moment and
+-- your selection put back. Asked once per quest (the words never change).
+local questText = {}
+function RG.QuestObjectivesText(id)
+  if not id then return nil end
+  if questText[id] ~= nil then return questText[id] or nil end
+  if not GetQuestLogQuestText then return nil end
+  local QL = C_QuestLog or {}
+  local byIndex = SelectQuestLogEntry and GetQuestLogSelection
+  local byId = QL.SetSelectedQuest and QL.GetSelectedQuest
+  if not (byIndex or byId) then return nil end
+  local idx
+  for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do if q.id == id then idx = q.idx break end end
+  if not idx then return nil end   -- (not in your log: asked again once it is)
+  local ok, text = pcall(function()
+    local objectives
+    if byIndex then
+      local sel = GetQuestLogSelection()
+      SelectQuestLogEntry(idx)
+      objectives = select(2, GetQuestLogQuestText(idx))
+      if sel ~= idx then SelectQuestLogEntry(sel or 0) end
+    else
+      local sel = QL.GetSelectedQuest()
+      QL.SetSelectedQuest(id)
+      objectives = select(2, GetQuestLogQuestText(idx))
+      if sel ~= id then QL.SetSelectedQuest(sel or 0) end
+    end
+    return objectives
+  end)
+  text = ok and type(text) == "string" and text:gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "") or ""
+  questText[id] = text ~= "" and text or false
+  return questText[id] or nil
+end
+-- (a long one cut at a word, the whole of it in the card's tooltip)
+local function shortText(t, n)
+  if #t <= n then return t end
+  return (t:sub(1, n):gsub("%s+%S*$", "")) .. "..."
+end
+
 -- What the card says, from the current objective (RG.Objective), or the profession step in the professions view.
 local function cardInfo()
   if RG.TrackerView and RG.TrackerView() == "prof" then
@@ -342,19 +383,20 @@ local function cardInfo()
   local place = obj.wp and obj.wp[4]
   if place and (place == info.title or place == zone or obj.kind == "route" or ("Head to " .. place) == info.title or (it and it.act == "doing")) then place = nil end
   info.where = zone and (zone .. (place and (": " .. place) or "")) or place
-  -- why: the planner's reason, without the distance and the "also here" list (said elsewhere), for what it follows
-  local why = obj.why and (obj.why:match("^(.-)%s+·%s+") or obj.why) or ""
-  why = why:gsub("%.+$", "")
-  local function with(lead) return lead .. (why ~= "" and (" " .. why .. ".") or "") end
-  local view = RG.TrackerView and RG.TrackerView()
-  if view == "dungeon" and obj.kind ~= "goal" and obj.kind ~= "prep" then
-    why = with("Preobtain: " .. tostring(RG.PrepDungeon and RG.PrepDungeon() or "the dungeon") .. ".")
-  elseif view == "zone" and obj.kind ~= "goal" then
-    why = with("Zone quests: " .. tostring((RG.FollowZone and RG.FollowZone()) or "this zone") .. ".")
-  elseif view == "guide" and obj.kind ~= "goal" and obj.kind ~= "route" then
-    local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
-    why = with(r and ("The guide: " .. r.zone .. ".") or "The guide.")
-  elseif why ~= "" then why = why .. "." end
+  -- what it says about the step: for a quest you're doing, how to do it (the game's own words); otherwise the reason
+  -- only where it tells you something (a route step's town, your own goal, how the dungeon prep stands). Not what the
+  -- header and the lines above already say: what the tracker follows, the zone, the giver, that you picked it.
+  local why = ""
+  if it then
+    if it.act == "doing" then
+      local t = RG.QuestObjectivesText and RG.QuestObjectivesText(it.id)
+      if t then why, info.whyFull = shortText(t, 170), t end
+    end
+  elseif obj.kind ~= "pick" then
+    why = obj.why and (obj.why:match("^(.-)%s+·%s+") or obj.why) or ""
+    why = why:gsub("%.+$", "")
+    if why ~= "" then why = why .. "." end
+  end
   info.why = why
   -- the others at the same stop
   if obj.stop and #obj.stop.items > 1 then
@@ -461,7 +503,7 @@ function RG.RefreshStepView()
   end
   if f.pic:IsShown() ~= picShown then f.pic:SetShown(picShown) end
   f.wp, f.prof = info.wp, info.prof
-  f.tipTitle = info.title
+  f.tipTitle, f.tipText = info.title, info.whyFull
   if frozen and lastH and lastH > 0 then h = lastH end
   f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -50); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -50)
   f:SetHeight(h); f:Show()
