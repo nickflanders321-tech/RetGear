@@ -1372,6 +1372,14 @@ SlashCmdList.WAYPATH = function(msg)
     elseif rest == "off" or rest == "on" then RG.db.trail = (rest == "on"); RG.Print("Learned paths " .. rest .. ".")
     elseif rest == "export" or rest == "import" then RG.ShowTrailBox(rest)
     else RG.Print("Learned paths: " .. (RG.TrailSize and RG.TrailSize() or 0) .. " points remembered. /wp trail off | on | reset | export | import") end
+  elseif cmd == "route" and (rest == "smart" or rest == "guided" or rest == "zone" or rest == "") then
+    -- route style: smart (best zone for you now), guided (the route in order), zone (stay in the zone you're in)
+    if rest == "" then RG.Print("Route style: " .. tostring(RG.db.routeStyle or "smart") .. ". /wp route smart | guided | zone") return end
+    if rest == "zone" then RG.db.routeStyle = "zone"; RG.db.smartKey = nil
+      RG.Print("Route: staying in the zone you're in. It won't send you to another zone; go there yourself and it follows.")
+      if RG.RefreshTracker then RG.RefreshTracker() end
+      if RG.RefreshUI then RG.RefreshUI() end
+    elseif RG.SmartToggle then RG.SmartToggle(rest == "smart") end
   elseif cmd == "smart" then
     if RG.SmartToggle then RG.SmartToggle(rest == "on" or (rest ~= "off" and (RG.db.smart == false or RG.db.routeStyle == "guided"))) end
   elseif cmd == "weight" then
@@ -1406,7 +1414,7 @@ SlashCmdList.WAYPATH = function(msg)
     RG.Print("Commands (type /wp on its own to open the guide):")
     for _, line in ipairs({
       "|cffffd100Guide|r  /wp  ·  /wp setup  ·  /wp settings  ·  /wp tracker",
-      "|cffffd100Questing|r  /wp next  ·  /wp plan  ·  /wp near  ·  /wp why  ·  /wp goto 45 60 Name  ·  /wp minimal  ·  /wp undo  ·  /wp stepview  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
+      "|cffffd100Questing|r  /wp next  ·  /wp plan  ·  /wp near  ·  /wp why  ·  /wp goto 45 60 Name  ·  /wp minimal  ·  /wp undo  ·  /wp route zone  ·  /wp stepview  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
       "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp fp  ·  /wp log",
       "|cffffd100Group|r  /wp lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /wp scan  ·  /wp autoscan  ·  /wp track [item]  ·  /wp untrack [item]  ·  /wp alert [item] 25",

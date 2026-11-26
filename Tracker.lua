@@ -152,14 +152,30 @@ local function currentEntry()
       end
     end
   end
-  if RG.SmartEntry then
-    local ok, pick = pcall(RG.SmartEntry)
-    if ok and pick then return pick end
-  end
   local function open(r)
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
     for i = 1, #steps do if not RG.StepIsDone(r, i) then return true end end
     return false
+  end
+  -- "Stay in the zone I'm in" (route style "zone"): the route never picks another zone. Of this zone's route entries,
+  -- the one for your level with work left, else the nearest in level with work, else a finished one (the tracker then
+  -- says so and suggests where to go next); nil where the route has nothing (a city, a zone off the route).
+  if RG.db and RG.db.routeStyle == "zone" then
+    local best, bestD, done
+    for _, r in ipairs(RG.ROUTE) do
+      if r.kind == "zone" and r.zone == here then
+        if open(r) then
+          local d = (lvl < r.from - 1 and (r.from - 1 - lvl)) or (lvl > r.to and (lvl - r.to)) or 0
+          if not best or d < bestD then best, bestD = r, d end
+        end
+        done = done or r
+      end
+    end
+    return best or done
+  end
+  if RG.SmartEntry then
+    local ok, pick = pcall(RG.SmartEntry)
+    if ok and pick then return pick end
   end
   -- 1. the first questing zone (in route order) for your level that still has work
   -- 2. else the next one coming up within 3 levels
@@ -175,6 +191,51 @@ local function currentEntry()
     if r.kind == "zone" and r.from > lvl and r.from <= lvl + 3 and open(r) then return r end
   end
   return done
+end
+
+-- The zones to go to next, best first, other than skip: { { r = entry, why = text }, ... }. The smart route's ranking
+-- (zones with something you can do now), then the route's next zones coming up within 3 levels (an Orc done with
+-- Durotar at 10: the Barrens, from 12).
+local function nextZones(skip, max)
+  local out, seen = {}, {}
+  local lvl = UnitLevel("player") or 1
+  local function add(r, why)
+    if #out < max and r ~= skip and r.kind == "zone" and not seen[r.zone] and not (skip and r.zone == skip.zone) then
+      seen[r.zone] = true; out[#out + 1] = { r = r, why = why }
+    end
+  end
+  for _, o in ipairs(RG.SmartRankNow and RG.SmartRankNow() or {}) do add(o.r, o.why) end
+  for _, r in ipairs(RG.ROUTE or {}) do
+    if r.kind == "zone" and r.to >= lvl and r.from <= lvl + 3 then
+      local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
+      local left = false
+      for i = 1, #steps do if not RG.StepIsDone(r, i) then left = true break end end
+      if left then add(r, r.from > lvl and ("from level " .. r.from) or "next on the route") end
+    end
+  end
+  return out
+end
+function RG.TrackerBestNext(skip) local z = nextZones(skip, 1)[1]; return z and z.r.zone end
+-- "Stay" mode, nothing left here: the best zones to go to next (from the smart route's ranking). Returns the new y;
+-- RG.trackerN is the row count after them. Clicking one shows the way there in your chat (no arrow is set).
+function RG.TrackerNextZones(n, y, item, skip)
+  local shown = 0
+  for _, o in ipairs(nextZones(skip, 3)) do
+    do
+      shown = shown + 1
+      n = n + 1
+      local z = o.r.zone
+      y = item(n, y, GOLD .. "Next: |r|cffffffff" .. z .. "|r" .. GREY .. "  ·  " .. o.r.from .. "-" .. o.r.to .. "|r", { single = true, indent = 2,
+        tip = "|cffffffff" .. z .. "|r\n" .. GREY .. tostring(o.why or "") .. "|r\n\n" .. GOLD .. "Click:|r how to get there",
+        onClick = function()
+          local t = RG.TravelSummary and RG.TravelSummary(z)
+          RG.Print(z .. ": " .. (t or "see the Route tab for the way there."))
+        end })
+    end
+  end
+  if shown == 0 then n = n + 1; y = item(n, y, GREY .. "The Route tab has zones for your level.|r", { single = true, indent = 2, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+  RG.trackerN = n
+  return y
 end
 
 -- the map point of the first step still to do in a route entry (nil when it has none)
@@ -1174,6 +1235,19 @@ function RG.RefreshTracker()
   end
   -- 3. route: the zone you're in and its next tasks (the leveling route is a work in progress: off unless turned on)
   local r = RG.Opt("routeGuide") and currentEntry()
+  if not r and RG.Opt("routeGuide") and RG.db.routeStyle == "zone" then
+    local here = RG.ZoneName()
+    local isFolded
+    local nx = RG.TrackerBestNext and RG.TrackerBestNext(nil)
+    n = n + 1; y, isFolded = section(n, y, "Route: " .. (here ~= "" and here or "here"), "route", nx and (GREEN .. "no steps here: next " .. nx .. "|r") or (GREY .. "no steps here|r"))
+    if not isFolded then
+      n = n + 1; y = item(n, y, GREY .. "No route steps in this zone.|r", { single = true, indent = 2,
+        tip = "You chose to stay in the zone you're in. Go to a zone on the route (below) and it follows you there.\n/wp route smart lets it choose zones again." })
+      y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, nil) or y
+      n = RG.trackerN or n
+    end
+    y = gap(y)
+  end
   if r then
     local key = r.zone .. "|" .. r.from
     local steps = RG.STEPS[key] or {}
@@ -1187,8 +1261,13 @@ function RG.RefreshTracker()
     local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
     if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
     if #steps == 0 then right = GOLD .. "new zone|r" end
+    -- staying in this zone and it's done: the header says where next (it shows in the "+ More" row too)
+    if RG.db.routeStyle == "zone" and #steps > 0 and doneN == #steps then
+      local nx = RG.TrackerBestNext and RG.TrackerBestNext(r)
+      right = GREEN .. "done" .. (nx and (": next " .. nx) or "") .. "|r"
+    end
     n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
-    if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" then
+    if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" and RG.db.routeStyle ~= "zone" then
       local ok, alts = pcall(RG.SmartAlternatives, r)
       if ok and alts and #alts > 0 then
         local names = {}
@@ -1299,6 +1378,11 @@ function RG.RefreshTracker()
       end
       if shown == 0 and #steps == 0 then
         n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here; they show up above. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+      elseif shown == 0 and RG.db.routeStyle == "zone" then
+        n = n + 1; y = item(n, y, GREEN .. "All done in " .. r.zone .. ".|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end,
+          tip = "You chose to stay in the zone you're in: the route won't send you elsewhere. Go to the next zone yourself (below) and it follows you there.\n\n" .. GOLD .. "Click:|r the Route tab" })
+        y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, r) or y
+        n = RG.trackerN or n
       elseif shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
       if shown > 0 and RG.TravelSummary then
         local tip = RG.TravelSummary(r.zone)

@@ -117,6 +117,34 @@ return {
     end,
   },
   {
+    name = "route-stays-in-zone",
+    about = "route style \"zone\": the route follows the zone you're in, and a finished zone suggests the next ones",
+    race = "Orc", class = "WARRIOR", level = 10,
+    run = function(T)
+      T.RG.db.routeGuide = true; T.RG.db.routeStyle = "zone"; T.RG.db.trackerMore = true   -- (every section open)
+      T.go({ 1413, 52.0, 30.0 })   -- the Crossroads, the Barrens: the route follows you there at level 10
+      local r = T.RG.CurrentRouteEntry()
+      T.eq(r and r.zone, "The Barrens", "standing in the Barrens, the route is the Barrens'")
+      -- back in Durotar, with every Durotar step done: it says so and suggests zones, and doesn't move you on
+      local d = T.entry("Durotar")
+      for _, ids in pairs(T.RG.STEP_QUESTS[d.zone .. "|" .. d.from] or {}) do for _, id in ipairs(ids) do T.Wd.state.done[id] = true end end
+      T.go({ 1411, 52.0, 43.0 })   -- Razor Hill
+      T.W.fire("QUEST_LOG_UPDATE"); T.step(2)
+      r = T.RG.CurrentRouteEntry()
+      T.eq(r and r.zone, "Durotar", "in Durotar the route stays Durotar's, finished")
+      T.RG.RefreshTracker(); T.step(1)
+      T.ok(T.trackerFind("All done in Durotar"), "the tracker says the zone is done")
+      T.ok(T.trackerFind("^Next: "), "and suggests where to go next")
+      T.RG.db.trackerMore = false; T.RG.RefreshTracker(); T.step(1)
+      T.ok(T.trackerFind("Route: done: next "), "folded into the \"+ More\" row, it still says where next")
+      T.RG.db.trackerMore = true
+      -- a city (no route steps): says so
+      T.go({ 1454, 50.0, 50.0 })
+      T.RG.RefreshTracker(); T.step(1)
+      T.ok(T.trackerFind("No route steps in this zone"), "in Orgrimmar it says there are no route steps here")
+    end,
+  },
+  {
     name = "class-quest-not-early",
     about = "the Class quests list doesn't say \"pick up now\" for a quest well above your level",
     race = "Orc", class = "WARRIOR", level = 20,

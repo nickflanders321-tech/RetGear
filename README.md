@@ -90,6 +90,7 @@ Esc > Options > Keybindings > AddOns > Waypath+: open the guide, pin your neares
 | `/wp minimal` | Tracker with only the Now line (again to bring everything back) |
 | `/wp share` | Share your current objective with your party (and see theirs) |
 | `/wp log` · `log copy` · `log clear` | Play-test log: arrivals, skipped stops, pins you set yourself |
+| `/wp route smart` · `guided` · `zone` | Route style: the best zone for you now, the route in order, or stay in the zone you're in (it never sends you to another zone; go there yourself and it follows) |
 | `/wp stepview` | Show or hide the step view: the current step explained, with the mob or item to look for |
 | `/wp undo` | Put the last task you ticked off back on the list (the tracker also shows an Undo line for 10 minutes) |
 | `/wp way 45 60` | Pin a spot in your zone and follow the arrow |
