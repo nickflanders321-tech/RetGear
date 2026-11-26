@@ -1,15 +1,15 @@
 local _, RG = ...
--- Waypath+ step view and drop rates.
+-- Waypath+ current step and drop rates.
 --   * Drop rates: how often a quest's items drop and from what (Objectives.lua carries them, from Polestar forever-db's
---     item sources and the cMaNGOS loot tables). Shown in the tracker's tooltips (RG.DropTip) and in the step view.
---   * The step view (Settings: "Detailed step view", or /wp stepview): a panel that explains what to do right now. The
---     quest and what to do for it, where, how often its items drop, a 3D model of the mob (or the item's icon, or the
---     quest giver) to look for, how far it is, and what comes after. It follows the tracker's top line (RG.Objective).
+--     item sources and the cMaNGOS loot tables). Shown in the tracker's tooltips (RG.DropTip) and on the current step.
+--   * The current step: a card under the tracker's header that says what to do right now (it follows RG.Objective).
+--     With step details on (Settings, the tracker's header, or /wp details): where, how often its items drop, a 3D
+--     model of the mob (or the item's icon, or the quest giver) to look for, why it's next and what comes after.
 -- Models are only asked for out in the world: never inside an instance (as the card game does, see v1.60.2).
 local GOLD, GREY, GREEN = RG.COLORS.GOLD, RG.COLORS.GREY, RG.COLORS.GREEN
 local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
 
-table.insert(RG.OPTIONS, { key = "stepView", label = "Detailed step view: a panel that explains the current step, with the mob, item or quest giver to look for and how often its items drop", default = false })
+table.insert(RG.OPTIONS, { key = "stepView", label = "Step details: under the current step on the tracker, the mob, item or quest giver to look for, how often its items drop and why it's next", default = true })
 
 -- ---------------------------------------------------------------------------------------------------------------------
 -- Drop rates
@@ -115,16 +115,21 @@ local function lookFor(obj, it)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
--- The panel
+-- The current step: a card under the tracker's header (it's part of the tracker, not a window of its own)
 -- ---------------------------------------------------------------------------------------------------------------------
-local W, MODEL = 420, 104
-local f, rows, model
--- Skip what the view shows: a stop of your quests for an hour (it comes back after), or a route step (ticked:
+-- Always: what to do (Do / Hand in / Pick up / Go), the quest, how far, and its objective with the progress.
+-- With step details on (Settings, the button in the tracker's header, the menu at its top, or /wp details): where it
+-- is, how often its items drop, a picture of the mob, item or quest giver to look for, why it's next, what comes after
+-- and a Skip button. In the professions view it shows the profession step you're on (RG.ProfFocus).
+local MODEL = 58
+local f, model
+local cardH = 0
+function RG.StepCardHeight() return (f and f:IsShown()) and cardH or 0 end
+-- Skip what the card shows: a stop of your quests for an hour (it comes back after), or a route step (ticked:
 -- /wp undo puts it back). "Never" stops suggesting the quests to pick up there.
 local function afterSkip(what)
   if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end
   if RG.RefreshTracker then RG.RefreshTracker() end
-  RG.RefreshStepView()
   if RG.Notify then RG.Notify("Skipped: " .. what) end
 end
 local function routeKey(obj) return obj and obj.kind == "route" and obj.key and obj.key:match("^route:(.+)$") end
@@ -150,8 +155,9 @@ local function skipMenu()
       end
     end
   end
-  e[#e + 1] = { "Hide the step view", function() RG.db.stepView = false; RG.RefreshStepView(); RG.Print("Step view off. Turn it back on in Settings or with /wp stepview.") end }
-  if RG.ShowMenu then RG.ShowMenu(e, "Step view") end
+  local on = RG.Opt("stepView")
+  e[#e + 1] = { (on and "Hide" or "Show") .. " the step details", function() RG.db.stepView = not on; if RG.RefreshTracker then RG.RefreshTracker() end end }
+  if RG.ShowMenu then RG.ShowMenu(e, "Current step") end
 end
 RG.StepViewSkip = skipNow
 
@@ -164,72 +170,60 @@ local function newText(parent, size, kind)
 end
 local function build()
   if f then return f end
-  f = CreateFrame("Frame", "WaypathStepView", UIParent, "BackdropTemplate")
-  f:SetWidth(W); f:SetHeight(120); f:SetClampedToScreen(true); f:SetMovable(true); f:EnableMouse(true); f:SetFrameStrata("MEDIUM")
-  if RG.Round then RG.Round(f, 0.063, 0.11, 0.153, (RG.db and RG.db.trackerAlpha) or 0.85, 8) end
-  f:RegisterForDrag("LeftButton")
-  f:SetScript("OnDragStart", function(self) if not (RG.Opt and RG.Opt("trackerLocked")) then self:StartMoving() end end)
-  f:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    local p, _, rp, x, y = self:GetPoint(1)
-    if p and RG.db then RG.db.stepViewPos = { p, rp, math.floor(x + 0.5), math.floor(y + 0.5) } end
-  end)
-  local function place(self)
-    local p = RG.db and RG.db.stepViewPos
-    self:ClearAllPoints()
-    if p then self:SetPoint(p[1], UIParent, p[2], p[3], p[4]) else self:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -360, -260) end
-  end
-  place(f)
-  if RG.RegisterMover then
-    RG.RegisterMover(f, "stepView", "Step view", nil, nil, { own = {
-      apply = place,
-      save = function(self) local p, _, rp, x, y = self:GetPoint(1); if p then RG.db.stepViewPos = { p, rp, math.floor(x + 0.5), math.floor(y + 0.5) } end end,
-      reset = function() RG.db.stepViewPos = nil end,
-    } })
-  end
-  -- header: what to do, and how far
-  f.verb = newText(f, 13, "bold"); f.verb:SetPoint("TOPLEFT", 12, -10)
-  f.skip = CreateFrame("Button", nil, f); f.skip:SetSize(44, 18); f.skip:SetPoint("TOPRIGHT", -10, -8)
+  local t = _G.WaypathTracker
+  if not t then return nil end
+  f = CreateFrame("Button", "WaypathStepView", t)
+  f:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  local bg = f:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(1, 1, 1, 0.045)
+  local hl = f:CreateTexture(nil, "HIGHLIGHT"); hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.03)
+  if RG.TrackerDragFrom then RG.TrackerDragFrom(f) end
+  -- what to do (a small tag), the quest, how far
+  f.chip = f:CreateTexture(nil, "ARTWORK"); f.chip:SetHeight(14); f.chip:SetPoint("TOPLEFT", 8, -8)
+  f.verb = newText(f, 10, "bold"); f.verb:SetPoint("LEFT", f.chip, "LEFT", 4, 0)
+  f.dist = newText(f, 11, "semibold"); f.dist:SetPoint("TOPRIGHT", -8, -9); f.dist:SetJustifyH("RIGHT"); f.dist:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  f.title = newText(f, 13, "semibold"); f.title:SetPoint("LEFT", f.chip, "RIGHT", 6, 0); f.title:SetPoint("RIGHT", f.dist, "LEFT", -6, 0)
+  f.title:SetWordWrap(false); f.title:SetTextColor(0.937, 0.902, 0.824)
+  -- the objective and its progress
+  f.prog = newText(f, 12, "semibold"); f.prog:SetPoint("TOPRIGHT", -8, -27); f.prog:SetJustifyH("RIGHT")
+  f.obj = newText(f, 12); f.obj:SetPoint("TOPLEFT", 8, -27); f.obj:SetPoint("RIGHT", f.prog, "LEFT", -6, 0); f.obj:SetWordWrap(false)
+  f.obj:SetTextColor(0.8, 0.82, 0.85)
+  -- details: the picture (a 3D model of the NPC, or an icon), and beside it where, drops and why
+  f.pic = CreateFrame("Frame", nil, f); f.pic:SetSize(MODEL, MODEL); f.pic:SetPoint("TOPLEFT", 8, -46)
+  local pbg = f.pic:CreateTexture(nil, "BACKGROUND"); pbg:SetAllPoints(); pbg:SetColorTexture(0, 0, 0, 0.3)
+  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(36, 36); f.icon:SetPoint("CENTER"); f.icon:Hide()
+  f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -2); f.picName:SetWidth(MODEL + 8); f.picName:SetJustifyH("CENTER")
+  f.picName:SetTextColor(0.79, 0.75, 0.66)
+  f.body = newText(f, 11); f.body:SetPoint("TOPLEFT", 8, -46); f.body:SetSpacing(2); f.body:SetTextColor(0.8, 0.82, 0.85)
+  -- what comes after, and Skip
+  f.line = f:CreateTexture(nil, "ARTWORK"); f.line:SetHeight(1); f.line:SetColorTexture(1, 1, 1, 0.07)
+  f.skip = CreateFrame("Button", nil, f); f.skip:SetSize(40, 16); f.skip:SetPoint("BOTTOMRIGHT", -6, 6)
   f.skip:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  local sbg = f.skip:CreateTexture(nil, "BACKGROUND"); sbg:SetAllPoints(); sbg:SetColorTexture(1, 1, 1, 0.06)
-  f.skip.label = newText(f.skip, 11, "semibold"); f.skip.label:SetPoint("CENTER"); f.skip.label:SetJustifyH("CENTER"); f.skip.label:SetText("Skip")
+  local sbg = f.skip:CreateTexture(nil, "BACKGROUND"); sbg:SetAllPoints(); sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.14)
+  f.skip.label = newText(f.skip, 10.5, "semibold"); f.skip.label:SetPoint("CENTER"); f.skip.label:SetJustifyH("CENTER"); f.skip.label:SetText("Skip")
   f.skip.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
   f.skip:SetScript("OnClick", function(_, button) if button == "RightButton" then skipMenu() else skipNow() end end)
   f.skip:SetScript("OnEnter", function(self)
-    sbg:SetColorTexture(1, 1, 1, 0.14)
+    sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.28)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Skip this step", 1, 0.93, 0.74)
     GameTooltip:AddLine("Click: skip it (a stop of your quests for an hour; a route step until /wp undo)", 1, 1, 1, true)
-    GameTooltip:AddLine("Right-click: more (never suggest these quests again, hide the view)", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Right-click: more (never suggest these quests again, hide the details)", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
-  f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(1, 1, 1, 0.06); GameTooltip:Hide() end)
-  f.title = newText(f, 13, "semibold"); f.title:SetPoint("LEFT", f.verb, "RIGHT", 6, 0); f.title:SetPoint("RIGHT", f.skip, "LEFT", -8, 0)
-  f.title:SetWordWrap(false); f.title:SetTextColor(0.937, 0.902, 0.824)
-  f.where = newText(f, 11); f.where:SetPoint("TOPLEFT", f.verb, "BOTTOMLEFT", 0, -3); f.where:SetPoint("RIGHT", f, "RIGHT", -12, 0)
-  f.where:SetTextColor(0.79, 0.75, 0.66); f.where:SetWordWrap(false)
-  local line = f:CreateTexture(nil, "ARTWORK"); line:SetHeight(1); line:SetPoint("TOPLEFT", 10, -44); line:SetPoint("TOPRIGHT", -10, -44)
-  line:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.35)
-  -- the body: one text, wrapped (quests, objectives, drop rates, why), beside the picture
-  f.body = newText(f, 12); f.body:SetPoint("TOPLEFT", 12, -52); f.body:SetWidth(W - MODEL - 34); f.body:SetSpacing(2)
-  -- the picture: a 3D model of the NPC, or an icon
-  f.pic = CreateFrame("Frame", nil, f); f.pic:SetSize(MODEL, MODEL + 6); f.pic:SetPoint("TOPRIGHT", -10, -50)
-  local bg = f.pic:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(0, 0, 0, 0.25)
-  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(44, 44); f.icon:SetPoint("CENTER", 0, 6); f.icon:Hide()
-  f.picName = newText(f, 10); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -3); f.picName:SetWidth(MODEL + 10); f.picName:SetJustifyH("CENTER")
-  f.picName:SetTextColor(0.79, 0.75, 0.66)
-  -- the footer: how far, and what's next
-  f.foot = newText(f, 11); f.foot:SetPoint("BOTTOMLEFT", 12, 10); f.foot:SetPoint("RIGHT", f, "RIGHT", -12, 0); f.foot:SetTextColor(0.79, 0.75, 0.66)
-  -- click: the arrow to it; right-click: hide the view
-  f:SetScript("OnMouseUp", function(self, button)
-    if button == "RightButton" then skipMenu() return end
+  f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.14); GameTooltip:Hide() end)
+  f.foot = newText(f, 11); f.foot:SetPoint("BOTTOMLEFT", 8, 8); f.foot:SetPoint("RIGHT", f.skip, "LEFT", -6, 0); f.foot:SetWordWrap(false)
+  f.foot:SetTextColor(0.6, 0.6, 0.6)
+  -- click: the arrow to it; right-click: skip, and more
+  f:SetScript("OnClick", function(self, button)
+    if button == "RightButton" then if self.prof then if RG.ShowTab then RG.ShowTab("prof") end else skipMenu() end return end
     if self.wp and RG.Follow then RG.Follow(self.wp) end
   end)
   f:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine("Waypath+ step view", 1, 0.93, 0.74)
-    GameTooltip:AddLine("Click: the arrow to this step", 1, 1, 1)
-    GameTooltip:AddLine("Drag: move it  ·  right-click: skip this step, or hide the view", 0.8, 0.8, 0.8)
+    GameTooltip:AddLine(self.tipTitle or "The current step", 1, 0.93, 0.74, true)
+    if self.tipWhy then GameTooltip:AddLine(self.tipWhy, 0.8, 0.8, 0.8, true) end
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("Click: the arrow to it  ·  right-click: " .. (self.prof and "the Professions page" or "skip it, and more"), 1, 1, 1, true)
     GameTooltip:Show()
   end)
   f:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -243,7 +237,7 @@ local function showModel(npc, icon)
   if npc and not inInstance() then
     if not model then
       local ok, m = pcall(CreateFrame, "DressUpModel", nil, f.pic)
-      if ok and m then model = m; m:SetPoint("TOPLEFT", 2, -2); m:SetPoint("BOTTOMRIGHT", -2, 2) end
+      if ok and m then model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1) end
     end
     if model and model.SetCreature then
       if model.cur ~= npc then
@@ -276,93 +270,154 @@ local function showModel(npc, icon)
   return icon ~= nil
 end
 
-local VERB = { turnin = { "Hand in", "|cff8be0a4" }, pickup = { "Pick up", "|cffffd100" }, doing = { "Do", "|cff9fd4ff" } }
+local VERB = { turnin = { "Hand in", { 0.55, 0.88, 0.64 } }, pickup = { "Pick up", { 1, 0.82, 0 } }, doing = { "Do", { 0.62, 0.83, 1 } } }
 local function zoneName(map)
+  if RG.MapZone and RG.MapZone(map) then return RG.MapZone(map) end
   local i = map and C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(map)
   return i and i.name
 end
--- what one task of the stop says, with its progress and drop rates
-local function taskLines(it, out)
-  local d = it.id and RG.QDATA and RG.QDATA[it.id]
-  out[#out + 1] = "|cffffffff" .. tostring(it.title or (d and d.n) or "?") .. "|r"
-  if it.act == "turnin" then
-    out[#out + 1] = GREEN .. "  Done: hand it in" .. ((it.label and it.label ~= "") and (" to " .. it.label) or "") .. "|r"
-  elseif it.act == "pickup" then
-    local how
-    if d and not d.s and d.si then
-      local si = d.si
-      how = si[1] == "o" and ("Click " .. tostring(si[2]) .. " to start it") or ("Loot " .. tostring(si[2]) .. ((si[3] and si[3][1]) and (" from " .. si[3][1]) or "") .. ": it starts the quest")
-    end
-    out[#out + 1] = GREY .. "  " .. (how or ("Pick it up" .. ((it.label and it.label ~= "") and (" from " .. it.label) or ""))) .. "|r"
-  else
-    local verb = ({ k = "Kill", i = "Collect", o = "Use" })[it.okind or ""] or "Get"
-    local prog = (it.need and it.need > 0) and (" " .. (it.have or 0) .. "/" .. it.need) or ""
-    local done = it.need and it.have and it.need > 0 and it.have >= it.need
-    out[#out + 1] = (done and GREEN or "|cffe6e6e6") .. "  " .. verb .. " " .. tostring(it.label or "") .. "|r" .. (done and GREEN or GOLD) .. prog .. "|r"
-  end
-  if it.act ~= "turnin" then
-    for _, x in ipairs(RG.DropInfo(it.id, it.act == "doing" and it.label or nil)) do
-      out[#out + 1] = GREY .. "  " .. (x.starts and (x.item .. ": ") or "Drops ") .. x.text .. "|r"
-    end
-  end
-end
+local function plain(t) return ((t or ""):gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
 
-function RG.RefreshStepView()
-  local want = RG.Opt and RG.Opt("stepView") and not (RG.CardsOnly and RG.CardsOnly())
-  if not want then if f then f:Hide() end return end
-  build()
+-- What the card says, from the current objective (RG.Objective), or the profession step in the professions view.
+local function cardInfo()
+  if RG.TrackerView and RG.TrackerView() == "prof" then
+    local p = RG.ProfFocus and RG.ProfFocus()
+    if not p then return nil end
+    return { verb = p.verb, col = { GOLDC[1], GOLDC[2], GOLDC[3] }, title = p.title, line = p.line, wp = p.wp, where = p.where,
+      why = p.why, next = p.next, prof = true }
+  end
   local obj = RG.Objective and RG.Objective()
-  if not obj then f:Hide() return end
+  if not obj then return nil end
   local it = obj.stop and obj.stop.items and obj.stop.items[1]
-  -- header
-  local v = (it and VERB[it.act]) or (obj.kind == "route" and { "Go", "|cffffd100" }) or (obj.kind == "dungeon" and { "In", "|cff9fd4ff" }) or { "Next", "|cffffd100" }
-  f.verb:SetText(v[2] .. v[1] .. "|r")
-  local titles = {}
-  for _, x in ipairs(obj.stop and obj.stop.items or {}) do
-    local t = tostring(x.title or "")
-    local seen = false
-    for _, y in ipairs(titles) do if y == t then seen = true end end
-    if not seen and t ~= "" then titles[#titles + 1] = t end
+  local v = (it and VERB[it.act]) or (obj.kind == "route" and { "Go", { 1, 0.82, 0 } }) or (obj.kind == "dungeon" and { "In", { 0.62, 0.83, 1 } })
+    or (obj.kind == "goal" and { "Goal", { 1, 0.82, 0 } }) or { "Next", { 1, 0.82, 0 } }
+  local info = { verb = v[1], col = v[2], obj = obj, it = it, wp = obj.wp, dist = obj.dist }
+  info.title = obj.qtitle or plain(obj.text)
+  local line, prog = obj.qline, nil
+  if line then
+    local a, b = line:match("^(.-)%s%s+(%d+/%d+)$")
+    if a then line, prog = a, b end
   end
-  f.title:SetText(#titles > 0 and table.concat(titles, ", ") or tostring(obj.text or ""))
+  if not line and obj.kind ~= "goal" then line = obj.wp and zoneName(obj.wp[1]) or nil end
+  info.line, info.prog = line, prog
+  if prog then
+    local h, n = prog:match("(%d+)/(%d+)")
+    info.done = h and n and tonumber(h) >= tonumber(n)
+  end
+  -- where (the zone, and the place's name when it says more than the quest's)
   local zone = obj.wp and zoneName(obj.wp[1])
-  local eta = obj.dist and (RG.FormatYards and RG.FormatYards(math.floor(obj.dist)) or (math.floor(obj.dist) .. " yd"))
-  f.where:SetText((zone or "") .. ((zone and eta) and "  ·  " or "") .. (eta or ""))
-  -- body
-  local out = {}
-  if obj.stop and obj.stop.items then
-    for i = 1, math.min(3, #obj.stop.items) do taskLines(obj.stop.items[i], out) end
-    if #obj.stop.items > 3 then out[#out + 1] = GREY .. "+" .. (#obj.stop.items - 3) .. " more here|r" end
-  else
-    out[#out + 1] = "|cffffffff" .. tostring(obj.text or "") .. "|r"
+  local place = obj.wp and obj.wp[4]
+  if place and (place == info.title or place == zone) then place = nil end
+  info.where = zone and (zone .. (place and (": " .. place) or "")) or place
+  -- why: the planner's reason, without the distance and the "also here" list (said elsewhere), for what it follows
+  local why = obj.why and (obj.why:match("^(.-)%s+·%s+") or obj.why) or ""
+  local mode = RG.RouteMode and RG.RouteMode()
+  if mode == "zone" and obj.kind ~= "goal" then
+    why = "Zone quests: " .. tostring((RG.FollowZone and RG.FollowZone()) or "this zone") .. "." .. (why ~= "" and (" " .. why .. ".") or "")
+  elseif mode == "guide" and obj.kind ~= "goal" and obj.kind ~= "route" then
+    local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+    why = (r and ("The guide: " .. r.zone .. ".") or "The guide.") .. (why ~= "" and (" " .. why .. ".") or "")
   end
-  -- why here, and the one thing people get wrong about the quest (QuestNotes.lua)
-  local why = obj.why and obj.why:gsub("%s*·%s*[%d%.]+k? yd away", "") or ""
-  if why ~= "" then out[#out + 1] = GREY .. why .. "|r" end
-  local qn = it and it.id and RG.QuestNote and RG.QuestNote(it.id)
-  if qn and qn.n then out[#out + 1] = "|cffff9f43" .. qn.n .. "|r" end
-  f.body:SetText(table.concat(out, "\n"))
-  -- the picture
-  local look = lookFor(obj, it)
-  local shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
-  f.pic:SetShown(shown and true or false)
-  f.picName:SetText(shown and look and look.name or "")
-  f.body:SetWidth(shown and (W - MODEL - 34) or (W - 24))
-  -- footer: nearest, and next
-  local foot = {}
-  if obj.nextText then foot[#foot + 1] = GOLD .. "Next:|r " .. obj.nextText end
-  f.foot:SetText(table.concat(foot, "\n"))
-  f.skip:SetShown((obj.stop or routeKey(obj)) and true or false)
-  f.wp = obj.wp
-  local h = 52 + math.max(f.body:GetStringHeight() or 0, shown and (MODEL + 20) or 0) + 12 + ((f.foot:GetStringHeight() or 0) > 0 and ((f.foot:GetStringHeight() or 0) + 8) or 0)
-  f:SetHeight(math.max(90, h))
-  f:Show()
+  info.why = why
+  -- the others at the same stop
+  if obj.stop and #obj.stop.items > 1 then
+    local names, seen = {}, { [info.title] = true }
+    for i = 2, #obj.stop.items do
+      local x = obj.stop.items[i]
+      local t = (x.act == "turnin" and "hand in " or (x.act == "pickup" and "pick up " or "")) .. tostring(x.title)
+      if not seen[t] and #names < 3 then seen[t] = true; names[#names + 1] = t end
+    end
+    if #names > 0 then info.also = "Also here: " .. table.concat(names, ", ") end
+  end
+  info.next = obj.nextText
+  info.skip = (obj.stop or routeKey(obj)) and true or false
+  return info
 end
 
--- kept up to date: a second's tick (the objective itself is worked out at most every couple of seconds), and straight
--- away when the option changes
+local lastH
+function RG.RefreshStepView()
+  local t = _G.WaypathTracker
+  if not (t and t:IsShown()) or (RG.CardsOnly and RG.CardsOnly()) or not (RG.Opt and RG.Opt("tracker")) then
+    if f then f:Hide() end
+    return
+  end
+  if not build() then return end
+  -- (a quest-item button on the tracker and a fight on: the tracker holds still, and so does the card's size)
+  local frozen = RG.TrackerFrozen and RG.TrackerFrozen()
+  local info = cardInfo()
+  if not info then
+    if not frozen then f:Hide() end
+    if lastH ~= 0 and not frozen then lastH = 0; if not RG.stepCardFromTracker and RG.RefreshTracker then RG.RefreshTracker() end end
+    return
+  end
+  local W = (t:GetWidth() or 300) - 16
+  local folded = RG.db.trackerCollapsed or (RG.trackerInCombat and RG.Opt("trackerCombatFold"))
+  local details = RG.Opt("stepView") and not folded
+  -- the top: what to do, the quest, how far
+  f.verb:SetText(info.verb:upper())
+  f.verb:SetTextColor(info.col[1], info.col[2], info.col[3])
+  f.chip:SetColorTexture(info.col[1], info.col[2], info.col[3], 0.16)
+  f.chip:SetWidth(math.max(18, (f.verb:GetStringWidth() or 20) + 8))
+  f.title:SetText(info.title or "")
+  f.dist:SetText(info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
+  f.obj:SetText(info.line or "")
+  f.prog:SetText(info.prog or "")
+  if info.done then f.prog:SetTextColor(0.35, 0.85, 0.45) else f.prog:SetTextColor(0.94, 0.94, 0.94) end
+  local h = (info.line and info.line ~= "") and 46 or 30
+  -- the details
+  f.pic:Hide(); f.picName:SetText(""); f.body:Hide(); f.line:Hide(); f.skip:Hide(); f.foot:SetText("")
+  if details then
+    local body = {}
+    if info.where then body[#body + 1] = info.where end
+    if info.it and info.it.act ~= "turnin" and RG.DropInfo then
+      for _, x in ipairs(RG.DropInfo(info.it.id, info.it.act == "doing" and info.it.label or nil)) do
+        body[#body + 1] = (x.starts and (x.item .. ": ") or "Drops ") .. x.text
+      end
+    end
+    if info.also then body[#body + 1] = info.also end
+    if info.why and info.why ~= "" then body[#body + 1] = GREY .. info.why .. "|r" end
+    local qn = info.it and info.it.id and RG.QuestNote and RG.QuestNote(info.it.id)
+    if qn and qn.n then body[#body + 1] = "|cffff9f43" .. qn.n .. "|r" end
+    -- the picture
+    local look = info.obj and RG.StepLookFor and RG.StepLookFor(info.obj, info.it)
+    local shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
+    local x = 8
+    if shown then
+      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(h - 2)); f.pic:Show()
+      f.picName:SetText(look.name or "")
+      x = 8 + MODEL + 8
+    end
+    f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -(h - 2)); f.body:SetWidth(W - x - 8)
+    f.body:SetText(table.concat(body, "\n")); f.body:SetShown(#body > 0)
+    local bh = #body > 0 and (f.body:GetStringHeight() or 0) or 0
+    local ph = shown and (MODEL + 14) or 0
+    h = h - 2 + math.max(bh, ph) + 8
+    -- what comes after, and Skip
+    if info.next or info.skip then
+      f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 8, -h); f.line:SetPoint("TOPRIGHT", -8, -h); f.line:Show()
+      f.foot:SetText(info.next and (GOLD .. "Next|r  " .. info.next) or "")
+      f.skip:SetShown(info.skip and true or false)
+      h = h + 26
+    end
+  end
+  f.wp, f.prof = info.wp, info.prof
+  f.tipTitle = info.title
+  f.tipWhy = (info.obj and info.obj.text and plain(info.obj.text) ~= info.title) and plain(info.obj.text) or info.why
+  if frozen and lastH and lastH > 0 then h = lastH end
+  f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -50); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -50)
+  f:SetHeight(h); f:Show()
+  cardH = h
+  if h ~= lastH then
+    lastH = h
+    -- the list under it moves with it
+    if not RG.stepCardFromTracker and not frozen and RG.RefreshTracker then RG.RefreshTracker() end
+  end
+end
+RG.StepLookFor = function(obj, it) return lookFor(obj, it) end
+
+-- kept up to date: a second's tick (the objective itself is worked out at most every couple of seconds)
 do
-  local tick = function() if f or (RG.Opt and RG.Opt("stepView")) then pcall(RG.RefreshStepView) end end
+  local tick = function() if f or (RG.Opt and RG.Opt("tracker")) then pcall(RG.RefreshStepView) end end
   if RG.PerfWrap then tick = RG.PerfWrap("stepView", tick) end
   local boot = CreateFrame("Frame")
   boot:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -376,10 +431,10 @@ end
 local base = SlashCmdList.WAYPATH
 SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):lower():match("^%s*(%S*)")
-  if cmd == "stepview" then
+  if cmd == "details" or cmd == "stepview" then
     RG.db.stepView = not (RG.Opt and RG.Opt("stepView"))
-    RG.Print("Step view " .. (RG.db.stepView and "on: drag it where you want it; Skip moves on, right-click for more." or "off."))
-    RG.RefreshStepView()
+    RG.Print("Step details " .. (RG.db.stepView and "on: under the current step on the tracker, the mob to look for, how often its items drop and why it's next." or "off."))
+    if RG.RefreshTracker then RG.RefreshTracker() end
     return
   end
   return base(msg)

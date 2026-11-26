@@ -173,6 +173,28 @@ local function buildTasks()
   local quests = RG.MyQuests and RG.MyQuests() or {}
   local byTitle = {}
   for _, q in ipairs(quests) do byTitle[q.title] = q end
+  -- what the tracker follows decides what the plan may pick (Smart.lua):
+  --   zone quests: only what's in that zone (the arrow never leaves it); the guide: only the quests of the route's
+  --   zone you're on (a zone of hand-written steps, with no quest list: all of yours); your quest log: only your quests
+  local mode = RG.RouteMode and RG.RouteMode() or "log"
+  local zoneName = mode == "zone" and RG.FollowZone and RG.FollowZone() or nil
+  local function inZone(wp) return not zoneName or (wp and RG.MapZone and RG.MapZone(wp[1]) == zoneName) end
+  local routeIds
+  if mode == "guide" then
+    local r0 = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+    local sq = r0 and RG.STEP_QUESTS and RG.STEP_QUESTS[r0.zone .. "|" .. r0.from]
+    if sq then
+      routeIds = {}
+      for _, ids in pairs(sq) do for _, id in ipairs(ids) do routeIds[id] = true end end
+    end
+  end
+  local function wanted(q, id, title)
+    id = id or (q and q.id)
+    if routeIds and not (id and routeIds[id]) then return false end
+    -- a dungeon quest while they're left out (one that's finished can still be handed in)
+    if not (q and q.complete) and RG.DungeonQuestHidden and RG.DungeonQuestHidden(id, q and q.zone) then return false end
+    return true
+  end
   local function pt(wp)
     local e = ptCache[wp]
     if e and e.c == c then return e.p end
@@ -218,8 +240,15 @@ local function buildTasks()
   local objOf = {}
   for _, g in ipairs(order) do
     local q = byTitle[g.quest]
-    if #g.pts > 0 then
-      local t = { act = "doing", title = g.quest, id = q and q.id, label = g.label, pts = g.pts, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
+    local pts = g.pts
+    if zoneName and #pts > 0 then
+      pts = {}
+      for _, p in ipairs(g.pts) do if inZone(p.wp) then pts[#pts + 1] = p end end
+    end
+    if not wanted(q, nil, g.quest) then
+      -- (left out on purpose: not counted as somewhere else)
+    elseif #pts > 0 then
+      local t = { act = "doing", title = g.quest, id = q and q.id, label = g.label, pts = pts, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
       tasks[#tasks + 1] = t
       objOf[g.quest] = objOf[g.quest] or {}
       table.insert(objOf[g.quest], t)
@@ -231,7 +260,7 @@ local function buildTasks()
     local ewp
     if qd and qd.e and qd.e[1] then ewp = { qd.e[1], qd.e[2], qd.e[3], (qd.e[4] and qd.e[4] ~= "") and qd.e[4] or q.title }
     elseif q.complete and q.wp then ewp = q.wp end   -- not in our data: where the game says to hand it in
-    if ewp then
+    if ewp and wanted(q) and inZone(ewp) then
       local p = pt(ewp)
       if p and (q.complete or objOf[q.title]) then
         tasks[#tasks + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], pts = { p }, level = q.level, group = q.group,
@@ -240,14 +269,14 @@ local function buildTasks()
     end
   end
   -- the route's next pick-ups, so a giver on your way gets bundled with the rest
-  local r = opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+  local r = mode ~= "log" and opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   if r and RG.STEPS and RG.StepQuestLines then
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
     for i = 1, #steps do
       if not RG.StepIsDone(r, i) then
         local ql = RG.StepQuestLines(r, i, quests)
         for _, l in ipairs(ql or {}) do
-          if l.act == "pickup" and l.wp and not byTitle[l.name] then
+          if l.act == "pickup" and l.wp and not byTitle[l.name] and inZone(l.wp) then
             local p = pt(l.wp)
             if p then tasks[#tasks + 1] = { act = "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
           end
@@ -256,7 +285,9 @@ local function buildTasks()
       end
     end
   end
-  -- worthwhile quests just around you, even when the route has not reached them yet
+  -- worthwhile quests just around you, even when the route has not reached them yet (not for the guide, which keeps to
+  -- its route, nor for your quest log, which keeps to what you have)
+  if mode == "zone" or not opt("routeGuide") then
   if RG.OptBesideQuestie and RG.OptBesideQuestie("newQuests", "available") and RG.NearbyNewQuests then
     local have = {}
     for _, t in ipairs(tasks) do have[t.title] = true end
@@ -265,9 +296,10 @@ local function buildTasks()
       if added >= 3 then break end
       if not have[q.name] and not byTitle[q.name] and (q.dist or 99999) <= 900 then
         local p = pt(q.wp)
-        if p then tasks[#tasks + 1] = { act = "pickup", title = q.name, id = q.id, label = q.giver, pts = { p }, level = q.lvl }; have[q.name] = true; added = added + 1 end
+        if p and inZone(q.wp) and not (RG.DungeonQuestHidden and RG.DungeonQuestHidden(q.id)) then tasks[#tasks + 1] = { act = "pickup", title = q.name, id = q.id, label = q.giver, pts = { p }, level = q.lvl }; have[q.name] = true; added = added + 1 end
       end
     end
+  end
   end
   return tasks, elsewhere, c, px, py
 end

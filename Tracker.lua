@@ -143,7 +143,8 @@ local function currentEntry()
   local lvl = UnitLevel("player")
   -- standing in a new zone that has no steps yet (WoW Forever's quest data for it isn't out): stay with it
   -- instead of sending you somewhere else; the tracker shows its quests from your log
-  local here = RG.ZoneName()
+  local zoneMode = RG.RouteMode and RG.RouteMode() == "zone"
+  local here = (zoneMode and RG.FollowZone and RG.FollowZone()) or RG.ZoneName() or ""
   if here ~= "" then
     for _, r in ipairs(RG.ROUTE) do
       if r.kind == "zone" and r.zone == here and lvl >= r.from - 1 and lvl <= r.to then
@@ -157,13 +158,27 @@ local function currentEntry()
     for i = 1, #steps do if not RG.StepIsDone(r, i) then return true end end
     return false
   end
-  -- "Stay in the zone I'm in" (route style "zone"): the route never picks another zone. Of this zone's route entries,
-  -- the one for your level with work left, else the nearest in level with work, else a finished one (the tracker then
-  -- says so and suggests where to go next); nil where the route has nothing (a city, a zone off the route).
-  if RG.db and RG.db.routeStyle == "zone" then
+  -- Zone quests (Smart.lua): the route never picks another zone than the one it follows (yours, or one you picked).
+  -- Of that zone's route entries, the one for your level with work left, else the nearest in level with work, else a
+  -- finished one (the tracker then says so and suggests where to go next); nil where the route has nothing (a city, a
+  -- zone off the route).
+  if zoneMode then
+    -- (the zone you're in also covers the route's areas on its map: in the Valley of Trials you're "in Durotar", and
+    -- at level 1 it's the Valley of Trials' steps you want; a zone you picked is just that zone)
+    local _, picked = RG.FollowZone()
+    -- (only an area without a map of its own, like the Valley of Trials, and only while your level fits it)
+    local function onMap(r)
+      if picked or not (RG.StepWaypoint and RG.MapZone) then return false end
+      if (RG.ZONE_MAPS and RG.ZONE_MAPS[r.zone]) or lvl < r.from - 1 or lvl > r.to then return false end
+      if r._zoneOf == nil then
+        local wp = RG.StepWaypoint(r, 1)
+        r._zoneOf = (wp and RG.MapZone(wp[1])) or false
+      end
+      return r._zoneOf == here
+    end
     local best, bestD, done
     for _, r in ipairs(RG.ROUTE) do
-      if r.kind == "zone" and r.zone == here then
+      if r.kind == "zone" and (r.zone == here or onMap(r)) then
         if open(r) then
           local d = (lvl < r.from - 1 and (r.from - 1 - lvl)) or (lvl > r.to and (lvl - r.to)) or 0
           if not best or d < bestD then best, bestD = r, d end
@@ -204,7 +219,7 @@ local function nextZones(skip, max)
       seen[r.zone] = true; out[#out + 1] = { r = r, why = why }
     end
   end
-  for _, o in ipairs(RG.SmartRankNow and RG.SmartRankNow() or {}) do add(o.r, o.why) end
+  for _, o in ipairs((RG.SmartRank and RG.SmartRank()) or {}) do add(o.r, o.why) end
   for _, r in ipairs(RG.ROUTE or {}) do
     if r.kind == "zone" and r.to >= lvl and r.from <= lvl + 3 then
       local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
@@ -308,6 +323,8 @@ function RG.StepQuestLines(entry, i, myQuests)
       if not done and not q and RG.QuestIsGrey and RG.QuestIsGrey(d.l) and not (RG.GreyButNeeded and RG.GreyButNeeded(id, isDone)) then done = true end
       if not done and not q then why, never = RG.QuestBlocked(id, d, isDone) end
       if never then done = true end   -- the other branch, a later step, or not for you: nothing to do here
+      -- a dungeon quest while they're left out (one in your log, finished, can still be handed in)
+      if not done and not (q and q.complete) and RG.DungeonQuestHidden and RG.DungeonQuestHidden(id) then done = true end
       total = total + 1
       if done then doneN = doneN + 1
       else
@@ -433,7 +450,7 @@ end
 
 -- A small right-click menu of our own (not a Blizzard dropdown, so nothing can be blocked or tainted).
 local menuFrame, menuCatcher
-function RG.ShowMenu(entries, title)
+function RG.ShowMenu(entries, title, anchor)
   if not entries or #entries == 0 then return end
   if not menuFrame then
     menuFrame = CreateFrame("Frame", "WaypathMenu", UIParent, "BackdropTemplate")
@@ -470,8 +487,19 @@ function RG.ShowMenu(entries, title)
   end
   local i = 0
   if title then i = i + 1; row(i, GREY .. title .. "|r", nil, true) end
-  for _, e in ipairs(entries) do i = i + 1; row(i, e[1], e[2]) end
+  -- (an entry { text, fn }; { text, head = true } is a heading, { text, off = true } a greyed-out line)
+  for _, e in ipairs(entries) do
+    i = i + 1
+    if e.head then row(i, GREY .. e[1] .. "|r", nil, true)
+    elseif e.off then row(i, "|cff6a6a6a" .. e[1] .. "|r", nil, true)
+    else row(i, e[1], e[2]) end
+  end
   menuFrame:SetSize(wMax, y + 8)
+  if anchor and anchor.GetBottom then
+    menuFrame:ClearAllPoints(); menuFrame:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
+    menuCatcher:Show(); menuFrame:Show()
+    return
+  end
   local cx, cy = GetCursorPosition()
   local s = UIParent:GetEffectiveScale()
   if type(s) ~= "number" or s <= 0 then s = 1 end
@@ -490,6 +518,9 @@ local function line(i)
   b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetPoint("TOPLEFT", -4, 1); b.hl:SetPoint("BOTTOMRIGHT", 4, -1); b.hl:SetColorTexture(1, 1, 1, 0.06)
   b.box = b:CreateTexture(nil, "ARTWORK"); b.box:SetSize(12, 12); b.box:SetPoint("TOPLEFT", 0, -1)
   b.check = b:CreateTexture(nil, "OVERLAY"); b.check:SetSize(12, 12); b.check:SetPoint("CENTER", b.box, "CENTER", 0, 0); b.check:SetTexture("Interface\\AddOns\\Waypath\\Media\\Check"); b.check:SetVertexColor(0.05, 0.07, 0.07, 1)
+  -- a route step's number in its ring, and the band behind the step you're on
+  b.num = b:CreateFontString(nil, "OVERLAY"); b.num:SetFont("Fonts\\ARIALN.TTF", 9, ""); b.num:SetPoint("CENTER", b.box, "CENTER", 0, 0); b.num:Hide()
+  b.band = b:CreateTexture(nil, "BACKGROUND"); b.band:SetPoint("TOPLEFT", -6, 2); b.band:SetPoint("BOTTOMRIGHT", 6, -3); b.band:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.07); b.band:Hide()
   b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   b:SetScript("OnClick", function(self, btn)
     if btn == "RightButton" and self.menu and IsShiftKeyDown and IsShiftKeyDown() then RG.ShowMenu(self.menu()); return end   -- Shift + right-click: more options
@@ -569,53 +600,52 @@ local function build()
     } })
   end
 
-  -- the compass: points where the arrow points
-  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(18, 18); crest:SetPoint("TOPLEFT", 12, -12); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  -- The header: what the tracker follows (click for the menu: the guide, zone quests, your quest log, professions),
+  -- a line about it under that (in zone quests: the zone, click to pick another), and the buttons on the right.
+  -- The current step sits under the header (StepView.lua), then the list.
+  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(16, 16); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
   tr.crest = crest
-  tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:SetPoint("TOPLEFT", crest, "TOPRIGHT", 8, 2); tr.title:SetText("Waypath+")
-  if not tr.title:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(tr.title, 14) end
-  tr.title:SetTextColor(0.937, 0.902, 0.824); tr.title:SetShadowColor(0, 0, 0, 0.8); tr.title:SetShadowOffset(1, -1); tr.title:SetJustifyH("LEFT")
-  tr.goal = RG.NewText(tr, "GameFontHighlightSmall"); tr.goal:SetPoint("TOPLEFT", tr.title, "BOTTOMLEFT", 0, -2); tr.goal:SetJustifyH("LEFT"); tr.goal:SetTextColor(0.79, 0.75, 0.66)
-  tr.goal:SetWordWrap(false)
-  tr.dist = RG.NewText(tr, "GameFontHighlightSmall"); tr.dist:SetPoint("TOPRIGHT", -12, -30); tr.dist:SetJustifyH("RIGHT"); tr.dist:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
-  -- the top line is a button: click for the arrow, hover for the details
-  local head = CreateFrame("Button", nil, tr); head:SetPoint("TOPLEFT", 6, -6); head:SetPoint("TOPRIGHT", -84, -6); head:SetHeight(40); tr.head = head
-  head:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  head:SetScript("OnClick", function(_, btn)
-    local o = RG.Objective and RG.Objective()
-    if btn == "RightButton" and o and o.stop and o.count and o.count > 1 and RG.SkipStop then RG.SkipStop(o.stop); if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end; RG.RefreshTracker(); return end
-    if o and o.wp then RG.Follow(o.wp) end
-  end)
-  head:SetScript("OnEnter", function(self)
-    local o = RG.Objective and RG.Objective()
-    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    if o then
-      GameTooltip:SetText(o.text or "", 1, 1, 1, 1, true)
-      if o.why then GameTooltip:AddLine(o.why, 0.7, 0.7, 0.7, true) end
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Click: arrow to it  ·  Right-click: skip to the next stop", GOLDC[1], GOLDC[2], GOLDC[3], true)
-    else GameTooltip:SetText("Waypath+ tracker", GOLDC[1], GOLDC[2], GOLDC[3]) end
-    GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag the panel to move it", 0.8, 0.8, 0.8)
+  -- (the old top line's texts: kept for anything that sets them, never shown)
+  tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:Hide()
+  tr.goal = RG.NewText(tr, "GameFontHighlightSmall"); tr.goal:Hide()
+  tr.dist = RG.NewText(tr, "GameFontHighlightSmall"); tr.dist:Hide()
+  local function dragFrom(f)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") and not (RG.TrackerFrozen and RG.TrackerFrozen()) then tr:StartMoving() end end)
+    f:SetScript("OnDragStop", function() if InCombatLockdown() then return end tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
+  end
+  RG.TrackerDragFrom = dragFrom
+  local mb = CreateFrame("Button", nil, tr); mb:SetHeight(22); mb:SetPoint("TOPLEFT", 30, -6); mb:SetPoint("TOPRIGHT", -98, -6)
+  mb.text = mb:CreateFontString(nil, "OVERLAY"); mb.text:SetPoint("LEFT", 2, 0); mb.text:SetJustifyH("LEFT"); mb.text:SetWordWrap(false)
+  if not mb.text:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(mb.text, 14) end
+  mb.text:SetTextColor(0.937, 0.902, 0.824); mb.text:SetShadowColor(0, 0, 0, 0.8); mb.text:SetShadowOffset(1, -1)
+  mb.chev = mb:CreateTexture(nil, "OVERLAY"); mb.chev:SetSize(10, 10); mb.chev:SetPoint("LEFT", mb.text, "RIGHT", 5, -1)
+  mb.chev:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\FoldRight"); mb.chev:SetVertexColor(0.6, 0.6, 0.6)
+  if mb.chev.SetRotation then pcall(mb.chev.SetRotation, mb.chev, -math.pi / 2) end
+  mb.hl = mb:CreateTexture(nil, "HIGHLIGHT"); mb.hl:SetAllPoints(); mb.hl:SetColorTexture(1, 1, 1, 0.06)
+  mb:SetScript("OnClick", function(self) if RG.TrackerModeMenu then RG.TrackerModeMenu(self) end end)
+  mb:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("What the tracker follows", GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:AddLine("Click: the ordered guide, one zone's quests, your quest log or your professions, and whether dungeon quests and step details show.", 1, 1, 1, true)
+    GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move the tracker", 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Mouse wheel: scroll the list  ·  Ctrl / Shift / Alt + wheel: size, width, see-through", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
-  head:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  head:RegisterForDrag("LeftButton")
-  head:SetScript("OnDragStart", function() if not RG.Opt("trackerLocked") and not (RG.TrackerFrozen and RG.TrackerFrozen()) then tr:StartMoving() end end)
-  head:SetScript("OnDragStop", function() if InCombatLockdown() then return end tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
-  -- hover the header for the tracker's controls
-  local hint = CreateFrame("Frame", nil, tr); hint:SetPoint("TOPLEFT", 6, -4); hint:SetSize(1, 1); hint:Hide()
-  hint:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Waypath+ tracker", GOLDC[1], GOLDC[2], GOLDC[3])
-    GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move", 1, 1, 1)
-    GameTooltip:AddLine("Ctrl + mouse wheel: bigger or smaller", 1, 1, 1)
-    GameTooltip:AddLine("Shift + mouse wheel: wider or narrower", 1, 1, 1)
-    GameTooltip:AddLine("Alt + mouse wheel: more or less see-through", 1, 1, 1)
-    GameTooltip:AddLine("Mouse wheel on the list: scroll  ·  corner grip: how tall it gets", 1, 1, 1)
-    GameTooltip:AddLine("Click a gold heading to fold it", 0.7, 0.7, 0.7)
-    GameTooltip:Show()
-  end)
-  hint:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  mb:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  dragFrom(mb)
+  tr.modeBtn = mb
+  -- the line under it
+  local cx = CreateFrame("Button", nil, tr); cx:SetHeight(16); cx:SetPoint("TOPLEFT", 12, -30); cx:SetPoint("TOPRIGHT", -12, -30)
+  cx.right = cx:CreateFontString(nil, "OVERLAY"); cx.right:SetPoint("RIGHT", 0, 0); cx.right:SetJustifyH("RIGHT"); cx.right:SetWordWrap(false)
+  cx.left = cx:CreateFontString(nil, "OVERLAY"); cx.left:SetPoint("LEFT", 0, 0); cx.left:SetPoint("RIGHT", cx.right, "LEFT", -8, 0); cx.left:SetJustifyH("LEFT"); cx.left:SetWordWrap(false)
+  tfont(cx.left, 11); tfont(cx.right, 11)
+  cx.left:SetTextColor(0.79, 0.75, 0.66); cx.right:SetTextColor(0.6, 0.6, 0.6)
+  cx.hl = cx:CreateTexture(nil, "HIGHLIGHT"); cx.hl:SetPoint("TOPLEFT", -4, 1); cx.hl:SetPoint("BOTTOMRIGHT", 4, -1); cx.hl:SetColorTexture(1, 1, 1, 0.06)
+  cx:SetScript("OnClick", function(self) if self.onClick then self.onClick(self) end end)
+  cx:SetScript("OnEnter", function(self) if self.tip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(self.tip, 1, 1, 1, 1, true); GameTooltip:Show() end end)
+  cx:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  dragFrom(cx)
+  tr.ctx = cx
   tr.lvl = RG.NewText(tr, "GameFontHighlightSmall"); tr.lvl:Hide()
 
   local function hdrBtn(label, x, fn, tip)
@@ -648,6 +678,22 @@ local function build()
   end)
   ab:SetScript("OnLeave", function() GameTooltip:Hide() end)
   tr.arrowBtn = ab
+  -- step details on/off (the mob, drops and why under the current step)
+  local dbt = CreateFrame("Button", nil, tr); dbt:SetSize(20, 20); dbt:SetPoint("TOPRIGHT", -74, -8)
+  dbt.icon = dbt:CreateTexture(nil, "OVERLAY"); dbt.icon:SetSize(13, 13); dbt.icon:SetPoint("CENTER"); dbt.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Report")
+  dbt:SetScript("OnClick", function(self)
+    RG.db.stepView = not RG.Opt("stepView")
+    RG.RefreshTracker()
+    if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
+  end)
+  dbt:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    GameTooltip:SetText("Step details: " .. (RG.Opt("stepView") and "on" or "off"))
+    GameTooltip:AddLine("Under the current step: the mob, item or quest giver to look for, how often its items drop and why it's next. Click to " .. (RG.Opt("stepView") and "hide" or "show") .. " them.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  dbt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  tr.detailsBtn = dbt
 
   -- thin XP bar along the bottom, with the pace and time to level above it
   local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(2); xpBg:SetPoint("BOTTOMLEFT", 8, 6); xpBg:SetPoint("BOTTOMRIGHT", -8, 6)
@@ -659,7 +705,8 @@ local function build()
 
   local sep = tr:CreateTexture(nil, "ARTWORK"); sep:SetHeight(1); sep:SetPoint("TOPLEFT", 0, -50); sep:SetPoint("TOPRIGHT", 0, -50); sep:SetColorTexture(0.122, 0.176, 0.224, 1); tr.sep = sep
   -- the rows live on a scroll child: the list scrolls once it is taller than its cap (TrackerExtras.lua)
-  tr.scroll = CreateFrame("ScrollFrame", nil, tr); tr.scroll:SetPoint("TOPLEFT", 12, -60); tr.scroll:SetWidth(W - 24); tr.scroll:SetHeight(10)
+  -- (it starts under the header and the current step: RG.TrackerTop)
+  tr.scroll = CreateFrame("ScrollFrame", nil, tr); tr.scroll:SetPoint("TOPLEFT", 12, -56); tr.scroll:SetWidth(W - 24); tr.scroll:SetHeight(10)
   tr.body = CreateFrame("Frame", nil, tr.scroll); tr.body:SetWidth(W - 24); tr.body:SetHeight(10)
   tr.scroll:SetScrollChild(tr.body)
   lines = {}
@@ -678,9 +725,15 @@ local function folded(key)
   return v
 end
 local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
+-- How far down the list starts: under the header (what it follows, and the line under that) and the current step.
+local HEAD_H = 50
+function RG.TrackerTop()
+  local h = RG.StepCardHeight and RG.StepCardHeight() or 0
+  return HEAD_H + (h > 0 and (h + 6) or 0) + 4
+end
 -- The sections under Quests (new quests, route, class quests, dungeon, upgrade, professions, reminders) share one
 -- "More" row until you open it, so the side bar stays short: the first thing it shows is what to do now.
-local SECONDARY = { route = "Route", pala = "Class quests" }
+local SECONDARY = { pala = "Class quests" }
 local hints, skipped, moreOpen = {}, 0, false
 local lastSkipped = false   -- the last section went into the "More" row: it drew nothing, so it leaves no gap either
 local function gap(y) if lastSkipped then return y end return y + 5 end
@@ -699,7 +752,11 @@ local function section(n, y, label, key, right)
   local b = line(n)
   b._sig = nil; b._q, b._top = nil, y
   b._live, b._timer, b._rbase, b.tipFn = nil, nil, nil, nil
-  if rawget(b, "_tick") then b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b._tick = nil end
+  if rawget(b, "_tick") or rawget(b, "_step") then
+    b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b.check:SetVertexColor(0.05, 0.07, 0.07, 1)
+    b._tick, b._step = nil, nil
+  end
+  b.num:Hide(); b.band:Hide()
   b.onClick, b.onRightClick, b.tip, b.onDoubleClick, b.menu, b.wpClick = nil, nil, nil, nil, nil, nil
   b.box:Hide(); b.check:Hide()
   local isFolded = folded(key)
@@ -735,7 +792,7 @@ local function item(n, y, text, opts)
   local sig = tostring(text) .. "\1" .. tostring(opts.right) .. "\1" .. indent .. "\1" .. W .. "\1" .. fontSize(13) .. "\1" ..
     (opts.single and "s" or "") .. tostring(opts.box) .. (RG.trInterBad and "a" or "") .. (RG.Opt("trackerInter") and "i" or "") ..
     "\1" .. tostring(opts.progress and math.floor(opts.progress * 40)) .. (RG.Opt("trackerRoomy") and "r" or "") ..
-    "\1" .. tostring(opts.rpad) .. tostring(opts.tickAt)
+    "\1" .. tostring(opts.rpad) .. tostring(opts.tickAt) .. "\1" .. (opts.step and (opts.step.n .. opts.step.state) or "") .. (opts.band and "b" or "")
   local spacing = RG.Opt("trackerRoomy") and 8 or 4
   b._q, b._top = opts.quest, y
   b._live, b._timer, b._rbase, b.tipFn = opts.live, opts.timer, opts.rbase, opts.tipFn
@@ -768,10 +825,28 @@ local function item(n, y, text, opts)
     if b.text.SetMaxLines then b.text:SetMaxLines(0) end
     b.text:SetText(text)
   end
-  if b._tick and not opts.tickAt then
-    b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b._tick = nil
+  if (b._tick and not opts.tickAt) or (b._step and not opts.step) then
+    b.box:SetSize(12, 12); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 0, -1); b.check:SetSize(12, 12); b.check:SetVertexColor(0.05, 0.07, 0.07, 1)
+    b._tick, b._step = nil, nil
   end
-  if opts.tickAt then
+  b.num:Hide()
+  b.band:SetShown(opts.band and true or false)
+  if opts.step then
+    -- a route step: a ring with its number (a tick once it's done; a filled disc for the step you're on)
+    local st = opts.step
+    b._step = true
+    b.box:Show(); b.box:SetSize(14, 14); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 2, 0)
+    b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\" .. (st.state == "cur" and "Disc" or "Ring"))
+    if st.state == "done" then
+      b.box:SetVertexColor(0.35, 0.85, 0.45, 0.9)
+      b.check:SetSize(10, 10); b.check:SetVertexColor(0.35, 0.85, 0.45, 1); b.check:Show()
+    else
+      b.check:Hide()
+      if st.state == "cur" then b.box:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1); b.num:SetTextColor(0.05, 0.07, 0.07)
+      else b.box:SetVertexColor(0.5, 0.5, 0.5, 0.9); b.num:SetTextColor(0.7, 0.7, 0.7) end
+      b.num:SetText(tostring(st.n)); b.num:Show()
+    end
+  elseif opts.tickAt then
     -- a small green tick (a finished objective)
     b._tick = true
     b.box:Show(); b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc"); b.box:SetVertexColor(0.35, 0.85, 0.45, 1)
@@ -864,22 +939,14 @@ function RG.RefreshTracker()
   local rested = GetXPExhaustion and GetXPExhaustion()
   if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
   tr.lvl:SetText("Level " .. lvl .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or ""))
-  -- the top line: the quest and the objective the arrow points to, and how far it is
+  -- the header: what the tracker follows (Smart.lua), the line under it, and the current step (StepView.lua)
+  local view = RG.TrackerView and RG.TrackerView() or "log"
+  local alt = RG.IsAlt and RG.IsAlt()
+  tr.modeBtn.text:SetWidth(0); tr.modeBtn.text:SetText(alt and "Bank alt" or (RG.ModeName and RG.ModeName(view)) or "Waypath+")
+  if (tr.modeBtn.text:GetStringWidth() or 0) > W - 150 then tr.modeBtn.text:SetWidth(W - 150) end
   do
     local okO, o = pcall(RG.Objective or function() end)
-    if not okO then o = nil end
-    local title, goal
-    if o and o.qtitle then title, goal = o.qtitle, o.qline
-    elseif o and o.text then title = plain(o.text)
-    else
-      local ze = not (RG.IsAlt and RG.IsAlt()) and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
-      title, goal = ze and ze.zone or "Waypath+", "Level " .. lvl .. (rested and rested > 0 and "  ·  rested" or "")
-    end
-    tr.title:SetWidth(0); tr.title:SetText(title or ""); if tr.title.SetWordWrap then tr.title:SetWordWrap(false) end
-    if (tr.title:GetStringWidth() or 0) > W - 120 then tr.title:SetWidth(W - 120) end
-    tr.goal:SetWidth(W - 110); tr.goal:SetText(goal or "")
-    tr.dist:SetText(o and o.dist and RG.FormatYards and RG.FormatYards(o.dist) or "")
-    tr.crest:SetDesaturated(not (o and o.wp))
+    tr.crest:SetDesaturated(not (okO and o and o.wp))
   end
   tr.xp:SetWidth(math.max(1, (W - 16) * ((max and max > 0) and xp / max or 1)))
   if tr.arrowBtn then
@@ -887,38 +954,58 @@ function RG.RefreshTracker()
     tr.arrowBtn.icon:SetDesaturated(not on)
     if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
+  if tr.detailsBtn then
+    local on = RG.Opt("stepView")
+    if on then tr.detailsBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.detailsBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
+  end
+  local quests = RG.MyQuests and RG.MyQuests() or {}
+  -- the line under the header: what it's following right now (click: more)
+  do
+    local left, right, click, tip
+    if alt then left = "Bank alt for " .. (RG.MainName and RG.MainName() or "your main")
+    elseif view == "guide" then
+      local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+      left = r and ("|cffffffff" .. r.zone .. "|r" .. GREY .. "  ·  levels " .. r.from .. "-" .. r.to .. "|r") or (GREY .. "No route zone for your level|r")
+      right = RG.db.smart == false and "in order" or "smart order"
+      click = function() if RG.ShowTab then RG.ShowTab("route") end end
+      tip = GOLD .. "Ordered guide|r: the route, zone by zone" .. (RG.db.smart == false and ", in its order." or ". The smart zone order picks the zone that suits your level, where you are and your quest log.") ..
+        "\nSettings > Route & quests switches the smart zone order.\n\n" .. GOLD .. "Click:|r the Route tab"
+    elseif view == "zone" then
+      local zn, picked = RG.FollowZone()
+      local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+      if r then
+        local steps, d = RG.STEPS[r.zone .. "|" .. r.from] or {}, 0
+        for i = 1, #steps do if RG.StepIsDone(r, i) then d = d + 1 end end
+        if #steps > 0 then right = math.floor(d / #steps * 100 + 0.5) .. "% done" end
+      end
+      left = "|cffffffff" .. tostring(zn or "?") .. "|r" .. GREY .. (picked and "  (picked)" or "  (you're here)") .. "  ·  change|r"
+      click = function(self) if RG.TrackerZoneMenu then RG.TrackerZoneMenu(self) end end
+      tip = GOLD .. "Zone quests|r: one zone's route. It follows the zone you're in, or keeps to one you pick (until you log out).\n\n" .. GOLD .. "Click:|r pick a zone"
+    elseif view == "log" then
+      local ready = 0
+      for _, q in ipairs(quests) do if q.complete then ready = ready + 1 end end
+      left = #quests .. "/" .. ((C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 20) .. " quests" .. (ready > 0 and (GREY .. "  ·  |r" .. GREEN .. ready .. " ready|r") or "")
+      right = "nearest first"
+      click = function() if ToggleQuestLog then ToggleQuestLog() end end
+      tip = GOLD .. "My quest log|r: only the quests you have. Pick up a quest and it joins the plan." ..
+        (RG.Opt("routeGuide") and "" or ("\n" .. GREY .. "The ordered guide and zone quests need the leveling route: pick one in the menu above and it's turned on.|r")) .. "\n\n" .. GOLD .. "Click:|r open your quest log"
+    else
+      left = "Your professions' next steps"
+      tip = GOLD .. "Professions|r: the step you're on in each profession you're levelling, and what you're short of. The menu above goes back to leveling."
+    end
+    tr.ctx.left:SetText(left or ""); tr.ctx.right:SetText(right or ""); tr.ctx.onClick, tr.ctx.tip = click, tip
+  end
+  -- the current step under the header (it knows whether the tracker is folded)
+  if RG.RefreshStepView then RG.stepCardFromTracker = true; pcall(RG.RefreshStepView); RG.stepCardFromTracker = nil end
+  local top = RG.TrackerTop()
+  tr.sep:ClearAllPoints(); tr.sep:SetPoint("TOPLEFT", 0, -(top - 4)); tr.sep:SetPoint("TOPRIGHT", 0, -(top - 4))
   if RG.db.trackerCollapsed or (RG.trackerInCombat and RG.Opt("trackerCombatFold")) then
+    -- folded: the header and the current step
     tr.scroll:Hide(); if RG.TrackerChrome then RG.TrackerChrome(false) end
     tr.min.t:SetText("+"); tr.sep:Hide()
-    if rawget(tr, "nextLine") then tr.nextLine:Hide() end
-    tr:SetHeight(54)
-    do return end
-    -- compact: one calm line with the next thing to do
-    local txt
-    local okO, objc = pcall(RG.Objective or function() end)
-    if okO and objc and objc.text then
-      txt = plain(objc.text)
-      if #txt > 110 then txt = txt:sub(1, 107):gsub("[%s%p]+$", "") .. "..." end
-    end
-    if not txt and not (RG.IsAlt and RG.IsAlt()) then
-      local ok, r = pcall(currentEntry)
-      local steps = ok and r and RG.STEPS[r.zone .. "|" .. r.from]
-      local i = steps and RG.NextStep(r)
-      if i then
-        txt = plain(steps[i]):gsub("%s+", " ")
-        if #txt > 110 then txt = txt:sub(1, 107):gsub("[%s%p]+$", "") .. "..." end
-      end
-    end
-    if not rawget(tr, "nextLine") then
-      tr.nextLine = RG.NewText(tr, "GameFontHighlightSmall")
-      tr.nextLine:SetPoint("TOPLEFT", 12, -38); tr.nextLine:SetJustifyH("LEFT"); tr.nextLine:SetTextColor(0.85, 0.85, 0.85)
-    end
-    tr.nextLine:SetWidth(W - 24)
-    if txt then tr.nextLine:SetText(GOLD .. "Next:|r " .. txt); tr.nextLine:Show(); tr:SetHeight(66 + math.max(12, tr.nextLine:GetStringHeight() or 12))
-    else tr.nextLine:Hide(); tr:SetHeight(58) end
+    tr:SetHeight(top + 2)
     return
   end
-  if rawget(tr, "nextLine") then tr.nextLine:Hide() end
   tr.scroll:Show(); tr.min.t:SetText("-"); tr.sep:Show()
 
   local n, y = 0, 0
@@ -1008,92 +1095,142 @@ function RG.RefreshTracker()
       y = gap(y)
     end
   end
-  -- 1. your quests: level, name, progress, distance
-  local quests = RG.MyQuests and RG.MyQuests() or {}
-  local new = RG.NearbyNewQuests and RG.NearbyNewQuests(8) or {}
-  -- the route section: under your quests, or above them with "Route steps at the top" on
-  local routeTop = RG.Opt("trackerRouteTop")
-  local function routeSection()
-    -- 3. route: the zone you're in and its next tasks (the leveling route is a work in progress: off unless turned on)
-    local r = RG.Opt("routeGuide") and currentEntry()
-    if not r and RG.Opt("routeGuide") and RG.db.routeStyle == "zone" then
-      local here = RG.ZoneName()
-      local isFolded
-      local nx = RG.TrackerBestNext and RG.TrackerBestNext(nil)
-      n = n + 1; y, isFolded = section(n, y, "Route: " .. (here ~= "" and here or "here"), "route", nx and (GREEN .. "no steps here: next " .. nx .. "|r") or (GREY .. "no steps here|r"))
-      if not isFolded then
-        n = n + 1; y = item(n, y, GREY .. "No route steps in this zone.|r", { single = true, indent = 2,
-          tip = "You chose to stay in the zone you're in. Go to a zone on the route (below) and it follows you there.\n/wp route smart lets it choose zones again." })
-        y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, nil) or y
-        n = RG.trackerN or n
+  -- 1. new quests nearby (your quest log)
+  local new = view == "log" and RG.NearbyNewQuests and RG.NearbyNewQuests(8) or {}
+  -- 2. the route (the ordered guide and zone quests): the zone's steps, one line each, the step you're on opened up into
+  -- its quests; then what comes after (the guide: the next zones and dungeons; zone quests: where to go when it's done)
+  local function oneLine(t) return (plain(t or ""):gsub("%s+", " "):gsub("^ ", "")) end
+  local function comingUp(r)
+    local rows = {}
+    for _, o in ipairs(nextZones(r, 3)) do rows[#rows + 1] = { r = o.r, why = o.why } end
+    local off, left = not RG.DungeonQuestsOn(), 0
+    for _, d in ipairs(RG.ROUTE or {}) do
+      local dq = d.kind == "dungeon" and RG.DUNGEON_QUESTS and RG.DUNGEON_QUESTS[d.zone]
+      if dq and lvl >= (dq.prep or d.from) and lvl <= d.to and not RG.DungeonQuestsDone(dq) then
+        if off then left = left + 1 elseif #rows < 5 then rows[#rows + 1] = { r = d, dq = dq } end
       end
-      y = gap(y)
     end
-    if r then
-      local key = r.zone .. "|" .. r.from
-      local steps = RG.STEPS[key] or {}
-      local doneN = 0
-      for i = 1, #steps do if RG.StepIsDone(r, i) then doneN = doneN + 1 end end
-      -- the first open step, split into its quests when it's a generated one
-      local firstOpen = RG.NextStep(r)
-      local qlines, qdone, qtotal, place, levels
-      if firstOpen then qlines, qdone, qtotal, place, levels = RG.StepQuestLines(r, firstOpen, quests) end
-      local isFolded
-      local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
-      if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
-      if #steps == 0 then right = GOLD .. "new zone|r" end
-      -- staying in this zone and it's done: the header says where next (it shows in the "+ More" row too)
-      if RG.db.routeStyle == "zone" and #steps > 0 and doneN == #steps then
-        local nx = RG.TrackerBestNext and RG.TrackerBestNext(r)
-        right = GREEN .. "done" .. (nx and (": next " .. nx) or "") .. "|r"
-      end
-      n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
-      if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" and RG.db.routeStyle ~= "zone" then
-        local ok, alts = pcall(RG.SmartAlternatives, r)
-        if ok and alts and #alts > 0 then
-          local names = {}
-          for _, o in ipairs(alts) do names[#names + 1] = o.r.zone end
-          n = n + 1
-          y = item(n, y, GREY .. "Also good: " .. table.concat(names, ", ") .. "|r", { single = true, indent = 2,
-            tip = GOLD .. "Smart route|r picks the zone that suits your level, position and quest log.\n\n" .. (function() local t = {} for _, o in ipairs(alts) do t[#t + 1] = "|cffffffff" .. o.r.zone .. "|r: " .. o.why end return table.concat(t, "\n") end)() .. "\n\n" .. GOLD .. "/wp smart|r turns this off." })
+    if #rows == 0 and left == 0 then return end
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Coming up", "next")
+    if isFolded then y = gap(y) return end
+    for _, row in ipairs(rows) do
+      local z = row.r.zone
+      n = n + 1
+      if row.dq then
+        local missing = 0
+        for _, q in ipairs(row.dq.quests or {}) do
+          local st = RG.QuestState and RG.QuestState((q[1]:gsub("%s*%(.-%)$", "")))
+          if not st and (not q.id or RG.QuestPrereqsMet(q.id)) then missing = missing + 1 end
         end
+        y = item(n, y, "|cffffffff" .. z .. "|r  |cffb9a8ffdungeon|r", { single = true, indent = 8,
+          right = GREY .. row.r.from .. "-" .. row.r.to .. "|r",
+          tip = "|cffffffff" .. z .. "|r  (dungeon, levels " .. row.r.from .. "-" .. row.r.to .. ")\n" .. GREY .. (missing > 0 and (missing .. " of its quests still to pick up.") or "All its quests are in your log.") .. "|r" ..
+            "\n" .. GREY .. "Leave dungeon quests out: the menu at the top of the tracker, or Settings > Route & quests.|r\n\n" .. GOLD .. "Click:|r the Route tab",
+          onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+      else
+        y = item(n, y, "|cffffffff" .. z .. "|r", { single = true, indent = 8, right = GREY .. row.r.from .. "-" .. row.r.to .. "|r",
+          tip = "|cffffffff" .. z .. "|r\n" .. GREY .. tostring(row.why or "") .. "|r\n\n" .. GOLD .. "Click:|r how to get there",
+          onClick = function() local t = RG.TravelSummary and RG.TravelSummary(z); RG.Print(z .. ": " .. (t or "see the Route tab for the way there.")) end })
       end
-      -- a flight master you haven't learned yet, close by: grab it while you're here
-      if not isFolded and RG.NearbyFlight then
-        local fe = RG.NearbyFlight()
-        if fe then
-          n = n + 1
-          y = item(n, y, (isTarget(fe.wp) and ARROW or RG.PIN or "") .. GOLD .. "Grab the " .. fe.node .. " flight path|r", { single = true, indent = 2, wp = fe.wp,
-            right = GREY .. math.floor(fe.dist) .. " yd|r",
-            tip = GOLD .. "Flight path nearby:|r " .. fe.node .. " (" .. fe.zone .. ")" .. (fe.npc and (", from " .. fe.npc) or "") .. ".\nLearn it now and you can fly back here later instead of running." ..
-              (fe.known == nil and ("\n" .. GREY .. "Already have it? Talk to any flight master once and Waypath+ remembers which ones you know.|r") or "") ..
-              "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map",
-            onRightClick = function() RG.PinWaypoint(fe.wp) end })
+    end
+    if left > 0 then
+      n = n + 1
+      y = item(n, y, GREY .. left .. " dungeon" .. (left == 1 and "" or "s") .. " left out  ·  show|r", { single = true, indent = 8,
+        tip = "You've left dungeon quests out (the menu at the top of the tracker, or Settings > Route & quests).\n\n" .. GOLD .. "Click:|r show them again",
+        onClick = function() RG.db.dungeonQuests = true; if RG.RouteChanged then RG.RouteChanged() end end })
+    end
+    y = gap(y)
+  end
+  local function routeSection()
+    local r = currentEntry()
+    if not r then
+      if view == "zone" then
+        local zn = RG.FollowZone() or "here"
+        local isFolded
+        n = n + 1; y, isFolded = section(n, y, "Route · " .. zn, "route", GREY .. "no steps|r")
+        if not isFolded then
+          n = n + 1; y = item(n, y, GREY .. "No route steps in this zone.|r", { single = true, indent = 2,
+            tip = "Zone quests keeps to one zone's route, and " .. zn .. " has none. Go to a zone on the route (below), or pick one at the top of the tracker, and it follows you there." })
+          y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, nil) or y
+          n = RG.trackerN or n
         end
+        y = gap(y)
       end
-      if not isFolded and qlines then
-        local sk = key .. "#" .. firstOpen
-        local wp = RG.StepWaypoint and RG.StepWaypoint(r, firstOpen)
-        -- where this step happens
+      return
+    end
+    local key = r.zone .. "|" .. r.from
+    local steps = RG.STEPS[key] or {}
+    local cur = RG.NextStep(r)
+    local right
+    if #steps == 0 then right = GOLD .. "new zone|r"
+    elseif cur then right = GREY .. "step " .. cur .. " of " .. #steps .. "|r"
+    else right = GREEN .. "done|r" end
+    local isFolded
+    n = n + 1; y, isFolded = section(n, y, "Route · " .. r.zone, "route", right)
+    if isFolded then y = gap(y) return end
+    -- the smart zone order's other good zones (the ordered guide)
+    if view == "guide" and RG.SmartAlternatives and RG.db.smart ~= false then
+      local ok, alts = pcall(RG.SmartAlternatives, r)
+      if ok and alts and #alts > 0 then
+        local names = {}
+        for _, o in ipairs(alts) do names[#names + 1] = o.r.zone end
         n = n + 1
-        y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. "|cffc9a227" .. (place or r.zone) .. "|r" .. (levels and (GREY .. "  ·  " .. levels .. "|r") or ""),
-          { indent = 2, wp = wp, right = GREY .. qdone .. "/" .. qtotal .. " quests done|r",
-            tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in." ..
-              (function()   -- how often the step's items drop
-                local t = ""
-                if RG.DropTip then for _, l in ipairs(qlines) do if l.act ~= "turnin" and l.act ~= "later" then t = t .. RG.DropTip(l.id):gsub("^\n\n" .. GOLD:gsub("%p", "%%%0") .. "Drops:|r", "") end end end
-                return t ~= "" and ("\n\n" .. GOLD .. "Drops:|r" .. t) or ""
-              end)() .. "\n\n" ..
-              (wp and (GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") .. GOLD .. "Shift-click:|r skip this step",
-            onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
-            onRightClick = wp and function() RG.Follow(wp) end or nil })
+        y = item(n, y, GREY .. "Also good: " .. table.concat(names, ", ") .. "|r", { single = true, indent = 2,
+          tip = GOLD .. "Smart zone order|r picks the zone that suits your level, where you are and your quest log.\n\n" .. (function() local t = {} for _, o in ipairs(alts) do t[#t + 1] = "|cffffffff" .. o.r.zone .. "|r: " .. o.why end return table.concat(t, "\n") end)() .. "\n\n" .. GOLD .. "Settings > Route & quests|r turns it off." })
+      end
+    end
+    -- a flight master you haven't learned yet, close by: grab it while you're here
+    if RG.NearbyFlight then
+      local fe = RG.NearbyFlight()
+      if fe then
+        n = n + 1
+        y = item(n, y, (isTarget(fe.wp) and ARROW or RG.PIN or "") .. GOLD .. "Grab the " .. fe.node .. " flight path|r", { single = true, indent = 2, wp = fe.wp,
+          right = GREY .. math.floor(fe.dist) .. " yd|r",
+          tip = GOLD .. "Flight path nearby:|r " .. fe.node .. " (" .. fe.zone .. ")" .. (fe.npc and (", from " .. fe.npc) or "") .. ".\nLearn it now and you can fly back here later instead of running." ..
+            (fe.known == nil and ("\n" .. GREY .. "Already have it? Talk to any flight master once and Waypath+ remembers which ones you know.|r") or "") ..
+            "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map",
+          onRightClick = function() RG.PinWaypoint(fe.wp) end })
+      end
+    end
+    -- one step: its number in a ring (a tick once done), the place, and how much is left; the whole text in its tooltip
+    local function stepRow(i, state)
+      local ql, qd, qt, place, levels = RG.StepQuestLines(r, i, quests)
+      local sk = key .. "#" .. i
+      local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+      local full = oneLine(steps[i])
+      local rt
+      if state == "done" then rt = GREY .. "done|r"
+      elseif ql and state == "cur" then rt = GOLD .. qd .. "/" .. qt .. "|r"
+      elseif ql and #ql > 0 then rt = GREY .. #ql .. " quest" .. (#ql == 1 and "" or "s") .. "|r" end
+      local drops = ""
+      if state == "cur" and ql and RG.DropTip then
+        for _, l in ipairs(ql) do if l.act ~= "turnin" and l.act ~= "later" then drops = drops .. RG.DropTip(l.id):gsub("^\n\n" .. GOLD:gsub("%p", "%%%0") .. "Drops:|r", "") end end
+        if drops ~= "" then drops = "\n\n" .. GOLD .. "Drops:|r" .. drops end
+      end
+      local col = (state == "cur" and "|cffffffff") or (state == "done" and GREY) or "|cffd6d6d6"
+      n = n + 1
+      y = item(n, y, (isTarget(wp) and ARROW or "") .. col .. (place or full) .. "|r" .. ((state == "cur" and levels) and (GREY .. "  ·  " .. levels .. "|r") or ""),
+        { single = true, indent = 22, step = { n = i, state = state }, band = state == "cur", right = rt, wp = wp,
+          tip = "|cffffffff" .. full .. "|r" .. (ql and ("\n" .. GREY .. qd .. " of " .. qt .. " quests done|r") or "") .. drops .. "\n\n" ..
+            (wp and (GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") ..
+            (state ~= "done" and (GOLD .. "Shift-click:|r skip this step") or GREY .. "Done|r"),
+          onClick = function() if state ~= "done" and IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[i]) end end,
+          onRightClick = wp and function() RG.Follow(wp) end or nil })
+      return ql, wp, sk, full
+    end
+    if cur then
+      -- the step done just before it (where you are in the zone)
+      for i = cur - 1, 1, -1 do if RG.StepIsDone(r, i) then stepRow(i, "done") break end end
+      local qlines, wp, sk, full = stepRow(cur, "cur")
+      if qlines then
         -- the arrow goes to the first thing to do: a hand-in, else a pick-up, else the hub
         if RG.AutoPin and not (RG.Opt("smartPlan") and RG.Objective and RG.Objective()) then
           local first = qlines[1]
           if first and first.wp and (first.act == "turnin" or first.act == "pickup") then RG.AutoPin(sk .. "@" .. first.act .. first.id, first.wp)
           elseif wp then RG.AutoPin(sk, wp) end
         end
-        -- an icon per kind of task, like the quest log: ? hand in, ! pick up, sword to do, clock for later
+        -- its quests, one line each: an icon per kind of task, like the quest log (? hand in, ! pick up, sword to do, clock for later)
         local VERB = { turnin = "|TInterface\\GossipFrame\\ActiveQuestIcon:13:13:0:-1|t ", pickup = "|TInterface\\GossipFrame\\AvailableQuestIcon:13:13:0:-1|t ",
           doing = "|TInterface\\Icons\\INV_Sword_27:13:13:0:-1:64:64:5:59:5:59|t ", later = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:13:13:0:-1:64:64:5:59:5:59|t " }
         local shownL = 0
@@ -1102,10 +1239,10 @@ function RG.RefreshTracker()
             shownL = shownL + 1
             local nameCol = (l.act == "later" and GREY) or (l.act == "turnin" and "|cff8be0a4") or (l.act == "doing" and "|cff9fd4ff") or "|cffffffff"
             local rt
-            if l.act == "turnin" then rt = GREEN .. "to " .. (l.npc or "the quest giver") .. "|r"
-            elseif l.act == "pickup" then rt = GREY .. (l.npc and ("from " .. l.npc) or "starts from an item or object") .. "|r"
+            if l.act == "turnin" then rt = GREEN .. "hand in|r"
+            elseif l.act == "pickup" then rt = GREY .. "pick up|r"
             elseif l.act == "doing" then rt = l.prog and ("|cffffffff" .. l.prog .. "|r") or (GREY .. "in your log|r")
-            else rt = GREY .. l.npc .. "|r" end
+            else rt = GREY .. "later|r" end
             local tip
             if l.act == "turnin" then tip = "Done: take it back to " .. (l.npc or "the quest giver") .. "."
             elseif l.act == "pickup" then tip = l.how or ("Get this quest from " .. (l.npc or "the quest giver") .. ".")
@@ -1118,77 +1255,66 @@ function RG.RefreshTracker()
             tip = tip .. noteTip(qn) .. upTip(l.id) .. ((RG.DropTip and l.act ~= "turnin" and l.act ~= "later") and RG.DropTip(l.id) or "")
             n = n + 1
             y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or "") .. upTag(l.id),
-              { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
+              { single = true, indent = 26, band = true, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
                 onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
                 onRightClick = l.wp and function() RG.Follow(l.wp) end or nil })
           end
         end
-        if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 12, noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
-        -- what comes after this step
-        -- the steps after this one: one with the route under your quests, two with it on top
-        local after = {}
-        for i = 1, #steps do if i ~= firstOpen and not RG.StepIsDone(r, i) and #after < (routeTop and 2 or 1) then after[#after + 1] = i end end
-        for k, nextI in ipairs(after) do
-          local nq, _, nt, np, nl = RG.StepQuestLines(r, nextI, quests)
-          local text = (np or plain(steps[nextI]):sub(1, 40)) .. (nl and (", " .. nl) or "")
-          local names = {}
-          for _, l in ipairs(routeTop and nq or {}) do if #names < 2 and l.act ~= "later" then names[#names + 1] = l.name end end
-          if #names > 0 then text = text .. ": " .. table.concat(names, ", ")
-          elseif nt then text = text .. " (" .. nt .. " quests)" end
-          local label = routeTop and (k == 1 and (GOLD .. "Next|r  ") or "Then  ") or "Then: "
-          n = n + 1
-          y = item(n, y, GREY .. label .. text .. "|r",
-            { single = true, indent = 2, wp = RG.StepWaypoint and RG.StepWaypoint(r, nextI), tip = (k == 1 and "The next step" or "The step after that") .. " of this zone's route" .. (nt and (": " .. nt .. " quests") or "") .. ".\nThe Route tab has every step.\n\n" .. GOLD .. "Click:|r open the route", noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
-        end
-        if RG.TravelSummary then
-          local tip = RG.TravelSummary(r.zone)
-          if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
-        end
-        local u = lastTick(key .. "#")
-        if u then
-          n = n + 1
-          y = item(n, y, GREY .. "Skipped a step|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put it back on your list.\n/wp undo does the same.",
-            onClick = function() RG.UndoTick() end })
-        end
-      elseif not isFolded then
-        local shown = 0
-        for i, text in ipairs(steps) do
-          local done = RG.StepIsDone(r, i)
-          if not done and shown < (routeTop and 3 or 2) then
-            shown = shown + 1
-            n = n + 1
-            local sk = key .. "#" .. i
-            local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
-            if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
-            y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, text) end end,
-              onRightClick = wp and function() RG.Follow(wp) end or nil })
-          end
-        end
-        if shown == 0 and #steps == 0 then
-          n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here; they show up above. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
-        elseif shown == 0 and RG.db.routeStyle == "zone" then
-          n = n + 1; y = item(n, y, GREEN .. "All done in " .. r.zone .. ".|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end,
-            tip = "You chose to stay in the zone you're in: the route won't send you elsewhere. Go to the next zone yourself (below) and it follows you there.\n\n" .. GOLD .. "Click:|r the Route tab" })
-          y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, r) or y
-          n = RG.trackerN or n
-        elseif shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
-        if shown > 0 and RG.TravelSummary then
-          local tip = RG.TravelSummary(r.zone)
-          if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
-        end
-        local u = lastTick(key .. "#")
-        if u then
-          local short = plain(u.text); if #short > 30 then short = short:sub(1, 28) .. "..." end
-          n = n + 1
-          y = item(n, y, GREY .. "Ticked: " .. short .. "|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put this task back on your list.\n" .. GREY .. plain(u.text) .. "\n/wp undo does the same.|r",
-            onClick = function() RG.UndoTick() end })
+        if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 26, band = true, noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+      else
+        -- a hand-written step: what it says, in full
+        if wp and RG.AutoPin then RG.AutoPin(sk, wp) end
+        n = n + 1
+        y = item(n, y, GREY .. full .. "|r", { indent = 22, band = true, wp = wp,
+          tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. tostring(wp[4]) .. " on the map") or ""),
+          onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[cur]) end end,
+          onRightClick = wp and function() RG.Follow(wp) end or nil })
+      end
+      -- the steps after it
+      local shownN, more = 0, 0
+      for i = 1, #steps do
+        if i ~= cur and not RG.StepIsDone(r, i) then
+          if shownN < 4 then shownN = shownN + 1; stepRow(i, "todo") else more = more + 1 end
         end
       end
-      y = gap(y)
+      if more > 0 then
+        n = n + 1; y = item(n, y, GREY .. "+" .. more .. " more step" .. (more == 1 and "" or "s") .. " on the Route tab|r", { single = true, indent = 22, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+      end
+      if RG.TravelSummary then
+        local tip = RG.TravelSummary(r.zone)
+        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { single = true, indent = 2, wp = destWp(r), tip = GOLD .. "Getting there:|r " .. tip .. "\n\nThe quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
+      end
+      -- zone quests: where to go once this zone is done
+      if view == "zone" then
+        local names = {}
+        for _, o in ipairs(nextZones(r, 2)) do names[#names + 1] = o.r.zone end
+        if #names > 0 then
+          n = n + 1; y = item(n, y, GREY .. "When it's done: " .. table.concat(names, " or ") .. "|r", { single = true, indent = 2,
+            tip = "Zone quests keeps to " .. r.zone .. ". When it's done, go to one of these (or pick one at the top of the tracker) and it follows you there." })
+        end
+      end
+    elseif #steps == 0 then
+      n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+    elseif view == "zone" then
+      n = n + 1; y = item(n, y, GREEN .. "All done in " .. r.zone .. ".|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end,
+        tip = "Zone quests keeps to one zone, so it won't send you elsewhere. Go to the next zone yourself (below), or pick one at the top of the tracker, and it follows you there.\n\n" .. GOLD .. "Click:|r the Route tab" })
+      y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, r) or y
+      n = RG.trackerN or n
+    else
+      n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
     end
+    local u = lastTick(key .. "#")
+    if u then
+      local short = oneLine(u.text); if #short > 30 then short = short:sub(1, 28) .. "..." end
+      n = n + 1
+      y = item(n, y, GREY .. "Skipped: " .. short .. "|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put this step back on your list.\n" .. GREY .. oneLine(u.text) .. "\n/wp undo does the same.|r",
+        onClick = function() RG.UndoTick() end })
+    end
+    y = gap(y)
+    if view == "guide" then comingUp(r) end
   end
-  if routeTop then routeSection() end
-  if #quests > 0 then
+  if view == "guide" or view == "zone" then routeSection() end
+  if view == "log" and #quests > 0 then
     local ready = 0
     for _, q in ipairs(quests) do if q.complete then ready = ready + 1 end end
     local isFolded
@@ -1214,8 +1340,10 @@ function RG.RefreshTracker()
         for id in pairs(hiddenQ) do if not inLog[id] then hiddenQ[id] = nil end end
         if next(hiddenQ) == nil then RG.db.trackerHidden = nil; hiddenQ = nil end
       end
+      local dunN = 0
       for _, q in ipairs(quests) do
-        if hiddenQ and hiddenQ[q.id] then hiddenN = hiddenN + 1 else
+        if hiddenQ and hiddenQ[q.id] then hiddenN = hiddenN + 1
+        elseif not q.complete and RG.DungeonQuestHidden and RG.DungeonQuestHidden(q.id, q.zone) then dunN = dunN + 1 else
         local z = q.zone or "Other"
         local g = byZone[z]
         if not g then g = { zone = z, list = {}, here = (z == here) }; byZone[z] = g; groups[#groups + 1] = g end
@@ -1364,13 +1492,18 @@ function RG.RefreshTracker()
         n = n + 1; y = item(n, y, GREY .. hiddenN .. " hidden|r", { single = true, indent = 12, tip = "You hid " .. hiddenN .. " quest" .. (hiddenN == 1 and "" or "s") .. " from the tracker.\n\n" .. GOLD .. "Click:|r show them again",
           onClick = function() RG.db.trackerHidden = nil; RG.RefreshTracker() end })
       end
+      if dunN > 0 then
+        n = n + 1; y = item(n, y, GREY .. dunN .. " dungeon quest" .. (dunN == 1 and "" or "s") .. " hidden  ·  show|r", { single = true, indent = 12,
+          tip = "Quests you can only finish inside a dungeon are left out (the menu at the top of the tracker, or Settings > Route & quests).\n\n" .. GOLD .. "Click:|r show them again",
+          onClick = function() RG.db.dungeonQuests = true; if RG.RouteChanged then RG.RouteChanged() end end })
+      end
       if hidden > 0 then
         n = n + 1; y = item(n, y, GREY .. "+" .. hidden .. " more in your quest log|r", { single = true, indent = 12, onClick = function() if ToggleQuestLog then ToggleQuestLog() end end })
       end
     end
     y = gap(y)
   end
-  -- 2. new quests to pick up nearby (not the ones the route already lists)
+  -- new quests to pick up nearby (not the ones the route already lists)
   do
     local r0 = currentEntry()
     if r0 and #new > 0 then
@@ -1389,7 +1522,7 @@ function RG.RefreshTracker()
     end
     for k = #new, 3, -1 do new[k] = nil end
   end
-  if #new > 0 then
+  if view == "log" and #new > 0 then
     local isFolded
     n = n + 1; y, isFolded = section(n, y, "New quests nearby", "new")
     if not isFolded then
@@ -1406,10 +1539,9 @@ function RG.RefreshTracker()
     end
     y = gap(y)
   end
-  if not routeTop then routeSection() end
   -- 3b. hand-written class chain (paladin): the next step for your level
-  local shownClassSteps = false
-  for _, pr in ipairs(RG.ROUTE) do
+  local shownClassSteps = view == "prof"
+  for _, pr in ipairs(view ~= "prof" and RG.ROUTE or {}) do
     if pr.kind == "pala" and lvl >= pr.from and lvl <= pr.to then
       local pkey = pr.zone .. "|" .. pr.from
       local psteps = RG.STEPS[pkey] or {}
@@ -1506,42 +1638,23 @@ function RG.RefreshTracker()
     end
     y = gap(y)
   end
-  -- 5b. professions: the step you're on and what you're short of
-  if false and RG.Opt("trackerProfs") and RG.ProfNow then   -- professions: the Professions group in the main window
-    local entries = {}
-    for name, k in pairs(RG.Professions and RG.Professions() or {}) do
-      local now = RG.PROFESSIONS and RG.PROFESSIONS[name] and RG.ProfNow(name, k.rank)
-      if now and now.st and not now.done then
-        local text, short, firstShort
-        if now.craft then
-          short = 0
-          for _, e in ipairs(now.mats or {}) do
-            if not e.via and e.short > 0 then short = short + 1; firstShort = firstShort or e end
-          end
-          text = now.craft .. " x" .. (now.left or 0) .. (firstShort and (GREY .. "  ·  " .. firstShort.short .. " more " .. firstShort.name .. (short > 1 and (", +" .. (short - 1)) or "") .. "|r") or (GREEN .. "  ·  ready|r"))
-        else
-          text = (now.st.gather or now.st.skin or (now.st.fish and ("fish in " .. now.st.fish)) or "") .. GREY .. "  ·  to " .. now.st.to .. "|r"
-        end
-        entries[#entries + 1] = { name = name, rank = k.rank, text = text, now = now, order = now.craft and (firstShort and 0 or 1) or 2 }
-      end
+  -- 5b. professions (the menu at the top: Professions): the step you're on in each, and what you're short of
+  if view == "prof" then
+    local entries = RG.ProfEntries and RG.ProfEntries() or {}
+    n = n + 1; y = section(n, y, "Professions", nil, GREY .. #entries .. "|r")
+    if #entries == 0 then
+      n = n + 1; y = item(n, y, GREY .. "No profession to level right now. Learn one at a trainer, or open the Professions page for plans.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("prof") end end })
     end
-    if #entries > 0 then
-      table.sort(entries, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.name < b.name end)
-      local isFolded
-      n = n + 1; y, isFolded = section(n, y, "Professions", "profs", GREY .. #entries .. "|r")
-      if not isFolded then
-        for i = 1, math.min(3, #entries) do
-          local e = entries[i]
-          local places = RG.ProfPlaces and RG.ProfPlaces(e.name, e.now) or {}
-          local pl = places[1]
-          n = n + 1
-          y = item(n, y, "|cffffffff" .. e.name .. " " .. e.rank .. "|r  " .. e.text, { single = true, wp = pl and pl.wp,
-            tip = "|cffffffff" .. e.name .. "|r " .. e.rank .. "\n" .. e.text .. (pl and ("\n\n" .. GOLD .. "Click:|r arrow to " .. (pl.wp and pl.wp[4] or pl.title)) or "") .. "\n" .. GOLD .. "Click:|r open its guide",
-            onClick = function() if RG.ShowProf then RG.ShowProf(e.name) end end })
-        end
-      end
-      y = gap(y)
+    for i = 1, math.min(6, #entries) do
+      local e = entries[i]
+      local pl = e.place
+      n = n + 1
+      y = item(n, y, (isTarget(pl and pl.wp) and ARROW or "") .. "|cffffffff" .. e.name .. " " .. e.rank .. "|r  " .. e.text, { single = true, wp = pl and pl.wp,
+        tip = "|cffffffff" .. e.name .. "|r " .. e.rank .. "\n" .. e.text .. (pl and ("\n\n" .. GOLD .. "Click:|r arrow to " .. (pl.wp and pl.wp[4] or pl.title or "it")) or "") .. "\n" .. GOLD .. "Right-click:|r open its guide",
+        onRightClick = function() if RG.ShowProf then RG.ShowProf(e.name) end end,
+        onClick = (not pl or not pl.wp) and function() if RG.ShowProf then RG.ShowProf(e.name) end end or nil })
     end
+    y = gap(y)
   end
   -- 6. reminders: the most important few
   local rem = {}   -- reminders: in the main window and as pop-ups
@@ -1580,6 +1693,104 @@ function RG.RefreshTracker()
   if RG.TrackerFinish then RG.TrackerFinish(y) else tr.body:SetHeight(math.max(10, y)); tr:SetHeight(60 + y + 14) end
 end
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- The menu at the top of the tracker, and the zone picker of zone quests (Smart.lua keeps the choices)
+-- ---------------------------------------------------------------------------------------------------------------------
+local DOT = "|TInterface\\AddOns\\Waypath\\Media\\Disc:10:10:0:0|t  "
+local RING = "|TInterface\\AddOns\\Waypath\\Media\\Ring:10:10:0:0|t  "
+local BOX_ON = "|TInterface\\Buttons\\UI-CheckBox-Check:16:16:0:0|t "
+local BOX_OFF = "|TInterface\\Buttons\\UI-CheckBox-Up:16:16:0:0|t "
+function RG.TrackerModeMenu(anchor)
+  local view = RG.TrackerView()
+  local function pick(v, name, about)
+    local on = view == v
+    return { (on and DOT or RING) .. (on and GOLD or "|cffffffff") .. name .. "|r" .. GREY .. "   " .. about .. "|r", function() RG.SetTrackerView(v) end }
+  end
+  local dun, det = RG.DungeonQuestsOn(), RG.Opt("stepView")
+  RG.ShowMenu({
+    { "Leveling", head = true },
+    pick("guide", "Ordered guide", "the route, zone by zone"),
+    pick("zone", "Zone quests", "one zone's route: yours, or pick one"),
+    pick("log", "My quest log", "only the quests you have"),
+    { "Other", head = true },
+    pick("prof", "Professions", "your plans, step by step"),
+    { RING .. "Dungeon quests   (coming later)", off = true },
+    { " ", head = true },
+    { (dun and BOX_ON or BOX_OFF) .. "Dungeon quests" .. GREY .. (dun and "   included" or "   left out") .. "|r", function()
+      RG.db.dungeonQuests = not dun
+      if RG.RouteChanged then RG.RouteChanged() end
+    end },
+    { (det and BOX_ON or BOX_OFF) .. "Step details" .. GREY .. "   the mob, drops and why|r", function() RG.db.stepView = not det; RG.RefreshTracker() end },
+  }, nil, anchor)
+end
+
+-- zone quests: the zone you're in, or one of the route's zones near your level (picked until you log out)
+function RG.TrackerZoneMenu(anchor)
+  local lvl = UnitLevel and UnitLevel("player") or 1
+  local zn, picked = RG.FollowZone()
+  local here = RG.ZoneName() or ""
+  local e = { { "Zone quests: which zone?", head = true },
+    { (not picked and DOT or RING) .. (not picked and GOLD or "|cffffffff") .. "The zone I'm in|r" .. GREY .. (here ~= "" and ("   " .. here .. " now") or "") .. "|r", function() RG.SetZonePick(nil) end } }
+  local byZone, list = {}, {}
+  for _, r in ipairs(RG.ROUTE or {}) do
+    if r.kind == "zone" and r.to >= lvl - 6 and r.from <= lvl + 6 then
+      local z = byZone[r.zone]
+      if not z then z = { zone = r.zone, from = r.from, to = r.to, done = 0, total = 0 }; byZone[r.zone] = z; list[#list + 1] = z end
+      z.from, z.to = math.min(z.from, r.from), math.max(z.to, r.to)
+      local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
+      z.total = z.total + #steps
+      for i = 1, #steps do if RG.StepIsDone(r, i) then z.done = z.done + 1 end end
+    end
+  end
+  table.sort(list, function(a, b) if a.from ~= b.from then return a.from < b.from end return a.zone < b.zone end)
+  local band
+  for i, z in ipairs(list) do
+    if i > 18 then break end
+    local b = math.floor(z.from / 10) * 10
+    if b ~= band then band = b; e[#e + 1] = { "Levels " .. b .. "-" .. (b + 10), head = true } end
+    local on = picked and zn == z.zone
+    local pct = z.total > 0 and math.floor(z.done / z.total * 100 + 0.5) or nil
+    e[#e + 1] = { (on and DOT or RING) .. (on and GOLD or (pct == 100 and GREY or "|cffffffff")) .. z.zone .. "|r" .. GREY .. "  " .. z.from .. "-" .. z.to ..
+      (pct and (pct == 100 and "   done" or ("   " .. pct .. "%")) or "") .. (z.zone == here and "   (here)" or "") .. "|r",
+      function() RG.SetZonePick(z.zone) end }
+  end
+  RG.ShowMenu(e, nil, anchor)
+end
+
+-- Your professions' next steps: { { name, rank, text, place = { title, wp } }, ... }, ones short of materials first
+function RG.ProfEntries()
+  local entries = {}
+  if not (RG.ProfNow and RG.Professions) then return entries end
+  for name, k in pairs(RG.Professions() or {}) do
+    local now = RG.PROFESSIONS and RG.PROFESSIONS[name] and RG.ProfNow(name, k.rank)
+    if now and now.st and not now.done then
+      local text, short, firstShort
+      if now.craft then
+        short = 0
+        for _, e in ipairs(now.mats or {}) do
+          if not e.via and e.short > 0 then short = short + 1; firstShort = firstShort or e end
+        end
+        text = now.craft .. " x" .. (now.left or 0) .. (firstShort and (GREY .. "  ·  " .. firstShort.short .. " more " .. firstShort.name .. (short > 1 and (", +" .. (short - 1)) or "") .. "|r") or (GREEN .. "  ·  ready|r"))
+      else
+        text = (now.st.gather or now.st.skin or (now.st.fish and ("fish in " .. now.st.fish)) or "") .. GREY .. "  ·  to " .. now.st.to .. "|r"
+      end
+      local places = RG.ProfPlaces and RG.ProfPlaces(name, now) or {}
+      entries[#entries + 1] = { name = name, rank = k.rank, text = text, now = now, place = places[1], order = now.craft and (firstShort and 0 or 1) or 2 }
+    end
+  end
+  table.sort(entries, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.name < b.name end)
+  return entries
+end
+-- the professions view's current step (the card under the tracker's header, StepView.lua)
+function RG.ProfFocus()
+  local e = RG.ProfEntries()[1]
+  if not e then return nil end
+  local second = RG.ProfEntries()[2]
+  return { verb = e.now.craft and "Make" or "Gather", title = e.name .. " " .. e.rank, line = e.text, wp = e.place and e.place.wp,
+    where = e.place and (e.place.title .. (e.place.sub and (", " .. e.place.sub) or "")) or nil,
+    why = "Professions: the step you're on in " .. e.name .. ".", next = second and (second.name .. " " .. second.rank) or nil }
+end
+
 -- Where the tracker is: always by its top-right corner, so folding and unfolding grows and shrinks it downwards
 -- (the game's own drag can leave it anchored by its middle or bottom).
 function RG.TrackerSavePos()
@@ -1615,7 +1826,8 @@ table.insert(RG.OPTIONS, { key = "trackerLocked", label = "Lock the tracker in p
 table.insert(RG.OPTIONS, { key = "trackerProfs", label = "Show your professions' next step and missing materials on the tracker", default = true })
 table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = false })
 table.insert(RG.OPTIONS, { key = "trackerCombatFold", label = "Fold the tracker to one line during combat", default = true })
-table.insert(RG.OPTIONS, { key = "trackerRouteTop", label = "Route steps at the top of the tracker: the step you're on and the next two, above your quests", default = true })
+table.insert(RG.OPTIONS, { key = "dungeonQuests", label = "Dungeon quests: include quests you can only finish inside a dungeon in the guide, zone quests and your quest log", default = true })
+table.insert(RG.OPTIONS, { key = "smart", label = "Smart zone order: the ordered guide picks the zone that suits your level, where you are and your quest log", default = true })
 local fade = CreateFrame("Frame")
 fade:RegisterEvent("PLAYER_REGEN_DISABLED"); fade:RegisterEvent("PLAYER_REGEN_ENABLED")
 fade:SetScript("OnEvent", function(_, event)

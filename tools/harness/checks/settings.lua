@@ -87,43 +87,89 @@ return {
       local before = RG.Opt("trackerLocked")
       if row then row.onClick(row); T.step(1) end
       T.ok(RG.Opt("trackerLocked") ~= before, "clicking it flips it")
-      -- route style cards
+      -- what to follow: three cards
       RG.db.routeGuide = true
       openSettings(T, "Route & quests")
-      T.ok(page(T):find("Stay in this zone", 1, true), "the route styles are explained")
-      local stay = button(T, "t", "Stay in this zone")
-      if stay then click(stay); T.step(1) end
-      T.eq(RG.db.routeStyle, "zone", "clicking Stay in this zone picks it")
-      local guided = button(T, "t", "Guided")
-      if guided then click(guided); T.step(1) end
-      T.eq(RG.db.routeStyle, "guided", "clicking Guided picks it")
-      T.ok(RG.db.smart == false, "and the smart route is off")
+      T.ok(page(T):find("Zone quests", 1, true) and page(T):find("My quest log", 1, true), "the three things to follow are explained")
+      local zq = button(T, "t", "Zone quests")
+      if zq then click(zq); T.step(1) end
+      T.eq(RG.RouteMode(), "zone", "clicking Zone quests picks it")
+      local guide = button(T, "t", "Ordered guide")
+      if guide then click(guide); T.step(1) end
+      T.eq(RG.RouteMode(), "guide", "clicking Ordered guide picks it")
+      T.ok(page(T):find("Smart zone order", 1, true), "with the smart zone order beside it")
+      T.ok(page(T):find("Dungeon quests", 1, true), "and dungeon quests to include or leave out")
+      local out = button(T, "t", "Leave out")
+      if out then click(out); T.step(1) end
+      T.ok(not RG.DungeonQuestsOn(), "clicking Leave out leaves dungeon quests out")
     end,
   },
   {
-    name = "tracker-route-on-top",
-    about = "with the leveling route on, the route's step is above your quests, with the next steps; turned off, it's below them",
+    name = "tracker-follows-mode",
+    about = "the ordered guide and zone quests show the route (no quest list); my quest log shows your quests (no route); the menu at the top switches",
     race = "Orc", class = "WARRIOR", level = 1,
     run = function(T)
       local RG = T.RG
       RG.db.routeGuide = true; RG.db.trackerMore = true
       T.accept(4641)   -- Your Place In The World
       T.step(2)
-      local function where()
-        local route, quests
-        for i, t in ipairs(T.tracker()) do
-          local l = clean(t):lower()
-          if not route and l:find("route:", 1, true) then route = i end
-          if not quests and l:find("^%-?%s*quests") then quests = i end
-        end
-        return route, quests
+      local function has(pat) for _, t in ipairs(T.tracker()) do if clean(t):lower():find(pat) then return true end end return false end
+      RG.SetRouteMode("guide", true); T.step(2)
+      T.ok(has("^[%-%+] route · "), "the guide shows the route: " .. table.concat(T.tracker(), " | "))
+      T.ok(not has("^[%-%+] quests"), "and not your quest list")
+      T.ok(T.trackerFind("Ordered guide"), "the header says what it follows")
+      T.ok(T.trackerFind("Your Place In The World"), "the step you're on lists its quests")
+      RG.SetRouteMode("log", true); T.step(2)
+      T.ok(has("^[%-%+] quests"), "my quest log shows your quests: " .. table.concat(T.tracker(), " | "))
+      T.ok(not has("^[%-%+] route · "), "and not the route")
+      RG.SetRouteMode("zone", true); T.step(2)
+      T.ok(has("^[%-%+] route · valley of trials"), "zone quests shows the route of the zone you're in: " .. table.concat(T.tracker(), " | "))
+      -- the menu at the top: Professions, then back
+      local tr = T.W.G.WaypathTracker
+      T.ok(tr and tr.modeBtn and tr.modeBtn:IsVisible(), "the menu button is at the top")
+      RG.SetTrackerView("prof"); T.step(2)
+      T.eq(RG.TrackerView(), "prof", "the menu can show professions")
+      T.ok(T.trackerFind("Professions"), "and the tracker says so")
+      RG.SetTrackerView("guide"); T.step(2)
+      T.eq(RG.TrackerView(), "guide", "and goes back to the guide")
+    end,
+  },
+  {
+    name = "zone-pick-resets-at-login",
+    about = "zone quests can keep to a zone you pick; it lasts through /reload and resets when you log in",
+    race = "Orc", class = "WARRIOR", level = 12,
+    run = function(T)
+      local RG = T.RG
+      RG.db.routeGuide = true
+      RG.SetZonePick("The Barrens"); T.step(1)
+      T.eq(RG.RouteMode(), "zone", "picking a zone switches to zone quests")
+      local z, picked = RG.FollowZone()
+      T.ok(z == "The Barrens" and picked, "it follows the zone you picked (" .. tostring(z) .. ")")
+      local r = RG.CurrentRouteEntry()
+      T.eq(r and r.zone, "The Barrens", "and the route is that zone's")
+      T.W.fire("PLAYER_ENTERING_WORLD", false, true); T.step(1)
+      T.eq(RG.db.zonePick, "The Barrens", "a /reload keeps it")
+      T.W.fire("PLAYER_ENTERING_WORLD", true, false); T.step(1)
+      T.eq(RG.db.zonePick, nil, "logging in resets it")
+    end,
+  },
+  {
+    name = "dungeon-quests-left-out",
+    about = "a dungeon quest from the data counts as one, is included by default and is left out once the option is off",
+    race = "Orc", class = "WARRIOR", level = 20,
+    run = function(T)
+      local RG = T.RG
+      local id
+      for _, dq in pairs(RG.DUNGEON_QUESTS or {}) do
+        for _, q in ipairs(dq.quests or {}) do if q.id and not id and RG.QDATA and RG.QDATA[q.id] then id = q.id end end
       end
-      local route, quests = where()
-      T.ok(route and quests and route < quests, "the route is above the quests (route at " .. tostring(route) .. ", quests at " .. tostring(quests) .. "): " .. table.concat(T.tracker(), " | "))
-      T.ok(T.trackerFind("Next"), "and says what's next")
-      RG.db.trackerRouteTop = false; RG.RefreshTracker(); T.step(2)
-      route, quests = where()
-      T.ok(route and quests and route > quests, "turned off, the route is under the quests (route at " .. tostring(route) .. ", quests at " .. tostring(quests) .. ")")
+      T.ok(id, "there's a dungeon quest in the data")
+      if not id then return end
+      T.ok(RG.IsDungeonQuest(id), "it counts as a dungeon quest")
+      T.ok(not RG.DungeonQuestHidden(id), "included by default")
+      RG.db.dungeonQuests = false
+      T.ok(RG.DungeonQuestHidden(id), "left out once the option is off")
+      RG.db.dungeonQuests = nil
     end,
   },
 }

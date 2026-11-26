@@ -111,7 +111,7 @@ function RG.SmartRankNow()
   local out = {}
   for _, r in ipairs(RG.ROUTE or {}) do
     local isZone, isDungeon = r.kind == "zone", r.kind == "dungeon"
-    if (isZone or (isDungeon and group)) and lvl >= r.from - 1 and lvl <= r.to then
+    if (isZone or (isDungeon and group and RG.DungeonQuestsOn())) and lvl >= r.from - 1 and lvl <= r.to then
       local open, total, inLog = workOf(r, logIds)
       if open > 0 or isDungeon then
         local mid = (r.from + r.to) / 2
@@ -137,10 +137,10 @@ function RG.SmartRankNow()
   return out
 end
 
--- The pick for the tracker; nil when smart mode is off or nothing fits (the guided route then decides).
+-- The pick for the tracker; nil when the smart zone order is off or nothing fits (the route's order then decides).
 local STAY = 1.5   -- how much better another zone must score before you're sent away from the one you're working on
 function RG.SmartEntry()
-  if not RG.db or RG.db.smart == false or RG.db.routeStyle == "guided" then return nil end
+  if not RG.db or RG.db.smart == false then return nil end
   local list = RG.SmartRank()
   -- finish the zone you're working on while it still has something you can do now (the list only has entries with
   -- work), unless another zone is much better for you (a wide zone like Stranglethorn mustn't hold you while the
@@ -166,26 +166,112 @@ function RG.SmartAlternatives(skip)
   return out
 end
 
--- The route style: "smart", "guided" or "zone" (stay in the zone you're in). Quiet: no chat line.
-function RG.SetRouteStyle(style, quiet)
-  if style ~= "guided" and style ~= "zone" then style = "smart" end
-  RG.db.routeStyle = style
-  RG.db.smart = style ~= "guided"
-  RG.db.smartKey = nil
-  if not quiet then
-    RG.Print(({ smart = "Smart route: the tracker picks the best zone for where you are and your level.",
-      guided = "Guided route: the tracker follows the route in order.",
-      zone = "Route: staying in the zone you're in. It won't send you to another zone; go there yourself and it follows." })[style])
+-- ---------------------------------------------------------------------------------------------------------------------
+-- What the tracker follows (the menu at its top, Settings > Route & quests, /wp route):
+--   "guide"  the ordered guide: the route, zone by zone (RG.db.smart: the smart zone order picks the zone)
+--   "zone"   zone quests: one zone's route, the zone you're in or one you picked (RG.db.zonePick, until you log out)
+--   "log"    my quest log: only the quests you have
+-- Without the leveling route on, it's always your quest log. The tracker can also show your professions instead
+-- (RG.db.trackerView = "prof"); picking one of the three goes back to it.
+-- ---------------------------------------------------------------------------------------------------------------------
+function RG.RouteMode()
+  local db = RG.db
+  if not db then return "log" end
+  local s = db.routeStyle
+  if s == "smart" or s == "guided" then   -- (saved by an older version: Smart and Guided are the ordered guide now)
+    if s == "guided" then db.smart = false end
+    db.routeStyle, s = "guide", "guide"
   end
+  if not (RG.Opt and RG.Opt("routeGuide")) then return "log" end
+  if s == "zone" or s == "log" then return s end
+  return "guide"
+end
+function RG.TrackerView()
+  if RG.db and RG.db.trackerView == "prof" then return "prof" end
+  return RG.RouteMode()
+end
+local MODE_NAME = { guide = "Ordered guide", zone = "Zone quests", log = "My quest log", prof = "Professions" }
+function RG.ModeName(m) return MODE_NAME[m or RG.TrackerView()] or "Waypath+" end
+
+local function changed()
+  if RG.ForgetNextStep then RG.ForgetNextStep() end
+  if RG.MarkObjectiveDirty then RG.MarkObjectiveDirty() end
   if RG.RefreshTracker then RG.RefreshTracker() end
+  if RG.RefreshStepView then pcall(RG.RefreshStepView) end
   if RG.RefreshUI then RG.RefreshUI() end
 end
+RG.RouteChanged = changed
 
-function RG.SmartToggle(on)
-  RG.db.smart = on
-  RG.db.routeStyle = on and "smart" or "guided"
+function RG.SetRouteMode(mode, quiet)
+  if mode ~= "zone" and mode ~= "log" then mode = "guide" end
+  RG.db.routeStyle = mode
+  RG.db.smartKey, RG.db.trackerView = nil, nil
+  -- the guide and zone quests need the leveling route: picking one turns it on
+  if mode ~= "log" and not RG.Opt("routeGuide") then RG.db.routeGuide = true end
+  if not quiet then
+    RG.Print(({ guide = "Ordered guide: the tracker follows the route, zone by zone" .. (RG.db.smart == false and ", in its order." or " (the smart zone order picks the zone that suits you best)."),
+      zone = "Zone quests: the tracker follows one zone's route (" .. (RG.FollowZone() or "the zone you're in") .. "). Pick another zone at the top of the tracker.",
+      log = "My quest log: the tracker follows only the quests you have." })[mode])
+  end
+  changed()
+end
+-- (older name) "smart" and "guided" are the ordered guide with the smart zone order on or off
+function RG.SetRouteStyle(style, quiet)
+  if style == "smart" or style == "guided" then RG.db.smart = style == "smart"; style = "guide" end
+  RG.SetRouteMode(style, quiet)
+end
+function RG.SetTrackerView(view)
+  if view == "prof" then RG.db.trackerView = "prof"; changed() else RG.SetRouteMode(view, true) end
+end
+
+-- The smart zone order (the ordered guide picks the zone that suits your level, where you are and your quest log)
+function RG.SmartToggle(on, quiet)
+  RG.db.smart = on and true or false
   RG.db.smartKey = nil
-  RG.Print((on and "Smart route on: the tracker picks the best zone for where you are and your level." or "Smart route off: the tracker follows the route in order.") )
-  if RG.RefreshTracker then RG.RefreshTracker() end
-  if RG.RefreshUI then RG.RefreshUI() end
+  if not quiet then RG.Print(on and "Smart zone order on: the guide picks the zone that suits you best." or "Smart zone order off: the guide follows the route in its order.") end
+  changed()
+end
+
+-- Zone quests: the zone it follows. The one you picked (until you log out), else the one you're in. Second value:
+-- true when you picked it.
+function RG.FollowZone()
+  local p = RG.db and RG.db.zonePick
+  if p and p ~= "" then return p, true end
+  return RG.ZoneName and RG.ZoneName() or nil, false
+end
+function RG.SetZonePick(zone)
+  if zone == "" then zone = nil end
+  RG.db.zonePick = zone
+  if zone and RG.RouteMode() ~= "zone" then RG.SetRouteMode("zone", true) else changed() end
+end
+do   -- a picked zone lasts until you log out (a /reload keeps it)
+  local f = CreateFrame("Frame")
+  f:RegisterEvent("PLAYER_ENTERING_WORLD")
+  f:SetScript("OnEvent", function(_, _, isLogin) if isLogin and RG.db then RG.db.zonePick = nil end end)
+end
+
+-- Dungeon quests: ones you can only finish inside a dungeon (the quests our data files under a dungeon, and any your
+-- quest log files under one). Settings, or the menu at the top of the tracker, can leave them out.
+function RG.DungeonQuestsOn() return not RG.Opt or RG.Opt("dungeonQuests") ~= false end
+local dqIds, dqZones
+function RG.IsDungeonQuest(id, zone)
+  if not dqIds then
+    dqIds, dqZones = {}, {}
+    -- (the quest log files a dungeon's quests under the dungeon: these names, plus the route's own)
+    for _, name in ipairs({ "Ragefire Chasm", "Wailing Caverns", "The Deadmines", "Deadmines", "Shadowfang Keep", "The Stockade",
+      "Stormwind Stockade", "Blackfathom Deeps", "Gnomeregan", "Razorfen Kraul", "Scarlet Monastery", "Razorfen Downs", "Uldaman",
+      "Zul'Farrak", "Maraudon", "The Temple of Atal'Hakkar", "Sunken Temple", "Blackrock Depths", "Blackrock Spire",
+      "Lower Blackrock Spire", "Upper Blackrock Spire", "Stratholme", "Scholomance", "Dire Maul", "Molten Core", "Onyxia's Lair",
+      "Blackwing Lair", "Zul'Gurub", "Ruins of Ahn'Qiraj", "Temple of Ahn'Qiraj", "Ahn'Qiraj", "Naxxramas" }) do dqZones[name] = true end
+    for name, dq in pairs(RG.DUNGEON_QUESTS or {}) do
+      dqZones[name] = true
+      for _, q in ipairs(dq.quests or {}) do if q.id then dqIds[q.id] = true end end
+    end
+    for _, r in ipairs(RG.ROUTE or {}) do if r.kind == "dungeon" then dqZones[r.zone] = true end end
+  end
+  return (id and dqIds[id]) or (zone and dqZones[zone]) or false
+end
+-- left out: true for a dungeon quest while they're left out
+function RG.DungeonQuestHidden(id, zone)
+  return not RG.DungeonQuestsOn() and RG.IsDungeonQuest(id, zone) and true or false
 end

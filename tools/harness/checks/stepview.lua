@@ -1,4 +1,5 @@
--- The step view (StepView.lua) and drop rates in the tracker's tooltips.
+-- The current step (StepView.lua: the card under the tracker's header, with its details) and drop rates in the
+-- tracker's tooltips.
 local function texts(T, frame)
   local out = {}
   for _, t in ipairs(T.W.visibleTexts(frame)) do out[#out + 1] = (tostring(t):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T.-|t", "")) end
@@ -33,7 +34,7 @@ return {
   },
   {
     name = "step-view-shows-step",
-    about = "with the step view on, it explains the quest you're doing, how often its item drops and what to look for",
+    about = "with step details on, the current step explains the quest you're doing, how often its item drops and what to look for",
     race = "Human", class = "MAGE", level = 12,
     run = function(T)
       T.RG.db.stepView = true
@@ -42,7 +43,8 @@ return {
       T.go(T.Wd.objectiveSpot(102))   -- out among the gnolls
       T.RG.Objective(true); T.RG.RefreshStepView(); T.step(1)
       local f = T.W.G.WaypathStepView
-      T.ok(f and f:IsShown(), "the step view is on screen")
+      T.ok(f and f:IsShown(), "the current step is on screen")
+      T.ok(f and f:GetParent() == T.W.G.WaypathTracker, "it's part of the tracker, not a window of its own")
       if not (f and f:IsShown()) then return end
       local all = texts(T, f)
       T.ok(all:find("Patrolling Westfall", 1, true), "it names the quest")
@@ -52,14 +54,16 @@ return {
       -- the distance shows once (in the header)
       local _, n = all:gsub("%d+ yd", "")
       T.eq(n, 1, "the distance is shown once")
-      -- off again: gone
-      T.RG.db.stepView = false; T.RG.RefreshStepView()
-      T.ok(not f:IsShown(), "turned off, it's gone")
+      -- details off: the step stays, the picture and the drop rates go
+      T.RG.db.stepView = false; T.RG.RefreshTracker(); T.step(1)
+      T.ok(f:IsShown(), "with details off, the current step is still there")
+      T.ok(not f.pic:IsShown(), "without its picture")
+      T.ok(not texts(T, f):find("Drops %d+%% from"), "or its drop rates")
     end,
   },
   {
     name = "step-view-skip",
-    about = "the step view's Skip moves on from the current step",
+    about = "the current step's Skip moves on from it",
     race = "Human", class = "MAGE", level = 12,
     run = function(T)
       T.RG.db.stepView = true

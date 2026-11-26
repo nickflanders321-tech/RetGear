@@ -118,7 +118,7 @@ return {
   },
   {
     name = "route-stays-in-zone",
-    about = "route style \"zone\": the route follows the zone you're in, and a finished zone suggests the next ones",
+    about = "zone quests: the route follows the zone you're in, and a finished zone suggests the next ones",
     race = "Orc", class = "WARRIOR", level = 10,
     run = function(T)
       T.RG.db.routeGuide = true; T.RG.db.routeStyle = "zone"; T.RG.db.trackerMore = true   -- (every section open)
@@ -135,9 +135,6 @@ return {
       T.RG.RefreshTracker(); T.step(1)
       T.ok(T.trackerFind("All done in Durotar"), "the tracker says the zone is done")
       T.ok(T.trackerFind("^Next: "), "and suggests where to go next")
-      T.RG.db.trackerMore = false; T.RG.RefreshTracker(); T.step(1)
-      T.ok(T.trackerFind("Route: done: next "), "folded into the \"+ More\" row, it still says where next")
-      T.RG.db.trackerMore = true
       -- a city (no route steps): says so
       T.go({ 1454, 50.0, 50.0 })
       T.RG.RefreshTracker(); T.step(1)

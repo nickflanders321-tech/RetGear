@@ -209,11 +209,12 @@ local function buildPages()
     local bs, x, row = {}, 0, 0
     local about
     for _, o in ipairs(opts) do if o[3] then about = text(pp, "GameFontHighlightSmall", "", W - 70); about:SetTextColor(0.79, 0.75, 0.66) break end end
-    local function pickIt(v)
-      RG.db[key] = v
+    -- (what the tracker follows goes through Smart.lua, and only when you click: showing the page changes nothing)
+    local function pickIt(v, shown)
+      if key ~= "routeStyle" then RG.db[key] = v
+      elseif not shown and RG.SetRouteMode then RG.SetRouteMode(v, true) end
       for k, b in pairs(bs) do b:SetPicked(k == v) end
       if about then for _, o in ipairs(opts) do if o[1] == v then about:SetText(o[3] or "") end end end
-      if key == "routeStyle" then RG.db.smart = v ~= "guided"; RG.db.smartKey = nil; if RG.RefreshTracker then RG.RefreshTracker() end end
     end
     for _, o in ipairs(opts) do
       local b = RG.ThemeButton(pp)
@@ -226,16 +227,16 @@ local function buildPages()
     end
     if about then about:SetPoint("TOPLEFT", 0, sy - 48 - row * 28); sy = sy - 16 end
     sy = sy - row * 28
-    table.insert(pp.refreshers, function() pickIt(RG.db[key] or default) end)
+    table.insert(pp.refreshers, function() pickIt((key == "routeStyle" and RG.RouteMode and RG.RouteMode()) or RG.db[key] or default, true) end)
     sy = sy - 62
   end
   segment("What matters most?", "goal", { { "fast", "Level fast" }, { "balanced", "Balanced" }, { "scenic", "Enjoy the zones" } }, "balanced")
   segment("Solo or with others?", "playStyle", { { "solo", "Solo only" }, { "group", "Open to dungeons and groups" } }, "solo")
   segment("Travel", "travel", { { "any", "Use boats, zeppelins and hearth" }, { "walk", "Keep travel short" } }, "any")
-  segment("Route style", "routeStyle", {
-    { "smart", "Smart", "Picks the best zone for you now: where you are, your level and the quests you have." },
-    { "guided", "Guided", "Follows the route in its written order, zone after zone, like a written guide." },
-    { "zone", "Stay in this zone", "Only the zone you're in: it never sends you elsewhere, and suggests where next when it's done." } }, "smart")
+  segment("What to follow", "routeStyle", {
+    { "guide", "Ordered guide", "The full route, zone by zone, with every step (the leveling route turns on)." },
+    { "zone", "Zone quests", "One zone's route: the zone you're in, or one you pick at the top of the tracker." },
+    { "log", "My quest log", "Only the quests you have; new ones join as you pick them up." } }, "log")
   segment("Your role", "role", { { "dps", "Damage" }, { "tank", "Tank" }, { "heal", "Healer" } }, "dps")
   local why = text(pp, "GameFontHighlightSmall", GREY .. "Waypath+ uses these to choose routes, gear and dungeon steps. Change them any time with /wp setup.|r", W - 70)
   why:SetPoint("TOPLEFT", 0, sy)

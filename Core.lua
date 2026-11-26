@@ -1079,6 +1079,20 @@ function RG.ZoneName()
     local ok, _, _, _, _, _, _, _, iid = pcall(GetInstanceInfo)
     if ok and iid and INSTANCE_EN[iid] then res = INSTANCE_EN[iid] end
   elseif C_Map and C_Map.GetBestMapForUnit then
+    local z = RG.MapZone(C_Map.GetBestMapForUnit("player"))
+    if z then res = z end
+  end
+  zoneT, zoneV = now, res
+  return res
+end
+
+-- The route's name for the zone a map is in (a cave or a town's map counts as its zone), or nil.
+local zoneOfMap = {}
+function RG.MapZone(m)
+  if not (m and C_Map) then return nil end
+  local hit = zoneOfMap[m]
+  if hit ~= nil then return hit or nil end
+  do
     if not mapToZone then
       -- ZONE_MAPS also names places inside a zone (Ratchet, Auberdine, Valanaar...) with the zone's map: for each map,
       -- the route's zone name wins, then the map's own name, then the first alphabetically (pairs() order is random,
@@ -1100,20 +1114,19 @@ function RG.ZoneName()
           if a < b or (a == b and z < cur) then mapToZone[m] = z end
         end
       end
-      for m, z in pairs(CITY_EN) do mapToZone[m] = z end
-    end
-    local m = C_Map.GetBestMapForUnit("player")
-    local guard = 0
-    while m and guard < 6 do
-      guard = guard + 1
-      if mapToZone[m] then res = mapToZone[m]; break end
-      local info = C_Map.GetMapInfo and C_Map.GetMapInfo(m)
-      m = info and info.parentMapID
-      if info and info.mapType and info.mapType <= 2 then break end   -- (reached the continent: not a listed zone)
+      for mm, z in pairs(CITY_EN) do mapToZone[mm] = z end
     end
   end
-  zoneT, zoneV = now, res
-  return res
+  local res, cur, guard = false, m, 0
+  while cur and guard < 6 do
+    guard = guard + 1
+    if mapToZone[cur] then res = mapToZone[cur]; break end
+    local info = C_Map.GetMapInfo and C_Map.GetMapInfo(cur)
+    cur = info and info.parentMapID
+    if info and info.mapType and info.mapType <= 2 then break end   -- (reached the continent: not a listed zone)
+  end
+  zoneOfMap[m] = res
+  return res or nil
 end
 
 -- Which of the game's quest objectives is our objective #k? By its text (English clients), or else by position
@@ -1380,16 +1393,17 @@ SlashCmdList.WAYPATH = function(msg)
     elseif rest == "off" or rest == "on" then RG.db.trail = (rest == "on"); RG.Print("Learned paths " .. rest .. ".")
     elseif rest == "export" or rest == "import" then RG.ShowTrailBox(rest)
     else RG.Print("Learned paths: " .. (RG.TrailSize and RG.TrailSize() or 0) .. " points remembered. /wp trail off | on | reset | export | import") end
-  elseif cmd == "route" and (rest == "smart" or rest == "guided" or rest == "zone" or rest == "") then
-    -- route style: smart (best zone for you now), guided (the route in order), zone (stay in the zone you're in)
-    if rest == "" then RG.Print("Route style: " .. tostring(RG.db.routeStyle or "smart") .. ". /wp route smart | guided | zone") return end
-    if rest == "zone" then RG.db.routeStyle = "zone"; RG.db.smartKey = nil
-      RG.Print("Route: staying in the zone you're in. It won't send you to another zone; go there yourself and it follows.")
-      if RG.RefreshTracker then RG.RefreshTracker() end
-      if RG.RefreshUI then RG.RefreshUI() end
-    elseif RG.SmartToggle then RG.SmartToggle(rest == "smart") end
+  elseif cmd == "route" and (rest == "guide" or rest == "smart" or rest == "guided" or rest == "zone" or rest == "log" or rest == "") then
+    -- what the tracker follows: guide (the route in order; smart / guided: with the smart zone order on or off),
+    -- zone (one zone's route) or log (only your quests)
+    if rest == "" then
+      RG.Print("Following: " .. (RG.ModeName and RG.ModeName(RG.RouteMode()) or "?") .. (RG.RouteMode() == "guide" and (RG.db.smart == false and " (in order)" or " (smart zone order)") or "") ..
+        ". /wp route guide | zone | log  ·  /wp route smart | guided: the guide with the smart zone order on or off")
+      return
+    end
+    if RG.SetRouteStyle then RG.SetRouteStyle(rest == "guide" and "guide" or rest) end
   elseif cmd == "smart" then
-    if RG.SmartToggle then RG.SmartToggle(rest == "on" or (rest ~= "off" and (RG.db.smart == false or RG.db.routeStyle == "guided"))) end
+    if RG.SmartToggle then RG.SmartToggle(rest == "on" or (rest ~= "off" and RG.db.smart == false)) end
   elseif cmd == "weight" then
     local stat, val = rest:match("^(%S+)%s+([%d%.]+)$")
     stat = stat and stat:upper()
@@ -1422,7 +1436,7 @@ SlashCmdList.WAYPATH = function(msg)
     RG.Print("Commands (type /wp on its own to open the guide):")
     for _, line in ipairs({
       "|cffffd100Guide|r  /wp  ·  /wp setup  ·  /wp settings  ·  /wp tracker",
-      "|cffffd100Questing|r  /wp next  ·  /wp plan  ·  /wp near  ·  /wp why  ·  /wp goto 45 60 Name  ·  /wp minimal  ·  /wp undo  ·  /wp route zone  ·  /wp stepview  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
+      "|cffffd100Questing|r  /wp next  ·  /wp plan  ·  /wp near  ·  /wp why  ·  /wp goto 45 60 Name  ·  /wp minimal  ·  /wp undo  ·  /wp route guide | zone | log  ·  /wp details  ·  /wp way 45 60  ·  /wp auto  ·  /wp pace  ·  /wp session",
       "|cffffd100Tabs|r  /wp group  ·  /wp heal  ·  /wp fish  ·  /wp camp  ·  /wp gold  ·  /wp mail  ·  /wp fp  ·  /wp log",
       "|cffffd100Group|r  /wp lfg Scarlet Monastery",
       "|cffffd100Auction House|r  /wp scan  ·  /wp autoscan  ·  /wp track [item]  ·  /wp untrack [item]  ·  /wp alert [item] 25",

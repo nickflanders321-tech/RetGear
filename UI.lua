@@ -2915,11 +2915,11 @@ local function accentCode() return string.format("|cff%02x%02x%02x", math.floor(
 -- a short name and one line on what it does; the option's own (longer) label is the tooltip
 local SETTING_TEXT = {
   tracker = { "Show the tracker", "The quest tracker at the side of your screen." },
-  trackerRouteTop = { "Route steps at the top", "The step you're on and the next two, above your quests (when the leveling route is on)." },
+  smart = { "Smart zone order", "The ordered guide picks the zone that suits your level, where you are and your quest log. Off: the route's own order." },
   trackerObjectives = { "Each quest's objectives", "Listed under the quest, coloured by progress. Off: one line per quest." },
   trackerFocus = { "Objectives for one quest only", "Only the quest you're at, targeting or following lists its objectives." },
   trackerItems = { "Quest item buttons", "A button beside a quest whose item you use (a horn, a vial)." },
-  stepView = { "Step view", "A panel that explains the current step, with the mob or quest giver to look for and how often its items drop." },
+  stepView = { "Step details", "Under the current step: the mob, item or quest giver to look for, how often its items drop and why it's next. Also the button in the tracker's header." },
   trackerProfs = { "Profession steps", "Your professions' next step and the materials you're short of." },
   fishTracker = { "Fishing panel", "Your skill, lure and catches on the tracker while you fish." },
   dungeonHelper = { "Dungeon upgrades", "In a dungeon, the upgrades it can drop for you, by boss." },
@@ -3012,27 +3012,31 @@ local SPECIAL = {
     opts = { { "stay", "Stay" }, { "fade", "Fade" }, { "fold", "Fold up" } },
     get = function() return RG.Opt("trackerCombatFold") and "fold" or (RG.Opt("trackerFade") and "fade" or "stay") end,
     set = function(v) RG.db.trackerCombatFold = v == "fold"; RG.db.trackerFade = v == "fade"; refreshAll() end },
-  routeStyle = { kind = "cards", name = "Route style", desc = "Smart Guided Stay in this zone",
+  routeStyle = { kind = "cards", name = "What to follow", desc = "Ordered guide Zone quests My quest log. Also: the menu at the top of the tracker.",
     opts = {
-      { "smart", "Smart", "Picks the best zone for your level, where you are and the quests in your log. It moves you on to another zone when that one is better." },
-      { "guided", "Guided", "Follows the route in order, zone by zone, the way the guide is written. For a fixed plan." },
-      { "zone", "Stay in this zone", "Only the zone you're standing in. When it's done it suggests the next zones and you go there yourself. Hand-ins elsewhere still show." } },
-    get = function() local s = RG.db.routeStyle; if s ~= "zone" and s ~= "guided" then s = (RG.db.smart == false) and "guided" or "smart" end; return s end,
-    set = function(v) if RG.SetRouteStyle then RG.SetRouteStyle(v, true) end; refreshAll() end },
+      { "guide", "Ordered guide", "The full route, zone by zone, with every step. The tracker shows the route." },
+      { "zone", "Zone quests", "One zone's route: the zone you're in, or one you pick at the top of the tracker. The tracker shows the route." },
+      { "log", "My quest log", "Only the quests you have; new ones join as you pick them up. The tracker shows your quests." } },
+    get = function() return RG.RouteMode and RG.RouteMode() or "log" end,
+    set = function(v) if RG.SetRouteMode then RG.SetRouteMode(v, true) end; refreshAll() end },
+  dungeons = { kind = "choice", name = "Dungeon quests", desc = "Quests you can only finish inside a dungeon, in the guide, zone quests and your quest log. Left out, a line on the tracker says how many and shows them again." },
 }
 do
   local f = choiceOf("trackerInter", { true, "Modern" }, { false, "Game font" }); for k, v in pairs(f) do SPECIAL.font[k] = v end
   local s = choiceOf("trackerRoomy", { false, "Compact" }, { true, "Roomy" }); for k, v in pairs(s) do SPECIAL.spacing[k] = v end
   local l = choiceOf("compactTracker", { true, "Short" }, { false, "Everything" }); for k, v in pairs(l) do SPECIAL.length[k] = v end
+  local dq = choiceOf("dungeonQuests", { true, "Include" }, { false, "Leave out" }); for k, v in pairs(dq) do SPECIAL.dungeons[k] = v end
+  local dset = SPECIAL.dungeons.set
+  SPECIAL.dungeons.set = function(v) dset(v); if RG.RouteChanged then RG.RouteChanged() end end
 end
 -- options a control above stands for (they get no switch of their own)
 local COVERED = { trackerInter = true, trackerRoomy = true, compactTracker = true, trackerFade = true, trackerCombatFold = true }
 -- the categories, in order; "#..." is a heading, "@..." a control from SPECIAL, anything else an option's switch
 local SETTING_CATS = {
   { "look", "Look", { "#Colours", "@accent", "#Sizes", "@arrowSize", "@trackerSize", "@trackerAlpha", "@textSize", "#Text", "@font", "@spacing" } },
-  { "tracker", "Tracker", { "#What it shows", "tracker", "trackerRouteTop", "trackerObjectives", "trackerFocus", "trackerItems", "stepView", "trackerProfs", "fishTracker", "dungeonHelper",
+  { "tracker", "Tracker", { "#What it shows", "tracker", "stepView", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "dungeonHelper",
     "#How it behaves", "@length", "@fight", "trackerLocked" } },
-  { "route", "Route & quests", { "#Leveling route", "routeGuide", "@routeStyle", "smartStepOrder", "profQuests",
+  { "route", "Route & quests", { "#Leveling route", "routeGuide", "@routeStyle", "smart", "@dungeons", "smartStepOrder", "profQuests",
     "#Quests", "autoQuest", "autoReward", "rewardPicker", "newQuests", "nameplateAlert", "questUpgradeMarks", "shareObjective" } },
   { "arrow", "Arrow & travel", { "arrow", "autoArrow", "smartPlan", "mapClicks", "spf", "travelTips", "fpNudge" } },
   { "remind", "Reminders", { "#Leveling", "levelBanner", "levelReport", "efficiency", "talentReminder", "wellFed", "campReminder",

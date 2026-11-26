@@ -70,16 +70,13 @@ return {
       -- start well away from the finisher, then walk halfway to it
       T.go({ q.e[1], q.e[2] + 20, q.e[3] + 20 })
       T.step(2)
-      -- the top line names the hand-in ("Hand in to Shadow Priest Sarvis"); its distance is the text after it
+      -- the current step (the card under the tracker's header) says "Hand in to Shadow Priest Sarvis", and how far
       local function yards()
-        local lines, seen = T.tracker(), false
-        for _, t in ipairs(lines) do
-          if t:find("Hand in to", 1, true) then seen = true
-          elseif seen then
-            local n, k = t:match("([%d%.]+)(k?) yd")   -- "543 yd", or "1.1k yd" from 1000 up
-            if n then return tonumber(n) * (k == "k" and 1000 or 1), t end
-          end
-        end
+        local card = T.W.G.WaypathStepView
+        if not (card and card:IsShown() and T.trackerFind("Hand in to")) then return nil end
+        local t = card.dist and card.dist:GetText() or ""
+        local n, k = t:match("([%d%.]+)(k?) yd")   -- "543 yd", or "1.1k yd" from 1000 up
+        if n then return tonumber(n) * (k == "k" and 1000 or 1), t end
       end
       local far, l1 = yards()
       T.go({ q.e[1], q.e[2] + 10, q.e[3] + 10 })

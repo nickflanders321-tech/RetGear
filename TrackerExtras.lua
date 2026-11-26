@@ -142,8 +142,12 @@ function RG.TrackerFit()
   local content = t.contentH or 10
   local view = math.min(content, cap())
   t.viewH = view
+  -- the list starts under the header and the current step (Tracker.lua, StepView.lua)
+  local top = RG.TrackerTop and RG.TrackerTop() or 60
+  t.scroll:ClearAllPoints(); t.scroll:SetPoint("TOPLEFT", 12, -top)
+  if t.sep then t.sep:ClearAllPoints(); t.sep:SetPoint("TOPLEFT", 0, -(top - 4)); t.sep:SetPoint("TOPRIGHT", 0, -(top - 4)) end
   t.scroll:SetHeight(math.max(10, view))
-  t:SetHeight(60 + view + 14)
+  t:SetHeight(top + view + 14)
   RG.TrackerScrollTo(t.scrollV or 0)
 end
 

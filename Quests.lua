@@ -244,6 +244,8 @@ function stepAuto(entry, text)
             local _, never = RG.QuestBlocked(id, rq, isDone)
             if never then ok = true end
           end
+          -- nor does a dungeon quest while you've left them out (Settings, or the menu at the top of the tracker)
+          if not ok and RG.DungeonQuestHidden and RG.DungeonQuestHidden(id) then ok = true end
           -- one of a pair of either/or quests counts for both
           local d = not ok and RG.QDATA and RG.QDATA[id]
           if d and d.x and isDone then for _, x in ipairs(d.x) do if isDone(x) then ok = true break end end end
