@@ -191,9 +191,9 @@ local function refreshOne(b)
   b.icon:SetDesaturated(not usable); b.icon:SetVertexColor(usable and 1 or 0.55, usable and 1 or 0.55, usable and 1 or 0.55)
   if usable and not cooling then b.bg:SetColorTexture(1, 0.82, 0, 0.95) else b.bg:SetColorTexture(0.42, 0.36, 0.13, 0.9) end
 end
-local function makeButton()
+local function makeButton(parent)
   local t = tr()
-  local ok, b = pcall(CreateFrame, "Button", nil, t.body, "SecureActionButtonTemplate")
+  local ok, b = pcall(CreateFrame, "Button", nil, parent or t.body, "SecureActionButtonTemplate")
   if not ok or not b then return nil end
   hasButtons = true
   b:SetSize(26, 26)
@@ -212,8 +212,36 @@ local function makeButton()
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  pool[#pool + 1] = b
+  if not parent then pool[#pool + 1] = b end
   return b
+end
+
+-- The current step's quest item: one button on the card, beside Skip (StepView.lua). It hangs off the tracker itself,
+-- at x, y from its top-right corner, not off the card: the game won't let anything a secure button is anchored to move
+-- in a fight, and the card is laid out again as you play. Placed and hidden only out of combat, like the list's.
+local cardBtn
+function RG.TrackerCardItem(itm, q, x, y)
+  if fighting() then
+    if itm or (cardBtn and cardBtn:IsShown()) then RG.trackerDeferred = true end
+    return false
+  end
+  if not itm then if cardBtn then cardBtn:Hide() end return false end
+  local t = tr(); if not t then return false end
+  if not cardBtn then
+    cardBtn = makeButton(t); if not cardBtn then return false end
+    cardBtn:SetSize(22, 22)
+    cardBtn.count:SetFont("Fonts\\ARIALN.TTF", 10, "OUTLINE")
+  end
+  local b = cardBtn
+  b.id, b.link, b.charges, b.questName = itm.id, itm.link, itm.charges, q and q.title
+  local what = itm.name or itm.link
+  if b._what ~= what then b:SetAttribute("item", what); b._what = what end
+  b:ClearAllPoints(); b:SetPoint("TOPRIGHT", t, "TOPRIGHT", x, y)
+  b:SetFrameLevel(t:GetFrameLevel() + 12)
+  if itm.tex then b.icon:SetTexture(itm.tex) end
+  b:Show()
+  refreshOne(b)
+  return true
 end
 
 function RG.TrackerItemBegin()
@@ -253,6 +281,7 @@ do
     C_Timer.After(0.2, function()
       queued = nil
       for i = 1, used do local b = pool[i]; if b and b:IsShown() then pcall(refreshOne, b) end end
+      if cardBtn and cardBtn:IsShown() then pcall(refreshOne, cardBtn) end
     end)
   end)
 end

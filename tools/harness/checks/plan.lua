@@ -14,6 +14,23 @@ end
 
 return {
   {
+    name = "zone-also-in-log",
+    about = "zone quests: a quest of the zone the plan can't take you to here is listed under the steps, with why (its mobs are in another zone)",
+    race = "Orc", class = "WARRIOR", level = 53,
+    run = function(T)
+      local RG = T.RG
+      felwood(T)
+      local ok, why = T.accept(4521)   -- Wild Guardians: given in Felwood, its owlbeasts are in Winterspring
+      T.ok(ok, "Wild Guardians accepted (" .. tostring(why) .. ")")
+      RG.db.routeGuide = true; RG.db.zonePick = "Felwood"
+      RG.SetRouteMode("zone", true); T.go(SANCTUARY); T.step(2)
+      RG.Objective(true); RG.RefreshTracker(); T.step(1)
+      local line = T.trackerFind("Wild Guardians")
+      T.ok(T.trackerFind("Also in your log"), "a list of the zone's other quests: " .. table.concat(T.tracker(), " | "))
+      T.ok(T.trackerFind("in Winterspring"), "Wild Guardians says where its mobs are (" .. tostring(line) .. ")")
+    end,
+  },
+  {
     name = "plan-shortest-trip",
     about = "the plan looks at the whole trip: the claw close by comes before a camp of four objectives far off when that's less walking in all",
     race = "Orc", class = "WARRIOR", level = 53,

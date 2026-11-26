@@ -127,7 +127,7 @@ end
 -- how often its items drop, a picture of the mob, item or quest giver to look for, why it's next, what comes after and
 -- a Skip button. Folded, the tracker keeps only the first two lines. In the professions view it shows the profession
 -- step you're on (RG.ProfFocus).
-local MODEL = 58
+local MODEL = 66
 local STRIP = 27   -- the strip across the card's top: what to do, the quest, how far
 local f, model
 local cardH = 0
@@ -233,7 +233,7 @@ local function build()
   local pring = ringF:CreateTexture(nil, "OVERLAY"); pring:SetAllPoints(); pring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring")
   pring:SetVertexColor(P.ring[1], P.ring[2], P.ring[3], 1)
   f.pic.ring = pring
-  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(40, 40); f.icon:SetPoint("CENTER"); f.icon:Hide()
+  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(46, 46); f.icon:SetPoint("CENTER"); f.icon:Hide()
   -- (the icon round too, where the game has the mask)
   if f.icon.SetMask then pcall(f.icon.SetMask, f.icon, "Interface\\CharacterFrame\\TempPortraitAlphaMask") end
   f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -3); f.picName:SetWidth(MODEL + 8); f.picName:SetJustifyH("CENTER")
@@ -438,14 +438,16 @@ function RG.RefreshStepView()
   local t = _G.WaypathTracker
   if not (t and t:IsShown()) or (RG.CardsOnly and RG.CardsOnly()) or not (RG.Opt and RG.Opt("tracker")) then
     if f then f:Hide() end
+    if RG.TrackerCardItem then RG.TrackerCardItem(nil) end
     return
   end
   if not build() then return end
   -- (a quest-item button on the tracker and a fight on: the tracker holds still, and so does the card's size)
   local frozen = RG.TrackerFrozen and RG.TrackerFrozen()
   local info = cardInfo()
+  local itm, itmQ
   if not info then
-    if not frozen then f:Hide() end
+    if not frozen then f:Hide(); if RG.TrackerCardItem then RG.TrackerCardItem(nil) end end
     if lastH ~= 0 and not frozen then lastH = 0; if not RG.stepCardFromTracker and RG.RefreshTracker then RG.RefreshTracker() end end
     return
   end
@@ -521,11 +523,18 @@ function RG.RefreshStepView()
     local bh = #body > 0 and (f.body:GetStringHeight() or 0) or 0
     local ph = picShown and (STRIP + 8 + MODEL + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
     h = math.max(by + bh, ph) + 8
+    -- the quest's usable item (a flask to fill, a horn to blow): a button beside Skip
+    if info.it and info.it.id and info.it.act == "doing" and RG.QuestItemFor and RG.Opt("trackerItems") ~= false then
+      for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+        if q.id == info.it.id then itm, itmQ = RG.QuestItemFor(q), q break end
+      end
+    end
     -- what comes after, and Skip
-    if info.next or info.skip then
+    if info.next or info.skip or itm then
       f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h); f.line:Show()
       f.foot:SetText(info.next and ("|cffffd100Next|r  " .. info.next) or "")
       f.skip:SetShown(info.skip and true or false)
+      f.foot:SetPoint("RIGHT", f.skip, "LEFT", itm and -34 or -6, 0)
       h = h + 28
     end
   else
@@ -539,6 +548,10 @@ function RG.RefreshStepView()
   f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -headH); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -headH)
   f:SetHeight(h); f:Show()
   cardH = h
+  -- (the item button: to the left of Skip, at the card's foot; it hangs off the tracker, so it's placed from there)
+  if not frozen and RG.TrackerCardItem then
+    if itm then RG.TrackerCardItem(itm, itmQ, -(8 + 7 + 44 + 6), -(headH + h - 26)) else RG.TrackerCardItem(nil) end
+  end
   if h ~= lastH then
     lastH = h
     -- the list under it moves with it

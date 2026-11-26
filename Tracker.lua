@@ -1383,6 +1383,54 @@ function RG.RefreshTracker()
       if #zstops > shownS then
         n = n + 1; y = item(n, y, GREY .. "+" .. (#zstops - shownS) .. " more step" .. ((#zstops - shownS) == 1 and "" or "s") .. "|r", { single = true, indent = 22 })
       end
+      -- the zone's quests in your log the plan can't take you to here, and why (their mobs are in another zone, there's no
+      -- known place for them, or what's left is a reputation), so the list doesn't look cut short
+      do
+        local inPlan = {}
+        for _, st in ipairs(zstops) do for _, it in ipairs(st.items) do inPlan[it.title] = true end end
+        local spotZone = {}
+        for _, sp in ipairs(RG.QuestSpots and RG.QuestSpots() or {}) do
+          if not sp.turnin and not spotZone[sp.quest] and sp.wp and RG.MapZone then spotZone[sp.quest] = RG.MapZone(sp.wp[1]) or false end
+        end
+        local rest = {}
+        -- (the zone's: under its heading in your quest log, or given or handed in there)
+        local function ofZone(q)
+          if q.zone == r.zone then return true end
+          local qd = q.id and RG.QDATA and RG.QDATA[q.id]
+          if not (qd and RG.MapZone) then return false end
+          return (qd.s and RG.MapZone(qd.s[1]) == r.zone) or (qd.e and RG.MapZone(qd.e[1]) == r.zone) or false
+        end
+        for _, q in ipairs(quests) do
+          if ofZone(q) and not inPlan[q.title] and not q.failed and not (RG.DungeonQuestHidden and RG.DungeonQuestHidden(q.id, q.zone)) then
+            local why
+            if q.complete then
+              local qd = q.id and RG.QDATA and RG.QDATA[q.id]
+              local ez = qd and qd.e and RG.MapZone and RG.MapZone(qd.e[1])
+              why = "hand in" .. ((ez and ez ~= r.zone) and (" in " .. ez) or "")
+            else
+              local z = spotZone[q.title]
+              if z and z ~= r.zone then why = "in " .. z
+              elseif z == nil then
+                local rep = false
+                for _, o in ipairs(q.objs or {}) do if o.type == "reputation" and not o.finished then rep = true end end
+                why = rep and "reputation" or "no place known"
+              else why = "left out" end
+            end
+            rest[#rest + 1] = { q = q, why = why }
+          end
+        end
+        if #rest > 0 then
+          n = n + 1; y = item(n, y, "|cffc9a54aAlso in your log|r", { single = true, indent = 2, right = "|cff9a8a6a" .. #rest .. "|r",
+            tip = "Your " .. r.zone .. " quests the plan can't take you to here: their objectives are in another zone, there's no known place for them, or what's left is a reputation. Hover one for more; click to open it." })
+          for i, e in ipairs(rest) do
+            if i > 5 then n = n + 1; y = item(n, y, GREY .. "+" .. (#rest - 5) .. " more in your quest log|r", { single = true, indent = 12 }) break end
+            local q = e.q
+            n = n + 1
+            y = item(n, y, RG.LevelTag(q.level) .. "|cff9a8a6a" .. q.title .. "|r", { single = true, indent = 12, right = "|cff9a8a6a" .. e.why .. "|r", wp = q.wp,
+              tip = questTip(q), onClick = function() RG.OpenQuest(q.title, q.id) end })
+          end
+        end
+      end
       afterSteps()
     elseif cur then
       -- the step done just before it (where you are in the zone)
@@ -1518,8 +1566,8 @@ function RG.RefreshTracker()
         else
           local zf = RG.db.trackerFold and RG.db.trackerFold["zone:" .. g.zone]
           n = n + 1
-          y = item(n, y, (zf and "+ " or "") .. "|cffc9a227" .. g.zone .. "|r" .. (g.here and (GREY .. "  (you're here)|r") or ""),
-            { single = true, indent = 2, right = GREY .. #g.list .. (g.ready and ("  ·  " .. GREEN .. g.ready .. " ready|r") or "") .. "|r",
+          y = item(n, y, (zf and "+ " or "") .. "|cffc9a54a" .. g.zone .. "|r" .. (g.here and "|cff9a8a6a  (you're here)|r" or ""),
+            { single = true, indent = 2, right = "|cff9a8a6a" .. #g.list .. (g.ready and ("  ·  |cff1eff00" .. g.ready .. " ready|r") or "") .. "|r",
               tip = "Click to fold or show this zone's quests.",
               onClick = function()
                 RG.db.trackerFold = RG.db.trackerFold or {}
@@ -1539,23 +1587,27 @@ function RG.RefreshTracker()
                   if k > 0 then frac = sum / k end
                 end
                 local status
-                if q.complete then status = GREEN .. "turn in|r"
+                if q.complete then status = "|cff1eff00turn in|r"
                 elseif q.failed then status = "|cffff3333failed|r"
                 else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
-                local where = q.dist and (GREY .. "  " .. RG.FormatYards(q.dist) .. "|r") or ""
-                -- objectives under the quest (a setting); a usable quest item gets a button on the quest's right
+                -- (as the quest log reads: no distance on the line, it's in the tooltip; the quest's usable item is on the
+                -- current step's card, not on the list)
+                local where = ""
+                -- objectives under the quest (a setting)
                 local objOn = RG.Opt("trackerObjectives") and not q.failed
                 if objOn and RG.Opt("trackerFocus") and RG.TrackerQuestActive and not q.complete then objOn = RG.TrackerQuestActive(q) end   -- only the quest being worked on opens
-                local itm = RG.Opt("trackerItems") and RG.QuestItemFor and RG.QuestItemFor(q) or nil
-                local rpad = itm and 32 or nil
+                local itm = nil
+                local rpad = nil
                 n = n + 1
                 local titleN = n
                 local qn = RG.QuestNote(q.id, q.group)
                 local rbase = objOn and ((q.failed and status or "") .. where) or (status .. where)
                 local tm = RG.TrackerTimerText and RG.TrackerTimerText(q.id) or ""   -- a timed quest: the time left, ticking
-                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. upFront(q.id) .. (q.complete and GREEN or "|cffffd100") .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
+                -- the title in its level's colour (grey, green, yellow, orange, red), green once it's ready to hand in
+                local tcol = q.complete and "|cff1eff00" or ((q.level and RG.QuestColor and RG.QuestColor(q.level)) or "|cffffd100")
+                y = item(n, y, (isTarget(q.wp) and ARROW or "") .. RG.LevelTag(q.level) .. upFront(q.id) .. tcol .. q.title .. "|r" .. (q.group and (GREY .. " (group)|r") or "") .. ((qn and qn.tag) and ("  " .. qn.tag) or ""),
                   { single = true, indent = 12, quest = true, rpad = rpad, right = tm .. rbase, timer = tm ~= "" and q.id or nil, rbase = rbase,
-                    tip = questTip(q), wp = q.wp, progress = (not objOn) and frac or nil,
+                    tip = questTip(q), wp = q.wp,
                     -- a quest ready to hand in: click points the arrow at the hand-in, right-click opens it
                     onClick = function()
                       -- Shift-click with a chat box open: link the quest in chat
