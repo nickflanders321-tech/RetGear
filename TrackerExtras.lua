@@ -6,7 +6,7 @@ local _, RG = ...
 -- Quest-item buttons are secure buttons, which the game won't let an add-on move or hide during a fight. So while one is on
 -- the tracker, the tracker holds still in combat (nothing is laid out again, it can't be dragged or scrolled) and catches
 -- up the moment the fight ends.
-local GOLDC = { 0.788, 0.635, 0.153 }
+local GOLDC = { 1, 0.82, 0 }   -- (the tracker's gold: Tracker.lua's RG.TPAL)
 local function tr() return _G.WaypathTracker end
 local function fighting() return InCombatLockdown and InCombatLockdown() end
 -- (a quest-item button makes the whole tracker protected for the game, shown or not: once one exists, it holds still in a fight)
@@ -40,7 +40,7 @@ local function makeChrome()
   chrome.thumb = chrome.bar:CreateTexture(nil, "ARTWORK"); chrome.thumb:SetWidth(3); chrome.thumb:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.75)
   -- "N more quests" over the bottom of the list
   chrome.more = CreateFrame("Frame", nil, t); chrome.more:SetFrameLevel(lvl); chrome.more:SetHeight(16)
-  chrome.moreBg = chrome.more:CreateTexture(nil, "BACKGROUND"); chrome.moreBg:SetAllPoints(); chrome.moreBg:SetColorTexture(0.063, 0.11, 0.153, 0.94)
+  chrome.moreBg = chrome.more:CreateTexture(nil, "BACKGROUND"); chrome.moreBg:SetAllPoints(); chrome.moreBg:SetColorTexture(0.071, 0.051, 0.035, 0.95)
   chrome.moreText = chrome.more:CreateFontString(nil, "OVERLAY"); chrome.moreText:SetFont("Fonts\\ARIALN.TTF", 11, ""); chrome.moreText:SetPoint("CENTER", 0, 0)
   chrome.moreText:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
   chrome.more:Hide(); chrome.bar:Hide()
@@ -94,7 +94,7 @@ function RG.TrackerChrome(show)
     if c.grip.leftSide ~= left then
       c.grip.leftSide = left
       c.grip:ClearAllPoints()
-      c.grip:SetPoint(left and "BOTTOMLEFT" or "BOTTOMRIGHT", t, left and "BOTTOMLEFT" or "BOTTOMRIGHT", left and 2 or -2, 2)
+      c.grip:SetPoint(left and "BOTTOMLEFT" or "BOTTOMRIGHT", t, left and "BOTTOMLEFT" or "BOTTOMRIGHT", left and 2 or -2, (RG.TrackerFootH and RG.TrackerFootH() or 0) + 2)
       if left then c.grip.tex:SetTexCoord(1, 0, 0, 1) else c.grip.tex:SetTexCoord(0, 1, 0, 1) end
     end
   end
@@ -147,7 +147,7 @@ function RG.TrackerFit()
   t.scroll:ClearAllPoints(); t.scroll:SetPoint("TOPLEFT", 12, -top)
   if t.sep then t.sep:ClearAllPoints(); t.sep:SetPoint("TOPLEFT", 0, -(top - 4)); t.sep:SetPoint("TOPRIGHT", 0, -(top - 4)) end
   t.scroll:SetHeight(math.max(10, view))
-  t:SetHeight(top + view + 14)
+  t:SetHeight(top + view + 6 + (RG.TrackerFootH and RG.TrackerFootH() or 8))
   RG.TrackerScrollTo(t.scrollV or 0)
 end
 

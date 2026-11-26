@@ -4,9 +4,56 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }   -- brass (follows the accent setting)
+local GOLDC = { 1, 0.82, 0 }   -- the tracker's gold (fixed: the restyle doesn't follow the accent setting)
 local W = 300
 local tr, lines, collapsed
+-- The tracker's look (the restyle mockup): a WoW quest-log panel, dark leather and brass, gold titles in Marcellus.
+-- Fixed colours: the accent setting tints the main window, not the tracker. StepView.lua and TrackerExtras.lua use
+-- them too (RG.TPAL).
+local P = {
+  panel = { 0.071, 0.051, 0.035 }, border = { 0.42, 0.32, 0.15 }, inner = { 0.165, 0.122, 0.075 }, head = { 0.122, 0.086, 0.051 },
+  gold = { 1, 0.82, 0 }, brass = { 0.79, 0.65, 0.29 }, light = { 0.94, 0.78, 0.37 }, ring = { 0.54, 0.416, 0.18 },
+  btn = { 0.165, 0.114, 0.063 }, btnEdge = { 0.353, 0.263, 0.125 }, red = { 0.431, 0.043, 0.043 }, redEdge = { 0.69, 0.54, 0.227 },
+  box = { 0.102, 0.071, 0.043 }, ink = { 0.949, 0.918, 0.847 }, muted = { 0.604, 0.541, 0.416 }, where = { 0.788, 0.722, 0.561 },
+  strip = { 0.133, 0.094, 0.055 }, line = { 0.227, 0.165, 0.086 }, chip = { 0.18, 0.125, 0.063 }, dark = { 0.043, 0.031, 0.02 },
+  bar = { 0.165, 0.102, 0.055 }, green = { 0.118, 1, 0 }, doneEdge = { 0.184, 0.478, 0.184 }, foot = { 0.086, 0.059, 0.035 },
+  xp = { 0.54, 0.247, 0.82 },
+}
+RG.TPAL = P
+-- the header (what it follows, and the boxed line under it) and the level bar along the bottom
+local HEAD_H, FOOT_H = 64, 30
+function RG.TrackerHeadH() return HEAD_H end
+function RG.TrackerFootH() return FOOT_H end
+local DISPLAY = "Interface\\AddOns\\Waypath\\Media\\Fonts\\Marcellus-Regular.ttf"
+RG.TDISPLAY = DISPLAY
+-- Marcellus for titles (the game's own font if it won't load)
+local function dfont(fs, size)
+  if not fs:SetFont(DISPLAY, size, "") then fs:SetFont("Fonts\\FRIZQT__.TTF", size, "") end
+end
+RG.TDisplayFont = dfont
+-- A filled box with a 1-pixel edge, of plain textures on f itself (nothing of the game's; under f's own text, never a
+-- frame over it). ox: how far it reaches out past f's sides. key: where it's kept on f, for a second box on one frame.
+-- Called again, it only recolours (and shows it).
+local function framed(f, fill, edge, alpha, sub, ox, key)
+  key = key or "_fr"
+  local fr = rawget(f, key)
+  if not fr then
+    sub, ox = sub or -8, ox or 0
+    fr = {}
+    fr.fill = f:CreateTexture(nil, "BACKGROUND", nil, sub); fr.fill:SetPoint("TOPLEFT", -ox, 0); fr.fill:SetPoint("BOTTOMRIGHT", ox, 0)
+    for _, k in ipairs({ "t", "b", "l", "r" }) do fr[k] = f:CreateTexture(nil, "BORDER", nil, sub) end
+    fr.t:SetPoint("TOPLEFT", -ox, 0); fr.t:SetPoint("TOPRIGHT", ox, 0); fr.t:SetHeight(1)
+    fr.b:SetPoint("BOTTOMLEFT", -ox, 0); fr.b:SetPoint("BOTTOMRIGHT", ox, 0); fr.b:SetHeight(1)
+    fr.l:SetPoint("TOPLEFT", -ox, 0); fr.l:SetPoint("BOTTOMLEFT", -ox, 0); fr.l:SetWidth(1)
+    fr.r:SetPoint("TOPRIGHT", ox, 0); fr.r:SetPoint("BOTTOMRIGHT", ox, 0); fr.r:SetWidth(1)
+    fr.SetShown = function(self, on) for _, k in ipairs({ "fill", "t", "b", "l", "r" }) do self[k]:SetShown(on and true or false) end end
+    f[key] = fr
+  end
+  if fill then fr.fill:SetColorTexture(fill[1], fill[2], fill[3], alpha or 1); fr.fill:Show() else fr.fill:Hide() end
+  for _, k in ipairs({ "t", "b", "l", "r" }) do fr[k]:SetColorTexture(edge[1], edge[2], edge[3], 1); fr[k]:Show() end
+  return fr
+end
+RG.TFramed = framed
 -- marks the line the arrow is pointing at
 local ARROW = "|TInterface\\Minimap\\MinimapArrow:12:12|t"
 local function isTarget(wp) return RG.ArrowTarget and RG.ArrowTarget(wp) end
@@ -456,7 +503,7 @@ function RG.ShowMenu(entries, title, anchor)
   if not menuFrame then
     menuFrame = CreateFrame("Frame", "WaypathMenu", UIParent, "BackdropTemplate")
     menuFrame:SetFrameStrata("FULLSCREEN_DIALOG"); menuFrame:SetClampedToScreen(true)
-    if RG.Round then RG.Round(menuFrame, 0.063, 0.11, 0.153, 0.98, 8) end
+    framed(menuFrame, P.panel, P.border, 0.98)
     menuFrame.btns = {}
     menuCatcher = CreateFrame("Button", nil, UIParent)
     menuCatcher:SetAllPoints(UIParent); menuCatcher:SetFrameStrata("FULLSCREEN"); menuCatcher:RegisterForClicks("AnyUp")
@@ -473,7 +520,8 @@ function RG.ShowMenu(entries, title, anchor)
       b = CreateFrame("Button", nil, menuFrame)
       b:SetHeight(20)
       b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetPoint("LEFT", 10, 0); b.t:SetJustifyH("LEFT")
-      b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 1, 1, 0.1)
+      b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetAllPoints(); b.hl:SetColorTexture(1, 0.82, 0, 0.1)
+      b.t:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
       b:RegisterForClicks("LeftButtonUp")
       b:SetScript("OnClick", function(self) menuFrame:Hide(); if self.fn then pcall(self.fn) end end)
       menuFrame.btns[i] = b
@@ -521,7 +569,11 @@ local function line(i)
   b.check = b:CreateTexture(nil, "OVERLAY"); b.check:SetSize(12, 12); b.check:SetPoint("CENTER", b.box, "CENTER", 0, 0); b.check:SetTexture("Interface\\AddOns\\Waypath\\Media\\Check"); b.check:SetVertexColor(0.05, 0.07, 0.07, 1)
   -- a route step's number in its ring, and the band behind the step you're on
   b.num = b:CreateFontString(nil, "OVERLAY"); b.num:SetFont("Fonts\\ARIALN.TTF", 9, ""); b.num:SetPoint("CENTER", b.box, "CENTER", 0, 0); b.num:Hide()
-  b.band = b:CreateTexture(nil, "BACKGROUND"); b.band:SetPoint("TOPLEFT", -6, 2); b.band:SetPoint("BOTTOMRIGHT", 6, -3); b.band:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.07); b.band:Hide()
+  b.band = b:CreateTexture(nil, "BACKGROUND"); b.band:SetPoint("TOPLEFT", -6, 2); b.band:SetPoint("BOTTOMRIGHT", 6, -3); b.band:SetColorTexture(P.gold[1], P.gold[2], P.gold[3], 0.07); b.band:Hide()
+  -- a section's header: a brass-edged bar, its title in gold, the fold mark on the right
+  b.secF = framed(b, P.bar, P.border, 1, -6, 4, "_sec"); b.secF:SetShown(false)
+  b.fold = b:CreateFontString(nil, "OVERLAY"); b.fold:SetFont("Fonts\\ARIALN.TTF", 14, ""); b.fold:SetPoint("TOPRIGHT", -3, -2)
+  b.fold:SetTextColor(P.gold[1], P.gold[2], P.gold[3]); b.fold:Hide()
   b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   b:SetScript("OnClick", function(self, btn)
     if btn == "RightButton" and self.menu and IsShiftKeyDown and IsShiftKeyDown() then RG.ShowMenu(self.menu()); return end   -- Shift + right-click: more options
@@ -564,7 +616,14 @@ end
 local function build()
   tr = CreateFrame("Frame", "WaypathTracker", UIParent, "BackdropTemplate")
   tr:SetWidth(W); tr:SetClampedToScreen(true); tr:SetMovable(true); tr:EnableMouse(true); tr:SetFrameStrata("MEDIUM")
-  RG.Round(tr, 0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85, 8)   -- deep ink, dense enough to read over snow and sand
+  -- dark leather with a brass edge and a darker line inside it; the header a shade lighter, ruled off in brass
+  framed(tr, P.panel, P.border, RG.db.trackerAlpha or 0.92)
+  local inner = CreateFrame("Frame", nil, tr); inner:SetPoint("TOPLEFT", 1, -1); inner:SetPoint("BOTTOMRIGHT", -1, 1)
+  framed(inner, nil, P.inner)
+  tr.headBg = tr:CreateTexture(nil, "BACKGROUND", nil, -7); tr.headBg:SetPoint("TOPLEFT", 1, -1); tr.headBg:SetPoint("TOPRIGHT", -1, -1); tr.headBg:SetHeight(33)
+  tr.headBg:SetColorTexture(P.head[1], P.head[2], P.head[3], 1)
+  tr.headLine = tr:CreateTexture(nil, "BORDER"); tr.headLine:SetPoint("TOPLEFT", 1, -34); tr.headLine:SetPoint("TOPRIGHT", -1, -34); tr.headLine:SetHeight(1)
+  tr.headLine:SetColorTexture(P.border[1], P.border[2], P.border[3], 1)
   local pos = RG.db.trackerPos
   if pos then tr:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else tr:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -40, -260) end
   -- (a place saved by its middle or bottom made the tracker grow upwards, over whatever sits above it: pin its top)
@@ -604,7 +663,12 @@ local function build()
   -- The header: what the tracker follows (click for the menu: the guide, zone quests, your quest log, professions),
   -- a line about it under that (in zone quests: the zone, click to pick another), and the buttons on the right.
   -- The current step sits under the header (StepView.lua), then the list.
-  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(16, 16); crest:SetPoint("TOPLEFT", 10, -9); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  -- the crest: the arrow in a brass ring
+  local cdisc = tr:CreateTexture(nil, "ARTWORK"); cdisc:SetSize(22, 22); cdisc:SetPoint("TOPLEFT", 8, -6); cdisc:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc")
+  cdisc:SetVertexColor(P.btn[1], P.btn[2], P.btn[3], 1)
+  local cring = tr:CreateTexture(nil, "ARTWORK", nil, 1); cring:SetAllPoints(cdisc); cring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring")
+  cring:SetVertexColor(P.ring[1], P.ring[2], P.ring[3], 1)
+  local crest = tr:CreateTexture(nil, "OVERLAY"); crest:SetSize(11, 11); crest:SetPoint("CENTER", cdisc, "CENTER", 0, 0); crest:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow"); crest:SetVertexColor(P.light[1], P.light[2], P.light[3], 1)
   tr.crest = crest
   -- (the old top line's texts: kept for anything that sets them, never shown)
   tr.title = RG.NewText(tr, "GameFontNormal"); tr.title:Hide()
@@ -616,17 +680,17 @@ local function build()
     f:SetScript("OnDragStop", function() if InCombatLockdown() then return end tr:StopMovingOrSizing(); RG.TrackerSavePos() end)
   end
   RG.TrackerDragFrom = dragFrom
-  local mb = CreateFrame("Button", nil, tr); mb:SetHeight(22); mb:SetPoint("TOPLEFT", 30, -6); mb:SetPoint("TOPRIGHT", -76, -6)
+  local mb = CreateFrame("Button", nil, tr); mb:SetHeight(22); mb:SetPoint("TOPLEFT", 34, -6); mb:SetPoint("TOPRIGHT", -88, -6)
   mb.text = mb:CreateFontString(nil, "OVERLAY"); mb.text:SetPoint("LEFT", 2, 0); mb.text:SetJustifyH("LEFT"); mb.text:SetWordWrap(false)
-  if not mb.text:SetFont(RG.FONTS.display or RG.FONTS.semibold, 14, "") then tfont(mb.text, 14) end
-  mb.text:SetTextColor(0.937, 0.902, 0.824); mb.text:SetShadowColor(0, 0, 0, 0.8); mb.text:SetShadowOffset(1, -1)
+  dfont(mb.text, 15)
+  mb.text:SetTextColor(P.gold[1], P.gold[2], P.gold[3]); mb.text:SetShadowColor(0, 0, 0, 0.9); mb.text:SetShadowOffset(1, -1)
   mb.chev = mb:CreateTexture(nil, "OVERLAY"); mb.chev:SetSize(10, 10); mb.chev:SetPoint("LEFT", mb.text, "RIGHT", 5, -1)
-  mb.chev:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\FoldRight"); mb.chev:SetVertexColor(0.6, 0.6, 0.6)
+  mb.chev:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\FoldRight"); mb.chev:SetVertexColor(P.brass[1], P.brass[2], P.brass[3])
   if mb.chev.SetRotation then pcall(mb.chev.SetRotation, mb.chev, -math.pi / 2) end
-  mb.hl = mb:CreateTexture(nil, "HIGHLIGHT"); mb.hl:SetAllPoints(); mb.hl:SetColorTexture(1, 1, 1, 0.06)
+  mb.hl = mb:CreateTexture(nil, "HIGHLIGHT"); mb.hl:SetAllPoints(); mb.hl:SetColorTexture(1, 0.82, 0, 0.06)
   mb:SetScript("OnClick", function(self) if RG.TrackerModeMenu then RG.TrackerModeMenu(self) end end)
   mb:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("What the tracker follows", GOLDC[1], GOLDC[2], GOLDC[3])
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("What the tracker follows", P.gold[1], P.gold[2], P.gold[3])
     GameTooltip:AddLine("Click: the ordered guide, one zone's quests, your quest log or your professions, and whether dungeon quests show.", 1, 1, 1, true)
     GameTooltip:AddLine(RG.Opt("trackerLocked") and "Locked (unlock in Settings)" or "Drag to move the tracker", 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Mouse wheel: scroll the list  ·  Ctrl / Shift / Alt + wheel: size, width, see-through", 0.8, 0.8, 0.8, true)
@@ -636,44 +700,52 @@ local function build()
   dragFrom(mb)
   tr.modeBtn = mb
   -- the line under it
-  local cx = CreateFrame("Button", nil, tr); cx:SetHeight(16); cx:SetPoint("TOPLEFT", 12, -30); cx:SetPoint("TOPRIGHT", -12, -30)
-  cx.right = cx:CreateFontString(nil, "OVERLAY"); cx.right:SetPoint("RIGHT", 0, 0); cx.right:SetJustifyH("RIGHT"); cx.right:SetWordWrap(false)
-  cx.left = cx:CreateFontString(nil, "OVERLAY"); cx.left:SetPoint("LEFT", 0, 0); cx.left:SetJustifyH("LEFT"); cx.left:SetWordWrap(false)
-  tfont(cx.left, 11); tfont(cx.right, 11)
-  cx.left:SetTextColor(0.79, 0.75, 0.66); cx.right:SetTextColor(0.6, 0.6, 0.6)
-  -- (as a dropdown: a caret after the text, on a faint box, like the menu above)
-  cx.box = cx:CreateTexture(nil, "BACKGROUND"); cx.box:SetColorTexture(1, 1, 1, 0.06); cx.box:Hide()
-  cx.chev = cx:CreateTexture(nil, "OVERLAY"); cx.chev:SetSize(9, 9); cx.chev:SetPoint("LEFT", cx.left, "RIGHT", 5, -1)
-  cx.chev:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\FoldRight"); cx.chev:SetVertexColor(0.75, 0.75, 0.75)
+  -- (the button is the box: as wide as its text and caret, set as the text changes; what it counts sits at the
+  -- tracker's right edge)
+  local cx = CreateFrame("Button", nil, tr); cx:SetHeight(20); cx:SetPoint("TOPLEFT", 8, -40); cx:SetWidth(120)
+  cx.boxF = framed(cx, P.box, P.btnEdge)
+  cx.box = cx.boxF   -- (the old name)
+  cx.right = cx:CreateFontString(nil, "OVERLAY"); cx.right:SetPoint("RIGHT", tr, "TOPRIGHT", -8, -50); cx.right:SetJustifyH("RIGHT"); cx.right:SetWordWrap(false)
+  cx.left = cx:CreateFontString(nil, "OVERLAY"); cx.left:SetPoint("LEFT", 8, 0); cx.left:SetJustifyH("LEFT"); cx.left:SetWordWrap(false)
+  tfont(cx.left, 11.5); tfont(cx.right, 11)
+  cx.left:SetTextColor(P.muted[1], P.muted[2], P.muted[3]); cx.right:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
+  cx.chev = cx:CreateTexture(nil, "OVERLAY"); cx.chev:SetSize(9, 9); cx.chev:SetPoint("LEFT", cx.left, "RIGHT", 6, -1)
+  cx.chev:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\FoldRight"); cx.chev:SetVertexColor(P.brass[1], P.brass[2], P.brass[3])
   if cx.chev.SetRotation then pcall(cx.chev.SetRotation, cx.chev, -math.pi / 2) end
   cx.chev:Hide()
-  cx.hl = cx:CreateTexture(nil, "HIGHLIGHT"); cx.hl:SetPoint("TOPLEFT", -4, 1); cx.hl:SetPoint("BOTTOMRIGHT", 4, -1); cx.hl:SetColorTexture(1, 1, 1, 0.06)
+  cx.hl = cx:CreateTexture(nil, "HIGHLIGHT"); cx.hl:SetPoint("TOPLEFT", 1, -1); cx.hl:SetPoint("BOTTOMRIGHT", -1, 1); cx.hl:SetColorTexture(1, 0.82, 0, 0.08)
   cx:SetScript("OnClick", function(self) if self.onClick then self.onClick(self) end end)
   cx:SetScript("OnEnter", function(self) if self.tip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(self.tip, 1, 1, 1, 1, true); GameTooltip:Show() end end)
   cx:SetScript("OnLeave", function() GameTooltip:Hide() end)
   dragFrom(cx)
   tr.ctx = cx
-  tr.lvl = RG.NewText(tr, "GameFontHighlightSmall"); tr.lvl:Hide()
 
-  local function hdrBtn(label, x, fn, tip)
-    local b = CreateFrame("Button", nil, tr); b:SetSize(20, 20); b:SetPoint("TOPRIGHT", x, -8)
-    b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\ARIALN.TTF", 15, ""); b.t:SetPoint("CENTER"); b.t:SetText(label); b.t:SetTextColor(0.6, 0.6, 0.6)
+  -- the buttons on the right: small brass-edged squares, the fold button red like the game's close buttons
+  local function hdrBtn(label, x, fn, tip, red)
+    local b = CreateFrame("Button", nil, tr); b:SetSize(22, 22); b:SetPoint("TOPRIGHT", x, -6)
+    framed(b, red and P.red or P.btn, red and P.redEdge or P.btnEdge)
+    b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetFont("Fonts\\ARIALN.TTF", 16, ""); b.t:SetPoint("CENTER", 0, 1); b.t:SetText(label)
+    local base = red and P.gold or P.brass
+    b.t:SetTextColor(base[1], base[2], base[3])
+    b.hl = b:CreateTexture(nil, "HIGHLIGHT"); b.hl:SetPoint("TOPLEFT", 1, -1); b.hl:SetPoint("BOTTOMRIGHT", -1, 1); b.hl:SetColorTexture(1, 0.82, 0, 0.12)
     b:SetScript("OnClick", fn)
-    b:SetScript("OnEnter", function(self) self.t:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3]); GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(tip); GameTooltip:Show() end)
-    b:SetScript("OnLeave", function(self) self.t:SetTextColor(0.6, 0.6, 0.6); GameTooltip:Hide() end)
+    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText(tip); GameTooltip:Show() end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return b
   end
-  tr.min = hdrBtn("-", -8, function() RG.db.trackerCollapsed = not RG.db.trackerCollapsed; RG.RefreshTracker() end, "Collapse or expand")
-  local g = hdrBtn("", -30, function()
+  tr.min = hdrBtn("-", -6, function() RG.db.trackerCollapsed = not RG.db.trackerCollapsed; RG.RefreshTracker() end, "Collapse or expand", true)
+  local g = hdrBtn("", -32, function()
     local v = RG.TrackerView and RG.TrackerView() or "guide"
     local tab = (v == "prof" and "prof") or (v == "dungeon" and "dungeons") or "journey"
     if RG.ShowTab then RG.ShowTab(tab) elseif RG.ToggleUI then RG.ToggleUI() end
   end, "Open the full guide")
   tr.guideBtn = g
-  local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(14, 14); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Journey"); gi:SetVertexColor(0.66, 0.62, 0.54)
+  local gi = g:CreateTexture(nil, "OVERLAY"); gi:SetSize(13, 13); gi:SetPoint("CENTER"); gi:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Journey"); gi:SetVertexColor(P.brass[1], P.brass[2], P.brass[3])
   -- arrow on/off switch
-  local ab = CreateFrame("Button", nil, tr); ab:SetSize(20, 20); ab:SetPoint("TOPRIGHT", -52, -8)
-  ab.icon = ab:CreateTexture(nil, "OVERLAY"); ab.icon:SetSize(13, 13); ab.icon:SetPoint("CENTER"); ab.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow")
+  local ab = CreateFrame("Button", nil, tr); ab:SetSize(22, 22); ab:SetPoint("TOPRIGHT", -58, -6)
+  framed(ab, P.btn, P.btnEdge)
+  ab.hl = ab:CreateTexture(nil, "HIGHLIGHT"); ab.hl:SetPoint("TOPLEFT", 1, -1); ab.hl:SetPoint("BOTTOMRIGHT", -1, 1); ab.hl:SetColorTexture(1, 0.82, 0, 0.12)
+  ab.icon = ab:CreateTexture(nil, "OVERLAY"); ab.icon:SetSize(12, 12); ab.icon:SetPoint("CENTER"); ab.icon:SetTexture("Interface\\AddOns\\Waypath\\Media\\Icons\\Arrow")
   ab:SetScript("OnClick", function(self)
     RG.db.arrow = not RG.Opt("arrow")
     if RG.RefreshArrow then RG.RefreshArrow() end
@@ -691,15 +763,26 @@ local function build()
   ab:SetScript("OnLeave", function() GameTooltip:Hide() end)
   tr.arrowBtn = ab
 
-  -- thin XP bar along the bottom, with the pace and time to level above it
-  local xpBg = tr:CreateTexture(nil, "ARTWORK"); xpBg:SetHeight(2); xpBg:SetPoint("BOTTOMLEFT", 8, 6); xpBg:SetPoint("BOTTOMRIGHT", -8, 6)
-  xpBg:SetTexture("Interface\\Buttons\\WHITE8X8"); xpBg:SetVertexColor(1, 1, 1, 0.08)
-  tr.xp = tr:CreateTexture(nil, "OVERLAY"); tr.xp:SetHeight(2); tr.xp:SetPoint("BOTTOMLEFT", 8, 6)
-  tr.xp:SetTexture("Interface\\Buttons\\WHITE8X8"); tr.xp:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1)
+  -- the level bar along the bottom: your level and how far into it, the time to the next one, and the XP bar
+  tr.footBg = tr:CreateTexture(nil, "BACKGROUND", nil, -7); tr.footBg:SetPoint("BOTTOMLEFT", 1, 1); tr.footBg:SetPoint("BOTTOMRIGHT", -1, 1); tr.footBg:SetHeight(FOOT_H - 1)
+  tr.footBg:SetColorTexture(P.foot[1], P.foot[2], P.foot[3], 1)
+  tr.footLine = tr:CreateTexture(nil, "BORDER"); tr.footLine:SetPoint("BOTTOMLEFT", 1, FOOT_H); tr.footLine:SetPoint("BOTTOMRIGHT", -1, FOOT_H); tr.footLine:SetHeight(1)
+  tr.footLine:SetColorTexture(P.line[1], P.line[2], P.line[3], 1)
+  tr.lvl = tr:CreateFontString(nil, "OVERLAY"); tr.lvl:SetPoint("BOTTOMLEFT", 9, 15); tr.lvl:SetJustifyH("LEFT"); tfont(tr.lvl, 10.5)
+  tr.lvl:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
+  tr.eta = tr:CreateFontString(nil, "OVERLAY"); tr.eta:SetPoint("BOTTOMRIGHT", -9, 15); tr.eta:SetJustifyH("RIGHT"); tfont(tr.eta, 10.5)
+  tr.eta:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
+  local xpBox = CreateFrame("Frame", nil, tr); xpBox:SetHeight(6); xpBox:SetPoint("BOTTOMLEFT", 8, 6); xpBox:SetPoint("BOTTOMRIGHT", -8, 6)
+  framed(xpBox, P.dark, P.btnEdge)
+  tr.xpBox = xpBox
+  tr.xp = xpBox:CreateTexture(nil, "ARTWORK"); tr.xp:SetHeight(4); tr.xp:SetPoint("TOPLEFT", 1, -1)
+  tr.xp:SetColorTexture(P.xp[1], P.xp[2], P.xp[3], 1)
+  tr.rest = xpBox:CreateTexture(nil, "ARTWORK", nil, -1); tr.rest:SetHeight(4); tr.rest:SetPoint("TOPLEFT", tr.xp, "TOPRIGHT", 0, 0)
+  tr.rest:SetColorTexture(0.3, 0.52, 0.9, 0.55); tr.rest:Hide()
   tr.foot = RG.NewText(tr, "GameFontHighlightSmall"); tr.foot:Hide()
   tr.pct = RG.NewText(tr, "GameFontHighlightSmall"); tr.pct:Hide()
 
-  local sep = tr:CreateTexture(nil, "ARTWORK"); sep:SetHeight(1); sep:SetPoint("TOPLEFT", 0, -50); sep:SetPoint("TOPRIGHT", 0, -50); sep:SetColorTexture(0.122, 0.176, 0.224, 1); tr.sep = sep
+  local sep = tr:CreateTexture(nil, "ARTWORK"); sep:SetHeight(1); sep:SetPoint("TOPLEFT", 1, -50); sep:SetPoint("TOPRIGHT", -1, -50); sep:SetColorTexture(P.line[1], P.line[2], P.line[3], 1); tr.sep = sep
   -- the rows live on a scroll child: the list scrolls once it is taller than its cap (TrackerExtras.lua)
   -- (it starts under the header and the current step: RG.TrackerTop)
   tr.scroll = CreateFrame("ScrollFrame", nil, tr); tr.scroll:SetPoint("TOPLEFT", 12, -56); tr.scroll:SetWidth(W - 24); tr.scroll:SetHeight(10)
@@ -722,10 +805,9 @@ local function folded(key)
 end
 local function fontSize(base) return math.floor(base * ((RG.db.textSize or 1.2) / 1.2) + 0.5) end
 -- How far down the list starts: under the header (what it follows, and the line under that) and the current step.
-local HEAD_H = 50
 function RG.TrackerTop()
   local h = RG.StepCardHeight and RG.StepCardHeight() or 0
-  return HEAD_H + (h > 0 and (h + 6) or 0) + 4
+  return HEAD_H + 4 + (h > 0 and (h + 6) or 0) + 4
 end
 -- The sections under Quests (new quests, route, class quests, dungeon, upgrade, professions, reminders) share one
 -- "More" row until you open it, so the side bar stays short: the first thing it shows is what to do now.
@@ -764,16 +846,21 @@ local function section(n, y, label, key, right)
     end
     b.tip = isFolded and "Click to show this section." or "Click to fold this section away."
   end
-  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 0, 0); tfont(b.text, fontSize(12))
-  b.text:SetWidth(W - 24); b.text:SetWordWrap(false)
+  -- the bar: title in Marcellus gold on the left, what it counts on the right, then + or - (folded or open)
+  b.secF:SetShown(true)
+  b.fold:SetShown(key ~= nil); b.fold:SetText(isFolded and "+" or "-")
+  b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", 4, -4); dfont(b.text, fontSize(13))
+  b.text:SetWordWrap(false); if b.text.SetMaxLines then b.text:SetMaxLines(1) end
   b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
-  local lab = label:find("|", 1, true) and label or label:upper()
-  b.text:SetText((key and ("|cff8a8a8a" .. (isFolded and "+ " or "- ") .. "|r") or "") .. "|cffb4b4b4" .. lab .. "|r")
-  tfont(b.right, fontSize(11)); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
-  b.right:ClearAllPoints(); b.right:SetPoint("TOPRIGHT", 0, -1)
+  b.text:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
+  b.text:SetText(label)
+  tfont(b.right, fontSize(10.5)); b.right:SetText(right or ""); b.right:SetShown(right ~= nil)
+  b.right:SetTextColor(P.where[1], P.where[2], P.where[3])
+  b.right:ClearAllPoints(); b.right:SetPoint("TOPRIGHT", key and -16 or -4, -5)
+  b.text:SetWidth(math.max(40, W - 24 - 8 - (right and ((b.right:GetStringWidth() or 0) + 8) or 0) - (key and 16 or 4)))
   if rawget(b, "pbg") then b.pbg:Hide(); b.pbar:Hide() end
-  b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(16); b:Show()
-  return y + 24, isFolded
+  b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:SetHeight(20); b:Show()
+  return y + 25, isFolded
 end
 -- opts: onClick, onRightClick, tip, box (checkbox state), right (right-hand text), single (one line, cut with ...)
 local function item(n, y, text, opts)
@@ -796,10 +883,13 @@ local function item(n, y, text, opts)
     b:ClearAllPoints(); b:SetPoint("TOPLEFT", 0, -y); b:Show()
     return y + b._h + spacing + (b._prog and 2 or 0)
   end
+  b.secF:SetShown(false); b.fold:Hide()
   tfont(b.right, fontSize(11.5)); b.right:SetText(opts.right or ""); b.right:SetShown(opts.right ~= nil)
+  b.right:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
   b.right:ClearAllPoints(); b.right:SetPoint("TOPRIGHT", -(opts.rpad or 0), -1)
   local rw = opts.right and ((b.right:GetStringWidth() or 0) + 8) or 0
   b.text:ClearAllPoints(); b.text:SetPoint("TOPLEFT", indent, 0); tfont(b.text, fontSize(13))
+  b.text:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
   local avail = W - 24 - indent - rw - (opts.rpad or 0)
   b.text:SetWidth(avail)
   b.text:SetShadowColor(0, 0, 0, 0.9); b.text:SetShadowOffset(1, -1)
@@ -834,12 +924,12 @@ local function item(n, y, text, opts)
     b.box:Show(); b.box:SetSize(14, 14); b.box:ClearAllPoints(); b.box:SetPoint("TOPLEFT", 2, 0)
     b.box:SetTexture("Interface\\AddOns\\Waypath\\Media\\" .. (st.state == "cur" and "Disc" or "Ring"))
     if st.state == "done" then
-      b.box:SetVertexColor(0.35, 0.85, 0.45, 0.9)
-      b.check:SetSize(10, 10); b.check:SetVertexColor(0.35, 0.85, 0.45, 1); b.check:Show()
+      b.box:SetVertexColor(P.doneEdge[1], P.doneEdge[2], P.doneEdge[3], 1)
+      b.check:SetSize(10, 10); b.check:SetVertexColor(P.green[1], P.green[2], P.green[3], 1); b.check:Show()
     else
       b.check:Hide()
-      if st.state == "cur" then b.box:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3], 1); b.num:SetTextColor(0.05, 0.07, 0.07)
-      else b.box:SetVertexColor(0.5, 0.5, 0.5, 0.9); b.num:SetTextColor(0.7, 0.7, 0.7) end
+      if st.state == "cur" then b.box:SetVertexColor(P.gold[1], P.gold[2], P.gold[3], 1); b.num:SetTextColor(0.1, 0.07, 0.02)
+      else b.box:SetVertexColor(P.btnEdge[1] * 1.4, P.btnEdge[2] * 1.4, P.btnEdge[3] * 1.4, 1); b.num:SetTextColor(P.muted[1], P.muted[2], P.muted[3]) end
       b.num:SetText(tostring(st.n)); b.num:Show()
     end
   elseif opts.tickAt then
@@ -925,7 +1015,7 @@ function RG.RefreshTracker()
   -- size and width (Ctrl / Shift + mouse wheel)
   W = RG.db.trackerWidth or 300
   tr:SetWidth(W); tr.body:SetWidth(W - 24); tr.scroll:SetWidth(W - 24); tr:SetScale(RG.db.trackerScale or 1)
-  tr:SetBackdropColor(0.063, 0.11, 0.153, RG.db.trackerAlpha or 0.85)
+  framed(tr, P.panel, P.border, RG.db.trackerAlpha or 0.92)
   -- pairs, not ipairs: a folded section leaves a gap in the list, and ipairs stops at the first gap (old rows stayed on screen)
   -- rows are not hidden first: every row up to the last one is placed again below, and the rest are hidden at the end
   -- (hiding and showing each row on every refresh made the game lay the whole tracker out twice)
@@ -936,7 +1026,13 @@ function RG.RefreshTracker()
   if RG.XPRate then rate, eta = RG.XPRate() end
   local rested = GetXPExhaustion and GetXPExhaustion()
   if rested and RG.IsSecret and RG.IsSecret(rested) then rested = nil end
-  tr.lvl:SetText("Level " .. lvl .. (rested and rested > 0 and "  ·  |cff4d85e6rested|r" or ""))
+  -- the level bar: "Level 53 · 42%", "level 54 in about 3 h" (at your pace this session), rested XP a paler stretch
+  local frac = (max and max > 0) and math.min(1, xp / max) or 0
+  tr.lvl:SetText("Level " .. lvl .. " · " .. math.floor(frac * 100) .. "%" .. (rested and rested > 0 and "  ·  |cff7fa6e6rested|r" or ""))
+  local maxLvl = (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 60
+  if lvl >= maxLvl then tr.eta:SetText("max level")
+  elseif eta and RG.FormatETA then tr.eta:SetText("level " .. (lvl + 1) .. " in about " .. RG.FormatETA(eta))
+  else tr.eta:SetText("") end
   -- the header: what the tracker follows (Smart.lua), the line under it, and the current step (StepView.lua)
   local view = RG.TrackerView and RG.TrackerView() or "log"
   local alt = RG.IsAlt and RG.IsAlt()
@@ -946,11 +1042,16 @@ function RG.RefreshTracker()
     local okO, o = pcall(RG.Objective or function() end)
     tr.crest:SetDesaturated(not (okO and o and o.wp))
   end
-  tr.xp:SetWidth(math.max(1, (W - 16) * ((max and max > 0) and xp / max or 1)))
+  do
+    local bw = W - 18
+    tr.xp:SetWidth(math.max(1, bw * frac))
+    local rw = (rested and rested > 0 and max and max > 0) and math.min(bw * (1 - frac), bw * rested / max) or 0
+    if rw >= 1 then tr.rest:SetWidth(rw); tr.rest:Show() else tr.rest:Hide() end
+  end
   if tr.arrowBtn then
     local on = RG.Opt("arrow")
     tr.arrowBtn.icon:SetDesaturated(not on)
-    if on then tr.arrowBtn.icon:SetVertexColor(GOLDC[1], GOLDC[2], GOLDC[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
+    if on then tr.arrowBtn.icon:SetVertexColor(P.light[1], P.light[2], P.light[3]) else tr.arrowBtn.icon:SetVertexColor(0.45, 0.45, 0.45) end
   end
   local quests = RG.MyQuests and RG.MyQuests() or {}
   -- the line under the header: what it's following right now (click: more)
@@ -998,10 +1099,13 @@ function RG.RefreshTracker()
     local cx = tr.ctx
     cx.right:SetText(right or ""); cx.onClick, cx.tip = click, tip
     cx.left:SetWidth(0); cx.left:SetText(left or "")
-    local room = (W - 24) - ((right and right ~= "") and ((cx.right:GetStringWidth() or 0) + 10) or 0) - (drop and 16 or 0)
+    local room = (W - 16) - ((right and right ~= "") and ((cx.right:GetStringWidth() or 0) + 10) or 0) - 18 - (drop and 15 or 0)
     cx.left:SetWidth(math.max(20, math.min(room, (cx.left:GetStringWidth() or 0) + 2)))
-    cx.chev:SetShown(drop and true or false); cx.box:SetShown(drop and true or false)
-    if drop then cx.box:ClearAllPoints(); cx.box:SetPoint("TOPLEFT", cx.left, "TOPLEFT", -4, 2); cx.box:SetPoint("BOTTOMRIGHT", cx.chev, "BOTTOMRIGHT", 4, -3) end
+    -- (boxed like the mockup's dropdown; the caret only when it opens a list)
+    cx.chev:SetShown(drop and true or false)
+    local has = left and left ~= ""
+    cx.boxF:SetShown(has and true or false)
+    cx:SetWidth(has and ((cx.left:GetWidth() or 0) + 16 + (drop and 15 or 0)) or 1)
   end
   -- the current step under the header (it knows whether the tracker is folded)
   if RG.RefreshStepView then RG.stepCardFromTracker = true; pcall(RG.RefreshStepView); RG.stepCardFromTracker = nil end
@@ -1011,7 +1115,7 @@ function RG.RefreshTracker()
     -- folded: the header and the current step
     tr.scroll:Hide(); if RG.TrackerChrome then RG.TrackerChrome(false) end
     tr.min.t:SetText("+"); tr.sep:Hide()
-    tr:SetHeight(top + 2)
+    tr:SetHeight(top - 2 + FOOT_H)
     return
   end
   tr.scroll:Show(); tr.min.t:SetText("-"); tr.sep:Show()
@@ -1811,7 +1915,7 @@ function RG.RefreshTracker()
   tr.rowCount = n
   for i, b in pairs(lines) do if i > n then b:Hide() end end
   if RG.TrackerItemEnd then RG.TrackerItemEnd() end
-  if RG.TrackerFinish then RG.TrackerFinish(y) else tr.body:SetHeight(math.max(10, y)); tr:SetHeight(60 + y + 14) end
+  if RG.TrackerFinish then RG.TrackerFinish(y) else tr.body:SetHeight(math.max(10, y)); tr:SetHeight(RG.TrackerTop() + y + 6 + FOOT_H) end
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------

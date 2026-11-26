@@ -115,15 +115,15 @@ return {
       T.step(2)
       local function has(pat) for _, t in ipairs(T.tracker()) do if clean(t):lower():find(pat) then return true end end return false end
       RG.SetRouteMode("guide", true); T.step(2)
-      T.ok(has("^[%-%+] route · "), "the guide shows the route: " .. table.concat(T.tracker(), " | "))
-      T.ok(not has("^[%-%+] quests"), "and not your quest list")
+      T.ok(has("^route · "), "the guide shows the route: " .. table.concat(T.tracker(), " | "))
+      T.ok(not has("^quests$"), "and not your quest list")
       T.ok(T.trackerFind("Ordered guide"), "the header says what it follows")
       T.ok(T.trackerFind("Your Place In The World"), "the step you're on lists its quests")
       RG.SetRouteMode("log", true); T.step(2)
-      T.ok(has("^[%-%+] quests"), "my quest log shows your quests: " .. table.concat(T.tracker(), " | "))
-      T.ok(not has("^[%-%+] route · "), "and not the route")
+      T.ok(has("^quests$"), "my quest log shows your quests: " .. table.concat(T.tracker(), " | "))
+      T.ok(not has("^route · "), "and not the route")
       RG.SetRouteMode("zone", true); T.step(2)
-      T.ok(has("^[%-%+] steps · valley of trials"), "zone quests shows the steps of the zone you're in, nearest first: " .. table.concat(T.tracker(), " | "))
+      T.ok(has("^steps · valley of trials"), "zone quests shows the steps of the zone you're in, nearest first: " .. table.concat(T.tracker(), " | "))
       T.ok(has("^hand in your place in the world"), "the step the current step shows is in that list")
       -- the menu at the top: Professions, then back
       local tr = T.W.G.WaypathTracker

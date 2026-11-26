@@ -7,7 +7,7 @@ local _, RG = ...
 --     why it's next and what comes after.
 -- Models are only asked for out in the world: never inside an instance (as the card game does, see v1.60.2).
 local GOLD, GREY, GREEN = RG.COLORS.GOLD, RG.COLORS.GREY, RG.COLORS.GREEN
-local GOLDC = RG.ACCENT or { 0.847, 0.71, 0.416 }
+local GOLDC = { 1, 0.82, 0 }   -- the tracker's gold (the restyle's fixed colours, Tracker.lua's RG.TPAL)
 
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -128,6 +128,7 @@ end
 -- a Skip button. Folded, the tracker keeps only the first two lines. In the professions view it shows the profession
 -- step you're on (RG.ProfFocus).
 local MODEL = 58
+local STRIP = 27   -- the strip across the card's top: what to do, the quest, how far
 local f, model
 local cardH = 0
 function RG.StepCardHeight() return (f and f:IsShown()) and cardH or 0 end
@@ -201,36 +202,54 @@ local function build()
   if not t then return nil end
   f = CreateFrame("Button", "WaypathStepView", t)
   f:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  local bg = f:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(1, 1, 1, 0.045)
-  local hl = f:CreateTexture(nil, "HIGHLIGHT"); hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.03)
+  -- the restyle (Tracker.lua's RG.TPAL): a brass-edged card, a darker strip across its top for what to do and the quest
+  local P = RG.TPAL
+  if RG.TFramed then RG.TFramed(f, P.box, P.border) end
+  local strip = f:CreateTexture(nil, "BACKGROUND", nil, -6); strip:SetPoint("TOPLEFT", 1, -1); strip:SetPoint("TOPRIGHT", -1, -1); strip:SetHeight(STRIP - 1)
+  strip:SetColorTexture(P.strip[1], P.strip[2], P.strip[3], 1)
+  local rule = f:CreateTexture(nil, "BORDER"); rule:SetPoint("TOPLEFT", 1, -STRIP); rule:SetPoint("TOPRIGHT", -1, -STRIP); rule:SetHeight(1)
+  rule:SetColorTexture(P.line[1], P.line[2], P.line[3], 1)
+  local hl = f:CreateTexture(nil, "HIGHLIGHT"); hl:SetPoint("TOPLEFT", 1, -1); hl:SetPoint("BOTTOMRIGHT", -1, 1); hl:SetColorTexture(1, 0.82, 0, 0.03)
   if RG.TrackerDragFrom then RG.TrackerDragFrom(f) end
-  -- what to do (a small tag), the quest, how far
-  f.chip = f:CreateTexture(nil, "ARTWORK"); f.chip:SetHeight(14); f.chip:SetPoint("TOPLEFT", 8, -8)
-  f.verb = newText(f, 10, "bold"); f.verb:SetPoint("LEFT", f.chip, "LEFT", 4, 0)
-  f.dist = newText(f, 11, "semibold"); f.dist:SetPoint("TOPRIGHT", -8, -9); f.dist:SetJustifyH("RIGHT"); f.dist:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
-  f.title = newText(f, 13, "semibold"); f.title:SetPoint("LEFT", f.chip, "RIGHT", 6, 0); f.title:SetPoint("RIGHT", f.dist, "LEFT", -6, 0)
-  f.title:SetWordWrap(false); f.title:SetTextColor(0.937, 0.902, 0.824)
-  -- the objective and its progress
-  f.prog = newText(f, 12, "semibold"); f.prog:SetPoint("TOPRIGHT", -8, -27); f.prog:SetJustifyH("RIGHT")
-  f.obj = newText(f, 12); f.obj:SetPoint("TOPLEFT", 8, -27); f.obj:SetPoint("RIGHT", f.prog, "LEFT", -6, 0); f.obj:SetWordWrap(false)
-  f.obj:SetTextColor(0.8, 0.82, 0.85)
-  -- details: the picture (a 3D model of the NPC, or an icon), and beside it where, drops and why
-  f.pic = CreateFrame("Frame", nil, f); f.pic:SetSize(MODEL, MODEL); f.pic:SetPoint("TOPLEFT", 8, -46)
-  local pbg = f.pic:CreateTexture(nil, "BACKGROUND"); pbg:SetAllPoints(); pbg:SetColorTexture(0, 0, 0, 0.3)
-  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(36, 36); f.icon:SetPoint("CENTER"); f.icon:Hide()
-  f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -2); f.picName:SetWidth(MODEL + 8); f.picName:SetJustifyH("CENTER")
-  f.picName:SetTextColor(0.79, 0.75, 0.66)
-  f.body = newText(f, 11); f.body:SetPoint("TOPLEFT", 8, -46); f.body:SetSpacing(2); f.body:SetTextColor(0.8, 0.82, 0.85)
-  -- what comes after, and Skip
-  f.line = f:CreateTexture(nil, "ARTWORK"); f.line:SetHeight(1); f.line:SetColorTexture(1, 1, 1, 0.07)
-  f.skip = CreateFrame("Button", nil, f); f.skip:SetSize(40, 16); f.skip:SetPoint("BOTTOMRIGHT", -6, 6)
+  -- what to do (a small brass-edged tag), the quest in Marcellus gold, how far
+  f.chipF = CreateFrame("Frame", nil, f); f.chipF:SetHeight(15); f.chipF:SetPoint("TOPLEFT", 8, -6)
+  if RG.TFramed then RG.TFramed(f.chipF, P.chip, P.ring) end
+  f.verb = newText(f.chipF, 9.5, "semibold"); f.verb:SetPoint("CENTER", 0, 0); f.verb:SetJustifyH("CENTER")
+  f.dist = newText(f, 11.5, "semibold"); f.dist:SetPoint("TOPRIGHT", -8, -8); f.dist:SetJustifyH("RIGHT"); f.dist:SetTextColor(P.light[1], P.light[2], P.light[3])
+  f.title = f:CreateFontString(nil, "OVERLAY"); f.title:SetJustifyH("LEFT"); f.title:SetJustifyV("MIDDLE")
+  if RG.TDisplayFont then RG.TDisplayFont(f.title, 14) else RG.Font(f.title, "semibold", 13) end
+  f.title:SetPoint("LEFT", f.chipF, "RIGHT", 8, 0); f.title:SetPoint("RIGHT", f.dist, "LEFT", -6, 0)
+  f.title:SetWordWrap(false); f.title:SetTextColor(P.gold[1], P.gold[2], P.gold[3]); f.title:SetShadowColor(0, 0, 0, 0.9); f.title:SetShadowOffset(1, -1)
+  -- the objective and its progress (more lines are added beside it for a quest with several)
+  f.prog = newText(f, 12, "semibold"); f.prog:SetJustifyH("RIGHT")
+  f.obj = newText(f, 12); f.obj:SetWordWrap(false)
+  f.obj:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
+  -- details: the picture (a 3D model of the NPC, or an icon) in a round brass frame, and beside it where, drops and how
+  f.pic = CreateFrame("Frame", nil, f); f.pic:SetSize(MODEL, MODEL); f.pic:SetPoint("TOPLEFT", 8, -(STRIP + 8))
+  local pbg = f.pic:CreateTexture(nil, "BACKGROUND"); pbg:SetAllPoints(); pbg:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc")
+  pbg:SetVertexColor(P.dark[1], P.dark[2], P.dark[3], 1)
+  -- (the ring on a frame of its own, above the model)
+  local ringF = CreateFrame("Frame", nil, f.pic); ringF:SetAllPoints(); ringF:SetFrameLevel(f.pic:GetFrameLevel() + 10)
+  local pring = ringF:CreateTexture(nil, "OVERLAY"); pring:SetAllPoints(); pring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring")
+  pring:SetVertexColor(P.ring[1], P.ring[2], P.ring[3], 1)
+  f.pic.ring = pring
+  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(40, 40); f.icon:SetPoint("CENTER"); f.icon:Hide()
+  -- (the icon round too, where the game has the mask)
+  if f.icon.SetMask then pcall(f.icon.SetMask, f.icon, "Interface\\CharacterFrame\\TempPortraitAlphaMask") end
+  f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -3); f.picName:SetWidth(MODEL + 8); f.picName:SetJustifyH("CENTER")
+  f.picName:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
+  f.body = newText(f, 11); f.body:SetSpacing(2); f.body:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
+  -- what comes after, and Skip (red, like the game's close buttons)
+  f.line = f:CreateTexture(nil, "ARTWORK"); f.line:SetHeight(1); f.line:SetColorTexture(P.line[1], P.line[2], P.line[3], 1)
+  f.skip = CreateFrame("Button", nil, f); f.skip:SetSize(44, 18); f.skip:SetPoint("BOTTOMRIGHT", -7, 5)
   f.skip:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  local sbg = f.skip:CreateTexture(nil, "BACKGROUND"); sbg:SetAllPoints(); sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.14)
-  f.skip.label = newText(f.skip, 10.5, "semibold"); f.skip.label:SetPoint("CENTER"); f.skip.label:SetJustifyH("CENTER"); f.skip.label:SetText("Skip")
-  f.skip.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  if RG.TFramed then RG.TFramed(f.skip, P.red, P.redEdge) end
+  local sbg = f.skip:CreateTexture(nil, "ARTWORK"); sbg:SetPoint("TOPLEFT", 1, -1); sbg:SetPoint("BOTTOMRIGHT", -1, 1); sbg:SetColorTexture(1, 0.82, 0, 0);
+  f.skip.label = newText(f.skip, 10.5, "semibold"); f.skip.label:SetPoint("CENTER", 0, 0); f.skip.label:SetJustifyH("CENTER"); f.skip.label:SetText("Skip")
+  f.skip.label:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
   f.skip:SetScript("OnClick", function(_, button) if button == "RightButton" then skipMenu() else skipNow() end end)
   f.skip:SetScript("OnEnter", function(self)
-    sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.28)
+    sbg:SetColorTexture(1, 0.82, 0, 0.14)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Skip this step", 1, 0.93, 0.74)
     GameTooltip:AddLine("Click: skip it (a stop of your quests for an hour; a route step until /wp undo)", 1, 1, 1, true)
@@ -238,9 +257,9 @@ local function build()
     GameTooltip:AddLine("Skipped something by mistake? /wp undo brings back the last skip.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
-  f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.14); GameTooltip:Hide() end)
+  f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(1, 0.82, 0, 0); GameTooltip:Hide() end)
   f.foot = newText(f, 11); f.foot:SetPoint("BOTTOMLEFT", 8, 8); f.foot:SetPoint("RIGHT", f.skip, "LEFT", -6, 0); f.foot:SetWordWrap(false)
-  f.foot:SetTextColor(0.6, 0.6, 0.6)
+  f.foot:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
   -- click: the arrow to it; right-click: skip, and more
   f:SetScript("OnClick", function(self, button)
     if button == "RightButton" then if not self.prof then skipNow() end return end
@@ -265,7 +284,8 @@ local function showModel(npc, icon)
   if npc and not inInstance() then
     if not model then
       local ok, m = pcall(CreateFrame, "DressUpModel", nil, f.pic)
-      if ok and m then model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1) end
+      -- (inside the round frame: a little in from its edge, so the model's square corners stay within the ring)
+      if ok and m then model = m; m:SetPoint("TOPLEFT", 6, -6); m:SetPoint("BOTTOMRIGHT", -6, 6) end
     end
     if model and model.SetCreature then
       if model.cur ~= npc then
@@ -432,80 +452,91 @@ function RG.RefreshStepView()
   local W = (t:GetWidth() or 300) - 16
   local folded = RG.db.trackerCollapsed or (RG.trackerInCombat and RG.Opt("trackerCombatFold"))
   local details = not folded
-  -- the top: what to do, the quest, how far
+  local P = RG.TPAL
+  -- the strip: what to do (a brass-edged tag), the quest, how far
   f.verb:SetText(info.verb:upper())
-  f.verb:SetTextColor(info.col[1], info.col[2], info.col[3])
-  f.chip:SetColorTexture(info.col[1], info.col[2], info.col[3], 0.16)
-  f.chip:SetWidth(math.max(18, (f.verb:GetStringWidth() or 20) + 8))
+  f.verb:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
+  f.chipF:SetWidth(math.max(22, (f.verb:GetStringWidth() or 20) + 12))
   f.title:SetText(info.title or "")
   f.dist:SetText(info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
+  -- the picture first: the lines go beside it when there is one (folded: no picture, the objective under the strip)
+  -- (it isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made it flash
+  -- once a second)
+  local look, shown
+  if details then
+    look = info.obj and RG.StepLookFor and RG.StepLookFor(info.obj, info.it)
+    shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
+  end
+  local picShown = shown and true or false
+  local x = picShown and (8 + MODEL + 10) or 8
+  local top = STRIP + 7
   -- the objective and its progress; a quest with several, one line each
   local lines = info.lines or ((info.line and info.line ~= "") and { { text = info.line, prog = info.prog, done = info.done } }) or {}
   f.objs = f.objs or { { f.obj, f.prog } }
+  local LH = 16
   for k = 1, math.max(#lines, #f.objs) do
     local pair, l = f.objs[k], lines[k]
     if l and not pair then
-      local p = newText(f, 12, "semibold"); p:SetPoint("TOPRIGHT", -8, -27 - (k - 1) * 18); p:SetJustifyH("RIGHT")
-      local o = newText(f, 12); o:SetPoint("TOPLEFT", 8, -27 - (k - 1) * 18); o:SetPoint("RIGHT", p, "LEFT", -6, 0); o:SetWordWrap(false)
-      o:SetTextColor(0.8, 0.82, 0.85)
+      local p = newText(f, 12, "semibold"); p:SetJustifyH("RIGHT")
+      local o = newText(f, 12); o:SetWordWrap(false)
+      o:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
       pair = { o, p }; f.objs[k] = pair
     end
     if pair then
+      local y = -(top + (k - 1) * LH)
+      pair[2]:ClearAllPoints(); pair[2]:SetPoint("TOPRIGHT", -8, y)
+      pair[1]:ClearAllPoints(); pair[1]:SetPoint("TOPLEFT", x, y); pair[1]:SetPoint("RIGHT", pair[2], "LEFT", -6, 0)
       pair[1]:SetText(l and l.text or ""); pair[2]:SetText(l and l.prog or "")
-      if l and l.done then pair[2]:SetTextColor(0.35, 0.85, 0.45) else pair[2]:SetTextColor(0.94, 0.94, 0.94) end
+      if l and l.done then pair[2]:SetTextColor(P.green[1], P.green[2], P.green[3]) else pair[2]:SetTextColor(1, 1, 1) end
     end
   end
-  local h = #lines > 0 and (46 + (#lines - 1) * 18) or 30
-  -- the details
-  -- (the picture isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made
-  -- it flash once a second)
-  local picShown = false
+  local h = top + #lines * LH
   f.picName:SetText(""); f.body:Hide(); f.line:Hide(); f.skip:Hide(); f.foot:SetText("")
   if details then
+    -- beside the picture: where (parchment), who drops it (green, like the game's quest items), what else is here,
+    -- how to do it (muted), the one thing people get wrong (orange)
     local body = {}
-    if info.where then body[#body + 1] = info.where end
+    if info.where then body[#body + 1] = "|cffc9b88f" .. info.where .. "|r" end
     if info.it and info.it.act ~= "turnin" and RG.DropInfo then
       -- (several objectives: the drops of each one still to do; else the one the stop is for)
       local done = {}
       for _, l in ipairs(info.lines or {}) do if l.done and l.label then done[l.label:lower()] = true end end
-      for _, x in ipairs(RG.DropInfo(info.it.id, (info.it.act == "doing" and not info.lines) and info.it.label or nil)) do
-        if not done[x.item:lower()] and not (x.starts and info.it.act == "doing") then
-          body[#body + 1] = (x.starts and (x.item .. " (starts the quest): drops ") or "Drops ") .. x.text
+      for _, d in ipairs(RG.DropInfo(info.it.id, (info.it.act == "doing" and not info.lines) and info.it.label or nil)) do
+        if not done[d.item:lower()] and not (d.starts and info.it.act == "doing") then
+          body[#body + 1] = "|cff1eff00" .. ((d.starts and (d.item .. " (starts the quest): drops ") or "Drops ") .. d.text) .. "|r"
         end
       end
     end
     if info.also then body[#body + 1] = info.also end
-    if info.why and info.why ~= "" then body[#body + 1] = GREY .. info.why .. "|r" end
+    if info.why and info.why ~= "" then body[#body + 1] = "|cff9a8a6a" .. info.why .. "|r" end
     local qn = info.it and info.it.id and RG.QuestNote and RG.QuestNote(info.it.id)
     if qn and qn.n then body[#body + 1] = "|cffff9f43" .. qn.n .. "|r" end
-    -- the picture
-    local look = info.obj and RG.StepLookFor and RG.StepLookFor(info.obj, info.it)
-    local shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
-    local x = 8
-    if shown then
-      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(h - 2))
-      picShown = true
+    if picShown then
+      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(STRIP + 8))
       f.picName:SetText(look.name or "")
-      x = 8 + MODEL + 8
     end
-    f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -(h - 2)); f.body:SetWidth(W - x - 8)
+    local by = h + (#lines > 0 and 3 or 0)
+    f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8)
     f.body:SetText(table.concat(body, "\n")); f.body:SetShown(#body > 0)
     local bh = #body > 0 and (f.body:GetStringHeight() or 0) or 0
-    local ph = shown and (MODEL + 14) or 0
-    h = h - 2 + math.max(bh, ph) + 8
+    local ph = picShown and (STRIP + 8 + MODEL + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
+    h = math.max(by + bh, ph) + 8
     -- what comes after, and Skip
     if info.next or info.skip then
-      f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 8, -h); f.line:SetPoint("TOPRIGHT", -8, -h); f.line:Show()
-      f.foot:SetText(info.next and (GOLD .. "Next|r  " .. info.next) or "")
+      f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h); f.line:Show()
+      f.foot:SetText(info.next and ("|cffffd100Next|r  " .. info.next) or "")
       f.skip:SetShown(info.skip and true or false)
-      h = h + 26
+      h = h + 28
     end
+  else
+    h = h + 4
   end
   if f.pic:IsShown() ~= picShown then f.pic:SetShown(picShown) end
   f.wp, f.prof = info.wp, info.prof
   f.tipTitle, f.tipText = info.title, info.whyFull
   if frozen and lastH and lastH > 0 then h = lastH end
-  f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -50); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -50)
+  local headH = (RG.TrackerHeadH and RG.TrackerHeadH() or 50) + 4
+  f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -headH); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -headH)
   f:SetHeight(h); f:Show()
   cardH = h
   if h ~= lastH then

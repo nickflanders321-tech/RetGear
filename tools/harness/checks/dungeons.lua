@@ -50,7 +50,7 @@ return {
       -- the tracker: the dungeon picker and the quests
       RG.RefreshTracker(); T.step(1)
       T.ok(T.trackerFind("Selected Dungeon: Blackrock Depths"), "the line under the header says which dungeon: " .. table.concat(T.tracker(), " | "))
-      T.ok(T.trackerFind("STEPS · BLACKROCK DEPTHS") and T.trackerFind("CHAINS"), "and the tracker lists the steps and the chains")
+      T.ok(T.trackerFind("Steps · Blackrock Depths") and T.trackerFind("Chains"), "and the tracker lists the steps and the chains")
       -- the planner only picks from the chains: whatever the current step is, it's one of them (or how it stands)
       local obj = RG.Objective(true)
       local work = RG.PrepWork()
