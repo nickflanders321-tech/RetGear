@@ -93,11 +93,20 @@ function RG.ThemeButton(parent, text, w, h, onClick)
   b:SetFontString(l); b.label = l
   local function paint(self, hover)
     local on = self:IsEnabled()
+    if self.picked then   -- the chosen one of a set: filled with the accent
+      local g = TH.gold
+      local k = (hover and on) and 1.12 or 1
+      self:SetBackdropColor(math.min(1, g[1] * k), math.min(1, g[2] * k), math.min(1, g[3] * k), on and 1 or 0.55)
+      l:SetTextColor(TH.bg[1], TH.bg[2], TH.bg[3])
+      return
+    end
     local c = (hover and on) and TH.edge or TH.raised
     self:SetBackdropColor(c[1], c[2], c[3], on and 1 or 0.55)
     local t = not on and TH.dim or (hover and TH.gold or TH.text)
     l:SetTextColor(t[1], t[2], t[3])
   end
+  -- one of a set of choices: show whether it's the picked one
+  function b.SetPicked(self, v) self.picked = v and true or nil; paint(self, self:IsMouseOver()) end
   b:SetScript("OnEnter", function(self) paint(self, true) end)
   b:SetScript("OnLeave", function(self) paint(self, false) end)
   b:SetScript("OnEnable", function(self) paint(self, false) end)
