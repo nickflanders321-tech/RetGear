@@ -167,12 +167,13 @@ function RG.SmartAlternatives(skip)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
--- What the tracker follows (the menu at its top, Settings > Route & quests, /wp route):
+-- What the tracker follows (the menu at its top, Settings > Tracker, /wp route):
 --   "guide"  the ordered guide: the route, zone by zone (RG.db.smart: the smart zone order picks the zone)
 --   "zone"   zone quests: one zone's route, the zone you're in or one you picked (RG.db.zonePick, until you log out)
 --   "log"    my quest log: only the quests you have
--- Without the leveling route on, it's always your quest log. The tracker can also show your professions instead
--- (RG.db.trackerView = "prof"); picking one of the three goes back to it.
+-- With the leveling route switched off (an old setting), it's your quest log. The tracker can also show your
+-- professions or preobtain a dungeon's quests instead (RG.db.trackerView = "prof" / "dungeon", DungeonPrep.lua);
+-- picking one of the three goes back to it.
 -- ---------------------------------------------------------------------------------------------------------------------
 function RG.RouteMode()
   local db = RG.db
@@ -187,10 +188,11 @@ function RG.RouteMode()
   return "guide"
 end
 function RG.TrackerView()
-  if RG.db and RG.db.trackerView == "prof" then return "prof" end
+  local v = RG.db and RG.db.trackerView
+  if v == "prof" or v == "dungeon" then return v end
   return RG.RouteMode()
 end
-local MODE_NAME = { guide = "Ordered guide", zone = "Zone quests", log = "My quest log", prof = "Professions" }
+local MODE_NAME = { guide = "Ordered guide", zone = "Zone quests", log = "My quest log", prof = "Professions", dungeon = "Dungeon quests" }
 function RG.ModeName(m) return MODE_NAME[m or RG.TrackerView()] or "Waypath+" end
 
 local function changed()
@@ -221,7 +223,11 @@ function RG.SetRouteStyle(style, quiet)
   RG.SetRouteMode(style, quiet)
 end
 function RG.SetTrackerView(view)
-  if view == "prof" then RG.db.trackerView = "prof"; changed() else RG.SetRouteMode(view, true) end
+  if view == "prof" or view == "dungeon" then
+    RG.db.trackerView = view
+    if RG.PrepForget then RG.PrepForget() end
+    changed()
+  else RG.SetRouteMode(view, true) end
 end
 
 -- The smart zone order (the ordered guide picks the zone that suits your level, where you are and your quest log)

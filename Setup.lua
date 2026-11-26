@@ -234,9 +234,9 @@ local function buildPages()
   segment("Solo or with others?", "playStyle", { { "solo", "Solo only" }, { "group", "Open to dungeons and groups" } }, "solo")
   segment("Travel", "travel", { { "any", "Use boats, zeppelins and hearth" }, { "walk", "Keep travel short" } }, "any")
   segment("What to follow", "routeStyle", {
-    { "guide", "Ordered guide", "The full route, zone by zone, with every step (the leveling route turns on)." },
+    { "guide", "Ordered guide", "The full route, zone by zone, with every step." },
     { "zone", "Zone quests", "One zone's route: the zone you're in, or one you pick at the top of the tracker." },
-    { "log", "My quest log", "Only the quests you have; new ones join as you pick them up." } }, "log")
+    { "log", "My quest log", "Only the quests you have; new ones join as you pick them up." } }, "guide")
   segment("Your role", "role", { { "dps", "Damage" }, { "tank", "Tank" }, { "heal", "Healer" } }, "dps")
   local why = text(pp, "GameFontHighlightSmall", GREY .. "Waypath+ uses these to choose routes, gear and dungeon steps. Change them any time with /wp setup.|r", W - 70)
   why:SetPoint("TOPLEFT", 0, sy)

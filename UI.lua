@@ -54,7 +54,7 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Sections in the sidebar, each with its pages as tabs along the top. (The Group page is gone.)
 local SECTIONS = {
-  { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "plan", "flights" } },
+  { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "dungeons", "plan", "flights" } },
   { key = "equip",   label = "Gear",    icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Gear", tabs = { "guide", "gear", "raid", "spec", "heal" } },
   { key = "economy", label = "Professions", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Economy", tabs = { "prof", "fish", "ah", "gold", "mail" } },
   { key = "cards",   label = "Cards",   icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Cards", tabs = { "cards" } },
@@ -63,7 +63,7 @@ local GROUPS, PARENT = {}, {}
 for _, sec in ipairs(SECTIONS) do GROUPS[sec.key] = sec.tabs; for _, t in ipairs(sec.tabs) do PARENT[t] = sec.key end end
 -- old section names still work (/wp money, minimap menu entries...)
 local ALIAS = { money = "economy", spec2 = "equip", group = "journey" }
-local SUBLABEL = { route = "Route", plan = "Quest plan", flights = "Flight paths", guide = "Gear guide", gear = "What I wear", raid = "Raid & tier", spec = "2nd spec",
+local SUBLABEL = { route = "Route", dungeons = "Dungeon quests", plan = "Quest plan", flights = "Flight paths", guide = "Gear guide", gear = "What I wear", raid = "Raid & tier", spec = "2nd spec",
   heal = "2nd spec gear", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt",
   cards = "Cards", settings = "Settings" }
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -1345,15 +1345,15 @@ local function renderRoute()
       end
     end
   end
-  -- the step-by-step route is a work in progress: off unless turned on (the zones for your level still show)
+  -- the step-by-step route switched off (an old setting): the zones for your level still show
   local routeOn = RG.Opt("routeGuide")
   if not routeOn and (state.search or "") == "" then
     n = n + 1
-    setItem(getRow(n), nil, nil, "Leveling route  |cffff9933WIP|r", "Work in progress: the step-by-step route is off while we improve it. Your quests, the tracker and the arrow work as usual, and the zones for your level are below.", "", GOLD .. "Turn it on|r", "gold", nil, nil)
+    setItem(getRow(n), nil, nil, "Leveling route off", "Your quests, the tracker and the arrow work as usual, and the zones for your level are below.", "", GOLD .. "Turn it on|r")
     local wr = getRow(n)
     wr.icon:SetTexture(134269); wr.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    wr.onClick = function() RG.db.routeGuide = true; RG.Print("Leveling route |cffff9933(WIP)|r on. Settings turns it off again."); RG.RefreshUI() end
-    wr.tip = "Click to turn on the leveling route (work in progress): the steps here, a Route section in the tracker, and the arrow follows the next step.\nSettings turns it off again."
+    wr.onClick = function() if RG.SetRouteMode then RG.SetRouteMode("guide", true) else RG.db.routeGuide = true end; RG.Print("Leveling route on: the tracker follows the ordered guide."); RG.RefreshUI() end
+    wr.tip = "Click to turn on the leveling route: the steps here, the tracker follows the ordered guide, and the arrow follows the next step."
   end
   local KIND = { zone = GREY .. "Questing|r", dungeon = "|cffA58BD8Dungeon|r", pala = GOLD .. "Paladin|r", travel = "|cff6FA8DCTravel|r" }
   local ICON = { zone = 134269, dungeon = 136058, pala = 135920, travel = "Interface\\Icons\\Ability_Mount_Wyvern_01" }
@@ -2284,6 +2284,77 @@ local function renderFlights()
   return n
 end
 
+-- Journey > Dungeon quests (DungeonPrep.lua): the quests of the dungeon you're preparing for, each with the chain of
+-- quests that comes first, numbered like a quest chain; skip a chain from any quest in it, or bring it back
+local function renderDungeons()
+  local n = 0
+  local lvl = UnitLevel and UnitLevel("player") or 1
+  if not (RG.PrepPlan and RG.PrepDungeon) then return n end
+  local cur = RG.PrepDungeon()
+  local following = RG.TrackerView and RG.TrackerView() == "dungeon"
+  local pl = RG.PrepPlan(cur)
+  local QI = { have = "Interface\\GossipFrame\\ActiveQuestIcon", ready = "Interface\\GossipFrame\\ActiveQuestIcon", pickup = "Interface\\GossipFrame\\AvailableQuestIcon" }
+  n = n + 1; setHeader(getRow(n), tostring(cur or "No dungeon") .. "  ·  " .. RG.PrepSummary(pl))
+  if not following then
+    n = n + 1
+    local r = getRow(n)
+    setItem(r, nil, nil, GOLD .. "Follow it on the tracker|r", "The tracker walks you through every quest below: pick up, do and hand in the ones that come first, then pick up the dungeon's own quests and keep them for the run.", "", "", "gold")
+    r.icon:SetTexture(136058)
+    r.onClick = function() RG.SetTrackerView("dungeon"); RG.RefreshUI() end
+    r.tip = "Switch the tracker to Preobtain Dungeon Quests for " .. tostring(cur) .. "."
+  end
+  for _, t in ipairs(pl.quests) do
+    local before = #t.chain - 1
+    local sub = (t.state == "have" and "In your log: keep it for the run") or (t.state == "after" and "Comes after a quest you can only do inside the dungeon")
+      or (t.state == "skipped" and "Skipped, with its chain") or (before > 0 and (before .. " quest" .. (before == 1 and "" or "s") .. " before it")) or "Pick it up before you go"
+    n = n + 1
+    local r = getRow(n)
+    setItem(r, nil, nil, RG.LevelTag(t.level) .. (t.state == "skipped" and GREY or "|cffffffff") .. t.name .. "|r", sub, RG.PrepStateText(t), "", t.state == "have" and "green" or nil)
+    r.icon:SetTexture(QI[t.state] or "Interface\\GossipFrame\\AvailableQuestIcon"); r.icon:SetTexCoord(0, 1, 0, 1)
+    r.icon:SetDesaturated(t.state == "skipped" or t.state == "after")
+    r.onClick = function() RG.PrepSkipMenu(t) end
+    r.onRightClick = r.onClick
+    r.tip = "|cffffffff" .. t.name .. "|r\n" .. sub .. ".\n\n" .. GOLD .. "Click:|r " .. (t.state == "skipped" and "bring it back" or "skip it and its chain")
+    -- its chain, in order
+    if before > 0 then
+      for i, st in ipairs(t.chain) do
+        n = n + 1
+        local c = getRow(n)
+        setItem(c, nil, nil, GREY .. i .. ".|r  " .. ((st.state == "skipped" or st.state == "after") and GREY or "|cffffffff") .. st.name .. "|r" .. (st.target and (GREY .. "  (" .. tostring(cur) .. ")|r") or ""),
+          st.why and (GREY .. st.why .. "|r") or "", RG.PrepStateText(st), "", nil, nil, true)
+        c.icon:SetTexture(QI[st.state] or "Interface\\GossipFrame\\AvailableQuestIcon"); c.icon:SetTexCoord(0, 1, 0, 1)
+        c.icon:SetDesaturated(not QI[st.state])
+        c.onClick = function() RG.PrepSkipMenu(t, st) end
+        c.onRightClick = c.onClick
+        c.tip = "|cffffffff" .. st.name .. "|r" .. (st.why and ("\n" .. st.why) or "") .. "\n\n" .. GOLD .. "Click:|r " .. (st.state == "skipped" and "bring it back" or "skip it and the rest of its chain")
+      end
+    end
+  end
+  if pl.total == 0 then
+    n = n + 1; setStep(getRow(n), "", GREY .. "Nothing left to collect for " .. tostring(cur or "this dungeon") .. ". Pick another dungeon below.|r", false, nil)
+    rows[n].iconBorder:Hide(); rows[n].icon:Hide(); rows[n].tip = nil
+  end
+  -- the other dungeons near your level
+  local others = {}
+  for _, d in ipairs(RG.PrepDungeons()) do
+    if d.name ~= cur and d.to >= lvl - 8 and d.from <= lvl + 12 then others[#others + 1] = d end
+  end
+  if #others > 0 then
+    n = n + 1; setHeader(getRow(n), "Other dungeons")
+    for _, d in ipairs(others) do
+      local p2 = RG.PrepPlan(d.name)
+      n = n + 1
+      local r = getRow(n)
+      setItem(r, nil, nil, "|cffffffff" .. d.name .. "|r", GREY .. "levels " .. d.from .. "-" .. d.to .. "  ·  " .. RG.PrepSummary(p2) .. "|r", "", "")
+      r.icon:SetTexture(136058)
+      r.onClick = function() RG.db.prepDungeon = d.name; if RG.PrepForget then RG.PrepForget() end; if RG.RouteChanged then RG.RouteChanged() end; RG.RefreshUI() end
+      r.tip = "Prepare for " .. d.name .. " instead."
+    end
+    RG.PrepForget()
+  end
+  return n
+end
+
 local function renderPlan()
   local n = 0
   local obj
@@ -2923,7 +2994,7 @@ local SETTING_TEXT = {
   fishTracker = { "Fishing panel", "Your skill, lure and catches on the tracker while you fish." },
   dungeonHelper = { "Dungeon upgrades", "In a dungeon, the upgrades it can drop for you, by boss." },
   trackerLocked = { "Lock in place", "So it can't be dragged by accident." },
-  routeGuide = { "Leveling route", "A step-by-step route on the Route tab and in the tracker; the arrow follows its steps. Still a work in progress." },
+  routeGuide = { "Leveling route", "A step-by-step route on the Route tab and in the tracker; the arrow follows its steps." },
   smartStepOrder = { "Steps you've started first", "In a zone, the step with quests you already have, or the one you're standing at, comes first. Off: the guide's order." },
   profQuests = { "Profession starter quests", "Puts quests like Camping 101 and Craftsman's Writ in the route." },
   autoQuest = { "Accept and hand in quests", "Automatically. Hold Shift at a quest giver to pause it." },
@@ -3033,10 +3104,10 @@ local COVERED = { trackerInter = true, trackerRoomy = true, compactTracker = tru
 -- the categories, in order; "#..." is a heading, "@..." a control from SPECIAL, anything else an option's switch
 local SETTING_CATS = {
   { "look", "Look", { "#Colours", "@accent", "#Sizes", "@arrowSize", "@trackerSize", "@trackerAlpha", "@textSize", "#Text", "@font", "@spacing" } },
-  { "tracker", "Tracker", { "#What it shows", "tracker", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "dungeonHelper",
+  { "tracker", "Tracker", { "#What it follows", "@routeStyle", "smart", "smartStepOrder", "@dungeons", "profQuests",
+    "#What it shows", "tracker", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "dungeonHelper",
     "#How it behaves", "@length", "@fight", "trackerLocked" } },
-  { "route", "Route & quests", { "#Leveling route", "routeGuide", "@routeStyle", "smart", "@dungeons", "smartStepOrder", "profQuests",
-    "#Quests", "autoQuest", "autoReward", "rewardPicker", "newQuests", "nameplateAlert", "questUpgradeMarks", "shareObjective" } },
+  { "quests", "Quests", { "autoQuest", "autoReward", "rewardPicker", "newQuests", "nameplateAlert", "questUpgradeMarks", "shareObjective" } },
   { "arrow", "Arrow & travel", { "arrow", "autoArrow", "smartPlan", "mapClicks", "spf", "travelTips", "fpNudge" } },
   { "remind", "Reminders", { "#Leveling", "levelBanner", "levelReport", "efficiency", "talentReminder", "wellFed", "campReminder",
     "#Your class", "reminders", "stoneReminder", "ammoReminder", "weaponTips" } },
@@ -3391,9 +3462,8 @@ local function renderSettings()
       elseif s.kind == "choice" then
         n = n + 1; setChoice(getRow(n), s.name, s.desc, s.opts, s.get(), s.set)
       elseif s.kind == "cards" then
-        local off = not RG.Opt("routeGuide")
-        n = n + 1; setHeader(getRow(n), off and "Route style  ·  turn on Leveling route to use it" or "Route style")
-        n = n + 1; setCards(getRow(n), s.opts, s.get(), s.set, off)
+        n = n + 1; setHeader(getRow(n), s.name)
+        n = n + 1; setCards(getRow(n), s.opts, s.get(), s.set, false)
       end
       return
     end
@@ -3548,6 +3618,7 @@ local TITLES = {
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
   plan = { "Quest plan", "The best order for the quests in your log, with what each one needs" },
+  dungeons = { "Dungeon quests", "Collect a dungeon's quests, and the quests that lead to them, before you run it" },
   flights = { "Flight paths", "Every flight master for your faction: click one and Waypath+ guides you there" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
@@ -3566,6 +3637,7 @@ local FOOTERS = {
   settings = "Settings are saved per character (prices and window positions are shared)",
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
   plan = "Click a stop for the arrow  ·  right-click skips it for 10 minutes  ·  /wp next  ·  /wp goto adds a goal",
+  dungeons = "Click a quest to skip it and its chain, or bring it back  ·  click a dungeon to prepare for it instead",
   flights = "Click a flight path for the arrow  ·  fly there once to learn it  ·  /wp fp points at the nearest one you haven't learned",
   fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off  ·  /wp fishkeep: keep another add-on's meter visible",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
@@ -3697,6 +3769,7 @@ function RG.RefreshUINow()
   elseif state.tab == "camp" then n = renderCamp()
   elseif state.tab == "fish" then n = renderFish()
   elseif state.tab == "flights" then n = renderFlights()
+  elseif state.tab == "dungeons" then n = renderDungeons()
   elseif state.tab == "plan" then n = renderPlan()
   else n = renderAH() end
   end)

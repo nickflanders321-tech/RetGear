@@ -12,7 +12,7 @@ for _, o in ipairs({
   { key = "nameplateAlert", label = "Tell me when a quest mob shows up nearby", default = true },
   { key = "arrow",         label = "Arrow to my map pin (/wp way 45 60)", default = true },
   { key = "spf",           label = "Let Shortest Path Forever give walking directions (when it is installed)", default = true },
-  { key = "routeGuide",    label = "Leveling route |cffff9933(WIP)|r: step-by-step zone route on the Route tab and in the tracker, and the arrow follows its steps", default = false },
+  { key = "routeGuide",    label = "Leveling route: step-by-step zone route on the Route tab and in the tracker, and the arrow follows its steps", default = true },
   { key = "autoArrow",     label = "Arrow follows my next route step automatically", default = true },
   { key = "smartStepOrder", label = "Within a zone, do the step with quests I already have, or the one I'm standing at, first (otherwise the guide's order)", default = true },
   { key = "newQuests",     label = "Show new quests I can pick up nearby", default = true },
@@ -1716,8 +1716,14 @@ SlashCmdList.WAYPATH = function(msg)
     RG.Print("Auto accept and turn in " .. (RG.Opt("autoQuest") and "on (hold Shift to pause)." or "off."))
     return
   elseif cmd == "undo" then
-    local t = RG.UndoTick and RG.UndoTick()
-    if t then RG.Print("Back on your list: " .. t) else RG.Print("Nothing to undo: no tasks ticked off by hand.") end
+    -- the last skip: a stop of your quests (the current step's Skip) or a route step, whichever came last
+    local h = RG.db.tickHistory
+    local lastTick = h and h[#h] and RG.db.stepsDone and RG.db.stepsDone[h[#h].sk] and h[#h].t or 0
+    local s = RG.lastStopSkip
+    local t
+    if s and s.t >= lastTick and RG.UnskipStop then t = RG.UnskipStop() end
+    t = t or (RG.UndoTick and RG.UndoTick()) or (RG.UnskipStop and RG.UnskipStop())
+    if t then RG.Print("Back on your list: " .. t) else RG.Print("Nothing to undo: nothing skipped.") end
     return
   elseif cmd == "pace" then
     local cur, last, avg = RG.Pace()

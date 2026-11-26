@@ -188,8 +188,12 @@ local function buildTasks()
       for _, ids in pairs(sq) do for _, id in ipairs(ids) do routeIds[id] = true end end
     end
   end
+  -- preobtaining a dungeon's quests (DungeonPrep.lua): only its chains, and its own quests are picked up and kept
+  local prep = RG.TrackerView and RG.TrackerView() == "dungeon" and RG.PrepWork and RG.PrepWork() or nil
+  if prep then mode, zoneName, routeIds = "prep", nil, nil end
   local function wanted(q, id, title)
     id = id or (q and q.id)
+    if prep then return (id and (prep.full[id] or prep.keep[id])) and true or false end
     if routeIds and not (id and routeIds[id]) then return false end
     -- a dungeon quest while they're left out (one that's finished can still be handed in)
     if not (q and q.complete) and RG.DungeonQuestHidden and RG.DungeonQuestHidden(id, q and q.zone) then return false end
@@ -245,8 +249,9 @@ local function buildTasks()
       pts = {}
       for _, p in ipairs(g.pts) do if inZone(p.wp) then pts[#pts + 1] = p end end
     end
-    if not wanted(q, nil, g.quest) then
-      -- (left out on purpose: not counted as somewhere else)
+    if not wanted(q, nil, g.quest) or (prep and q and prep.keep[q.id] and not (RG.PrepObjectiveBefore and RG.PrepObjectiveBefore(q.id, g.label))) then
+      -- (left out on purpose: not counted as somewhere else; a dungeon's own quest waits for the run, except an
+      -- objective that has nothing to do with its mobs)
     elseif #pts > 0 then
       local t = { act = "doing", title = g.quest, id = q and q.id, label = g.label, pts = pts, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
       tasks[#tasks + 1] = t
@@ -260,7 +265,7 @@ local function buildTasks()
     local ewp
     if qd and qd.e and qd.e[1] then ewp = { qd.e[1], qd.e[2], qd.e[3], (qd.e[4] and qd.e[4] ~= "") and qd.e[4] or q.title }
     elseif q.complete and q.wp then ewp = q.wp end   -- not in our data: where the game says to hand it in
-    if ewp and wanted(q) and inZone(ewp) then
+    if ewp and wanted(q) and inZone(ewp) and not (prep and q.id and prep.keep[q.id]) then
       local p = pt(ewp)
       if p and (q.complete or objOf[q.title]) then
         tasks[#tasks + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], pts = { p }, level = q.level, group = q.group,
@@ -269,7 +274,7 @@ local function buildTasks()
     end
   end
   -- the route's next pick-ups, so a giver on your way gets bundled with the rest
-  local r = mode ~= "log" and opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+  local r = mode ~= "log" and mode ~= "prep" and opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   if r and RG.STEPS and RG.StepQuestLines then
     local steps = RG.STEPS[r.zone .. "|" .. r.from] or {}
     for i = 1, #steps do
@@ -285,9 +290,18 @@ local function buildTasks()
       end
     end
   end
+  -- the dungeon's chains: their quests to pick up
+  if prep then
+    for _, pk in ipairs(prep.pickups) do
+      if not byTitle[pk.name] then
+        local p = pt(pk.wp)
+        if p then tasks[#tasks + 1] = { act = "pickup", title = pk.name, id = pk.id, label = pk.label, pts = { p }, level = pk.level } end
+      end
+    end
+  end
   -- worthwhile quests just around you, even when the route has not reached them yet (not for the guide, which keeps to
   -- its route, nor for your quest log, which keeps to what you have)
-  if mode == "zone" or not opt("routeGuide") then
+  if mode ~= "prep" and (mode == "zone" or not opt("routeGuide")) then
   if RG.OptBesideQuestie and RG.OptBesideQuestie("newQuests", "available") and RG.NearbyNewQuests then
     local have = {}
     for _, t in ipairs(tasks) do have[t.title] = true end
@@ -533,6 +547,16 @@ local function buildObjective()
     elseif pick > 1 then obj.nextText, obj.nextWp = stopText(stops[1], true), stops[1].wp end
     return obj, plan
   end
+  -- preobtaining a dungeon's quests, nothing to go and do right now: how it stands
+  if RG.TrackerView and RG.TrackerView() == "dungeon" and RG.PrepPlan then
+    local pl = RG.PrepPlan()
+    obj.kind, obj.key = "prep", "prep:" .. tostring(pl.name)
+    obj.text = RG.PrepSummary(pl)
+    obj.why = pl.ready and ("Every quest for " .. tostring(pl.name) .. " you can get before the run is in your log.")
+      or (pl.waiting > 0 and (pl.waiting .. " wait for a level or an earlier quest.") or "Nothing to go and do right now.")
+    obj.reqs, obj.count, obj.index = {}, 0, 0
+    return obj, plan
+  end
   -- nothing in the log to plan: the route's hub for this step
   local r = opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   if r and RG.STEPS then
@@ -628,9 +652,21 @@ function RG.GuideReset() cache = { dirty = true, t = -99 }; lastObjKey = nil; sk
 function RG.SkipStop(stop)
   if not stop then return end
   local until_ = (GetTime and GetTime() or 0) + 3600   -- an hour: a skipped stop should not come straight back
-  for _, it in ipairs(stop.items) do skipUntil[taskKey(it)] = until_ end
+  local keys = {}
+  for _, it in ipairs(stop.items) do skipUntil[taskKey(it)] = until_; keys[#keys + 1] = taskKey(it) end
+  RG.lastStopSkip = { keys = keys, text = stopText(stop, true), t = time and time() or 0 }
   RG.Log("skip", stopText(stop, true))
   cache.obj = nil; cache.dirty = true
+end
+-- /wp undo: the stop skipped last comes back. Returns what it was.
+function RG.UnskipStop()
+  local l = RG.lastStopSkip
+  if not l then return nil end
+  for _, k in ipairs(l.keys) do skipUntil[k] = nil end
+  RG.lastStopSkip = nil
+  cache.obj = nil; cache.dirty = true
+  if RG.RefreshTracker then RG.RefreshTracker() end
+  return l.text
 end
 
 -- One key that does the useful thing: point at the objective, or move on to the next one.

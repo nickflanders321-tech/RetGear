@@ -89,7 +89,7 @@ return {
       T.ok(RG.Opt("trackerLocked") ~= before, "clicking it flips it")
       -- what to follow: three cards
       RG.db.routeGuide = true
-      openSettings(T, "Route & quests")
+      openSettings(T, "Tracker")
       T.ok(page(T):find("Zone quests", 1, true) and page(T):find("My quest log", 1, true), "the three things to follow are explained")
       local zq = button(T, "t", "Zone quests")
       if zq then click(zq); T.step(1) end

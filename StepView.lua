@@ -154,6 +154,7 @@ local function skipMenu()
       end
     end
   end
+  if #e <= 1 then skipNow() return end
   if RG.ShowMenu then RG.ShowMenu(e, "Current step") end
 end
 RG.StepViewSkip = skipNow
@@ -204,7 +205,8 @@ local function build()
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Skip this step", 1, 0.93, 0.74)
     GameTooltip:AddLine("Click: skip it (a stop of your quests for an hour; a route step until /wp undo)", 1, 1, 1, true)
-    GameTooltip:AddLine("Right-click: more (never suggest these quests again)", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Right-click: never suggest a quest here again", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Skipped something by mistake? /wp undo brings back the last skip.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(GOLDC[1], GOLDC[2], GOLDC[3], 0.14); GameTooltip:Hide() end)
@@ -212,15 +214,14 @@ local function build()
   f.foot:SetTextColor(0.6, 0.6, 0.6)
   -- click: the arrow to it; right-click: skip, and more
   f:SetScript("OnClick", function(self, button)
-    if button == "RightButton" then if self.prof then if RG.ShowTab then RG.ShowTab("prof") end else skipMenu() end return end
+    if button == "RightButton" then if not self.prof then skipNow() end return end
     if self.wp and RG.Follow then RG.Follow(self.wp) end
   end)
   f:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine(self.tipTitle or "The current step", 1, 0.93, 0.74, true)
-    if self.tipWhy then GameTooltip:AddLine(self.tipWhy, 0.8, 0.8, 0.8, true) end
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Click: the arrow to it  ·  right-click: " .. (self.prof and "the Professions page" or "skip it, and more"), 1, 1, 1, true)
+    GameTooltip:AddLine("Click: the arrow to it" .. (self.prof and "" or "  ·  Right-click: skip it"), 1, 1, 1, true)
+    if not self.prof then GameTooltip:AddLine("Skipped something by mistake? /wp undo brings back the last skip.", 0.8, 0.8, 0.8, true) end
     GameTooltip:Show()
   end)
   f:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -287,7 +288,7 @@ local function cardInfo()
   if not obj then return nil end
   local it = obj.stop and obj.stop.items and obj.stop.items[1]
   local v = (it and VERB[it.act]) or (obj.kind == "route" and { "Go", { 1, 0.82, 0 } }) or (obj.kind == "dungeon" and { "In", { 0.62, 0.83, 1 } })
-    or (obj.kind == "goal" and { "Goal", { 1, 0.82, 0 } }) or { "Next", { 1, 0.82, 0 } }
+    or (obj.kind == "goal" and { "Goal", { 1, 0.82, 0 } }) or (obj.kind == "prep" and { "Prep", { 0.74, 0.68, 1 } }) or { "Next", { 1, 0.82, 0 } }
   local info = { verb = v[1], col = v[2], obj = obj, it = it, wp = obj.wp, dist = obj.dist }
   info.title = obj.qtitle or plain(obj.text)
   local line, prog = obj.qline, nil
@@ -295,7 +296,7 @@ local function cardInfo()
     local a, b = line:match("^(.-)%s%s+(%d+/%d+)$")
     if a then line, prog = a, b end
   end
-  if not line and obj.kind ~= "goal" then line = obj.wp and zoneName(obj.wp[1]) or nil end
+  if not line and obj.kind ~= "goal" and obj.kind ~= "route" and obj.kind ~= "prep" then line = obj.wp and zoneName(obj.wp[1]) or nil end
   info.line, info.prog = line, prog
   if prog then
     local h, n = prog:match("(%d+)/(%d+)")
@@ -304,17 +305,21 @@ local function cardInfo()
   -- where (the zone, and the place's name when it says more than the quest's)
   local zone = obj.wp and zoneName(obj.wp[1])
   local place = obj.wp and obj.wp[4]
-  if place and (place == info.title or place == zone) then place = nil end
+  if place and (place == info.title or place == zone or obj.kind == "route" or ("Head to " .. place) == info.title) then place = nil end
   info.where = zone and (zone .. (place and (": " .. place) or "")) or place
   -- why: the planner's reason, without the distance and the "also here" list (said elsewhere), for what it follows
   local why = obj.why and (obj.why:match("^(.-)%s+·%s+") or obj.why) or ""
-  local mode = RG.RouteMode and RG.RouteMode()
-  if mode == "zone" and obj.kind ~= "goal" then
-    why = "Zone quests: " .. tostring((RG.FollowZone and RG.FollowZone()) or "this zone") .. "." .. (why ~= "" and (" " .. why .. ".") or "")
-  elseif mode == "guide" and obj.kind ~= "goal" and obj.kind ~= "route" then
+  why = why:gsub("%.+$", "")
+  local function with(lead) return lead .. (why ~= "" and (" " .. why .. ".") or "") end
+  local view = RG.TrackerView and RG.TrackerView()
+  if view == "dungeon" and obj.kind ~= "goal" and obj.kind ~= "prep" then
+    why = with("Preobtain: " .. tostring(RG.PrepDungeon and RG.PrepDungeon() or "the dungeon") .. ".")
+  elseif view == "zone" and obj.kind ~= "goal" then
+    why = with("Zone quests: " .. tostring((RG.FollowZone and RG.FollowZone()) or "this zone") .. ".")
+  elseif view == "guide" and obj.kind ~= "goal" and obj.kind ~= "route" then
     local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
-    why = (r and ("The guide: " .. r.zone .. ".") or "The guide.") .. (why ~= "" and (" " .. why .. ".") or "")
-  end
+    why = with(r and ("The guide: " .. r.zone .. ".") or "The guide.")
+  elseif why ~= "" then why = why .. "." end
   info.why = why
   -- the others at the same stop
   if obj.stop and #obj.stop.items > 1 then
@@ -399,7 +404,6 @@ function RG.RefreshStepView()
   end
   f.wp, f.prof = info.wp, info.prof
   f.tipTitle = info.title
-  f.tipWhy = (info.obj and info.obj.text and plain(info.obj.text) ~= info.title) and plain(info.obj.text) or info.why
   if frozen and lastH and lastH > 0 then h = lastH end
   f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -50); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -50)
   f:SetHeight(h); f:Show()
