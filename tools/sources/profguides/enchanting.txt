@@ -29,12 +29,12 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 26x Purple Lotus
 52x Crystal Vial (vendor)
 52x Firebloom
-1x Golden Pearl
 88x Illusion Dust
 4x Greater Eternal Essence
 4x Small Brilliant Shard
 2x Large Brilliant Shard
 1x Arcanite Rod
+1x Golden Pearl
 Formula: Enchant 2H Weapon - Lesser Intellect (100)
 Only if you level 70-150 with Lesser Magic Essence
 Formula: Minor Mana Oil (150)
