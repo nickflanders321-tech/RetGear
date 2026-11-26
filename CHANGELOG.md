@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.62.6
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.62.5
 - Alchemy: make one Philosopher's Stone at 234 (keep it for transmutes); Pestlezugg's Iron to Gold and Mithril to Truesilver transmutes are listed as an alternative for 225-235.
 - Engineering 280-300 now matches the updated WoW Forever guide: 8 more Thorium Widgets to 286, then 15 Thorium Tubes (and 14 Thorium Shells).

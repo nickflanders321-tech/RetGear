@@ -1123,6 +1123,7 @@ RG.ZONE_MAPS = {
   ["Forlorn Gardens"] = 2652,
   ["Forlorn Pit"] = 2548,
   ["Frostmane Hold"] = 1426,
+  ["Gadgetzan"] = 1446,
   ["Gloomrise"] = 1412,
   ["Gustberry Lowlands"] = 2521,
   ["Hillsbrad Foothills"] = 1424,
