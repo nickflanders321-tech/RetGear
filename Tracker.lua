@@ -1011,6 +1011,183 @@ function RG.RefreshTracker()
   -- 1. your quests: level, name, progress, distance
   local quests = RG.MyQuests and RG.MyQuests() or {}
   local new = RG.NearbyNewQuests and RG.NearbyNewQuests(8) or {}
+  -- the route section: under your quests, or above them with "Route steps at the top" on
+  local routeTop = RG.Opt("trackerRouteTop")
+  local function routeSection()
+    -- 3. route: the zone you're in and its next tasks (the leveling route is a work in progress: off unless turned on)
+    local r = RG.Opt("routeGuide") and currentEntry()
+    if not r and RG.Opt("routeGuide") and RG.db.routeStyle == "zone" then
+      local here = RG.ZoneName()
+      local isFolded
+      local nx = RG.TrackerBestNext and RG.TrackerBestNext(nil)
+      n = n + 1; y, isFolded = section(n, y, "Route: " .. (here ~= "" and here or "here"), "route", nx and (GREEN .. "no steps here: next " .. nx .. "|r") or (GREY .. "no steps here|r"))
+      if not isFolded then
+        n = n + 1; y = item(n, y, GREY .. "No route steps in this zone.|r", { single = true, indent = 2,
+          tip = "You chose to stay in the zone you're in. Go to a zone on the route (below) and it follows you there.\n/wp route smart lets it choose zones again." })
+        y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, nil) or y
+        n = RG.trackerN or n
+      end
+      y = gap(y)
+    end
+    if r then
+      local key = r.zone .. "|" .. r.from
+      local steps = RG.STEPS[key] or {}
+      local doneN = 0
+      for i = 1, #steps do if RG.StepIsDone(r, i) then doneN = doneN + 1 end end
+      -- the first open step, split into its quests when it's a generated one
+      local firstOpen = RG.NextStep(r)
+      local qlines, qdone, qtotal, place, levels
+      if firstOpen then qlines, qdone, qtotal, place, levels = RG.StepQuestLines(r, firstOpen, quests) end
+      local isFolded
+      local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
+      if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
+      if #steps == 0 then right = GOLD .. "new zone|r" end
+      -- staying in this zone and it's done: the header says where next (it shows in the "+ More" row too)
+      if RG.db.routeStyle == "zone" and #steps > 0 and doneN == #steps then
+        local nx = RG.TrackerBestNext and RG.TrackerBestNext(r)
+        right = GREEN .. "done" .. (nx and (": next " .. nx) or "") .. "|r"
+      end
+      n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
+      if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" and RG.db.routeStyle ~= "zone" then
+        local ok, alts = pcall(RG.SmartAlternatives, r)
+        if ok and alts and #alts > 0 then
+          local names = {}
+          for _, o in ipairs(alts) do names[#names + 1] = o.r.zone end
+          n = n + 1
+          y = item(n, y, GREY .. "Also good: " .. table.concat(names, ", ") .. "|r", { single = true, indent = 2,
+            tip = GOLD .. "Smart route|r picks the zone that suits your level, position and quest log.\n\n" .. (function() local t = {} for _, o in ipairs(alts) do t[#t + 1] = "|cffffffff" .. o.r.zone .. "|r: " .. o.why end return table.concat(t, "\n") end)() .. "\n\n" .. GOLD .. "/wp smart|r turns this off." })
+        end
+      end
+      -- a flight master you haven't learned yet, close by: grab it while you're here
+      if not isFolded and RG.NearbyFlight then
+        local fe = RG.NearbyFlight()
+        if fe then
+          n = n + 1
+          y = item(n, y, (isTarget(fe.wp) and ARROW or RG.PIN or "") .. GOLD .. "Grab the " .. fe.node .. " flight path|r", { single = true, indent = 2, wp = fe.wp,
+            right = GREY .. math.floor(fe.dist) .. " yd|r",
+            tip = GOLD .. "Flight path nearby:|r " .. fe.node .. " (" .. fe.zone .. ")" .. (fe.npc and (", from " .. fe.npc) or "") .. ".\nLearn it now and you can fly back here later instead of running." ..
+              (fe.known == nil and ("\n" .. GREY .. "Already have it? Talk to any flight master once and Waypath+ remembers which ones you know.|r") or "") ..
+              "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map",
+            onRightClick = function() RG.PinWaypoint(fe.wp) end })
+        end
+      end
+      if not isFolded and qlines then
+        local sk = key .. "#" .. firstOpen
+        local wp = RG.StepWaypoint and RG.StepWaypoint(r, firstOpen)
+        -- where this step happens
+        n = n + 1
+        y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. "|cffc9a227" .. (place or r.zone) .. "|r" .. (levels and (GREY .. "  ·  " .. levels .. "|r") or ""),
+          { indent = 2, wp = wp, right = GREY .. qdone .. "/" .. qtotal .. " quests done|r",
+            tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in." ..
+              (function()   -- how often the step's items drop
+                local t = ""
+                if RG.DropTip then for _, l in ipairs(qlines) do if l.act ~= "turnin" and l.act ~= "later" then t = t .. RG.DropTip(l.id):gsub("^\n\n" .. GOLD:gsub("%p", "%%%0") .. "Drops:|r", "") end end end
+                return t ~= "" and ("\n\n" .. GOLD .. "Drops:|r" .. t) or ""
+              end)() .. "\n\n" ..
+              (wp and (GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") .. GOLD .. "Shift-click:|r skip this step",
+            onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
+            onRightClick = wp and function() RG.Follow(wp) end or nil })
+        -- the arrow goes to the first thing to do: a hand-in, else a pick-up, else the hub
+        if RG.AutoPin and not (RG.Opt("smartPlan") and RG.Objective and RG.Objective()) then
+          local first = qlines[1]
+          if first and first.wp and (first.act == "turnin" or first.act == "pickup") then RG.AutoPin(sk .. "@" .. first.act .. first.id, first.wp)
+          elseif wp then RG.AutoPin(sk, wp) end
+        end
+        -- an icon per kind of task, like the quest log: ? hand in, ! pick up, sword to do, clock for later
+        local VERB = { turnin = "|TInterface\\GossipFrame\\ActiveQuestIcon:13:13:0:-1|t ", pickup = "|TInterface\\GossipFrame\\AvailableQuestIcon:13:13:0:-1|t ",
+          doing = "|TInterface\\Icons\\INV_Sword_27:13:13:0:-1:64:64:5:59:5:59|t ", later = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:13:13:0:-1:64:64:5:59:5:59|t " }
+        local shownL = 0
+        for _, l in ipairs(qlines) do
+          if shownL < 6 then
+            shownL = shownL + 1
+            local nameCol = (l.act == "later" and GREY) or (l.act == "turnin" and "|cff8be0a4") or (l.act == "doing" and "|cff9fd4ff") or "|cffffffff"
+            local rt
+            if l.act == "turnin" then rt = GREEN .. "to " .. (l.npc or "the quest giver") .. "|r"
+            elseif l.act == "pickup" then rt = GREY .. (l.npc and ("from " .. l.npc) or "starts from an item or object") .. "|r"
+            elseif l.act == "doing" then rt = l.prog and ("|cffffffff" .. l.prog .. "|r") or (GREY .. "in your log|r")
+            else rt = GREY .. l.npc .. "|r" end
+            local tip
+            if l.act == "turnin" then tip = "Done: take it back to " .. (l.npc or "the quest giver") .. "."
+            elseif l.act == "pickup" then tip = l.how or ("Get this quest from " .. (l.npc or "the quest giver") .. ".")
+            elseif l.act == "doing" then tip = "In your quest log: finish its objectives."
+            else tip = "Not open yet: it becomes available " .. l.npc .. "." end
+            if l.wp then tip = tip .. "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map" end
+            if l.act == "doing" then tip = tip .. (l.wp and "\n" or "\n\n") .. GOLD .. "Click:|r open the quest" end
+            -- what kind of quest it is, and the one thing people get wrong about it (QuestNotes.lua)
+            local qn = RG.QuestNote(l.id)
+            tip = tip .. noteTip(qn) .. upTip(l.id) .. ((RG.DropTip and l.act ~= "turnin" and l.act ~= "later") and RG.DropTip(l.id) or "")
+            n = n + 1
+            y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or "") .. upTag(l.id),
+              { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
+                onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
+                onRightClick = l.wp and function() RG.Follow(l.wp) end or nil })
+          end
+        end
+        if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 12, noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+        -- what comes after this step
+        -- the steps after this one: one with the route under your quests, two with it on top
+        local after = {}
+        for i = 1, #steps do if i ~= firstOpen and not RG.StepIsDone(r, i) and #after < (routeTop and 2 or 1) then after[#after + 1] = i end end
+        for k, nextI in ipairs(after) do
+          local nq, _, nt, np, nl = RG.StepQuestLines(r, nextI, quests)
+          local text = (np or plain(steps[nextI]):sub(1, 40)) .. (nl and (", " .. nl) or "")
+          local names = {}
+          for _, l in ipairs(routeTop and nq or {}) do if #names < 2 and l.act ~= "later" then names[#names + 1] = l.name end end
+          if #names > 0 then text = text .. ": " .. table.concat(names, ", ")
+          elseif nt then text = text .. " (" .. nt .. " quests)" end
+          local label = routeTop and (k == 1 and (GOLD .. "Next|r  ") or "Then  ") or "Then: "
+          n = n + 1
+          y = item(n, y, GREY .. label .. text .. "|r",
+            { single = true, indent = 2, wp = RG.StepWaypoint and RG.StepWaypoint(r, nextI), tip = (k == 1 and "The next step" or "The step after that") .. " of this zone's route" .. (nt and (": " .. nt .. " quests") or "") .. ".\nThe Route tab has every step.\n\n" .. GOLD .. "Click:|r open the route", noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+        end
+        if RG.TravelSummary then
+          local tip = RG.TravelSummary(r.zone)
+          if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
+        end
+        local u = lastTick(key .. "#")
+        if u then
+          n = n + 1
+          y = item(n, y, GREY .. "Skipped a step|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put it back on your list.\n/wp undo does the same.",
+            onClick = function() RG.UndoTick() end })
+        end
+      elseif not isFolded then
+        local shown = 0
+        for i, text in ipairs(steps) do
+          local done = RG.StepIsDone(r, i)
+          if not done and shown < (routeTop and 3 or 2) then
+            shown = shown + 1
+            n = n + 1
+            local sk = key .. "#" .. i
+            local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+            if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
+            y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, text) end end,
+              onRightClick = wp and function() RG.Follow(wp) end or nil })
+          end
+        end
+        if shown == 0 and #steps == 0 then
+          n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here; they show up above. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+        elseif shown == 0 and RG.db.routeStyle == "zone" then
+          n = n + 1; y = item(n, y, GREEN .. "All done in " .. r.zone .. ".|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end,
+            tip = "You chose to stay in the zone you're in: the route won't send you elsewhere. Go to the next zone yourself (below) and it follows you there.\n\n" .. GOLD .. "Click:|r the Route tab" })
+          y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, r) or y
+          n = RG.trackerN or n
+        elseif shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
+        if shown > 0 and RG.TravelSummary then
+          local tip = RG.TravelSummary(r.zone)
+          if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
+        end
+        local u = lastTick(key .. "#")
+        if u then
+          local short = plain(u.text); if #short > 30 then short = short:sub(1, 28) .. "..." end
+          n = n + 1
+          y = item(n, y, GREY .. "Ticked: " .. short .. "|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put this task back on your list.\n" .. GREY .. plain(u.text) .. "\n/wp undo does the same.|r",
+            onClick = function() RG.UndoTick() end })
+        end
+      end
+      y = gap(y)
+    end
+  end
+  if routeTop then routeSection() end
   if #quests > 0 then
     local ready = 0
     for _, q in ipairs(quests) do if q.complete then ready = ready + 1 end end
@@ -1229,171 +1406,7 @@ function RG.RefreshTracker()
     end
     y = gap(y)
   end
-  -- 3. route: the zone you're in and its next tasks (the leveling route is a work in progress: off unless turned on)
-  local r = RG.Opt("routeGuide") and currentEntry()
-  if not r and RG.Opt("routeGuide") and RG.db.routeStyle == "zone" then
-    local here = RG.ZoneName()
-    local isFolded
-    local nx = RG.TrackerBestNext and RG.TrackerBestNext(nil)
-    n = n + 1; y, isFolded = section(n, y, "Route: " .. (here ~= "" and here or "here"), "route", nx and (GREEN .. "no steps here: next " .. nx .. "|r") or (GREY .. "no steps here|r"))
-    if not isFolded then
-      n = n + 1; y = item(n, y, GREY .. "No route steps in this zone.|r", { single = true, indent = 2,
-        tip = "You chose to stay in the zone you're in. Go to a zone on the route (below) and it follows you there.\n/wp route smart lets it choose zones again." })
-      y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, nil) or y
-      n = RG.trackerN or n
-    end
-    y = gap(y)
-  end
-  if r then
-    local key = r.zone .. "|" .. r.from
-    local steps = RG.STEPS[key] or {}
-    local doneN = 0
-    for i = 1, #steps do if RG.StepIsDone(r, i) then doneN = doneN + 1 end end
-    -- the first open step, split into its quests when it's a generated one
-    local firstOpen = RG.NextStep(r)
-    local qlines, qdone, qtotal, place, levels
-    if firstOpen then qlines, qdone, qtotal, place, levels = RG.StepQuestLines(r, firstOpen, quests) end
-    local isFolded
-    local right = GREY .. doneN .. "/" .. #steps .. " steps|r"
-    if qlines then right = GREY .. "step " .. firstOpen .. " of " .. #steps .. "|r" end
-    if #steps == 0 then right = GOLD .. "new zone|r" end
-    -- staying in this zone and it's done: the header says where next (it shows in the "+ More" row too)
-    if RG.db.routeStyle == "zone" and #steps > 0 and doneN == #steps then
-      local nx = RG.TrackerBestNext and RG.TrackerBestNext(r)
-      right = GREEN .. "done" .. (nx and (": next " .. nx) or "") .. "|r"
-    end
-    n = n + 1; y, isFolded = section(n, y, "Route: " .. r.zone, "route", right)
-    if not isFolded and RG.SmartAlternatives and RG.db.smart ~= false and RG.db.routeStyle ~= "guided" and RG.db.routeStyle ~= "zone" then
-      local ok, alts = pcall(RG.SmartAlternatives, r)
-      if ok and alts and #alts > 0 then
-        local names = {}
-        for _, o in ipairs(alts) do names[#names + 1] = o.r.zone end
-        n = n + 1
-        y = item(n, y, GREY .. "Also good: " .. table.concat(names, ", ") .. "|r", { single = true, indent = 2,
-          tip = GOLD .. "Smart route|r picks the zone that suits your level, position and quest log.\n\n" .. (function() local t = {} for _, o in ipairs(alts) do t[#t + 1] = "|cffffffff" .. o.r.zone .. "|r: " .. o.why end return table.concat(t, "\n") end)() .. "\n\n" .. GOLD .. "/wp smart|r turns this off." })
-      end
-    end
-    -- a flight master you haven't learned yet, close by: grab it while you're here
-    if not isFolded and RG.NearbyFlight then
-      local fe = RG.NearbyFlight()
-      if fe then
-        n = n + 1
-        y = item(n, y, (isTarget(fe.wp) and ARROW or RG.PIN or "") .. GOLD .. "Grab the " .. fe.node .. " flight path|r", { single = true, indent = 2, wp = fe.wp,
-          right = GREY .. math.floor(fe.dist) .. " yd|r",
-          tip = GOLD .. "Flight path nearby:|r " .. fe.node .. " (" .. fe.zone .. ")" .. (fe.npc and (", from " .. fe.npc) or "") .. ".\nLearn it now and you can fly back here later instead of running." ..
-            (fe.known == nil and ("\n" .. GREY .. "Already have it? Talk to any flight master once and Waypath+ remembers which ones you know.|r") or "") ..
-            "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map",
-          onRightClick = function() RG.PinWaypoint(fe.wp) end })
-      end
-    end
-    if not isFolded and qlines then
-      local sk = key .. "#" .. firstOpen
-      local wp = RG.StepWaypoint and RG.StepWaypoint(r, firstOpen)
-      -- where this step happens
-      n = n + 1
-      y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. "|cffc9a227" .. (place or r.zone) .. "|r" .. (levels and (GREY .. "  ·  " .. levels .. "|r") or ""),
-        { indent = 2, wp = wp, right = GREY .. qdone .. "/" .. qtotal .. " quests done|r",
-          tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in." ..
-            (function()   -- how often the step's items drop
-              local t = ""
-              if RG.DropTip then for _, l in ipairs(qlines) do if l.act ~= "turnin" and l.act ~= "later" then t = t .. RG.DropTip(l.id):gsub("^\n\n" .. GOLD:gsub("%p", "%%%0") .. "Drops:|r", "") end end end
-              return t ~= "" and ("\n\n" .. GOLD .. "Drops:|r" .. t) or ""
-            end)() .. "\n\n" ..
-            (wp and (GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") .. GOLD .. "Shift-click:|r skip this step",
-          onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
-          onRightClick = wp and function() RG.Follow(wp) end or nil })
-      -- the arrow goes to the first thing to do: a hand-in, else a pick-up, else the hub
-      if RG.AutoPin and not (RG.Opt("smartPlan") and RG.Objective and RG.Objective()) then
-        local first = qlines[1]
-        if first and first.wp and (first.act == "turnin" or first.act == "pickup") then RG.AutoPin(sk .. "@" .. first.act .. first.id, first.wp)
-        elseif wp then RG.AutoPin(sk, wp) end
-      end
-      -- an icon per kind of task, like the quest log: ? hand in, ! pick up, sword to do, clock for later
-      local VERB = { turnin = "|TInterface\\GossipFrame\\ActiveQuestIcon:13:13:0:-1|t ", pickup = "|TInterface\\GossipFrame\\AvailableQuestIcon:13:13:0:-1|t ",
-        doing = "|TInterface\\Icons\\INV_Sword_27:13:13:0:-1:64:64:5:59:5:59|t ", later = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:13:13:0:-1:64:64:5:59:5:59|t " }
-      local shownL = 0
-      for _, l in ipairs(qlines) do
-        if shownL < 6 then
-          shownL = shownL + 1
-          local nameCol = (l.act == "later" and GREY) or (l.act == "turnin" and "|cff8be0a4") or (l.act == "doing" and "|cff9fd4ff") or "|cffffffff"
-          local rt
-          if l.act == "turnin" then rt = GREEN .. "to " .. (l.npc or "the quest giver") .. "|r"
-          elseif l.act == "pickup" then rt = GREY .. (l.npc and ("from " .. l.npc) or "starts from an item or object") .. "|r"
-          elseif l.act == "doing" then rt = l.prog and ("|cffffffff" .. l.prog .. "|r") or (GREY .. "in your log|r")
-          else rt = GREY .. l.npc .. "|r" end
-          local tip
-          if l.act == "turnin" then tip = "Done: take it back to " .. (l.npc or "the quest giver") .. "."
-          elseif l.act == "pickup" then tip = l.how or ("Get this quest from " .. (l.npc or "the quest giver") .. ".")
-          elseif l.act == "doing" then tip = "In your quest log: finish its objectives."
-          else tip = "Not open yet: it becomes available " .. l.npc .. "." end
-          if l.wp then tip = tip .. "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map" end
-          if l.act == "doing" then tip = tip .. (l.wp and "\n" or "\n\n") .. GOLD .. "Click:|r open the quest" end
-          -- what kind of quest it is, and the one thing people get wrong about it (QuestNotes.lua)
-          local qn = RG.QuestNote(l.id)
-          tip = tip .. noteTip(qn) .. upTip(l.id) .. ((RG.DropTip and l.act ~= "turnin" and l.act ~= "later") and RG.DropTip(l.id) or "")
-          n = n + 1
-          y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or "") .. upTag(l.id),
-            { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,
-              onClick = function() if l.act == "doing" then RG.OpenQuest(l.name, l.id) elseif l.wp then RG.PinWaypoint(l.wp) end end,
-              onRightClick = l.wp and function() RG.Follow(l.wp) end or nil })
-        end
-      end
-      if #qlines > shownL then n = n + 1; y = item(n, y, GREY .. "+" .. (#qlines - shownL) .. " more on the Route tab|r", { single = true, indent = 12, noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
-      -- what comes after this step
-      local nextI
-      for i = 1, #steps do if i ~= firstOpen and not RG.StepIsDone(r, i) then nextI = i break end end
-      if nextI then
-        local _, _, nt, np, nl = RG.StepQuestLines(r, nextI, quests)
-        n = n + 1
-        y = item(n, y, GREY .. "Then: " .. (np or plain(steps[nextI]):sub(1, 40)) .. (nl and (", " .. nl) or "") .. (nt and (" (" .. nt .. " quests)") or "") .. "|r",
-          { single = true, indent = 2, wp = RG.StepWaypoint and RG.StepWaypoint(r, nextI), tip = "The next step of this zone's route.\nThe Route tab has every step.\n\n" .. GOLD .. "Click:|r open the route", noArrow = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
-      end
-      if RG.TravelSummary then
-        local tip = RG.TravelSummary(r.zone)
-        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
-      end
-      local u = lastTick(key .. "#")
-      if u then
-        n = n + 1
-        y = item(n, y, GREY .. "Skipped a step|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put it back on your list.\n/wp undo does the same.",
-          onClick = function() RG.UndoTick() end })
-      end
-    elseif not isFolded then
-      local shown = 0
-      for i, text in ipairs(steps) do
-        local done = RG.StepIsDone(r, i)
-        if not done and shown < 2 then
-          shown = shown + 1
-          n = n + 1
-          local sk = key .. "#" .. i
-          local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
-          if wp and shown == 1 and RG.AutoPin then RG.AutoPin(key .. "#" .. i, wp) end
-          y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. text, { box = false, wp = wp, tip = GOLD .. "Shift-click:|r tick this off" .. (wp and ("\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show " .. wp[4] .. " on the map") or ""), onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, text) end end,
-            onRightClick = wp and function() RG.Follow(wp) end or nil })
-        end
-      end
-      if shown == 0 and #steps == 0 then
-        n = n + 1; y = item(n, y, GOLD .. "New zone: steps are coming.|r " .. GREY .. "Take the quests you find here; they show up above. The Route tab has other zones for your level.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
-      elseif shown == 0 and RG.db.routeStyle == "zone" then
-        n = n + 1; y = item(n, y, GREEN .. "All done in " .. r.zone .. ".|r", { single = true, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end,
-          tip = "You chose to stay in the zone you're in: the route won't send you elsewhere. Go to the next zone yourself (below) and it follows you there.\n\n" .. GOLD .. "Click:|r the Route tab" })
-        y = RG.TrackerNextZones and RG.TrackerNextZones(n, y, item, r) or y
-        n = RG.trackerN or n
-      elseif shown == 0 then n = n + 1; y = item(n, y, GREEN .. "All done here. The Route tab has your next zone.|r", { onClick = function() if RG.ShowTab then RG.ShowTab("route") end end }) end
-      if shown > 0 and RG.TravelSummary then
-        local tip = RG.TravelSummary(r.zone)
-        if tip then n = n + 1; y = item(n, y, GOLD .. "Getting there:|r " .. tip, { wp = destWp(r), tip = "The quickest way from here, using your hearthstone, the flight paths you know, zeppelins and boats.\n\n" .. GOLD .. "Click:|r arrow to the first stop in " .. r.zone }) end
-      end
-      local u = lastTick(key .. "#")
-      if u then
-        local short = plain(u.text); if #short > 30 then short = short:sub(1, 28) .. "..." end
-        n = n + 1
-        y = item(n, y, GREY .. "Ticked: " .. short .. "|r", { single = true, right = GOLD .. "Undo|r", tip = "Click to put this task back on your list.\n" .. GREY .. plain(u.text) .. "\n/wp undo does the same.|r",
-          onClick = function() RG.UndoTick() end })
-      end
-    end
-    y = gap(y)
-  end
+  if not routeTop then routeSection() end
   -- 3b. hand-written class chain (paladin): the next step for your level
   local shownClassSteps = false
   for _, pr in ipairs(RG.ROUTE) do
@@ -1602,6 +1615,7 @@ table.insert(RG.OPTIONS, { key = "trackerLocked", label = "Lock the tracker in p
 table.insert(RG.OPTIONS, { key = "trackerProfs", label = "Show your professions' next step and missing materials on the tracker", default = true })
 table.insert(RG.OPTIONS, { key = "trackerFade", label = "Fade the tracker during combat", default = false })
 table.insert(RG.OPTIONS, { key = "trackerCombatFold", label = "Fold the tracker to one line during combat", default = true })
+table.insert(RG.OPTIONS, { key = "trackerRouteTop", label = "Route steps at the top of the tracker: the step you're on and the next two, above your quests", default = true })
 local fade = CreateFrame("Frame")
 fade:RegisterEvent("PLAYER_REGEN_DISABLED"); fade:RegisterEvent("PLAYER_REGEN_ENABLED")
 fade:SetScript("OnEvent", function(_, event)

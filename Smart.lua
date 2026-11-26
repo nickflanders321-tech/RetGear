@@ -166,6 +166,21 @@ function RG.SmartAlternatives(skip)
   return out
 end
 
+-- The route style: "smart", "guided" or "zone" (stay in the zone you're in). Quiet: no chat line.
+function RG.SetRouteStyle(style, quiet)
+  if style ~= "guided" and style ~= "zone" then style = "smart" end
+  RG.db.routeStyle = style
+  RG.db.smart = style ~= "guided"
+  RG.db.smartKey = nil
+  if not quiet then
+    RG.Print(({ smart = "Smart route: the tracker picks the best zone for where you are and your level.",
+      guided = "Guided route: the tracker follows the route in order.",
+      zone = "Route: staying in the zone you're in. It won't send you to another zone; go there yourself and it follows." })[style])
+  end
+  if RG.RefreshTracker then RG.RefreshTracker() end
+  if RG.RefreshUI then RG.RefreshUI() end
+end
+
 function RG.SmartToggle(on)
   RG.db.smart = on
   RG.db.routeStyle = on and "smart" or "guided"

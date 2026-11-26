@@ -641,8 +641,8 @@ SlashCmdList.WAYPATH = function(msg)
   return base(msg)
 end
 
--- Pick the accent colour: a name, or nothing to go to the next one.
-function RG.SetAccent(name)
+-- Pick the accent colour: a name, or nothing to go to the next one (quiet: no chat line, the settings page shows it).
+function RG.SetAccent(name, quiet)
   local order = RG.ACCENT_ORDER
   if name then name = name:lower(); if name == "contrast" or name == "white" then name = "light" end end
   if not (name and RG.ACCENTS[name]) then
@@ -652,7 +652,7 @@ function RG.SetAccent(name)
   end
   RG.db.accent = name
   RG.ApplyAccent(name)
-  RG.Print("Accent colour: " .. RG.ACCENTS[name][1] .. ". Some text updates on /reload.")
+  if not quiet then RG.Print("Accent colour: " .. RG.ACCENTS[name][1] .. ". Some text updates on /reload.") end
   if RG.RefreshTracker then RG.RefreshTracker() end
   if RG.RefreshUI then RG.RefreshUI() end
 end

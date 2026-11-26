@@ -221,6 +221,8 @@ local function hideAll(r)
   if rawget(r, "rgLine") then r.rgLine:Hide() end
   r.title:SetWordWrap(false); r.sub:SetWordWrap(false)
   for _, k in ipairs({ "iconBorder", "icon", "title", "sub", "pill", "meta", "head", "headLine", "barBg", "barFill", "barMark", "barLabel", "barValue", "stripe" }) do r[k]:Hide() end
+  local ctl = rawget(r, "ctl")
+  if ctl then for _, c in pairs(ctl) do c:Hide() end end
 end
 
 local function setHeader(r, text)
@@ -2810,29 +2812,6 @@ local function renderFish()
   return n
 end
 
-local SETTING_GROUPS = {
-  -- ("#..." starts a sub-heading inside a group; the page shows one group open at a time)
-  { "Leveling and quests", {
-    "#Tracker: look", "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter",
-    "#Tracker: what it shows", "trackerObjectives", "trackerFocus", "trackerItems", "stepView", "fishTracker", "trackerProfs",
-    "#Quests", "autoQuest", "newQuests", "autoReward", "rewardPicker", "nameplateAlert", "shareObjective",
-    "#Arrow and travel", "arrow", "mapClicks", "spf", "smartPlan", "travelTips", "fpNudge",
-    "#Leveling route (work in progress)", "routeGuide", "autoArrow", "smartStepOrder",
-    "#Reminders and tips", "levelBanner", "efficiency", "talentReminder", "reminders", "wellFed", "campReminder" } },
-  { "Gear and combat", {
-    "#Item tooltips and scores", "tooltip", "tooltipBest", "paperdoll", "gearPanel", "bagArrows",
-    "#Upgrades", "upgradeToast", "questUpgradeMarks", "dungeonHelper",
-    "#Second spec", "healSet", "specSwap",
-    "#Reminders and tips", "stoneReminder", "ammoReminder", "weaponTips", "levelReport" } },
-  { "Group play", { "groupDuties", "groupAlerts", "arcadeToasts", "fieldGuideToasts" } },
-  { "Professions, bags and gold", {
-    "#Gathering alerts", "mineReminder", "oreAlert", "oreAlertAll", "herbAlert",
-    "#Fishing", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishCombatSwap", "fishCampTip",
-    "#Bags and vendors", "sellJunk", "autoRepair", "bagReminder", "sortButton",
-    "#Auction House", "profitWatch", "autoScan", "ahProgress",
-    "#Professions", "profReminder", "profQuests", "profTips", "profBuyButton", "profTooltip" } },
-  { "Interface", { "minimap", "sounds", "quietErrors", "sharePrompt" } },
-}
 local function renderGroup()
   local n = 0
   local inGroup = (GetNumGroupMembers and GetNumGroupMembers() or 0) > 1
@@ -2928,105 +2907,404 @@ local function renderGroup()
   return n
 end
 
-local function renderSettings()
-  local n = 0
-  local byKey, used, ordered = {}, {}, {}
-  for _, o in ipairs(RG.OPTIONS or {}) do byKey[o.key] = o end
-  for _, g in ipairs(SETTING_GROUPS) do
-    local list, subAt, pending = {}, {}, nil
-    for _, k in ipairs(g[2]) do
-      if k:sub(1, 1) == "#" then pending = k:sub(2)
-      elseif byKey[k] then
-        list[#list + 1] = byKey[k]; used[k] = true
-        if pending then subAt[k] = pending; pending = nil end
-      end
+-- ---------------------------------------------------------------------------
+-- Settings: categories down the left, one control per setting (a switch, a choice, swatches, a slider)
+-- ---------------------------------------------------------------------------
+local INK = "|cffefe6d2"
+local function accentCode() return string.format("|cff%02x%02x%02x", math.floor(T.gold[1] * 255), math.floor(T.gold[2] * 255), math.floor(T.gold[3] * 255)) end
+-- a short name and one line on what it does; the option's own (longer) label is the tooltip
+local SETTING_TEXT = {
+  tracker = { "Show the tracker", "The quest tracker at the side of your screen." },
+  trackerRouteTop = { "Route steps at the top", "The step you're on and the next two, above your quests (when the leveling route is on)." },
+  trackerObjectives = { "Each quest's objectives", "Listed under the quest, coloured by progress. Off: one line per quest." },
+  trackerFocus = { "Objectives for one quest only", "Only the quest you're at, targeting or following lists its objectives." },
+  trackerItems = { "Quest item buttons", "A button beside a quest whose item you use (a horn, a vial)." },
+  stepView = { "Step view", "A panel that explains the current step, with the mob or quest giver to look for and how often its items drop." },
+  trackerProfs = { "Profession steps", "Your professions' next step and the materials you're short of." },
+  fishTracker = { "Fishing panel", "Your skill, lure and catches on the tracker while you fish." },
+  dungeonHelper = { "Dungeon upgrades", "In a dungeon, the upgrades it can drop for you, by boss." },
+  trackerLocked = { "Lock in place", "So it can't be dragged by accident." },
+  routeGuide = { "Leveling route", "A step-by-step route on the Route tab and in the tracker; the arrow follows its steps. Still a work in progress." },
+  smartStepOrder = { "Steps you've started first", "In a zone, the step with quests you already have, or the one you're standing at, comes first. Off: the guide's order." },
+  profQuests = { "Profession starter quests", "Puts quests like Camping 101 and Craftsman's Writ in the route." },
+  autoQuest = { "Accept and hand in quests", "Automatically. Hold Shift at a quest giver to pause it." },
+  autoReward = { "Pick quest rewards", "When one reward is clearly the best for you." },
+  rewardPicker = { "Highlight the best reward", "Marks the reward to take when you choose it yourself." },
+  newQuests = { "New quests nearby", "Quests you can pick up close to you, on the tracker." },
+  nameplateAlert = { "Quest mobs nearby", "Tells you when a mob you need for a quest shows up." },
+  questUpgradeMarks = { "Mark upgrade rewards", "Quests whose reward is an upgrade, on the tracker, the route and the quest log." },
+  shareObjective = { "Share my objective", "Tells your party what you're working on." },
+  arrow = { "Arrow to my map pin", "The arrow points at the pin you put on the map (/wp way 45 60)." },
+  autoArrow = { "Arrow follows the route", "The arrow moves on to your next route step by itself." },
+  smartPlan = { "Plan the quest trip", "The arrow picks the best next stop for the quests in your log." },
+  mapClicks = { "Map clicks move the arrow", "Quests picked on the map, minimap Ctrl-click, and Questie and TomTom pins." },
+  spf = { "Walking directions", "From Shortest Path Forever, when it's installed." },
+  travelTips = { "Travel tips", "How to get there when the guide sends you to another zone." },
+  fpNudge = { "Flight path reminders", "When you walk past a flight path you haven't learned." },
+  levelBanner = { "Level-up banner", "A banner when you level up." },
+  levelReport = { "Level-up report", "One line on how long the level took and where the XP came from (/wp levels)." },
+  efficiency = { "Efficiency tips", "Quests worth no XP, turn-ins to batch, rested XP." },
+  talentReminder = { "Talent points", "A reminder when you have points to spend." },
+  wellFed = { "Well Fed", "A reminder to eat for Well Fed (+5% XP while leveling)." },
+  campReminder = { "Make camp", "A reminder to set up camp for the 1-hour camp buff." },
+  reminders = { "Blessings and Seals", "A reminder when one is missing." },
+  stoneReminder = { "Sharpen my weapon", "A reminder to use a sharpening stone or weightstone." },
+  ammoReminder = { "Buy ammo", "A reminder to buy arrows or bullets while you're in town." },
+  weaponTips = { "Weapon skill tips", "When a weapon's skill is far behind, and where to learn a weapon type you just got." },
+  tooltip = { "Scores on item tooltips", "How much better or worse an item is for you." },
+  tooltipBest = { "Best for my level", "Item tooltips say how close an item is to the best for your level." },
+  paperdoll = { "Scores on the character screen", "Upgrade scores on your Character window." },
+  gearPanel = { "Gear status panel", "Beside the Character window." },
+  bagArrows = { "Upgrade marks on bag icons", "Green: an upgrade for you. Light: a piece for your 2nd spec." },
+  upgradeToast = { "Upgrade pop-up", "When you get a gear upgrade." },
+  healSet = { "Collect a 2nd spec set", "Keeps a gear set for your 2nd spec (the 2nd Spec tab)." },
+  specSwap = { "Swap gear with my spec", "Offers to swap gear when you change to or from your 2nd spec." },
+  groupDuties = { "Group helper", "In a party: buff and aura reminders, shared quests, LFG posts." },
+  groupAlerts = { "Group alerts", "A party member to dispel, or one about to die." },
+  arcadeToasts = { "Friends' cards", "Shows cards your friends pull and show off." },
+  fieldGuideToasts = { "Field Guide rares", "Tells you when a rare for your Field Guide is nearby." },
+  mineReminder = { "Find Minerals", "A reminder to turn it on." },
+  oreAlert = { "Ore alerts", "When you're near ore that still gives Mining skill." },
+  herbAlert = { "Herb alerts", "When you're near herbs that still give Herbalism skill." },
+  oreAlertAll = { "Alerts for every node", "Ore and herbs you can gather, even ones that no longer give skill." },
+  profReminder = { "Trainers nearby", "A reminder to pick up professions when you're near their trainers." },
+  profTips = { "Profession reminders", "A new ore or herb, train before the cap, gathering behind your level." },
+  profTooltip = { "Profession tooltips", "How many your next steps need, and what your other characters hold." },
+  profBuyButton = { "Buy materials button", "At a vendor, buys the materials for your next profession steps." },
+  fishHud = { "Fishing HUD", "Your fishing buttons around one button (move it in Edit Mode)." },
+  fishHudIdle = { "HUD when not fishing", "Keeps the HUD's middle button on screen when you're not fishing." },
+  fishImmersive = { "Immersive fishing", "Hides the interface while you fish (move, Esc or Enter brings it back)." },
+  fishSound = { "Loud bobber splash", "Music and ambience are muted while you fish." },
+  fishRecast = { "Bobber gone alert", "A ding and a screen flash when it's time to cast again." },
+  fishAutoLoot = { "Auto-loot", "While you fish." },
+  fishDoubleRight = { "Double-right-click to cast", "Casts Fishing while you hold your pole." },
+  fishCombatSwap = { "Weapons back in a fight", "When a fight starts while you hold your fishing pole." },
+  fishCampTip = { "Fishing Rack reminder", "Set down your Fishing Rack or Hut when you start fishing." },
+  sellJunk = { "Sell junk", "Sells grey items at vendors." },
+  autoRepair = { "Repair", "Repairs your gear at vendors." },
+  bagReminder = { "Bags filling up", "A warning before your bags are full." },
+  sortButton = { "Sort button", "On your bags and bank." },
+  profitWatch = { "Worth more on the AH", "A warning before you vendor something that sells for more at the Auction House." },
+  autoScan = { "Scan prices", "When you open the Auction House." },
+  ahProgress = { "Scan progress", "Above the Auction House while it scans." },
+  minimap = { "Minimap button", "The Waypath+ button on the minimap." },
+  sounds = { "Sounds", "For pop-ups." },
+  quietErrors = { "Catch errors quietly", "See them with /wp errors." },
+  sharePrompt = { "Share reminders", "Now and then, when you have finds to /wp share." },
+}
+local function refreshAll() if RG.RefreshTracker then RG.RefreshTracker() end; RG.RefreshUI() end
+local function choiceOf(key, a, b) return { get = function() return RG.Opt(key) end, set = function(v) RG.db[key] = v; refreshAll() end, opts = { a, b } } end
+-- the controls that aren't a plain on/off switch
+local SPECIAL = {
+  accent = { kind = "swatch", name = "Accent colour", desc = "Headings, highlights and the arrow. It changes at once; a little text keeps its old colour until /reload." },
+  arrowSize = { kind = "slider", name = "Arrow size", desc = "Also: the mouse wheel over the arrow.", min = 50, max = 300, step = 10,
+    get = function() return (RG.db.arrowScale or 1) * 100 end, set = function(v) if RG.SetArrowScale then RG.SetArrowScale(v / 100, true) end end },
+  trackerSize = { kind = "slider", name = "Tracker size", desc = "Also: Ctrl + mouse wheel over the tracker.", min = 60, max = 160, step = 5,
+    get = function() return (RG.db.trackerScale or 1) * 100 end, set = function(v) RG.db.trackerScale = v / 100; if RG.RefreshTracker then RG.RefreshTracker() end end },
+  trackerAlpha = { kind = "slider", name = "Tracker background", desc = "How solid it is. Also: Alt + mouse wheel over the tracker.", min = 15, max = 95, step = 5,
+    get = function() return (RG.db.trackerAlpha or 0.85) * 100 end, set = function(v) RG.db.trackerAlpha = v / 100; if RG.RefreshTracker then RG.RefreshTracker() end end },
+  textSize = { kind = "slider", name = "Text size", desc = "The text in this window. Also: A- and A+ at the top.", min = 90, max = 170, step = 10, release = true,
+    get = function() return (RG.db.textSize or 1.2) * 100 end, set = function(v) RG.db.textSize = v / 100; RG.RefreshUI() end },
+  font = { kind = "choice", name = "Tracker font", desc = "Waypath's modern font, or the game's own if the tracker's text ever looks blank." },
+  spacing = { kind = "choice", name = "Tracker spacing", desc = "The room between the tracker's lines." },
+  length = { kind = "choice", name = "Length", desc = "Short: quests near you first, the rest folded into a \"+ More\" row." },
+  fight = { kind = "choice", name = "In a fight", desc = "What the tracker does while you're in combat.",
+    opts = { { "stay", "Stay" }, { "fade", "Fade" }, { "fold", "Fold up" } },
+    get = function() return RG.Opt("trackerCombatFold") and "fold" or (RG.Opt("trackerFade") and "fade" or "stay") end,
+    set = function(v) RG.db.trackerCombatFold = v == "fold"; RG.db.trackerFade = v == "fade"; refreshAll() end },
+  routeStyle = { kind = "cards", name = "Route style", desc = "Smart Guided Stay in this zone",
+    opts = {
+      { "smart", "Smart", "Picks the best zone for your level, where you are and the quests in your log. It moves you on to another zone when that one is better." },
+      { "guided", "Guided", "Follows the route in order, zone by zone, the way the guide is written. For a fixed plan." },
+      { "zone", "Stay in this zone", "Only the zone you're standing in. When it's done it suggests the next zones and you go there yourself. Hand-ins elsewhere still show." } },
+    get = function() local s = RG.db.routeStyle; if s ~= "zone" and s ~= "guided" then s = (RG.db.smart == false) and "guided" or "smart" end; return s end,
+    set = function(v) if RG.SetRouteStyle then RG.SetRouteStyle(v, true) end; refreshAll() end },
+}
+do
+  local f = choiceOf("trackerInter", { true, "Modern" }, { false, "Game font" }); for k, v in pairs(f) do SPECIAL.font[k] = v end
+  local s = choiceOf("trackerRoomy", { false, "Compact" }, { true, "Roomy" }); for k, v in pairs(s) do SPECIAL.spacing[k] = v end
+  local l = choiceOf("compactTracker", { true, "Short" }, { false, "Everything" }); for k, v in pairs(l) do SPECIAL.length[k] = v end
+end
+-- options a control above stands for (they get no switch of their own)
+local COVERED = { trackerInter = true, trackerRoomy = true, compactTracker = true, trackerFade = true, trackerCombatFold = true }
+-- the categories, in order; "#..." is a heading, "@..." a control from SPECIAL, anything else an option's switch
+local SETTING_CATS = {
+  { "look", "Look", { "#Colours", "@accent", "#Sizes", "@arrowSize", "@trackerSize", "@trackerAlpha", "@textSize", "#Text", "@font", "@spacing" } },
+  { "tracker", "Tracker", { "#What it shows", "tracker", "trackerRouteTop", "trackerObjectives", "trackerFocus", "trackerItems", "stepView", "trackerProfs", "fishTracker", "dungeonHelper",
+    "#How it behaves", "@length", "@fight", "trackerLocked" } },
+  { "route", "Route & quests", { "#Leveling route", "routeGuide", "@routeStyle", "smartStepOrder", "profQuests",
+    "#Quests", "autoQuest", "autoReward", "rewardPicker", "newQuests", "nameplateAlert", "questUpgradeMarks", "shareObjective" } },
+  { "arrow", "Arrow & travel", { "arrow", "autoArrow", "smartPlan", "mapClicks", "spf", "travelTips", "fpNudge" } },
+  { "remind", "Reminders", { "#Leveling", "levelBanner", "levelReport", "efficiency", "talentReminder", "wellFed", "campReminder",
+    "#Your class", "reminders", "stoneReminder", "ammoReminder", "weaponTips" } },
+  { "gear", "Gear & combat", { "#Scores", "tooltip", "tooltipBest", "paperdoll", "gearPanel", "bagArrows", "upgradeToast", "#2nd spec", "healSet", "specSwap" } },
+  { "group", "Group play", { "groupDuties", "groupAlerts", "#Cards", "arcadeToasts", "fieldGuideToasts" } },
+  { "prof", "Professions & fishing", { "#Gathering", "mineReminder", "oreAlert", "herbAlert", "oreAlertAll",
+    "#Professions", "profReminder", "profTips", "profTooltip", "profBuyButton",
+    "#Fishing", "fishHud", "fishHudIdle", "fishImmersive", "fishSound", "fishRecast", "fishAutoLoot", "fishDoubleRight", "fishCombatSwap", "fishCampTip" } },
+  { "bags", "Bags & Auction House", { "#Bags and vendors", "sellJunk", "autoRepair", "bagReminder", "sortButton", "#Auction House", "profitWatch", "autoScan", "ahProgress" } },
+  { "ui", "Interface", { "minimap", "sounds", "quietErrors", "sharePrompt" } },
+  { "char", "This character", {}, sep = true },
+}
+RG.SETTING_CATS = SETTING_CATS
+
+-- the row's own controls (made once per row, hidden by hideAll)
+local function ctlOf(r)
+  local c = rawget(r, "ctl")
+  if not c then c = {}; r.ctl = c end
+  return c
+end
+-- a setting's name and the line under it, wrapped to `width`; returns their height (placed by the caller)
+local function labelText(r, name, desc, width)
+  font(r.title, FONT_SEMI, sz(13.5)); font(r.sub, FONT_NUM, sz(12))
+  r.title:SetText(INK .. name .. "|r"); r.title:Show()
+  local hasDesc = desc and desc ~= ""
+  r.sub:SetText(hasDesc and desc or ""); r.sub:SetShown(hasDesc and true or false)
+  local th = fitText(r.title, width)
+  local sh = hasDesc and fitText(r.sub, width) or 0
+  r.sub:ClearAllPoints(); r.sub:SetPoint("TOPLEFT", r.title, "BOTTOMLEFT", 0, -3)
+  return th + (hasDesc and (sh + 3) or 0)
+end
+local function placeLabel(r, top) r.title:ClearAllPoints(); r.title:SetPoint("TOPLEFT", r, "TOPLEFT", 16, -top) end
+local function card(r, hover)
+  hideAll(r); r.itemID, r.link = nil, nil
+  backdrop(r, T.panel, nil, 12)
+  r.hl:SetShown(hover and true or false)
+end
+
+-- on/off: the name, what it does, and a switch on the right; click anywhere on the row
+local function setToggle(r, name, desc, on, onClick, tip)
+  card(r, true); r.kind = "toggle"
+  local c = ctlOf(r)
+  local swW, swH, kn = sz(40), sz(22), sz(16)
+  if not c.sw then c.sw = CreateFrame("Frame", nil, r); c.knob = CreateFrame("Frame", nil, c.sw) end
+  c.sw:SetSize(swW, swH)
+  if on then RG.Round(c.sw, T.gold[1], T.gold[2], T.gold[3], 1, math.floor(swH / 2)) else RG.Round(c.sw, 0.169, 0.227, 0.278, 1, math.floor(swH / 2)) end
+  c.knob:SetSize(kn, kn)
+  if on then RG.Round(c.knob, T.bg[1], T.bg[2], T.bg[3], 1, math.floor(kn / 2)) else RG.Round(c.knob, T.dim[1], T.dim[2], T.dim[3], 1, math.floor(kn / 2)) end
+  c.knob:ClearAllPoints(); c.knob:SetPoint(on and "RIGHT" or "LEFT", c.sw, on and "RIGHT" or "LEFT", on and -3 or 3, 0); c.knob:Show()
+  c.sw:ClearAllPoints(); c.sw:SetPoint("RIGHT", r, "RIGHT", -16, 0); c.sw:Show()
+  local h = labelText(r, name, desc, CW - 32 - swW - 20)
+  r.h = math.max(sz(46), math.ceil(h + sz(11) * 2))
+  placeLabel(r, (r.h - h) / 2)
+  r.onClick = onClick; r.tip = tip
+  r:Show()
+end
+
+-- a row of buttons, one picked (filled with the accent); `box` is the frame they sit in
+local function segButtons(box, opts, cur, onPick)
+  box.btns = box.btns or {}
+  local x, pad, h = 3, sz(12), sz(26)
+  for i, o in ipairs(opts) do
+    local b = box.btns[i]
+    if not b then
+      b = CreateFrame("Button", nil, box)
+      b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetPoint("CENTER", 0, 0)
+      local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.06)
+      b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+      box.btns[i] = b
     end
-    ordered[#ordered + 1] = { g[1], list, subAt = subAt }
+    local picked = o[1] == cur
+    font(b.t, picked and FONT_SEMI or FONT_BODY, sz(12)); b.t:SetText(o[2])
+    if picked then b.t:SetTextColor(T.bg[1], T.bg[2], T.bg[3], 1) else b.t:SetTextColor(0.79, 0.75, 0.66, 1) end
+    local w = math.ceil(b.t:GetStringWidth() or 40) + pad * 2
+    b:SetSize(w, h); b:ClearAllPoints(); b:SetPoint("LEFT", box, "LEFT", x, 0)
+    RG.Round(b, T.gold[1], T.gold[2], T.gold[3], picked and 1 or 0, sz(6))
+    local val = o[1]
+    b:SetScript("OnClick", function() if PlaySound and SOUNDKIT then pcall(PlaySound, SOUNDKIT.U_CHAT_SCROLL_BUTTON or 1115) end; onPick(val) end)
+    b:SetScript("OnEnter", o[3] and function(self) GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(o[3], 1, 1, 1, 1, true); GameTooltip:Show() end or nil)
+    b:Show()
+    x = x + w + 2
   end
-  local other = {}
-  for _, o in ipairs(RG.OPTIONS or {}) do if not used[o.key] then other[#other + 1] = o end end
-  if #other > 0 then ordered[#ordered + 1] = { "Other", other } end
-  -- search box: keep only options whose label (or group) matches
-  local q = state.search and state.search:lower():gsub("^%s+", ""):gsub("%s+$", "") or ""
-  if q ~= "" then
-    local hits = 0
-    for _, grp in ipairs(ordered) do
-      -- every word you type must appear somewhere (any order), in the setting or its group: "arrow sound", "ah scan"
-      local keep = {}
-      for _, o in ipairs(grp[2]) do
-        local hay = (grp[1] .. " " .. o.label .. " " .. o.key):lower()
-        local all = true
-        for w in q:gmatch("%S+") do if not hay:find(w, 1, true) then all = false; break end end
-        if all then keep[#keep + 1] = o end
-      end
-      grp.any = {}
-      for _, o in ipairs(grp[2]) do
-        local hay = (grp[1] .. " " .. o.label .. " " .. o.key):lower()
-        for w in q:gmatch("%S+") do if #w > 2 and hay:find(w, 1, true) then grp.any[#grp.any + 1] = o; break end end
-      end
-      grp[2] = keep; hits = hits + #keep
-    end
-    -- nothing has every word: show what has any of them
-    if hits == 0 then for _, grp in ipairs(ordered) do grp[2] = grp.any or {}; hits = hits + #grp[2] end end
-    if hits == 0 then n = n + 1; setHeader(getRow(n), "No settings match \"" .. state.search .. "\"") end
+  for i = #opts + 1, #box.btns do box.btns[i]:Hide() end
+  box:SetSize(x + 1, h + 6)
+  RG.Round(box, T.side[1], T.side[2], T.side[3], 1, sz(8))
+end
+
+-- pick one of a few: the name, what it does, and a segmented control (under the text when the window is narrow)
+local function setChoice(r, name, desc, opts, cur, onPick)
+  card(r, false); r.kind = "choice"
+  local c = ctlOf(r)
+  if not c.seg then c.seg = CreateFrame("Frame", nil, r) end
+  segButtons(c.seg, opts, cur, onPick)
+  local gw, gh = c.seg:GetWidth(), c.seg:GetHeight()
+  local textW = CW - 32 - gw - 20
+  local stacked = textW < sz(200)
+  if stacked then textW = CW - 32 end
+  local h = labelText(r, name, desc, textW)
+  local pad = sz(11)
+  c.seg:ClearAllPoints()
+  if stacked then
+    r.h = math.ceil(pad + h + 8 + gh + pad)
+    placeLabel(r, pad); c.seg:SetPoint("TOPLEFT", r, "TOPLEFT", 16, -(pad + h + 8))
+  else
+    r.h = math.max(sz(46), math.ceil(math.max(h, gh) + pad * 2))
+    placeLabel(r, (r.h - h) / 2); c.seg:SetPoint("RIGHT", r, "RIGHT", -16, 0)
   end
-  if q == "" then
-    n = n + 1; setHeader(getRow(n), "Look")
-    n = n + 1
-    local cur = RG.db.accent or "mint"
-    setItem(getRow(n), nil, nil, "Accent colour", "Click to change: Mint, Gold, Sky, Rose, Violet or High contrast. Some text keeps its colour until /reload.", GOLD .. (RG.ACCENTS[cur] or RG.ACCENTS.mint)[1] .. "|r", "", "gold")
-    rows[n].icon:SetTexture("Interface\\Icons\\INV_Misc_Gem_Variety_01")
-    rows[n].onClick = function() RG.SetAccent(nil) end
-    -- arrow size: click to step bigger (it wraps back to the smallest), or use the mouse wheel over the arrow
-    n = n + 1
-    local sizes = { 0.6, 0.8, 1, 1.25, 1.5, 2, 2.5, 3 }
-    local cs = RG.db.arrowScale or 1
-    setItem(getRow(n), nil, nil, "Arrow size", "Click to make the arrow bigger (it wraps round). Mouse wheel over the arrow, or /wp arrowsize 150, also work.", GOLD .. math.floor(cs * 100 + 0.5) .. "%|r", "")
-    rows[n].icon:SetTexture("Interface\\Icons\\Ability_Hunter_MarkedForDeath")
-    rows[n].onClick = function()
-      local nxt = sizes[1]
-      for _, v in ipairs(sizes) do if v > cs + 0.01 then nxt = v break end end
-      RG.SetArrowScale(nxt)
-      if RG.ArrowTo and RG.RefreshArrow then RG.RefreshArrow() end
-      RG.RefreshUI()
+  c.seg:Show(); r:Show()
+end
+
+-- colour swatches: click one and it's picked (a ring round it)
+local function setSwatches(r, name, desc, list, cur, onPick)
+  card(r, false); r.kind = "swatch"
+  local c = ctlOf(r)
+  if not c.swatch then c.swatch = CreateFrame("Frame", nil, r); c.swatch.btns = {} end
+  local box = c.swatch
+  local pad = sz(12)
+  local h = labelText(r, name, desc, CW - 32)
+  placeLabel(r, pad)
+  local bw, bh, disc = sz(76), sz(60), sz(30)
+  local perRow = math.max(1, math.floor((CW - 20) / bw))
+  local MEDIA = "Interface\\AddOns\\Waypath\\Media\\"
+  for i, s in ipairs(list) do
+    local b = box.btns[i]
+    if not b then
+      b = CreateFrame("Button", nil, box)
+      b.ring = b:CreateTexture(nil, "ARTWORK"); b.ring:SetTexture(MEDIA .. "Ring")
+      b.disc = b:CreateTexture(nil, "OVERLAY"); b.disc:SetTexture(MEDIA .. "Disc")
+      b.t = b:CreateFontString(nil, "OVERLAY")
+      local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.04)
+      box.btns[i] = b
     end
+    local picked = s[1] == cur
+    b:SetSize(bw, bh); b:ClearAllPoints()
+    b:SetPoint("TOPLEFT", box, "TOPLEFT", ((i - 1) % perRow) * bw, -math.floor((i - 1) / perRow) * bh)
+    b.disc:SetSize(disc, disc); b.disc:ClearAllPoints(); b.disc:SetPoint("TOP", b, "TOP", 0, -sz(6)); b.disc:SetVertexColor(s[3], s[4], s[5], 1)
+    b.ring:SetSize(disc + sz(10), disc + sz(10)); b.ring:ClearAllPoints(); b.ring:SetPoint("CENTER", b.disc, "CENTER", 0, 0)
+    b.ring:SetVertexColor(T.text[1], T.text[2], T.text[3], 1); b.ring:SetShown(picked)
+    font(b.t, picked and FONT_SEMI or FONT_BODY, sz(11)); b.t:SetText(s[2]); b.t:ClearAllPoints(); b.t:SetPoint("TOP", b.disc, "BOTTOM", 0, -sz(7))
+    b.t:SetTextColor(unpack(picked and T.text or T.dim))
+    local key = s[1]
+    b:SetScript("OnClick", function() onPick(key) end)
+    b:Show()
   end
-  -- one group open at a time (the last one you opened is remembered); a search opens whatever matches
-  local openName = RG.db.settingsOpen
-  if openName == nil then openName = ordered[1] and ordered[1][1] end
-  for _, grp in ipairs(ordered) do
-   local isOpen = (q ~= "") or grp[1] == openName
-   if #grp[2] > 0 then
-    n = n + 1
-    local hr = getRow(n); setHeader(hr, grp[1])
-    -- the heading is a card: click to open or fold it, and it says how many of its settings are on
-    local onN = 0
-    for _, o in ipairs(grp[2]) do if RG.Opt(o.key) then onN = onN + 1 end end
-    backdrop(hr, T.small, nil, 10); hr.hl:Show()
-    hr.head:ClearAllPoints(); hr.head:SetPoint("LEFT", 12, 0)
-    hr.head:SetText((q == "" and (isOpen and "-  " or "+  ") or "") .. grp[1]:upper()); hr.head:SetTextColor(unpack(isOpen and T.gold or T.dim))
-    font(hr.meta, FONT_NUM, sz(11)); hr.meta:ClearAllPoints(); hr.meta:SetPoint("RIGHT", -12, 0)
-    hr.meta:SetText(GREY .. onN .. " of " .. #grp[2] .. " on|r"); hr.meta:Show()
-    hr.h = math.max(hr.h, sz(34))
-    if q == "" then
-      hr.onClick = function() RG.db.settingsOpen = isOpen and "" or grp[1]; RG.RefreshUI() end
-      hr.tip = isOpen and "Click to fold this group away." or "Click to open this group."
-    end
-   end
-   for _, o in ipairs(isOpen and grp[2] or {}) do
-    if q == "" and grp.subAt and grp.subAt[o.key] then n = n + 1; setHeader(getRow(n), "|cffc9a227" .. grp.subAt[o.key]:upper() .. "|r") end
-    n = n + 1
-    local on = RG.Opt(o.key)
-    setStep(getRow(n), "", o.label, on, function()
-      RG.db[o.key] = not on
-      if o.key == "minimap" and RG.MinimapButton then RG.MinimapButton() end
-      if RG.RefreshTracker then RG.RefreshTracker() end
-      RG.RefreshUI()
+  for i = #list + 1, #box.btns do box.btns[i]:Hide() end
+  local lines = math.ceil(#list / perRow)
+  box:SetSize(perRow * bw, lines * bh)
+  box:ClearAllPoints(); box:SetPoint("TOPLEFT", r, "TOPLEFT", 4, -(pad + h + sz(6))); box:Show()
+  r.h = math.ceil(pad + h + sz(6) + lines * bh + pad - sz(4))
+  r:Show()
+end
+
+-- a slider with its value on the right; `spec` has min, max, step, get, set (and release: apply on letting go)
+local function setSlider(r, name, desc, spec)
+  card(r, false); r.kind = "slider"
+  local c = ctlOf(r)
+  if not c.sl then
+    local s = CreateFrame("Slider", nil, r)
+    s:SetOrientation("HORIZONTAL"); s:EnableMouse(true)
+    s.track = s:CreateTexture(nil, "BACKGROUND"); s.track:SetHeight(4); s.track:SetPoint("LEFT", s, "LEFT", 0, 0); s.track:SetPoint("RIGHT", s, "RIGHT", 0, 0)
+    s.thumb = s:CreateTexture(nil, "OVERLAY"); s.thumb:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc")
+    s:SetThumbTexture(s.thumb)
+    s.fill = s:CreateTexture(nil, "ARTWORK"); s.fill:SetHeight(4); s.fill:SetPoint("LEFT", s.track, "LEFT", 0, 0); s.fill:SetPoint("RIGHT", s.thumb, "CENTER", 0, 0)
+    c.slVal = r:CreateFontString(nil, "OVERLAY")
+    s:SetScript("OnValueChanged", function(self, v)
+      if self.busy or not self.spec then return end
+      local sp = self.spec
+      v = math.floor(v / sp.step + 0.5) * sp.step
+      c.slVal:SetText(v .. "%")
+      if not sp.release and v ~= self.last then self.last = v; sp.set(v) end
     end)
-    rows[n].title:SetText((on and "|cffffffff" or GREY) .. o.label .. "|r")
-    rows[n].tip = on and "On. Click to turn off." or "Off. Click to turn on."
-   end
+    s:SetScript("OnMouseUp", function(self)
+      local sp = self.spec
+      if sp and sp.release then local v = math.floor(self:GetValue() / sp.step + 0.5) * sp.step; if v ~= self.last then self.last = v; sp.set(v) end end
+    end)
+    c.sl = s
   end
+  local s = c.sl
+  s.spec = spec
+  local v = math.floor(spec.get() / spec.step + 0.5) * spec.step
+  s.busy = true
+  s:SetMinMaxValues(spec.min, spec.max); s:SetValueStep(spec.step); if s.SetObeyStepOnDrag then s:SetObeyStepOnDrag(true) end
+  s:SetValue(math.max(spec.min, math.min(spec.max, v))); s.last = v
+  s.busy = false
+  s:SetHeight(sz(20))
+  s.track:SetColorTexture(0.169, 0.227, 0.278, 1); s.fill:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 1)
+  s.thumb:SetSize(sz(16), sz(16)); s.thumb:SetVertexColor(T.gold[1], T.gold[2], T.gold[3], 1)
+  font(c.slVal, FONT_SEMI, sz(13)); c.slVal:SetText(v .. "%"); c.slVal:SetTextColor(unpack(T.gold)); c.slVal:SetJustifyH("RIGHT"); c.slVal:SetWidth(sz(52))
+  local labelW = sz(230)
+  local stacked = CW - 32 - labelW - sz(52) - 40 < sz(120)
+  local h = labelText(r, name, desc, stacked and (CW - 32) or labelW)
+  local pad = sz(11)
+  s:ClearAllPoints(); c.slVal:ClearAllPoints()
+  if stacked then
+    r.h = math.ceil(pad + h + 10 + sz(20) + pad)
+    placeLabel(r, pad)
+    s:SetPoint("TOPLEFT", r, "TOPLEFT", 16, -(pad + h + 10)); s:SetPoint("RIGHT", r, "RIGHT", -(16 + sz(52) + 12), 0)
+    c.slVal:SetPoint("RIGHT", r, "RIGHT", -16, 0); c.slVal:SetPoint("TOP", s, "TOP", 0, 0)
+  else
+    r.h = math.max(sz(50), math.ceil(h + pad * 2))
+    placeLabel(r, (r.h - h) / 2)
+    s:SetPoint("LEFT", r, "LEFT", 16 + labelW + 20, 0); s:SetPoint("RIGHT", r, "RIGHT", -(16 + sz(52) + 12), 0)
+    c.slVal:SetPoint("RIGHT", r, "RIGHT", -16, 0)
+  end
+  s:Show(); c.slVal:Show(); r:Show()
+end
+
+-- big choices with a paragraph each, side by side (stacked when the window is narrow): the route style
+local function setCards(r, list, cur, onPick, dim)
+  hideAll(r); r.itemID, r.link = nil, nil
+  r.kind = "cards"; r:SetBackdrop(nil); r.hl:Hide()
+  local c = ctlOf(r)
+  if not c.cards then c.cards = CreateFrame("Frame", nil, r); c.cards.btns = {} end
+  local box = c.cards
+  local n, gapX = #list, sz(10)
+  local across = CW >= n * sz(190) + (n - 1) * gapX
+  local cw = across and math.floor((CW - (n - 1) * gapX) / n) or CW
+  local hs = {}
+  for i, o in ipairs(list) do
+    local b = box.btns[i]
+    if not b then
+      b = CreateFrame("Button", nil, box)
+      b.t = b:CreateFontString(nil, "OVERLAY"); b.t:SetJustifyH("LEFT")
+      b.tag = b:CreateFontString(nil, "OVERLAY")
+      b.body = b:CreateFontString(nil, "OVERLAY"); b.body:SetJustifyH("LEFT"); b.body:SetJustifyV("TOP")
+      b.stripe = b:CreateTexture(nil, "ARTWORK"); b.stripe:SetWidth(3); b.stripe:SetPoint("TOPLEFT", 6, -11); b.stripe:SetPoint("BOTTOMLEFT", 6, 11)
+      local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetPoint("TOPLEFT", 3, -3); hl:SetPoint("BOTTOMRIGHT", -3, 3); hl:SetColorTexture(1, 1, 1, 0.05)
+      box.btns[i] = b
+    end
+    local picked = o[1] == cur
+    if picked then RG.Round(b, 0.118, 0.153, 0.18, 1, 12) else RG.Round(b, T.panel[1], T.panel[2], T.panel[3], 1, 12) end
+    b.stripe:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 0.9); b.stripe:SetShown(picked)
+    font(b.t, FONT_SEMI, sz(14)); b.t:SetText((picked and accentCode() or INK) .. o[2] .. "|r")
+    font(b.tag, FONT_SEMI, sz(10.5)); b.tag:SetText(picked and (accentCode() .. "IN USE|r") or ""); b.tag:ClearAllPoints(); b.tag:SetPoint("TOPRIGHT", b, "TOPRIGHT", -14, -sz(15))
+    font(b.body, FONT_NUM, sz(12)); b.body:SetText(o[3]); b.body:SetTextColor(unpack(T.dim))
+    b.t:ClearAllPoints(); b.t:SetPoint("TOPLEFT", b, "TOPLEFT", 18, -sz(13))
+    local th = fitText(b.t, cw - 36 - (picked and (b.tag:GetStringWidth() + 8) or 0))
+    local bh = fitText(b.body, cw - 36)
+    b.body:ClearAllPoints(); b.body:SetPoint("TOPLEFT", b.t, "BOTTOMLEFT", 0, -sz(6))
+    hs[i] = math.ceil(sz(13) + th + sz(6) + bh + sz(14))
+    b:SetAlpha(dim and 0.55 or 1)
+    local val = o[1]
+    b:SetScript("OnClick", function() onPick(val) end)
+    b:Show()
+  end
+  for i = n + 1, #box.btns do box.btns[i]:Hide() end
+  local maxH, y = 0, 0
+  for i = 1, n do maxH = math.max(maxH, hs[i]) end
+  for i = 1, n do
+    local b = box.btns[i]
+    b:ClearAllPoints()
+    if across then b:SetSize(cw, maxH); b:SetPoint("TOPLEFT", box, "TOPLEFT", (i - 1) * (cw + gapX), 0)
+    else b:SetSize(cw, hs[i]); b:SetPoint("TOPLEFT", box, "TOPLEFT", 0, -y); y = y + hs[i] + gapX end
+  end
+  r.h = across and maxH or (y - gapX)
+  box:SetSize(CW, r.h); box:ClearAllPoints(); box:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0); box:Show()
+  r:Show()
+end
+
+-- every word you type must appear somewhere (any order) in the setting, its description or its category
+local function settingMatches(hay, q, any)
+  hay = hay:lower()
+  for w in q:gmatch("%S+") do
+    local hit = hay:find(w, 1, true)
+    if any and hit and #w > 2 then return true end
+    if not any and not hit then return false end
+  end
+  return not any
+end
+
+local function renderCharacter(n)
   local function action(label, sub, fn)
     n = n + 1
     setItem(getRow(n), nil, nil, label, sub, GOLD .. "Run|r", "", "gold")
@@ -3073,6 +3351,155 @@ local function renderSettings()
   return n
 end
 
+local function renderSettings()
+  local n = 0
+  local byKey, used = {}, {}
+  for _, o in ipairs(RG.OPTIONS or {}) do byKey[o.key] = o end
+  for _, cat in ipairs(SETTING_CATS) do for _, k in ipairs(cat[3]) do used[k] = true end end
+  -- any option no category names yet goes under Interface, so nothing is ever missing
+  local extra = {}
+  for _, o in ipairs(RG.OPTIONS or {}) do if not used[o.key] and not COVERED[o.key] then extra[#extra + 1] = o.key; used[o.key] = true end end
+  local function itemsOf(cat)
+    if cat[1] ~= "ui" or #extra == 0 then return cat[3] end
+    local t = {}
+    for _, k in ipairs(cat[3]) do t[#t + 1] = k end
+    t[#t + 1] = "#Other"
+    for _, k in ipairs(extra) do t[#t + 1] = k end
+    return t
+  end
+  local function nameOf(k)
+    if k:sub(1, 1) == "@" then local s = SPECIAL[k:sub(2)]; return s and s.name or k, s and s.desc or "" end
+    local tx, o = SETTING_TEXT[k], byKey[k]
+    if tx then return tx[1], tx[2] end
+    return o and o.label or k, ""
+  end
+  -- one setting's row
+  local function draw(k)
+    if k:sub(1, 1) == "@" then
+      local id = k:sub(2)
+      local s = SPECIAL[id]
+      if not s then return end
+      if s.kind == "swatch" then
+        local list, cur = {}, RG.db.accent or "brass"
+        for _, key in ipairs(RG.ACCENT_ORDER or {}) do local a = RG.ACCENTS[key]; if a then list[#list + 1] = { key, a[1], a[2], a[3], a[4] } end end
+        n = n + 1; setSwatches(getRow(n), s.name, s.desc, list, cur, function(v) RG.SetAccent(v, true) end)
+      elseif s.kind == "slider" then
+        n = n + 1; setSlider(getRow(n), s.name, s.desc, s)
+      elseif s.kind == "choice" then
+        n = n + 1; setChoice(getRow(n), s.name, s.desc, s.opts, s.get(), s.set)
+      elseif s.kind == "cards" then
+        local off = not RG.Opt("routeGuide")
+        n = n + 1; setHeader(getRow(n), off and "Route style  ·  turn on Leveling route to use it" or "Route style")
+        n = n + 1; setCards(getRow(n), s.opts, s.get(), s.set, off)
+      end
+      return
+    end
+    local o = byKey[k]
+    if not o then return end
+    local name, desc = nameOf(k)
+    local on = RG.Opt(k)
+    n = n + 1
+    setToggle(getRow(n), name, desc, on, function()
+      RG.db[k] = not on
+      if k == "minimap" and RG.MinimapButton then RG.MinimapButton() end
+      refreshAll()
+    end, INK .. name .. "|r\n" .. (o.label ~= name and (o.label .. "\n\n") or "") .. (on and (GREEN .. "On.|r Click to turn it off.") or (GREY .. "Off.|r Click to turn it on.")))
+  end
+  local q = state.search and state.search:lower():gsub("^%s+", ""):gsub("%s+$", "") or ""
+  if q ~= "" then
+    -- a search looks through every category: what has every word, else what has any of them
+    local function collect(any)
+      local hits = {}
+      for _, cat in ipairs(SETTING_CATS) do
+        local list = {}
+        for _, k in ipairs(itemsOf(cat)) do
+          if k:sub(1, 1) ~= "#" then
+            local name, desc = nameOf(k)
+            local o = byKey[k]
+            if settingMatches(cat[2] .. " " .. name .. " " .. desc .. " " .. k .. " " .. (o and o.label or ""), q, any) then list[#list + 1] = k end
+          end
+        end
+        if #list > 0 then hits[#hits + 1] = { cat[2], list } end
+      end
+      return hits
+    end
+    local hits = collect(false)
+    if #hits == 0 then hits = collect(true) end
+    if #hits == 0 then n = n + 1; setHeader(getRow(n), "No settings match \"" .. state.search .. "\"") end
+    for _, h in ipairs(hits) do
+      n = n + 1; setHeader(getRow(n), h[1])
+      for _, k in ipairs(h[2]) do draw(k) end
+    end
+    return n
+  end
+  local catKey = RG.db.settingsCat or "look"
+  local cat
+  for _, c in ipairs(SETTING_CATS) do if c[1] == catKey then cat = c end end
+  cat = cat or SETTING_CATS[1]
+  if cat[1] == "char" then return renderCharacter(n) end
+  for _, k in ipairs(itemsOf(cat)) do
+    if k:sub(1, 1) == "#" then n = n + 1; setHeader(getRow(n), k:sub(2)) else draw(k) end
+  end
+  return n
+end
+
+-- The settings page has its categories down the left: the list moves right to make room.
+local function navWidth() return ((frame and frame:GetWidth() or W) < 820) and 150 or 184 end
+local function placeNav()
+  if not frame or not scroll then return end
+  local L = frame.contentLeft or 230
+  local fw = frame:GetWidth() or W
+  local nav = frame.setNav
+  local on = state.tab == "settings"
+  local left = L
+  if nav then
+    nav:SetShown(on)
+    if on then
+      local nw = navWidth()
+      nav:ClearAllPoints(); nav:SetPoint("TOPLEFT", frame, "TOPLEFT", L, -108); nav:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", L, 40); nav:SetWidth(nw)
+      left = L + nw + 16
+      local cur = ((state.search or "") == "") and (RG.db.settingsCat or "look") or nil
+      local bh = ((frame:GetHeight() or H) < 600) and 26 or 32
+      local y = 6
+      for _, b in ipairs(nav.btns) do
+        if b.cat.sep then b.sepLine:ClearAllPoints(); b.sepLine:SetPoint("TOPLEFT", nav, "TOPLEFT", 12, -(y + 4)); b.sepLine:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -12, -(y + 4)); y = y + 9 end
+        b:ClearAllPoints(); b:SetPoint("TOPLEFT", nav, "TOPLEFT", 6, -y); b:SetSize(nw - 12, bh)
+        local picked = b.cat[1] == cur
+        b.bg:SetShown(picked); b.bar:SetShown(picked); b.bar:SetColorTexture(T.gold[1], T.gold[2], T.gold[3], 1)
+        font(b.text, picked and FONT_SEMI or FONT_BODY, 13); b.text:SetTextColor(unpack(picked and T.text or T.dim))
+        y = y + bh + 2
+      end
+    end
+  end
+  scroll:ClearAllPoints(); scroll:SetPoint("TOPLEFT", left, -108); scroll:SetPoint("BOTTOMRIGHT", -30, 36)
+  CW = math.max(300, fw - left - 38)
+  content:SetWidth(CW)
+end
+local function buildSettingsNav()
+  local nav = CreateFrame("Frame", nil, frame)
+  frame.setNav = nav
+  RG.Round(nav, T.side[1], T.side[2], T.side[3], 1, 10)
+  nav.btns = {}
+  for _, c in ipairs(SETTING_CATS) do
+    local b = CreateFrame("Button", nil, nav)
+    b.cat = c
+    b.bg = b:CreateTexture(nil, "BACKGROUND"); b.bg:SetAllPoints(); b.bg:SetColorTexture(T.raised[1], T.raised[2], T.raised[3], 1)
+    b.bar = b:CreateTexture(nil, "ARTWORK"); b.bar:SetWidth(3); b.bar:SetPoint("TOPLEFT"); b.bar:SetPoint("BOTTOMLEFT")
+    local hl = b:CreateTexture(nil, "HIGHLIGHT"); hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.05)
+    b.text = b:CreateFontString(nil, "OVERLAY"); font(b.text, FONT_BODY, 13); b.text:SetPoint("LEFT", 14, 0); b.text:SetPoint("RIGHT", -6, 0); b.text:SetJustifyH("LEFT"); b.text:SetWordWrap(false)
+    b.text:SetText(c[2])
+    if c.sep then b.sepLine = nav:CreateTexture(nil, "ARTWORK"); b.sepLine:SetHeight(1); b.sepLine:SetColorTexture(T.line[1], T.line[2], T.line[3], 1) end
+    b:SetScript("OnClick", function()
+      RG.db.settingsCat = c[1]
+      state.search = ""
+      if frame.search then frame.search:SetText("") end
+      scroll:SetVerticalScroll(0); RG.RefreshUINow()
+    end)
+    nav.btns[#nav.btns + 1] = b
+  end
+  nav:Hide()
+end
+
 -- ---------------------------------------------------------------------------
 -- Window
 -- ---------------------------------------------------------------------------
@@ -3114,7 +3541,7 @@ local TITLES = {
   gear  = { "My gear", "What you're wearing and what to chase next" },
   prof  = { "Professions", "Where you are in each profession, what you still need, and where to go for it" },
   ah    = { "Auction House", "Lowest buyout from your last scan" },
-  settings = { "Settings", "Turn Waypath+'s helpers on or off" },
+  settings = { "Settings", "How Waypath+ looks and what it does for you, by category" },
   gold  = { "Gold making", "Up-to-date ways to make money as a miner and smith" },
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
   plan = { "Quest plan", "The best order for the quests in your log, with what each one needs" },
@@ -3248,6 +3675,7 @@ function RG.RefreshUINow()
   -- the Raid & tier page opens at level 58; below that (or with nothing for your class) its tab is hidden
   if state.tab == "raid" and not (RG.RaidShown and RG.RaidShown()) then state.tab = "guide" end
   updateHeader()
+  placeNav()
   for _, r in pairs(rows) do r:SetWidth(CW) end
   local n
   local okRender, errRender = pcall(function()
@@ -3378,6 +3806,7 @@ local function relayout()
   CW = math.max(300, fw - L - 38)
   footer:SetWidth(CW)
   content:SetWidth(CW)
+  placeNav()
 end
 RG.UIRelayout = function() relayout(); RG.RefreshUI() end
 
@@ -3510,6 +3939,7 @@ local function build()
   end)
 
   buildSidebar()
+  buildSettingsNav()
 
   -- top right: quick switches, text size, close
   local close = CreateFrame("Button", nil, frame)
