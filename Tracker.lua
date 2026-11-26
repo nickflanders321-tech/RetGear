@@ -57,12 +57,12 @@ function RG.NextStep(r)
     for rank, i in ipairs(open) do
       local s = rank   -- the guide's order
       local ql = RG.StepQuestLines and RG.StepQuestLines(r, i, quests)
-      local turnin, doing, now, near = false, false, false, false
+      local turnin, doing, now, near, pickup = false, false, false, false, false
       for _, l in ipairs(ql or {}) do
         if l.act ~= "later" and not l.away then near = true end
         -- (only for something on this step's map or yours: one in another zone waits for the trip there)
         if not l.away then
-          if l.act == "turnin" then turnin = true elseif l.act == "doing" then doing = true end
+          if l.act == "turnin" then turnin = true elseif l.act == "doing" then doing = true elseif l.act == "pickup" then pickup = true end
         end
         if l.act ~= "later" then now = true end
       end
@@ -77,7 +77,8 @@ function RG.NextStep(r)
       if wp and px and wp[1] == here and not waits[i] then
         local dx, dy = (wp[2] / 100) - px, (wp[3] / 100) - py
         local d = math.sqrt(dx * dx + dy * dy)
-        if d < 0.05 then s = s - 3 elseif d < 0.12 then s = s - 1 end
+        -- (right in a town where this step has quests to pick up or hand in: do them now, you're standing there)
+        if d < 0.05 then s = s - ((pickup or turnin) and 4 or 3) elseif d < 0.12 then s = s - 1 end
       end
       score[i] = s
     end
@@ -877,6 +878,8 @@ function RG.Follow(wp)
   if not RG.Opt("arrow") then RG.db.arrow = true; if RG.RefreshArrow then RG.RefreshArrow() end end
   RG.db.arrowPaused = nil
   RG.PinWaypoint(wp)
+  -- you picked it: it's the current step for a while (Guide.lua)
+  if RG.PickManually then RG.PickManually(wp) end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
 
@@ -1248,12 +1251,13 @@ function RG.RefreshTracker()
       -- zone quests: the planner's stops, the one the current step shows opened up into everything at that stop
       local okO, o = pcall(RG.Objective or function() end)
       local curStop = okO and o and o.stop or nil
+      local picked = okO and o and o.kind == "pick"   -- (a place you picked that isn't a stop: none of these is current)
       local shownS = 0
       for i, st in ipairs(zstops) do
         if shownS < 6 then
           shownS = shownS + 1
           local it = st.items[1]
-          local isCur = (curStop and st == curStop) or (not curStop and i == 1)
+          local isCur = (curStop and st == curStop) or (not curStop and not picked and i == 1)
           local text = RG.PrepStepText(it)
           n = n + 1
           y = item(n, y, (isTarget(st.wp) and ARROW or "") .. (isCur and "|cffffffff" or "|cffd6d6d6") .. text .. "|r",

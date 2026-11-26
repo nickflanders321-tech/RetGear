@@ -312,14 +312,22 @@ local function buildTasks()
       elseif not p and q.complete then elsewhere = elsewhere + 1 end
     end
   end
-  -- the route's next pick-ups (the step the tracker shows you're on), so a giver on your way gets bundled with the rest
+  -- the route's pick-ups, so a giver on your way gets bundled with the rest: the guide, those of the step the tracker
+  -- shows you're on; zone quests, those of every step of the zone still open (it plans the whole zone, so walking
+  -- into a town with quests to pick up has you pick them up)
   local r = mode ~= "log" and mode ~= "prep" and opt("routeGuide") and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
   local cur = r and RG.STEPS and RG.StepQuestLines and RG.NextStep and RG.NextStep(r)
   if cur then
-    for _, l in ipairs(RG.StepQuestLines(r, cur, quests) or {}) do
-      if l.act == "pickup" and l.wp and not byTitle[l.name] and inZone(l.wp) then
-        local p = pt(l.wp)
-        if p then tasks[#tasks + 1] = { act = "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
+    local nSteps = #(RG.STEPS[r.zone .. "|" .. r.from] or {})
+    local picked = {}
+    for i = (mode == "zone" and 1 or cur), (mode == "zone" and nSteps or cur) do
+      if i == cur or not RG.StepIsDone(r, i) then
+        for _, l in ipairs(RG.StepQuestLines(r, i, quests) or {}) do
+          if l.act == "pickup" and l.wp and not picked[l.id] and not byTitle[l.name] and inZone(l.wp) then
+            local p = pt(l.wp)
+            if p then picked[l.id] = true; tasks[#tasks + 1] = { act = "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
+          end
+        end
       end
     end
   end
@@ -335,7 +343,7 @@ local function buildTasks()
   -- worthwhile quests just around you, even when the route has not reached them yet (not for the guide, which keeps to
   -- its route, nor for your quest log, which keeps to what you have)
   if mode ~= "prep" and (mode == "zone" or not opt("routeGuide")) then
-  if RG.OptBesideQuestie and RG.OptBesideQuestie("newQuests", "available") and RG.NearbyNewQuests then
+  if RG.Opt("newQuests") and RG.NearbyNewQuests then
     local have = {}
     for _, t in ipairs(tasks) do have[t.title] = true end
     local added = 0
@@ -420,11 +428,11 @@ local function planFromTasks(tasks, px, py)
     if t.deps then for _, d in ipairs(t.deps) do if not d.done then return false end end end
     return true
   end
-  local cx, cy = px, py
-  local guard = 0
-  while guard < 60 do
-    guard = guard + 1
-    local best, bestCost, bestPt
+  -- The rule of thumb: from (cx, cy), the spot that's cheapest for what's done there (a spot where several tasks wait
+  -- counts for each of them; a quest worth more XP counts for more; a skipped one goes last). With k: also the k
+  -- cheapest different spots in cand[1..n] (cand[1] the cheapest), plus the nearest spot not skipped.
+  local function cheapest(cx, cy, k, cand, candC)
+    local n, nearest, nearD, best, bestCost = 0, nil, nil, nil, nil
     for _, t in ipairs(pending) do
       if ready(t) then
         local w, extra = t._w, t._sk and 20000 or 0
@@ -433,15 +441,81 @@ local function planFromTasks(tasks, px, py)
           local cover = 0
           for _, u in ipairs(nearTasks[p]) do if ready(u) then cover = cover + 1 end end
           local cost = (d + 40) / math.max(1, cover) / w + extra
-          if not bestCost or cost < bestCost then best, bestCost, bestPt = t, cost, p end
+          if not bestCost or cost < bestCost then best, bestCost = p, cost end
+          if k then
+            if not t._sk and (not nearD or d < nearD) then nearest, nearD = p, d end
+            -- (kept sorted, k at most; a spot at the same place as one already kept is the same stop)
+            local same = false
+            for i = 1, n do if math.abs(cand[i].x - p.x) < 1 and math.abs(cand[i].y - p.y) < 1 then same = i break end end
+            if same then
+              if cost < candC[same] then cand[same], candC[same] = p, cost end
+            elseif n < k or cost < candC[n] then
+              if n < k then n = n + 1 end
+              cand[n], candC[n] = p, cost
+            end
+            for i = 2, n do
+              local j = i
+              while j > 1 and candC[j] < candC[j - 1] do
+                cand[j], cand[j - 1], candC[j], candC[j - 1] = cand[j - 1], cand[j], candC[j - 1], candC[j]
+                j = j - 1
+              end
+            end
+          end
         end
       end
     end
-    if not best then break end
+    if k and nearest then
+      local have = false
+      for i = 1, n do if cand[i] == nearest then have = true end end
+      if not have then n = n + 1; cand[n], candC[n] = nearest, math.huge end
+    end
+    return best, n
+  end
+  -- everything ready at spot p is done there: the tasks (added to marked), and 20000 yards' worth when one was skipped
+  local function visit(p, marked)
+    local first, pen = #marked + 1, 0
+    for _, u in ipairs(nearTasks[p]) do if ready(u) then marked[#marked + 1] = u end end
+    for i = first, #marked do marked[i].done = true; if marked[i]._sk then pen = 20000 end end
+    return pen
+  end
+  -- the walk that's left from (cx, cy) following the rule of thumb to the end (then everything is put back as it was)
+  local function rollout(cx, cy)
+    local marked, walk = {}, 0
+    for _ = 1, 60 do
+      local p = cheapest(cx, cy)
+      if not p then break end
+      walk = walk + dist(cx, cy, p.x, p.y) + visit(p, marked)
+      cx, cy = p.x, p.y
+    end
+    for _, u in ipairs(marked) do u.done = false end
+    return walk
+  end
+  -- The first few stops (the current step and the next ones the tracker lists) look at the whole trip: each of the
+  -- best few next spots is tried, the rest of the trip finished from it by the rule of thumb, and the spot with the
+  -- least walking in all is taken. So a camp of four objectives a long way off doesn't come before a quick one close
+  -- by, and a hand-in on the way is done on the way. (Further stops: the rule of thumb alone, as the list moves on.)
+  local LOOK, K = 3, (#tasks > 40 and 3 or 4)
+  local cand, candC = {}, {}
+  local cx, cy = px, py
+  for round = 1, 60 do
+    local bestPt, n
+    if round <= LOOK then
+      bestPt, n = cheapest(cx, cy, K, cand, candC)
+      if n > 1 then
+        local bestTotal
+        for i = 1, n do
+          local p, marked = cand[i], {}
+          local tot = dist(cx, cy, p.x, p.y) + visit(p, marked)
+          tot = tot + rollout(p.x, p.y)
+          for _, u in ipairs(marked) do u.done = false end
+          -- (the rule of thumb's own pick, tried first, keeps a tie)
+          if not bestTotal or tot < bestTotal - 1 then bestTotal, bestPt = tot, p end
+        end
+      end
+    else bestPt = cheapest(cx, cy) end
+    if not bestPt then break end
     local items = {}
-    local snapshot = {}
-    for _, u in ipairs(nearTasks[bestPt]) do if ready(u) then snapshot[#snapshot + 1] = u end end
-    for _, u in ipairs(snapshot) do u.done = true; items[#items + 1] = u end
+    visit(bestPt, items)
     table.sort(items, function(a, b)
       if a.act ~= b.act then return ACT_RANK[a.act] < ACT_RANK[b.act] end
       return (a.title or "") < (b.title or "")
@@ -494,6 +568,49 @@ end
 -- ---------------------------------------------------------------------------
 local cache = { dirty = true, t = -99 }
 local lastObjKey, objSince
+
+-- A stop you picked yourself (a quest or step clicked on the tracker): it's the current step for 3 minutes whatever the
+-- plan says; then only while you're on your way (closer than a minute ago) or there (working on it). Done, or
+-- turned off: back to the plan.
+local MANUAL_HOLD, MANUAL_IDLE, MANUAL_THERE = 180, 60, 100
+local manual
+function RG.PickManually(wp)
+  manual = wp and { wp = wp, t = GetTime and GetTime() or 0 } or nil
+  -- (and the plan doesn't hold on to the stop you were heading to: a new pick, or back to what the plan says)
+  cache.obj = nil; cache.dirty = true
+end
+local function sameSpot(a, b) return a and b and a[1] == b[1] and math.abs((a[2] or 0) - (b[2] or 0)) < 0.15 and math.abs((a[3] or 0) - (b[3] or 0)) < 0.15 end
+-- the plan's stop you picked (its index), or nil and how far away it is (nil when there's no pick, or it has run out)
+local function manualStop(stops, c, px, py)
+  local m = manual
+  if not m then return nil end
+  local now = GetTime and GetTime() or 0
+  local c2, mx, my = RG.ToWorld(m.wp[1], m.wp[2], m.wp[3])
+  local d = (c2 and c and c2 == c and px) and dist(px, py, mx, my) or nil
+  if d then
+    if not m.best or d < m.best - 25 then m.best, m.bestT = d, now end
+    if d <= MANUAL_THERE then m.bestT = now end
+  end
+  if now - m.t > MANUAL_HOLD and now - (m.bestT or m.t) > MANUAL_IDLE then manual = nil; cache.obj = nil return nil end
+  -- the stop at that spot, or with a task at it (a quest's objective spot, its giver), else the stop nearest it
+  local nearI, nearD
+  for i, s in ipairs(stops) do
+    if sameSpot(s.wp, m.wp) then m.matched = true return i, d end
+    for _, it in ipairs(s.items) do
+      for _, p in ipairs(it.pts or {}) do if sameSpot(p.wp, m.wp) then m.matched = true return i, d end end
+    end
+    if mx and c2 == c then
+      local sd = dist(s.x, s.y, mx, my)
+      if sd <= 120 and (not nearD or sd < nearD) then nearI, nearD = i, sd end
+    end
+  end
+  if nearI then m.matched = true return nearI, d end
+  -- it was a stop of the plan and isn't any more: done
+  if m.matched then manual = nil; cache.obj = nil return nil end
+  -- a place, not a stop of the plan (a step's town, a flight master): until you get there
+  if d and d <= 25 then manual = nil; cache.obj = nil return nil end
+  return false, d
+end
 local function goals() RG.db.goals = RG.db.goals or {}; return RG.db.goals end
 
 local function buildObjective()
@@ -538,13 +655,26 @@ local function buildObjective()
     return obj, plan
   end
   local stops = plan.stops
+  -- a stop you picked yourself
+  local mi, md = manualStop(stops, c, px, py)
+  if mi == false then
+    local m = manual
+    obj.kind, obj.key, obj.manual = "pick", "pick:" .. m.wp[1] .. ":" .. m.wp[2] .. ":" .. m.wp[3], true
+    obj.text = "Head to " .. tostring(m.wp[4] or "your pick")
+    obj.wp, obj.dist, obj.reqs = m.wp, md, {}
+    obj.why = "You picked it. The plan picks up again once you're there, or after a while if you go elsewhere"
+    obj.count, obj.index = #stops, 0
+    if stops[1] then obj.nextText, obj.nextWp = stopText(stops[1], true), stops[1].wp end
+    return obj, plan
+  end
   if #stops > 0 then
     local pick = 1
-    -- keep the stop you were already heading to unless another is clearly closer
+    -- keep the stop you were already heading to unless another is clearly closer (one you can do now: not a hand-in
+    -- still waiting on its objectives)
     if cache.obj and cache.obj.stopKey then
       for i, s in ipairs(stops) do
         for _, it in ipairs(s.items) do
-          if taskKey(it) == cache.obj.stopKey then
+          if taskKey(it) == cache.obj.stopKey and not it.deps then
             local first = stops[1]
             if i ~= 1 and first.pd and s.pd and not (first.pd < s.pd * 0.5 and s.pd - first.pd > 150) then pick = i end
             break
@@ -553,6 +683,7 @@ local function buildObjective()
         if pick ~= 1 then break end
       end
     end
+    if mi then pick = mi end
     local s = stops[pick]
     local it = s.items[1]
     obj.kind, obj.act = (it.act == "doing" and "doing" or it.act), it.act
@@ -560,6 +691,7 @@ local function buildObjective()
     obj.stopKey = taskKey(it)
     obj.text, obj.wp, obj.dist, obj.stop = stopText(s), s.wp, s.pd, s
     obj.why = stopWhy(s)
+    if mi then obj.manual = true; obj.why = "You picked it  ·  " .. obj.why end
     -- the tracker's top line: the quest, and the one thing to do for it ("Kill 15 Hillsbrad Farmers  9/15")
     obj.qtitle = it.title
     if it.act == "turnin" then obj.qline = "Hand in" .. ((it.label and it.label ~= "") and (" to " .. it.label) or "")
@@ -635,6 +767,10 @@ function RG.SyncObjective(obj)
     lastObjKey = obj.key; objSince = GetTime and GetTime() or 0
     announce(obj)
   end
+  -- the arrow switched off for one step (RG.ArrowOff) comes back by itself for the next
+  local paused = RG.db and RG.db.arrowPaused
+  if paused == true then RG.db.arrowPaused = obj.key
+  elseif paused and paused ~= obj.key and not (RG.CorpseRun and RG.CorpseRun()) then RG.db.arrowPaused = nil end
   if not obj.wp or (IsInInstance and IsInInstance()) then return end
   if not (opt("arrow") and (opt("autoArrow") or obj.kind == "goal")) then return end
   if RG.ArrowPaused and RG.ArrowPaused() then return end

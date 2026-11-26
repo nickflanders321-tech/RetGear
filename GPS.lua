@@ -156,7 +156,6 @@ do
       if RG.QuestieDoes("accept") or RG.QuestieDoes("turnin") then parts[#parts + 1] = "Questie's auto accept / turn-in does those (Waypath+ still picks your best quest reward)" end
       if RG.QuestieDoes("tracker") then parts[#parts + 1] = "the quest list on Waypath+'s tracker starts folded next to Questie's tracker" end
       if RG.QuestieDoes("map") then parts[#parts + 1] = "Waypath+'s map dots are off (Ctrl-click a Questie icon to send the arrow there)" end
-      if RG.QuestieDoes("available") then parts[#parts + 1] = "Questie shows the new quests nearby" end
       if RG.QuestieDoes("nameplates") then parts[#parts + 1] = "Questie marks quest mobs, so no nearby-mob messages" end
       if #parts == 0 then return end
       RG.Print("Running beside Questie: " .. table.concat(parts, "; ") .. ". Any of these can be turned back on in Settings.")

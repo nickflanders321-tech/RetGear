@@ -1134,7 +1134,17 @@ end
 function RG.MatchObjective(objs, qdo, k)
   local d = qdo and qdo[k]
   if not (d and objs) then return nil end
-  for _, o in ipairs(objs) do if o.text and o.text:find(d[2], 1, true) then return o end end
+  -- (several objectives with the same name, Valuable Vantages' three "Credit"s: the n-th of that name is the game's n-th)
+  local nth = 0
+  for i = 1, k do if qdo[i][2] == d[2] then nth = nth + 1 end end
+  for _, o in ipairs(objs) do
+    if o.text and o.text:find(d[2], 1, true) then
+      nth = nth - 1
+      if nth == 0 then return o end
+    end
+  end
+  -- (fewer of that name in the game than in the data: the last one there is)
+  for i = #objs, 1, -1 do local o = objs[i]; if o.text and o.text:find(d[2], 1, true) then return o end end
   if #objs == #qdo then
     -- only when no objective of this quest matches by text (so an English client never guesses)
     for _, x in ipairs(qdo) do for _, o in ipairs(objs) do if o.text and o.text:find(x[2], 1, true) then return nil end end end

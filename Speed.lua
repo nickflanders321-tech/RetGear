@@ -533,7 +533,8 @@ function RG.MarkQuestsDirty() classDirty = true; if RG.ForgetMyQuests then RG.Fo
 function RG.IgnoreQuest(id) if id and RG.db then RG.db.ignoredQuests = RG.db.ignoredQuests or {}; RG.db.ignoredQuests[id] = true; RG.MarkQuestsDirty(); RG.Print("Won't suggest that quest again. " .. "/wp unhide brings them all back.") end end
 -- Nearest few quest givers with something for you, on your continent.
 function RG.NearbyNewQuests(max, valued)
-  if not RG.OptBesideQuestie("newQuests", "available") then return {} end
+  -- (on beside Questie too: the guide picks which to pick up on the way, which Questie's map marks don't)
+  if not RG.Opt("newQuests") then return {} end
   local c, px, py = playerWorld()
   if not c then return {} end
   local out = {}
@@ -816,6 +817,9 @@ end
 -- ===========================================================================
 local lastAuto, lastPlaced, lastLabel
 local function samePin(a, b) return a and b and a.map == b.map and math.abs(a.x - b.x) < 0.2 and math.abs(a.y - b.y) < 0.2 end
+-- counts the pins placed: arriving lets go of the pin you reached a moment later, but not of one placed since (the
+-- next step, pinned as soon as you'd picked up or handed in, often at the very same NPC)
+local pinSerial = 0
 local arrow
 local function worldPos(mapID, pos)
   if not (C_Map and C_Map.GetWorldPosFromMapPos and mapID and pos) then return nil end
@@ -906,7 +910,7 @@ local function buildArrow()
   arrow:SetScript("OnLeave", function() GameTooltip:Hide() end)
   -- a quick pulse whenever the target changes
   arrow.pulse = 0
-  local shown, lastKey, arrivedAt = 0, nil, nil
+  local shown, lastKey, arrivedAt, arrivedSerial = 0, nil, nil, nil
   local doneKey   -- the pin you already arrived at: standing there again is not a new arrival
   local acc = 0
   -- The game knows the next leg of a quest's way (a door, a cave mouth, a stair). When it gives one that isn't the
@@ -980,7 +984,17 @@ local function buildArrow()
     if arrivedAt then
       local t = GetTime() - arrivedAt
       self:SetAlpha(math.max(0, 1 - math.max(0, t - 1.2) * 2))
-      if t > 1.7 then arrivedAt = nil; self.check:Hide(); self.tex:Show(); self:SetAlpha(1); if not (InCombatLockdown and InCombatLockdown()) and C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end; self:Hide() end
+      if t > 1.7 then
+        arrivedAt = nil; self.check:Hide(); self.tex:Show(); self:SetAlpha(1)
+        -- (a pin placed since you arrived is the next step's: it stays, and so does the arrow)
+        if arrivedSerial == pinSerial then
+          if not (InCombatLockdown and InCombatLockdown()) and C_Map.ClearUserWaypoint then C_Map.ClearUserWaypoint() end
+          self:Hide()
+          -- (and the guide may put it back: while that step isn't done it's still where to go, a steady "You're
+          -- here" while you stand there)
+          lastAuto = nil
+        end
+      end
       return
     end
     -- every frame: ease towards the heading found by the slower pass below, so turning follows the display's frame rate
@@ -1064,7 +1078,7 @@ local function buildArrow()
       return
     end
     if d < 10 then
-      arrivedAt = GetTime(); doneKey = key
+      arrivedAt = GetTime(); doneKey = key; arrivedSerial = pinSerial
       if RG.OnArrive then pcall(RG.OnArrive, label) end
       self.tex:Hide(); self.check:Show()
       self.dist:SetText(GREEN .. "Arrived|r"); self.hint:SetText("")
@@ -1214,6 +1228,7 @@ function RG.PinWaypoint(wp, quiet)
   local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(wp[1], wp[2] / 100, wp[3] / 100))
   if not ok then if not quiet then RG.Print("Can't pin " .. wp[4] .. " from here.") end return end
   lastPlaced = { map = wp[1], x = wp[2], y = wp[3] }; lastLabel = wp[4]
+  pinSerial = pinSerial + 1
   local api = spfApi()
   if api then pcall(api.Navigate, "Waypath+", wp[1], wp[2] / 100, wp[3] / 100, wp[4]) end
   -- you asked for it (a click, not the route moving on by itself): if the arrow was switched off, it comes back on
@@ -1229,13 +1244,15 @@ function RG.ClearWaypoint()
   if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
   if arrow then arrow:Hide() end
 end
--- You switched the arrow off (right-click or double-click it, or double-click its target): it stays off - the route moving
--- on doesn't bring it back - until you point it somewhere yourself (click a quest, step or quest giver, Shift-click for
--- the next stop, /wp way, or the Arrow button).
+-- You switched the arrow off (right-click or double-click it, or click its target): it stays off for the step you're on,
+-- and comes back by itself for the next one (Guide.lua's SyncObjective), or as soon as you point it somewhere yourself
+-- (click a quest, step or quest giver, Shift-click for the next stop, /wp way). The Arrow button turns it off for good.
+-- (arrowPaused holds the step it was switched off for; true until the guide has seen which step that is)
 function RG.ArrowOff()
-  if RG.db then RG.db.arrowPaused = true end
+  local o = RG.Objective and RG.Objective()
+  if RG.db then RG.db.arrowPaused = (o and o.key) or true end
   RG.ClearWaypoint()
-  RG.Notify("Arrow off: it stays off until you click a quest or step to follow")
+  RG.Notify("Arrow off for this step: it comes back for the next one")
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
 function RG.ArrowPaused() return RG.db and RG.db.arrowPaused and true or false end
@@ -1261,11 +1278,14 @@ function RG.ArrowTo(wp)
   local cur = currentPin()
   if cur and samePin(cur, { map = wp[1], x = wp[2], y = wp[3] }) then
     RG.ArrowOff()
+    if RG.PickManually then RG.PickManually(nil) end
   else
     RG.db.arrowPaused = nil
     if not RG.Opt("arrow") then RG.db.arrow = true end
     RG.PinWaypoint(wp, true)
     RG.Notify("Arrow on: " .. wp[4])
+    -- you picked it: it's the current step for a while (Guide.lua)
+    if RG.PickManually then RG.PickManually(wp) end
   end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
@@ -1342,7 +1362,7 @@ function RG.AutoPin(key, wp)
   if RG.CardsOnly and RG.CardsOnly() then return end
   if corpse.active then return end    -- the way back to your body comes first
   if not RG.Opt("routeGuide") or not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
-  if RG.db and RG.db.arrowPaused then return end   -- you switched it off: the route moving on doesn't bring it back
+  if RG.db and RG.db.arrowPaused then return end   -- you switched it off for this step (the next step brings it back)
   if IsInInstance and IsInInstance() then return end
   local cur = currentPin()
   if cur and not samePin(cur, lastPlaced) then return end -- you placed your own pin: leave it

@@ -144,7 +144,10 @@ local function skipNow()
   local obj = RG.Objective and RG.Objective()
   if not obj then return end
   local rk = routeKey(obj)
-  if rk and RG.TickStep then RG.TickStep(rk, obj.text); afterSkip((obj.text or "this step") .. " (/wp undo brings it back)")
+  if obj.manual and RG.PickManually then
+    -- one you picked yourself: back to what the plan says
+    RG.PickManually(nil); afterSkip("your pick (" .. tostring(obj.qtitle or obj.text or "") .. ")")
+  elseif rk and RG.TickStep then RG.TickStep(rk, obj.text); afterSkip((obj.text or "this step") .. " (/wp undo brings it back)")
   elseif obj.stop and RG.SkipStop then
     RG.SkipStop(obj.stop)
     local after = RG.Objective(true)
@@ -313,7 +316,7 @@ local function cardInfo()
   local obj = RG.Objective and RG.Objective()
   if not obj then return nil end
   local it = obj.stop and obj.stop.items and obj.stop.items[1]
-  local v = (it and VERB[it.act]) or (obj.kind == "route" and { "Go", { 1, 0.82, 0 } }) or (obj.kind == "dungeon" and { "In", { 0.62, 0.83, 1 } })
+  local v = (it and VERB[it.act]) or ((obj.kind == "route" or obj.kind == "pick") and { "Go", { 1, 0.82, 0 } }) or (obj.kind == "dungeon" and { "In", { 0.62, 0.83, 1 } })
     or (obj.kind == "goal" and { "Goal", { 1, 0.82, 0 } }) or (obj.kind == "prep" and { "Prep", { 0.74, 0.68, 1 } }) or { "Next", { 1, 0.82, 0 } }
   local info = { verb = v[1], col = v[2], obj = obj, it = it, wp = obj.wp, dist = obj.dist }
   info.title = obj.qtitle or plain(obj.text)
@@ -364,7 +367,7 @@ local function cardInfo()
     if #names > 0 then info.also = "Also here: " .. table.concat(names, ", ") end
   end
   info.next = obj.nextText
-  info.skip = (obj.stop or routeKey(obj)) and true or false
+  info.skip = (obj.stop or obj.manual or routeKey(obj)) and true or false
   return info
 end
 
