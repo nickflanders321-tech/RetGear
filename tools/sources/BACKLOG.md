@@ -9,13 +9,6 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
-- Request (feature, asked for and approved by the owner on 2026-11-25, to build after the route fixes): an optional detailed view of the current
-  step that explains it better: the quests and objectives in it, where to go, and a 3D model of the mob (or the item's
-  icon / the object) so it's easier to find in the world. Our own look, not a copy of another add-on's.
-- Request (feature, asked for and approved by the owner on 2026-11-25, to build after the route fixes): item drop rates on a step's tooltip in the
-  tracker and in the detailed view above ("Gnoll Paw: 35% from Riverpaw Gnoll"). The rates are in Polestar forever-db's
-  item sources (data/item_source.jsonl, CC BY 4.0; tools/routes/gen.py and tools/objectives/gen.py read it already for
-  quest-start items) and cMaNGOS's creature_loot_template; Objectives.lua's item objectives would carry them.
 
 1. **Mount Hyjal still has no quests (Riverglades done in v1.31.0, Shen'dralas in v1.32.0):** QuestieDB's Forever data has only one
    Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship
@@ -152,6 +145,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Done
 
+- 2026-11-25 (v1.61.0, on brad/dev): the step view (StepView.lua, /wp stepview: the current step explained, with a 3D model
+  of the mob or giver, or the item's icon) and item drop rates on the tracker's tooltips (Objectives.lua's item objectives
+  carry mob IDs, item IDs and drop %), both approved by the owner on 2026-11-25. Route fixes: missing quests (item- and
+  object-started, Camping, starting areas, capitals), class quests in the steps, less zone bouncing.
 - v1.60.0: item 10 (camp blueprints) done: all eight missing sources from QuestieDB's Forever item data; item 1 (Mount Hyjal) moved on:
   window 57-60, 70 Horde quests, Horde road-in givers, Summit inn and flight master. Blizzard's November 16-20 hotfixes applied to
   Camp.lua (Fishing Rack lures for everyone, Seed Hybridizer failure chance). New: Agamaggan's Blood (93604) is no longer a dungeon quest

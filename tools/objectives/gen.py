@@ -225,23 +225,29 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         for i in ids or []:
             n, sp = spawns_of(kind, i)
             pts = rep_points(sp, zone, 1)
-            if pts: end = (pts[0], n); break
+            if pts: end = (pts[0], n, i if kind == 'npc' else None); break
         if end: break
     objs = []
-    def add(kind, label, sources):
+    def add(kind, label, sources, thing=None, item=None):
+        """thing = the item or object the objective is about (its ID, for its icon); item = the item to loot, for the
+        drop chance of each mob (Polestar forever-db's item sources first, else the cMaNGOS loot tables)."""
         global npts
-        pts, mobs = [], []
+        pts, mobs, ids, chances = [], [], [], []
         for si, (skind, sid) in enumerate(sources[:4]):
             sname, sp = spawns_of(skind, sid)
             if not sname: continue
-            if skind == 'npc' and sname not in mobs: mobs.append(sname)
+            if skind == 'npc' and sname not in mobs:
+                mobs.append(sname); ids.append(int(sid))
+                ch = item and CHANCE.get((int(item), 'npc', int(sid)))
+                if item and ch is None: ch = DROP.get(sid, {}).get(int(item))
+                chances.append(ch or 0)
             for p in cluster_points(sp, zone, 2, 4 if si == 0 else 2): pts.append(p + (len(mobs) if skind == 'npc' else 0,))
         if pts or mobs:
-            objs.append((kind, label, mobs, pts[:8])); npts += len(pts[:8])
+            objs.append((kind, label, mobs, pts[:8], ids, thing, chances if item and any(chances) else None)); npts += len(pts[:8])
     for o in map(L, at(objectives, 1) or []):          # kill
         n, _ = spawns_of('npc', o[0]); add('kill', (o[1] if len(o) > 1 and o[1] else n) or '?', [('npc', o[0])])
     for o in map(L, at(objectives, 2) or []):          # use / interact with an object
-        n, _ = spawns_of('obj', o[0]); add('object', (o[1] if len(o) > 1 and o[1] else n) or '?', [('obj', o[0])])
+        n, _ = spawns_of('obj', o[0]); add('object', (o[1] if len(o) > 1 and o[1] else n) or '?', [('obj', o[0])], thing=o[0])
     for o in map(L, at(objectives, 3) or []):          # loot an item
         it = D['items'].get(str(o[0]))
         if not it: continue
@@ -253,7 +259,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             best = max(known)
             npcs = sorted([n for n in npcs if ch[n] and ch[n] >= best * 0.35], key=lambda n: -ch[n]) + [n for n in npcs if not ch[n]]
         srcs = [('npc', i) for i in npcs] + [('obj', i) for i in (at(it, 3) or [])]
-        add('item', at(it, 1) or '?', srcs)
+        add('item', at(it, 1) or '?', srcs, thing=o[0], item=o[0])
     for o in map(L, at(objectives, 5) or []):          # kill credit (several mobs count)
         ids = o[0] if isinstance(o[0], list) else []
         add('kill', (o[2] if len(o) > 2 and o[2] else '?'), [('npc', i) for i in ids])
@@ -275,7 +281,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     for i in givers:
         n, sp = spawns_of('npc', i)
         pts = rep_points(sp, zone, 1)
-        if pts: start = (pts[0], n); break
+        if pts: start = (pts[0], n, i); break
     # where a quest no NPC hands out begins: an object to click, or an item from a mob or a chest (si; sure = it
     # always drops there, so the route can send you; otherwise the add-on shows the quest once you have it)
     si = None
@@ -283,7 +289,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         for oid in (at(starts, 2) or []):
             n, sp = spawns_of('obj', oid)
             pts = rep_points(sp, zone, 2)
-            if pts: si = ('o', n or '?', [], [p + (0,) for p in pts], 1); break
+            if pts: si = ('o', n or '?', [], [p + (0,) for p in pts], 1, [], oid, None); break
         for iid in ([] if si else (at(starts, 3) or [])):
             it = D['items'].get(str(iid))
             if not it: continue
@@ -293,21 +299,22 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
                 if ch is None and kind == 'npc': ch = DROP.get(sid, {}).get(int(iid))
                 srcs.append((-(ch or 0), kind, sid))
             srcs.sort(key=lambda x: x[0])
-            mobs, pts = [], []
-            for _, kind, sid in srcs[:3]:
+            mobs, pts, ids, chances = [], [], [], []
+            for ch, kind, sid in srcs[:3]:
                 n, sp = spawns_of('npc' if kind == 'npc' else 'obj', sid)
                 if not n: continue
-                if kind == 'npc' and n not in mobs: mobs.append(n)
+                if kind == 'npc' and n not in mobs: mobs.append(n); ids.append(int(sid)); chances.append(-ch)
                 for p in cluster_points(sp, zone, 2, 2): pts.append(p + (len(mobs) if kind == 'npc' else 0,))
             if pts:
-                si = ('i', at(it, 1) or '?', mobs, pts[:4], 1 if srcs and -srcs[0][0] >= SURE_DROP else 0); break
+                si = ('i', at(it, 1) or '?', mobs, pts[:4], 1 if srcs and -srcs[0][0] >= SURE_DROP else 0, ids, int(iid),
+                      chances if any(chances) else None); break
     if not objs and not end and not start and not name: continue
     nq += 1; nobj += len(objs)
     parts = []
-    if end: parts.append('e={%d,%.1f,%.1f,%s}' % (end[0][0], end[0][1], end[0][2], lstr(end[1] or '')))
+    if end: parts.append('e={%d,%.1f,%.1f,%s%s}' % (end[0][0], end[0][1], end[0][2], lstr(end[1] or ''), (',%d' % end[2]) if end[2] else ''))
     # s = where to pick it up (only for quests offered as "new": not repeatables)
     if start and not ((sflags or 0) & 1):
-        parts.append('s={%d,%.1f,%.1f,%s}' % (start[0][0], start[0][1], start[0][2], lstr(start[1] or '')))
+        parts.append('s={%d,%.1f,%.1f,%s,%d}' % (start[0][0], start[0][1], start[0][2], lstr(start[1] or ''), start[2]))
     # name, levels and prerequisites for every quest, even ones that start from an
     # item or object or whose giver has no map position (steps, chains and dungeon
     # lists still need to know them)
@@ -335,17 +342,22 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         dis = [disabledBy] if isinstance(disabledBy, int) else [x for x in (disabledBy.values() if isinstance(disabledBy, dict) else disabledBy or []) if isinstance(x, int)]
         if dis: parts.append('dq={%s}' % ','.join(str(x) for x in dis))
     if si and not ((sflags or 0) & 1):
-        parts.append('si={%s,%s,{%s},{%s},%d}' % (lstr(si[0]), lstr(si[1]), ','.join(lstr(m) for m in si[2]),
-                     ','.join('{%d,%.1f,%.1f,%d}' % p for p in si[3]), si[4]))
+        parts.append('si={%s,%s,{%s},{%s},%d,{%s},%d%s}' % (lstr(si[0]), lstr(si[1]), ','.join(lstr(m) for m in si[2]),
+                     ','.join('{%d,%.1f,%.1f,%d}' % p for p in si[3]), si[4], ','.join(str(i) for i in si[5]), si[6],
+                     (',{%s}' % ','.join('%g' % round(c, 1) for c in si[7])) if si[7] else ''))
     if (sflags or 0) & 1: parts.append('rep=true')
     if ra: parts.append('ra="%s"' % ra)
     if cl: parts.append('cl="%s"' % cl)
     if cl and len(cl) <= 4: parts.append('cq=true')   # a real class quest (not a "most classes" variant)
     if objs:
         os_ = []
-        for kind, label, mobs, pts in objs:
-            os_.append('{%s,%s,{%s},{%s}}' % (lstr(kind[0]), lstr(label), ','.join(lstr(m) for m in mobs),
-                       ','.join('{%d,%.1f,%.1f,%d}' % p for p in pts)))
+        for kind, label, mobs, pts, ids, thing, chances in objs:
+            extra = ''
+            if ids or thing or chances:
+                extra = ',{%s},%s' % (','.join(str(i) for i in ids), str(int(thing)) if thing else 'nil')
+                if chances: extra += ',{%s}' % ','.join('%g' % round(c, 1) for c in chances)
+            os_.append('{%s,%s,{%s},{%s}%s}' % (lstr(kind[0]), lstr(label), ','.join(lstr(m) for m in mobs),
+                       ','.join('{%d,%.1f,%.1f,%d}' % p for p in pts), extra))
         parts.append('o={' + ','.join(os_) + '}')
     out.append('[%s]={%s}' % (qid, ','.join(parts)))
 head = ['-- Waypath+ quest objectives: where to finish each quest and where its objectives are.',
@@ -359,8 +371,10 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '--   mx = max level, uc = gone once this is done, sw = only once this is taken or done, dq = {not while these are in your log},',
         '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
-        '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}}, ... },',
-        '--   si = {o/i, object or item that starts it, {mob names}, {{uiMapID, x, y, mob#}, ...}, 1 = always drops there / 0 = only sometimes} }',
+        '--   (e and s: a 5th value is the NPC\'s ID)',
+        '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}, {mob NPC IDs}, item or object ID, {drop % per mob}}, ... },',
+        '--   si = {o/i, object or item that starts it, {mob names}, {{uiMapID, x, y, mob#}, ...}, 1 = always drops there / 0 = only sometimes,',
+        '--         {mob NPC IDs}, item or object ID, {drop % per mob}} }',
         'local _, RG = ...', 'RG.QDATA = {']
 open(RET + 'Objectives.lua', 'w', encoding='utf-8').write('\n'.join(head) + '\n' + ',\n'.join(out) + '\n}\n')
 print(f'{nq} quests, {nobj} objectives, {npts} points', file=sys.stderr)

@@ -764,6 +764,7 @@ local function questTip(q)
     for _, o in ipairs(q.objs or {}) do
       if o.text and o.text ~= "" then t = t .. "\n" .. (o.finished and (GREY .. "  - " .. o.text .. "|r") or ("|cffffffff  - " .. o.text .. "|r")) end
     end
+    if RG.DropTip then t = t .. RG.DropTip(q.id) end
   end
   if q.dist then t = t .. "\n" .. GREY .. (q.complete and "Turn in: " or "Nearest: ") .. (q.label ~= "" and q.label or "") .. ", " .. RG.FormatYards(q.dist) .. "|r" end
   if q.complete and q.wp then
@@ -1082,6 +1083,7 @@ function RG.RefreshTracker()
                               t = t .. "\n" .. GREY .. "Nearest: " .. ((src and src ~= name) and (src .. ", ") or "") .. ((zone and zone.name) and (zone.name .. ", ") or "") ..
                                 (dist and RG.FormatYards and RG.FormatYards(dist) or "") .. "|r"
                             else t = t .. "\n" .. GREY .. "No place known for it yet.|r" end
+                            if RG.DropTip then t = t .. RG.DropTip(q.id, name) end
                             t = t .. "\n\n" .. GOLD .. "Click:|r the arrow to the nearest place for it\n"
                           else t = t .. "\n\n" end
                           return t .. GOLD .. "Shift-click:|r open in your quest log"
@@ -1216,7 +1218,12 @@ function RG.RefreshTracker()
       n = n + 1
       y = item(n, y, (isTarget(wp) and ARROW or (wp and RG.PIN or "")) .. "|cffc9a227" .. (place or r.zone) .. "|r" .. (levels and (GREY .. "  ·  " .. levels .. "|r") or ""),
         { indent = 2, wp = wp, right = GREY .. qdone .. "/" .. qtotal .. " quests done|r",
-          tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in.\n\n" ..
+          tip = GOLD .. "This step:|r the quests below, all from " .. (place or r.zone) .. ".\nIt ticks itself off once they're all handed in." ..
+            (function()   -- how often the step's items drop
+              local t = ""
+              if RG.DropTip then for _, l in ipairs(qlines) do if l.act ~= "turnin" and l.act ~= "later" then t = t .. RG.DropTip(l.id):gsub("^\n\n" .. GOLD:gsub("%p", "%%%0") .. "Drops:|r", "") end end end
+              return t ~= "" and ("\n\n" .. GOLD .. "Drops:|r" .. t) or ""
+            end)() .. "\n\n" ..
             (wp and (GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r show it on the map\n") or "") .. GOLD .. "Shift-click:|r skip this step",
           onClick = function() if IsShiftKeyDown and IsShiftKeyDown() then RG.TickStep(sk, steps[firstOpen]) end end,
           onRightClick = wp and function() RG.Follow(wp) end or nil })
@@ -1248,7 +1255,7 @@ function RG.RefreshTracker()
           if l.act == "doing" then tip = tip .. (l.wp and "\n" or "\n\n") .. GOLD .. "Click:|r open the quest" end
           -- what kind of quest it is, and the one thing people get wrong about it (QuestNotes.lua)
           local qn = RG.QuestNote(l.id)
-          tip = tip .. noteTip(qn) .. upTip(l.id)
+          tip = tip .. noteTip(qn) .. upTip(l.id) .. ((RG.DropTip and l.act ~= "turnin" and l.act ~= "later") and RG.DropTip(l.id) or "")
           n = n + 1
           y = item(n, y, (isTarget(l.wp) and ARROW or "") .. VERB[l.act] .. nameCol .. l.name .. "|r" .. ((qn and qn.tag) and ("  " .. qn.tag) or "") .. upTag(l.id),
             { indent = 12, right = rt, wp = l.wp, tip = "|cffffffff" .. l.name .. "|r\n" .. tip,

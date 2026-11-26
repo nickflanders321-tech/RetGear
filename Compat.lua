@@ -16,6 +16,7 @@ local NEEDS = {
   { "Auction House prices", { "C_AuctionHouse.ReplicateItems|C_AuctionHouse.SendBrowseQuery|GetNumAuctionItems" } },
   { "Professions", { "GetProfessions|GetNumSkillLines", "GetProfessionInfo|GetSkillLineInfo" } },
   { "Fishing", { "UnitChannelInfo", "IsFishingLoot", "GetLootSlotInfo" } },
+  { "Step view (models and icons)", { "GetItemIcon|C_Item.GetItemIconByID", "C_Map.GetMapInfo", "IsInInstance" } },
 }
 
 local function resolve(path)

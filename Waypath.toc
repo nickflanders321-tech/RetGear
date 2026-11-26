@@ -76,6 +76,7 @@ QoL2.lua
 Smart.lua
 Tracker.lua
 TrackerExtras.lua
+StepView.lua
 Extras.lua
 Movers.lua
 Auction.lua

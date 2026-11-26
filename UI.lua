@@ -2804,7 +2804,7 @@ local SETTING_GROUPS = {
   -- ("#..." starts a sub-heading inside a group; the page shows one group open at a time)
   { "Leveling and quests", {
     "#Tracker: look", "tracker", "trackerFade", "trackerLocked", "compactTracker", "trackerRoomy", "trackerCombatFold", "trackerInter",
-    "#Tracker: what it shows", "trackerObjectives", "trackerFocus", "trackerItems", "fishTracker", "trackerProfs",
+    "#Tracker: what it shows", "trackerObjectives", "trackerFocus", "trackerItems", "stepView", "fishTracker", "trackerProfs",
     "#Quests", "autoQuest", "newQuests", "autoReward", "rewardPicker", "nameplateAlert", "shareObjective",
     "#Arrow and travel", "arrow", "mapClicks", "spf", "smartPlan", "travelTips", "fpNudge",
     "#Leveling route (work in progress)", "routeGuide", "autoArrow", "smartStepOrder",
