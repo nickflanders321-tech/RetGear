@@ -103,4 +103,7 @@ Artisan Leatherworking (205-300)
 36x Runic Leather Headband
 295-300
 7x Wicked Leather Belt
-20x Blue Suede Hat - 320 Rugged Leather, 80 Blue Dye, 20 Rune Thread
+265-280
+15x Runic Leather Headband
+280-300
+20x Blue Suede Hat

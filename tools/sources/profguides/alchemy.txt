@@ -18,6 +18,10 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 225-300
 26x Liferoot
 26x Stranglekelp
+4x Iron Bar
+1x Black Vitriol
+4x Purple Lotus
+4x Firebloom
 25x Khadgar's Whisker
 44x Sungrass
 25x Blindweed
@@ -25,8 +29,9 @@ This WoW Forever Alchemy leveling guide will show you the fastest and cheapest w
 73x Leaded Vial (vendor)
 69x Crystal Vial (vendor)
 Recipe: Nature Protection Potion (190) - (Binds when picked up)
+Recipe: Philosopher's Stone (225)
+Recipe: Transmute Arcanite (275)
 Recipe: Elixir of Superior Defense (265)
-Recipe: Superior Mana Potion (260)
 Apprentice Alchemy (1-55)
 1-10
 9x Elixir of Minor Force - 9 Silverleaf, 9 Empty Vial
@@ -48,11 +53,14 @@ Expert Alchemy (150-225)
 15x Elixir of Fire Power - 30 Fire Oil, 15 Kingsblood, 15 Leaded Vial
 165-195
 36x Mana Potion - 36 Stranglekelp, 36 Kingsblood, 36 Leaded Vial
+Recipe: Nature Protection Potion - 20 (for the 195-225 step)
+Pestlezugg also sells Recipe: Transmute Iron to Gold and Recipe: Transmute Mithril to Truesilver . They are not that great, but you can level with them as an alternative (see 225-235).
 195-225
 36x Nature Protection Potion - 36 Liferoot, 36 Stranglekelp, 36 Leaded Vial
 Artisan Alchemy (225-300)
 225-235
 26x Nature Protection Potion - 26 Liferoot, 26 Stranglekelp, 26 Leaded Vial
+1x Philosopher's Stone - 4 Iron Bar, 1 Black Vitriol, 4 Purple Lotus, 4 Firebloom
 235-250
 15x Elixir of Greater Intellect - 15 Blindweed, 15 Khadgar's Whisker, 15 Crystal Vial
 250-260
