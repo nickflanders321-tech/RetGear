@@ -83,7 +83,7 @@ local function workOf(r, logIds)
         if logIds[id] then inLog = inLog + 1; doable = true
         elseif not doable and not isDone(id) then
           local d = RG.QDATA and RG.QDATA[id]
-          if d and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l) and not (RG.GreyButNeeded and RG.GreyButNeeded(id, isDone))) and not (RG.QuestBlocked and RG.QuestBlocked(id, d, isDone, function(q) return logIds[q] or false end, true)) then doable = true end
+          if d and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id)) and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l) and not (RG.GreyButNeeded and RG.GreyButNeeded(id, isDone))) and not (RG.QuestBlocked and RG.QuestBlocked(id, d, isDone, function(q) return logIds[q] or false end, true)) then doable = true end
         end
       end
       if doable then open = open + 1 end
@@ -92,6 +92,7 @@ local function workOf(r, logIds)
   return open, #steps, inLog
 end
 
+RG.SmartWorkOf = workOf   -- (the harness's bot asks it why a zone still counts)
 -- Ranked options for right now: { { r = entry, score, why }, ... } best first.
 local rankCache, rankT
 function RG.SmartRank()
@@ -137,14 +138,17 @@ function RG.SmartRankNow()
 end
 
 -- The pick for the tracker; nil when smart mode is off or nothing fits (the guided route then decides).
+local STAY = 1.5   -- how much better another zone must score before you're sent away from the one you're working on
 function RG.SmartEntry()
   if not RG.db or RG.db.smart == false or RG.db.routeStyle == "guided" then return nil end
   local list = RG.SmartRank()
-  -- stay put unless something is clearly better: no flip-flopping between zones
+  -- finish the zone you're working on while it still has something you can do now (the list only has entries with
+  -- work), unless another zone is much better for you (a wide zone like Stranglethorn mustn't hold you while the
+  -- zones of your level go grey): no flip-flopping between zones
   local keep = RG.db.smartKey
   if keep then
     for _, o in ipairs(list) do
-      if o.r.zone .. "|" .. o.r.from == keep and list[1] and list[1].score - o.score < 0.6 then return o.r end
+      if o.r.zone .. "|" .. o.r.from == keep and list[1] and list[1].score - o.score < STAY then return o.r end
     end
   end
   local best = list[1]

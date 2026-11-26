@@ -53,21 +53,28 @@ function RG.NextStep(r)
       if pos and pos.GetXY then px, py = pos:GetXY() elseif pos then px, py = pos.x, pos.y end
       if RG.IsSecret and (RG.IsSecret(px) or RG.IsSecret(py)) then px, py = nil, nil end
     end
-    local score = {}
+    local score, waits = {}, {}
     for rank, i in ipairs(open) do
       local s = rank   -- the guide's order
       local ql = RG.StepQuestLines and RG.StepQuestLines(r, i, quests)
-      local turnin, doing, now = false, false, false
+      local turnin, doing, now, near = false, false, false, false
       for _, l in ipairs(ql or {}) do
-        if l.act == "turnin" then turnin = true elseif l.act == "doing" then doing = true end
+        if l.act ~= "later" and not l.away then near = true end
+        -- (only for something on this step's map or yours: one in another zone waits for the trip there)
+        if not l.away then
+          if l.act == "turnin" then turnin = true elseif l.act == "doing" then doing = true end
+        end
         if l.act ~= "later" then now = true end
       end
       if turnin then s = s - 3 elseif doing then s = s - 2 end
+      -- all it has left is in another zone: after the steps with something to do here
+      if now and not near then s = s + 3 end
       -- every quest in it has to wait (for an earlier step's quest, a level...): any step with something to do
       -- now comes first, even one further on or further away (Gordo's Task before the Brill step that needs it)
-      if ql and #ql > 0 and not now then s = s + 10 end
+      if ql and #ql > 0 and not now then s = s + 10; waits[i] = true end
+      -- (standing at a step only helps one with something to do now: one that waits stays behind)
       local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
-      if wp and px and wp[1] == here then
+      if wp and px and wp[1] == here and not waits[i] then
         local dx, dy = (wp[2] / 100) - px, (wp[3] / 100) - py
         local d = math.sqrt(dx * dx + dy * dy)
         if d < 0.05 then s = s - 3 elseif d < 0.12 then s = s - 1 end
@@ -80,7 +87,7 @@ function RG.NextStep(r)
     if held and held ~= pick and score[held] and score[held] - score[pick] < 1 then pick = held end
     -- every one of the next few has to wait (Fragments of the Past waits on Winterspring's Troubled Spirits of
     -- Kel'Theril): the first open step further on that has something to do now, if there is one
-    if score[pick] >= 10 then
+    if waits[pick] then
       local last = open[#open]
       for i = last + 1, #steps do
         if not RG.StepIsDone(r, i) then
@@ -183,8 +190,9 @@ function RG.CurrentRouteEntry() local ok, r = pcall(currentEntry); return ok and
 -- A generated route step split into its quests, each with the one thing to do
 -- next. Returns the list (hand-ins first, then pick-ups, then quests in your
 -- log, then ones that open later), how many are done, how many count, and the
--- step's place and level range. nil for hand-written steps.
---   { id, name, act = "turnin"|"pickup"|"doing"|"later", npc, wp, prog, how = how a quest without a giver starts }
+-- step's place and level range. nil for hand-written steps. Things in another zone than the step's (and yours) come
+-- last: away = true.
+--   { id, name, act = "turnin"|"pickup"|"doing"|"later", npc, wp, prog, how = how a quest without a giver starts, away }
 local ACT_ORDER = { turnin = 1, pickup = 2, doing = 3, later = 4 }
 -- A quest's kind and note (QuestNotes.lua, from Polestar's forever-db, CC BY 4.0): a short coloured tag for the line and
 -- a sentence for its tooltip. nil when there is nothing to say.
@@ -227,6 +235,8 @@ function RG.StepQuestLines(entry, i, myQuests)
   for _, q in ipairs(myQuests or (RG.MyQuests and RG.MyQuests()) or {}) do if q.id then byId[q.id] = q end end
   local lvl = UnitLevel("player") or 1
   local out, doneN, total = {}, 0, 0
+  local handIn = {}   -- quests in your log, finished, that a quest of this step waits on (listed once)
+  for _, id in ipairs(ids) do handIn[id] = true end   -- (one of the step's own has its own line)
   for _, id in ipairs(ids) do
     local d = RG.QDATA[id]
     if d and d.n and not d.rep and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id)) then
@@ -250,6 +260,18 @@ function RG.StepQuestLines(entry, i, myQuests)
           -- what's still in the way: an earlier quest, your level, a profession, reputation...
           if why then
             l.act, l.npc = "later", why
+            -- it waits on a quest you've finished but not handed in (Chillwind Horns on Felnok Steelspring, which
+            -- belongs to an earlier zone's step): hand that one in here first
+            for _, list in ipairs({ d.pg or {}, d.ps or {} }) do
+              for _, p in ipairs(list) do
+                local pq, pd = byId[p], RG.QDATA[p]
+                if pq and pq.complete and not handIn[p] and pd and pd.e then
+                  handIn[p] = true
+                  out[#out + 1] = { id = p, name = pd.n or pq.title, level = pd.l, act = "turnin", npc = pd.e[4],
+                    wp = { pd.e[1], pd.e[2], pd.e[3], pd.e[4] ~= "" and pd.e[4] or pd.n } }
+                end
+              end
+            end
           elseif not d.s and d.si and d.si[4] and d.si[4][1] then
             -- it starts from an object you click or an item that always drops there (one that only sometimes drops
             -- never gets here: QuestBlocked leaves it out until you have it)
@@ -270,8 +292,16 @@ function RG.StepQuestLines(entry, i, myQuests)
       end
     end
   end
-  for k, l in ipairs(out) do l._k = k end
+  -- What can be done on the step's own map (or the one you're on) comes first; a hand-in or an objective in another
+  -- zone waits until you go there (it's batched with the next trip instead of sending you back and forth)
+  local hub = RG.StepWaypoint and RG.StepWaypoint(entry, i)
+  local here = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  for k, l in ipairs(out) do
+    l._k = k
+    l.away = (l.wp and hub and l.wp[1] ~= hub[1] and l.wp[1] ~= here) and true or nil
+  end
   table.sort(out, function(a, b)
+    if (a.away or false) ~= (b.away or false) then return not a.away end
     if a.act ~= b.act then return ACT_ORDER[a.act] < ACT_ORDER[b.act] end
     return a._k < b._k
   end)

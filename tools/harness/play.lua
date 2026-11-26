@@ -35,13 +35,14 @@ function P.run(W, Wd, RG, opts, Inv, I)
     W.step(framed, 1)
     if secs > framed then W.advance(secs - framed) end
   end
-  -- the zones the bot goes through, in order, with the levels it was there ({ zone, from, to }): how much it mixes zones
+  -- the zones the bot goes through, in order, with the levels it was there ({ zone, from, to, why }): how much it mixes
+  -- zones, and what the guide sent it there for (R.why: the route entry, step and the one thing it was doing)
   R.path = {}
   local function notePlace()
     local z = Wd.mapName(S.map)
     local last = R.path[#R.path]
     if last and last.zone == z then last.to = me.level
-    else R.path[#R.path + 1] = { zone = z, from = me.level, to = me.level } end
+    else R.path[#R.path + 1] = { zone = z, from = me.level, to = me.level, why = R.why } end
   end
   -- walk to a waypoint { uiMapID, x 0-100, y 0-100 }
   local function walk(wp)
@@ -71,6 +72,29 @@ function P.run(W, Wd, RG, opts, Inv, I)
 
   local function grind(why)
     local from = me.level
+    -- what the zone ranking had to offer instead (none: every zone for this level waits on something)
+    local offer = {}
+    if RG.SmartRankNow then
+      for k, o in ipairs(RG.SmartRankNow()) do if k <= 3 then offer[#offer + 1] = o.r.zone .. " " .. string.format("%.1f", o.score) end end
+    end
+    why = why .. "; the zone ranking offered: " .. (#offer > 0 and table.concat(offer, ", ") or "nothing")
+    if os.getenv("BOT_DEBUG") then
+      local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+      if r then
+        local key = r.zone .. "|" .. r.from
+        RG.ForgetNextStep()
+        why = why .. "\n      entry " .. key .. ", next step " .. tostring(RG.NextStep(r)) .. ", smartStepOrder " .. tostring(RG.Opt("smartStepOrder"))
+        for i, ids in ipairs((RG.STEP_QUESTS or {})[key] or {}) do
+          if not RG.StepIsDone(r, i) then
+            local acts = {}
+            for _, l in ipairs(RG.StepQuestLines(r, i) or {}) do acts[#acts + 1] = l.act .. ":" .. tostring(l.id) .. (l.away and "(away)" or "") end
+            local alls = {}
+            for _, id in ipairs(ids) do alls[#alls + 1] = tostring(id) end
+            why = why .. "\n      step " .. i .. " ids " .. table.concat(alls, ",") .. " lines " .. table.concat(acts, " ")
+          end
+        end
+      end
+    end
     note("grinds a level: " .. why)
     R.ground[#R.ground + 1] = { level = from, why = why }
     W.context = "grinding"
@@ -242,6 +266,7 @@ function P.run(W, Wd, RG, opts, Inv, I)
   end
   local function doFound(p)
     local pd = RG.QDATA[p]
+    R.why = "found: " .. tostring(pd.n)
     walk(Wd.starterSpot(p))
     local ok, why = Wd.accept(p)
     if not ok then return false, why end
@@ -259,23 +284,30 @@ function P.run(W, Wd, RG, opts, Inv, I)
     return true
   end
 
-  -- Class quests: the tracker lists them beside the route ("Class quests: pick up now", RG.ClassQuests); a player
-  -- following it does them when it says so. The bot does the same, and notes when each one became available and
-  -- when it was handed in.
+  -- Class quests: the route's steps carry most of them; the rest the tracker lists beside the route ("Class quests:
+  -- pick up now", RG.ClassQuests). A player does those on the way: when the giver is in the zone they're in or the
+  -- one the guide sends them to next (or when the route has nothing else for them), not by crossing the world at once.
+  -- The bot does the same, and notes when each one became available and when it was handed in.
   R.classQuests = {}
   local cqSeen, cqSkip = {}, {}
   local function doClassQuests()
     if not RG.ClassQuests then return end
     local moment = S.stats.handedIn .. ":" .. me.level   -- (a quest it couldn't take is tried again after the next change)
+    -- where the guide goes next (its step's map), or nil when the route has nothing for now
+    local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+    local ni = r and RG.NextStep(r)
+    local nextWp = ni and RG.StepWaypoint and RG.StepWaypoint(r, ni)
+    local function onTheWay(wp) return not ni or (wp and (wp[1] == S.map or (nextWp and wp[1] == nextWp[1]))) end
     for _, q in ipairs(RG.ClassQuests(5)) do
       if not cqSeen[q.id] then cqSeen[q.id] = { id = q.id, name = q.name, lvl = q.lvl, req = q.req, listed = me.level } end
       local rec = cqSeen[q.id]
       -- "pick up now" for a quest well above your level (Brutal Armor, level 30, at 20): noted; the bot, like a
       -- player, waits until it's within 3 levels (the world can't make a quest harder for being above you)
       if q.now and q.lvl and q.lvl > me.level + 3 then rec.tooHigh = rec.tooHigh or me.level end
-      if q.now and (not q.lvl or q.lvl <= me.level + 3) and cqSkip[q.id] ~= moment and not S.done[q.id] then
+      if q.now and (not q.lvl or q.lvl <= me.level + 3) and cqSkip[q.id] ~= moment and not S.done[q.id] and onTheWay(q.wp) then
         rec.now = rec.now or me.level
         W.phase = "class quest " .. tostring(q.name)
+        R.why = "class quest (side list): " .. tostring(q.name)
         walk(q.wp)
         local ok, why = Wd.accept(q.id)
         if not ok then cqSkip[q.id] = moment; rec.failed = why
@@ -327,6 +359,7 @@ function P.run(W, Wd, RG, opts, Inv, I)
         local lines = RG.StepQuestLines(r, i)
         local l
         for _, x in ipairs(lines or {}) do if x.act ~= "later" then l = x break end end
+        R.why = where .. ": " .. (l and (l.act .. " " .. tostring(l.name)) or "step")
         local progress = 0
         for _, e in ipairs(S.log) do for _, o in ipairs(e.objs) do progress = progress + o.have end end
         local sig = where .. ":" .. (l and (l.act .. ":" .. l.id) or "none") .. ":" .. #S.log .. ":" .. Wd.state.stats.handedIn .. ":" .. me.level .. ":" .. progress

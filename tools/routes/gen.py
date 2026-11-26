@@ -446,8 +446,13 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
     # A class quest joins the step at the hub where its giver stands, or the nearest one (Paladins see a Paladin quest
     # there, nobody else does). A quest from an item that only sometimes drops joins the step where it's handed in
     # (the add-on shows it once you have it), or the one nearest its drop. Only steps at or after its level, if any.
+    def step_of(qid):
+        for i, s in enumerate(steps):
+            if any(x['id'] == qid for x in s['q']): return i
+        return -1
     for q in sorted((q for q in quests.values() if q['maybe'] or q['cls']), key=lambda q: (q['lvl'], q['id'])):
         if not steps: break
+        after = max([step_of(p) for p in q['pre'] if p in quests] or [-1])   # (Armaments of War after The Calling)
         target = q['giver'][1]
         if q['maybe'] and q['ender']:
             _, sp = npc(q['ender'])
@@ -456,7 +461,7 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
             pz, px, py = steps[i]['point']
             lvl = min(x['lvl'] for x in steps[i]['q'] if not (x['maybe'] or x['cls']))
             return (ui.get(pz) != ui.get(target[0]), lvl < q['lvl'] - 2, round(math.hypot(px - target[1], py - target[2]) / 5), i)
-        steps[min(range(len(steps)), key=far)]['q'].append(q)
+        steps[min(range(max(0, min(after, len(steps) - 1)), len(steps)), key=far)]['q'].append(q)
     out = []
     for s in steps:
         names = []

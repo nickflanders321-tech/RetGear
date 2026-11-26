@@ -144,6 +144,31 @@ return {
     end,
   },
   {
+    name = "waiting-step-where-you-stand",
+    about = "standing at a step whose quests all wait for a higher level, the guide still moves on to one with work",
+    race = "NightElf", class = "WARRIOR", level = 50,
+    run = function(T)
+      local r = T.entry("Felwood")
+      T.ok(r, "Felwood is on the Alliance route")
+      if not r then return end
+      local key = r.zone .. "|" .. r.from
+      -- To Winterspring! (5249) is level 53: everything before its step done, and the bot standing at it
+      local at
+      for i, ids in ipairs(T.RG.STEP_QUESTS[key] or {}) do for _, id in ipairs(ids) do if id == 5249 then at = at or i end end end
+      T.ok(at, "a Felwood step holds To Winterspring!")
+      if not at then return end
+      for i = 1, at - 1 do for _, id in ipairs(T.RG.STEP_QUESTS[key][i] or {}) do T.Wd.state.done[id] = true end end
+      T.go(T.RG.StepWaypoint(r, at))
+      T.W.fire("QUEST_LOG_UPDATE"); T.RG.ForgetNextStep(); T.step(2)
+      local pick = T.RG.NextStep(r)
+      local acts = {}
+      for _, l in ipairs(T.RG.StepQuestLines(r, pick) or {}) do acts[#acts + 1] = l.act end
+      local doable = false
+      for _, a in ipairs(acts) do if a ~= "later" then doable = true end end
+      T.ok(pick ~= at and doable, string.format("the guide picks a step with something to do, not the one you stand at (step %d: %s)", pick or 0, table.concat(acts, ", ")))
+    end,
+  },
+  {
     name = "zone-name-is-the-zone",
     about = "standing anywhere in a zone, the add-on names the zone, not a place inside it (Ratchet, Valanaar...)",
     race = "Orc", class = "WARRIOR", level = 20,
