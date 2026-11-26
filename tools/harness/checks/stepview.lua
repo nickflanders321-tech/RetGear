@@ -49,9 +49,30 @@ return {
       T.ok(all:find("Gnoll Paw", 1, true), "and the item to collect")
       T.ok(all:find("Drops %d+%% from"), "and how often it drops")
       T.ok(f.pic and f.pic:IsShown(), "with a picture of what to look for")
+      -- the distance shows once (in the header)
+      local _, n = all:gsub("%d+ yd", "")
+      T.eq(n, 1, "the distance is shown once")
       -- off again: gone
       T.RG.db.stepView = false; T.RG.RefreshStepView()
       T.ok(not f:IsShown(), "turned off, it's gone")
+    end,
+  },
+  {
+    name = "step-view-skip",
+    about = "the step view's Skip moves on from the current step",
+    race = "Human", class = "MAGE", level = 12,
+    run = function(T)
+      T.RG.db.stepView = true
+      T.accept(102)   -- Patrolling Westfall
+      T.go(T.Wd.objectiveSpot(102))
+      T.RG.Objective(true); T.RG.RefreshStepView(); T.step(1)
+      local f = T.W.G.WaypathStepView
+      T.ok(f and f.skip and f.skip:IsShown(), "there's a Skip button")
+      local before = T.RG.Objective(true)
+      T.ok(before and before.qtitle == "Patrolling Westfall", "the view is on Patrolling Westfall (" .. tostring(before and before.qtitle) .. ")")
+      T.RG.StepViewSkip(); T.step(1)
+      local after = T.RG.Objective(true)
+      T.ok(not after or after.key ~= before.key, "after Skip it's on something else (" .. tostring(after and after.text) .. ")")
     end,
   },
 }

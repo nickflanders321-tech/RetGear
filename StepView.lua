@@ -117,8 +117,44 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 -- The panel
 -- ---------------------------------------------------------------------------------------------------------------------
-local W, MODEL = 340, 104
+local W, MODEL = 420, 104
 local f, rows, model
+-- Skip what the view shows: a stop of your quests for an hour (it comes back after), or a route step (ticked:
+-- /wp undo puts it back). "Never" stops suggesting the quests to pick up there.
+local function afterSkip(what)
+  if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end
+  if RG.RefreshTracker then RG.RefreshTracker() end
+  RG.RefreshStepView()
+  if RG.Notify then RG.Notify("Skipped: " .. what) end
+end
+local function routeKey(obj) return obj and obj.kind == "route" and obj.key and obj.key:match("^route:(.+)$") end
+local function skipNow()
+  local obj = RG.Objective and RG.Objective()
+  if not obj then return end
+  local rk = routeKey(obj)
+  if rk and RG.TickStep then RG.TickStep(rk, obj.text); afterSkip((obj.text or "this step") .. " (/wp undo brings it back)")
+  elseif obj.stop and RG.SkipStop then RG.SkipStop(obj.stop); afterSkip((obj.qtitle or "this stop") .. " for an hour")
+  else RG.Print("Nothing here to skip.") end
+end
+local function skipMenu()
+  local obj = RG.Objective and RG.Objective()
+  local e = {}
+  if routeKey(obj) then e[#e + 1] = { "Skip this route step (/wp undo brings it back)", skipNow }
+  elseif obj and obj.stop then
+    e[#e + 1] = { "Skip this stop for an hour", skipNow }
+    local seen = {}
+    for _, it in ipairs(obj.stop.items or {}) do
+      if it.act == "pickup" and it.id and not seen[it.id] and RG.IgnoreQuest then
+        seen[it.id] = true
+        e[#e + 1] = { "Never suggest " .. tostring(it.title) .. " again", function() RG.IgnoreQuest(it.id); afterSkip(tostring(it.title)) end }
+      end
+    end
+  end
+  e[#e + 1] = { "Hide the step view", function() RG.db.stepView = false; RG.RefreshStepView(); RG.Print("Step view off. Turn it back on in Settings or with /wp stepview.") end }
+  if RG.ShowMenu then RG.ShowMenu(e, "Step view") end
+end
+RG.StepViewSkip = skipNow
+
 local function inInstance() return IsInInstance and select(1, IsInInstance()) and true or false end
 local function newText(parent, size, kind)
   local fs = parent:CreateFontString(nil, "OVERLAY")
@@ -153,7 +189,22 @@ local function build()
   end
   -- header: what to do, and how far
   f.verb = newText(f, 13, "bold"); f.verb:SetPoint("TOPLEFT", 12, -10)
-  f.title = newText(f, 13, "semibold"); f.title:SetPoint("LEFT", f.verb, "RIGHT", 6, 0); f.title:SetPoint("RIGHT", f, "RIGHT", -12, 0)
+  f.skip = CreateFrame("Button", nil, f); f.skip:SetSize(44, 18); f.skip:SetPoint("TOPRIGHT", -10, -8)
+  f.skip:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  local sbg = f.skip:CreateTexture(nil, "BACKGROUND"); sbg:SetAllPoints(); sbg:SetColorTexture(1, 1, 1, 0.06)
+  f.skip.label = newText(f.skip, 11, "semibold"); f.skip.label:SetPoint("CENTER"); f.skip.label:SetJustifyH("CENTER"); f.skip.label:SetText("Skip")
+  f.skip.label:SetTextColor(GOLDC[1], GOLDC[2], GOLDC[3])
+  f.skip:SetScript("OnClick", function(_, button) if button == "RightButton" then skipMenu() else skipNow() end end)
+  f.skip:SetScript("OnEnter", function(self)
+    sbg:SetColorTexture(1, 1, 1, 0.14)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine("Skip this step", 1, 0.93, 0.74)
+    GameTooltip:AddLine("Click: skip it (a stop of your quests for an hour; a route step until /wp undo)", 1, 1, 1, true)
+    GameTooltip:AddLine("Right-click: more (never suggest these quests again, hide the view)", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  f.skip:SetScript("OnLeave", function() sbg:SetColorTexture(1, 1, 1, 0.06); GameTooltip:Hide() end)
+  f.title = newText(f, 13, "semibold"); f.title:SetPoint("LEFT", f.verb, "RIGHT", 6, 0); f.title:SetPoint("RIGHT", f.skip, "LEFT", -8, 0)
   f.title:SetWordWrap(false); f.title:SetTextColor(0.937, 0.902, 0.824)
   f.where = newText(f, 11); f.where:SetPoint("TOPLEFT", f.verb, "BOTTOMLEFT", 0, -3); f.where:SetPoint("RIGHT", f, "RIGHT", -12, 0)
   f.where:SetTextColor(0.79, 0.75, 0.66); f.where:SetWordWrap(false)
@@ -171,14 +222,14 @@ local function build()
   f.foot = newText(f, 11); f.foot:SetPoint("BOTTOMLEFT", 12, 10); f.foot:SetPoint("RIGHT", f, "RIGHT", -12, 0); f.foot:SetTextColor(0.79, 0.75, 0.66)
   -- click: the arrow to it; right-click: hide the view
   f:SetScript("OnMouseUp", function(self, button)
-    if button == "RightButton" then RG.db.stepView = false; RG.RefreshStepView(); RG.Print("Step view off. Turn it back on in Settings or with /wp stepview.") return end
+    if button == "RightButton" then skipMenu() return end
     if self.wp and RG.Follow then RG.Follow(self.wp) end
   end)
   f:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine("Waypath+ step view", 1, 0.93, 0.74)
     GameTooltip:AddLine("Click: the arrow to this step", 1, 1, 1)
-    GameTooltip:AddLine("Drag: move it  ·  right-click: hide it", 0.8, 0.8, 0.8)
+    GameTooltip:AddLine("Drag: move it  ·  right-click: skip this step, or hide the view", 0.8, 0.8, 0.8)
     GameTooltip:Show()
   end)
   f:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -286,7 +337,8 @@ function RG.RefreshStepView()
     out[#out + 1] = "|cffffffff" .. tostring(obj.text or "") .. "|r"
   end
   -- why here, and the one thing people get wrong about the quest (QuestNotes.lua)
-  if obj.why and obj.why ~= "" then out[#out + 1] = GREY .. obj.why .. "|r" end
+  local why = obj.why and obj.why:gsub("%s*·%s*[%d%.]+k? yd away", "") or ""
+  if why ~= "" then out[#out + 1] = GREY .. why .. "|r" end
   local qn = it and it.id and RG.QuestNote and RG.QuestNote(it.id)
   if qn and qn.n then out[#out + 1] = "|cffff9f43" .. qn.n .. "|r" end
   f.body:SetText(table.concat(out, "\n"))
@@ -298,9 +350,9 @@ function RG.RefreshStepView()
   f.body:SetWidth(shown and (W - MODEL - 34) or (W - 24))
   -- footer: nearest, and next
   local foot = {}
-  if look and look.name and obj.dist and it and it.act == "doing" then foot[#foot + 1] = "Nearest " .. look.name .. ": " .. eta end
   if obj.nextText then foot[#foot + 1] = GOLD .. "Next:|r " .. obj.nextText end
   f.foot:SetText(table.concat(foot, "\n"))
+  f.skip:SetShown((obj.stop or routeKey(obj)) and true or false)
   f.wp = obj.wp
   local h = 52 + math.max(f.body:GetStringHeight() or 0, shown and (MODEL + 20) or 0) + 12 + ((f.foot:GetStringHeight() or 0) > 0 and ((f.foot:GetStringHeight() or 0) + 8) or 0)
   f:SetHeight(math.max(90, h))
@@ -326,7 +378,7 @@ SlashCmdList.WAYPATH = function(msg)
   local cmd = (msg or ""):lower():match("^%s*(%S*)")
   if cmd == "stepview" then
     RG.db.stepView = not (RG.Opt and RG.Opt("stepView"))
-    RG.Print("Step view " .. (RG.db.stepView and "on: drag it where you want it, right-click to hide it." or "off."))
+    RG.Print("Step view " .. (RG.db.stepView and "on: drag it where you want it; Skip moves on, right-click for more." or "off."))
     RG.RefreshStepView()
     return
   end
