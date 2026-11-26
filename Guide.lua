@@ -164,6 +164,8 @@ local skipUntil, skipQuest = {}, {}
 function RG.SkipQuest(title) skipQuest[title] = (GetTime and GetTime() or 0) + 600; if RG.MarkObjectiveDirty then RG.MarkObjectiveDirty() end end
 local function taskKey(t) return t.act .. ":" .. tostring(t.id or t.title) .. ":" .. tostring(t.label or "") end
 
+local objGroups   -- (see buildTasks)
+local ptCache, ptN = {}, 0   -- spot -> its point in world coordinates (a spot never moves); emptied now and then (the game's Lua can't drop entries whose value points back at the key)
 local function buildTasks()
   local c, px, py = RG.PlayerWorld()
   if not c then return nil end
@@ -172,22 +174,46 @@ local function buildTasks()
   local byTitle = {}
   for _, q in ipairs(quests) do byTitle[q.title] = q end
   local function pt(wp)
-    local c2, x, y = RG.ToWorld(wp[1], wp[2], wp[3])
-    if c2 == c and x then return { x = x, y = y, wp = wp } end
+    local e = ptCache[wp]
+    if e and e.c == c then return e.p end
+    local c2, x, y
+    if RG.WpWorld then c2, x, y = RG.WpWorld(wp) else c2, x, y = RG.ToWorld(wp[1], wp[2], wp[3]) end
+    if c2 == c and x then
+      local p = { x = x, y = y, wp = wp }
+      if ptN > 4000 then ptCache, ptN = {}, 0 end
+      ptN = ptN + 1; ptCache[wp] = { c = c, p = p }
+      return p
+    end
   end
   -- objectives still to do (kill, collect, use): one task per objective, any of its spots will do
-  local groups, order = {}, {}
-  for _, sp in ipairs(RG.QuestSpots and RG.QuestSpots() or {}) do
-    if not sp.turnin then
-      local k = sp.quest .. "\0" .. tostring(sp.label)
-      local g = groups[k]
-      if not g then
-        g = { quest = sp.quest, label = sp.label, pts = {}, have = sp.have, need = sp.need, okind = sp.okind }
-        groups[k] = g; order[#order + 1] = g
+  -- (grouping every known quest spot and turning each into world coordinates made most of this function's garbage and none of it
+  -- depends on where you stand: it is kept for as long as the list of spots is the same one, on the same continent)
+  local spots = RG.QuestSpots and RG.QuestSpots() or {}
+  local order
+  if objGroups and objGroups.spots == spots and objGroups.c == c then order = objGroups.order
+  else
+    local groups = {}
+    order = {}
+    for _, sp in ipairs(spots) do
+      if not sp.turnin then
+        local k = sp.quest .. "\0" .. tostring(sp.label)
+        local g = groups[k]
+        if not g then
+          g = { quest = sp.quest, label = sp.label, pts = {}, have = sp.have, need = sp.need, okind = sp.okind }
+          groups[k] = g; order[#order + 1] = g
+        end
+        local p = pt(sp.wp)
+        if p then
+          -- one spot per 6-yard square is enough (a mob camp lists dozens a few steps apart, and every one of them was weighed
+          -- against every other in each round of the plan; 6 yards is well inside the arrival distance)
+          local ck = math.floor(p.x / 6) * 65536 + math.floor(p.y / 6)
+          local seen = g.seen
+          if not seen then seen = {}; g.seen = seen end
+          if not seen[ck] then seen[ck] = true; g.pts[#g.pts + 1] = p end
+        else g.off = true end
       end
-      local p = pt(sp.wp)
-      if p then g.pts[#g.pts + 1] = p else g.off = true end
     end
+    objGroups = { spots = spots, c = c, order = order }
   end
   local objOf = {}
   for _, g in ipairs(order) do
