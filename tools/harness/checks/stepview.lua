@@ -109,6 +109,26 @@ return {
     end,
   },
   {
+    name = "guide-skip-always-moves-on",
+    about = "the ordered guide: Skip always moves the current step on, even when the stop is all that's left of the route step (then the route step is skipped, and /wp undo brings it back)",
+    race = "Orc", class = "WARRIOR", level = 1,
+    run = function(T)
+      local RG = T.RG
+      RG.SetRouteMode("guide", true)
+      T.step(2)
+      local moved = 0
+      for i = 1, 4 do
+        RG.ForgetNextStep()
+        local before = RG.Objective(true)
+        if not before then break end
+        RG.StepViewSkip(); T.step(1)
+        local after = RG.Objective(true)
+        if T.ok(not after or after.key ~= before.key, "skip " .. i .. " moves on from " .. tostring(before.qtitle or before.text) .. " (now " .. tostring(after and (after.qtitle or after.text)) .. ")") then moved = moved + 1 end
+      end
+      T.ok(moved >= 2, "it moved on each time (" .. moved .. ")")
+    end,
+  },
+  {
     name = "step-view-skip",
     about = "the current step's Skip moves on from it",
     race = "Human", class = "MAGE", level = 12,

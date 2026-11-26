@@ -134,6 +134,7 @@ function RG.StepCardHeight() return (f and f:IsShown()) and cardH or 0 end
 -- Skip what the card shows: a stop of your quests for an hour (it comes back after), or a route step (ticked:
 -- /wp undo puts it back). "Never" stops suggesting the quests to pick up there.
 local function afterSkip(what)
+  if RG.ForgetNextStep then RG.ForgetNextStep() end
   if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end
   if RG.RefreshTracker then RG.RefreshTracker() end
   if RG.Notify then RG.Notify("Skipped: " .. what) end
@@ -144,7 +145,25 @@ local function skipNow()
   if not obj then return end
   local rk = routeKey(obj)
   if rk and RG.TickStep then RG.TickStep(rk, obj.text); afterSkip((obj.text or "this step") .. " (/wp undo brings it back)")
-  elseif obj.stop and RG.SkipStop then RG.SkipStop(obj.stop); afterSkip((obj.qtitle or "this stop") .. " for an hour")
+  elseif obj.stop and RG.SkipStop then
+    RG.SkipStop(obj.stop)
+    local after = RG.Objective(true)
+    if after and after.key == obj.key then
+      -- nothing else to go to, so the same stop came straight back. The ordered guide: this stop was all that's left of
+      -- the route step you're on, so skip the step and move on to the next one
+      local r = RG.TrackerView and RG.TrackerView() == "guide" and RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+      local cur = r and RG.NextStep and RG.NextStep(r)
+      local key = r and (r.zone .. "|" .. r.from)
+      if cur and RG.TickStep then
+        -- (the stop's own skip is taken back, so /wp undo brings back the step)
+        if RG.UnskipStop then RG.UnskipStop() end
+        RG.TickStep(key .. "#" .. cur, RG.STEPS[key] and RG.STEPS[key][cur] or "")
+        afterSkip("this step (/wp undo brings it back)")
+      else
+        afterSkip((obj.qtitle or "this stop") .. " for an hour")
+        RG.Print("Nothing else to go to" .. ((RG.TrackerView and RG.TrackerView() == "zone" and RG.FollowZone and RG.FollowZone()) and (" in " .. RG.FollowZone()) or "") .. ", so it stays the current step.")
+      end
+    else afterSkip((obj.qtitle or "this stop") .. " for an hour") end
   else RG.Print("Nothing here to skip.") end
 end
 local function skipMenu()
