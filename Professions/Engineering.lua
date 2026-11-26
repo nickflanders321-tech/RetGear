@@ -46,7 +46,8 @@ G.plan = {
   { from = 238, to = 250, craft = "Hi-Explosive Bomb", n = 20, mats = "2 Mithril Casing, 1 Unstable Trigger, 2 Solid Blasting Powder each" },
   { from = 250, to = 260, craft = "Dense Blasting Powder", n = 44, mats = "2 Dense Stone each" },
   { from = 260, to = 280, craft = "Thorium Widget", n = 20, mats = "3 Thorium Bar, 1 Runecloth each (schematic: an Engineering supplier in a capital city; Sovik in Orgrimmar for the Horde)" },
-  { from = 280, to = 300, craft = "Thorium Tube", n = 21, mats = "6 Thorium Bar each (schematic: Xizzer Fizzbolt, Everlook). From 285 the guide also makes 15 Thorium Shells: 2 Thorium Bar, 1 Dense Blasting Powder each" },
+  { from = 280, to = 286, craft = "Thorium Widget", n = 8, mats = "3 Thorium Bar, 1 Runecloth each" },
+  { from = 286, to = 300, craft = "Thorium Tube", n = 15, mats = "6 Thorium Bar each (schematic: Xizzer Fizzbolt, Everlook). The guide also makes 14 Thorium Shells here: 2 Thorium Bar, 1 Dense Blasting Powder each" },
 }
 G.mats = { 2835, 2836, 2838, 7912, 12365, 2840, 2841, 3575, 3859, 3860, 12359 }
 RG.RegisterProfession("Engineering", G)

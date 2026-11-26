@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.62.5
+- Alchemy: make one Philosopher's Stone at 234 (keep it for transmutes); Pestlezugg's Iron to Gold and Mithril to Truesilver transmutes are listed as an alternative for 225-235.
+- Engineering 280-300 now matches the updated WoW Forever guide: 8 more Thorium Widgets to 286, then 15 Thorium Tubes (and 14 Thorium Shells).
+- Leatherworking: the Blue Suede Hat alternative now starts with 15 Runic Leather Headbands to 280.
+- First Aid: 47 Runecloth Bandages for 260-290.
+- Quest, map and card data updated from WoW Forever's latest game data.
+
 ## v1.62.4
 - Engineering 175-195 now matches the updated WoW Forever guide: 61 Solid Blasting Powder to 193 (enough for the triggers at 200 and the bombs at 238), then the Gyromatic Micro-Adjustor and only 3 Iron Grenades.
 - Checked against WoW Forever build 1.60.1.71139: no changes needed.
