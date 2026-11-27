@@ -127,7 +127,7 @@ end
 -- how often its items drop, a picture of the mob, item or quest giver to look for, why it's next, what comes after and
 -- a Skip button. Folded, the tracker keeps only the first two lines. In the professions view it shows the profession
 -- step you're on (RG.ProfFocus).
-local MODEL = 80
+local MODEL_W, MODEL_H = 80, 92   -- the picture's panel (the model fills it)
 local STRIP = 27   -- the strip across the card's top: what to do, the quest, how far
 local f, model
 local cardH = 0
@@ -230,19 +230,14 @@ local function build()
   f.prog = newText(f, 12, "semibold"); f.prog:SetJustifyH("RIGHT")
   f.obj = newText(f, 12); f.obj:SetWordWrap(false)
   f.obj:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
-  -- details: the picture (a 3D model of the NPC, or an icon) in a round brass frame, and beside it where, drops and how
-  f.pic = CreateFrame("Frame", nil, f); f.pic:SetSize(MODEL, MODEL); f.pic:SetPoint("TOPLEFT", 8, -(STRIP + 8))
-  local pbg = f.pic:CreateTexture(nil, "BACKGROUND"); pbg:SetAllPoints(); pbg:SetTexture("Interface\\AddOns\\Waypath\\Media\\Disc")
-  pbg:SetVertexColor(P.dark[1], P.dark[2], P.dark[3], 1)
-  -- (the ring on a frame of its own, above the model)
-  local ringF = CreateFrame("Frame", nil, f.pic); ringF:SetAllPoints(); ringF:SetFrameLevel(f.pic:GetFrameLevel() + 10)
-  local pring = ringF:CreateTexture(nil, "OVERLAY"); pring:SetAllPoints(); pring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring")
-  pring:SetVertexColor(P.ring[1], P.ring[2], P.ring[3], 1)
-  f.pic.ring = pring
-  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(MODEL * 0.68, MODEL * 0.68); f.icon:SetPoint("CENTER"); f.icon:Hide()
-  -- (the icon round too, where the game has the mask)
-  if f.icon.SetMask then pcall(f.icon.SetMask, f.icon, "Interface\\CharacterFrame\\TempPortraitAlphaMask") end
-  f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -3); f.picName:SetWidth(MODEL + 8); f.picName:SetJustifyH("CENTER")
+  -- details: the picture (a 3D model of the NPC, or an icon) in a dark panel with a brass edge, and beside it where,
+  -- drops and how. (Not round: the game draws a model in its frame's rectangle, so a round ring let arms and yawns
+  -- stick out past it, and a box small enough to stay inside the ring made the model tiny.)
+  f.pic = CreateFrame("Frame", nil, f); f.pic:SetSize(MODEL_W, MODEL_H); f.pic:SetPoint("TOPLEFT", 8, -(STRIP + 8))
+  if RG.TFramed then RG.TFramed(f.pic, P.dark, P.ring) end
+  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(46, 46); f.icon:SetPoint("CENTER"); f.icon:Hide()
+  f.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+  f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -3); f.picName:SetWidth(MODEL_W + 8); f.picName:SetJustifyH("CENTER")
   f.picName:SetTextColor(P.muted[1], P.muted[2], P.muted[3])
   f.body = newText(f, 11); f.body:SetSpacing(2); f.body:SetTextColor(P.ink[1], P.ink[2], P.ink[3])
   -- what comes after, and Skip (red, like the game's close buttons)
@@ -290,9 +285,8 @@ local function showModel(npc, icon)
   if npc and not inInstance() then
     if not model then
       local ok, m = pcall(CreateFrame, "DressUpModel", nil, f.pic)
-      -- (the game draws a model only inside its own frame, and can't make that frame round: so the frame is a tall
-      -- box whose corners stay under the ring, and an NPC that yawns or stretches can't reach past the circle)
-      if ok and m then model = m; m:SetSize(MODEL * 0.48, MODEL * 0.72); m:SetPoint("CENTER") end
+      -- (the whole panel, inside its edge)
+      if ok and m then model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1) end
     end
     if model and model.SetCreature then
       if model.cur ~= npc then
@@ -481,7 +475,7 @@ function RG.RefreshStepView()
     shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
   end
   local picShown = shown and true or false
-  local x = picShown and (8 + MODEL + 10) or 8
+  local x = picShown and (8 + MODEL_W + 10) or 8
   local top = STRIP + 7
   -- the objective and its progress; a quest with several, one line each
   local lines = info.lines or ((info.line and info.line ~= "") and { { text = info.line, prog = info.prog, done = info.done } }) or {}
@@ -532,7 +526,7 @@ function RG.RefreshStepView()
     f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8)
     f.body:SetText(table.concat(body, "\n")); f.body:SetShown(#body > 0)
     local bh = #body > 0 and (f.body:GetStringHeight() or 0) or 0
-    local ph = picShown and (STRIP + 8 + MODEL + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
+    local ph = picShown and (STRIP + 8 + MODEL_H + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
     h = math.max(by + bh, ph) + 8
     -- the quest's usable item (a flask to fill, a horn to blow): a button beside Skip
     if info.it and info.it.id and info.it.act == "doing" and RG.QuestItemFor and RG.Opt("trackerItems") ~= false then
