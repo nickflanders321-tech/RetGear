@@ -935,7 +935,7 @@ RG.CLASS_GEAR_A.PRIEST = {
   { id = 9470, slot = "Head", lvl = 44, how = "Dungeon", src = "Shadowpriest Sezz'ziz", zone = "Zul'Farrak", score = 25, bl = 47, name = "Bad Mojo Mask", gen = true },
   { id = 10025, slot = "Head", lvl = 44, how = "Crafted", src = "Tailoring", zone = "Bind on Equip · Quest: The Undermarket", score = 26, prof = "Tailoring", sk = 245, boe = true, ah = true, alt = true, name = "Shadoweave Mask", gen = true },
   { id = 12256, slot = "Legs", lvl = 44, how = "Vendor", src = "Vinasia", zone = "Darnassus", score = 28, alt = true, name = "Cindercloth Leggings", gen = true },
-  { id = 276903, slot = "Main Hand", lvl = 44, how = "Quest", src = "A Taste of Home (Arille Azuregaze)", zone = "", score = 2, q = 96609, alt = true, name = "Shimmerwine Shanker", gen = true },
+  { id = 276903, slot = "Main Hand", lvl = 44, how = "Quest", src = "A Taste of Home (Arille Azuregaze)", zone = "Alterac Mountains", score = 2, q = 96609, alt = true, name = "Shimmerwine Shanker", gen = true },
   { id = 249453, slot = "2H", lvl = 45, how = "Crafted", src = "Enchanting", zone = "Bind on Pickup · Merchant's Favor: Alynsia (Redridge Mountains) · 120 favor at Friendly", score = 77, prof = "Enchanting", sk = 220, alt = true, name = "Radiant Staff", gen = true },
   { id = 282014, slot = "2H", lvl = 45, how = "Rare mob", src = "Mojo the Twisted", zone = "Blasted Lands", score = 60, bl = 48, alt = true, name = "Twisted Shadow Staff", gen = true },
   { id = 249454, slot = "2H", lvl = 45, how = "Crafted", src = "Enchanting", zone = "Bind on Pickup · Merchant's Favor: Alynsia (Redridge Mountains) · 120 favor at Friendly", score = 70, prof = "Enchanting", sk = 220, alt = true, name = "Dreamstaff", gen = true },
