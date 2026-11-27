@@ -1265,7 +1265,9 @@ refreshArrow = function()
   local on = RG.Opt("arrow")
   if on and wasOn == false and RG.db then RG.db.arrowPaused = nil end
   wasOn = on
-  if not RG.Opt("arrow") or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
+  -- (the way back to your body after dying shows even with the arrow switched off; the setting itself isn't touched)
+  local corpseRun = RG.CorpseRun and RG.CorpseRun()
+  if not (RG.Opt("arrow") or corpseRun) or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
   -- switched off by you: stays hidden whatever puts a pin on the map, until you point it somewhere yourself
   -- (the way back to your body after dying is the one exception)
   if RG.db and RG.db.arrowPaused and not (RG.CorpseRun and RG.CorpseRun()) then if arrow then arrow:Hide() end return end
@@ -1401,7 +1403,7 @@ function RG.ArrowTarget(wp)
 end
 -- Dead: the arrow leads you back to your body. Following the way you walked before (learned paths) and Shortest
 -- Path Forever (when installed) both work off this pin like any other, so the way back is the fastest known one.
-local corpse = { active = false, wasOff = false, told = false }
+local corpse = { active = false, told = false }
 function RG.CorpseRun() return corpse.active end
 local function corpsePoint()
   if not (C_Map and C_Map.GetBestMapForUnit) then return end
@@ -1427,17 +1429,14 @@ local function corpseSync()
     if not m then return end    -- not released yet, or the game does not know where it is: try again in a moment
     local cur = currentPin()
     if corpse.active and cur and samePin(cur, { map = m, x = x, y = y }) then return end
-    if not corpse.active then
-      corpse.active = true; corpse.wasOff = not RG.Opt("arrow")
-      if corpse.wasOff and RG.db then RG.db.arrow = true end
-    end
+    -- (the Arrow setting is left alone: switching it on here and back afterwards left it on for good after a /reload
+    -- as a ghost; RefreshArrow shows the arrow for the run instead)
+    corpse.active = true
     RG.PinWaypoint({ m, x, y, "Your body" }, true)
     if not corpse.told then corpse.told = true; RG.Notify("Run back to your body: follow the arrow") end
   elseif corpse.active then
     corpse.active = false; corpse.told = false
     if RG.PinIsOurs and RG.PinIsOurs() then RG.ClearWaypoint() end
-    if corpse.wasOff and RG.db then RG.db.arrow = false end
-    corpse.wasOff = false
     if RG.RefreshArrow then RG.RefreshArrow() end
     if RG.RefreshTracker then RG.RefreshTracker() end
   end
@@ -1588,7 +1587,9 @@ do
   local lastQ
   local function followSuper()
     if not on() then return end
-    if RG.db and RG.db.arrowPaused then return end   -- the game picks quests on its own too: that doesn't undo "off"
+    -- the game picks quests on its own too (after every loading screen, on accepting one): that doesn't undo "off",
+    -- whether the Arrow switch is off or the arrow is off for this step
+    if not RG.Opt("arrow") or (RG.db and RG.db.arrowPaused) then return end
     local S = C_SuperTrack
     if not S then return end
     if S.IsSuperTrackingUserWaypoint and S.IsSuperTrackingUserWaypoint() then return end   -- our own pin
@@ -1613,7 +1614,8 @@ do
       if type(self) ~= "table" or self ~= T then map, x, y, opts = self, map, x, y end
       if type(map) ~= "number" or type(x) ~= "number" or type(y) ~= "number" then return end
       local label = type(opts) == "table" and (opts.title or opts.name) or nil
-      if RG.Follow then RG.Follow({ map, x * 100, y * 100, label or "Waypoint" }) end
+      -- (other add-ons call this on their own too, not only on a Ctrl-click: an arrow you switched off stays off)
+      if RG.Follow and RG.Opt("arrow") and not (RG.db and RG.db.arrowPaused) then RG.Follow({ map, x * 100, y * 100, label or "Waypoint" }) end
       -- shaped like TomTom's own: Questie keeps it, and Ctrl-clicking the same icon again turns it off
       local uid = { map, x, y, title = label, from = type(opts) == "table" and opts.from or nil }
       uids[#uids + 1] = uid
