@@ -850,7 +850,7 @@ local function section(n, y, label, key, right)
   lastSkipped = false
   if key and SECONDARY[key] and not moreOpen then
     local name = SECONDARY[key]
-    if key == "dungeon" or key == "pala" then name = label:gsub("^Class quests: ", "Class quests"):gsub("%s*$", "") end
+    if key == "dungeon" or key == "pala" then name = label:gsub("^Class quests: ", ""):gsub("%s*$", "") end
     local plain = right and right:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") or ""
     hints[#hints + 1] = { name = name, note = plain, urgent = right ~= nil and right:find(GREEN, 1, true) ~= nil }
     skipped = skipped + 1
