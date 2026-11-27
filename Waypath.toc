@@ -78,6 +78,7 @@ Smart.lua
 Tracker.lua
 TrackerExtras.lua
 StepView.lua
+DropRecord.lua
 DungeonPrep.lua
 Extras.lua
 Movers.lua

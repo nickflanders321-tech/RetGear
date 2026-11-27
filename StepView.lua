@@ -1,7 +1,8 @@
 local _, RG = ...
 -- Waypath+ current step and drop rates.
 --   * Drop rates: how often a quest's items drop and from what (Objectives.lua carries them, from Polestar forever-db's
---     item sources and the cMaNGOS loot tables). Shown in the tracker's tooltips (RG.DropTip) and on the current step.
+--     item sources, the cMaNGOS loot tables and ForeverDB; else the rate you counted yourself, DropRecord.lua).
+--     Shown in the tracker's tooltips (RG.DropTip) and on the current step.
 --   * The current step: a card under the tracker's header that says what to do right now (it follows RG.Objective):
 --     where, how often its items drop, a 3D model of the mob (or the item's icon, or the quest giver) to look for,
 --     why it's next and what comes after.
@@ -56,8 +57,12 @@ function RG.DropInfo(id, label)
       local name = tostring(o[2] or "?")
       local l = name:lower()
       if not want or l == want or want:find(l, 1, true) or l:find(want, 1, true) then
-        local text = dropPhrase(o[3], o[7])
-        if text then out[#out + 1] = { item = name, text = text, rate = o[7] and true or nil } end
+        -- (no rate in the data: the one you counted yourself, DropRecord.lua, marked as yours)
+        local chances, mine = o[7], nil
+        if not chances and RG.MyDropChances then chances, mine = RG.MyDropChances(o[6], o[5]) end
+        local text = dropPhrase(o[3], chances)
+        if text and mine then text = text .. " (your " .. mine .. " kills)" end
+        if text then out[#out + 1] = { item = name, text = text, rate = chances and true or nil, mine = mine and true or nil } end
       end
     end
   end

@@ -9,7 +9,8 @@ Hand-checked fixes from Polestar's forever-db (its corrections layer, CC BY 4.0,
 live client data or an in-game check) go on top of QuestieDB's data when --fixes <forever-db folder> is given: who can
 take a quest (races, classes), what comes first, levels, givers, turn-ins, objectives, and quests not in the game.
 Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql] [--fixes forever-db]
-       [--guides <Polestar>/guides]: where Polestar's guides (GPL-3.0) do objectives none of the data shows"""
+       [--guides <Polestar>/guides]: where Polestar's guides (GPL-3.0) do objectives none of the data shows
+       [--foreverdb <foreverfraddons/forever-db checkout>]: drop rates the other two sources don't have"""
 import json, re, sys, os
 SQL = None
 FIXES = None
@@ -23,6 +24,9 @@ if '--sql' in sys.argv:
 WAGO = None   # --wago <dir>: WoW Forever's own client tables (the data/wago branch): how its items are bound
 if '--wago' in sys.argv:
     i = sys.argv.index('--wago'); WAGO = sys.argv[i + 1]; del sys.argv[i:i + 2]
+FDB = None    # --foreverdb <dir>: a foreverfraddons/forever-db checkout (GPL-3.0): drop rates neither source above has
+if '--foreverdb' in sys.argv:
+    i = sys.argv.index('--foreverdb'); FDB = sys.argv[i + 1]; del sys.argv[i:i + 2]
 QDB = sys.argv[1].rstrip('/') + '/'
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -112,6 +116,25 @@ if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
     for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
         _r = json.loads(_line)
         if _r.get('chance') is not None: CHANCE[(_r['item'], _r['kind'], _r['id'])] = _r['chance']
+# How often an item drops, from ForeverDB (foreverfraddons/forever-db: the median of VMaNGOS, cMaNGOS, pfQuest and
+# AllTheThings, replaced by WoW Forever players' own counts where they have them): item -> {('npc' or 'object', id): percent}.
+# Read last, only for what forever-db's item sources and the cMaNGOS tables don't have. The add-on's files are Lua
+# tables written by its tools/slice.py; they're read here as text, never run.
+FDB_CHANCE = {}
+if FDB:
+    import glob
+    _tab = None
+    for _f in sorted(glob.glob(os.path.join(FDB, 'ForeverDB_Full', 'ForeverDB_Full*.lua'))):
+        for _line in open(_f, encoding='utf-8'):
+            _m = re.search(r'local t = D\.(\w+)', _line)
+            if _m: _tab = {'drop': 'npc', 'odrop': 'object'}.get(_m.group(1)); continue
+            if not _tab: continue
+            _m = re.match(r't\[(\d+)\]=\{([-\d,]*)\}', _line)
+            if not _m: continue
+            _v = [int(x) for x in _m.group(2).split(',') if x]
+            for _j in range(0, len(_v) - 1, 2):
+                if _v[_j + 1] > 0: FDB_CHANCE.setdefault(int(_m.group(1)), {})[(_tab, _v[_j])] = _v[_j + 1] / 100.0   # (per 10000)
+    print('ForeverDB drop rates for %d items' % len(FDB_CHANCE), file=sys.stderr)
 if SQL:
     print('reading drop chances...', file=sys.stderr)
     sqltxt = open(SQL, encoding='utf-8', errors='replace').read()
@@ -366,6 +389,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
                 mobs.append(sname); ids.append(int(sid))
                 ch = item and CHANCE.get((int(item), 'npc', int(sid)))
                 if item and ch is None: ch = DROP.get(sid, {}).get(int(item))
+                if item and ch is None: ch = FDB_CHANCE.get(int(item), {}).get(('npc', int(sid)))
                 chances.append(ch or 0)
             for p in cluster_points(sp, zone, 2, 4 if si == 0 else 2): pts.append(p + (len(mobs) if skind == 'npc' else 0,))
         if pts or mobs:
@@ -453,6 +477,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             for kind, sid in [('npc', n) for n in (at(it, 2) or [])] + [('object', o) for o in (at(it, 3) or [])]:
                 ch = CHANCE.get((int(iid), kind, int(sid)))
                 if ch is None and kind == 'npc': ch = DROP.get(sid, {}).get(int(iid))
+                if ch is None: ch = FDB_CHANCE.get(int(iid), {}).get((kind, int(sid)))
                 srcs.append((-(ch or 0), kind, sid))
             srcs.sort(key=lambda x: x[0])
             mobs, pts, ids, chances = [], [], [], []

@@ -123,6 +123,7 @@ local SHARED = {
   errors = true, chars = true, profiles = true, profilesMigrated = true, migratedFrom = true, altGuide = true,
   trackerPos = true, trackerScale = true, trackerWidth = true, trackerMaxH = true, windowPos = true, arrowPos = true, arrowScale = true,
   speedBarPos = true, mmAngle = true, textSize = true, seenVersion = true, matStock = true,
+  drops = true,   -- drop rates you counted yourself (DropRecord.lua)
 }
 RG.SHARED_KEYS = SHARED
 local function charKey() return (UnitName("player") or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "") end

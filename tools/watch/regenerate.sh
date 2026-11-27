@@ -28,7 +28,12 @@ if [ ! -s "$T/wago/SkillLineAbility.csv.gz" ] && [ ! -s "$T/wago/SkillLineAbilit
   git clone -q --depth 1 -b data/wago "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/wago" || true
 fi
 WGO=""; [ -s "$T/wago/ItemSparse.csv.gz" ] && WGO="--wago $T/wago"
-python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX $GD $WGO
+# ForeverDB (foreverfraddons/forever-db, GPL-3.0; its Drop Tables counts CC BY-SA 4.0): drop rates, WoW Forever
+# players' own counts among them, for quest items the two sources above have no rate for
+rm -rf "$T/fdb"
+git clone -q --depth 1 --filter=blob:none --sparse https://github.com/foreverfraddons/forever-db "$T/fdb" && git -C "$T/fdb" sparse-checkout set ForeverDB_Full || rm -rf "$T/fdb"
+FDB=""; [ -d "$T/fdb/ForeverDB_Full" ] && FDB="--foreverdb $T/fdb"
+python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX $GD $WGO $FDB
 python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" . $FX
 $LUA tools/nodes/dump.lua "$C/foreverObjectDB.lua" "$T/veins.tsv"
 python3 tools/nodes/gen.py "$T/qdb" "$T/veins.tsv" NodeData.lua
