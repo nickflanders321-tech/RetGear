@@ -64,8 +64,10 @@ A scene script gets `T` with: `T.slash("/wp arcade")`, `T.step(seconds)`, `T.cli
 ## How close it is
 
 - Layout follows the game's rules: anchors, sizes, scale, strata, frame levels, draw layers and sublevels, and
-  clipping. Text uses the real fonts' widths, so wrapping and `GetStringWidth` match closely, though not to the
-  pixel (no kerning). A line too long for its box that can't wrap is cut and ends in "...", as in game (and so
+  clipping. Text is laid out in whole pixels as the game does: the font at a whole pixel size, each letter's
+  advance rounded up to a whole pixel. Checked against 2560 x 1440 screenshots (UI scale 0.64, 27 Nov 2026): the
+  main window's frame, rows and buttons land on the same pixels, Marcellus text (most of the text) matches to the
+  pixel, and small Cinzel labels (tabs, buttons) come out about 5-8% wider than in game. A line too long for its box that can't wrap is cut and ends in "...", as in game (and so
   does the last line kept by `SetMaxLines`).
 - Quest mobs and quest givers on the tracker get their model from cMaNGOS classic-db's creature table
   (`modeldata.cmangos_creatures`, fetched into the cache once) when the client's own table and the game's answers
@@ -107,10 +109,12 @@ comparing with their screenshots), give it their resolution and UI scale, and dr
 
 ```sh
 lua5.1 tools/harness/run.lua --shoot tools/render/scenes/ui.lua --out DIR --screen 2560x1440 --ui-scale 0.64
-python3 tools/render/render.py DIR --scale 0.64        # 2560 x 1440 pictures, the windows at their real size
+python3 tools/render/render.py DIR --scale 1.2         # 2560 x 1440 pictures, the windows at their real size
 ```
 
-In game, `/run print(GetCVar("useUiScale"), GetCVar("uiScale"), UIParent:GetEffectiveScale(), GetPhysicalScreenSize())`
+The game's UI is 768 units high at scale 1, so at UI scale 0.64 the screen is 1200 units high and each unit is
+1440 / 1200 = 1.2 pixels: render at screen height x UI scale / 768. In game,
+`/run print(GetCVar("useUiScale"), GetCVar("uiScale"), UIParent:GetEffectiveScale(), GetPhysicalScreenSize())`
 prints both (the third number is the UI scale actually used: 0.64 on a 2560 x 1440 screen with the default setting).
 
 ## Calibration

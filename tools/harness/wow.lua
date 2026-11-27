@@ -688,12 +688,15 @@ local function gameFrame(name, otype, parent)
 end
 G.UIParent = gameFrame("UIParent")
 S[G.UIParent].w, S[G.UIParent].h = 1920, 1080
--- a real player's screen (run.lua --screen 2560x1440 --ui-scale 0.64): UIParent is that many pixels over the UI
--- scale wide and high, as in game (a 2560 x 1440 screen at 0.64 is 4000 x 2250 UI units). Before look.lua installs.
+-- a real player's screen (run.lua --screen 2560x1440 --ui-scale 0.64): the game's UI is 768 units high at scale 1,
+-- so UIParent is 768 / scale units high and as wide as the screen's shape makes it (2560 x 1440 at 0.64: 2133 x 1200
+-- units, 1.2 pixels each; render.py --scale 1.2 draws it at the screen's size). Before look.lua installs.
 function W.setScreen(pw, ph, uiScale)
   uiScale = tonumber(uiScale) or 1
-  local w, h = pw / uiScale, ph / uiScale
+  local h = 768 / uiScale
+  local w = h * pw / ph
   S[G.UIParent].w, S[G.UIParent].h = w, h
+  W.pxScale = ph / h       -- screen pixels per UI unit (text is laid out in whole pixels: look.lua)
   G.GetScreenWidth = function() return w end
   G.GetScreenHeight = function() return h end
   G.GetPhysicalScreenSize = function() return pw, ph end

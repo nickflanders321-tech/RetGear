@@ -510,13 +510,29 @@ def draw_text(cv, it):
         y += lh + spacing
 
 
+def _adv(f, c):
+    """A letter's advance as the game lays text out: rounded up to a whole pixel (see look.lua, tokens)."""
+    return math.ceil(f.getlength(c) - 1e-6)
+
+
+def _text(dr, x, y, val, f, fill, stroke=0):
+    """Text drawn letter by letter at those advances."""
+    for c in val:
+        if c != " ":
+            if stroke:
+                dr.text((x, y), c, font=f, fill=fill, anchor="ls", stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
+            else:
+                dr.text((x, y), c, font=f, fill=fill, anchor="ls")
+        x += _adv(f, c)
+
+
 def draw_line(cv, segs, x, baseline, f, size, shadow, stroke, alpha, clip, _):
     # draw onto a small RGBA image, then composite
     widths = []
     total = 0
     for kind, val, col in segs:
         if kind == "t":
-            wd = f.getlength(val)
+            wd = sum(_adv(f, c) for c in val)
         else:
             parts = val.split(":")
             h = float(parts[1]) if len(parts) > 1 and parts[1] not in ("", "0") else size
@@ -539,17 +555,14 @@ def draw_line(cv, segs, x, baseline, f, size, shadow, stroke, alpha, clip, _):
         xx = ox
         for (kind, val, col), wd in zip(segs, widths):
             if kind == "t":
-                dr.text((xx + sx, by + sy), val, font=f, fill=shade, anchor="ls")
+                _text(dr, xx + sx, by + sy, val, f, fill=shade)
             xx += wd
     xx = ox
     inline = []
     for (kind, val, col), wd in zip(segs, widths):
         if kind == "t":
             fill = tuple(int(255 * max(0, min(1, c))) for c in col[:3]) + (255,)
-            if stroke:
-                dr.text((xx, by), val, font=f, fill=fill, anchor="ls", stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
-            else:
-                dr.text((xx, by), val, font=f, fill=fill, anchor="ls")
+            _text(dr, xx, by, val, f, fill=fill, stroke=stroke)
         else:
             inline.append((xx, wd, val))
         xx += wd
