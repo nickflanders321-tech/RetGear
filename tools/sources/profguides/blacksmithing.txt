@@ -2,11 +2,11 @@ WoW Forever Blacksmithing Leveling Guide 1-300
 WoW Forever Blacksmithing Leveling Guide 1-300
 This WoW Forever Blacksmithing leveling guide will show you the fastest and cheapest way to level your Blacksmithing skill from 1 to 300. You will also find every trainer location and where to train Blacksmithing past 75, 150 and 225.
 1-150
-154x Rough Stone
+198x Rough Stone
 15x Silver Bar
-132x Coarse Stone
-300x Bronze Bar
-60x Heavy Stone
+120x Coarse Stone
+261x Bronze Bar
+90x Heavy Stone
 60x Iron Bar
 10x Green Dye (vendor)
 150-210
@@ -14,7 +14,6 @@ This WoW Forever Blacksmithing leveling guide will show you the fastest and chea
 30x Green Dye (vendor)
 60x Solid Stone
 75x Steel Bar (if you have Mining: 75 Iron Bar + 75 Coal )
-30x Heavy Stone
 204x Mithril Bar
 210-245
 1x Plans: Mithril Spurs
@@ -38,24 +37,21 @@ This step has a few options, so there is no list for it. You will need 508 to 1,
 Apprentice Blacksmithing (1-75)
 1-25
 30x Rough Sharpening Stone - 30 Rough Stone
-25-50
-30x Rough Grinding Stone - 60 Rough Stone
-50-75
-36x Coarse Grinding Stone - 72 Coarse Stone
+25-75
+84x Rough Grinding Stone - 168 Rough Stone
 Journeyman Blacksmithing (75-140)
-75-80
-32x Rough Grinding Stone - 64 Rough Stone
-80-95
-15x Rough Bronze Leggings - 90 Bronze Bar
+75-84
+60x Coarse Grinding Stone - 120 Coarse Stone
+84-95
+11x Rough Bronze Leggings - 66 Bronze Bar
 95-100
 5x Patterned Bronze Bracers - 25 Bronze Bar, 10 Coarse Grinding Stone
-100-112
-20x Heavy Grinding Stone - 60 Heavy Stone
-112-125
-13x Patterned Bronze Bracers - 65 Bronze Bar, 26 Coarse Grinding Stone
+100-115
+30x Heavy Grinding Stone - 90 Heavy Stone
+115-125
+10x Patterned Bronze Bracers - 50 Bronze Bar, 20 Coarse Grinding Stone
 125-140
 15x Silvered Bronze Gauntlets - 120 Bronze Bar, 15 Silver Bar, 30 Coarse Grinding Stone
-Make 30x Coarse Grinding Stone for these (60 Coarse Stone).
 15x Bronze Warhammer - 120 Bronze Bar, 15 Strong Flux, 15 Medium Leather
 Expert Blacksmithing (140-210)
 140-175
