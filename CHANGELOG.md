@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.62.10
+- Blacksmithing 25-140 now matches the updated WoW Forever guide: 84 Rough Grinding Stones to 75, 60 Coarse Grinding Stones for 75-84 (keep them all for the bracers and gauntlets), 11 Rough Bronze Leggings to 95, 30 Heavy Grinding Stones to 115 (keep them for the Golden Scale Bracers) and 10 Patterned Bronze Bracers to 125.
+
 ## v1.62.9
 - Quest, gear, map and profession data updated from WoW Forever's latest game data.
 
