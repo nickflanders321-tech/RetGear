@@ -466,5 +466,6 @@ function RG.PrepStepText(it, keep)
   if it.act == "turnin" then return "Hand in " .. tostring(it.title) end
   if it.act == "pickup" then return "Pick up " .. tostring(it.title) .. (keep and keep[it.id] and (GREY .. "  · keep|r") or "") end
   local verb = ({ k = "Kill", i = "Collect", o = "Use" })[it.okind or ""] or "Do"
-  return verb .. " " .. tostring(it.label or it.title) .. ((it.need and it.need > 0) and ("  " .. (it.have or 0) .. "/" .. it.need) or "")
+  if it.okind == "e" then verb = nil end   -- (an event or a place: its words already say what to do)
+  return (verb and (verb .. " ") or "") .. tostring(it.label or it.title) .. ((it.need and it.need > 0) and ("  " .. (it.have or 0) .. "/" .. it.need) or "")
 end

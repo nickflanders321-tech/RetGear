@@ -300,7 +300,7 @@ function Wd.install(w)
     local out = {}
     for _, o in ipairs(e.objs) do
       local t = o.kind == "k" and (o.label .. " slain") or o.label
-      out[#out + 1] = { text = string.format("%s: %d/%d", t, o.have, o.need), type = o.kind == "k" and "monster" or o.kind == "i" and "item" or "object",
+      out[#out + 1] = { text = string.format("%s: %d/%d", t, o.have, o.need), type = o.kind == "k" and "monster" or o.kind == "i" and "item" or o.kind == "e" and "event" or "object",
         finished = o.have >= o.need, numFulfilled = o.have, numRequired = o.need }
     end
     return out
@@ -346,7 +346,7 @@ function Wd.install(w)
     local e = S.log[i or 0]
     local o = e and e.objs[j]
     if not o then return nil end
-    return string.format("%s: %d/%d", o.label, o.have, o.need), o.kind == "k" and "monster" or o.kind == "i" and "item" or "object", o.have >= o.need
+    return string.format("%s: %d/%d", o.label, o.have, o.need), o.kind == "k" and "monster" or o.kind == "i" and "item" or o.kind == "e" and "event" or "object", o.have >= o.need
   end
   -- the quest window (talking to a giver or finisher)
   G.GetQuestID = function() return S.dialog and S.dialog.id or 0 end

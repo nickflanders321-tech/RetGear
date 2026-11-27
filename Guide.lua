@@ -159,6 +159,8 @@ end
 
 -- One objective as the current step says it: "Kill 15 Hillsbrad Farmers", "9/15" (the progress nil when there's none)
 function RG.ObjectiveLine(okind, label, have, need)
+  -- (an event or a place: the label already says what to do, "Release Winna's kitten at the corrupted moonwell")
+  if okind == "e" then return tostring(label or "?"), (have and need and need > 0) and (have .. "/" .. need) or nil end
   local verb = ({ k = "Kill", i = "Collect", o = "Use" })[okind or ""] or "Get"
   label = tostring(label or "?")
   local many = need and need > 1
@@ -770,6 +772,37 @@ local function buildObjective()
     for i = 1, #steps do
       if i == (nx or i) and not RG.StepIsDone(r, i) then
         local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+        -- every quest left on the step is already in your log, and none has a place we know (an event or an escort the
+        -- quest data has no spot for): not "its quests start here", but the quest itself, the game's own words for it
+        -- and the game's map area for it when it shows one
+        local lines = RG.StepQuestLines and RG.StepQuestLines(r, i) or {}
+        local doing, pickups = nil, 0
+        for _, l in ipairs(lines) do
+          if l.act == "pickup" then pickups = pickups + 1
+          elseif l.act == "doing" and not doing then doing = l end
+        end
+        if doing and pickups == 0 then
+          obj.kind, obj.key, obj.act = "route", "route:" .. r.zone .. "|" .. r.from .. "#" .. i, "doing"
+          obj.text, obj.qtitle, obj.id = doing.name, doing.name, doing.id
+          for _, ol in ipairs(RG.QuestObjectiveLines and RG.QuestObjectiveLines(doing.id) or {}) do
+            if not ol.done then obj.qline = ol.text .. (ol.prog and ("  " .. ol.prog) or "") break end
+          end
+          local m, x, y = nil, nil, nil
+          if RG.GamePOI then m, x, y = RG.GamePOI(doing.id) end
+          obj.wp = m and { m, x, y, doing.name } or nil
+          obj.clearArrow = not obj.wp
+          obj.why = (RG.QuestObjectivesText and RG.QuestObjectivesText(doing.id))
+            or (doing.name .. " is in your quest log. There's no known spot for it, so the quest log says what to do.")
+          obj.reqs, obj.level = RG.QuestRequirements and RG.QuestRequirements(doing.id) or {}, doing.level
+          obj.tag, obj.tagColor, obj.tagNote, obj.rank = RG.QuestWorth(doing.level, nil, doing.id)
+          obj.count, obj.index = 1, 1
+          if obj.wp then
+            local c2, x2, y2 = RG.ToWorld(obj.wp[1], obj.wp[2], obj.wp[3])
+            local cc, ax, ay = RG.PlayerWorld()
+            if c2 and cc == c2 then obj.dist = dist(ax, ay, x2, y2) end
+          end
+          return obj, plan
+        end
         if wp then
           local place = steps[i]:gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^At (.-) %(") or wp[4] or r.zone
           obj.kind, obj.key = "route", "route:" .. r.zone .. "|" .. r.from .. "#" .. i
@@ -814,6 +847,9 @@ function RG.SyncObjective(obj)
   local paused = RG.db and RG.db.arrowPaused
   if paused == true then RG.db.arrowPaused = obj.key
   elseif paused and paused ~= obj.key and not (RG.CorpseRun and RG.CorpseRun()) then RG.db.arrowPaused = nil end
+  -- nowhere known to go (a quest in your log with no spot): the guide's own pin from the step before is taken down, so
+  -- the arrow doesn't keep pointing at a town you've been to (a pin you placed yourself stays)
+  if obj.clearArrow and not obj.wp and RG.PinIsOurs and RG.PinIsOurs() and RG.ClearWaypoint then RG.ClearWaypoint() end
   if not obj.wp or (IsInInstance and IsInInstance()) then return end
   if not (opt("arrow") and (opt("autoArrow") or obj.kind == "goal")) then return end
   if RG.ArrowPaused and RG.ArrowPaused() then return end
@@ -828,7 +864,7 @@ function RG.SyncObjective(obj)
   if RG.HasPin and RG.HasPin() and RG.PinIsOurs and not RG.PinIsOurs() then
     if lastOverride ~= obj.key then lastOverride = obj.key; RG.Log("override", obj.text) end
   end
-  if RG.AutoPin then RG.AutoPin("obj:" .. obj.key, obj.wp) end
+  if RG.AutoPin then RG.AutoPin("obj:" .. obj.key .. (obj.kind == "route" and obj.act == "doing" and ":doing" or ""), obj.wp) end
 end
 
 -- The current objective (recomputed at most every couple of seconds, or at once after a change).
@@ -851,7 +887,7 @@ function RG.ObjectiveArea(map, x, y)
   if not (o and o.act == "doing" and o.wp and o.wp[1] == map) then return nil end
   if math.abs((o.wp[2] or 0) - x) > 0.6 or math.abs((o.wp[3] or 0) - y) > 0.6 then return nil end
   local it = o.stop and o.stop.items and o.stop.items[1]
-  if it and it.okind == "o" then return 15 end   -- an object to use: closer
+  if it and (it.okind == "o" or it.okind == "e") then return 15 end   -- an object to use, a place to be: closer
   return 45
 end
 function RG.GuidePlan() RG.Objective(); return cache.plan end

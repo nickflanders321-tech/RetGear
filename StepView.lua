@@ -378,7 +378,7 @@ local function cardInfo()
   local obj = RG.Objective and RG.Objective()
   if not obj then return nil end
   local it = obj.stop and obj.stop.items and obj.stop.items[1]
-  local v = (it and VERB[it.act]) or ((obj.kind == "route" or obj.kind == "pick") and { "Go", { 1, 0.82, 0 } }) or (obj.kind == "dungeon" and { "In", { 0.62, 0.83, 1 } })
+  local v = (it and VERB[it.act]) or (obj.kind == "route" and obj.act and VERB[obj.act]) or ((obj.kind == "route" or obj.kind == "pick") and { "Go", { 1, 0.82, 0 } }) or (obj.kind == "dungeon" and { "In", { 0.62, 0.83, 1 } })
     or (obj.kind == "goal" and { "Goal", { 1, 0.82, 0 } }) or (obj.kind == "prep" and { "Prep", { 0.74, 0.68, 1 } }) or { "Next", { 1, 0.82, 0 } }
   local info = { verb = v[1], col = v[2], obj = obj, it = it, wp = obj.wp, dist = obj.dist }
   info.title = obj.qtitle or plain(obj.text)
@@ -413,6 +413,9 @@ local function cardInfo()
       local t = RG.QuestObjectivesText and RG.QuestObjectivesText(it.id)
       if t then why, info.whyFull = shortText(t, 170), t end
     end
+  elseif obj.kind == "route" and obj.act == "doing" and obj.why then
+    -- (a route step whose quest is in your log but has no known spot: how to do it, in the quest log's words)
+    why, info.whyFull = shortText(obj.why, 170), obj.why
   elseif obj.kind ~= "pick" then
     why = obj.why and (obj.why:match("^(.-)%s+·%s+") or obj.why) or ""
     why = why:gsub("%.+$", "")

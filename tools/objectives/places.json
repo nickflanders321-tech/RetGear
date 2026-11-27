@@ -1,0 +1,4 @@
+{
+  "_about": "Hand-checked places for quests whose objective is an event or somewhere to go, where QuestieDB has no spot. gen.py turns each into kind e objectives (done in the order listed) and they replace QuestieDB's triggerEnd and extraObjectives for that quest. Every entry names where it was checked (src): Wowhead or warcraft.wiki.gg. map is the uiMapID, pts are {x, y} on that map. Add only what a source confirms; leave a quest out rather than guess.",
+  "_format": {"<quest ID>": {"name": "quest name, to read the file by", "src": ["URL"], "o": [{"text": "what to do there", "map": 1448, "pts": [[32.3, 66.6]], "item": "optional item ID to use there"}]}}
+}

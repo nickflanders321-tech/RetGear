@@ -247,6 +247,32 @@ local function learnedFor(qid, key)
   for _, p in ipairs(com or {}) do out[#out + 1] = p end
   return out
 end
+-- A place a quest sends you to (kind e: release the kitten at the moonwell, then bring the cat back): reached once you've
+-- stood within 25 yards of it, kept per character until the quest leaves your log (the game doesn't say when you've done
+-- the first part of an event, so the next place only shows once you've been to this one)
+local AREA_REACH = 25
+local function areaReached(qid, k, d)
+  if not RG.db then return false end
+  local seen = RG.db.areaSeen and RG.db.areaSeen[qid]
+  if seen and seen[k] then return true end
+  local c, px, py = playerWorld()
+  if not c then return false end
+  for _, p in ipairs(d[4] or {}) do
+    local c2, x, y = wpWorld(p)
+    if c2 == c and (x - px) ^ 2 + (y - py) ^ 2 <= AREA_REACH * AREA_REACH then
+      RG.db.areaSeen = RG.db.areaSeen or {}
+      RG.db.areaSeen[qid] = RG.db.areaSeen[qid] or {}
+      RG.db.areaSeen[qid][k] = true
+      return true
+    end
+  end
+  return false
+end
+do   -- (a quest handed in or dropped: where you've been for it no longer matters)
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_TURNED_IN", "QUEST_REMOVED" }) do pcall(f.RegisterEvent, f, e) end
+  f:SetScript("OnEvent", function(_, _, qid) if RG.db and RG.db.areaSeen and qid then RG.db.areaSeen[qid] = nil end end)
+end
 local dbSpots = {}   -- [questId * 64 + objective number] = the spots the database gives for it (see below)
 local function buildQuestSpots()
   local spots = {}
@@ -267,10 +293,15 @@ local function buildQuestSpots()
       for _, o in ipairs(objs) do
         if o.text then local k = objKey(o.text); if seenKey[k] then twice[k] = true end; seenKey[k] = true end
       end
+      local areaNext = true   -- (places are done in order: only the first one you haven't reached yet shows)
       for k, d in ipairs((qd and qd.o) or {}) do
         -- (by text, or by position on clients in other languages)
         local game = RG.MatchObjective(objs, qd.o, k)
-        if not (game and game.finished) then
+        local skipArea = false
+        if d[1] == "e" and not (game and game.finished) then
+          if not areaNext or areaReached(qid, k, d) then skipArea = true else areaNext = false end
+        end
+        if not (game and game.finished) and not skipArea then
           -- spots let go of beside Questie (memory, below): Questie's own spawns for this objective
           -- (the database's spawn points of an objective never change while you play: their tables are made once and reused, only the
           -- progress on them is refreshed; this was most of the memory garbage of every quest-log update)
@@ -301,12 +332,17 @@ local function buildQuestSpots()
           end
         end
       end
-      -- objectives the database has no spots for (new WoW Forever quests): what players found, else the game's own area
+      -- objectives the database has no spots for (new WoW Forever quests): what players found, else the game's own area.
+      -- An event (fill the gourd at the waterfall, bury the remains at the shrine) counts where it's done, so where players
+      -- got it done is where to go (for an escort, where it ends); none at all when our data has a place for the event
+      local hasArea = false
+      for _, d in ipairs((qd and qd.o) or {}) do if d[1] == "e" then hasArea = true end end
       for _, o in ipairs(objs) do
-        if o.text and not o.finished and o.type ~= "event" then
+        local event = o.type == "event"
+        if o.text and not o.finished and not (event and hasArea) then
           local key = objKey(o.text)
           if not used[key] then
-            local kind = (o.type == "monster" and "k") or (o.type == "item" and "i") or (o.type == "object" and "o") or nil
+            local kind = (o.type == "monster" and "k") or (o.type == "item" and "i") or (o.type == "object" and "o") or (event and "e") or nil
             local any = false
             for _, p in ipairs(twice[key] and {} or learnedFor(qid, key)) do
               any = true

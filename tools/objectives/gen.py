@@ -159,8 +159,8 @@ if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
     corr = json.load(open(os.path.join(FIXES, 'corrections', 'quests.json'), encoding='utf-8'))
     Q = D['quests']
     def qlist(q):
-        if isinstance(q, dict): return [q.get(str(i)) for i in range(1, 25)]
-        return list(q) + [None] * (24 - len(q))
+        if isinstance(q, dict): return [q.get(str(i)) for i in range(1, 27)]
+        return list(q) + [None] * (26 - len(q))
     gone = {k for k, v in corr.items() if v.get('remove')}
     for k in gone: Q.pop(k, None)
     for k, v in corr.items():
@@ -207,10 +207,33 @@ if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
                 if len(keep) != len(vals): ql[i - 1] = keep or None; Q[k] = ql
     print('forever-db fixes: %d quests changed, %d taken out (not in the game)' % (FIXED, len(gone)), file=sys.stderr)
 
+# Hand-checked places for quests QuestieDB has no spot for (an event, somewhere to go): places.json, each with where it
+# was checked
+PLACES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'places.json'), encoding='utf-8'))
+PLACES = {k: v for k, v in PLACES.items() if not k.startswith('_')}
+def vals(v):   # a Lua array from the dump (a list, or a dict when it had holes), as a list
+    if v is None: return []
+    if isinstance(v, dict): return [v[k] for k in sorted(v, key=lambda k: int(k) if k.isdigit() else 0)]
+    return list(v)
+def places(spawn, prefer_zone):
+    """QuestieDB's {[areaID] = {{x, y}, ...}} as {(uiMapID, x, y, 0), ...}, the preferred zone first."""
+    out = []
+    if isinstance(spawn, list): spawn = {str(i + 1): v for i, v in enumerate(spawn) if v}   # (area 1 alone dumps as a list)
+    if not isinstance(spawn, dict): return out
+    for z, pts in sorted(spawn.items(), key=lambda kv: 0 if str(kv[0]) == str(prefer_zone) else 1):
+        if not str(z).lstrip('-').isdigit() or int(z) not in ui: continue
+        for p in vals(pts):
+            p = vals(p)
+            if len(p) >= 2 and p[0] is not None and p[1] is not None and p[0] >= 0:
+                pt = (ui[int(z)], round(p[0], 1), round(p[1], 1), 0)
+                if pt not in out: out.append(pt)
+    return out
+
 out, nq, nobj, npts = [], 0, 0, 0
 for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
     reqSkill, minRep, maxRep, nextQ, parentQ, crumbFor, reqSpell, maxLvl, untilDone, startWith, disabledBy = [at(q, i) for i in range(14, 25)]
+    trigger, extras = at(q, 25), at(q, 26)
     races = int(races or 0); classes = int(classes or 0)
     if races and not (races & HORDE): continue
     if qlvl and qlvl > 62: continue
@@ -263,6 +286,31 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     for o in map(L, at(objectives, 5) or []):          # kill credit (several mobs count)
         ids = o[0] if isinstance(o[0], list) else []
         add('kill', (o[2] if len(o) > 2 and o[2] else '?'), [('npc', i) for i in ids])
+    # places: an event or somewhere to reach, which the objectives above can't show (release the kitten at the moonwell,
+    # scout the mine). In the order they're done: what to do first (QuestieDB's extraObjectives, only for a quest with
+    # no other spot to show), then the place the quest's event ends (triggerEnd). A hand-checked place replaces them.
+    hand = PLACES.get(str(qid))
+    if hand:
+        for h in hand['o']:
+            pts = [(int(h['map']), round(float(x), 1), round(float(y), 1), 0) for x, y in h['pts']][:8]
+            objs.append(('event', h['text'], [], pts, [], h.get('item'), None)); npts += len(pts)
+    else:
+        if not any(o[3] for o in objs):
+            for e in map(lambda e: [at(e, i) for i in range(1, 6)], vals(extras)):
+                spawn, text, refs = e[0], e[2], e[4]
+                pts = places(spawn, zone)
+                for r in vals(refs):
+                    if pts: break
+                    kind, rid = at(r, 1), at(r, 2)
+                    if kind in ('object', 'monster') and rid:
+                        _, sp = spawns_of('obj' if kind == 'object' else 'npc', rid)
+                        pts = [p + (0,) for p in cluster_points(sp, zone, 2, 4)]
+                if pts and text:
+                    objs.append(('event', text, [], pts[:8], [], None, None)); npts += len(pts[:8])
+        if trigger:
+            text, pts = at(trigger, 1), places(at(trigger, 2), zone)
+            if pts and text:
+                objs.append(('event', text, [], pts[:8], [], None, None)); npts += len(pts[:8])
     # who gives it (NPC only; item-started quests show up by themselves)
     start = None
     givers = at(starts, 1) or []
@@ -373,6 +421,7 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
         '--   (e and s: a 5th value is the NPC\'s ID)',
         '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}, {mob NPC IDs}, item or object ID, {drop % per mob}}, ... },',
+        '--     (kind e: an event or a place to reach, its label says what to do there; done in the order listed)',
         '--   si = {o/i, object or item that starts it, {mob names}, {{uiMapID, x, y, mob#}, ...}, 1 = always drops there / 0 = only sometimes,',
         '--         {mob NPC IDs}, item or object ID, {drop % per mob}} }',
         'local _, RG = ...', 'RG.QDATA = {']
