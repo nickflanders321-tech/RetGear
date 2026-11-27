@@ -20,6 +20,9 @@ if '--fixes' in sys.argv:
     i = sys.argv.index('--fixes'); FIXES = sys.argv[i + 1]; del sys.argv[i:i + 2]
 if '--sql' in sys.argv:
     i = sys.argv.index('--sql'); SQL = sys.argv[i + 1]; del sys.argv[i:i + 2]
+WAGO = None   # --wago <dir>: WoW Forever's own client tables (the data/wago branch): how its items are bound
+if '--wago' in sys.argv:
+    i = sys.argv.index('--wago'); WAGO = sys.argv[i + 1]; del sys.argv[i:i + 2]
 QDB = sys.argv[1].rstrip('/') + '/'
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -103,7 +106,7 @@ DROP = {}
 # Read before the cMaNGOS tables: it knows Forever's own items too. SURE_DROP: the same as tools/routes/gen.py's.
 CHANCE = {}
 REQ = {}   # quest -> {item: how many} (cMaNGOS quest_template, with --sql)
-BOND = {}  # item -> 1 bound when picked up, 4 a quest item (cMaNGOS item_template, with --sql): neither can be bought
+BOND = {}  # item -> 1 bound when picked up, 4 a quest item... (cMaNGOS item_template with --sql; the client's, with --wago): only 0, 2, 3 can be bought
 SURE_DROP = 90
 if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
     for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
@@ -161,6 +164,17 @@ if SQL:
         except Exception: pass
     del sqltxt
     print('drop tables for %d creatures' % len(DROP), file=sys.stderr)
+# How each item is bound, from the client's own item table: it knows WoW Forever's new items, which cMaNGOS doesn't
+# (Mote of Unstable Magic, bound when picked up, was sent to the auction house). It wins over cMaNGOS.
+# (0 not bound, 1 when picked up, 2 when equipped, 3 when used, 4 a quest item, others: account-bound)
+if WAGO:
+    import csv, gzip
+    _p = os.path.join(WAGO, 'ItemSparse.csv.gz')
+    with (gzip.open(_p, 'rt', encoding='utf-8') if os.path.exists(_p) else open(os.path.join(WAGO, 'ItemSparse.csv'), encoding='utf-8')) as _f:
+        for _r in csv.DictReader(_f):
+            try: BOND[int(_r['ID'])] = int(_r['Bonding'] or 0)
+            except (KeyError, ValueError): pass
+    print('bonding for %d items from the client' % len(BOND), file=sys.stderr)
 def L(o):  # objective entry as a 1-based list
     if isinstance(o, dict): return [o.get(str(i)) for i in range(1, 5)]
     return list(o) + [None] * 4
@@ -521,7 +535,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             if vend:
                 for (m, x, y), vn, fac in vend[:2]:
                     br.append('{%d,%d,"v",%d,%.1f,%.1f,%s,"%s"}' % (int(i), n, m, x, y, lstr(vn), fac))
-            elif at(it, 4) != 12 and BOND.get(int(i)) not in (1, 4):
+            elif at(it, 4) != 12 and BOND.get(int(i), 0) in (0, 2, 3):   # (only what can be traded is on the auction house)
                 br.append('{%d,%d,"a"}' % (int(i), n))
     if br: parts.append('br={%s}' % ','.join(br))
     if ra: parts.append('ra="%s"' % ra)

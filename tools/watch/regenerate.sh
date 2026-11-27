@@ -21,7 +21,14 @@ rm -rf "$T/ps"
 git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fitzforge/polestar "$T/ps" && git -C "$T/ps" sparse-checkout set forever-db guides || rm -rf "$T/ps"
 FX=""; [ -s "$T/ps/forever-db/corrections/quests.json" ] && FX="--fixes $T/ps/forever-db"
 GD=""; [ -d "$T/ps/guides" ] && GD="--guides $T/ps/guides"
-python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX $GD
+# WoW Forever's own client tables (wago.tools DB2 export: the data/wago branch, kept fresh by .github/workflows/fetch-wago.yml):
+# its items (how each is bound) for the objectives, its crafting for the professions
+if [ ! -s "$T/wago/SkillLineAbility.csv.gz" ] && [ ! -s "$T/wago/SkillLineAbility.csv" ]; then
+  rm -rf "$T/wago"
+  git clone -q --depth 1 -b data/wago "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/wago" || true
+fi
+WGO=""; [ -s "$T/wago/ItemSparse.csv.gz" ] && WGO="--wago $T/wago"
+python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX $GD $WGO
 python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" . $FX
 $LUA tools/nodes/dump.lua "$C/foreverObjectDB.lua" "$T/veins.tsv"
 python3 tools/nodes/gen.py "$T/qdb" "$T/veins.tsv" NodeData.lua
@@ -32,11 +39,6 @@ if [ ! -d "$T/itemdb/Forever" ]; then
   git clone -q --depth 1 -b data/itemdb "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/itemdb" || true
 fi
 IDB=""; [ -d "$T/itemdb/Forever" ] && IDB="--itemdb $T/itemdb"
-# WoW Forever's own crafting tables (wago.tools DB2 export: the data/wago branch, kept fresh by .github/workflows/fetch-wago.yml)
-if [ ! -s "$T/wago/SkillLineAbility.csv.gz" ] && [ ! -s "$T/wago/SkillLineAbility.csv" ]; then
-  rm -rf "$T/wago"
-  git clone -q --depth 1 -b data/wago "https://github.com/${GITHUB_REPOSITORY:-nickflanders321-tech/RetGear}.git" "$T/wago" || true
-fi
 [ -s "$T/wago/SkillLineAbility.csv.gz" ] || [ -s "$T/wago/SkillLineAbility.csv" ] && IDB="$IDB --wago $T/wago"
 # wowsims/forever's stat weights (MIT): the WoW Forever simulator's own EP presets for every spec it covers
 rm -rf "$T/wowsims"
