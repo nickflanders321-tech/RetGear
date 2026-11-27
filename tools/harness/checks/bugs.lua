@@ -94,7 +94,13 @@ return {
       -- standing in Brill, where that next step's waypoint is
       local sq = T.RG.STEP_QUESTS[r.zone .. "|" .. r.from]
       for j = 1, i - 1 do for _, id in ipairs(sq[j] or {}) do T.Wd.state.done[id] = true end end
-      for _, id in ipairs(sq[i + 1] or {}) do if id ~= 5482 then T.Wd.state.done[id] = true end end
+      -- (not what comes after Doom Weed either, like Tomb Weed: done, it would mean Doom Weed was done too)
+      local function afterDoomWeed(id)
+        local d = T.RG.QDATA[id]
+        for _, p in ipairs((d and d.ps) or {}) do if p == 5482 then return true end end
+        for _, p in ipairs((d and d.pg) or {}) do if p == 5482 then return true end end
+      end
+      for _, id in ipairs(sq[i + 1] or {}) do if id ~= 5482 and not afterDoomWeed(id) then T.Wd.state.done[id] = true end end
       T.W.fire("QUEST_LOG_UPDATE")
       T.go({ 1420, 61.7, 52.0 })
       T.step(2)

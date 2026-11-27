@@ -7,13 +7,13 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
-- Trips back (2026-11-27): the bot now lists every time it comes back to a quest giver for a quest it could have taken on
-  the visit before (`--play`, "Trips back"): 88 in a Human Mage's and an Orc Warrior's run to 60. The guide now does a later
-  step whose giver you're standing at and picks up follow-ups after a hand-in, but most of what's left is how
-  tools/routes/gen.py splits a town's quests into steps by level (Deputy Willem's Milly Osworth one step after his first
-  quests, Gryan Stoutmantle's People's Militia parts). Next: have the route generator keep a giver's quests that are open
-  on the same visit in one step, and count trips back as guide problems once they're down.
-
+- Trips back (2026-11-27): the bot lists every time it comes back to a quest giver for a quest it could have taken on
+  the visit before (`--play`, "Trips back"). Steps of up to 14 quests (was 8) took a Human Mage's run to 60 from 87 to 83 and
+  an Orc Warrior's from 89 to 76, with more quests done. Tried and dropped: taking quests up to 5 levels above you at a stop
+  (more trips and stuck steps: the guide won't send you for them that early) and keeping each giver's quests in one step
+  when a stop is split (no better than bigger steps; stuck steps at 8). What's left is mostly quests 4+ levels above you on
+  the first visit and follow-ups the route puts in a later step: the in-game guide's "while you're there" pick-up (Guide.lua)
+  is the place to look next. Count trips back as guide problems once they're down.
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
 

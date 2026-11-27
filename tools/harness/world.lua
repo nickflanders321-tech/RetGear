@@ -9,7 +9,7 @@ local Wd = {}
 
 local KILLS, ITEMS, OBJECTS = 6, 4, 1   -- how many of each an objective asks for (the data doesn't say)
 local NEAR_NPC, NEAR_OBJ = 0.03, 0.06   -- how close (in map fractions) counts as "at" an NPC / an objective spot
-local MAX_LOG = 25
+local MAX_LOG = 40   -- (WoW Forever's quest log holds 40)
 local ZONE_YARDS = { 3500, 2333 }       -- a zone's size, for distances (the real sizes aren't in the repo's data)
 
 -- XP to go from each level to the next (the classic table)

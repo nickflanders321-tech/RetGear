@@ -137,8 +137,9 @@ function RG.SmartRankNow()
   return out
 end
 
--- Does the tracker have something to do in this entry now: a quest line of an open step that isn't waiting ("later")
--- and isn't in another zone? The ranking above counts work more loosely (any quest of a step in your log), so a zone
+-- Does the tracker have something to do in this entry now: a quest line of an open step that isn't waiting ("later")?
+-- (One in another zone counts: a quest in your log to finish there still belongs to this zone's work, and leaving the
+-- zone for it filled the bot's quest log with every zone's quests.) The ranking above counts work more loosely (any quest of a step in your log), so a zone
 -- could rank as having work while the tracker could only show a dead end there (in Felwood, Salve via Hunting that
 -- Maybess Riverbreeze didn't offer): the pick asks this too. (Asked of a few entries per refresh; kept for the frame.)
 local nowMemo, nowT = {}, nil
@@ -154,7 +155,7 @@ local function workNow(r)
     if not RG.StepIsDone(r, i) then
       local ql = RG.StepQuestLines(r, i, mine)
       if not ql then yes = true break end   -- (a hand-written step: it always counts)
-      for _, l in ipairs(ql) do if l.act ~= "later" and not l.away then yes = true break end end
+      for _, l in ipairs(ql) do if l.act ~= "later" then yes = true break end end
       if yes then break end
     end
   end

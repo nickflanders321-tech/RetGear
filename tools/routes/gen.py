@@ -163,7 +163,9 @@ CAMPING = -666        # QuestieDB's category for Forever's Camping quests (The G
 CLASS_CATEGORIES = {-81, -82, -61, -141, -161, -162, -261, -262, -263}   # QuestieDB's class quest categories (Warrior -81 ...)
 ALL_CLASSES = 1 | 2 | 4 | 8 | 16 | 64 | 128 | 256 | 1024
 CAPITAL = {'O': 1637, 'R': 1637, 'T': 1638, 'S': 1638, 'U': 1497, 'H': 1519, 'D': 1537, 'G': 1537, 'N': 1657}
-MAX_PER_STEP = 8
+# (a stop's quests are split into steps of at most this many: at 8, quests open on the same visit were split into two
+# steps and the bot came back for the second; at 14 its runs to 60 had fewer trips back and more quests done)
+MAX_PER_STEP = 14
 
 def at(a, i):
     if a is None: return None

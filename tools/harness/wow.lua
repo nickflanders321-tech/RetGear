@@ -1077,7 +1077,7 @@ G.C_QuestLog = apiTable("C_QuestLog", {
   IsQuestFlaggedCompleted = function() return false end,
   GetLogIndexForQuestID = function() return nil end,
   GetQuestIDForLogIndex = function() return nil end,
-  GetMaxNumQuestsCanAccept = function() return 25 end,
+  GetMaxNumQuestsCanAccept = function() return 40 end,   -- (WoW Forever: 40)
   GetTitleForQuestID = function() return nil end,
 })
 G.C_Item = apiTable("C_Item", {
