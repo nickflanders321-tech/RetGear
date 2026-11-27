@@ -286,7 +286,35 @@ local function showModel(npc, icon)
     if not model then
       local ok, m = pcall(CreateFrame, "DressUpModel", nil, f.pic)
       -- (the whole panel, inside its edge)
-      if ok and m then model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1) end
+      if ok and m then
+        model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1)
+        -- The game sets a model's camera again when it has loaded (a creature can take a moment: the server is asked),
+        -- and the camera stays fixed at the size the frame had then. A panel that grew or shrank after that showed the
+        -- middle of the creature magnified (Thylaen's legs). So: the whole body again once loaded, and again whenever
+        -- the panel's size on screen has changed and settled.
+        local function fit(self)
+          pcall(function()
+            if self.SetPortraitZoom then self:SetPortraitZoom(0) end
+            if self.SetPosition then self:SetPosition(0, 0, 0) end
+            if self.SetFacing then self:SetFacing(0.45) end
+          end)
+        end
+        m:SetScript("OnModelLoaded", fit)
+        local lastFit, settle, acc = nil, 0, 0
+        m:HookScript("OnShow", function() lastFit, settle = nil, 0.3 end)
+        local function watch(self, dt)
+          acc = acc + dt
+          if acc < 0.1 then return end
+          acc = 0
+          local es, wd, ht = self:GetEffectiveScale(), self:GetWidth(), self:GetHeight()
+          if type(es) ~= "number" or type(wd) ~= "number" or type(ht) ~= "number" then return end
+          local key = es * (wd + ht * 1000)
+          if lastFit == nil then lastFit = key return end
+          if math.abs(key - lastFit) > 0.5 then lastFit, settle = key, 0.25 return end   -- still changing: wait
+          if settle > 0 then settle = settle - 0.1; if settle <= 0 then fit(self) end end
+        end
+        m:HookScript("OnUpdate", (RG.PerfWrap and RG.PerfWrap("step model fit", watch)) or watch)
+      end
     end
     if model and model.SetCreature then
       if model.cur ~= npc then
