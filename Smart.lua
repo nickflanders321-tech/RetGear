@@ -137,21 +137,53 @@ function RG.SmartRankNow()
   return out
 end
 
+-- Does the tracker have something to do in this entry now: a quest line of an open step that isn't waiting ("later")
+-- and isn't in another zone? The ranking above counts work more loosely (any quest of a step in your log), so a zone
+-- could rank as having work while the tracker could only show a dead end there (in Felwood, Salve via Hunting that
+-- Maybess Riverbreeze didn't offer): the pick asks this too. (Asked of a few entries per refresh; kept for the frame.)
+local nowMemo, nowT = {}, nil
+local function workNow(r)
+  if not (RG.StepQuestLines and RG.STEPS) then return true end
+  local t = GetTime and GetTime()
+  if t ~= nowT then nowMemo, nowT = {}, t end
+  local key = r.zone .. "|" .. r.from
+  if nowMemo[key] ~= nil then return nowMemo[key] end
+  local mine = RG.MyQuests and RG.MyQuests()
+  local yes = false
+  for i = 1, #(RG.STEPS[key] or {}) do
+    if not RG.StepIsDone(r, i) then
+      local ql = RG.StepQuestLines(r, i, mine)
+      if not ql then yes = true break end   -- (a hand-written step: it always counts)
+      for _, l in ipairs(ql) do if l.act ~= "later" and not l.away then yes = true break end end
+      if yes then break end
+    end
+  end
+  nowMemo[key] = yes
+  return yes
+end
+RG.SmartWorkNow = workNow
+
 -- The pick for the tracker; nil when the smart zone order is off or nothing fits (the route's order then decides).
 local STAY = 1.5   -- how much better another zone must score before you're sent away from the one you're working on
 function RG.SmartEntry()
   if not RG.db or RG.db.smart == false then return nil end
   local list = RG.SmartRank()
-  -- finish the zone you're working on while it still has something you can do now (the list only has entries with
-  -- work), unless another zone is much better for you (a wide zone like Stranglethorn mustn't hold you while the
-  -- zones of your level go grey): no flip-flopping between zones
+  -- finish the zone you're working on while it still has something you can do now, unless another zone is much
+  -- better for you (a wide zone like Stranglethorn mustn't hold you while the zones of your level go grey): no
+  -- flip-flopping between zones
   local keep = RG.db.smartKey
   if keep then
     for _, o in ipairs(list) do
-      if o.r.zone .. "|" .. o.r.from == keep and list[1] and list[1].score - o.score < STAY then return o.r end
+      if o.r.zone .. "|" .. o.r.from == keep and list[1] and list[1].score - o.score < STAY and workNow(o.r) then return o.r end
     end
   end
-  local best = list[1]
+  -- the best zone where the tracker has something to do now (the best by score if none of the first few has)
+  local best
+  for k, o in ipairs(list) do
+    if k > 5 then break end
+    if workNow(o.r) then best = o break end
+  end
+  best = best or list[1]
   if not best then RG.db.smartKey = nil return nil end
   RG.db.smartKey = best.r.zone .. "|" .. best.r.from
   return best.r

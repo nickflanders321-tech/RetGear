@@ -50,4 +50,54 @@ return {
       T.ok(l and l.wp and l.npc == "Maybess Riverbreeze", "at Maybess Riverbreeze (" .. tostring(l and l.npc) .. ")")
     end,
   },
+  {
+    name = "not-offered-leaves-zone",
+    about = "when the giver didn't offer the last quest a zone has left (Salve via Hunting), the smart zone order moves on instead of holding you there",
+    race = "Orc", class = "WARRIOR", level = 1,
+    run = function(T)
+      local RG = T.RG
+      T.setLevel(54)
+      T.Wd.state.done[CLEANSING] = true
+      local _, r, at = salveLine(T)
+      T.ok(r, "Salve via Hunting is in a route step")
+      if not r then return end
+      -- everything else in the zone done: only Maybess Riverbreeze's step is left
+      local key = r.zone .. "|" .. r.from
+      for i, ids in pairs(RG.STEP_QUESTS[key] or {}) do
+        if i ~= at then for _, id in ipairs(ids) do T.Wd.state.done[id] = true end end
+      end
+      -- a Tailor and Enchanter, like the player who met it: the other Salve quests need Mining, Herbalism, Skinning
+      RG.Professions = function() return { Tailoring = 260, Enchanting = 240 } end
+      RG.Skill = function(n) return ({ Tailoring = 260, Enchanting = 240 })[n] end
+      T.give(SHARD, 6)
+      T.go(RG.StepWaypoint(r, at))
+      RG.db.smart, RG.db.routeStyle, RG.db.smartKey = true, "guide", key
+      T.W.fire("QUEST_LOG_UPDATE"); RG.ForgetNextStep(); T.step(2)
+      T.eq(RG.CurrentRouteEntry() and RG.CurrentRouteEntry().zone, r.zone, "with the shards, Felwood is still the zone (a hand-in at Maybess)")
+      -- at Maybess, she doesn't offer it (as the add-on notes when her window opens without it)
+      RG.db.notOffered = { [HUNTING] = 54 }
+      T.W.fire("QUEST_LOG_UPDATE"); RG.ForgetNextStep(); T.step(2)
+      local work, seen = false, {}
+      for i = 1, #(RG.STEPS[key] or {}) do
+        if not RG.StepIsDone(r, i) then
+          for _, l in ipairs(RG.StepQuestLines(r, i) or {}) do if l.act ~= "later" then work = true; seen[#seen + 1] = tostring(l.name) end end
+        end
+      end
+      T.ok(not work, "nothing in Felwood can be done now (" .. table.concat(seen, ", ") .. ")")
+      local now = RG.CurrentRouteEntry()
+      T.ok(now and now.zone ~= r.zone, "the ordered guide moves on to another zone (" .. tostring(now and now.zone) .. ")")
+      -- even when the ranking thinks Felwood still has work (it counts more loosely than the tracker), the smart order
+      -- doesn't hold you there while the tracker has nothing to do in it
+      local rank = RG.SmartRank
+      RG.SmartRank = function()
+        local list = { { r = r, score = 10, why = "" } }
+        for _, o in ipairs(rank()) do if o.r ~= r then list[#list + 1] = o end end
+        return list
+      end
+      RG.db.smartKey = key
+      local pick = RG.SmartEntry()
+      RG.SmartRank = rank
+      T.ok(pick and pick ~= r, "the smart pick isn't Felwood when nothing there can be done now (" .. tostring(pick and pick.zone) .. ")")
+    end,
+  },
 }
