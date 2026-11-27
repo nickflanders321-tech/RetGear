@@ -326,9 +326,10 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
         # (a class quest filed under its class may come a few levels early: Path of Defense, level 10, is handed out in
         # the Crossroads, where the Barrens leg starts at 12)
         if not ((lo - 3 if z in CLASS_CATEGORIES else lo - 1) <= ql <= hi + 1) or ql < qmin: continue
+        if int(qid) in LEADS_IN: continue    # (it leads into a dungeon: in that dungeon's list instead)
         loose = z not in zones and ((city and z == city) or homeless(letter, z, ql))
         if z not in zones and not loose: continue
-        if loose and (covered(letter, int(qid)) or dungeon_quest(q)): continue    # (already on the way: an earlier leg took it)
+        if loose and (covered(letter, int(qid)) or dungeon_quest(q, qid)): continue    # (already on the way: an earlier leg took it)
         rec = make_quest(qid, q, letter, zones)
         if not rec: continue
         if loose and z != city:
@@ -354,7 +355,7 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
         if p in dropped: why[dep] = '%s (%d) is left out too' % (at(D['quests'].get(str(p)), 1), p); return False
         raw = D['quests'].get(str(p))
         if not raw: why[dep] = 'quest %d isn\'t in the data' % p; return False
-        if dungeon_quest(raw): why[dep] = '%s (%d) is a dungeon or raid quest' % (at(raw, 1), p); return False
+        if dungeon_quest(raw, p): why[dep] = '%s (%d) is a dungeon or raid quest' % (at(raw, 1), p); return False
         races = int(at(raw, 6) or 0)
         mask = (HORDE_ALL if letter == 'X' else ALLY_ALL) if letter in ('X', 'F') else RACE_BITS[letter]
         if races and not (races & mask):
@@ -364,7 +365,7 @@ def build(letter, zone_name, lo, hi, zones, qmin=0):
         if p in quests: return True
         if p in dropped: return False
         raw = D['quests'].get(str(p))
-        rec = raw and not dungeon_quest(raw) and make_quest(p, raw, letter, zones)
+        rec = raw and not dungeon_quest(raw, p) and make_quest(p, raw, letter, zones)
         if not rec: return False
         quests[p] = rec
         return True
@@ -497,14 +498,14 @@ DUNGEONS = [
     ('The Hall of Thanes', [16919]), ('Shadowfang Keep', [209]), ('Blackfathom Deeps', [719]), ('Gnomeregan', [721]),
     ('Razorfen Kraul', [491]), ('Excavation Site', [16732, 16877, 16878, 16879]), ('City of Dalaran', [16544, 16558, 16559, 16560, 16562]),
     ('Scarlet Monastery', [796]), ('Razorfen Downs', [722]), ('Uldaman', [1337]), ("Krol'dok Stronghold", [17780]),
-    ("Zul'Farrak", [1176]), ('Maraudon', [2100]), ("The Temple of Atal'Hakkar", [1477]), ('Blackrock Depths', [1584]),
+    ("Zul'Farrak", [1176]), ('Maraudon', [2100]), ("The Temple of Atal'Hakkar", [1477, 1417]), ('Blackrock Depths', [1584]),
     ('Stratholme, Scholomance, Dire Maul, LBRS/UBRS', [2017, 2057, 2557, 1583]), ("The Shaper's Terrace", [16985]),
 ]
 ALLY_DUNGEONS = [
     ('The Deadmines', [1581]), ('The Stockade', [717]), ('Wailing Caverns', [718]), ('Shadowfang Keep', [209]),
     ('Blackfathom Deeps', [719]), ('Gnomeregan', [721]), ('Razorfen Kraul', [491]), ('Excavation Site', [16732, 16877, 16878, 16879]),
     ('City of Dalaran', [16544, 16558, 16559, 16560, 16562]), ('Scarlet Monastery', [796]), ('Razorfen Downs', [722]),
-    ('Uldaman', [1337]), ("Zul'Farrak", [1176]), ('Maraudon', [2100]), ("The Temple of Atal'Hakkar", [1477]),
+    ('Uldaman', [1337]), ("Zul'Farrak", [1176]), ('Maraudon', [2100]), ("The Temple of Atal'Hakkar", [1477, 1417]),
     ('Blackrock Depths', [1584]), ('The Hall of Thanes', [16919]), ("The Shaper's Terrace", [16985]),
     ('Stratholme, Scholomance, Dire Maul, LBRS/UBRS', [2017, 2057, 2557, 1583]),
 ]
@@ -557,9 +558,17 @@ INSTANCE_NAMES = ('RAGEFIRE_CHASM', 'WAILING_CAVERNS', 'THE_DEADMINES', 'THE_STO
     'GNOMEREGAN', 'RAZORFEN_KRAUL', 'SCARLET_MONASTERY', 'RAZORFEN_DOWNS', 'ULDAMAN', 'ZUL_FARRAK', 'MARAUDON', 'SUNKEN_TEMPLE',
     'THE_TEMPLE_OF_ATAL_HAKKAR', 'BLACKROCK_DEPTHS', 'BLACKROCK_SPIRE', 'DIRE_MAUL', 'STRATHOLME', 'SCHOLOMANCE', 'MOLTEN_CORE',
     'ONYXIAS_LAIR', 'BLACKWING_LAIR', 'ZUL_GURUB', 'RUINS_OF_AHN_QIRAJ', 'AHN_QIRAJ', 'NAXXRAMAS')
-def dungeon_quest(raw):
-    """A dungeon or raid quest: filed under one (built on first use: the dungeon lists and sub-areas are read below).
+# Quests filed outside a dungeon that only lead into its quests: in that dungeon's list (so the guide gets them only for
+# a dungeon you've picked), never in a questing step. The Stone Circle (Tanaris) is the step between The Sunken Temple
+# (Witch Doctor Uzer'i for the Horde, filed under the temple; Angelas Moonbreeze for the Alliance) and Into the Depths
+# and Secret of the Circle, both done inside.
+DUNGEON_LEADS = {"The Temple of Atal'Hakkar": {3444, 3445}}
+LEADS_IN = set().union(*DUNGEON_LEADS.values())
+def dungeon_quest(raw, qid=None):
+    """A dungeon or raid quest: filed under one (built on first use: the dungeon lists and sub-areas are read below),
+    or one that only leads into a dungeon's quests (DUNGEON_LEADS).
     Only where it's filed counts: judging by its objectives (in_dungeon) wrongly caught ordinary quests."""
+    if qid is not None and int(qid) in LEADS_IN: return True
     if not _DUNGEON_AREAS:
         areas = set()
         for _, a in DUNGEONS + ALLY_DUNGEONS: areas |= set(a)
@@ -571,7 +580,7 @@ def dungeon_quest(raw):
     z = at(raw, 8)
     return isinstance(z, int) and z in _DUNGEON_AREAS[0]
 
-def dungeon_quests(areas, ally=False):
+def dungeon_quests(areas, ally=False, dname=None):
     FAC = ALLY_ALL if ally else HORDE_ALL
     FACTION[0] = 'Alliance' if ally else 'Horde'
     out = []
@@ -580,7 +589,7 @@ def dungeon_quests(areas, ally=False):
         name, starts, ends, rl, ql, races, objs, z, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
         races, classes = int(races or 0), int(classes or 0)
         if (races and not races & FAC) or (sflags or 0) & 1: continue
-        if z not in areas and not in_dungeon(objs, areas): continue
+        if z not in areas and int(qid) not in DUNGEON_LEADS.get(dname, ()) and not in_dungeon(objs, areas): continue
         if (horde_only if ally else alliance_only)(at(starts, 1)): continue
         if ql is not None and ql > 62: continue
         giver = None
@@ -675,7 +684,7 @@ def emit_dungeons(var, dlist, ally):
     lines.append('-- %s[route name] = { {id, name, giver, where, waypoint, level, required level, ra = races, cl = classes}, ... }' % var)
     lines.append('%s = {' % var)
     for dname, areas in dlist:
-        qs = dungeon_quests(areas, ally)
+        qs = dungeon_quests(areas, ally, dname)
         print('%s %-45s %2d quests' % ('ally' if ally else 'dungeon', dname, len(qs)), file=sys.stderr)
         if not qs: continue
         lines.append('  [%s] = {' % lstr(dname))

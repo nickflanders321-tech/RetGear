@@ -3,7 +3,7 @@
 -- Vein spawn points for ore alerts are in NodeData.lua.
 local _, RG = ...
 local M = { name = "Mining", kind = "gather", gathering = true, icon = "Interface\\Icons\\Trade_Mining" }
-M.source = "WoW Forever ore spawn data"
+M.source = "wow-professions.com's WoW Forever Mining guide (smelting) and WoW Forever ore spawn data"
 
 -- Mining: where to find each ore on the Horde side, by skill.
 M.zones = {
@@ -52,11 +52,18 @@ M.trainA = {
   journeyman = "any Mining trainer (level 10)", expert = "any Mining trainer (level 20)", artisan = "any Mining trainer (level 35)",
 }
 M.supplies = "Mining Pick: Trade Supplies vendors in every capital and most towns."
--- Gathering plan: what to mine at each skill (zones come from the spawn data in NodeData.lua).
+-- The plan (wow-professions.com's WoW Forever Mining guide, tools/sources/profguides/mining.txt): smelt to 120, mine 120-125,
+-- smelt Iron to about 138, mine to 155, smelt Gold to 175, then mine (zones come from the spawn data in NodeData.lua).
+-- Smelting needs a forge; the ore for it is what you mine on the way (140 Copper, 70 Tin, 43 Silver, 20 Iron, 25 Gold).
 M.plan = {
-  { from = 1,   to = 65,  gather = "Copper Vein" },
-  { from = 65,  to = 125, gather = "Tin Vein", also = "Silver Vein" },
-  { from = 125, to = 175, gather = "Iron Deposit", also = "Gold Vein" },
+  { from = 1,   to = 65,  craft = "Smelt Copper", n = 140, mats = "1 Copper Ore each, at a forge. Keep 70 Copper Bars for the Bronze at 75." },
+  { from = 65,  to = 75,  craft = "Smelt Tin", n = 70, mats = "1 Tin Ore each. It turns grey at 75, but keep making all 70: the Bronze needs the bars." },
+  { from = 75,  to = 105, craft = "Smelt Bronze", n = 70, mats = "1 Copper Bar, 1 Tin Bar each (you end up between 100 and 110)" },
+  { from = 105, to = 120, craft = "Smelt Silver", n = 43, mats = "1 Silver Ore each. Check the Auction House price of Silver Ore and Silver Bar first: this part can get expensive." },
+  { from = 120, to = 125, gather = "Tin Vein", also = "Silver Vein" },
+  { from = 125, to = 138, craft = "Smelt Iron", n = 20, mats = "1 Iron Ore each (you reach about 138)" },
+  { from = 138, to = 155, gather = "Iron Deposit", also = "Gold Vein" },
+  { from = 155, to = 175, craft = "Smelt Gold", n = 25, mats = "1 Gold Ore each (you reach about 177)" },
   { from = 175, to = 245, gather = "Mithril Deposit", also = "Truesilver Deposit" },
   { from = 245, to = 300, gather = "Small Thorium Vein", also = "Rich Thorium Vein" },
 }

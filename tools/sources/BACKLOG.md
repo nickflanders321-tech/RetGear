@@ -13,15 +13,9 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
   tools/routes/gen.py splits a town's quests into steps by level (Deputy Willem's Milly Osworth one step after his first
   quests, Gryan Stoutmantle's People's Militia parts). Next: have the route generator keep a giver's quests that are open
   on the same visit in one step, and count trips back as guide problems once they're down.
-- The Stone Circle (3444, Tanaris) waits on The Sunken Temple (3380), which isn't in the Horde route, so its step can't
-  finish (the bot ticks it). Either add 3380 to the route or leave 3444 out (the regeneration log warns about it).
 
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
-- Mining smelting route (waiting on the owner's decision, noted 2026-11-26 from #65): wow-professions.com's Mining guide
-  levels 1-175 mostly by smelting (140 Copper, 70 Tin, 70 Bronze, 43 Silver to 120, 20 Iron to 138, 25 Gold 155-175, mining
-  120-125 and 138-155). Professions/Mining.lua's plan is gathering only; adding smelt steps would change what the Mining
-  tab shows and counts, so it waits for the owner.
 
 1. **Mount Hyjal still has no quests (Riverglades done in v1.31.0, Shen'dralas in v1.32.0):** QuestieDB's Forever data has only one
    Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship
@@ -162,6 +156,11 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## Done
 
+- 2026-11-27 (on brad/dev): the Sunken Temple chain (The Sunken Temple 3380/3445, The Stone Circle 3444, Into the Depths,
+  Secret of the Circle) is in The Temple of Atal'Hakkar's dungeon list for both factions, not in Tanaris's questing steps:
+  tools/routes/gen.py `DUNGEON_LEADS`, and area 1417 (SUNKEN_TEMPLE, where most of its quests are filed) added to the
+  dungeon. The guide gets them only with the dungeon picked (user's decision). Mining: the plan smelts like
+  wow-professions.com's guide (Copper, Tin, Bronze, Silver, Iron, Gold; mining 120-125, 138-155 and from 175).
 - 2026-11-25 (v1.61.0, on brad/dev): the step view (StepView.lua, /wp stepview: the current step explained, with a 3D model
   of the mob or giver, or the item's icon) and item drop rates on the tracker's tooltips (Objectives.lua's item objectives
   carry mob IDs, item IDs and drop %), both approved by the owner on 2026-11-25. Route fixes: missing quests (item- and
