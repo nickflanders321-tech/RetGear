@@ -127,7 +127,7 @@ end
 -- how often its items drop, a picture of the mob, item or quest giver to look for, why it's next, what comes after and
 -- a Skip button. Folded, the tracker keeps only the first two lines. In the professions view it shows the profession
 -- step you're on (RG.ProfFocus).
-local MODEL = 66
+local MODEL = 80
 local STRIP = 27   -- the strip across the card's top: what to do, the quest, how far
 local f, model
 local cardH = 0
@@ -239,7 +239,7 @@ local function build()
   local pring = ringF:CreateTexture(nil, "OVERLAY"); pring:SetAllPoints(); pring:SetTexture("Interface\\AddOns\\Waypath\\Media\\Ring")
   pring:SetVertexColor(P.ring[1], P.ring[2], P.ring[3], 1)
   f.pic.ring = pring
-  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(46, 46); f.icon:SetPoint("CENTER"); f.icon:Hide()
+  f.icon = f.pic:CreateTexture(nil, "ARTWORK"); f.icon:SetSize(MODEL * 0.68, MODEL * 0.68); f.icon:SetPoint("CENTER"); f.icon:Hide()
   -- (the icon round too, where the game has the mask)
   if f.icon.SetMask then pcall(f.icon.SetMask, f.icon, "Interface\\CharacterFrame\\TempPortraitAlphaMask") end
   f.picName = newText(f, 9); f.picName:SetPoint("TOP", f.pic, "BOTTOM", 0, -3); f.picName:SetWidth(MODEL + 8); f.picName:SetJustifyH("CENTER")
@@ -290,8 +290,9 @@ local function showModel(npc, icon)
   if npc and not inInstance() then
     if not model then
       local ok, m = pcall(CreateFrame, "DressUpModel", nil, f.pic)
-      -- (inside the round frame: a little in from its edge, so the model's square corners stay within the ring)
-      if ok and m then model = m; m:SetPoint("TOPLEFT", 6, -6); m:SetPoint("BOTTOMRIGHT", -6, 6) end
+      -- (the game draws a model only inside its own frame, and can't make that frame round: so the frame is a tall
+      -- box whose corners stay under the ring, and an NPC that yawns or stretches can't reach past the circle)
+      if ok and m then model = m; m:SetSize(MODEL * 0.48, MODEL * 0.72); m:SetPoint("CENTER") end
     end
     if model and model.SetCreature then
       if model.cur ~= npc then
