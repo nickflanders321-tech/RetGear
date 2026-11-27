@@ -4729,7 +4729,7 @@ RG.QDATA = {
 [92701]={e={2521,66.1,76.7,"Valennia Stormfist",252383},s={2521,45.7,45.5,"Constable Aonda",251523},n="To Valanaar",r=6,l=9,pg={92550,93927},nx=92699,ra="HDNGA"},
 [92702]={e={2482,25.3,75.9,"Fenwick Togglespring",249549},s={2482,25.3,75.9,"Fenwick Togglespring",249549},n="Branch Out",r=54,l=56,nx=92064,ra="HDNGA",o={{"i","Sturdy Tree Branch",{},{{2482,24.8,77.7,0}},{},274617}}},
 [92703]={e={2521,62.1,73.3,"Alvarion Windfield",252448},s={2521,46.7,82.0,"Aamelia Windfield",252800},n="Deliver the News",r=5,l=9,ps={92693}},
-[92706]={e={1413,62.7,36.2,"Gazlowe",3391},n="WANTED: Bruuz",r=15,l=20,si={"o","WANTED",{},{{1413,62.6,37.5,0}},1,{},3972},ra="OUTRS",o={{"i","Bruuz's Dorsal Fin",{"Bruuz"},{{1413,65.3,39.2,1}},{209797},253710}}},
+[92706]={e={1413,62.7,36.2,"Gazlowe",3391},n="WANTED: Bruuz",r=15,l=20,si={"o","WANTED",{},{{1413,62.6,37.5,0}},1,{},3972},o={{"i","Bruuz's Dorsal Fin",{"Bruuz"},{{1413,65.3,39.2,1}},{209797},253710}}},
 [92707]={e={1417,74.2,33.9,"Drum Fel",2771},n="The Giant in the Den",r=30,l=33,si={"i","Goliath's Wristguards",{"Witherbark Goliath"},{{1417,69.6,81.6,1}},0,{218032},253711},ra="OUTRS",o={{"i","Goliath's Wristguards",{"Witherbark Goliath"},{{1417,69.6,81.6,1}},{218032},253711}}},
 [92708]={e={2521,59.1,79.8,"Ayessa Dawnsinger",251968},s={2521,59.1,79.8,"Ayessa Dawnsinger",251968},n="A Grand Adventure",r=7,l=12,ps={92700},ra="OUTRS",o={{"k","Ayessa Dawnsinger",{"Ayessa Dawnsinger"},{{2521,59.1,79.8,1}},{251968},nil}}},
 [92709]={e={2521,66.6,79.9,"Elaadrin Evengale",252475},s={2521,66.6,79.9,"Elaadrin Evengale",252475},n="A Grand Adventure",r=7,l=12,ps={92699},ra="HDNGA",o={{"k","Elaadrin Evengale",{"Elaadrin Evengale"},{{2521,66.6,79.9,1}},{252475},nil}}},

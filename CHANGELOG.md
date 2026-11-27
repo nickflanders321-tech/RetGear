@@ -33,6 +33,12 @@
 - **What to follow, in Settings.** Tracker starts with what it follows, the three side by side (Ordered guide, Zone quests, My quest log) and you pick one with a click. Smart and Guided are now one **Ordered guide** with a **Smart zone order** switch (on: it picks the zone that suits your level, where you are and your quest log; off: the route's own order).
 - **Setup**: the option you pick is highlighted, and "What to follow" (the guide, zone quests or your quest log) no longer runs off the edge.
 
+## v1.62.10
+- Blacksmithing 25-140 now matches the updated WoW Forever guide: 84 Rough Grinding Stones to 75, 60 Coarse Grinding Stones for 75-84 (keep them all for the bracers and gauntlets), 11 Rough Bronze Leggings to 95, 30 Heavy Grinding Stones to 115 (keep them for the Golden Scale Bracers) and 10 Patterned Bronze Bracers to 125.
+
+## v1.62.9
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.62.8
 - Blacksmithing now matches the updated WoW Forever guide: 32 Rough Grinding Stones for 75-80 (no more Silver Rods), and 28 Solid Sharpening Stones to 185 before 15 Golden Scale Bracers.
 - Cooking 285-300: the guide also cooks 69 Filet of Redgill alongside the Nightfin Soup.
