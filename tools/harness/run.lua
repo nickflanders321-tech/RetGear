@@ -348,11 +348,18 @@ if played then
       end
     end
   end
-  if #played.info > 0 then
+  -- trips back to a quest giver for a quest it could have taken on the visit before (not counted as a failure yet)
+  local revisits, info = {}, {}
+  for _, p in ipairs(played.info) do if p.kind == "revisit" then revisits[#revisits + 1] = p else info[#info + 1] = p end end
+  if #revisits > 0 then
+    out:write(string.format("\nTrips back (%d, not counted): the bot came back to a quest giver for a quest it could have taken on its visit before:\n", #revisits))
+    for _, p in ipairs(revisits) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end
+  end
+  if #info > 0 then
     out:write(string.format("\nNot counted (%d): quests blocked only because the bot skipped what they need, or because what they need starts from an item or object it couldn't take yet%s\n",
-      #played.info, opts.verbose and ":" or "; --verbose lists them"))
+      #info, opts.verbose and ":" or "; --verbose lists them"))
     if opts.verbose then
-      for _, p in ipairs(played.info) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end
+      for _, p in ipairs(info) do out:write(string.format("    %s\n        at level %d, %s\n", p.text, p.level, tostring(p.where))) end
     end
   end
   if opts.verbose and withItems then

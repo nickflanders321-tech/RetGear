@@ -103,6 +103,7 @@ DROP = {}
 # Read before the cMaNGOS tables: it knows Forever's own items too. SURE_DROP: the same as tools/routes/gen.py's.
 CHANCE = {}
 REQ = {}   # quest -> {item: how many} (cMaNGOS quest_template, with --sql)
+BOND = {}  # item -> 1 bound when picked up, 4 a quest item (cMaNGOS item_template, with --sql): neither can be bought
 SURE_DROP = 90
 if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
     for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
@@ -153,6 +154,10 @@ if SQL:
     qi = [(qc.index('ReqItemId%d' % n), qc.index('ReqItemCount%d' % n)) for n in range(1, 5)]
     for r in _rows('quest_template'):
         try: REQ[int(r[qe])] = {int(r[a]): int(r[b]) for a, b in qi if int(r[a]) > 0}
+        except Exception: pass
+    ic = _cols('item_template'); ii, ib = ic.index('entry'), ic.index('bonding')
+    for r in _rows('item_template'):
+        try: BOND[int(r[ii])] = int(r[ib])
         except Exception: pass
     del sqltxt
     print('drop tables for %d creatures' % len(DROP), file=sys.stderr)
@@ -488,6 +493,37 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     bring = [L(o)[0] for o in (at(objectives, 3) or [])]
     if bring and not (at(objectives, 1) or at(objectives, 2) or at(objectives, 5)) and not otext.strip():
         parts.append('bi={%s}' % ','.join('{%d,%d}' % (int(i), REQ.get(int(qid), {}).get(int(i), 1)) for i in bring))
+    # what it asks you to bring that nothing drops out in the world: bought from a vendor (v: where, and for which
+    # faction), or crafted and sold on the auction house (a); not quest items, nor ones bound when picked up (they come
+    # from the quest itself), and not for repeatable or donation quests (only reputation)
+    br = []
+    # (nor where the quest has you gather or fish them yourself: "Gather 10 Nightmare Moss in the Duskwood Nightmare
+    # Incursions", "Fish up 10 Winter Squid"; nor quests no longer in the game)
+    gather = re.match(r'\s*(Gather|Fish|Collect|Mine|Loot|Kill|Recover|Search|Hunt|Slay)\b', otext) or 'no longer available' in otext
+    if not ((sflags or 0) & 1) and not gather and not re.match(r'(A Donation of|Additional Runecloth)', name or ''):
+        for i in bring:
+            it = D['items'].get(str(i))
+            if not it or at(it, 2) or at(it, 3): continue
+            n = REQ.get(int(qid), {}).get(int(i))
+            if n is None:   # (a quest cMaNGOS doesn't have, WoW Forever's own: "Bring 2 Dense Sharpening Stones")
+                m = re.search(r'(\d+)\s+' + re.escape(str(at(it, 1) or '')[:12]), otext)
+                n = int(m.group(1)) if m else 1
+            # one vendor per faction, the one on the quest's own map when there is one
+            target = end[0][0] if end else ui.get(zone)
+            byfac = {}
+            for v in vals(at(it, 5)):
+                vn, sp = spawns_of('npc', v)
+                pts = rep_points(sp, zone, 1)
+                fac = at(D['npcs'].get(str(v)) or [], 3) or 'AH'
+                if pts and vn and (fac not in byfac or (byfac[fac][0][0] != target and pts[0][0] == target)):
+                    byfac[fac] = (pts[0], vn, fac)
+            vend = sorted(byfac.values(), key=lambda x: (x[0][0] != target, x[2]))
+            if vend:
+                for (m, x, y), vn, fac in vend[:2]:
+                    br.append('{%d,%d,"v",%d,%.1f,%.1f,%s,"%s"}' % (int(i), n, m, x, y, lstr(vn), fac))
+            elif at(it, 4) != 12 and BOND.get(int(i)) not in (1, 4):
+                br.append('{%d,%d,"a"}' % (int(i), n))
+    if br: parts.append('br={%s}' % ','.join(br))
     if ra: parts.append('ra="%s"' % ra)
     if cl: parts.append('cl="%s"' % cl)
     if cl and len(cl) <= 4: parts.append('cq=true')   # a real class quest (not a "most classes" variant)
@@ -513,6 +549,8 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '--   pa = parent quest (only while it is in your log), bc = breadcrumb for (that one taken or done: gone), sp = spell known (negative: not known),',
         '--   mx = max level, uc = gone once this is done, sw = only once this is taken or done, dq = {not while these are in your log},',
         '--   bi = {{item, how many}, ...}: taken only with these items in your bags (talking to the giver hands them in),',
+        '--   br = {{item, how many, "a"}, {item, how many, "v", uiMapID, x, y, vendor, factions}, ...}: what it asks you to bring that',
+        '--     nothing drops: bought on the auction house (a) or from a vendor (v; factions A/H/AH),',
         '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
         '--   (e and s: a 5th value is the NPC\'s ID)',
@@ -521,5 +559,17 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '--   si = {o/i, object or item that starts it, {mob names}, {{uiMapID, x, y, mob#}, ...}, 1 = always drops there / 0 = only sometimes,',
         '--         {mob NPC IDs}, item or object ID, {drop % per mob}} }',
         'local _, RG = ...', 'RG.QDATA = {']
-open(RET + 'Objectives.lua', 'w', encoding='utf-8').write('\n'.join(head) + '\n' + ',\n'.join(out) + '\n}\n')
+# where the auction houses are: an auctioneer per map and faction (for the guide's shopping stop before a zone)
+ahs = {}
+for nid, npc in sorted(D['npcs'].items(), key=lambda kv: int(kv[0])):
+    n = at(npc, 1)
+    if not (isinstance(n, str) and n.startswith('Auctioneer ')): continue
+    _, sp = spawns_of('npc', nid)
+    pts = rep_points(sp, 0, 1)
+    fac = at(npc, 3) or 'AH'
+    if pts and (pts[0][0], fac) not in ahs: ahs[(pts[0][0], fac)] = (pts[0], n, fac)
+tail = ["-- the auction houses: { uiMapID, x, y, auctioneer, factions (A, H or AH) }", 'RG.AUCTIONEERS = {']
+tail += ['  {%d,%.1f,%.1f,%s,"%s"},' % (p[0], p[1], p[2], lstr(n), fac) for (p, n, fac) in sorted(ahs.values())]
+tail.append('}')
+open(RET + 'Objectives.lua', 'w', encoding='utf-8').write('\n'.join(head) + '\n' + ',\n'.join(out) + '\n}\n' + '\n'.join(tail) + '\n')
 print(f'{nq} quests, {nobj} objectives, {npts} points', file=sys.stderr)

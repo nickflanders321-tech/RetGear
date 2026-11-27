@@ -133,6 +133,23 @@ function RG.NextStep(r)
     -- keep last time's pick unless the new one is clearly better
     local held = stepHold[key]
     if held and held ~= pick and score[held] and score[held] - score[pick] < 1 then pick = held end
+    -- standing right at the quest giver of a step further on, with a quest to take or hand in there now (beyond the
+    -- next few steps: Islen Waterseer offers Cleansed Water Returns to Felwood the moment you hand in Seeking Spiritual
+    -- Aid): that step, while you're there, rather than a trip back for it later
+    if px and not (score[pick] and score[pick] <= -1) then
+      for i = (open[#open] or 0) + 1, #steps do
+        local wp = RG.StepWaypoint and RG.StepWaypoint(r, i)
+        if wp and wp[1] == here then
+          local dx, dy = (wp[2] / 100) - px, (wp[3] / 100) - py
+          if dx * dx + dy * dy < 0.0009 and not RG.StepIsDone(r, i) then
+            for _, l in ipairs(RG.StepQuestLines and RG.StepQuestLines(r, i, quests) or {}) do
+              if (l.act == "pickup" or l.act == "turnin") and not l.away then pick = i break end
+            end
+            if pick == i then break end
+          end
+        end
+      end
+    end
     -- every one of the next few has to wait (Fragments of the Past waits on Winterspring's Troubled Spirits of
     -- Kel'Theril): the first open step further on that has something to do now, if there is one
     if waits[pick] then
@@ -354,7 +371,7 @@ function RG.StepQuestLines(entry, i, myQuests)
   local key = entry and (entry.zone .. "|" .. entry.from)
   local ids = key and RG.STEP_QUESTS and RG.STEP_QUESTS[key] and RG.STEP_QUESTS[key][i]
   if not (ids and RG.QDATA) then return nil end
-  local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted or function() return false end
+  local isDone = RG.QuestDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or function() return false end
   local byId = {}
   for _, q in ipairs(myQuests or (RG.MyQuests and RG.MyQuests()) or {}) do if q.id then byId[q.id] = q end end
   local lvl = UnitLevel("player") or 1
@@ -408,10 +425,20 @@ function RG.StepQuestLines(entry, i, myQuests)
               or (si[3] and #si[3] > 0) and ("Kill " .. from .. " and loot " .. si[2] .. ": it starts this quest.")
               or ("Pick up " .. si[2] .. " here: it starts this quest.")
             l.wp = { p[1], p[2], p[3], from }
-          elseif d.bi and d.e then
-            -- its items are in your bags (QuestBlocked lets it through only then): talking to the giver hands them in
+          elseif d.bi and d.e and RG.HasBringItems(d) then
+            -- its items are in your bags: talking to the giver hands them in
             l.act, l.npc, l.bi = "turnin", d.e[4], true
             l.wp = { d.e[1], d.e[2], d.e[3], d.e[4] ~= "" and d.e[4] or d.n }
+          elseif d.bi and RG.BringFarmable(d) then
+            -- its items drop around here (QuestBlocked lets it through only then): collect them first, then hand them
+            -- in as you take it (Salve via Hunting: 6 Corrupted Soul Shards from the oozes and owls)
+            local f = RG.BringFarmable(d)[1]
+            local count = (C_Item and C_Item.GetItemCount) or GetItemCount
+            local have = count and count(f.item) or 0
+            l.act, l.farm, l.npc = "doing", true, f.o[2]
+            l.prog = math.min(have, f.need) .. "/" .. f.need
+            local p = f.o[4][1]
+            l.wp = { p[1], p[2], p[3], f.o[2] }
           else
             l.act, l.npc = "pickup", d.s and d.s[4]
             l.noGiver = not d.s

@@ -28,9 +28,14 @@ function RG.QuestLog()
   logStamp = GetTime()
   local out = {}
   if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo then
-    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-      local info = C_QuestLog.GetInfo(i)
-      if info and not info.isHeader and info.title then
+    -- (every quest, those under a collapsed zone header too: RG.LogQuestInfos)
+    local list = RG.LogQuestInfos and RG.LogQuestInfos()
+    if not list then
+      list = {}
+      for i = 1, C_QuestLog.GetNumQuestLogEntries() do local info = C_QuestLog.GetInfo(i); if info and not info.isHeader then list[#list + 1] = info end end
+    end
+    for _, info in ipairs(list) do
+      if info.title then
         local complete = info.questID and C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID)
         out[norm(info.title)] = { complete = complete and true or false, id = info.questID, title = info.title, level = info.level }
       end
@@ -226,7 +231,7 @@ function stepAuto(entry, text)
     for i, t in ipairs(RG.STEPS[key] or {}) do
       if t == text and sq[i] then
         local left, skipped = 0, 0
-        local isDone = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
+        local isDone = RG.QuestDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted)
         for _, id in ipairs(sq[i]) do
           -- repeatable quests are never marked done by the game: they don't hold a step open
           local rq = RG.QDATA and RG.QDATA[id]

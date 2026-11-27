@@ -322,6 +322,43 @@ local function buildTasks()
       if not p and prep and (q.complete or objOf[q.title] or offOf[q.title]) then off[#off + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], wp = ewp, level = q.level, group = q.group } end
     end
   end
+  -- what a quest in your log asks you to bring and you don't have: from the vendor that sells it (a Flagon of Mead for
+  -- The Third Fleet), or the auction house (crafted goods: Frost Oil for Coolant Heads Prevail)
+  do
+    local count = (C_Item and C_Item.GetItemCount) or GetItemCount
+    local fac = ((UnitFactionGroup and UnitFactionGroup("player")) or ""):sub(1, 1)
+    for _, q in ipairs(count and quests or {}) do
+      local d = q.id and RG.QDATA and RG.QDATA[q.id]
+      if d and d.br and not q.complete and wanted(q) then
+        local done = {}
+        for _, b in ipairs(d.br) do
+          local miss = b[2] - (count(b[1]) or 0)
+          if miss > 0 and not done[b[1]] then
+            local name = (GetItemInfo and GetItemInfo(b[1])) or "the item"
+            local what = (miss > 1 and (miss .. " ") or "") .. name
+            local pts = {}
+            if b[3] == "v" and fac ~= "" and tostring(b[8] or "AH"):find(fac, 1, true) then
+              b.wp = b.wp or { b[4], b[5], b[6], b[7] }
+              local p = inZone(b.wp) and pt(b.wp)
+              if p then pts[1] = p; what = "Buy " .. what .. " from " .. tostring(b[7]) end
+            elseif b[3] == "a" then
+              for _, a in ipairs(RG.AUCTIONEERS or {}) do
+                if fac ~= "" and tostring(a[5]):find(fac, 1, true) then
+                  local p = inZone(a) and pt(a)
+                  if p then pts[#pts + 1] = p end
+                end
+              end
+              what = "Buy " .. what .. " at the auction house"
+            end
+            if #pts > 0 then
+              done[b[1]] = true
+              tasks[#tasks + 1] = { act = "doing", title = q.title, id = q.id, label = what, okind = "e", pts = pts, level = q.level, group = q.group }
+            end
+          end
+        end
+      end
+    end
+  end
   -- the route's pick-ups, so a giver on your way gets bundled with the rest: the guide, those of the step the tracker
   -- shows you're on; zone quests, those of every step of the zone still open (it plans the whole zone, so walking
   -- into a town with quests to pick up has you pick them up)
@@ -337,6 +374,78 @@ local function buildTasks()
           if (l.act == "pickup" or l.bi) and l.wp and not picked[l.id] and not byTitle[l.name] and inZone(l.wp) then
             local p = pt(l.wp)
             if p then picked[l.id] = true; tasks[#tasks + 1] = { act = l.bi and "turnin" or "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
+          elseif l.farm and not picked[l.id] then
+            -- its items to collect before you can take it: wherever they drop (any of the spots will do)
+            local d = RG.QDATA[l.id]
+            local count = (C_Item and C_Item.GetItemCount) or GetItemCount
+            for _, f in ipairs(RG.BringFarmable(d) or {}) do
+              local have = count and count(f.item) or 0
+              if have < f.need then
+                local pts = {}
+                for _, sp in ipairs(f.o[4]) do
+                  local p = inZone(sp) and pt(sp)
+                  if p then pts[#pts + 1] = p end
+                end
+                if #pts > 0 then
+                  picked[l.id] = true
+                  tasks[#tasks + 1] = { act = "doing", title = l.name, id = l.id, label = f.o[2], okind = "i", pts = pts, level = l.level, have = have, need = f.need }
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  -- while you're there (the guide): a quest of this step or a later one of the zone whose giver stands where the plan
+  -- already goes is picked up then, not on a trip back; one that waits on a quest handed in there comes right after
+  -- that hand-in (Seeking Spiritual Aid, then Cleansed Water Returns to Felwood from Islen Waterseer in the Barrens)
+  if cur and mode == "guide" then
+    local key = r.zone .. "|" .. r.from
+    local sq = RG.STEP_QUESTS and RG.STEP_QUESTS[key] or {}
+    local turnins, have = {}, {}
+    for _, t in ipairs(tasks) do
+      if t.act == "turnin" and t.id then turnins[t.id] = t end
+      if t.id then have[t.id] = true end
+    end
+    -- (the plan's spots filed in 40-yard cells: a giver is near the plan when a spot in its cell or the ones around is)
+    local cells = {}
+    for _, t in ipairs(tasks) do
+      for _, u in ipairs(t.pts) do
+        local k = math.floor(u.x / 40) * 65536 + math.floor(u.y / 40)
+        local c = cells[k]; if not c then c = {}; cells[k] = c end
+        c[#c + 1] = u
+      end
+    end
+    local function nearPlan(p)
+      local cx, cy = math.floor(p.x / 40), math.floor(p.y / 40)
+      for dx = -1, 1 do
+        for dy = -1, 1 do
+          for _, u in ipairs(cells[(cx + dx) * 65536 + (cy + dy)] or {}) do if dist(p.x, p.y, u.x, u.y) <= 40 then return true end end
+        end
+      end
+    end
+    local isDone = RG.QuestDone or function() return false end
+    for i = cur, #(RG.STEPS[key] or {}) do
+      if i == cur or not RG.StepIsDone(r, i) then
+        for _, id in ipairs(sq[i] or {}) do
+          local d = RG.QDATA and RG.QDATA[id]
+          if d and d.s and not d.rep and not have[id] and not byTitle[d.n] and not isDone(id)
+            and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id))
+            and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) then
+            local swp = { d.s[1], d.s[2], d.s[3], d.s[4] ~= "" and d.s[4] or d.n }
+            local p = inZone(swp) and pt(swp)
+            if p and nearPlan(p) then
+              local after
+              local why = RG.QuestBlocked(id, d, function(q)
+                if turnins[q] then after = after or turnins[q]; return true end
+                return isDone(q)
+              end)
+              if not why then
+                have[id] = true
+                tasks[#tasks + 1] = { act = "pickup", title = d.n, id = id, label = d.s[4], pts = { p }, level = d.l, deps = after and { after } or nil }
+              end
+            end
           end
         end
       end
@@ -658,6 +767,76 @@ local function manualStop(stops, c, px, py)
 end
 local function goals() RG.db.goals = RG.db.goals or {}; return RG.db.goals end
 
+-- What a route entry's quests ask you to bring from the auction house and you don't have yet (Frost Oil for Coolant
+-- Heads Prevail, a Lesser Nether Essence for Salve via Disenchanting, if you're an enchanter):
+-- { { item, need, name, quests = { quest names } }, ... }. Quests you can't take are left out; one you take by handing
+-- the items in counts.
+function RG.BringList(r)
+  local list = {}
+  local count = (C_Item and C_Item.GetItemCount) or GetItemCount
+  if not (r and count and RG.STEP_QUESTS and RG.QDATA) then return list end
+  local key = r.zone .. "|" .. r.from
+  local isDone = RG.QuestDone or function() return false end
+  local byItem, order = {}, {}
+  for i, ids in pairs(RG.STEP_QUESTS[key] or {}) do
+    if not RG.StepIsDone(r, i) then
+      for _, id in ipairs(ids) do
+        local d = RG.QDATA[id]
+        if d and d.br and not isDone(id) and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id))
+          and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) then
+          -- (in your log, or one you can take now: not one that waits on a chain or a reputation you may never get to)
+          local ok = C_QuestLog and C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)
+          if not ok then
+            local why = RG.QuestBlocked(id, d)
+            ok = not why or (d.bi and tostring(why):find("^bring ")) and true or false
+          end
+          if ok then
+            for _, b in ipairs(d.br) do
+              if b[3] == "a" then
+                local e = byItem[b[1]]
+                if not e then e = { item = b[1], want = 0, quests = {} }; byItem[b[1]] = e; order[#order + 1] = e end
+                e.want = e.want + (b[2] or 1)
+                e.quests[#e.quests + 1] = d.n
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  for _, e in ipairs(order) do
+    e.need = e.want - (count(e.item) or 0)
+    if e.need > 0 then e.name = GetItemInfo and GetItemInfo(e.item) or nil; list[#list + 1] = e end
+  end
+  return list
+end
+
+-- The ordered guide's shopping stop: when it moves on to a zone you haven't been to yet and that zone's quests need
+-- auction house goods you don't have, the nearest auction house first. Done once you have them, skip it, or get there.
+local function shoppingStop()
+  if not (RG.RouteMode and RG.RouteMode() == "guide" and opt("routeGuide") and RG.db) then return nil end
+  local r = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+  if not r then return nil end
+  local key = r.zone .. "|" .. r.from
+  RG.db.shopDone = RG.db.shopDone or {}
+  if RG.db.shopDone[key] then return nil end
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  if map and RG.MapZone and RG.MapZone(map) == r.zone then RG.db.shopDone[key] = true; return nil end
+  local list = RG.BringList(r)
+  if #list == 0 then return nil end
+  local fac = ((UnitFactionGroup and UnitFactionGroup("player")) or ""):sub(1, 1)
+  local c, px, py = RG.PlayerWorld()
+  local best, bestD
+  for _, a in ipairs(RG.AUCTIONEERS or {}) do
+    if fac ~= "" and tostring(a[5]):find(fac, 1, true) then
+      local c2, x, y = RG.ToWorld(a[1], a[2], a[3])
+      local d = (c and c2 == c) and dist(px, py, x, y) or nil
+      if d and (not bestD or d < bestD) then best, bestD = a, d end
+    end
+  end
+  return { key = key, zone = r.zone, list = list, wp = best and { best[1], best[2], best[3], best[4] } or nil, dist = bestD }
+end
+
 local function buildObjective()
   local obj = { }
   local plan = { stops = {}, total = 0, elsewhere = 0 }
@@ -698,6 +877,26 @@ local function buildObjective()
     if c2 and cc == c2 then obj.dist = dist(ax, ay, x2, y2) end
     obj.reqs = {}
     obj.count, obj.index = n, 1
+    return obj, plan
+  end
+  -- on the way to the next zone: its auction house goods first
+  local shop = shoppingStop()
+  if shop then
+    obj.kind, obj.key, obj.shopKey = "shop", "shop:" .. shop.key, shop.key
+    obj.qtitle = "Shopping for " .. shop.zone
+    obj.text = "Auction house: buy for " .. shop.zone
+    local what, why = {}, {}
+    for _, e in ipairs(shop.list) do
+      local name = e.name or ("item " .. e.item)
+      what[#what + 1] = e.need .. " " .. name
+      why[#why + 1] = name .. " for " .. table.concat(e.quests, " and ")
+    end
+    obj.qline = table.concat(what, ", ")
+    obj.why = "Bring these to " .. shop.zone .. ": " .. table.concat(why, "; ") .. ". Buy them on the auction house before you go, or skip."
+    obj.wp, obj.dist = shop.wp, shop.dist
+    obj.reqs, obj.count, obj.index = {}, 1, 1
+    local s1 = plan.stops and plan.stops[1]
+    if s1 then obj.nextText, obj.nextWp = stopText(s1, true), s1.wp end
     return obj, plan
   end
   local stops = plan.stops
@@ -1159,6 +1358,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
 end)
 
 -- a slow heartbeat: re-plan as you move, reach goals, keep the arrow honest
+local beatSig   -- (what the plan looked like at the last beat: the tracker is redrawn when it changes)
 local function beat()
   if RG.CardsOnly and RG.CardsOnly() then return end   -- (Cards only: the guide's heartbeat stops; switching back reloads)
   if RG.db and UnitLevel and not (RG.IsAlt and RG.IsAlt()) then
@@ -1175,6 +1375,16 @@ local function beat()
         end
       end
       if not inCombat() then RG.SyncObjective(obj) end
+      -- the plan changed since the tracker last drew it (re-planned as you move, or quest data the game hadn't given
+      -- yet when the tracker drew): draw it again, or it stays on the old list until the next quest event
+      local plan = cache.plan
+      local parts = { obj and obj.key or "-", plan and #plan.stops or 0 }
+      for i = 1, math.min(8, plan and #plan.stops or 0) do parts[#parts + 1] = plan.stops[i].key end
+      local sig = table.concat(parts, "|")
+      if sig ~= beatSig then
+        beatSig = sig
+        if RG.QueueTracker then RG.QueueTracker() end
+      end
     end)
     if not ok then cache.dirty = true end
   end

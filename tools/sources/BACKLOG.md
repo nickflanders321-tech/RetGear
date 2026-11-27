@@ -7,6 +7,15 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 ## To do
 
+- Trips back (2026-11-27): the bot now lists every time it comes back to a quest giver for a quest it could have taken on
+  the visit before (`--play`, "Trips back"): 88 in a Human Mage's and an Orc Warrior's run to 60. The guide now does a later
+  step whose giver you're standing at and picks up follow-ups after a hand-in, but most of what's left is how
+  tools/routes/gen.py splits a town's quests into steps by level (Deputy Willem's Milly Osworth one step after his first
+  quests, Gryan Stoutmantle's People's Militia parts). Next: have the route generator keep a giver's quests that are open
+  on the same visit in one step, and count trips back as guide problems once they're down.
+- The Stone Circle (3444, Tanaris) waits on The Sunken Temple (3380), which isn't in the Horde route, so its step can't
+  finish (the bot ticks it). Either add 3380 to the route or leave 3444 out (the regeneration log warns about it).
+
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
 - Mining smelting route (waiting on the owner's decision, noted 2026-11-26 from #65): wow-professions.com's Mining guide

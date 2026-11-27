@@ -305,8 +305,12 @@ function Wd.install(w)
     end
     return out
   end
-  QL.GetNumQuestLogEntries = function() return #S.log, #S.log end
-  QL.GetInfo = info
+  -- S.collapsed: the whole log under one zone header you've collapsed (the game then lists only the header)
+  QL.GetNumQuestLogEntries = function() if S.collapsed then return 1, #S.log end return #S.log, #S.log end
+  QL.GetInfo = function(i)
+    if S.collapsed then return i == 1 and { title = "Winterspring", isHeader = true, isCollapsed = true } or nil end
+    return info(i)
+  end
   QL.IsComplete = function(id) local e = entry(id); return e and complete(e) or false end
   QL.IsOnQuest = function(id) return entry(id) ~= nil end
   QL.GetQuestObjectives = objectives

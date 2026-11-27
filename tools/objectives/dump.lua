@@ -42,7 +42,8 @@ for id, q in pairs(quests) do Q[id] = { q[1], q[2], q[3], q[4], q[5], q[6], q[10
   q[18], q[19], q[20], q[22], q[25], q[27], q[30], q[32], q[33], q[34], q[36],
   q[9], q[29], q[8] } end   -- (the last three: triggerEnd, a place to reach; extraObjectives, events with a place; objectivesText)
 local I = {}
-for id, it in pairs(items) do if it[2] or it[3] then I[id] = { it[1], it[2], it[3] } end end
+-- (name, NPCs and objects that drop it, its class, the NPCs that sell it: every item, for what a quest asks you to bring)
+for id, it in pairs(items) do I[id] = { it[1], it[2], it[3], it[12], it[14] } end
 local N = {}
 for id, n in pairs(npcs) do N[id] = { n[1], n[7] and { __obj = n[7] } or nil, n[13] } end
 local O = {}

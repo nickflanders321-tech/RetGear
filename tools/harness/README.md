@@ -140,6 +140,11 @@ quest harder for being above you, so this is the bot standing in for a player's 
 the class quests as JSON). The report counts how often it goes back to a zone it had left, which shows how much the
 guide mixes zones.
 
+**Trips back.** At every quest giver the bot visits, it notes which of the route's quests that giver could hand it
+right then. Coming back later, after walking away, to take one of those is listed under "Trips back": a visit the
+guide could have saved (Gryan Stoutmantle's next People's Militia, offered the moment you hand in the one before).
+They're listed but not counted as guide problems yet.
+
 **Quests that start from an object or item.** The route only lists quests handed out by an NPC. Some quests start
 from an object instead (a crate, a corpse, a letter) or from an item that drops. When a step's quests all wait on
 one of those, the bot goes where it starts, takes it, does it and hands it in, as a player who came across it would.

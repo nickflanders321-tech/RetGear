@@ -86,6 +86,20 @@ local function why(quick, a, b) if quick then return true end return b ~= nil an
 local function takenBy(q, isDone, inLog) return isDone(q) or inLog(q) end
 local function alwaysNo() return false end
 local function onQuest(q) return C_QuestLog and C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(q) or false end
+-- Has this quest been handed in? The game's flag, and the ones you handed in this session: the flag can lag a moment
+-- behind QUEST_TURNED_IN, and the quest that follows (offered by the same NPC straight away) must count as open by then
+local turnedIn = {}
+local flagged   -- (the game's own check, looked up once: this is asked thousands of times a refresh)
+function RG.QuestDone(id)
+  if turnedIn[id] then return true end
+  if flagged == nil then flagged = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted or false end
+  return flagged and flagged(id) and true or false
+end
+if CreateFrame then   -- (the offline audit loads this file without the game's frames)
+  local f = CreateFrame("Frame")
+  pcall(f.RegisterEvent, f, "QUEST_TURNED_IN")
+  f:SetScript("OnEvent", function(_, _, qid) if qid then turnedIn[qid] = true end end)
+end
 -- Are a bring-items quest's items (d.bi = {{item, how many}, ...}) all in your bags?
 function RG.HasBringItems(d)
   local count = (C_Item and C_Item.GetItemCount) or GetItemCount
@@ -96,11 +110,48 @@ function RG.HasBringItems(d)
   end
   return true
 end
-function RG.QuestBlocked(id, d, isDone, inLog, quick)
+-- Do a bring-items quest's items drop somewhere the data knows (Salve via Hunting: Corrupted Soul Shards from Felwood's
+-- oozes and owls)? Then the guide has you collect them, and the quest waits for that like any other.
+-- Returns the item objectives (d.o entries), one per item, or nil.
+function RG.BringFarmable(d)
+  if not (d and d.bi and d.o) then return nil end
+  local out = {}
+  for _, b in ipairs(d.bi) do
+    local found
+    for _, o in ipairs(d.o) do if o[1] == "i" and o[6] == b[1] and o[4] and #o[4] > 0 then found = o break end end
+    if not found then return nil end
+    out[#out + 1] = { o = found, item = b[1], need = b[2] or 1 }
+  end
+  return out
+end
+local goneAt, goneMemo = nil, {}
+function RG.QuestBlocked(id, d, isDone, inLog, quick, depth)
   d = d or (RG.QDATA and RG.QDATA[id])
   if not d then return nil end
-  isDone = isDone or (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or alwaysNo
+  isDone = isDone or RG.QuestDone or alwaysNo
   inLog = inLog or onQuest
+  if not depth then
+    local now = GetTime and GetTime() or 0
+    if goneAt ~= now then goneAt = now; goneMemo = {} end
+  end
+  -- an earlier quest you can never take now (it starts from an item that only sometimes drops, you took the other
+  -- branch, it needs a profession you don't have): neither can this one, until that one is in your log or done
+  -- (Rescue From Jaedenar waits on A Strange Red Key, which starts from a Blood Red Key that rarely drops)
+  local function gone(p)
+    if (depth or 0) >= 4 or isDone(p) or inLog(p) then return false end
+    local pd = RG.QDATA and RG.QDATA[p]
+    if not pd then return false end
+    -- (asked of hundreds of quests per refresh: the answer is kept for the rest of the frame, per way of asking)
+    local m = goneMemo[isDone]; if not m then m = {}; goneMemo[isDone] = m end
+    local key = inLog == onQuest and p or -p
+    local v = m[key]
+    if v == nil then
+      local _, never = RG.QuestBlocked(p, pd, isDone, inLog, true, (depth or 0) + 1)
+      v = never and true or false
+      m[key] = v
+    end
+    return v
+  end
   local lvl = UnitLevel("player") or 1
   -- never again
   if d.x then for _, p in ipairs(d.x) do if takenBy(p, isDone, inLog) then return why(quick, "you took the other branch"), true end end end
@@ -122,7 +173,7 @@ function RG.QuestBlocked(id, d, isDone, inLog, quick)
   end
   -- taken only with its items in your bags (Salve via Hunting: 6 Corrupted Soul Shards; talking to the giver hands them
   -- in): without them there's nothing to pick up, and the route doesn't wait for it
-  if d.bi and not RG.HasBringItems(d) then
+  if d.bi and not RG.HasBringItems(d) and not RG.BringFarmable(d) then
     if quick then return true, true end
     local need = {}
     for _, b in ipairs(d.bi) do
@@ -131,12 +182,25 @@ function RG.QuestBlocked(id, d, isDone, inLog, quick)
     end
     return "bring " .. table.concat(need, ", ") .. " first", true
   end
-  -- not yet
-  if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then return why(quick, "after ", qname(p)) end end end
+  -- not yet (or never, behind a quest you can't take)
+  if d.pg then
+    for _, p in ipairs(d.pg) do
+      if not isDone(p) then
+        if gone(p) then return why(quick, "after ", qname(p) .. ", which you can't take now"), true end
+        return why(quick, "after ", qname(p))
+      end
+    end
+  end
   if d.ps then
-    local any = false
-    for _, p in ipairs(d.ps) do if isDone(p) then any = true break end end
-    if not any then return why(quick, "after ", qname(d.ps[1])) end
+    local any, open = false, nil
+    for _, p in ipairs(d.ps) do
+      if isDone(p) then any = true break end
+      if not open and not gone(p) then open = p end
+    end
+    if not any then
+      if not open then return why(quick, "after ", qname(d.ps[1]) .. ", which you can't take now"), true end
+      return why(quick, "after ", qname(open))
+    end
   end
   if d.pa and not inLog(d.pa) then return why(quick, "only while you have ", qname(d.pa)) end
   if d.sw and not takenBy(d.sw, isDone, inLog) then return why(quick, "after ", qname(d.sw)) end

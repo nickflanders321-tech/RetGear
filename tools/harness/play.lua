@@ -44,9 +44,48 @@ function P.run(W, Wd, RG, opts, Inv, I)
     if last and last.zone == z then last.to = me.level
     else R.path[#R.path + 1] = { zone = z, from = me.level, to = me.level, why = R.why } end
   end
+  -- Trips back: at every quest giver the bot visits, the route's quests that giver could hand it right then; coming back
+  -- later (after walking away) for one of those is a trip the guide could have saved (Islen Waterseer offers Cleansed
+  -- Water Returns to Felwood the moment you hand in Seeking Spiritual Aid there)
+  local givers   -- giver NPC ID -> { quest IDs in the route }
+  local visits = {}   -- giver NPC ID -> { avail = {id = true}, level, map, x, y, left }
+  local function availableAt(npc)
+    if not givers then
+      givers = {}
+      local inRoute = {}
+      for _, list in pairs(RG.STEP_QUESTS or {}) do for _, ids in pairs(list) do for _, id in ipairs(ids) do inRoute[id] = true end end end
+      for id in pairs(inRoute) do
+        local d = RG.QDATA[id]
+        if d and d.s and d.s[5] and not d.rep then givers[d.s[5]] = givers[d.s[5]] or {}; table.insert(givers[d.s[5]], id) end
+      end
+    end
+    local out = {}
+    for _, id in ipairs(givers[npc] or {}) do
+      local d = RG.QDATA[id]
+      if not S.done[id] and not Wd.entry(id) and (not RG.QuestForMe or RG.QuestForMe(d)) and not (RG.HideProfQuest and RG.HideProfQuest(id))
+        and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) and not RG.QuestBlocked(id, d) then out[id] = true end
+    end
+    return out
+  end
+  local function atGiver(npc, acceptedId, where)
+    if not npc then return end
+    local prev = visits[npc]
+    if acceptedId and prev and prev.left and prev.avail[acceptedId] then
+      local d = RG.QDATA[acceptedId]
+      problem("revisit", "came back to " .. tostring(d and d.s and d.s[4]) .. " for " .. tostring(d and d.n) .. " (" .. acceptedId ..
+        "), which it could have taken on its visit at level " .. prev.level, where)
+    end
+    visits[npc] = { avail = availableAt(npc), level = me.level, map = S.map, x = S.x, y = S.y }
+  end
+  local function leaveGivers(wp)
+    for _, v in pairs(visits) do
+      if not v.left and (wp[1] ~= v.map or (Wd.yards(v.map, v.x, v.y, wp[1], wp[2] / 100, wp[3] / 100) or 0) > 150) then v.left = true end
+    end
+  end
   -- walk to a waypoint { uiMapID, x 0-100, y 0-100 }
   local function walk(wp)
     if not wp or not wp[1] then return end
+    leaveGivers(wp)
     local tx, ty = wp[2] / 100, wp[3] / 100
     if wp[1] ~= S.map then
       notePlace()
@@ -412,10 +451,24 @@ function P.run(W, Wd, RG, opts, Inv, I)
           if not l.wp then problem("no-waypoint", "no waypoint to pick up " .. tostring(l.name) .. " (" .. l.id .. ")", where) end
           walk(l.wp)
           local ok, why = Wd.accept(l.id)
-          if ok then note("accepts " .. tostring(l.name)) else
+          if ok then
+            note("accepts " .. tostring(l.name))
+            local d = RG.QDATA[l.id]
+            atGiver(d and d.s and d.s[5], l.id, where .. ": " .. tostring(text))
+          else
             problem("pickup", "the guide says pick up " .. tostring(l.name) .. " (" .. l.id .. "), but the game says: " .. tostring(why), where .. ": " .. tostring(text))
           end
           wait(5)
+        elseif l.act == "doing" and l.farm then
+          -- items to collect for a quest you take by handing them in (Salve via Hunting): the world gives them where
+          -- they drop, as a player killing there would get them
+          walk(l.wp)
+          for _, f in ipairs(RG.BringFarmable(RG.QDATA[l.id]) or {}) do
+            if Inv then Inv.add(f.item, f.need) end
+            S.stats.kills = S.stats.kills + f.need
+          end
+          note("collects the items for " .. tostring(l.name))
+          wait(60)
         elseif l.act == "doing" then
           local wp = l.wp
           if not wp then
@@ -437,8 +490,20 @@ function P.run(W, Wd, RG, opts, Inv, I)
           wait(math.max(secs, 5))
         elseif l.act == "turnin" then
           walk(l.wp)
+          if l.bi and not Wd.entry(l.id) then
+            -- a quest you take by handing in its items (Salve via Hunting): talking to the giver takes it and hands it
+            -- in at once, the items out of your bags
+            Wd.accept(l.id)
+            local e = Wd.entry(l.id)
+            if e then for _, o in ipairs(e.objs) do o.have = o.need end end
+            for _, b in ipairs((RG.QDATA[l.id] or {}).bi or {}) do if Inv and Inv.remove then Inv.remove(b[1], b[2]) end end
+          end
           local ok, why = Wd.handIn(l.id)
-          if ok then note("hands in " .. tostring(l.name)) else
+          if ok then
+            note("hands in " .. tostring(l.name))
+            local d = RG.QDATA[l.id]
+            atGiver(d and d.e and d.e[5], nil, where)
+          else
             problem("turnin", "the guide says hand in " .. tostring(l.name) .. " (" .. l.id .. "), but: " .. tostring(why), where)
           end
           wait(5)
@@ -454,7 +519,7 @@ function P.run(W, Wd, RG, opts, Inv, I)
   -- cascades are reported, but only the first cause counts as a failure
   R.info = {}
   local keep = {}
-  for _, p in ipairs(R.problems) do if p.kind == "cascade" or p.kind == "item-start" then R.info[#R.info + 1] = p else keep[#keep + 1] = p end end
+  for _, p in ipairs(R.problems) do if p.kind == "cascade" or p.kind == "item-start" or p.kind == "revisit" then R.info[#R.info + 1] = p else keep[#keep + 1] = p end end
   R.problems = keep
   return R
 end

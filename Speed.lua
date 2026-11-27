@@ -273,13 +273,56 @@ do   -- (a quest handed in or dropped: where you've been for it no longer matter
   for _, e in ipairs({ "QUEST_TURNED_IN", "QUEST_REMOVED" }) do pcall(f.RegisterEvent, f, e) end
   f:SetScript("OnEvent", function(_, _, qid) if RG.db and RG.db.areaSeen and qid then RG.db.areaSeen[qid] = nil end end)
 end
+-- Every quest in your log. The game lists the log by position, and leaves out the quests under a zone header you've
+-- collapsed (the tracker lost Winterspring's quests until a /reload expanded the headers again). Those are asked by ID:
+-- the quests Waypath+ has seen in your log or watched you accept (RG.db.logSeen), still on them.
+-- Returns the game's entries (C_QuestLog.GetInfo) with idx (their place in the list) and zone (their header), and for a
+-- hidden one { questID, title, level, hidden = true }.
+do
+  local ev = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_ACCEPTED", "QUEST_REMOVED", "QUEST_TURNED_IN" }) do pcall(ev.RegisterEvent, ev, e) end
+  ev:SetScript("OnEvent", function(_, event, a1, a2)
+    if not RG.db then return end
+    RG.db.logSeen = RG.db.logSeen or {}
+    if event == "QUEST_ACCEPTED" then
+      local id = a2 or a1   -- (questLogIndex, questID) on this client; questID alone on others
+      if type(id) == "number" then RG.db.logSeen[id] = true end
+    elseif type(a1) == "number" then RG.db.logSeen[a1] = nil end
+  end)
+end
+function RG.LogQuestInfos()
+  local out, have = {}, {}
+  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return out end
+  local zone
+  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+    local info = C_QuestLog.GetInfo(i)
+    if info and info.isHeader then zone = info.title
+    elseif info and info.questID then info.idx, info.zone = i, zone; out[#out + 1] = info; have[info.questID] = true end
+  end
+  if not RG.db then return out end
+  RG.db.logSeen = RG.db.logSeen or {}
+  local seen = RG.db.logSeen
+  for id in pairs(have) do seen[id] = true end
+  local onQuest = C_QuestLog.IsOnQuest
+  for id in pairs(seen) do
+    if not have[id] then
+      if onQuest and onQuest(id) then
+        local d = RG.QDATA and RG.QDATA[id]
+        local title = (C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(id)) or (d and d.n)
+        if title then out[#out + 1] = { questID = id, title = title, level = d and d.l, isHeader = false, hidden = true } end
+      else
+        seen[id] = nil   -- (handed in or dropped)
+      end
+    end
+  end
+  return out
+end
 local dbSpots = {}   -- [questId * 64 + objective number] = the spots the database gives for it (see below)
 local function buildQuestSpots()
   local spots = {}
   if not (RG.QDATA and C_QuestLog and C_QuestLog.GetNumQuestLogEntries) then return spots end
-  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-    local info = C_QuestLog.GetInfo(i)
-    local qid = info and not info.isHeader and info.questID
+  for _, info in ipairs(RG.LogQuestInfos()) do
+    local qid = info.questID
     local qd = qid and RG.QDATA[qid]
     if qd and C_QuestLog.IsComplete and C_QuestLog.IsComplete(qid) then
       if qd.e then spots[#spots + 1] = { turnin = true, quest = info.title, label = qd.e[4], wp = { qd.e[1], qd.e[2], qd.e[3], qd.e[4] ~= "" and qd.e[4] or info.title } } end
@@ -395,9 +438,8 @@ do   -- the learning itself
     if RG.CardsOnly and RG.CardsOnly() then return end
     local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
-    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-      local info = C_QuestLog.GetInfo(i)
-      local qid = info and not info.isHeader and info.questID
+    for _, info in ipairs(RG.LogQuestInfos()) do
+      local qid = info.questID
       if qid then
         for _, o in ipairs(C_QuestLog.GetQuestObjectives(qid) or {}) do
           if o.text and type(o.numFulfilled) == "number" then
@@ -745,11 +787,9 @@ buildMyQuests = function()
     end
     RG.__nearC = { c = c, t = nnow, near = near, spots = RG.QuestSpots() }
   end
-  local zone
-  for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-    local info = C_QuestLog.GetInfo(i)
-    if info and info.isHeader then zone = info.title
-    elseif info and info.title and info.questID then
+  for _, info in ipairs(RG.LogQuestInfos()) do
+    local i, zone = info.idx, info.zone   -- (no place in the list: under a collapsed header)
+    if info.title and info.questID then
       local complete = C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID) and true or false
       local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(info.questID) or {}
       local prog, total, doneN

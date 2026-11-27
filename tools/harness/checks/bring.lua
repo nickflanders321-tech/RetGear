@@ -20,7 +20,7 @@ end
 return {
   {
     name = "bring-items-quest",
-    about = "a quest taken only with its items (Salve via Hunting) isn't a pick-up without them, doesn't hold the step open, and is a hand-in once they're in your bags",
+    about = "a quest taken only with its items (Salve via Hunting) has you collect them where they drop, and is a hand-in once they're in your bags",
     race = "Orc", class = "WARRIOR", level = 1,
     run = function(T)
       local RG = T.RG
@@ -31,10 +31,19 @@ return {
       local l, r, i = salveLine(T)
       T.ok(r, "Salve via Hunting is in a route step")
       if not r then return end
-      T.ok(not l, "without the shards it isn't on the step (" .. tostring(l and l.act) .. ")")
+      T.ok(l and l.act == "doing" and l.farm, "without the shards the step has you collect them (" .. tostring(l and l.act) .. ")")
+      T.eq(l and l.prog, "0/6", "6 Corrupted Soul Shards to collect")
+      T.ok(l and l.wp and l.wp[1] == 1448, "in Felwood, where they drop")
       local why, never = RG.QuestBlocked(HUNTING, d)
-      T.ok(never and tostring(why):find("6", 1, true), "it says to bring them first, and the step doesn't wait: " .. tostring(why))
-      T.give(SHARD, 6)
+      T.ok(not never, "it isn't left out: the shards drop around here (" .. tostring(why) .. ")")
+      -- Salve via Disenchanting: a Lesser Nether Essence, which nothing drops: left out (it needs Enchanting too)
+      local _, nev2 = RG.QuestBlocked(5891, T.quest(5891))
+      T.ok(nev2, "Salve via Disenchanting, whose essence nothing drops, is left out")
+      T.give(SHARD, 3)
+      RG.ForgetNextStep()
+      l = salveLine(T)
+      T.eq(l and l.prog, "3/6", "3 shards in your bags: 3/6")
+      T.give(SHARD, 3)
       RG.ForgetNextStep()
       l = salveLine(T)
       T.ok(l and l.act == "turnin", "with the shards it's a hand-in (" .. tostring(l and l.act) .. ")")
