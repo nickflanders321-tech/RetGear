@@ -1040,21 +1040,28 @@ local function buildArrow()
     return n and n.w
   end
   local FR, COLS3, CELL3, SHEET3 = 64, 8, 256, 2048
+  local function uv(idx)
+    local col = idx % COLS3; local row = (idx - col) / COLS3
+    return col * CELL3 / SHEET3, (col + 1) * CELL3 / SHEET3, row * CELL3 / SHEET3, (row + 1) * CELL3 / SHEET3
+  end
+  -- (every frame: only touches the textures when the heading, colour or 3D setting changed since the last one)
+  local s3on, s3rot, s3r, s3g, s3b
   local function sync3d(self)
     local on = RG.db.arrow3d ~= false and self.tex:IsShown()
-    self.tex:SetAlpha(on and 0 or 1)
-    self.sheet:SetShown(on); self.spec:SetShown(on); self.sheet2:SetShown(on); self.spec2:SetShown(on)
+    local r, g, b
+    if on then r, g, b = self.tex:GetVertexColor() end
+    if on == s3on and (not on or (self.rot == s3rot and r == s3r and g == s3g and b == s3b)) then return end
+    if on ~= s3on then
+      self.tex:SetAlpha(on and 0 or 1)
+      self.sheet:SetShown(on); self.spec:SetShown(on); self.sheet2:SetShown(on); self.spec2:SetShown(on)
+    end
+    s3on, s3rot, s3r, s3g, s3b = on, self.rot, r, g, b
     if not on then return end
-    local r, g, b = self.tex:GetVertexColor()
     -- two neighbouring frames, weighted by where the heading falls between them
     local pos = ((self.rot or 0) % (2 * math.pi)) / (2 * math.pi) * FR
     local i0 = math.floor(pos); local f = pos - i0
     i0 = i0 % FR
     local i1 = (i0 + 1) % FR
-    local function uv(idx)
-      local col = idx % COLS3; local row = (idx - col) / COLS3
-      return col * CELL3 / SHEET3, (col + 1) * CELL3 / SHEET3, row * CELL3 / SHEET3, (row + 1) * CELL3 / SHEET3
-    end
     local l, rr, t, bt = uv(i0)
     self.sheet:SetTexCoord(l, rr, t, bt); self.spec:SetTexCoord(l, rr, t, bt)
     l, rr, t, bt = uv(i1)
@@ -1530,7 +1537,17 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
   if event == "PLAYER_LOGIN" then
     paceTick = RG.PerfWrap("pace", paceTick)
     C_Timer.NewTicker(30, paceTick)
-    C_Timer.NewTicker(5, function() if not combat() and RG.QueueTracker then RG.QueueTracker() end end)
+    -- distances on the tracker follow you as you move; standing still there's nothing new to show (events and the
+    -- guide's heartbeat redraw it when something else changes), so then only every 30 seconds
+    local tc, tx, ty, tAt = nil, nil, nil, 0
+    C_Timer.NewTicker(5, function()
+      if combat() or not RG.QueueTracker then return end
+      local c, x, y = playerWorld()
+      local now = GetTime and GetTime() or 0
+      if c and x and c == tc and math.abs(x - tx) < 3 and math.abs(y - ty) < 3 and now - tAt < 30 then return end
+      tc, tx, ty, tAt = c, x, y, now
+      RG.QueueTracker()
+    end)
     C_Timer.After(3, function() refreshBar(); refreshArrow() end)
   elseif event == "GOSSIP_SHOW" then onGossip()
   elseif event == "QUEST_GREETING" then onGreeting()

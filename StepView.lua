@@ -500,6 +500,23 @@ local function cardInfo()
 end
 
 local lastH
+-- The card is redrawn every second, mostly with what it already shows: text and anchors are only handed to the game
+-- when they change (each new anchor makes the game lay the card out again). After a /reload the game can draw our
+-- font blank until the text is set again, so the tracker's repaint passes set everything afresh (gen).
+local gen = 0
+local function setText(fs, s)
+  s = s or ""
+  if fs._svT ~= s or fs._svG ~= gen then fs._svT, fs._svG = s, gen; fs:SetText(s) end
+end
+local function moved(r, a, b, c)
+  if r._svA == a and r._svB == b and r._svC == c and r._svPG == gen then return false end
+  r._svA, r._svB, r._svC, r._svPG = a, b, c, gen
+  return true
+end
+do
+  local base = RG.TrackerRepaint
+  if base then RG.TrackerRepaint = function(...) gen = gen + 1; return base(...) end end
+end
 function RG.RefreshStepView()
   local t = _G.WaypathTracker
   if not (t and t:IsShown()) or (RG.CardsOnly and RG.CardsOnly()) or not (RG.Opt and RG.Opt("tracker")) then
@@ -522,11 +539,14 @@ function RG.RefreshStepView()
   local details = not folded
   local P = RG.TPAL
   -- the strip: what to do (a brass-edged tag), the quest, how far
-  f.verb:SetText(info.verb:upper())
-  f.verb:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
-  f.chipF:SetWidth(math.max(22, (f.verb:GetStringWidth() or 20) + 12))
-  f.title:SetText(info.title or "")
-  f.dist:SetText(info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
+  local verb = info.verb:upper()
+  if f.verb._svT ~= verb or f.verb._svG ~= gen then
+    setText(f.verb, verb)
+    f.verb:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
+    f.chipF:SetWidth(math.max(22, (f.verb:GetStringWidth() or 20) + 12))
+  end
+  setText(f.title, info.title)
+  setText(f.dist, info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
   -- the picture first: the lines go beside it when there is one (folded: no picture, the objective under the strip)
   -- (it isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made it flash
   -- once a second)
@@ -552,14 +572,20 @@ function RG.RefreshStepView()
     end
     if pair then
       local y = -(top + (k - 1) * LH)
-      pair[2]:ClearAllPoints(); pair[2]:SetPoint("TOPRIGHT", -8, y)
-      pair[1]:ClearAllPoints(); pair[1]:SetPoint("TOPLEFT", x, y); pair[1]:SetPoint("RIGHT", pair[2], "LEFT", -6, 0)
-      pair[1]:SetText(l and l.text or ""); pair[2]:SetText(l and l.prog or "")
-      if l and l.done then pair[2]:SetTextColor(P.green[1], P.green[2], P.green[3]) else pair[2]:SetTextColor(1, 1, 1) end
+      if moved(pair[2], y) then pair[2]:ClearAllPoints(); pair[2]:SetPoint("TOPRIGHT", -8, y) end
+      if moved(pair[1], x, y) then pair[1]:ClearAllPoints(); pair[1]:SetPoint("TOPLEFT", x, y); pair[1]:SetPoint("RIGHT", pair[2], "LEFT", -6, 0) end
+      setText(pair[1], l and l.text); setText(pair[2], l and l.prog)
+      local done = (l and l.done) and true or false
+      if pair[2]._svDone ~= done then
+        pair[2]._svDone = done
+        if done then pair[2]:SetTextColor(P.green[1], P.green[2], P.green[3]) else pair[2]:SetTextColor(1, 1, 1) end
+      end
     end
   end
   local h = top + #lines * LH
-  f.picName:SetText(""); f.body:Hide(); f.line:Hide(); f.skip:Hide(); f.foot:SetText("")
+  -- (cleared here and filled in below: only what ends up different from last time reaches the game)
+  local picName, bodyText, footText = "", nil, ""
+  local showBody, showLine, showSkip = false, false, false
   if details then
     -- beside the picture: where (parchment), who drops it (green, like the game's quest items), what else is here,
     -- how to do it (muted), the one thing people get wrong (orange)
@@ -579,14 +605,14 @@ function RG.RefreshStepView()
     if info.why and info.why ~= "" then body[#body + 1] = "|cff9a8a6a" .. info.why .. "|r" end
     local qn = info.it and info.it.id and RG.QuestNote and RG.QuestNote(info.it.id)
     if qn and qn.n then body[#body + 1] = "|cffff9f43" .. qn.n .. "|r" end
-    if picShown then
-      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(STRIP + 8))
-      f.picName:SetText(look.name or "")
-    end
+    -- (the picture's place never changes: set when the card is built)
+    if picShown then picName = look.name or "" end
+    setText(f.picName, picName)
     local by = h + (#lines > 0 and 3 or 0)
-    f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8)
-    f.body:SetText(table.concat(body, "\n")); f.body:SetShown(#body > 0)
-    local bh = #body > 0 and (f.body:GetStringHeight() or 0) or 0
+    if moved(f.body, x, by, W) then f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8) end
+    bodyText = table.concat(body, "\n"); showBody = #body > 0
+    setText(f.body, bodyText)
+    local bh = showBody and (f.body:GetStringHeight() or 0) or 0
     local ph = picShown and (STRIP + 8 + MODEL_H + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
     h = math.max(by + bh, ph) + 8
     -- the quest's usable item (a flask to fill, a horn to blow): a button beside Skip
@@ -597,22 +623,32 @@ function RG.RefreshStepView()
     end
     -- what comes after, and Skip
     if info.next or info.skip or itm then
-      f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h); f.line:Show()
-      f.foot:SetText(info.next and ("|cffffd100Next|r  " .. info.next) or "")
-      f.skip:SetShown(info.skip and true or false)
-      f.foot:SetPoint("RIGHT", f.skip, "LEFT", itm and -34 or -6, 0)
+      if moved(f.line, h) then f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h) end
+      showLine = true
+      footText = info.next and ("|cffffd100Next|r  " .. info.next) or ""
+      showSkip = info.skip and true or false
+      local fx = itm and -34 or -6
+      if moved(f.foot, fx) then f.foot:SetPoint("RIGHT", f.skip, "LEFT", fx, 0) end
       h = h + 28
     end
   else
+    setText(f.picName, "")
     h = h + 4
   end
+  if f.body:IsShown() ~= showBody then f.body:SetShown(showBody) end
+  if f.line:IsShown() ~= showLine then f.line:SetShown(showLine) end
+  if f.skip:IsShown() ~= showSkip then f.skip:SetShown(showSkip) end
+  setText(f.foot, footText)
   if f.pic:IsShown() ~= picShown then f.pic:SetShown(picShown) end
   f.wp, f.prof = info.wp, info.prof
   f.tipTitle, f.tipText = info.title, info.whyFull
   if frozen and lastH and lastH > 0 then h = lastH end
   local headH = (RG.TrackerHeadH and RG.TrackerHeadH() or 50) + 4
-  f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -headH); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -headH)
-  f:SetHeight(h); f:Show()
+  if moved(f, headH, h) then
+    f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -headH); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -headH)
+    f:SetHeight(h)
+  end
+  if not f:IsShown() then f:Show() end
   cardH = h
   -- (the item button: to the left of Skip, at the card's foot; it hangs off the tracker, so it's placed from there)
   if not frozen and RG.TrackerCardItem then

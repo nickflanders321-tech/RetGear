@@ -1068,10 +1068,22 @@ function RG.SyncObjective(obj)
 end
 
 -- The current objective (recomputed at most every couple of seconds, or at once after a change).
+-- Standing still (at a vendor, in a fight, away from the keys) it is kept for up to 10 seconds: what it depends on
+-- besides where you are comes with an event that marks it dirty, and each rebuild made over 100 KB of garbage.
+local STILL_YD, STILL_MAX = 3, 10
 function RG.Objective(force)
   if not (RG.db and UnitLevel) then return nil end
   local now = GetTime and GetTime() or 0
-  if force or cache.dirty or now - cache.t > 2 then
+  local age = now - cache.t
+  local rebuild = force or cache.dirty or age > STILL_MAX
+  local pc, px, py
+  if not rebuild and age > 2 then
+    if RG.PlayerWorld then pc, px, py = RG.PlayerWorld() end
+    rebuild = not (pc and px and pc == cache.pc and math.abs(px - cache.px) < STILL_YD and math.abs(py - cache.py) < STILL_YD)
+  end
+  if rebuild then
+    if not pc and RG.PlayerWorld then pc, px, py = RG.PlayerWorld() end
+    cache.pc, cache.px, cache.py = pc, px, py
     local ok, obj = pcall(buildObjective)
     cache.t, cache.dirty = now, false
     if ok then

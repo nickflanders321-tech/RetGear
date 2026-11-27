@@ -236,7 +236,8 @@ local MILESTONES = {
   Mining = { [20] = "Lodestone camp object unlocked (good for groups without a paladin).", [140] = "Rock Garden unlocked if you have the blueprint (Wetlands excavation site, or the AH)." },
 }
 local ev = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "SKILL_LINES_CHANGED", "UNIT_AURA" }) do pcall(ev.RegisterEvent, ev, e) end
+for _, e in ipairs({ "PLAYER_LOGIN", "SKILL_LINES_CHANGED" }) do pcall(ev.RegisterEvent, ev, e) end
+if ev.RegisterUnitEvent then pcall(ev.RegisterUnitEvent, ev, "UNIT_AURA", "player") else pcall(ev.RegisterEvent, ev, "UNIT_AURA") end   -- (yours only)
 local lastState
 ev:SetScript("OnEvent", function(_, event, unit)
   if RG.IsAlt and RG.IsAlt() then return end
