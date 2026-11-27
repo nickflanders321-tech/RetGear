@@ -414,6 +414,26 @@ function L.install(W, here)
     end
     return lines, truncated
   end
+  -- what the game draws of those lines in a box 'width' wide: a line that doesn't fit (a font string that doesn't wrap)
+  -- is cut and ends in "...", and so does the last line kept when there were more (SetMaxLines)
+  function L.ellipsize(lines, font, size, width, cut)
+    if not width or width <= 0 then return lines end
+    local dots = 0
+    for _, t in ipairs(tokens("...", font, size)) do dots = dots + t[2] end
+    for i, ln in ipairs(lines) do
+      if ln[2] > width + 0.5 or (cut and i == #lines) then
+        local out, w = {}, 0
+        for _, t in ipairs(tokens(ln[1], font, size)) do
+          if t[3] == "c" then out[#out + 1] = t[1]
+          elseif w + t[2] > width - dots then break
+          else out[#out + 1] = t[1]; w = w + t[2] end
+        end
+        local s = table.concat(out):gsub("%s+$", "")
+        lines[i] = { s .. "...", w + dots }
+      end
+    end
+    return lines
+  end
   function L.textWidth(text, font, size)
     local best = 0
     for _, l in ipairs(L.layoutText(text, font, size, nil)) do if l[2] > best then best = l[2] end end
@@ -863,6 +883,7 @@ function L.install(W, here)
                   local font = L.fontOf(rg)
                   local es = effScale(rg)
                   local lines, cut = L.layoutText(txt, font, font[2], (rr - rl) / es, rs.wordWrap, rs.maxLines, rs.nonSpaceWrap)
+                  lines = L.ellipsize(lines, font, font[2], (rr - rl) / es, cut)
                   local ls = {}
                   for i, ln in ipairs(lines) do ls[i] = { ln[1], round(ln[2] * es) } end
                   item = { k = "text", r = R(rl, rb, rr, rt), font = font[1], size = font[2] * es, flags = font[3] or "",

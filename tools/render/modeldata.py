@@ -120,6 +120,65 @@ def learned_creatures():
     return out
 
 
+def cmangos_creatures():
+    """Creature id -> display id for every classic creature (cMaNGOS classic-db's creature_template, ModelId1..4),
+    so the quest mobs and quest givers on the tracker draw too. The database is fetched into the cache once, as
+    tools/watch/regenerate.sh does it. A WoW Forever creature can look different: the client's own table and the
+    game's answers (learned_creatures) come first."""
+    import re
+    sql_path = os.path.join(CACHE, "classic.sql")
+    if not os.path.exists(sql_path):
+        tmp = os.path.join(CACHE, "cdb")
+        subprocess.run(["rm", "-rf", tmp], check=False)
+        env = dict(os.environ, GIT_LFS_SKIP_SMUDGE="1")
+        subprocess.run(["git", "clone", "-q", "--depth", "1", "https://github.com/cmangos/classic-db.git", tmp], check=True, env=env)
+        with open(sql_path, "wb") as out:
+            for f in sorted(os.listdir(os.path.join(tmp, "Full_DB"))):
+                if f.endswith(".sql.gz"):
+                    out.write(gzip.open(os.path.join(tmp, "Full_DB", f)).read())
+        subprocess.run(["rm", "-rf", tmp], check=False)
+    sql = open(sql_path, encoding="utf-8", errors="replace").read()
+    m = re.search(r"CREATE TABLE `creature_template` \((.*?)\) ENGINE", sql, re.S)
+    cols = re.findall(r"^\s*`(\w+)`", m.group(1), re.M)
+    ie = cols.index("Entry")
+    im = [cols.index("ModelId%d" % k) for k in range(1, 5)]
+    # one row per creature: (values...) with quoted strings that may hold commas and escaped quotes
+    value = re.compile(r"'(?:[^'\\]|\\.|'')*'|[^,()]+")
+    out = {}
+    for ins in re.finditer(r"INSERT INTO `creature_template` VALUES ", sql):
+        i = ins.end()
+        while i < len(sql) and sql[i] == "(":
+            j, depth, inq = i + 1, 1, False
+            while depth:
+                c = sql[j]
+                if inq:
+                    if c == "\\":
+                        j += 1
+                    elif c == "'":
+                        if sql[j + 1] == "'":
+                            j += 1
+                        else:
+                            inq = False
+                elif c == "'":
+                    inq = True
+                elif c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
+                j += 1
+            vals = value.findall(sql[i + 1:j - 1])
+            if len(vals) == len(cols):
+                for k in im:
+                    d = num(vals[k])
+                    if d:
+                        out[num(vals[ie])] = d
+                        break
+            i = j
+            while i < len(sql) and sql[i] in ",\n\r ":
+                i += 1
+    return out
+
+
 # NPCModelItemSlotDisplayInfo.ItemSlot
 HEAD, SHOULDER, SHIRT, CHEST, BELT, LEGS, BOOTS, WRIST, HANDS, TABARD, BACK = range(11)
 # which geoset groups an item's GeosetGroup_0.. set (to xx01 + value), per slot (as WoW Model Viewer does it,
@@ -245,6 +304,16 @@ def main():
         if d in display:
             creature.setdefault(c, d)
     print("creatures: %d from the game's answers to the add-on (WaypathDB.arcade.npcDisp)" % len(learned))
+    try:
+        classic = cmangos_creatures()
+    except Exception as e:
+        classic = {}
+        print("(no cMaNGOS creatures: quest mobs on the tracker are drawn without a model: %s)" % e)
+    n0 = len(creature)
+    for c, d in classic.items():
+        if d in display:
+            creature.setdefault(c, d)
+    print("creatures: %d more from cMaNGOS classic-db" % (len(creature) - n0))
     extra = {}
     for r in table("CreatureDisplayInfoExtra"):
         extra[num(r["ID"])] = {"race": num(r["DisplayRaceID"]), "sex": num(r["DisplaySexID"]),

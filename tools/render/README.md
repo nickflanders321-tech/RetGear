@@ -20,6 +20,7 @@ CI. Requirements (WSL Ubuntu): `lua5.1`, and `sudo apt install python3-pil pytho
 | `particles.py` | A model's particle emitters as one still frame (for `model.py`). |
 | `camera.json` | The model frame's camera rules (field of view, framing, which calls set the camera again, lighting). Calibration changes these numbers. |
 | `camfix.py` | Cards whose creature model has no body camera of its own, and the camera distance (`RG.ARCADE_CAMFIX`) at which each fits. Run after new cards are added: `run.lua --shoot tools/render/scenes/npcs.lua --out DIR`, then `camfix.py DIR/npc.json`. |
+| `ui.sh`, `scenes/ui.lua`, `uidiff.py` | The screens check: the tracker in every view, its menu and every page of the main window, for a few characters, compared with the last accepted set (see "Checking the screens"). |
 | `check_cards.py` | Reads a drawn card sweep and flags blank, over-zoomed, tiny and inconsistent models; writes `report.md` and contact sheets. |
 | `casc.py` | Reads files from the local install by FileDataID or path. |
 | `modeldata.py` | Display ID → model file and creature → display, from the `data/wago` branch (same build as the client); a humanoid NPC's hair, face, armor shapes, helmet and shoulders from the customization and item tables (wago.tools, same build, cached); creature displays the game told the add-on. Run it again after playing, to pick up newly learned creatures. |
@@ -34,6 +35,25 @@ sh tools/render/cards.sh ~/shots/cards --cards "Hogger;Ragnaros"        # just t
 lua5.1 tools/harness/run.lua --shoot tools/render/scenes/basic.lua --out ~/shots/ui && python3 tools/render/render.py ~/shots/ui
 ```
 
+## Checking the screens
+
+```sh
+sh tools/render/ui.sh ~/shots/ui              # draw every screen and compare with the accepted set (~2 minutes)
+sh tools/render/ui.sh ~/shots/ui --accept     # ... and accept this set, once the changes are the ones you meant
+CHARS=fresh sh tools/render/ui.sh ~/shots/ui  # one character only (~10 s)
+```
+
+`scenes/ui.lua` finishes the first-time setup, then shoots the tracker in each view (`tracker-guide`, `-zone`,
+`-log`, `-prof`, `-dungeon`), its view menu (`tracker-menu`) and every page of the main window (`main-route`,
+`main-gear`, `main-settings`...). `ui.sh` runs it for three characters: `fresh` (level 1), `horde20` (an Orc
+warrior the leveling bot plays to level 20: quests in the log, part way through the route) and `alliance12` (a
+Human mage played to 12). The runs are the same every time, so any difference is a change.
+
+`uidiff.py` then compares each shot with the accepted one (`tools/harness/.cache/ui-baseline`, git-ignored) and
+writes `~/shots/ui/report/report.md`: each changed shot with the changed areas boxed in red beside the accepted
+picture, and the texts that appeared or went away. A change that shows on many shots (the tracker is on every
+page) is listed once, with the other shots it's in. It exits 1 when something changed.
+
 `render.py` options: `--scale 2` (sharper), `--crop auto` (cut to what was drawn), `--crop l,b,r,t` (screen units:
 UIParent is 1920 x 1080 of them, y up), `--bg FILE` (a real game screenshot behind the UI).
 
@@ -45,7 +65,11 @@ A scene script gets `T` with: `T.slash("/wp arcade")`, `T.step(seconds)`, `T.cli
 
 - Layout follows the game's rules: anchors, sizes, scale, strata, frame levels, draw layers and sublevels, and
   clipping. Text uses the real fonts' widths, so wrapping and `GetStringWidth` match closely, though not to the
-  pixel (no kerning).
+  pixel (no kerning). A line too long for its box that can't wrap is cut and ends in "...", as in game (and so
+  does the last line kept by `SetMaxLines`).
+- Quest mobs and quest givers on the tracker get their model from cMaNGOS classic-db's creature table
+  (`modeldata.cmangos_creatures`, fetched into the cache once) when the client's own table and the game's answers
+  don't have it. A creature only WoW Forever has (Tabitha Heartweaver) shows an empty frame offline.
 - The game's own templates (UIPanelButtonTemplate and the like) only get the pieces the harness models. The
   add-on draws almost everything itself, so this rarely matters.
 - Models are drawn in the first frame of their standing animation, with simple lighting. That's enough to see
