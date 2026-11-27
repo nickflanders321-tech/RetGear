@@ -15,11 +15,13 @@ if [ ! -s "$T/classic.sql" ]; then
   zcat "$T"/cdb/Full_DB/*.sql.gz > "$T/classic.sql"
 fi
 $LUA tools/objectives/dump.lua "$C" "$T/forever.json"
-# Polestar's forever-db: hand-checked quest fixes (on top of QuestieDB's data) and quest tags and notes, CC BY 4.0
+# Polestar's forever-db: hand-checked quest fixes (on top of QuestieDB's data) and quest tags and notes, CC BY 4.0;
+# and its guides (GPL-3.0): where they do objectives none of the data has a spot for
 rm -rf "$T/ps"
-git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fitzforge/polestar "$T/ps" && git -C "$T/ps" sparse-checkout set forever-db || rm -rf "$T/ps"
+git clone -q --depth 1 --filter=blob:none --sparse https://github.com/fitzforge/polestar "$T/ps" && git -C "$T/ps" sparse-checkout set forever-db guides || rm -rf "$T/ps"
 FX=""; [ -s "$T/ps/forever-db/corrections/quests.json" ] && FX="--fixes $T/ps/forever-db"
-python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX
+GD=""; [ -d "$T/ps/guides" ] && GD="--guides $T/ps/guides"
+python3 tools/objectives/gen.py "$T/qdb" "$T/forever.json" . --sql "$T/classic.sql" $FX $GD
 python3 tools/routes/gen.py "$T/qdb" "$T/forever.json" . $FX
 $LUA tools/nodes/dump.lua "$C/foreverObjectDB.lua" "$T/veins.tsv"
 python3 tools/nodes/gen.py "$T/qdb" "$T/veins.tsv" NodeData.lua

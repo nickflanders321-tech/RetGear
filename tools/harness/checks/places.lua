@@ -16,6 +16,9 @@ local function felwood(T, logOnly)
   T.Wd.state.done[WELL] = true; T.Wd.state.done[HUSBAND] = true
   local ok, why = T.accept(SABERS)
   T.ok(ok, "Corrupted Sabers accepted (" .. tostring(why) .. ")")
+  -- (like the game: one event objective, in words that match neither place, done when Winna gets the cat)
+  local e = T.Wd.entry(SABERS)
+  if e then e.objs = { { kind = "e", label = "Corrupted Saber returned", mobs = {}, spots = { { WINNA[1], WINNA[2], WINNA[3], 0 } }, need = 1, have = 0 } } end
   RG.ForgetNextStep(); T.step(1)
   return ok
 end

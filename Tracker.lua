@@ -408,6 +408,10 @@ function RG.StepQuestLines(entry, i, myQuests)
               or (si[3] and #si[3] > 0) and ("Kill " .. from .. " and loot " .. si[2] .. ": it starts this quest.")
               or ("Pick up " .. si[2] .. " here: it starts this quest.")
             l.wp = { p[1], p[2], p[3], from }
+          elseif d.bi and d.e then
+            -- its items are in your bags (QuestBlocked lets it through only then): talking to the giver hands them in
+            l.act, l.npc, l.bi = "turnin", d.e[4], true
+            l.wp = { d.e[1], d.e[2], d.e[3], d.e[4] ~= "" and d.e[4] or d.n }
           else
             l.act, l.npc = "pickup", d.s and d.s[4]
             l.noGiver = not d.s

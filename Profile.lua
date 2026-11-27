@@ -86,6 +86,16 @@ local function why(quick, a, b) if quick then return true end return b ~= nil an
 local function takenBy(q, isDone, inLog) return isDone(q) or inLog(q) end
 local function alwaysNo() return false end
 local function onQuest(q) return C_QuestLog and C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(q) or false end
+-- Are a bring-items quest's items (d.bi = {{item, how many}, ...}) all in your bags?
+function RG.HasBringItems(d)
+  local count = (C_Item and C_Item.GetItemCount) or GetItemCount
+  if not (d and d.bi and count) then return false end
+  for _, b in ipairs(d.bi) do
+    local ok, n = pcall(count, b[1])
+    if not ok or (n or 0) < (b[2] or 1) then return false end
+  end
+  return true
+end
 function RG.QuestBlocked(id, d, isDone, inLog, quick)
   d = d or (RG.QDATA and RG.QDATA[id])
   if not d then return nil end
@@ -109,6 +119,17 @@ function RG.QuestBlocked(id, d, isDone, inLog, quick)
   if d.sp then
     local k = knows(math.abs(d.sp))
     if k ~= nil and k ~= (d.sp > 0) then return d.sp > 0 and "needs a spell or specialization you don't have" or "not for your specialization", true end
+  end
+  -- taken only with its items in your bags (Salve via Hunting: 6 Corrupted Soul Shards; talking to the giver hands them
+  -- in): without them there's nothing to pick up, and the route doesn't wait for it
+  if d.bi and not RG.HasBringItems(d) then
+    if quick then return true, true end
+    local need = {}
+    for _, b in ipairs(d.bi) do
+      local name = GetItemInfo and GetItemInfo(b[1])
+      need[#need + 1] = (b[2] > 1 and (b[2] .. " ") or "") .. (name or "its items")
+    end
+    return "bring " .. table.concat(need, ", ") .. " first", true
   end
   -- not yet
   if d.pg then for _, p in ipairs(d.pg) do if not isDone(p) then return why(quick, "after ", qname(p)) end end end

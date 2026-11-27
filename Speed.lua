@@ -298,7 +298,9 @@ local function buildQuestSpots()
         -- (by text, or by position on clients in other languages)
         local game = RG.MatchObjective(objs, qd.o, k)
         local skipArea = false
-        if d[1] == "e" and not (game and game.finished) then
+        -- (one the game counts, "free five captives 2/5", shows until it's done; one it doesn't, the moonwell before Winna,
+        -- until you've been there, and only once you've been to the places before it)
+        if d[1] == "e" and not game then
           if not areaNext or areaReached(qid, k, d) then skipArea = true else areaNext = false end
         end
         if not (game and game.finished) and not skipArea then

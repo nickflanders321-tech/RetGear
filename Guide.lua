@@ -333,9 +333,10 @@ local function buildTasks()
     for i = (mode == "zone" and 1 or cur), (mode == "zone" and nSteps or cur) do
       if i == cur or not RG.StepIsDone(r, i) then
         for _, l in ipairs(RG.StepQuestLines(r, i, quests) or {}) do
-          if l.act == "pickup" and l.wp and not picked[l.id] and not byTitle[l.name] and inZone(l.wp) then
+          -- (and a quest you hand in as you take it, its items in your bags: Salve via Hunting)
+          if (l.act == "pickup" or l.bi) and l.wp and not picked[l.id] and not byTitle[l.name] and inZone(l.wp) then
             local p = pt(l.wp)
-            if p then picked[l.id] = true; tasks[#tasks + 1] = { act = "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
+            if p then picked[l.id] = true; tasks[#tasks + 1] = { act = l.bi and "turnin" or "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
           end
         end
       end

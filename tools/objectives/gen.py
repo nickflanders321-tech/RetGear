@@ -8,10 +8,14 @@ loot tables when --sql is given).
 Hand-checked fixes from Polestar's forever-db (its corrections layer, CC BY 4.0, each fix backed by players' recordings,
 live client data or an in-game check) go on top of QuestieDB's data when --fixes <forever-db folder> is given: who can
 take a quest (races, classes), what comes first, levels, givers, turn-ins, objectives, and quests not in the game.
-Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql] [--fixes forever-db]"""
+Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql] [--fixes forever-db]
+       [--guides <Polestar>/guides]: where Polestar's guides (GPL-3.0) do objectives none of the data shows"""
 import json, re, sys, os
 SQL = None
 FIXES = None
+GUIDES = None   # Polestar's guides folder: where they do objectives the data has no spot for
+if '--guides' in sys.argv:
+    i = sys.argv.index('--guides'); GUIDES = sys.argv[i + 1]; del sys.argv[i:i + 2]
 if '--fixes' in sys.argv:
     i = sys.argv.index('--fixes'); FIXES = sys.argv[i + 1]; del sys.argv[i:i + 2]
 if '--sql' in sys.argv:
@@ -98,6 +102,7 @@ DROP = {}
 # How often an item drops, from forever-db's item sources (CC BY 4.0): (item, 'npc' or 'object', id) -> percent.
 # Read before the cMaNGOS tables: it knows Forever's own items too. SURE_DROP: the same as tools/routes/gen.py's.
 CHANCE = {}
+REQ = {}   # quest -> {item: how many} (cMaNGOS quest_template, with --sql)
 SURE_DROP = 90
 if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
     for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
@@ -142,6 +147,13 @@ if SQL:
         except Exception: pass
     for e, l in lootof.items():
         if l and l in byloot: DROP[e] = byloot[l]
+    # how many of each item a quest asks for (QuestieDB's objectives don't say): for quests you can only take once you
+    # have the items (see bi below)
+    qc = _cols('quest_template'); qe = qc.index('entry')
+    qi = [(qc.index('ReqItemId%d' % n), qc.index('ReqItemCount%d' % n)) for n in range(1, 5)]
+    for r in _rows('quest_template'):
+        try: REQ[int(r[qe])] = {int(r[a]): int(r[b]) for a, b in qi if int(r[a]) > 0}
+        except Exception: pass
     del sqltxt
     print('drop tables for %d creatures' % len(DROP), file=sys.stderr)
 def L(o):  # objective entry as a 1-based list
@@ -159,8 +171,8 @@ if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
     corr = json.load(open(os.path.join(FIXES, 'corrections', 'quests.json'), encoding='utf-8'))
     Q = D['quests']
     def qlist(q):
-        if isinstance(q, dict): return [q.get(str(i)) for i in range(1, 27)]
-        return list(q) + [None] * (26 - len(q))
+        if isinstance(q, dict): return [q.get(str(i)) for i in range(1, 28)]
+        return list(q) + [None] * (27 - len(q))
     gone = {k for k, v in corr.items() if v.get('remove')}
     for k in gone: Q.pop(k, None)
     for k, v in corr.items():
@@ -229,11 +241,83 @@ def places(spawn, prefer_zone):
                 if pt not in out: out.append(pt)
     return out
 
+# Where Polestar's guides (GPL-3.0, like Waypath+; by the Polestar authors) do a quest's objective: for quests none of
+# the data above has a spot for. Their lines give the spot (@x,y, on the step's or guide's zone unless "map N" says), the
+# objective (quest N.k) and a note ("-- fill the gourd"). Guides on other coordinates ("coords era": exploration and
+# professions) are left out, and so are items you bring rather than go somewhere for ("in your bags", "made by", "bought").
+PS = {}
+PS_VERBS = ('complete', 'use', 'interact', 'explore', 'kill', 'collect', 'talk')
+PS_SKIP = re.compile(r'in your bags|made by|bought|\bbuy\b|vendor|auction house|raid of|play (a )?games?|\binside\b|\braid\b', re.I)
+PS_BRING = re.compile(r'\s*(Bring|Obtain|Acquire|Deliver|Turn in|Earn|Gain)\b')
+PS_NOMAP = {1459, 1460, 1461}   # (the battlegrounds: Alterac Valley, Warsong Gulch, Arathi Basin)
+PS_DUNGEON = set()   # (the area IDs of dungeons and raids: their quests are done inside, where the arrow rests)
+if GUIDES and os.path.isdir(GUIDES):
+    dsrc = open(QDB + 'support/Forever/Zones/dungeons.lua', encoding='utf-8').read()
+    for m in re.finditer(r'^\s*\[(\d+)\]\s*=\s*\{"[^"]*",(\{[\d,]*\}|nil)', dsrc, re.M):
+        PS_DUNGEON.add(int(m.group(1)))
+        PS_DUNGEON |= {int(x) for x in re.findall(r'\d+', m.group(2))}
+    for m in re.finditer(r'\[(\d+)\]\s*=\s*(\d+),\s*--\s*Referenced dungeon area', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read()):
+        PS_DUNGEON.add(int(m.group(1)))
+    zname = {}
+    for m in re.finditer(r'\[(\d+)\]\s*=\s*(\d+),\s*--\s*([^\n]+?)\s*$', open(QDB + 'support/Forever/Zones/areaIdToUiMapId.lua').read(), re.M):
+        zname.setdefault(m.group(3).split(' -> ')[0].strip(), int(m.group(2)))
+    # (WoW Forever's own zones, which QuestieDB's area table doesn't name: their uiMapIDs in the client's UiMap table)
+    zname.update({'Mount Hyjal': 2482, 'Zephras Isle': 2521, 'Riverglades': 2548, "Shen'dralas": 2652, 'Darkspear Islands': 2524})
+    nozone = set()
+    for root, _, files in os.walk(GUIDES):
+        for fn in sorted(files):
+            if not fn.endswith('.guide') or fn.startswith('dungeon-set') or 'collectibles' in root: continue   # (armour sets, mounts and pets)
+            path = os.path.join(root, fn)
+            text = open(path, encoding='utf-8').read()
+            if re.search(r'^coords era', text, re.M): continue
+            gzone = szone = None
+            for n, raw in enumerate(text.splitlines(), 1):
+                s = raw.strip()
+                if not s or s.startswith('#'): continue
+                if not raw.startswith((' ', '\t')):
+                    if s.startswith('zone '): gzone = s[5:].strip()
+                    if s.startswith('step'): szone = None
+                    continue
+                if s.startswith('zone '): szone = s[5:].strip(); continue
+                verb = s.split(' ', 1)[0]
+                if verb not in PS_VERBS: continue
+                code, _, note = s.partition('--')
+                pos = re.search(r'@([\d.]+),([\d.]+)', code)
+                if not pos or PS_SKIP.search(note): continue
+                qs = [(int(a), int(b) if b else 0) for a, b in re.findall(r'quest (\d+)(?:\.(\d+))?', code)]
+                m = re.match(r'complete (\d+)', s)
+                if m: qs.append((int(m.group(1)), 0))
+                mm = re.search(r'\bmap (\d+)', code)
+                zn = szone or gzone or ''
+                zm = re.match(r'map (\d+)$', zn)   # (a zone given by its map: "zone map 2521")
+                mp = int(mm.group(1)) if mm else (int(zm.group(1)) if zm else zname.get(zn))
+                if not mp: nozone.add(szone or gzone); continue
+                if mp in PS_NOMAP: continue
+                for q, k in qs:
+                    PS.setdefault(q, []).append((k, verb, note.strip(), (mp, round(float(pos.group(1)), 1), round(float(pos.group(2)), 1), 0)))
+    print('Polestar guides: spots for %d quests%s' % (len(PS), ('; zones not known: ' + ', '.join(sorted(z for z in nozone if z))) if nozone else ''), file=sys.stderr)
+def ps_label(verb, note, qname):
+    note = re.split(r'\s*\(', note)[0].strip().rstrip(',.;:')
+    if not note: return qname
+    # (a note that names something, "Tree Sprouting Kit", gets the line's verb; one that already says what to do,
+    # "grind the eight cones into the Pine Salve", is the label as it is)
+    pre = {'talk': 'Talk to ', 'kill': 'Kill ', 'use': 'Use ', 'collect': 'Collect '}.get(verb, '') if note[0].isupper() else ''
+    return pre + note if pre else note[0].upper() + note[1:]
+def ps_places(qid, qname):
+    """A quest's spots in Polestar's guides as places: one per objective (quest N.k), in the objectives' order, the
+    spots of the lines that only say where it's finished last; the same spot from several guides once."""
+    groups = {}
+    for k, verb, note, pt in PS.get(qid, []):
+        g = groups.setdefault(k, {'label': None, 'pts': []})
+        if not g['label'] and note: g['label'] = ps_label(verb, note, qname)
+        if not any(p[0] == pt[0] and abs(p[1] - pt[1]) < 1 and abs(p[2] - pt[2]) < 1 for p in g['pts']): g['pts'].append(pt)
+    return [(g['label'] or qname, g['pts'][:8]) for k, g in sorted(groups.items(), key=lambda kv: (kv[0] == 0, kv[0]))]
+
 out, nq, nobj, npts = [], 0, 0, 0
 for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
     reqSkill, minRep, maxRep, nextQ, parentQ, crumbFor, reqSpell, maxLvl, untilDone, startWith, disabledBy = [at(q, i) for i in range(14, 25)]
-    trigger, extras = at(q, 25), at(q, 26)
+    trigger, extras, otext = at(q, 25), at(q, 26), ' '.join(str(t) for t in vals(at(q, 27)) if t)
     races = int(races or 0); classes = int(classes or 0)
     if races and not (races & HORDE): continue
     if qlvl and qlvl > 62: continue
@@ -311,6 +395,11 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             text, pts = at(trigger, 1), places(at(trigger, 2), zone)
             if pts and text:
                 objs.append(('event', text, [], pts[:8], [], None, None)); npts += len(pts[:8])
+        # nothing in the data shows where: Polestar's guides (not for a quest that asks you to bring something, where their
+        # line is only where they had it: armour set pieces, crafted goods, raid drops)
+        if not any(o[3] for o in objs) and not PS_BRING.match(otext) and zone not in PS_DUNGEON:
+            for text, pts in ps_places(int(qid), name or '?'):
+                objs.append(('event', text, [], pts, [], None, None)); npts += len(pts)
     # who gives it (NPC only; item-started quests show up by themselves)
     start = None
     givers = at(starts, 1) or []
@@ -394,6 +483,11 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
                      ','.join('{%d,%.1f,%.1f,%d}' % p for p in si[3]), si[4], ','.join(str(i) for i in si[5]), si[6],
                      (',{%s}' % ','.join('%g' % round(c, 1) for c in si[7])) if si[7] else ''))
     if (sflags or 0) & 1: parts.append('rep=true')
+    # a quest you can only take once you have its items: items to bring and no words for its objectives (Salve via
+    # Hunting, cloth donations, library books: talking to the giver opens the hand-in, Continue greyed out without them)
+    bring = [L(o)[0] for o in (at(objectives, 3) or [])]
+    if bring and not (at(objectives, 1) or at(objectives, 2) or at(objectives, 5)) and not otext.strip():
+        parts.append('bi={%s}' % ','.join('{%d,%d}' % (int(i), REQ.get(int(qid), {}).get(int(i), 1)) for i in bring))
     if ra: parts.append('ra="%s"' % ra)
     if cl: parts.append('cl="%s"' % cl)
     if cl and len(cl) <= 4: parts.append('cq=true')   # a real class quest (not a "most classes" variant)
@@ -410,13 +504,15 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     out.append('[%s]={%s}' % (qid, ','.join(parts)))
 head = ['-- Waypath+ quest objectives: where to finish each quest and where its objectives are.',
         "-- Generated from QuestieDB's WoW Forever data (coordinates already converted to Forever's maps), with the hand-checked",
-        "-- fixes of Polestar's forever-db (corrections layer, CC BY 4.0, by the Polestar authors) on top:",
+        "-- fixes of Polestar's forever-db (corrections layer, CC BY 4.0, by the Polestar authors) on top, and the places where",
+        "-- Polestar's guides (GPL-3.0, by the Polestar authors) do objectives the data has no spot for:",
         '-- https://github.com/Questie/QuestieDB  ·  rebuild with tools/objectives.',
         '-- [questID] = { e = {uiMapID, x, y, finisher}, s = {uiMapID, x, y, giver}, n = name, r = required level, l = quest level,',
         '--   pg = {all of these first}, ps = {any of these first}, x = {done one of these: this one is gone},',
         '--   sk = {skill, rank}, rp = {faction, min rep}, rx = {faction, max rep}, nx = next in chain (taken or done: this one is gone),',
         '--   pa = parent quest (only while it is in your log), bc = breadcrumb for (that one taken or done: gone), sp = spell known (negative: not known),',
         '--   mx = max level, uc = gone once this is done, sw = only once this is taken or done, dq = {not while these are in your log},',
+        '--   bi = {{item, how many}, ...}: taken only with these items in your bags (talking to the giver hands them in),',
         '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
         '--   (e and s: a 5th value is the NPC\'s ID)',
