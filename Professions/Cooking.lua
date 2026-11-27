@@ -33,7 +33,7 @@ K.plan = {
   { from = 175, to = 225, craft = "Roast Raptor or Mithril Headed Trout", n = 55, mats = "1 Raptor Flesh and 1 Hot Spices, or 1 Raw Mithril Head Trout each" },
   { from = 225, to = 225, train = "Artisan: Clamlette Surprise for Dirge Quikcleave in Gadgetzan (bring 12 Giant Egg and 10 Zesty Clam Meat from the Auction House, and 20 Alterac Swiss from Innkeeper Abeqwa in Freewind Post or Dwane Wertle in Dustwallow Marsh, or the Auction House, so you only go once)" },
   { from = 225, to = 285, craft = "Spotted Yellowtail or Filet of Redgill", n = 72, mats = "1 Raw Spotted Yellowtail or Raw Redgill each (recipes: Gikkix, Tanaris)" },
-  { from = 285, to = 300, craft = "Nightfin Soup", n = 18, mats = "1 Raw Nightfin Snapper, 1 Refreshing Spring Water each" },
+  { from = 285, to = 300, craft = "Nightfin Soup", n = 18, mats = "1 Raw Nightfin Snapper, 1 Refreshing Spring Water each. The guide also cooks 69 more Filet of Redgill here (1 Raw Redgill each)" },
 }
 K.mats = {}
 RG.RegisterProfession("Cooking", K)
