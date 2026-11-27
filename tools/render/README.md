@@ -18,6 +18,7 @@ CI. Requirements (WSL Ubuntu): `lua5.1`, and `sudo apt install python3-pil pytho
 | `render.py` | Draws a scene (or a folder of them) to PNG: textures, texture coordinates, rotation, colors, gradients, blend modes, masks, backdrops, text with the game's fonts, shadows and outlines, and models. |
 | `model.py` | Draws a creature (M2 model, its skin, textures and geosets) as a model frame shows it. `python3 tools/render/model.py DISPLAYID` draws one on its own. |
 | `camera.json` | The model frame's camera rules (field of view, framing, which calls set the camera again, lighting). Calibration changes these numbers. |
+| `camfix.py` | Cards whose creature model has no body camera of its own, and the camera distance (`RG.ARCADE_CAMFIX`) at which each fits. Run after new cards are added: `run.lua --shoot tools/render/scenes/npcs.lua --out DIR`, then `camfix.py DIR/npc.json`. |
 | `check_cards.py` | Reads a drawn card sweep and flags blank, over-zoomed, tiny and inconsistent models; writes `report.md` and contact sheets. |
 | `casc.py` | Reads files from the local install by FileDataID or path. |
 | `modeldata.py` | Display ID → model file and creature → display, from the `data/wago` branch (same build as the client). |
@@ -48,14 +49,18 @@ A scene script gets `T` with: `T.slash("/wp arcade")`, `T.step(seconds)`, `T.cli
   add-on draws almost everything itself, so this rarely matters.
 - Models are drawn in their bind pose, not the standing animation, with simple lighting and no particles. That's
   enough to see framing (what part of the creature is in the card), which is what goes wrong.
-- **The model camera is the part to calibrate.** The add-on found that the game fixes a model's camera at the
-  frame size it had when the camera was last set (Arcade.lua, `ensureModel`). A card that loads its model while
-  small and then grows shows a zoomed-in middle of the creature. `camera.json` carries that rule
-  (`camera_fixed_at_fit_size`, `camera_resets_on`) and the framing numbers.
+- **The model camera** follows what calibration against game video showed (2026-11-27, 18 collection cards, all
+  matching): a model frame looks through the model's own "character info" camera (type 1 in the model file) and
+  moves toward its portrait camera (type 0) as `SetPortraitZoom` goes from 0 to 1. Those cameras store a diagonal
+  field of view. `SetCamDistanceScale` moves the camera back along its line. A model with no character info
+  camera gets a fallback that frames it too close (Tepolar, the centaurs): `camfix.py` finds those cards and a
+  camera distance (`RG.ARCADE_CAMFIX`) at which they fit. The fallback itself is tuned on one card (Tepolar).
+- The add-on found that the game fixes a model's camera at the frame size it had when the camera was last set
+  (Arcade.lua, `ensureModel`). `camera.json` carries that rule (`camera_fixed_at_fit_size`, `camera_resets_on`).
 
 ## Calibration
 
-Take these screenshots in game once, with the UI at its default scale:
+Done once against a video of the collection (see above). To check again, take these screenshots in game, with the UI at its default scale:
 1. The collection window on a page with a few creature cards.
 2. The big card view of three of them (one humanoid, one large creature like a dragon, one small one).
 3. A pack reveal after "Turn all", once it has settled.

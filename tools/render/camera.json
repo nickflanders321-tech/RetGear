@@ -24,5 +24,7 @@
   "from_box_front": false,
   "_status": "provisional (2026-11-27): set so the add-on's own hand-tuned zoom and camera numbers fill the art window; not yet checked against game screenshots",
   "frame_by": "sequence",
-  "pose": true
+  "pose": true,
+  "body": "model_camera",
+  "fov_mode": "diagonal"
 }

@@ -433,9 +433,31 @@ def camera_for(m, it, w, h, k, rules):
         head = np.array([center[0], center[1], hi[2] - height * 0.12])
         por_tgt = head
         por_eye = head + np.array([height * 0.55, 0, 0])
+    body_fov = por_fov = fov
+    # the model's own cameras, as the game uses them: its "character info" camera (type 1) for the whole body, its
+    # portrait camera (type 0) for SetPortraitZoom(1); the zoom goes between the two
+    if rules.get("body") == "model_camera":
+        bc = next((c for c in m.cameras if c["type"] == 1), None)
+        if bc:
+            body_eye, body_tgt = np.array(bc["pos"], float), np.array(bc["target"], float)
+            body_fov = bc["fov"] or fov
+        else:
+            # (no body camera: the fallback, tuned on a model that lacks one, Tepolar)
+            d2 = (height / 2) / math.tan(fov / 2) * rules.get("no_body_camera_margin", 1.0)
+            body_eye = np.array([max(center[0] + d2, hi[0] + 0.1 * height), center[1], center[2] + rules.get("no_body_camera_raise", 0) * height])
+            body_tgt = np.array([center[0], center[1], center[2] + rules.get("no_body_camera_raise", 0) * height])
+        if pc and pc.get("fov"):
+            por_fov = pc["fov"]
     z = max(0.0, min(1.0, float(it.get("zoom") or 0)))
     eye = body_eye * (1 - z) + por_eye * z
     tgt = body_tgt * (1 - z) + por_tgt * z
+    fov = body_fov * (1 - z) + por_fov * z
+    # the model's cameras store a diagonal field of view: the vertical one depends on the frame's shape
+    mode = rules.get("fov_mode", "vertical")
+    if mode == "diagonal":
+        fov = 2 * math.atan(math.tan(fov / 2) / math.hypot(1, w / max(1, h)))
+    elif mode == "horizontal":
+        fov = 2 * math.atan(math.tan(fov / 2) / max(1e-3, w / max(1, h)))
     # the camera distance scale: back along the view line
     cam = float(it.get("cam") or 1)
     eye = tgt + (eye - tgt) * cam
@@ -498,7 +520,8 @@ def render(fid, disp, it, w, h, k=1.0, supersample=2):
         m2.bbox = list(corners.min(0)) + list(corners.max(0))
     else:
         m2.bbox = list(lo) + list(hi)
-    m2.cameras = [dict(cc, pos=tuple(np.array(cc["pos"]) * s), target=tuple(np.array(cc["target"]) * s)) for cc in m.cameras]
+    cs = float((disp or {}).get("scale") or 1) if rules.get("use_display_scale") else 1.0
+    m2.cameras = [dict(cc, pos=tuple(np.array(cc["pos"]) * cs), target=tuple(np.array(cc["target"]) * cs)) for cc in m.cameras]
     eye, tgt, fov, mag = camera_for(m2, it, w, h, k, rules)
     r, u, fw = look_at(eye, tgt)
     rel = p - eye
