@@ -18,6 +18,7 @@ local P = require("play")
 local I = require("items")
 local Inv = require("inventory")
 local C = require("checks")
+local Look = require("look")
 
 local opts = { toc = "Waypath.toc", seconds = 15 }
 local FLAGS = { chat = true, verbose = true, login_only = true, play = true, checks = true }
@@ -55,6 +56,7 @@ if opts.check_one then
   for _, a in ipairs(check.addons or {}) do W.otherAddons[a] = true end
 end
 
+Look.install(W, HERE)
 local ok, err = pcall(W.setup, { class = opts.class, race = opts.race, faction = opts.faction, level = opts.level,
   map = opts.map, money = opts.money, version = version })
 if not ok then io.stderr:write(tostring(err) .. "\n") os.exit(2) end
@@ -161,6 +163,14 @@ if opts.dump_route then
   fh:close()
   io.stdout:write("route written to " .. opts.dump_route .. " (" .. #entries .. " entries)\n")
   os.exit(0)
+end
+
+-- --shoot FILE --out DIR: run a scene script (tools/render/scenes/*.lua) that puts things on screen and writes
+-- scenes (draw lists) into DIR for tools/render/render.py, then stop. See tools/render/README.md.
+if opts.shoot then
+  local S = require("shoot")
+  local okS = S.run(W, Look, RG, opts)
+  os.exit(okS and 0 or 1)
 end
 
 -- after login: drive everything (drive.lua)

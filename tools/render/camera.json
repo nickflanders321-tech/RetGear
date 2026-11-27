@@ -1,0 +1,28 @@
+{
+  "_about": "How a model frame (DressUpModel) frames its model. Tuned against real screenshots: tools/render/README.md, Calibration.",
+  "fov": 0.75,
+  "body_margin": 1.0,
+  "use_display_scale": false,
+  "camera_fixed_at_fit_size": true,
+  "camera_resets_on": [
+    "(model loaded)",
+    "SetPortraitZoom",
+    "SetCamDistanceScale",
+    "SetPosition"
+  ],
+  "light_dir": [
+    -0.4,
+    0.5,
+    0.8
+  ],
+  "ambient": 0.55,
+  "diffuse": 0.55,
+  "hide_groups": [
+    15
+  ],
+  "fit": "box",
+  "from_box_front": false,
+  "_status": "provisional (2026-11-27): set so the add-on's own hand-tuned zoom and camera numbers fill the art window; not yet checked against game screenshots",
+  "frame_by": "sequence",
+  "pose": true
+}

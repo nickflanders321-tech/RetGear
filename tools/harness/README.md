@@ -65,6 +65,13 @@ actual saved data.
 **Checking a change.** Run the commands that reach the code you changed (`--cmd`), or the whole thing. A
 `--coverage` run shows whether the changed lines ran at all.
 
+## Seeing it: scenes and pictures
+
+`look.lua` gives every widget real layout (anchors, scale, text measured with the real fonts) and records how it's
+drawn. `--shoot SCRIPT --out DIR` runs a scene script and writes what is on screen as a draw list, and
+`tools/render/render.py` turns that into a PNG: the windows, the cards and the 3D models, from the local game
+install. See `tools/render/README.md`.
+
 ## What a clean run means, and what it doesn't
 
 A clean run means nothing the harness can reach throws a Lua error or writes to the game's things. It does
@@ -75,7 +82,7 @@ A clean run means nothing the harness can reach throws a Lua error or writes to 
   and mail are around 30 to 50% covered. The harness also checks that nothing crashes, not that the output is
   right.
 - Positions are fake. Every map position is the middle of the map, so distances come out as 0 yd.
-- Nothing is drawn, so layout bugs are invisible.
+- Nothing is drawn unless you ask for it (`--shoot`, `tools/render`), so a plain run doesn't see layout bugs.
 - An API the harness doesn't model answers generically: 0 for counts (`GetNum...`, `...Num...`, `...Count`,
   money and cost), false for `Is.../Can.../Has...`, nil otherwise. `--verbose` lists these. If the add-on starts
   using a new game function, add it to `wow.lua`. Either give it a real stub, or put its name in the `GENERIC` list

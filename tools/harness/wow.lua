@@ -1265,6 +1265,10 @@ function W.makeGameFrame(name)
   end
 end
 
+-- For look.lua (layout, drawing state, the scene a renderer draws): the widget state and methods
+W.S, W.Methods, W.visible, W.makeRegion, W.newWidget, W.allFrames, W.TEMPLATES = S, Methods, visible, makeRegion, newWidget, frames, TEMPLATES
+W.schedule = schedule
+
 -- Saved variables: the game sets them after the files have run and just before ADDON_LOADED.
 function W.setSaved(name, value) G[name] = value end
 function W.getSaved(name) return G[name] end
