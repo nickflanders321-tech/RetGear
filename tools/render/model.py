@@ -322,6 +322,9 @@ def load_tex(fid):
         return None
     if fid in _tex:
         return _tex[fid]
+    if isinstance(fid, tuple):
+        _tex[fid] = composite(fid)
+        return _tex[fid]
     t = None
     try:
         import io
@@ -345,25 +348,69 @@ def texture_for(m, ti, disp):
         tex = (disp or {}).get("tex") or []
         k = ty - 11
         return tex[k] if k < len(tex) and tex[k] else None
-    if ty == 1 and disp and disp.get("extra"):
-        ex = data()["extra"].get(disp["extra"])
-        if ex:
-            for key in ("hdbake", "bake"):
-                f = data()["texfile"].get(ex.get(key) or 0)
-                if f:
-                    return f
+    ex = extra_for(disp)
+    if ty == 1 and ex:
+        for key in ("hdbake", "bake"):
+            f = data()["texfile"].get(ex.get(key) or 0)
+            if f:
+                return f
+    if ex and (ex.get("tex") or {}).get(str(ty)):
+        # hair (6), eyes (19) and the rest: the customization's layers (modeldata.customizations)
+        lay = ex["tex"][str(ty)]
+        return lay[0][0] if len(lay) == 1 else tuple(tuple(l) for l in lay)
     return None
+
+
+def extra_for(disp):
+    return data()["extra"].get(disp["extra"]) if disp and disp.get("extra") else None
+
+
+def composite(layers):
+    """Texture layers stacked bottom first; each later one over the earlier ones by its alpha (resized to the
+    bottom layer). Only plain alpha blending (mode 1) is drawn: the other modes are rare overlays."""
+    base = load_tex(layers[0][0])
+    if base is None:
+        return None
+    out = base.copy()
+    for fid, blend in layers[1:]:
+        t = load_tex(fid)
+        if t is None or blend != 1:
+            continue
+        if t.shape[:2] != out.shape[:2]:
+            from PIL import Image
+            img = Image.fromarray((t * 255).astype(np.uint8)).resize((out.shape[1], out.shape[0]))
+            t = np.asarray(img, dtype=np.float32) / 255.0
+        a = t[..., 3:4]
+        out[..., :3] = t[..., :3] * a + out[..., :3] * (1 - a)
+    return out
 
 
 # --------------------------------------------------------------------------------------------------
 # which parts show (geosets)
 # --------------------------------------------------------------------------------------------------
-def visible_subs(subs, rules):
+CHAR_DEFAULT_GEOSET = {17: 0, 32: 2}
+
+
+def visible_subs(subs, rules, ex=None):
     ids = sorted({s["id"] for s in subs})
     show = set()
     groups = {}
     for i in ids:
         groups.setdefault(i // 100, []).append(i)
+    if ex and ex.get("geo") is not None:
+        # a humanoid NPC (character model): its customization picks hair, beard, ears, face...; every other group
+        # shows its default, xx01 (none of them for the groups the model has no xx01 for). Id 0 hides a group.
+        # Except: the eye glows (17: death knight and primalist eyes) show only when an eye color picks them, and the
+        # face (32) is 3202 in every race's model (3201 is a small stub; human face shapes pick 2-4).
+        geo = {int(k): v for k, v in ex["geo"].items()}
+        show.add(0)
+        for g, lst in groups.items():
+            if g in rules.get("hide_groups", []):
+                continue
+            want = g * 100 + geo.get(g, CHAR_DEFAULT_GEOSET.get(g, 1))
+            if want in lst and (g > 0 or geo.get(0)):
+                show.add(want)
+        return show
     for g, lst in groups.items():
         if g == 0:
             show.add(0) if 0 in lst else None
@@ -540,7 +587,7 @@ def render(fid, disp, it, w, h, k=1.0, supersample=2):
     color = np.zeros((H, W, 3), np.float32)
     alpha = np.zeros((H, W), np.float32)
     zbuf = np.full((H, W), np.inf, np.float32)
-    show = visible_subs(subs, rules)
+    show = visible_subs(subs, rules, extra_for(disp))
     def blended(i):
         mi = batches[i]["mat"]
         mode = BLEND.get(m.materials[mi][1], "opaque") if mi < len(m.materials) else "opaque"

@@ -3,7 +3,8 @@
 From the data/wago branch (the client's own DB2 tables, the same build as the install):
   display  CreatureDisplayInfo.ID -> { model FileDataID, creature model scale, texture variations, extra display id }
   creature Creature.ID -> its first display id
-  extra    CreatureDisplayInfoExtra.ID -> { race, sex, baked texture material id }
+  extra    CreatureDisplayInfoExtra.ID -> { race, sex, baked texture material id, geo, tex } (geo and tex: hair,
+           face and the rest, see customizations())
 
     python3 tools/render/modeldata.py
 """
@@ -41,6 +42,60 @@ def num(v, f=int):
         return f(v)
     except (TypeError, ValueError):
         return 0
+
+
+def customizations(extra, texfile):
+    """What a humanoid NPC looks like besides its baked skin, added to each extra display (in place):
+      geo  {geoset group: id}: the parts its choices pick (hair style 0/6 -> geoset 6, beard 1/5 -> 105; id 0 hides the
+           group). Groups not named show their default (xx01).
+      tex  {texture type: [[file, blend], ...]}: the layers of every texture slot other than the baked skin (type 6
+           hair, 19 eyes, ...), bottom first, as the race's texture layout stacks them.
+    From the client's customization tables (CreatureDisplayInfoOption -> ChrCustomizationChoice -> Element ->
+    Geoset / Material, and ChrModelTextureLayer for the slots), fetched from wago.tools for the same build.
+    A material that belongs to another choice (a hair style's texture for each hair color) is used only when that
+    other choice is picked too."""
+    chosen = {}
+    for r in wago_table("CreatureDisplayInfoOption"):
+        chosen.setdefault(num(r["CreatureDisplayInfoExtraID"]), set()).add(num(r["ChrCustomizationChoiceID"]))
+    elements = {}
+    for r in wago_table("ChrCustomizationElement"):
+        elements.setdefault(num(r["ChrCustomizationChoiceID"]), []).append(r)
+    geoset = {num(r["ID"]): (num(r["GeosetType"]), num(r["GeosetID"])) for r in wago_table("ChrCustomizationGeoset")}
+    material = {num(r["ID"]): (num(r["ChrModelTextureTargetID"]), num(r["MaterialResourcesID"])) for r in wago_table("ChrCustomizationMaterial")}
+    chrmodel = {(num(r["ChrRacesID"]), num(r["Sex"])): num(r["ChrModelID"]) for r in wago_table("ChrRaceXChrModel")}
+    layout = {num(r["ID"]): num(r["CharComponentTextureLayoutID"]) for r in wago_table("ChrModel")}
+    layers = {}
+    for r in wago_table("ChrModelTextureLayer"):
+        ty = num(r["TextureType"])
+        if ty == 1:
+            continue    # (the skin: baked into one texture for an NPC)
+        for k in ("ChrModelTextureTargetID_0", "ChrModelTextureTargetID_1"):
+            if num(r[k]):
+                layers.setdefault(num(r["CharComponentTextureLayoutsID"]), []).append((ty, num(r["Layer"]), num(r["BlendMode"]), num(r[k])))
+    n = 0
+    for eid, ex in extra.items():
+        picks = chosen.get(eid)
+        if not picks:
+            continue
+        geo, targets = {}, {}
+        for c in sorted(picks):
+            for e in elements.get(c, []):
+                rel = num(e["RelatedChrCustomizationChoiceID"])
+                if rel and rel not in picks:
+                    continue
+                g = geoset.get(num(e["ChrCustomizationGeosetID"]))
+                if g:
+                    geo[g[0]] = g[1]
+                mt = material.get(num(e["ChrCustomizationMaterialID"]))
+                if mt and texfile.get(mt[1]):
+                    targets[mt[0]] = texfile[mt[1]]
+        tex = {}
+        for ty, layer, blend, target in sorted(layers.get(layout.get(chrmodel.get((ex["race"], ex["sex"]))), []), key=lambda l: (l[0], l[1])):
+            if target in targets:
+                tex.setdefault(ty, []).append([targets[target], blend])
+        ex["geo"], ex["tex"] = geo, tex
+        n += 1
+    return n
 
 
 def main():
@@ -88,6 +143,11 @@ def main():
         print("(no TextureFileData: humanoid NPCs are drawn without skin: %s)" % e)
     with open(os.path.join(CACHE, "texturefiles.json"), "w") as f:
         json.dump(texfile, f)
+    try:
+        n = customizations(extra, texfile)
+        print("customizations: %d humanoid displays with hair, face and geosets" % n)
+    except Exception as e:
+        print("(no customization tables: humanoid NPCs are drawn without hair: %s)" % e)
     with open(os.path.join(CACHE, "models.json"), "w") as f:
         json.dump({"display": display, "creature": creature, "extra": extra}, f)
     # the harness only needs display -> file and creature -> display
