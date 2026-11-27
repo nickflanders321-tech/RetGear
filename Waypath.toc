@@ -66,6 +66,7 @@ Professions\Generated.lua
 Profile.lua
 Waypoints.lua
 Objectives.lua
+ObjectModels.lua
 QuestNotes.lua
 CommunityQuests.lua
 Core.lua
