@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.63.1
+- **No more "buy it at the auction house" for items you can't buy there.** WoW Forever's new items (Mote of Unstable Magic, Darkspear Islands Mark of Honor, Moonsilver Blade, A Luddite's Guide) were read as tradable, so the guide sent you shopping for them. Whether an item binds now comes from the game's own item data, and only items that can be sold get an auction house step.
+- **Cards: creatures shown whole.** Sixteen card creatures were framed too close (Tepolar showed his torso with his head cut off, and the centaurs the same): they now fit their card.
+- **The tracker's "+ More" row reads right.** The class quests hint ran two names together ("Class questsDeathknell class quests"); it now says "Deathknell class quests: 4 to do".
+
 ## v1.63.0
 - **The route has the quests other guides do and it used to miss.** WoW Forever's Camping quests (The Adventurer, The Great Outdoors, Camping 101 for your professions), starting-area quests filed under the next zone (Wayward Weapons, Grace of An'she and Mu'sha, A Light in the Darkness, Nature's Call), your capital's early quests (Hidden Enemies, Meal Appeal and the rest of Orgrimmar's), and quests that start from an object or an item.
 - **Quests that start from an item.** When the item always drops (Gazz'uz's Eye of Burning Shadow) or lies in a chest (the Aged Envelope in Benedict's Chest), the step sends you there: "Kill Gazz'uz and loot Eye of Burning Shadow: it starts this quest." When it only sometimes drops, the quest waits in the step where it's handed in and shows up once you have it.
