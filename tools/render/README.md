@@ -100,6 +100,19 @@ A scene script gets `T` with: `T.slash("/wp arcade")`, `T.step(seconds)`, `T.cli
 - The add-on found that the game fixes a model's camera at the frame size it had when the camera was last set
   (Arcade.lua, `ensureModel`). `camera.json` carries that rule (`camera_fixed_at_fit_size`, `camera_resets_on`).
 
+## Your own screen
+
+The harness draws a 1920 x 1080 screen at UI scale 1 unless told otherwise. To match a real player's screen (for
+comparing with their screenshots), give it their resolution and UI scale, and draw at that scale:
+
+```sh
+lua5.1 tools/harness/run.lua --shoot tools/render/scenes/ui.lua --out DIR --screen 2560x1440 --ui-scale 0.64
+python3 tools/render/render.py DIR --scale 0.64        # 2560 x 1440 pictures, the windows at their real size
+```
+
+In game, `/run print(GetCVar("useUiScale"), GetCVar("uiScale"), UIParent:GetEffectiveScale(), GetPhysicalScreenSize())`
+prints both (the third number is the UI scale actually used: 0.64 on a 2560 x 1440 screen with the default setting).
+
 ## Calibration
 
 Done once against a video of the collection (see above). To check again, take these screenshots in game, with the UI at its default scale:
