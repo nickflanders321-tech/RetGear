@@ -23,6 +23,24 @@
 - **What to follow, in Settings.** Tracker starts with what it follows, the three side by side (Ordered guide, Zone quests, My quest log) and you pick one with a click. Smart and Guided are now one **Ordered guide** with a **Smart zone order** switch (on: it picks the zone that suits your level, where you are and your quest log; off: the route's own order).
 - **Setup**: the option you pick is highlighted, and "What to follow" (the guide, zone quests or your quest log) no longer runs off the edge.
 
+## v1.62.8
+- Blacksmithing now matches the updated WoW Forever guide: 32 Rough Grinding Stones for 75-80 (no more Silver Rods), and 28 Solid Sharpening Stones to 185 before 15 Golden Scale Bracers.
+- Cooking 285-300: the guide also cooks 69 Filet of Redgill alongside the Nightfin Soup.
+- Quest data updated from WoW Forever's latest game data.
+
+## v1.62.7
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
+## v1.62.6
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
+## v1.62.5
+- Alchemy: make one Philosopher's Stone at 234 (keep it for transmutes); Pestlezugg's Iron to Gold and Mithril to Truesilver transmutes are listed as an alternative for 225-235.
+- Engineering 280-300 now matches the updated WoW Forever guide: 8 more Thorium Widgets to 286, then 15 Thorium Tubes (and 14 Thorium Shells).
+- Leatherworking: the Blue Suede Hat alternative now starts with 15 Runic Leather Headbands to 280.
+- First Aid: 47 Runecloth Bandages for 260-290.
+- Quest, map and card data updated from WoW Forever's latest game data.
+
 ## v1.62.4
 - Engineering 175-195 now matches the updated WoW Forever guide: 61 Solid Blasting Powder to 193 (enough for the triggers at 200 and the bombs at 238), then the Gyromatic Micro-Adjustor and only 3 Iron Grenades.
 - Checked against WoW Forever build 1.60.1.71139: no changes needed.

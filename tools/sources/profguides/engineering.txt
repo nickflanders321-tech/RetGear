@@ -26,8 +26,8 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 225-300
 84x Mithril Bar
 88x Dense Stone
-186x Thorium Bar
-20x Runecloth
+174x Thorium Bar
+28x Runecloth
 Schematic: Thorium Widget (260)
 Schematic: Thorium Grenade (260)
 Schematic: Thorium Tube (275) - (Binds when picked up)
@@ -80,6 +80,8 @@ Artisan Engineering (200-300)
 20x Thorium Widget - 60 Thorium Bar, 20 Runecloth
 10x Thorium Widget - 30 Thorium Bar, 10 Runecloth
 10x Thorium Grenade - 10 Thorium Widget, 30 Thorium Bar, 30 Dense Blasting Powder, 30 Runecloth
-280-300
-21x Thorium Tube - 126 Thorium Bar
-15x Thorium Shells - 30 Thorium Bar, 15 Dense Blasting Powder
+280-286
+8x Thorium Widget - 24 Thorium Bar, 8 Runecloth
+286-300
+15x Thorium Tube - 90 Thorium Bar
+14x Thorium Shells - 28 Thorium Bar, 14 Dense Blasting Powder

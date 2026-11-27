@@ -9,6 +9,10 @@ cross-check warnings, or from players' bug reports). Keep entries short and conc
 
 - Player request #10 (feature, waiting on the owner's decision): a WeakAuras-style reminder for missing buffs and
   consumables, and working as a companion to the OpenXP leveling add-on. Don't build either without the owner's go-ahead.
+- Mining smelting route (waiting on the owner's decision, noted 2026-11-26 from #65): wow-professions.com's Mining guide
+  levels 1-175 mostly by smelting (140 Copper, 70 Tin, 70 Bronze, 43 Silver to 120, 20 Iron to 138, 25 Gold 155-175, mining
+  120-125 and 138-155). Professions/Mining.lua's plan is gathering only; adding smelt steps would change what the Mining
+  tab shows and counts, so it waits for the owner.
 
 1. **Mount Hyjal still has no quests (Riverglades done in v1.31.0, Shen'dralas in v1.32.0):** QuestieDB's Forever data has only one
    Alliance quest there and no guide lists Horde hubs yet. Known so far: Steamwheedle ship

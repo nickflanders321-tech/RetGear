@@ -2,8 +2,8 @@ WoW Forever Blacksmithing Leveling Guide 1-300
 WoW Forever Blacksmithing Leveling Guide 1-300
 This WoW Forever Blacksmithing leveling guide will show you the fastest and cheapest way to level your Blacksmithing skill from 1 to 300. You will also find every trainer location and where to train Blacksmithing past 75, 150 and 225.
 1-150
-90x Rough Stone
-20x Silver Bar
+154x Rough Stone
+15x Silver Bar
 132x Coarse Stone
 300x Bronze Bar
 60x Heavy Stone
@@ -12,9 +12,9 @@ This WoW Forever Blacksmithing leveling guide will show you the fastest and chea
 150-210
 180x Iron Bar
 30x Green Dye (vendor)
-32x Solid Stone
-100x Steel Bar (if you have Mining: 100 Iron Bar + 100 Coal )
-60x Heavy Stone
+60x Solid Stone
+75x Steel Bar (if you have Mining: 75 Iron Bar + 75 Coal )
+30x Heavy Stone
 204x Mithril Bar
 210-245
 1x Plans: Mithril Spurs
@@ -44,8 +44,7 @@ Apprentice Blacksmithing (1-75)
 36x Coarse Grinding Stone - 72 Coarse Stone
 Journeyman Blacksmithing (75-140)
 75-80
-5x Silver Rod - 5 Silver Bar, 10 Rough Grinding Stone
-If one Silver Bar costs more than 10 Copper Bars, make 5x Runed Copper Belt instead (10 Copper Bar each).
+32x Rough Grinding Stone - 64 Rough Stone
 80-95
 15x Rough Bronze Leggings - 90 Bronze Bar
 95-100
@@ -63,8 +62,10 @@ Expert Blacksmithing (140-210)
 40x Green Iron Bracers - 240 Iron Bar, 40 Green Dye
 175-180
 8x Solid Grinding Stone - 32 Solid Stone
-180-195
-20x Golden Scale Bracers - 100 Steel Bar, 40 Heavy Grinding Stone
+180-185
+28x Solid Sharpening Stone - 28 Solid Stone
+185-195
+15x Golden Scale Bracers - 75 Steel Bar, 30 Heavy Grinding Stone
 195-210
 17x Mithril Plate Pants - 204 Mithril Bar
 Artisan Blacksmithing (210-300)
