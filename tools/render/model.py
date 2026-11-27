@@ -130,6 +130,12 @@ def parse_m2(raw):
         key, fl, parent, sub = struct.unpack_from("<iIhH", d, o)
         m.bones.append({"parent": parent, "flags": fl, "trans": o + 16, "rot": o + 36, "scale": o + 56,
                         "pivot": struct.unpack_from("<3f", d, o + 76)})
+    # attachment points (helmet 11, shoulders 5 right / 6 left, ...): a bone and a position on it
+    m.attachments = {}
+    na, oa = _arr(d, 240)
+    for i in range(na):
+        aid, bone = struct.unpack_from("<IH", d, oa + 40 * i)
+        m.attachments.setdefault(aid, (bone, struct.unpack_from("<3f", d, oa + 40 * i + 8)))
     m.afid = {}
     if b"AFID" in chunks:
         a = chunks[b"AFID"]
@@ -242,9 +248,15 @@ def find_sequence(m, anim=0):
 
 def pose(m, anim=0):
     """The model's vertices and normals in the first frame of an animation (Stand by default)."""
+    p, n, bounds, _ = pose_bones(m, anim)
+    return p, n, bounds
+
+
+def pose_bones(m, anim=0):
+    """pose(), plus every bone's matrix in that frame (None when the model isn't posed)."""
     si = find_sequence(m, anim)
     if si is None or not m.bones:
-        return m.pos, m.normal, None
+        return m.pos, m.normal, None, None
     sq = m.sequences[si]
     anim_data = None
     if not (sq["flags"] & 0x20):   # (its keys live in an .anim file of their own)
@@ -253,7 +265,7 @@ def pose(m, anim=0):
         if raw:
             anim_data = raw[8:8 + struct.unpack_from("<I", raw, 4)[0]] if raw[:4] == b"AFM2" else raw
         else:
-            return m.pos, m.normal, sq["bounds"]
+            return m.pos, m.normal, sq["bounds"], None
     mats = [None] * len(m.bones)
     for i, b in enumerate(m.bones):
         t = _track_key(m, anim_data, b["trans"], si, "3f", 12) or (0, 0, 0)
@@ -282,7 +294,20 @@ def pose(m, anim=0):
     none = bw.sum(1) < 1e-3
     out[none] = m.pos[none]
     nout[none] = m.normal[none]
-    return out.astype(np.float32), nout.astype(np.float32), sq["bounds"]
+    return out.astype(np.float32), nout.astype(np.float32), sq["bounds"], mats
+
+
+def attachment_matrix(m, mats, aid):
+    """Where an attachment point is in the posed model (4x4), or None when the model has no such point."""
+    a = m.attachments.get(aid)
+    if not a:
+        return None
+    bone, pos = a
+    T = np.eye(4)
+    T[:3, 3] = pos
+    if mats is not None and 0 <= bone < len(mats):
+        return mats[bone] @ T
+    return T
 
 
 _models = {}
@@ -292,9 +317,8 @@ def load_model(fid):
     if fid in _models:
         return _models[fid]
     cp = os.path.join(CACHE, "game", "m2", "%d.pickle" % fid)
-    if os.path.exists(cp):
-        m = pickle.load(open(cp, "rb"))
-    else:
+    m = pickle.load(open(cp, "rb")) if os.path.exists(cp) else None
+    if m is None or not hasattr(m, "attachments"):    # (cached before attachments were read)
         raw = casc().read(fid)
         if not raw:
             raise FileNotFoundError("model file %d is not in the install" % fid)
@@ -354,6 +378,8 @@ def texture_for(m, ti, disp):
             f = data()["texfile"].get(ex.get(key) or 0)
             if f:
                 return f
+    if ty == 2 and ex and (ex.get("items") or {}).get("cape"):
+        return ex["items"]["cape"]
     if ex and (ex.get("tex") or {}).get(str(ty)):
         # hair (6), eyes (19) and the rest: the customization's layers (modeldata.customizations)
         lay = ex["tex"][str(ty)]
@@ -402,10 +428,16 @@ def visible_subs(subs, rules, ex=None):
         # shows its default, xx01 (none of them for the groups the model has no xx01 for). Id 0 hides a group.
         # Except: the eye glows (17: death knight and primalist eyes) show only when an eye color picks them, and the
         # face (32) is 3202 in every race's model (3201 is a small stub; human face shapes pick 2-4).
+        # Then its armor (modeldata.equipment): sleeves, robe, boots, gloves, cape... and what its helmet hides.
         geo = {int(k): v for k, v in ex["geo"].items()}
+        items = ex.get("items") or {}
+        worn = {int(k): v for k, v in (items.get("geo") or {}).items()}
+        geo.update(worn)
+        for g in items.get("hide") or []:
+            geo[g] = 0
         show.add(0)
         for g, lst in groups.items():
-            if g in rules.get("hide_groups", []):
+            if g in rules.get("hide_groups", []) and g not in worn:
                 continue
             want = g * 100 + geo.get(g, CHAR_DEFAULT_GEOSET.get(g, 1))
             if want in lst and (g > 0 or geo.get(0)):
@@ -531,11 +563,37 @@ def render(fid, disp, it, w, h, k=1.0, supersample=2):
     verts, idx, subs, batches = m.skin
     W, H = w * supersample, h * supersample
     # pose: scale, facing, position (model space: x forward, y left, z up)
+    mats = None
     if rules.get("pose", True):
-        p, n, seq_box = pose(m, int(it.get("anim") or 0))
+        p, n, seq_box, mats = pose_bones(m, int(it.get("anim") or 0))
         p, n = p.copy(), n.copy()
     else:
         p, n, seq_box = m.pos.copy(), m.normal.copy(), None
+    # what is drawn: the model, then what is attached to it (a humanoid NPC's helmet and shoulders), each placed at
+    # its attachment point. They share one vertex list; the camera frames the model alone, as in game.
+    ex = extra_for(disp)
+    parts = [(m, 0, lambda mm, ti: texture_for(mm, ti, disp), visible_subs(subs, rules, ex))]
+    nmain = len(p)
+    for aid, afid, atex in ((ex or {}).get("items") or {}).get("att") or []:
+        A = attachment_matrix(m, mats, aid)
+        try:
+            am = load_model(afid)
+        except Exception as e:
+            print("attached model %s: %s" % (afid, e), file=sys.stderr)
+            continue
+        if A is None:
+            continue
+        ap, an, _ = pose(am, 0) if rules.get("pose", True) else (am.pos, am.normal, None)
+        Rm = A[:3, :3]
+        ap = (ap.astype(np.float64) @ Rm.T + A[:3, 3]).astype(np.float32)
+        an = an.astype(np.float64) @ Rm.T
+        an = (an / np.maximum(np.linalg.norm(an, axis=1, keepdims=True), 1e-6)).astype(np.float32)
+        def item_tex(mm, ti, atex=atex):
+            ty = mm.textures[ti]["type"]
+            return (mm.txid[ti] if ti < len(mm.txid) else None) if ty == 0 else (atex or None) if ty == 2 else None
+        parts.append((am, len(p), item_tex, visible_subs(am.skin[2], {})))
+        p, n = np.concatenate([p, ap]), np.concatenate([n, an])
+    uv = np.concatenate([pt[0].uv for pt in parts])
     s = float(it.get("scale") or 1) * float((disp or {}).get("scale") or 1) if rules.get("use_display_scale") else float(it.get("scale") or 1)
     p *= s
     f = float(it.get("facing") or 0)
@@ -544,13 +602,20 @@ def render(fid, disp, it, w, h, k=1.0, supersample=2):
     p = p @ R.T
     n = n @ R.T
     pos = it.get("pos") or [0, 0, 0]
-    p += np.array([pos[0] or 0, pos[1] or 0, pos[2] or 0], np.float32)
+    posv = np.array([pos[0] or 0, pos[1] or 0, pos[2] or 0], np.float32)
+    p += posv
     # camera (the box is the posed one, so facing doesn't move the framing)
     m2 = M2()
     m2.__dict__.update(m.__dict__)
-    if not len(p):
-        raise ValueError("no vertices (a model made only of particles?)")
-    lo, hi = p.min(0), p.max(0)
+    if not nmain:
+        import particles as P
+        if not P.emitters(m):
+            # an empty model (an invisible creature, like Dream Fog, whose look is a spell): the game draws nothing
+            return np.zeros((h, w, 4), np.float32)
+        # (only particles: framed by the model's own box)
+        lo, hi = np.array(m.bbox[:3], np.float32), np.array(m.bbox[3:], np.float32)
+    else:
+        lo, hi = p[:nmain].min(0), p[:nmain].max(0)
     # what the camera frames: "sequence" (the animation's own bounds, as the client stores them), "model" (the
     # model's box), else the posed vertices
     src = rules.get("frame_by", "vertices")
@@ -587,38 +652,54 @@ def render(fid, disp, it, w, h, k=1.0, supersample=2):
     color = np.zeros((H, W, 3), np.float32)
     alpha = np.zeros((H, W), np.float32)
     zbuf = np.full((H, W), np.inf, np.float32)
-    show = visible_subs(subs, rules, extra_for(disp))
-    def blended(i):
-        mi = batches[i]["mat"]
-        mode = BLEND.get(m.materials[mi][1], "opaque") if mi < len(m.materials) else "opaque"
+    def blended(pm, bt):
+        mi = bt["mat"]
+        mode = BLEND.get(pm.materials[mi][1], "opaque") if mi < len(pm.materials) else "opaque"
         return mode not in ("opaque", "alphakey")
-    order = sorted(range(len(batches)), key=lambda i: (blended(i), batches[i]["prio"], i))
-    for bi in order:
-        bt = batches[bi]
-        if bt["sub"] >= len(subs):
+    draws = [(pi, bi) for pi, pt in enumerate(parts) for bi in range(len(pt[0].skin[3]))]
+    draws.sort(key=lambda d: (blended(parts[d[0]][0], parts[d[0]][0].skin[3][d[1]]), parts[d[0]][0].skin[3][d[1]]["prio"], d[0], d[1]))
+    for pi, bi in draws:
+        pm, off, texfn, show = parts[pi]
+        pverts, pidx, psubs, pbatches = pm.skin
+        bt = pbatches[bi]
+        if bt["sub"] >= len(psubs):
             continue
-        sub = subs[bt["sub"]]
+        sub = psubs[bt["sub"]]
         if sub["id"] not in show:
             continue
-        mat = m.materials[bt["mat"]] if bt["mat"] < len(m.materials) else (0, 0)
+        mat = pm.materials[bt["mat"]] if bt["mat"] < len(pm.materials) else (0, 0)
         mode = BLEND.get(mat[1], "opaque")
         unlit = mat[0] & 0x1
         two_sided = mat[0] & 0x4
-        ti = m.texture_combos[bt["tcombo"]] if bt["tcombo"] < len(m.texture_combos) else -1
-        fidt = texture_for(m, ti, disp) if 0 <= ti < len(m.textures) else None
+        ti = pm.texture_combos[bt["tcombo"]] if bt["tcombo"] < len(pm.texture_combos) else -1
+        fidt = texfn(pm, ti) if 0 <= ti < len(pm.textures) else None
         tex = load_tex(fidt)
         if tex is None and mode in ("add", "mod", "mod2x"):
             continue
         wv = 1.0
-        if bt["wcombo"] < len(m.weight_combos):
-            wi = m.weight_combos[bt["wcombo"]]
-            if wi < len(m.weights) and m.weights[wi] is not None:
-                wv = m.weights[wi]
+        if bt["wcombo"] < len(pm.weight_combos):
+            wi = pm.weight_combos[bt["wcombo"]]
+            if wi < len(pm.weights) and pm.weights[wi] is not None:
+                wv = pm.weights[wi]
         if wv <= 0.01:
             continue
-        tri = idx[sub["istart"]:sub["istart"] + sub["icount"]]
-        tri = verts[tri].reshape(-1, 3)
-        _raster(tri, sx, sy, cz, m.uv, shade if not unlit else np.ones_like(shade), tex, mode, wv, color, alpha, zbuf, two_sided)
+        tri = pidx[sub["istart"]:sub["istart"] + sub["icount"]]
+        tri = pverts[tri].reshape(-1, 3) + off
+        _raster(tri, sx, sy, cz, uv, shade if not unlit else np.ones_like(shade), tex, mode, wv, color, alpha, zbuf, two_sided)
+    # its particles (particles.py): sprites facing the camera, after the model
+    if rules.get("particles", True):
+        import particles as P
+        for em, cen, half, col, cells in P.spawn(m, mats, seed=int(fid)):
+            cen = (cen * s) @ R.T + posv
+            pv, puv, pcol, ptri = P.quads(em, cen, half * s, col, cells, r, u)
+            rel = pv - eye
+            pcz = rel @ fw
+            with np.errstate(divide="ignore", invalid="ignore"):
+                psx = W / 2 + (rel @ r) * focal / pcz
+                psy = H / 2 - (rel @ u) * focal / pcz
+            ti = em["tex"]
+            tex = load_tex(texture_for(m, ti, disp)) if ti < len(m.textures) else None
+            _raster(ptri, psx, psy, pcz, puv, pcol, P.blob() if tex is None else tex, BLEND.get(em["blend"], "alpha"), 1.0, color, alpha, zbuf, True)
     if supersample > 1:
         # average with premultiplied alpha, so edges don't darken
         pm = (color * alpha[..., None]).reshape(h, supersample, w, supersample, 3).mean(axis=(1, 3))
@@ -679,7 +760,11 @@ def _raster(tri, sx, sy, cz, uv, shade, tex, mode, weight, color, alpha, zbuf, t
         z = 1 / iz
         u = (w0 * uv[va, 0] / cz[va] + w1 * uv[vb, 0] / cz[vb] + w2 * uv[vc, 0] / cz[vc]) * z
         v = (w0 * uv[va, 1] / cz[va] + w1 * uv[vb, 1] / cz[vb] + w2 * uv[vc, 1] / cz[vc]) * z
-        sh = (w0 * shade[va] + w1 * shade[vb] + w2 * shade[vc])
+        if shade.ndim == 2:
+            # (a color and alpha per vertex: particles)
+            sh = w0[:, None] * shade[va] + w1[:, None] * shade[vb] + w2[:, None] * shade[vc]
+        else:
+            sh = (w0 * shade[va] + w1 * shade[vb] + w2 * shade[vc])
         if tex is not None:
             th, tw = tex.shape[:2]
             tx = (np.mod(u, 1.0) * tw).astype(np.int64) % tw
@@ -687,8 +772,12 @@ def _raster(tri, sx, sy, cz, uv, shade, tex, mode, weight, color, alpha, zbuf, t
             s = tex[ty, tx]
         else:
             s = np.tile(np.array([0.55, 0.52, 0.5, 1.0], np.float32), (len(t), 1))
-        rgb = s[:, :3] * sh[:, None]
-        al = s[:, 3] * weight
+        if sh.ndim == 2:
+            rgb = s[:, :3] * sh[:, :3]
+            al = s[:, 3] * weight * sh[:, 3]
+        else:
+            rgb = s[:, :3] * sh[:, None]
+            al = s[:, 3] * weight
         if mode in ("opaque",):
             al = np.ones_like(al) * weight
         if mode == "alphakey":
@@ -722,8 +811,12 @@ def _raster(tri, sx, sy, cz, uv, shade, tex, mode, weight, color, alpha, zbuf, t
                 sel = rank == rk
                 X, Y, C, A = px[sel], py[sel], rgb[sel], al[sel][:, None]
                 if mode == "add":
-                    color[Y, X] = np.clip(color[Y, X] + C * A, 0, 1)
-                    alpha[Y, X] = np.clip(alpha[Y, X] + A[:, 0] * 0.5, 0, 1)
+                    # light added, nothing covered: premultiplied, so over empty background it stays a glow
+                    # (alpha only as much as the brightest channel needs, so stacked glows don't hide what's behind)
+                    P = np.clip(color[Y, X] * alpha[Y, X][:, None] + C * A, 0, 1)
+                    a2 = np.maximum(alpha[Y, X], P.max(1))
+                    color[Y, X] = np.clip(P / np.maximum(a2, 1e-6)[:, None], 0, 1)
+                    alpha[Y, X] = a2
                 elif mode in ("mod", "mod2x"):
                     k2 = 2 if mode == "mod2x" else 1
                     color[Y, X] = np.clip(color[Y, X] * (C * k2 * A + (1 - A)), 0, 1)

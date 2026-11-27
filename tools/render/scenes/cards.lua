@@ -50,8 +50,21 @@ return function(T, opts)
     return cond()
   end
 
+  -- the creature cards: a player's game has long since told the add-on which model each one uses
+  -- (RG.ArcadeResolveCreatures, remembered in WaypathDB.arcade.npcDisp), so they show it with SetDisplayInfo. The same
+  -- answers, from the local install (tools/render/modeldata.py)
+  local cre = T.L.models and T.L.models.creature
+  local learned = {}
+  if cre and RG.ARCADE_DUNGEON_CREATURE then
+    RG.ARCADE_NPC = RG.ARCADE_NPC or {}
+    for name, cid in pairs(RG.ARCADE_DUNGEON_CREATURE) do
+      if cre[cid] and not RG.ARCADE_NPC[name] then RG.ARCADE_NPC[name] = cre[cid]; learned[cid] = cre[cid] end
+    end
+  end
   T.slash("/wp arcade")
   T.step(1)
+  local a = G.WaypathDB and G.WaypathDB.arcade
+  if a then a.npcDisp = a.npcDisp or {}; for cid, d in pairs(learned) do a.npcDisp[cid] = d end end
   local frame = G.WaypathArcade
   if not frame then io.stdout:write("no card window\n") return end
 

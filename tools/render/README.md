@@ -17,11 +17,12 @@ CI. Requirements (WSL Ubuntu): `lua5.1`, and `sudo apt install python3-pil pytho
 | `scenes/*.lua` | Scene scripts. `basic.lua`: the tracker, main window and card window. `cards.lua`: every card through the pack reveal, the collection and the big card view. |
 | `render.py` | Draws a scene (or a folder of them) to PNG: textures, texture coordinates, rotation, colors, gradients, blend modes, masks, backdrops, text with the game's fonts, shadows and outlines, and models. |
 | `model.py` | Draws a creature (M2 model, its skin, textures and geosets) as a model frame shows it. `python3 tools/render/model.py DISPLAYID` draws one on its own. |
+| `particles.py` | A model's particle emitters as one still frame (for `model.py`). |
 | `camera.json` | The model frame's camera rules (field of view, framing, which calls set the camera again, lighting). Calibration changes these numbers. |
 | `camfix.py` | Cards whose creature model has no body camera of its own, and the camera distance (`RG.ARCADE_CAMFIX`) at which each fits. Run after new cards are added: `run.lua --shoot tools/render/scenes/npcs.lua --out DIR`, then `camfix.py DIR/npc.json`. |
 | `check_cards.py` | Reads a drawn card sweep and flags blank, over-zoomed, tiny and inconsistent models; writes `report.md` and contact sheets. |
 | `casc.py` | Reads files from the local install by FileDataID or path. |
-| `modeldata.py` | Display ID → model file and creature → display, from the `data/wago` branch (same build as the client); a humanoid NPC's hair, face and geosets from the customization tables (wago.tools, same build, cached). |
+| `modeldata.py` | Display ID → model file and creature → display, from the `data/wago` branch (same build as the client); a humanoid NPC's hair, face, armor shapes, helmet and shoulders from the customization and item tables (wago.tools, same build, cached); creature displays the game told the add-on. Run it again after playing, to pick up newly learned creatures. |
 | `fonts.py` | Character widths of every font the add-on uses, so text wraps and measures as in game. |
 
 ## Running it
@@ -47,12 +48,25 @@ A scene script gets `T` with: `T.slash("/wp arcade")`, `T.step(seconds)`, `T.cli
   pixel (no kerning).
 - The game's own templates (UIPanelButtonTemplate and the like) only get the pieces the harness models. The
   add-on draws almost everything itself, so this rarely matters.
-- Models are drawn in their bind pose, not the standing animation, with simple lighting and no particles. That's
-  enough to see framing (what part of the creature is in the card), which is what goes wrong.
+- Models are drawn in the first frame of their standing animation, with simple lighting. That's enough to see
+  framing (what part of the creature is in the card), which is what goes wrong.
+- Particles (`particles.py`: fire, smoke, water, glows) are one still frame: each emitter's steady number of
+  particles, at random ages, moved by its speed, spread and gravity, colored, faded and sized by age, drawn as
+  sprites facing the camera with the emitter's blending. Close to the game's look, not exact (no drag, wind,
+  twinkle, spin, tails or ribbons). An empty model (an invisible creature such as Dream Fog, whose look is a
+  spell) draws nothing, as in game.
 - Humanoid NPCs (player-race models) get their baked skin, plus hair, beard, ears, face and eye color from the
   game's customization tables (`modeldata.customizations`). Groups no choice names show xx01, except the face
-  (3202) and eye glows (none). Not drawn yet: armor pieces that change the shape (robes, gloves, boots), helmets
-  and weapons, and the hair a helmet hides.
+  (3202) and eye glows (none).
+- Their armor (`modeldata.equipment`, from NPCModelItemSlotDisplayInfo) switches the parts it changes (sleeves,
+  robe, boots, gloves, belt, tabard, cape: WoW Model Viewer's rules, a robe hiding trousers and boots, gloves the
+  cuffs), and the helmet and shoulder models are drawn at their attachment points. A helmet hides what the game's
+  HelmetGeosetData says (hair, beard, ears). Weapons aren't drawn: a display id has none (SetDisplayInfo shows none
+  in game either).
+- Creature cards the client's Creature table leaves out (most of them) use the display id the game gave the
+  add-on (`WaypathDB.arcade.npcDisp` in the install's SavedVariables, read by `modeldata.learned_creatures`). The
+  card scene starts with those already learned, like a player's game. A creature this PC's game hasn't been asked
+  about yet has no model offline.
 - **The model camera** follows what calibration against game video showed (2026-11-27, 18 collection cards, all
   matching): a model frame looks through the model's own "character info" camera (type 1 in the model file) and
   moves toward its portrait camera (type 0) as `SetPortraitZoom` goes from 0 to 1. Those cameras store a diagonal
