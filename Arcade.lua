@@ -1749,7 +1749,15 @@ end
 -- how far the camera sits back (1 = the game's own framing): dragons, giants and bosses are far bigger than the frame
 local CAM = { [1] = 1.3, [2] = 2.0, [3] = 1.4, [4] = 1.4, [5] = 1.8, [6] = 1.1, [7] = 1.0, [8] = 1.0, [9] = 1.3 }
 -- (a card whose model needs its own distance: name = camera scale)
-RG.ARCADE_CAMFIX = { ["Atiesh"] = 1.3 }
+-- These models have no camera of their own for the whole body (the model file's "character info" camera), so the
+-- game frames them too close: the head or the legs ran off the card (Tepolar and the other centaurs). The distances
+-- are where the whole creature fits, found by tools/render/camfix.py.
+RG.ARCADE_CAMFIX = {
+  ["Atiesh"] = 1.85, ["Highlord Mograine"] = 2.29, ["Spirit of Mograine"] = 2.29, ["Medivh"] = 1.78,
+  ["Tepolar"] = 2.35, ["Cursed Centaur"] = 2.35, ["Staggon"] = 2.35, ["Yor"] = 2.35, ["Wep"] = 2.35, ["Rocklance"] = 2.34,
+  ["Achellios the Banished"] = 2.35, ["Ro'Bark"] = 2.01, ["Princess Theradras"] = 1.89, ["Rage Talon Fire Tongue"] = 2.34,
+  ["Metzen the Reindeer"] = 2.16,
+}
 function RG.ArcadeCamScale(c)
   local k = CAM[c and c.ref or 7] or 1
   if c and (c.tier or 0) >= 4 then k = k * 1.3 end     -- Legendary NPCs are the raid bosses
