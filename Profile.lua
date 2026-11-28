@@ -203,7 +203,11 @@ function RG.QuestBlocked(id, d, isDone, inLog, quick, depth)
   if d.uc and isDone(d.uc) then return why(quick, "no longer offered"), true end
   if d.mx and lvl > d.mx then return why(quick, "only up to level ", d.mx), true end
   -- it starts from an item that only sometimes drops: nothing to go and get (it shows once it's in your log)
-  if not d.s and d.si and d.si[5] ~= 1 then return why(quick, "starts from ", d.si[2] .. " (it may drop)"), true end
+  if not d.s and d.si and d.si[5] ~= 1 then
+    -- (a giver who only turns up now and then, after you kill something: Anywhere But Here's Veteran of the Third War)
+    if d.si[1] == "n" then return why(quick, d.si[2] .. " appears now and then after killing ", table.concat(d.si[3] or {}, " or ")), true end
+    return why(quick, "starts from ", d.si[2] .. " (it may drop)"), true
+  end
   if d.sk and skillsReadable() then
     local name = SKILL_NAME[d.sk[1]]
     local have = name and RG.Skill and RG.Skill(name)

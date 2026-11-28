@@ -528,7 +528,8 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     for o in objs:
         if o[0] == 'object' and o[5]: OBJ_USED.add(int(o[5]))
     # s = where to pick it up (only for quests offered as "new": not repeatables)
-    if start and not ((sflags or 0) & 1):
+    chance = req and req.get('chance')
+    if start and not ((sflags or 0) & 1) and not chance:
         parts.append('s={%d,%.1f,%.1f,%s,%d}' % (start[0][0], start[0][1], start[0][2], lstr(start[1] or ''), start[2]))
     # name, levels and prerequisites for every quest, even ones that start from an
     # item or object or whose giver has no map position (steps, chains and dungeon
@@ -561,6 +562,11 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         parts.append('si={%s,%s,{%s},{%s},%d,{%s},%d%s}' % (lstr(si[0]), lstr(si[1]), ','.join(lstr(m) for m in si[2]),
                      ','.join('{%d,%.1f,%.1f,%d}' % p for p in si[3]), si[4], ','.join(str(i) for i in si[5]), si[6],
                      (',{%s}' % ','.join('%g' % round(c, 1) for c in si[7])) if si[7] else ''))
+    # (requires.json "chance": its giver only turns up now and then, after killing something: a source that doesn't
+    # always appear, like an item that may drop; the guide shows the quest once it's in your log)
+    if chance and start:
+        parts.append('si={"n",%s,{%s},{{%d,%.1f,%.1f,0}},0,{},%d}' % (lstr(start[1] or ''), ','.join(lstr(m) for m in chance['after_killing']),
+                     start[0][0], start[0][1], start[0][2], start[2]))
     if (sflags or 0) & 1: parts.append('rep=true')
     # a quest you can only take once you have its items: items to bring and no words for its objectives (Salve via
     # Hunting, cloth donations, library books: talking to the giver opens the hand-in, Continue greyed out without them)
