@@ -130,6 +130,21 @@ It reports:
 
 `--until-level` (default 20) and `--max-actions` (default 4000) set when it stops.
 
+### One zone in "Zone quests" mode (`--play-zone`)
+
+```sh
+lua5.1 tools/harness/run.lua --race Orc --class MAGE --level 56 --play-zone "Mount Hyjal" [--verbose]
+```
+
+The route bot never uses the plan (`RG.Objective`) that "Zone quests" and the step card follow. This bot
+(`zoneplay.lua`) picks the zone, starts at its first step's waypoint and does what the card says, one thing at a time:
+the card's first item (pick up, hand in, or the objective to work on), at the card's waypoint. Then it looks at the card
+again. It reports as guide problems: a card that heads with something you can't do yet (a hand-in whose objectives
+aren't done), pickups and hand-ins the game refuses, a spot that isn't where the objective is, the card stuck on one
+thing, trips back to a quest giver for something it could have done on the visit before, a quest in the log with no
+place, and a card that sends you somewhere with nothing to do. At the end it lists what the zone has left: quests still
+in the log, and the zone's quests it never took, with the game's reason and what the guide's step says about them.
+
 **Maps.** `sh tools/harness/maps.sh` builds `.cache/maps.lua` from the client's UiMap and UiMapAssignment tables
 (wago.tools, for the build the `data/wago` branch has). It gives each map its real name and parent, so `RG.ZoneName`
 and the guide's zone checks behave as in game. Map points become world positions, so distances are real yards, also

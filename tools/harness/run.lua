@@ -15,6 +15,7 @@ local W = require("wow")
 local D = require("drive")
 local Wd = require("world")
 local P = require("play")
+local ZP = require("zoneplay")
 local I = require("items")
 local Inv = require("inventory")
 local C = require("checks")
@@ -26,6 +27,8 @@ local FLAGS = { chat = true, verbose = true, login_only = true, play = true, che
 --   (--check-one FILE --name NAME --phase run|reload [--world FILE] [--save-world FILE]: one of them; the runner uses it)
 -- --play: instead of the drive, a bot plays the route in a simulated world (world.lua, play.lua)
 --   [--until-level 20] [--max-actions 4000]
+-- --play-zone "Mount Hyjal": instead, a bot does one zone in "Zone quests" mode, following the step card (zoneplay.lua)
+--   [--level 55] [--max-actions 800]
 -- --coverage FILE: note every line of the add-on that runs, and write which lines never did (slower: a line hook)
 local i = 1
 while arg[i] do
@@ -37,6 +40,7 @@ while arg[i] do
   else io.stderr:write("unknown argument " .. a .. "\n(see the top of tools/harness/run.lua)\n") os.exit(2) end
 end
 
+if opts.play_zone then opts.play = true end
 local ROOT = "."
 local function readFile(p) local f = io.open(p, "rb"); if not f then return nil end local s = f:read("*a"); f:close(); return s end
 local toc = readFile(ROOT .. "/" .. opts.toc)
@@ -207,7 +211,7 @@ if check then
   io.stdout:write("CHECK-DONE\t\t\n")
   os.exit(0)
 elseif opts.play then
-  played = P.run(W, Wd, RG, opts, withItems and Inv or nil, I)
+  played = (opts.play_zone and ZP or P).run(W, Wd, RG, opts, withItems and Inv or nil, I)
   W.phase = "logout"
   D.logout(W)
   -- --play-dump FILE: the bot's zone path and class quests, as JSON (tools/audit/compare_guides.py reads it)
@@ -325,6 +329,18 @@ if played then
       out:write("Gear score by the add-on's own scoring, at level " .. table.concat(t, ", ") .. ".\n")
     end
   end
+  if played.zone then
+    out:write(string.format("\nZone quests in %s: %s.\n", played.zone, tostring(played.ended)))
+    local L = played.left or { inLog = {}, notTaken = {} }
+    if #L.inLog > 0 then
+      out:write(string.format("  Still in the log (%d):\n", #L.inLog))
+      for _, l in ipairs(L.inLog) do out:write("    " .. l .. "\n") end
+    end
+    if #L.notTaken > 0 then
+      out:write(string.format("  The zone's quests it never took (%d):\n", #L.notTaken))
+      for _, l in ipairs(L.notTaken) do out:write("    " .. l .. "\n") end
+    end
+  end
   if #played.ground > 0 then
     out:write(string.format("\nLevels the bot had to grind (%d): the route had nothing to do\n", #played.ground))
     for _, g in ipairs(played.ground) do out:write(string.format("  at level %d: %s\n", g.level, g.why)) end
@@ -346,6 +362,12 @@ if played then
     ["flip-flop"] = "gear scoring that contradicts itself (an item and the one it replaced both called upgrades)",
     downgrade = "an \"upgrade\" that made the whole outfit worse",
     starter = "a step waits on a quest that starts from an item or object the bot couldn't take",
+    card = "the step card headed with something you can't do yet",
+    revisit = "back at a quest giver for a quest it could have taken or handed in on its visit before",
+    ["no-spot"] = "a quest in the log the card has no place for",
+    ["plan-error"] = "the plan failed with a Lua error",
+    zone = "zone quests couldn't follow the zone",
+    ["dead-end"] = "the card sends you somewhere with nothing to do there",
   }
   if #played.problems > 0 then
     local byKind, kinds = {}, {}
