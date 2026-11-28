@@ -4,9 +4,10 @@
 --      a camp of shrubs for three quests on their own (about as far, a few yards less walking in all).
 --   2. A Revenge Now Bitter, right after Amalgamated Marrow: decide Felflick's fate (89 yards) and hand in, not the shrubs.
 --   3. Heading for a stop you clicked: The Dying God offered right beside you is picked up first, then back to your stop.
---   4. Barkskin Burrow at Hostile: its quests wait for Balance Through Strength and Unfriendly standing.
+--   4. Barkskin Burrow at Hostile: Barkskin Beginnings waits for Balance Through Strength and Unfriendly standing, the
+--      burrow's other quests for Barkskin Beginnings.
 local INLOG = { 91755, 91923, 92594, 93747, 93759, 95316, 96435 }
-local NOTYET = { 96255, 96322, 96321, 96131, 91881, 94782, 93952 }
+local NOTYET = { 96255, 96322, 96321, 96131, 91881, 94782, 93952, 94504 }
 
 local function current(T)
   local o = T.RG.Objective(true)
@@ -67,8 +68,10 @@ return {
       S.done[93952] = true; W.fire("QUEST_TURNED_IN", 93952, 0, 0); T.step(1)
       T.ok(RG.QuestBlocked(93834, RG.QDATA[93834]) ~= nil, "4. ... and with Balance Through Strength handed in but still Hostile")
       standing = -2900; T.step(1)
-      T.eq(RG.QuestBlocked(93834, RG.QDATA[93834]), nil, "4. Burrow Beetles open at Unfriendly")
-      T.ok(tostring(RG.QuestBlocked(94504, RG.QDATA[94504])):find("Barkskin Burrow") ~= nil, "4. Barkskin Beginnings waits for Neutral")
+      T.eq(RG.QuestBlocked(94504, RG.QDATA[94504]), nil, "4. Barkskin Beginnings open at Unfriendly")
+      T.ok(RG.QuestBlocked(93834, RG.QDATA[93834]) ~= nil, "4. Burrow Beetles still waits, for Barkskin Beginnings")
+      S.done[94504] = true; W.fire("QUEST_TURNED_IN", 94504, 0, 0); T.step(1)
+      T.eq(RG.QuestBlocked(93834, RG.QDATA[93834]), nil, "4. Burrow Beetles open once Barkskin Beginnings is handed in")
     end,
   },
 }
