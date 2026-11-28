@@ -208,6 +208,21 @@ local skipUntil, skipQuest = {}, {}
 function RG.SkipQuest(title) skipQuest[title] = (GetTime and GetTime() or 0) + 600; if RG.MarkObjectiveDirty then RG.MarkObjectiveDirty() end end
 local function taskKey(t) return t.act .. ":" .. tostring(t.id or t.title) .. ":" .. tostring(t.label or "") end
 
+-- the quests that come after a quest in its chain (they need it, or it names them as next): made once
+local followers
+local function questFollowers(id)
+  if not followers then
+    followers = {}
+    for qid, d in pairs(RG.QDATA or {}) do
+      for _, key in ipairs({ "ps", "pg" }) do
+        for _, p in ipairs(d[key] or {}) do followers[p] = followers[p] or {}; table.insert(followers[p], qid) end
+      end
+      if d.nx then followers[qid] = followers[qid] or {}; table.insert(followers[qid], d.nx) end
+    end
+  end
+  return followers[id] or {}
+end
+
 local objGroups   -- (see buildTasks)
 local ptCache, ptN = {}, 0   -- spot -> its point in world coordinates (a spot never moves); emptied now and then (the game's Lua can't drop entries whose value points back at the key)
 local function buildTasks()
@@ -240,6 +255,38 @@ local function buildTasks()
   -- preobtaining a dungeon's quests (DungeonPrep.lua): only its chains, and its own quests are picked up and kept
   local prep = RG.TrackerView and RG.TrackerView() == "dungeon" and RG.PrepWork and RG.PrepWork() or nil
   if prep then mode, zoneName, routeIds = "prep", nil, nil end
+  -- zone quests: the zone's own quests that need a trip out (Premiere Parts, from Kaylaena in Mount Hyjal, is handed in
+  -- to Nami in Everlook, who gives Crate Expectations, which opens four more Hyjal quests). Their hand-ins and pick-ups
+  -- outside the zone are trips, after what's in the zone (tripStops). Quest ID -> its step in the zone's route.
+  local tripIds
+  if mode == "zone" and zoneName then
+    local r0 = RG.CurrentRouteEntry and RG.CurrentRouteEntry()
+    local sq = r0 and r0.zone == zoneName and RG.STEP_QUESTS and RG.STEP_QUESTS[r0.zone .. "|" .. r0.from]
+    if sq then
+      tripIds = {}
+      for i, ids in pairs(sq) do for _, id in ipairs(ids) do if not tripIds[id] or i < tripIds[id] then tripIds[id] = i end end end
+    end
+  end
+  -- does a quest start, have an objective or end in the zone, or lead on to one of the zone's route that does (Aid from
+  -- Moonglade's chain is in Moonglade until The Pact, handed in in Mount Hyjal)?
+  local touchMemo = {}
+  local function touchesZone(id, seen)
+    if touchMemo[id] ~= nil then return touchMemo[id] end
+    local d = RG.QDATA and RG.QDATA[id]
+    if not d then return false end
+    local yes = (d.s and inZone(d.s)) or (d.e and d.e[1] and inZone(d.e)) or false
+    for _, sp in ipairs(not yes and d.si and d.si[4] or {}) do if inZone(sp) then yes = true break end end
+    for _, o in ipairs(not yes and d.o or {}) do for _, sp in ipairs(o[4] or {}) do if inZone(sp) then yes = true break end end end
+    if not yes then
+      seen = seen or {}
+      seen[id] = true
+      for _, f in ipairs(questFollowers(id)) do
+        if tripIds[f] and not seen[f] and touchesZone(f, seen) then yes = true break end
+      end
+    end
+    touchMemo[id] = yes
+    return yes
+  end
   local function wanted(q, id, title)
     id = id or (q and q.id)
     if prep then return (id and (prep.full[id] or prep.keep[id])) and true or false end
@@ -308,7 +355,8 @@ local function buildTasks()
       table.insert(objOf[g.quest], t)
     else
       elsewhere = elsewhere + 1
-      if prep and g.wp0 then
+      -- (zone quests, away on a trip to another continent: the zone's objectives are still to do, back there)
+      if g.wp0 and (prep or (tripIds and inZone(g.wp0))) then
         offOf[g.quest] = true
         off[#off + 1] = { act = "doing", title = g.quest, id = q and q.id, label = g.label, wp = g.wp0, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
       end
@@ -326,7 +374,10 @@ local function buildTasks()
         tasks[#tasks + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], pts = { p }, level = q.level, group = q.group,
           deps = (not q.complete) and objOf[q.title] or nil }
       elseif not p and q.complete then elsewhere = elsewhere + 1 end
+      if not p and tripIds and q.complete then off[#off + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], wp = ewp, level = q.level, group = q.group, step = tripIds[q.id] } end
       if not p and prep and (q.complete or objOf[q.title] or offOf[q.title]) then off[#off + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], wp = ewp, level = q.level, group = q.group } end
+    elseif ewp and tripIds and q.complete and q.id and tripIds[q.id] and wanted(q) and not inZone(ewp) then
+      off[#off + 1] = { act = "turnin", title = q.title, id = q.id, label = ewp[4], wp = ewp, level = q.level, group = q.group, step = tripIds[q.id] }
     end
   end
   -- what a quest in your log asks you to bring and you don't have: from the vendor that sells it (a Flagon of Mead for
@@ -380,7 +431,17 @@ local function buildTasks()
           -- (and a quest you hand in as you take it, its items in your bags: Salve via Hunting)
           if (l.act == "pickup" or l.bi) and l.wp and not picked[l.id] and not byTitle[l.name] and inZone(l.wp) then
             local p = pt(l.wp)
-            if p then picked[l.id] = true; tasks[#tasks + 1] = { act = l.bi and "turnin" or "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level } end
+            if p then picked[l.id] = true; tasks[#tasks + 1] = { act = l.bi and "turnin" or "pickup", title = l.name, id = l.id, label = l.npc, pts = { p }, level = l.level }
+            elseif tripIds then
+              -- (away on another continent: still the zone's, for when you're back)
+              picked[l.id] = true
+              off[#off + 1] = { act = l.bi and "turnin" or "pickup", title = l.name, id = l.id, label = l.npc, wp = l.wp, level = l.level, step = i }
+            end
+          elseif (l.act == "pickup" or l.bi) and l.wp and tripIds and not picked[l.id] and not byTitle[l.name] and touchesZone(l.id) then
+            -- (the zone's quest from a giver outside it: a trip. Not one done wholly outside it, which the route only
+            -- lists here because it passes by: Halt the Hail, from Umaron Stragarelm in Everlook, is Winterspring's)
+            picked[l.id] = true
+            off[#off + 1] = { act = l.bi and "turnin" or "pickup", title = l.name, id = l.id, label = l.npc, wp = l.wp, level = l.level, step = i }
           elseif l.farm and not picked[l.id] then
             -- its items to collect before you can take it: wherever they drop (any of the spots will do)
             local d = RG.QDATA[l.id]
@@ -538,7 +599,7 @@ local function buildTasks()
     for _, t in ipairs(tasks) do if t.act == "turnin" and t.id and not t.chain then hand[#hand + 1] = t end end
     for _, t in ipairs(hand) do chainFrom(t, 1, {}) end
   end
-  return tasks, elsewhere, c, px, py, prep and off or nil
+  return tasks, elsewhere, c, px, py, (prep or tripIds) and off or nil, tripIds ~= nil
 end
 
 -- Preobtaining a dungeon's quests: its steps on another continent come after the ones on yours, in the order of the
@@ -565,6 +626,53 @@ local function offStops(off)
       stops[#stops + 1] = { items = { t }, wp = t.wp, act = t.act, key = taskKey(t), off = true }
     end
   end
+  return stops
+end
+
+-- Zone quests: the zone's trips out (see buildTasks), after the stops in the zone. What's at one spot is one stop (Nami
+-- and Umaron Stragarelm in Everlook); the nearest first on your continent, then the rest in the route's order; a stop
+-- you skipped goes last.
+local function tripStops(off, c, px, py)
+  if not off or #off == 0 then return {} end
+  local now = GetTime and GetTime() or 0
+  for i, t in ipairs(off) do t._i = i end
+  table.sort(off, function(a, b)
+    if (a.step or 999) ~= (b.step or 999) then return (a.step or 999) < (b.step or 999) end
+    return a._i < b._i
+  end)
+  local stops = {}
+  for _, t in ipairs(off) do
+    t.pts = {}
+    local at
+    for _, s in ipairs(stops) do
+      if s.wp[1] == t.wp[1] and math.abs(s.wp[2] - t.wp[2]) < 1 and math.abs(s.wp[3] - t.wp[3]) < 1 then at = s break end
+    end
+    if at then at.items[#at.items + 1] = t
+    else
+      local st = { items = { t }, wp = t.wp, off = true, _n = #stops + 1 }
+      local c2, x, y = RG.ToWorld(t.wp[1], t.wp[2], t.wp[3])
+      if c and c2 == c and x then st.x, st.y, st.pd = x, y, dist(px, py, x, y) end
+      stops[#stops + 1] = st
+    end
+  end
+  for _, s in ipairs(stops) do
+    table.sort(s.items, function(a, b)
+      if a.act ~= b.act then return ACT_RANK[a.act] < ACT_RANK[b.act] end
+      return (a.title or "") < (b.title or "")
+    end)
+    s.act, s.key = s.items[1].act, taskKey(s.items[1])
+    s._sk = false
+    for _, t in ipairs(s.items) do
+      t._sk = (skipUntil[taskKey(t)] or 0) > now or (skipQuest[t.title] or 0) > now
+      if t._sk then s._sk = true end
+    end
+  end
+  table.sort(stops, function(a, b)
+    if a._sk ~= b._sk then return not a._sk end
+    if (a.pd ~= nil) ~= (b.pd ~= nil) then return a.pd ~= nil end
+    if a.pd and b.pd and a.pd ~= b.pd then return a.pd < b.pd end
+    return a._n < b._n
+  end)
   return stops
 end
 
@@ -1114,12 +1222,12 @@ local function buildObjective()
   -- your own goals come first
   local g = RG.db and RG.db.goals and RG.db.goals[1]
   -- planner
-  local tasks, elsewhere, c, px, py, off = buildTasks()
+  local tasks, elsewhere, c, px, py, off, trips = buildTasks()
   if tasks then
     plan.stops, plan.total = planFromTasks(tasks, px, py)
     plan.elsewhere = elsewhere or 0
     plan.eta = plan.total / RUN
-    for _, st in ipairs(offStops(off)) do plan.stops[#plan.stops + 1] = st end
+    for _, st in ipairs(trips and tripStops(off, c, px, py) or offStops(off)) do plan.stops[#plan.stops + 1] = st end
   end
   cache.plan = plan
   -- in a dungeon the arrow rests; the quest log carries the objectives
@@ -1317,6 +1425,9 @@ local function buildObjective()
           end
           return obj, plan
         end
+        -- (zone quests: a step out of the zone whose quests the plan left out, as they're done wholly elsewhere — Notarized
+        -- Claim in Undercity, on Mount Hyjal's route — isn't a place to send you: the zone is done)
+        if wp and RG.RouteMode and RG.RouteMode() == "zone" and RG.MapZone and RG.FollowZone and RG.MapZone(wp[1]) ~= RG.FollowZone() then wp = nil end
         if wp then
           local place = steps[i]:gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^At (.-) %(") or wp[4] or r.zone
           obj.kind, obj.key = "route", "route:" .. r.zone .. "|" .. r.from .. "#" .. i
