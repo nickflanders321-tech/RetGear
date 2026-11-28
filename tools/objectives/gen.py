@@ -549,6 +549,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         if pair(reqSkill): parts.append('sk={%d,%d}' % tuple(pair(reqSkill)))
         if pair(minRep): parts.append('rp={%d,%d}' % tuple(pair(minRep)))
         if req and req.get('rep'): parts.append('rn={%s,%d}' % (lstr(req['rep'][0]), STANDING[req['rep'][1]]))
+        if req and req.get('unknown'): parts.append('uk=%s' % lstr(req['unknown']))
         if pair(maxRep): parts.append('rx={%d,%d}' % tuple(pair(maxRep)))
         if isinstance(nextQ, int) and nextQ > 0: parts.append('nx=%d' % nextQ)
         if isinstance(parentQ, int) and parentQ > 0: parts.append('pa=%d' % parentQ)

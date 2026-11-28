@@ -203,6 +203,8 @@ function RG.QuestBlocked(id, d, isDone, inLog, quick, depth)
   if d.uc and isDone(d.uc) then return why(quick, "no longer offered"), true end
   if d.mx and lvl > d.mx then return why(quick, "only up to level ", d.mx), true end
   -- it starts from an item that only sometimes drops: nothing to go and get (it shows once it's in your log)
+  -- what opens it isn't known (tools/objectives/requires.json "unknown"): left out until it's in your log
+  if d.uk then return why(quick, d.uk), true end
   if not d.s and d.si and d.si[5] ~= 1 then
     -- (a giver who only turns up now and then, after you kill something: Anywhere But Here's Veteran of the Third War)
     if d.si[1] == "n" then return why(quick, d.si[2] .. " appears now and then after killing ", table.concat(d.si[3] or {}, " or ")), true end
