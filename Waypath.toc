@@ -78,6 +78,7 @@ QoL2.lua
 Smart.lua
 Tracker.lua
 TrackerExtras.lua
+ModelCams.lua
 StepView.lua
 DropRecord.lua
 DungeonPrep.lua

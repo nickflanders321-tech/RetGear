@@ -344,6 +344,12 @@ local function showModel(npc, icon, file)
             if self.SetPortraitZoom then self:SetPortraitZoom(0) end
             if self.SetPosition then self:SetPosition(0, 0, 0) end
             if self.SetFacing then self:SetFacing(0.45) end
+            -- a model with no whole-body camera of its own is framed too close by the game (Hyacinth: her legs and
+            -- nothing else): the camera further back, by how much its model needs (ModelCams.lua, by model file)
+            if self.SetCamDistanceScale then
+              local fid = self.GetModelFileID and self:GetModelFileID()
+              self:SetCamDistanceScale((fid and RG.MODEL_CAM and RG.MODEL_CAM[fid]) or 1)
+            end
           end)
         end
         m:SetScript("OnModelLoaded", fit)
