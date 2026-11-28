@@ -26,8 +26,10 @@ local function names(list)
   for i = 1, math.min(2, #list) do n[i] = list[i][1] end
   return table.concat(n, #list == 2 and " and " or ", ") .. (#list > 2 and (" and " .. (#list - 2) .. " more") or "")
 end
-local function dropPhrase(mobs, chances)
+local function dropPhrase(mobs, chances, rough)
   if not mobs then return nil end
+  -- (a rate from few kills of your own: "~25%")
+  local pct = rough and function(c) local s = pct(c); return s and ("~" .. s) end or pct
   local list = {}
   if not chances then
     for _, name in ipairs(mobs) do list[#list + 1] = { name } end
@@ -44,6 +46,7 @@ local function dropPhrase(mobs, chances)
   return "from " .. table.concat(parts, ", ") .. (#list > 3 and (", " .. (#list - 3) .. " more") or "")
 end
 RG.DropPhrase = dropPhrase
+local ROUGH_KILLS = 30   -- a rate you counted from fewer kills than this is marked as rough
 -- The quest's items and how they drop: { { item = name, text = phrase, rate = true when the chances are known }, ... }
 -- (objectives with known rates, or at least known mobs that drop them).
 -- label: just the objective with that name (the quest log's wording may differ a little: a match either way counts).
@@ -57,11 +60,21 @@ function RG.DropInfo(id, label)
       local name = tostring(o[2] or "?")
       local l = name:lower()
       if not want or l == want or want:find(l, 1, true) or l:find(want, 1, true) then
-        -- (no rate in the data: the one you counted yourself, DropRecord.lua, marked as yours)
+        -- (no rate in the data: the one you counted yourself, DropRecord.lua, marked as yours: a rough one, "~25% (rough:
+        -- 3 in 12 of your kills)", until ROUGH_KILLS; before there's a rate at all, what you've counted so far, from the
+        -- first kill: "no drops in 4 kills yet", "1 in 6 kills so far")
         local chances, mine = o[7], nil
         if not chances and RG.MyDropChances then chances, mine = RG.MyDropChances(o[6], o[5]) end
-        local text = dropPhrase(o[3], chances)
-        if text and mine then text = text .. " (your " .. mine .. " kills)" end
+        local kills, drops = 0, 0
+        if not o[7] and RG.MyDropCounts then kills, drops = RG.MyDropCounts(o[6], o[5]) end
+        local rough = mine and kills < ROUGH_KILLS
+        local text = dropPhrase(o[3], chances, rough)
+        if text and mine then
+          text = text .. (rough and (" (rough: " .. drops .. " in " .. kills .. " of your kills)") or (" (your " .. kills .. " kills)"))
+        elseif text and kills > 0 then
+          text = text .. " · " .. (drops == 0 and ("no drops in " .. kills .. " kill" .. (kills == 1 and "" or "s") .. " yet")
+            or (drops .. " in " .. kills .. " kill" .. (kills == 1 and "" or "s") .. " so far"))
+        end
         if text then out[#out + 1] = { item = name, text = text, rate = chances and true or nil, mine = mine and true or nil } end
       end
     end

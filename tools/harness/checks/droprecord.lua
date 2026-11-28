@@ -1,6 +1,7 @@
 -- Drop rates you count yourself (DropRecord.lua): where the quest data names who drops a quest's item but not how
 -- often (Notation, Notation, Notation: Fel Ash Experimentation Notes from Ashen Acolytes, Mount Hyjal), the add-on counts
--- your kills and the items you loot from them, and shows the rate once there are enough kills.
+-- your kills and the items you loot from them: what it's counted so far from the first kill, a rough rate from 10 kills,
+-- the rate from 30.
 local QUEST, ITEM, ACOLYTE = 95317, 274396, 260422
 
 return {
@@ -29,23 +30,32 @@ return {
       G.GetNumLootItems = function() return loot and 1 or 0 end
       G.GetLootSlotLink = function() return loot and ("|cffffffff|Hitem:" .. ITEM .. "::::::::57:::::|h[Fel Ash Experimentation Notes]|h|r") end
       G.GetLootSourceInfo = function() return loot, 1 end
-      -- 12 kills: 3 of them drop the notes. Each corpse is seen dead as your target, and the ones with notes are looted
+      -- 32 kills, every 4th drops the notes. Each corpse is seen dead as your target, and the ones with notes are looted
       -- (looted twice: the same corpse counts once)
-      for i = 1, 12 do
+      local function at(i)
+        x = RG.DropInfo(QUEST)[1]
+        local t = tostring(x and x.text)
+        if i == 1 then T.ok(x and not x.rate and t:find("no drops in 1 kill yet", 1, true), "1 kill, no drop: counted from the first kill (" .. t .. ")") end
+        if i == 3 then T.ok(x and not x.rate and t:find("no drops in 3 kills yet", 1, true), "3 kills, no drop: the count goes up (" .. t .. ")") end
+        if i == 9 then T.ok(x and not x.rate and t:find("2 in 9 kills so far", 1, true), "9 kills: too few for a rate, what's counted so far (" .. t .. ")") end
+        if i == 12 then
+          local r = RG.db.drops and RG.db.drops[ITEM] and RG.db.drops[ITEM][ACOLYTE]
+          T.ok(r and r[1] == 12 and r[2] == 3, "counted 12 kills and 3 drops (" .. tostring(r and r[1]) .. ", " .. tostring(r and r[2]) .. ")")
+          T.ok(x and x.rate and x.mine and t:find("~25%", 1, true) and t:find("rough: 3 in 12 of your kills", 1, true),
+            "12 kills: the rate is shown, marked as yours and rough (" .. t .. ")")
+        end
+        if i == 32 then
+          T.ok(x and x.rate and x.mine and t:find("25%", 1, true) and not t:find("~", 1, true) and t:find("your 32 kills", 1, true),
+            "32 kills: the rate, no longer rough (" .. t .. ")")
+        end
+      end
+      for i = 1, 32 do
         target = string.format("Creature-0-1-2-3-%d-%010d", ACOLYTE, i)
         T.W.fire("PLAYER_TARGET_CHANGED")
         if i % 4 == 0 then loot = target; T.W.fire("LOOT_OPENED"); T.W.fire("LOOT_READY"); loot = nil end
-        if i == 9 then
-          x = RG.DropInfo(QUEST)[1]
-          T.ok(x and not x.rate, "9 kills: still too few to say (" .. tostring(x and x.text) .. ")")
-        end
+        at(i)
       end
       for k, v in pairs(saved) do G[k] = v end
-      local r = RG.db.drops and RG.db.drops[ITEM] and RG.db.drops[ITEM][ACOLYTE]
-      T.ok(r and r[1] == 12 and r[2] == 3, "counted 12 kills and 3 drops (" .. tostring(r and r[1]) .. ", " .. tostring(r and r[2]) .. ")")
-      x = RG.DropInfo(QUEST)[1]
-      T.ok(x and x.rate and x.mine and x.text:find("25%", 1, true) and x.text:find("your 12 kills", 1, true),
-        "the rate is shown, marked as yours (" .. tostring(x and x.text) .. ")")
       T.ok(RG.SHARED_KEYS and RG.SHARED_KEYS.drops, "the counts are account-wide")
     end,
   },

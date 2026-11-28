@@ -129,6 +129,20 @@ function RG.MyDropChances(item, npcs)
   return out, kills
 end
 RG.DROP_MIN_KILLS = MIN_KILLS
+-- What you've counted so far for an item from these mobs, all of them together: kills, drops (0, 0 when none). Shown
+-- from the first kill ("no drops in 4 kills yet", "1 in 6 kills so far") until there are enough kills for a rate.
+function RG.MyDropCounts(item, npcs)
+  local all = RG.db and RG.db.drops
+  local byNpc = all and item and all[item]
+  local kills, drops = 0, 0
+  if byNpc and npcs then
+    for _, nid in ipairs(npcs) do
+      local r = byNpc[nid]
+      if r then kills = kills + (r[1] or 0); drops = drops + (r[2] or 0) end
+    end
+  end
+  return kills, drops
+end
 
 local ev = CreateFrame("Frame")
 local queued = false
