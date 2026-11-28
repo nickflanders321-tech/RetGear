@@ -1136,7 +1136,15 @@ end
 -- contains it is in the line too: "Firegut Ogre" is not "Firegut Ogre Mage slain: 0/6" (Extinguish the Firegut: with
 -- the ogres done, the mages' line was read as theirs, and the arrow stayed on the ogres).
 local function owns(text, name, qdo)
-  if not (text and name and text:find(name, 1, true)) then return false end
+  if not (text and name) then return false end
+  if not text:find(name, 1, true) then
+    -- a place in our data says what to do there, "Use Bag of Enchanted Seeds: the Ruined Ballista"; the game counts it
+    -- by the thing, "Ruined Ballista reclaimed: 0/1" (Violence Into Verdure: unmatched, the game's line became a
+    -- "Kill Ruined Ballista reclaimed" of its own)
+    local thing = name:match(":%s+[Tt]he%s+(.+)$") or name:match(":%s+(.+)$")
+    if not (thing and #thing >= 4 and text:find(thing, 1, true)) then return false end
+    name = thing
+  end
   for _, x in ipairs(qdo) do
     local n2 = x[2]
     if n2 and #n2 > #name and n2:find(name, 1, true) and text:find(n2, 1, true) then return false end

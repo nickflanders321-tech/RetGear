@@ -1,0 +1,5 @@
+{
+  "_about": "Hand-checked facts about NPCs that QuestieDB's WoW Forever data has wrong. tools/objectives/gen.py and tools/routes/gen.py apply them to the data before anything else. 'faction' replaces the NPC's friendlyToFaction (A, H or AH): a giver marked as one faction's makes all their quests that faction's only. Every entry names where it was checked (src). Add only what a source or an in-game check confirms.",
+  "_format": {"<NPC ID>": {"name": "NPC name, to read the file by", "faction": "A|H|AH", "src": ["where it was checked"]}},
+  "256222": {"name": "Ketharas", "faction": "AH", "src": ["in-game check, 2026-11-28: a Horde character (Orc) took Violence Into Verdure and The Bounty of Nature from him at Mount Hyjal 73.3,81.9 and was working on both (QuestieDB marks him A, which left all his quests out for the Horde)"]}
+}

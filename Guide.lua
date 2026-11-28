@@ -909,8 +909,10 @@ local lastObjKey, objSince
 local MANUAL_HOLD, MANUAL_IDLE, MANUAL_THERE = 180, 60, 100
 local GRAB_YD = 60   -- yards: a pickup or hand-in this close is done before going on (see below)
 local manual
-function RG.PickManually(wp)
-  manual = wp and { wp = wp, t = GetTime and GetTime() or 0 } or nil
+-- task (optional): { id, act } of the quest you clicked at that stop, which then heads it (a stop of several quests
+-- shows the first; clicking another one of them on the tracker makes it the one the step is about)
+function RG.PickManually(wp, task)
+  manual = wp and { wp = wp, t = GetTime and GetTime() or 0, task = task } or nil
   -- (and the plan doesn't hold on to the stop you were heading to: a new pick, or back to what the plan says)
   cache.obj = nil; cache.dirty = true
 end
@@ -947,6 +949,92 @@ local function manualStop(stops, c, px, py)
   -- a place, not a stop of the plan (a step's town, a flight master): until you get there
   if d and d <= 25 then manual = nil; cache.obj = nil return nil end
   return false, d
+end
+-- What you're working on: the quest whose objective count went up last (a kill, an item looted, a thing used). The
+-- plan's order alone can't tell, and it kept the arrow on the objective before while you were already on the next one.
+-- It's the current step while you keep at it: let go after 2 minutes without progress, once you're 250 yards from
+-- where it last counted, or when that objective is done. (A pickup or hand-in right beside you still comes first.)
+local WORK_IDLE, WORK_YD = 120, 250
+local working
+local progSeen = {}   -- [questID] = { [objective's words] = count done }, as last seen
+local function scanProgress()
+  if not (RG.db and RG.LogQuestInfos and C_QuestLog and C_QuestLog.GetQuestObjectives) then return false end
+  local live, up = {}, nil
+  local key = RG.ObjKey or function(t) return t end
+  for _, info in ipairs(RG.LogQuestInfos()) do
+    local qid = info.questID
+    if qid then
+      live[qid] = true
+      local old = progSeen[qid]
+      local cur = {}
+      -- (by the objective's words, not its place in the list: the game drops a finished line from some quests' lists,
+      -- Violence Into Verdure's wrecks, and the lines after it move up)
+      for _, o in ipairs(C_QuestLog.GetQuestObjectives(qid) or {}) do
+        if o.text and o.text ~= "" then
+          local k, n = key(o.text), tonumber(o.numFulfilled) or 0
+          -- (a quest seen for the first time, at login or just accepted with the items already in your bags, only
+          -- sets where it stands: that's not you working on it)
+          if old and old[k] and n > old[k] then up = qid end
+          cur[k] = n
+        end
+      end
+      -- a line that was there and isn't any more, with the quest still in your log: done (and dropped from the list)
+      if old then for k in pairs(old) do if cur[k] == nil then up = qid end end end
+      progSeen[qid] = cur
+    end
+  end
+  for qid in pairs(progSeen) do if not live[qid] then progSeen[qid] = nil end end
+  if working and not live[working.id] then working = nil end
+  if up then
+    local c, x, y = RG.PlayerWorld()
+    working = { id = up, t = GetTime and GetTime() or 0, c = c, x = x, y = y }
+    cache.dirty = true
+    return true
+  end
+  return false
+end
+-- the plan's stop for the quest you're working on (the nearest one, with its task moved to the front), or nil
+local function workingStop(stops, c, px, py)
+  local w = working
+  if not w then return nil end
+  local now = GetTime and GetTime() or 0
+  if now - w.t > WORK_IDLE then working = nil return nil end
+  if w.c and c and (w.c ~= c or (px and w.x and dist(px, py, w.x, w.y) > WORK_YD)) then working = nil return nil end
+  local best, bestJ, bestD
+  for i, s in ipairs(stops) do
+    for j, it in ipairs(s.items) do
+      if it.id == w.id and it.act == "doing" and not it._sk then
+        if not bestD or (s.pd or 1e9) < bestD then best, bestJ, bestD = i, j, s.pd or 1e9 end
+        break
+      end
+    end
+  end
+  -- (nothing left to do for it here: the objective is done, or the quest is ready to hand in)
+  if not best then working = nil return nil end
+  if bestJ > 1 then local items = stops[best].items; table.insert(items, 1, table.remove(items, bestJ)) end
+  return best
+end
+function RG.WorkingOn() return working and working.id or nil end
+do
+  local f = CreateFrame("Frame")
+  for _, e in ipairs({ "QUEST_LOG_UPDATE", "UNIT_QUEST_LOG_CHANGED", "PLAYER_LOGIN" }) do pcall(f.RegisterEvent, f, e) end
+  local queued
+  local run = RG.PerfWrap("guide.working", function()
+    queued = false
+    if RG.CardsOnly and RG.CardsOnly() then return end
+    local ok, moved = pcall(scanProgress)
+    -- (out of combat the arrow turns at once; in combat the heartbeat turns it once the fight is over)
+    if ok and moved and not inCombat() and RG.SyncObjective then
+      RG.SyncObjective(RG.Objective(true))
+      if RG.QueueTracker then RG.QueueTracker() end
+    end
+  end)
+  f:SetScript("OnEvent", function(_, event, unit)
+    if event == "UNIT_QUEST_LOG_CHANGED" and unit ~= "player" then return end
+    if queued or not (C_Timer and C_Timer.After) then return end
+    queued = true
+    C_Timer.After(0.3, run)
+  end)
 end
 local function goals() RG.db.goals = RG.db.goals or {}; return RG.db.goals end
 
@@ -1085,6 +1173,10 @@ local function buildObjective()
   local stops = plan.stops
   -- a stop you picked yourself
   local mi, md = manualStop(stops, c, px, py)
+  -- the quest you're working on (its count went up): over the stop you were heading to, and over one you picked
+  -- before that progress (your pick comes back once you stop)
+  local wi, worked = workingStop(stops, c, px, py), false
+  if wi and (mi == nil or (manual and working and working.t > manual.t)) then mi, md, worked = wi, nil, true end
   -- a pickup or hand-in right beside you comes first, whatever you were heading to (your pick or the plan's): it takes
   -- a moment, and walking past Velician with The Dying God on offer to come back later is the trip the guide is for.
   -- Your pick isn't dropped: once it's done, the guide goes back to it.
@@ -1127,6 +1219,13 @@ local function buildObjective()
     if mi then pick = mi end
     local grabbed = grab ~= nil
     local s = stops[pick]
+    -- the quest you clicked at this stop heads it
+    local mt = mi and not grabbed and not worked and manual and manual.task
+    if mt then
+      for j, x in ipairs(s.items) do
+        if j > 1 and x.id == mt.id and (not mt.act or x.act == mt.act) then table.insert(s.items, 1, table.remove(s.items, j)) break end
+      end
+    end
     local it = s.items[1]
     obj.kind, obj.act = (it.act == "doing" and "doing" or it.act), it.act
     obj.key = "q:" .. s.key
@@ -1134,6 +1233,7 @@ local function buildObjective()
     obj.text, obj.wp, obj.dist, obj.stop = stopText(s), s.wp, s.pd, s
     obj.why = stopWhy(s)
     if grabbed then obj.why = "Right here: on your way  ·  " .. obj.why
+    elseif worked then obj.working = true; obj.why = "You're working on it  ·  " .. obj.why
     elseif mi then obj.manual = true; obj.why = "You picked it  ·  " .. obj.why end
     -- the tracker's top line: the quest, and the one thing to do for it ("Kill 15 Hillsbrad Farmers  9/15")
     obj.qtitle = it.title

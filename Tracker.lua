@@ -994,12 +994,13 @@ local function item(n, y, text, opts)
 end
 
 -- Right-click on a tracker line: point the arrow at it (turning the arrow on if it was off).
-function RG.Follow(wp)
+-- task (optional): { id, act } of one quest at that place, which then heads the step (Guide.lua)
+function RG.Follow(wp, task)
   if not wp then return end
   if not RG.Opt("arrow") then RG.db.arrow = true; if RG.RefreshArrow then RG.RefreshArrow() end end
   RG.PinWaypoint(wp)
   -- you picked it: it's the current step for a while (Guide.lua)
-  if RG.PickManually then RG.PickManually(wp) end
+  if RG.PickManually then RG.PickManually(wp, task) end
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
 
@@ -1387,8 +1388,9 @@ function RG.RefreshTracker()
       local curStop = okO and o and o.stop or nil
       local picked = okO and o and o.kind == "pick"   -- (a place you picked that isn't a stop: none of these is current)
       local shownS = 0
+      local limit = RG.trackerAllSteps and #zstops or 6
       for i, st in ipairs(zstops) do
-        if shownS < 6 then
+        if shownS < limit then
           shownS = shownS + 1
           local it = st.items[1]
           local isCur = (curStop and st == curStop) or (not curStop and not picked and i == 1)
@@ -1401,17 +1403,28 @@ function RG.RefreshTracker()
                 (RG.DropTip and it.act ~= "turnin" and RG.DropTip(it.id, it.act == "doing" and it.label or nil) or "") ..
                 "\n\n" .. GOLD .. "Click:|r arrow on / off\n" .. GOLD .. "Right-click:|r skip this stop for an hour (/wp undo brings it back)",
               onRightClick = function() if RG.SkipStop then RG.SkipStop(st); if RG.SyncObjective then RG.SyncObjective(RG.Objective(true)) end; RG.RefreshTracker() end end })
-          if isCur and #st.items > 1 then
-            for k = 2, math.min(#st.items, 5) do
-              local x = st.items[k]
-              n = n + 1
-              y = item(n, y, GREY .. RG.PrepStepText(x) .. "|r" .. ((x.act == "doing" and x.title ~= it.title) and (GREY .. "  ·  " .. tostring(x.title) .. "|r") or ""), { single = true, indent = 26, band = true })
-            end
+          -- every quest at the stop, each on a line of its own (not only the current stop's: Violence Into Verdure's last
+          -- wreck, where Celastrus also drops, showed only Celastrus, with nothing to click to get back to it)
+          for k = 2, #st.items do
+            local x = st.items[k]
+            local xt = RG.PrepStepText(x)
+            n = n + 1
+            y = item(n, y, GREY .. xt .. "|r" .. ((x.act == "doing" and x.title ~= it.title) and (GREY .. "  ·  " .. tostring(x.title) .. "|r") or ""),
+              { single = true, indent = 30, band = isCur, noArrow = true,
+                tip = "|cffffffff" .. xt .. "|r\n" .. GREY .. tostring(x.title) .. "|r" ..
+                  (RG.DropTip and x.act ~= "turnin" and RG.DropTip(x.id, x.act == "doing" and x.label or nil) or "") ..
+                  "\n\n" .. GOLD .. "Click:|r make it the current step (arrow on)",
+                onClick = st.wp and function() RG.Follow(st.wp, { id = x.id, act = x.act }) end or nil })
           end
         end
       end
-      if #zstops > shownS then
-        n = n + 1; y = item(n, y, GREY .. "+" .. (#zstops - shownS) .. " more step" .. ((#zstops - shownS) == 1 and "" or "s") .. "|r", { single = true, indent = 22 })
+      if #zstops > 6 then
+        local more = #zstops - shownS
+        n = n + 1
+        y = item(n, y, GREY .. (RG.trackerAllSteps and "Show fewer steps" or ("+" .. more .. " more step" .. (more == 1 and "" or "s"))) .. "|r",
+          { single = true, indent = 22, noArrow = true,
+            tip = RG.trackerAllSteps and "Fold the list back to the next 6 stops." or "Show every stop in the list (until you log out).",
+            onClick = function() RG.trackerAllSteps = not RG.trackerAllSteps; RG.RefreshTracker() end })
       end
       -- the zone's quests in your log the plan can't take you to here, and why (their mobs are in another zone, there's no
       -- known place for them, or what's left is a reputation), so the list doesn't look cut short
@@ -1515,13 +1528,18 @@ function RG.RefreshTracker()
       end
       -- the steps after it
       local shownN, more = 0, 0
+      local limitN = RG.trackerAllSteps and #steps or 4
       for i = 1, #steps do
         if i ~= cur and not RG.StepIsDone(r, i) then
-          if shownN < 4 then shownN = shownN + 1; stepRow(i, "todo") else more = more + 1 end
+          if shownN < limitN then shownN = shownN + 1; stepRow(i, "todo") else more = more + 1 end
         end
       end
-      if more > 0 then
-        n = n + 1; y = item(n, y, GREY .. "+" .. more .. " more step" .. (more == 1 and "" or "s") .. " on the Route tab|r", { single = true, indent = 22, onClick = function() if RG.ShowTab then RG.ShowTab("route") end end })
+      if more > 0 or (RG.trackerAllSteps and shownN > 4) then
+        n = n + 1
+        y = item(n, y, GREY .. (RG.trackerAllSteps and "Show fewer steps" or ("+" .. more .. " more step" .. (more == 1 and "" or "s"))) .. "|r",
+          { single = true, indent = 22, noArrow = true,
+            tip = (RG.trackerAllSteps and "Fold the list back to the next 4 steps." or "Show every step left in this zone (until you log out).") .. "\n" .. GREY .. "The Route tab has every zone's steps.|r",
+            onClick = function() RG.trackerAllSteps = not RG.trackerAllSteps; RG.RefreshTracker() end })
       end
       afterSteps()
     elseif #steps == 0 then

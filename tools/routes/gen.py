@@ -24,6 +24,12 @@ def _sorted_pairs(kv):
         return (0, int(s), '') if s.lstrip('-').isdigit() else (1, 0, s)
     return dict(sorted(kv, key=k))
 D = json.load(open(sys.argv[2], encoding='utf-8'), object_pairs_hook=_sorted_pairs)
+# Hand-checked NPC facts QuestieDB has wrong (tools/objectives/npcs.json): a giver's faction, which makes their quests one faction's
+for _nid, _fix in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'objectives', 'npcs.json'), encoding='utf-8')).items():
+    _e = D['npcs'].get(_nid)
+    if _nid.startswith('_') or _e is None or 'faction' not in _fix: continue
+    if isinstance(_e, dict): _e['3'] = _fix['faction']
+    else: _e = list(_e) + [None] * max(0, 3 - len(_e)); _e[2] = _fix['faction']; D['npcs'][_nid] = _e
 if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
     _corr = json.load(open(os.path.join(FIXES, 'corrections', 'quests.json'), encoding='utf-8'))
     for _k, _v in _corr.items():
