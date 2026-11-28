@@ -387,6 +387,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
     reqSkill, minRep, maxRep, nextQ, parentQ, crumbFor, reqSpell, maxLvl, untilDone, startWith, disabledBy = [at(q, i) for i in range(14, 25)]
     req = REQUIRES.get(str(qid))
+    if req and req.get('minLevel'): reqlvl = max(reqlvl or 1, int(req['minLevel']))
     if req and req.get('after'):
         preG = sorted(set(int(x) for x in (vals(preG) if preG else [])) | set(int(x) for x in req['after']))
     trigger, extras, otext = at(q, 25), at(q, 26), ' '.join(str(t) for t in vals(at(q, 27)) if t)
