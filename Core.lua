@@ -1132,6 +1132,17 @@ end
 
 -- Which of the game's quest objectives is our objective #k? By its text (English clients), or else by position
 -- when the quest has the same number of objectives in both (other languages).
+-- Does the game's objective line belong to this name? It contains it, and no longer name of the same quest that also
+-- contains it is in the line too: "Firegut Ogre" is not "Firegut Ogre Mage slain: 0/6" (Extinguish the Firegut: with
+-- the ogres done, the mages' line was read as theirs, and the arrow stayed on the ogres).
+local function owns(text, name, qdo)
+  if not (text and name and text:find(name, 1, true)) then return false end
+  for _, x in ipairs(qdo) do
+    local n2 = x[2]
+    if n2 and #n2 > #name and n2:find(name, 1, true) and text:find(n2, 1, true) then return false end
+  end
+  return true
+end
 function RG.MatchObjective(objs, qdo, k)
   local d = qdo and qdo[k]
   if not (d and objs) then return nil end
@@ -1139,13 +1150,13 @@ function RG.MatchObjective(objs, qdo, k)
   local nth = 0
   for i = 1, k do if qdo[i][2] == d[2] then nth = nth + 1 end end
   for _, o in ipairs(objs) do
-    if o.text and o.text:find(d[2], 1, true) then
+    if owns(o.text, d[2], qdo) then
       nth = nth - 1
       if nth == 0 then return o end
     end
   end
   -- (fewer of that name in the game than in the data: the last one there is)
-  for i = #objs, 1, -1 do local o = objs[i]; if o.text and o.text:find(d[2], 1, true) then return o end end
+  for i = #objs, 1, -1 do local o = objs[i]; if owns(o.text, d[2], qdo) then return o end end
   if #objs == #qdo then
     -- only when no objective of this quest matches by text (so an English client never guesses)
     for _, x in ipairs(qdo) do for _, o in ipairs(objs) do if o.text and o.text:find(x[2], 1, true) then return nil end end end

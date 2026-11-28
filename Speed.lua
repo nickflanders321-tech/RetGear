@@ -337,6 +337,13 @@ local function buildQuestSpots()
         if o.text then local k = objKey(o.text); if seenKey[k] then twice[k] = true end; seenKey[k] = true end
       end
       local areaNext = true   -- (places are done in order: only the first one you haven't reached yet shows)
+      -- (the last such place stays while the quest isn't done, even once you've been there: A Revenge Now Bitter is
+      -- done by talking to Felflick near its place, and with its only place "reached" the quest had nowhere to go, so
+      -- the guide sent you off to other quests until the game called it complete)
+      local lastArea
+      for k, d in ipairs((qd and qd.o) or {}) do
+        if d[1] == "e" and not RG.MatchObjective(objs, qd.o, k) then lastArea = k end
+      end
       for k, d in ipairs((qd and qd.o) or {}) do
         -- (by text, or by position on clients in other languages)
         local game = RG.MatchObjective(objs, qd.o, k)
@@ -344,7 +351,7 @@ local function buildQuestSpots()
         -- (one the game counts, "free five captives 2/5", shows until it's done; one it doesn't, the moonwell before Winna,
         -- until you've been there, and only once you've been to the places before it)
         if d[1] == "e" and not game then
-          if not areaNext or areaReached(qid, k, d) then skipArea = true else areaNext = false end
+          if not areaNext or (k ~= lastArea and areaReached(qid, k, d)) then skipArea = true else areaNext = false end
         end
         if not (game and game.finished) and not skipArea then
           -- spots let go of beside Questie (memory, below): Questie's own spawns for this objective
@@ -838,14 +845,23 @@ end
 function RG.QuestObjectiveSpot(title, objName)
   local c, px, py = playerWorld()
   if not c or not title then return nil end
-  local best, bestD, any
+  local best, bestD, bestLen, any
   for _, s in ipairs(RG.QuestSpots()) do
     if not s.turnin and s.quest == title and s.wp then
       local c2, x, y = toWorld(s.wp[1], s.wp[2], s.wp[3])
       if c2 == c then
         local d = math.sqrt((x - px) ^ 2 + (y - py) ^ 2)
-        local match = objName and (s.label == objName or (s.label and objName:find(s.label, 1, true)) or (s.src and objName:find(s.src, 1, true)))
-        if match and (not best or d < bestD) then best, bestD = s, d end
+        -- how much of the row's words it matches: the longest name wins ("Firegut Ogre Mage slain" is the mages', not the
+        -- ogres' whose name it also contains), then the nearest
+        local len = 0
+        if objName then
+          if s.label == objName then len = 9999
+          else
+            if s.label and objName:find(s.label, 1, true) then len = #s.label end
+            if s.src and #s.src > len and objName:find(s.src, 1, true) then len = #s.src end
+          end
+        end
+        if len > 0 and (not best or len > bestLen or (len == bestLen and d < bestD)) then best, bestD, bestLen = s, d, len end
         if not any or d < any.d then any = { s = s, d = d } end
       end
     end
@@ -1972,10 +1988,14 @@ do
         if d and d.o and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then d.o = nil end
       end
       -- beside Questie, its database already holds every spawn: the quests not in your log let go of their spots too
-      -- (the objective names and mobs stay); if you take one later, the arrow reads the spots from Questie
+      -- (the objective names and mobs stay); if you take one later, the arrow reads the spots from Questie. Not the
+      -- quests around your level, which you may take this session: Questie has no spawns for many of WoW Forever's own
+      -- (Balance Through Strength, Blight No More in Mount Hyjal), and taken after login they showed "no place known"
+      local lvl = UnitLevel and UnitLevel("player") or 1
       if RG.QuestieDataWorks and RG.QuestieDataWorks() then
         for id, d in pairs(RG.QDATA) do
-          if d.o and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then
+          local soon = (d.l or d.r or 0) >= lvl - 3 and (d.r or 1) <= lvl + 6
+          if d.o and not soon and not (C_QuestLog.IsOnQuest and C_QuestLog.IsOnQuest(id)) then
             for _, o in ipairs(d.o) do o[4] = nil end
           end
         end
