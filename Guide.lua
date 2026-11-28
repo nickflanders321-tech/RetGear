@@ -1183,8 +1183,14 @@ local function buildObjective()
   local grab
   for i, s in ipairs(stops) do
     if s.pd and s.pd <= GRAB_YD then
-      for _, it in ipairs(s.items) do
-        if (it.act == "pickup" or it.act == "turnin") and not it.deps and not it._sk then grab = i break end
+      for j, it in ipairs(s.items) do
+        if (it.act == "pickup" or it.act == "turnin") and not it.deps and not it._sk then
+          grab = i
+          -- (what heads the stop is what you can do now: not a hand-in there still waiting on its objectives, such as
+          -- Twisted Tools at Toron Rockhoof while Cleansing Winds and Cult Closure wait to be picked up beside him)
+          if j > 1 then table.insert(s.items, 1, table.remove(s.items, j)) end
+          break
+        end
       end
     end
     if grab then break end
