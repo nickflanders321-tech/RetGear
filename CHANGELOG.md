@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.65.1
+- **Zone quests: trips out of the zone are planned.** A zone's quests that send you elsewhere (Premiere Parts to Nami in Everlook, Aid from Moonglade's chain, Sawyer's Legacy in Undercity, Wake Memories at Lake Everstill) come after the zone's own stops, and the zone stays planned while you're away. On a trip, the trips in the zone you're in come first, and once the zone only has hand-ins waiting the other trips join them, so you only go back once.
+- **Stops right beside you.** A pickup or hand-in grabbed on your way is step 1 of the plan's list too, and it leads with what you can do now, not a hand-in still waiting on its objectives.
+- **The arrow follows the quest you're making progress on,** and every quest at a stop shows on the tracker. Ketharas's quests are in the guide for the Horde.
+- **Quest data fixes.** Nami is shown in Everlook only, not in Mount Hyjal. Sacred Refreshment waits for level 56. Barkskin Beginnings opens at Unfriendly and the burrow's other quests wait for it. Leather for Inclement Weather stays out of the guide until it's in your log.
+- **Quest notes:** Eyes of the Watchers: step close to the gargoyles. Feathers in Flight: the owl nests in the trees hold feathers too.
+- An objective the game words as a description ("Elder Pinespeaker met") is no longer shown as "Kill ...".
+- Drop rates you count: counted from the first kill, with a rough rate under 30 kills.
+- Step card: a creature whose model has no whole-body camera is shown whole, not just its legs.
+
 ## v1.65.0
 - **The guide finishes a storyline before moving on.** Close to a quest chain you're in (a hand-in whose next quest starts right there, or a quest whose earlier part you just handed in), the guide follows it through before sending you to quests on their own. In Mount Hyjal, after The Experimental Method it now has you hand it in to the Curious Crow and carry on with A Fitting End, Amalgamated Marrow and A Revenge Now Bitter, instead of leaving for a camp of shrubs and coming back.
 - **Pickups and hand-ins on your way.** A quest to pick up or hand in right beside you comes first, even while you're heading to a stop you clicked; then the guide goes back to where you were going. No more walking past The Dying God to come back for it later.
