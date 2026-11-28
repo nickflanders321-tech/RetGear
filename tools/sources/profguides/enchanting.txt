@@ -2,10 +2,10 @@ WoW Forever Enchanting Leveling Guide 1-300
 WoW Forever Enchanting Leveling Guide 1-300
 This WoW Forever Enchanting leveling guide will show you the fastest and cheapest way to level your Enchanting skill from 1 to 300. You will also find every trainer location and where to train Enchanting past 75, 150 and 225.
 1-150
-19x Mote of Magic (vendor)
+20x Mote of Magic (vendor)
 1x Copper Rod (vendor)
-257x Strange Dust
-293x Lesser Magic Essence and 23x Simple Wood (vendor)
+256x Strange Dust
+292x Lesser Magic Essence and 23x Simple Wood (vendor)
 1x Silver Rod
 1x Shadowgem
 4x Lesser Magic Essence
@@ -17,17 +17,17 @@ This WoW Forever Enchanting leveling guide will show you the fastest and cheapes
 1x Iridescent Pearl
 1x Greater Astral Essence
 32x Maple Seed (vendor)
-41x Leaded Vial (vendor)
+45x Leaded Vial (vendor)
 31x Vision Dust
 1x Truesilver Rod
 1x Black Pearl
 1x Greater Mystic Essence
 50x Stranglethorn Seed (vendor)
 225-300
-34x Vision Dust
+37x Vision Dust
 104x Dream Dust
 26x Purple Lotus
-52x Crystal Vial (vendor)
+55x Crystal Vial (vendor)
 52x Firebloom
 88x Illusion Dust
 4x Greater Eternal Essence
@@ -46,11 +46,11 @@ Formula: Runed Arcanite Rod (290) - (Binds when picked up)
 Apprentice Enchanting (1-70)
 1-2
 1x Runed Copper Rod - 1 Copper Rod, 1 Mote of Magic
-2-20
-18x Enchant Bracer - Inferior Stamina - 18 Mote of Magic
-20-70
-50x Enchant Chest - Inferior Stamina - 50 Strange Dust
-50x Enchant Bracer - Minor Deflect - 50 Lesser Magic Essence
+2-21
+19x Enchant Bracer - Inferior Stamina - 19 Mote of Magic
+21-70
+49x Enchant Chest - Inferior Stamina - 49 Strange Dust
+49x Enchant Bracer - Minor Deflect - 49 Lesser Magic Essence
 Journeyman Enchanting (70-150)
 70-109
 49x Enchant Chest - Minor Absorption - 49 Lesser Magic Essence
@@ -87,11 +87,12 @@ Expert Enchanting (150-225)
 201-220
 25x Lesser Wizard Oil - 25 Vision Dust, 50 Stranglethorn Seed, 25 Leaded Vial
 If you didn't buy Formula: Lesser Wizard Oil yet, the vendors are listed at the 151-165 step above.
+The Stranglethorn Seed and the Leaded Vial are sold by the same vendors as in the 151-165 step.
 220-225
 5x Enchant Cloak - Greater Defense - 5 Vision Dust
 Artisan Enchanting (225-300)
 225-250
-34x Enchant Gloves - Agility - 34 Vision Dust
+37x Enchant Gloves - Agility - 37 Vision Dust
 250-270
 26x Lesser Mana Oil - 26 Dream Dust, 26 Purple Lotus, 26 Crystal Vial
 23x Enchant Bracer - Greater Strength - 23 Dream Dust, 46 Lesser Nether Essence

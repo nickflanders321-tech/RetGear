@@ -17,9 +17,10 @@ This WoW Forever Leatherworking leveling guide will show you the fastest and che
 10x Iron Buckle
 390x Thick Leather
 50x Fine Thread (vendor)
-198x Silken Thread (vendor)
+134x Silken Thread (vendor)
 225-265
 224x Thick Leather
+64x Silken Thread (vendor)
 288x Rugged Leather
 36x Black Dye (vendor)
 36x Rune Thread (vendor)
@@ -28,17 +29,15 @@ This step has a few alternatives, so there is no list for it. You will need 410 
 Pattern: Barbaric Leggings (145) - (Binds when picked up)
 Pattern: Wicked Leather Gauntlets (235) - (Binds when picked up)
 Pattern: Runic Leather Headband (265) - (Binds when picked up)
-Apprentice Leatherworking (1-60)
+Apprentice Leatherworking (1-70)
 1-30
 35x Light Leather - 105 Ruined Leather Scraps
 30-40
 10x Cured Light Hide - 10 Light Hide, 10 Salt
 14x Light Armor Kit - 14 Light Leather
-40-60
-20x Embossed Leather Gloves - 60 Light Leather, 40 Coarse Thread
-Journeyman Leatherworking (60-130)
-60-70
-10x Embossed Leather Gloves - 30 Light Leather, 20 Coarse Thread
+40-70
+30x Embossed Leather Gloves - 90 Light Leather, 60 Coarse Thread
+Journeyman Leatherworking (70-150)
 70-80
 10x Embossed Leather Pants - 10 Cured Light Hide, 60 Light Leather, 20 Coarse Thread
 14x Embossed Leather Gloves - 42 Light Leather, 28 Coarse Thread
@@ -53,13 +52,13 @@ Journeyman Leatherworking (60-130)
 5x Hillman's Leather Gloves - 70 Medium Leather, 20 Fine Thread
 125-130
 8x Heavy Leather - 40 Medium Leather
-Expert Leatherworking (130-205)
 130-143
 25x Cured Heavy Hide - 25 Heavy Hide, 75 Salt
 If Heavy Hides are hard to get or cost more than that leather, skip them and make Hillman's Leather Gloves from 130 to 150 instead:
 21x Hillman's Leather Gloves - 294 Medium Leather, 84 Fine Thread
 143-150
 8x Hillman's Leather Gloves - 112 Medium Leather, 32 Fine Thread
+Expert Leatherworking (150-205)
 150-165
 15x Barbaric Shoulders - 120 Heavy Leather, 15 Cured Heavy Hide, 30 Fine Thread
 15x Barbaric Leggings - 150 Heavy Leather, 15 Moss Agate, 30 Fine Thread
@@ -99,6 +98,10 @@ Artisan Leatherworking (205-300)
 10x Runic Leather Headband
 275-300
 27x Blue Suede Bracers
+265-290
+31x Blue Suede Shoulders
+290-300
+27x Runic Leather Headband
 265-295
 36x Runic Leather Headband
 295-300

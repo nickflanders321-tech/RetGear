@@ -3,9 +3,9 @@ WoW Forever Blacksmithing Leveling Guide 1-300
 This WoW Forever Blacksmithing leveling guide will show you the fastest and cheapest way to level your Blacksmithing skill from 1 to 300. You will also find every trainer location and where to train Blacksmithing past 75, 150 and 225.
 1-150
 198x Rough Stone
-15x Silver Bar
+14x Silver Bar
 120x Coarse Stone
-261x Bronze Bar
+258x Bronze Bar
 90x Heavy Stone
 60x Iron Bar
 10x Green Dye (vendor)
@@ -48,11 +48,11 @@ Journeyman Blacksmithing (75-140)
 5x Patterned Bronze Bracers - 25 Bronze Bar, 10 Coarse Grinding Stone
 100-115
 30x Heavy Grinding Stone - 90 Heavy Stone
-115-125
-10x Patterned Bronze Bracers - 50 Bronze Bar, 20 Coarse Grinding Stone
-125-140
-15x Silvered Bronze Gauntlets - 120 Bronze Bar, 15 Silver Bar, 30 Coarse Grinding Stone
-15x Bronze Warhammer - 120 Bronze Bar, 15 Strong Flux, 15 Medium Leather
+115-126
+11x Patterned Bronze Bracers - 55 Bronze Bar, 22 Coarse Grinding Stone
+126-140
+14x Silvered Bronze Gauntlets - 112 Bronze Bar, 14 Silver Bar, 28 Coarse Grinding Stone
+14x Bronze Warhammer - 112 Bronze Bar, 14 Strong Flux, 14 Medium Leather
 Expert Blacksmithing (140-210)
 140-175
 40x Green Iron Bracers - 240 Iron Bar, 40 Green Dye
@@ -98,13 +98,17 @@ If you have the Plans: Dazzling Mithril Rapier , the Plans: Runed Mithril Hammer
 If you have the Plans: Thorium Belt , make Thorium Belts from 245 to 255 and the bracers only from 255 to 270. It's slightly cheaper, but not worth paying a lot for the plans. They are a world drop, so you have to buy them on the Auction House.
 16x Thorium Belt
 17x Imperial Plate Bracers
+The Officer's Gloves are usually cheaper than the bracers too, but only from 250 to 255. The Plans: Officer's Gloves bind when picked up and drop in dungeons, so make them only if you already have the plans.
 270-300
 270-290
 22x Radiant Boots
 290-300
 10x Radiant Leggings
 270-275
-11x Imperial Plate Bracers
+8-11x Imperial Plate Bracers
+160-220 Thorium Bar, 8-11 Star Ruby
+862-922 Thorium Bar
+8-11 Star Ruby
 275-300
 27x Thorium Leggings
 270-290

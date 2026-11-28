@@ -31,19 +31,19 @@ This WoW Forever Engineering leveling guide will show you the fastest and cheape
 Schematic: Thorium Widget (260)
 Schematic: Thorium Grenade (260)
 Schematic: Thorium Tube (275) - (Binds when picked up)
-Apprentice Engineering (1-50)
+Apprentice Engineering (1-56)
 1-35
 56x Rough Blasting Powder - 56 Rough Stone
 35-55
 28x Handful of Copper Bolts - 28 Copper Bar
 55-56
 1x Arclight Spanner - 6 Copper Bar
-Journeyman Engineering (50-150)
+Journeyman Engineering (56-150)
 56-75
 28x Rough Copper Bomb - 28 Copper Bar, 28 Handful of Copper Bolts, 56 Rough Blasting Powder, 28 Linen Cloth
-75-90
+75-95
 51x Coarse Blasting Powder - 51 Coarse Stone
-90-100
+95-100
 17x Coarse Dynamite - 51 Coarse Blasting Powder, 17 Linen Cloth
 100-105
 5x Silver Contact - 5 Silver Bar

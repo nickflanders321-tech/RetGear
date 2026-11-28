@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.64.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
 ## v1.64.0
 - **The arrow stays off when you turn it off.** It used to come back after a hearthstone, a boat or a new continent (the game picks a quest to track after every loading screen, and Waypath+ followed it), when another add-on set a waypoint, or when you clicked a quest in the game's quest log. Now only you turn it back on: the Arrow button, or Waypath+'s own "arrow to it" clicks. Dying still shows the way back to your body, without changing your setting.
 - **One way to turn the arrow off.** Right-clicking or double-clicking the arrow, or clicking the place it already points at, now turns it off just like the Arrow button. The "off for this step" that came back by itself at the next step is gone.
