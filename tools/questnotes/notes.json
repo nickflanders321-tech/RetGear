@@ -1,5 +1,7 @@
 {
   "_about": "Hand-checked notes for quests Polestar's database has none for: what isn't obvious when you get there. gen.py puts them first on the quest's note (n), before Polestar's. Every entry names where it was checked (src).",
   "_format": {"<quest ID>": {"name": "quest name, to read the file by", "n": "the note, one or two short sentences", "src": ["where it was checked"]}},
+  "92609": {"name": "Feathers in Flight (Horde)", "n": "The owl nests in the trees hold feathers too: loot them as well as the owls.", "src": ["in-game check, 2026-11-28"]},
+  "95027": {"name": "Feathers in Flight (Alliance)", "n": "The owl nests in the trees hold feathers too: loot them as well as the owls.", "src": ["in-game check, 2026-11-28 (the Horde's quest; the Alliance's is the same quest from Hnaz Blunderflame)"]},
   "90865": {"name": "Eyes of the Watchers", "n": "The Eternal Sentries are the gargoyle statues: step close to one and it comes to life.", "src": ["in-game check, 2026-11-28"]}
 }
