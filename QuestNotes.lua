@@ -1438,6 +1438,7 @@ RG.QNOTE = {
   [84399] = { n = "On Forever, any class can do this quest, not only mages, and it gives 660 XP and 9 silver." },
   [84400] = { n = "Forever made this quest open to every class and added XP and money; the original quest was for Mages only." },
   [88756] = { g = "e" },
+  [90865] = { n = "The Eternal Sentries are the gargoyle statues: step close to one and it comes to life." },
   [91752] = { g = "e" },
   [91775] = { g = "e" },
   [91777] = { g = "e", n = "Both book carriers are elite, so bringing a group is recommended.", w = "Elite spider in Jasperlode Mine. It drops the arcane book." },
