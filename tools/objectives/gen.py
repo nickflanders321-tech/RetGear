@@ -287,6 +287,11 @@ if FIXES and os.path.exists(os.path.join(FIXES, 'corrections', 'quests.json')):
 # was checked
 PLACES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'places.json'), encoding='utf-8'))
 PLACES = {k: v for k, v in PLACES.items() if not k.startswith('_')}
+# Hand-checked requirements the data lacks (requires.json): quests handed in first, and a faction's standing by name
+REQUIRES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'requires.json'), encoding='utf-8'))
+REQUIRES = {k: v for k, v in REQUIRES.items() if not k.startswith('_')}
+STANDING = {'Hated': -42000, 'Hostile': -6000, 'Unfriendly': -3000, 'Neutral': 0, 'Friendly': 3000, 'Honored': 9000,
+            'Revered': 21000, 'Exalted': 42000}
 def vals(v):   # a Lua array from the dump (a list, or a dict when it had holes), as a list
     if v is None: return []
     if isinstance(v, dict): return [v[k] for k in sorted(v, key=lambda k: int(k) if k.isdigit() else 0)]
@@ -381,6 +386,9 @@ out, nq, nobj, npts = [], 0, 0, 0
 for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     name, starts, ends, reqlvl, qlvl, races, objectives, zone, sflags, classes, preG, preS, excl = [at(q, i) for i in range(1, 14)]
     reqSkill, minRep, maxRep, nextQ, parentQ, crumbFor, reqSpell, maxLvl, untilDone, startWith, disabledBy = [at(q, i) for i in range(14, 25)]
+    req = REQUIRES.get(str(qid))
+    if req and req.get('after'):
+        preG = sorted(set(int(x) for x in (vals(preG) if preG else [])) | set(int(x) for x in req['after']))
     trigger, extras, otext = at(q, 25), at(q, 26), ' '.join(str(t) for t in vals(at(q, 27)) if t)
     races = int(races or 0); classes = int(classes or 0)
     if races and not (races & HORDE): continue
@@ -538,6 +546,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             return v if v and v[0] is not None and v[1] is not None else None
         if pair(reqSkill): parts.append('sk={%d,%d}' % tuple(pair(reqSkill)))
         if pair(minRep): parts.append('rp={%d,%d}' % tuple(pair(minRep)))
+        if req and req.get('rep'): parts.append('rn={%s,%d}' % (lstr(req['rep'][0]), STANDING[req['rep'][1]]))
         if pair(maxRep): parts.append('rx={%d,%d}' % tuple(pair(maxRep)))
         if isinstance(nextQ, int) and nextQ > 0: parts.append('nx=%d' % nextQ)
         if isinstance(parentQ, int) and parentQ > 0: parts.append('pa=%d' % parentQ)

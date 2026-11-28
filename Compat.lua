@@ -19,6 +19,7 @@ local NEEDS = {
   { "Step view (models and icons)", { "GetItemIcon|C_Item.GetItemIconByID", "C_Map.GetMapInfo", "IsInInstance" } },
   { "Drop rates you count yourself", { "GetLootSourceInfo", "GetLootSlotLink", "UnitIsDead", "UnitIsTapDenied" } },
   { "Step view (how to do a quest)", { "GetQuestLogQuestText", "SelectQuestLogEntry|C_QuestLog.SetSelectedQuest", "GetQuestLogSelection|C_QuestLog.GetSelectedQuest" } },
+  { "Quests that need a faction's standing", { "C_Reputation.GetFactionDataByIndex|GetFactionInfo", "C_Reputation.GetNumFactions|GetNumFactions" } },
 }
 
 local function resolve(path)

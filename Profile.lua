@@ -71,6 +71,47 @@ local function repOf(faction)
     if ok and name and type(value) == "number" then return value, name end
   end
 end
+-- A faction's standing by its name (WoW Forever's new factions have no ID in the quest data: Barkskin Burrow). The game
+-- only lists the factions under expanded headers of the reputation panel, so one found once is remembered by its ID and
+-- read by that afterwards. nil when it can't be read (not met yet, or under a collapsed header the first time).
+local repMemo, repMemoT = {}, nil
+local repByNameNow
+local function repByName(name)
+  -- (asked for each such quest on every refresh: one answer per frame)
+  local now = GetTime and GetTime() or 0
+  if now ~= repMemoT then repMemo, repMemoT = {}, now end
+  local m = repMemo[name]
+  if m == nil then m = repByNameNow(name) or false; repMemo[name] = m end
+  return m or nil
+end
+repByNameNow = function(name)
+  local ids = RG.db and RG.db.factionIds
+  local id = ids and ids[name]
+  if id then
+    local v = repOf(id)
+    if v then return v end
+  end
+  local get = C_Reputation and C_Reputation.GetFactionDataByIndex
+  local num = (C_Reputation and C_Reputation.GetNumFactions) or GetNumFactions
+  if not num then return nil end
+  local okN, n = pcall(num)
+  if not okN or type(n) ~= "number" then return nil end
+  for i = 1, n do
+    local fname, value, fid
+    if get then
+      local ok, f = pcall(get, i)
+      if ok and type(f) == "table" then fname, value, fid = f.name, f.currentStanding, f.factionID end
+    elseif GetFactionInfo then
+      local ok, a, _, _, _, _, v, _, _, _, _, _, _, fi = pcall(GetFactionInfo, i)
+      if ok then fname, value, fid = a, v, fi end
+    end
+    if fname == name and type(value) == "number" then
+      if fid and RG.db then RG.db.factionIds = RG.db.factionIds or {}; RG.db.factionIds[name] = fid end
+      return value
+    end
+  end
+  return nil
+end
 local function knows(spell)
   if IsPlayerSpell then local ok, v = pcall(IsPlayerSpell, spell); if ok and v ~= nil then return v end end
   if IsSpellKnown then local ok, v = pcall(IsSpellKnown, spell); if ok and v ~= nil then return v end end
@@ -95,10 +136,12 @@ function RG.QuestDone(id)
   if flagged == nil then flagged = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted or false end
   return flagged and flagged(id) and true or false
 end
+-- When you handed a quest in this session (GetTime), or nil: the guide follows a storyline you're in (Guide.lua)
+function RG.TurnedInAt(id) local t = turnedIn[id]; return type(t) == "number" and t or nil end
 if CreateFrame then   -- (the offline audit loads this file without the game's frames)
   local f = CreateFrame("Frame")
   pcall(f.RegisterEvent, f, "QUEST_TURNED_IN")
-  f:SetScript("OnEvent", function(_, _, qid) if qid then turnedIn[qid] = true end end)
+  f:SetScript("OnEvent", function(_, _, qid) if qid then turnedIn[qid] = GetTime and GetTime() or true end end)
 end
 -- Are a bring-items quest's items (d.bi = {{item, how many}, ...}) all in your bags?
 function RG.HasBringItems(d)
@@ -207,6 +250,7 @@ function RG.QuestBlocked(id, d, isDone, inLog, quick, depth)
   if d.dq then for _, p in ipairs(d.dq) do if inLog(p) then return why(quick, "after you finish ", qname(p)) end end end
   if (d.r or 1) > lvl then return why(quick, "at level ", d.r) end
   if d.rp then local v = repOf(d.rp[1]); if v and v < d.rp[2] then return why(quick, "needs more reputation") end end
+  if d.rn then local v = repByName(d.rn[1]); if v and v < d.rn[2] then return why(quick, "needs more reputation with ", d.rn[1]) end end
   if d.rx then local v = repOf(d.rx[1]); if v and v >= d.rx[2] then return why(quick, "your reputation is too high"), true end end
   -- the giver didn't offer it when you were there (data can't know everything): until you level or hand something in there
   local no = RG.db and RG.db.notOffered and RG.db.notOffered[id]
