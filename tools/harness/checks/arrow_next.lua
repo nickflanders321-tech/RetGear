@@ -10,8 +10,6 @@ local function follow(T, mode, rounds)
     -- walk there and do what it says straight away (an auto accept / hand-in is quicker than the arrow letting go of
     -- the pin you reached)
     T.go(obj.wp); T.step(1)
-    -- (once along the way: the arrow switched off for this step comes back for the next)
-    if i == 2 then RG.ArrowOff(); T.step(1) end
     local it = obj.stop and obj.stop.items and obj.stop.items[1]
     if it and it.act == "pickup" then T.Wd.accept(it.id)
     elseif it and it.act == "turnin" then T.Wd.handIn(it.id)
@@ -22,7 +20,7 @@ local function follow(T, mode, rounds)
       T.step(1)
       local a0 = T.arrow()
       local o = RG.Objective()
-      trace[#trace + 1] = string.format("t+%d pin=%s obj=%s paused=%s", s, a0 and string.format("%.1f,%.1f", a0[2], a0[3]) or "off", tostring(o and o.key), tostring(RG.db.arrowPaused))
+      trace[#trace + 1] = string.format("t+%d pin=%s obj=%s", s, a0 and string.format("%.1f,%.1f", a0[2], a0[3]) or "off", tostring(o and o.key))
     end
     local now = RG.Objective()
     if not (now and now.wp) then break end

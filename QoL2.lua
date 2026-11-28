@@ -103,7 +103,7 @@ function RG.ReportEnv()
     for _, w in ipairs({ "accept", "turnin", "tracker", "nameplates", "map", "available" }) do if RG.QuestieDoes(w) then q[#q + 1] = w end end
     L[#L + 1] = "Questie does: " .. (#q > 0 and table.concat(q, ", ") or "none of ours") .. (RG.QuestieDataWorks and (RG.QuestieDataWorks() and "  ·  database answers" or "  ·  database not reachable") or "")
   end
-  L[#L + 1] = "Arrow: " .. ((RG.Opt and RG.Opt("arrow")) and "on" or "off") .. ((RG.ArrowPaused and RG.ArrowPaused()) and " (paused)" or "")
+  L[#L + 1] = "Arrow: " .. ((RG.Opt and RG.Opt("arrow")) and "on" or "off")
     .. "  ·  " .. (function()
       -- Waypath+'s own share first: collectgarbage("count") is every add-on together (Questie alone can be hundreds of MB)
       local total = (collectgarbage("count") or 0) / 1024
@@ -306,7 +306,7 @@ local function runNext()
     run.current = q.id
     local left = 0
     for _, x in ipairs(plan) do left = left + #x.quests end
-    if not (RG.ArrowPaused and RG.ArrowPaused()) then RG.PinWaypoint(q.wp, true) end
+    RG.PinWaypoint(q.wp, true)
     -- a new zone: say how to get there
     if g.cost ~= -1 and run.zone ~= g.zone then
       notify("Next: " .. GOLD .. g.zone .. "|r (" .. #g.quests .. " to turn in)" .. (g.travel and (GREY .. ": " .. g.travel:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r") or ""))
@@ -327,7 +327,6 @@ function RG.TurnInRun()
   local list = readyQuests()
   if #list == 0 then notify("No ready quests with a known turn-in spot"); return end
   run = { started = GetTime() }
-  if RG.db then RG.db.arrowPaused = nil end   -- you asked for the turn-in run
   local plan = RG.TurnInPlan()
   run.zone = plan[1] and plan[1].cost == -1 and plan[1].zone or nil
   RG.Print(GOLD .. "Turn-in run:|r " .. #list .. " quest" .. (#list > 1 and "s" or "") .. " ready: " .. RG.TurnInPlanText(plan) .. ".")

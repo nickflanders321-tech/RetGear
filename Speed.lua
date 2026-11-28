@@ -1259,18 +1259,10 @@ local function spfActive()
 end
 local refreshArrow
 function RG.RefreshArrow() if refreshArrow then refreshArrow() end end
-local wasOn
 refreshArrow = function()
-  -- switching the arrow back on (header button, minimap menu, Settings) also ends a pause
-  local on = RG.Opt("arrow")
-  if on and wasOn == false and RG.db then RG.db.arrowPaused = nil end
-  wasOn = on
   -- (the way back to your body after dying shows even with the arrow switched off; the setting itself isn't touched)
   local corpseRun = RG.CorpseRun and RG.CorpseRun()
   if not (RG.Opt("arrow") or corpseRun) or (RG.IsAlt and RG.IsAlt() and not (RG.AltGuideActive and RG.AltGuideActive())) then if arrow then arrow:Hide() end return end
-  -- switched off by you: stays hidden whatever puts a pin on the map, until you point it somewhere yourself
-  -- (the way back to your body after dying is the one exception)
-  if RG.db and RG.db.arrowPaused and not (RG.CorpseRun and RG.CorpseRun()) then if arrow then arrow:Hide() end return end
   local has = C_Map and C_Map.HasUserWaypoint and C_Map.HasUserWaypoint()
   if has and spfActive() then if arrow then arrow:Hide() end return end
   if has then buildArrow(); arrow:Show() elseif arrow then arrow:Hide() end
@@ -1316,7 +1308,6 @@ combatWatch:SetScript("OnEvent", function()
 end)
 local function inCombat() return InCombatLockdown and InCombatLockdown() end
 function RG.PinWaypoint(wp, quiet)
-  if quiet and RG.db and RG.db.arrowPaused and not (RG.CorpseRun and RG.CorpseRun()) then return end
   if not (wp and C_Map and C_Map.SetUserWaypoint and UiMapPoint) then RG.Print("This client doesn't support map pins.") return end
   if inCombat() then deferredPin = { wp, quiet }; deferredClear = nil; if not quiet then RG.Notify("Pin for " .. wp[4] .. " is set as soon as combat ends") end return end
   local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(wp[1], wp[2] / 100, wp[3] / 100))
@@ -1327,7 +1318,6 @@ function RG.PinWaypoint(wp, quiet)
   if api then pcall(api.Navigate, "Waypath+", wp[1], wp[2] / 100, wp[3] / 100, wp[4]) end
   -- you asked for it (a click, not the route moving on by itself): if the arrow was switched off, it comes back on
   if not quiet and RG.db and not RG.Opt("arrow") then RG.db.arrow = true end
-  if not quiet and RG.db then RG.db.arrowPaused = nil end
   if RG.RefreshArrow then RG.RefreshArrow() end
   if not quiet then RG.Notify("Pinned " .. wp[4] .. ": follow the arrow") end
 end
@@ -1338,25 +1328,23 @@ function RG.ClearWaypoint()
   if C_Map and C_Map.ClearUserWaypoint then pcall(C_Map.ClearUserWaypoint) end
   if arrow then arrow:Hide() end
 end
--- You switched the arrow off (right-click or double-click it, or click its target): it stays off for the step you're on,
--- and comes back by itself for the next one (Guide.lua's SyncObjective), or as soon as you point it somewhere yourself
--- (click a quest, step or quest giver, Shift-click for the next stop, /wp way). The Arrow button turns it off for good.
--- (arrowPaused holds the step it was switched off for; true until the guide has seen which step that is)
+-- You switched the arrow off (right-click or double-click it, or click its target): it's off, like the Arrow button,
+-- until you turn it back on or point it somewhere yourself (click a quest, step or quest giver, Shift-click for the next
+-- stop, /wp way). (There used to be an "off for this step" that came back by itself; it came back after every
+-- hearthstone and loading screen, so it went.)
 function RG.ArrowOff()
-  local o = RG.Objective and RG.Objective()
-  if RG.db then RG.db.arrowPaused = (o and o.key) or true end
+  if RG.db then RG.db.arrow = false end
   RG.ClearWaypoint()
-  RG.Notify("Arrow off for this step: it comes back for the next one")
+  RG.Notify("Arrow off: the Arrow button turns it back on")
   if RG.RefreshTracker then RG.RefreshTracker() end
 end
-function RG.ArrowPaused() return RG.db and RG.db.arrowPaused and true or false end
--- the Arrow switch (header button, minimap menu, key): off, or back on - a paused arrow comes straight back to the route
+-- the Arrow switch (header button, minimap menu, key): off, or back on to the route
 function RG.ToggleArrow()
   if not RG.db then return end
-  if RG.Opt("arrow") and not RG.db.arrowPaused then
+  if RG.Opt("arrow") then
     RG.db.arrow = false
   else
-    RG.db.arrow, RG.db.arrowPaused = true, nil
+    RG.db.arrow = true
     lastAuto = nil
     if RG.MarkObjectiveDirty then RG.MarkObjectiveDirty() end
     if RG.SyncObjective then pcall(RG.SyncObjective, RG.Objective and RG.Objective(true)) end
@@ -1365,7 +1353,7 @@ function RG.ToggleArrow()
   if RG.RefreshTracker then RG.RefreshTracker() end
   RG.Notify("Arrow " .. (RG.Opt("arrow") and "on" or "off"))
 end
-function RG.ArrowOnState() return RG.Opt("arrow") and not (RG.db and RG.db.arrowPaused) end
+function RG.ArrowOnState() return RG.Opt("arrow") and true or false end
 -- Double-click a quest, step or quest giver: arrow on to it, or off if it's already the target.
 function RG.ArrowTo(wp)
   if not wp then return end
@@ -1374,7 +1362,6 @@ function RG.ArrowTo(wp)
     RG.ArrowOff()
     if RG.PickManually then RG.PickManually(nil) end
   else
-    RG.db.arrowPaused = nil
     if not RG.Opt("arrow") then RG.db.arrow = true end
     RG.PinWaypoint(wp, true)
     RG.Notify("Arrow on: " .. wp[4])
@@ -1453,7 +1440,6 @@ function RG.AutoPin(key, wp)
   if RG.CardsOnly and RG.CardsOnly() then return end
   if corpse.active then return end    -- the way back to your body comes first
   if not RG.Opt("routeGuide") or not RG.Opt("autoArrow") or not RG.Opt("arrow") or key == lastAuto then return end
-  if RG.db and RG.db.arrowPaused then return end   -- you switched it off for this step (the next step brings it back)
   if IsInInstance and IsInInstance() then return end
   local cur = currentPin()
   if cur and not samePin(cur, lastPlaced) then return end -- you placed your own pin: leave it
@@ -1468,7 +1454,6 @@ function RG.SetWaypoint(x, y)
   if not mapID or (C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(mapID)) then RG.Print("Can't place a pin here.") return end
   C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(mapID, x / 100, y / 100))
   lastPlaced = nil -- a pin you chose: auto-follow leaves it alone
-  RG.db.arrowPaused = nil
   refreshArrow()
   RG.Notify(string.format("Pin set at %.1f, %.1f: follow the arrow", x, y))
 end
@@ -1534,6 +1519,7 @@ local barQueued
 local function queueBar() if barQueued then return end; barQueued = true; C_Timer.After(0.5, function() barQueued = nil; refreshBar() end) end
 f:SetScript("OnEvent", function(_, event, a1, a2)
   if event == "PLAYER_LOGIN" then
+    if RG.db then RG.db.arrowPaused = nil end   -- (the old "off for this step", from saved variables before it went)
     paceTick = RG.PerfWrap("pace", paceTick)
     C_Timer.NewTicker(30, paceTick)
     -- distances on the tracker follow you as you move; standing still there's nothing new to show (events and the
@@ -1562,10 +1548,6 @@ f:SetScript("OnEvent", function(_, event, a1, a2)
       if not paused then paused = true; RG.Print("Auto quests paused: " .. (msg:gsub("[%.%s]+$", "")) .. ". They'll resume when you have room.") end
     end
   elseif event == "USER_WAYPOINT_UPDATED" or event == "SUPER_TRACKING_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
-    if event == "USER_WAYPOINT_UPDATED" and RG.db and RG.db.arrowPaused then
-      local cur = currentPin()
-      if cur and not samePin(cur, lastPlaced) then RG.db.arrowPaused = nil end
-    end
     refreshArrow()
   elseif event == "PLAYER_LEVEL_UP" or event == "QUEST_TURNED_IN" then
     RG.MarkQuestsDirty(); queueBar()
@@ -1587,9 +1569,8 @@ do
   local lastQ
   local function followSuper()
     if not on() then return end
-    -- the game picks quests on its own too (after every loading screen, on accepting one): that doesn't undo "off",
-    -- whether the Arrow switch is off or the arrow is off for this step
-    if not RG.Opt("arrow") or (RG.db and RG.db.arrowPaused) then return end
+    -- the game picks quests on its own too (after every loading screen, on accepting one): that doesn't undo "off"
+    if not RG.Opt("arrow") then return end
     local S = C_SuperTrack
     if not S then return end
     if S.IsSuperTrackingUserWaypoint and S.IsSuperTrackingUserWaypoint() then return end   -- our own pin
@@ -1615,7 +1596,7 @@ do
       if type(map) ~= "number" or type(x) ~= "number" or type(y) ~= "number" then return end
       local label = type(opts) == "table" and (opts.title or opts.name) or nil
       -- (other add-ons call this on their own too, not only on a Ctrl-click: an arrow you switched off stays off)
-      if RG.Follow and RG.Opt("arrow") and not (RG.db and RG.db.arrowPaused) then RG.Follow({ map, x * 100, y * 100, label or "Waypoint" }) end
+      if RG.Follow and RG.Opt("arrow") then RG.Follow({ map, x * 100, y * 100, label or "Waypoint" }) end
       -- shaped like TomTom's own: Questie keeps it, and Ctrl-clicking the same icon again turns it off
       local uid = { map, x, y, title = label, from = type(opts) == "table" and opts.from or nil }
       uids[#uids + 1] = uid

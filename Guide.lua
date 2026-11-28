@@ -1043,16 +1043,11 @@ function RG.SyncObjective(obj)
     lastObjKey = obj.key; objSince = GetTime and GetTime() or 0
     announce(obj)
   end
-  -- the arrow switched off for one step (RG.ArrowOff) comes back by itself for the next
-  local paused = RG.db and RG.db.arrowPaused
-  if paused == true then RG.db.arrowPaused = obj.key
-  elseif paused and paused ~= obj.key and not (RG.CorpseRun and RG.CorpseRun()) then RG.db.arrowPaused = nil end
   -- nowhere known to go (a quest in your log with no spot): the guide's own pin from the step before is taken down, so
   -- the arrow doesn't keep pointing at a town you've been to (a pin you placed yourself stays)
   if obj.clearArrow and not obj.wp and RG.PinIsOurs and RG.PinIsOurs() and RG.ClearWaypoint then RG.ClearWaypoint() end
   if not obj.wp or (IsInInstance and IsInInstance()) then return end
   if not (opt("arrow") and (opt("autoArrow") or obj.kind == "goal")) then return end
-  if RG.ArrowPaused and RG.ArrowPaused() then return end
   if obj.kind == "goal" then
     if obj.pinned ~= obj.key and cache.pinnedGoal ~= obj.key then
       cache.pinnedGoal = obj.key
