@@ -64,7 +64,11 @@ def judge(e):
     if cov < 0.01:
         flags.append("blank")
     elif cov < 0.06:
-        flags.append("tiny")
+        # (a ghost or a wisp is mostly see-through, so few of its pixels are solid even when the figure fills the frame:
+        # judged by its height instead)
+        b = m.get("box")
+        if not (b and (b[3] - b[1]) >= 0.45):
+            flags.append("tiny")
     if {"top", "bottom"} <= edges and cov > 0.45:
         flags.append("zoomed")
     return flags

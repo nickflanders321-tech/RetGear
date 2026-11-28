@@ -49,9 +49,16 @@ local function showNext()
   banner:ClearAllPoints()
   if over then
     local top = over:GetTop() * (over:GetEffectiveScale() or 1) / (UIParent:GetEffectiveScale() or 1)
+    local ratio = (over:GetEffectiveScale() or 1) / (UIParent:GetEffectiveScale() or 1)
     local room = (UIParent:GetHeight() or 768) - top
+    local right = (over:GetRight() or 0) * ratio
+    local below = (over:GetBottom() or 0) * ratio
+    -- above the window if there is room, else beside it, else under it; on a small screen where none fits, along the
+    -- top of the screen (over the window's edge) so it is never cut off
     if room >= 80 then banner:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, top + 8)
-    else banner:SetPoint("TOPLEFT", over, "TOPRIGHT", 10, 0) end
+    elseif right + 10 + 360 <= (UIParent:GetWidth() or 1920) then banner:SetPoint("TOPLEFT", over, "TOPRIGHT", 10, 0)
+    elseif below >= 80 then banner:SetPoint("TOP", UIParent, "BOTTOM", 0, below - 8)
+    else banner:SetPoint("TOP", UIParent, "TOP", 0, -8) end
   else banner:SetPoint("TOP", UIParent, "TOP", 0, -120) end
   banner.age = 0; banner:SetAlpha(0); banner:Show()
   if RG.ArcadeSound then RG.ArcadeSound("reward") end

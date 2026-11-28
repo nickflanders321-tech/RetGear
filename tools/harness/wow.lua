@@ -622,8 +622,11 @@ end
 G.GetMouseFocus = function() return nil end
 G.GetMouseFoci = function() return {} end
 G.GetCursorPosition = function() return 0, 0 end
-G.GetScreenWidth = function() return 1920 end
-G.GetScreenHeight = function() return 1080 end
+-- WP_SCREEN=1280x720 runs the whole harness on a smaller (or larger) client: UIParent's size in UI units
+local SCRW, SCRH = 1920, 1080
+do local w, h = (os.getenv("WP_SCREEN") or ""):match("^(%d+)x(%d+)$"); if w then SCRW, SCRH = tonumber(w), tonumber(h) end end
+G.GetScreenWidth = function() return SCRW end
+G.GetScreenHeight = function() return SCRH end
 
 -- Per-frame updates: `seconds` of game time at `fps`, running timers and every visible frame's OnUpdate.
 function W.step(seconds, fps)
@@ -687,7 +690,7 @@ local function gameFrame(name, otype, parent)
   return f
 end
 G.UIParent = gameFrame("UIParent")
-S[G.UIParent].w, S[G.UIParent].h = 1920, 1080
+S[G.UIParent].w, S[G.UIParent].h = SCRW, SCRH
 G.WorldFrame = gameFrame("WorldFrame")
 for _, n in ipairs({ "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2", "EmbeddedItemTooltip" }) do
   G[n] = gameFrame(n, "GameTooltip", G.UIParent); S[G[n]].shown = false

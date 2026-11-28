@@ -79,6 +79,7 @@ Tracker.lua
 TrackerExtras.lua
 StepView.lua
 DungeonPrep.lua
+Attunement.lua
 Extras.lua
 Movers.lua
 Auction.lua
@@ -97,6 +98,7 @@ Flights.lua
 GateOff.lua
 ArcadeCards.lua
 ArcadeMythic.lua
+ArcadeMythicMounts.lua
 ArcadeArt.lua
 ArcadeFrame.lua
 ArcadeRaiderLook.lua
@@ -119,6 +121,7 @@ Battle.lua
 Arcade.lua
 ArcadeRewards.lua
 ArcadeSocial.lua
+ArcadeGuildBoard.lua
 ArcadeFieldGuide.lua
 ArcadeRaidPacks.lua
 ArcadeEarn.lua

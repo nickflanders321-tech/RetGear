@@ -58,7 +58,9 @@ local function discover(name, by, quiet)
   local me = safe(UnitName, "player")
   a.disc[name] = { by = by or me or "?", t = now() }
   if not by then
-    outbox[#outbox + 1] = { "D|" .. name, "GUILD" }; flush()
+    -- (a find that came out of a pack is only told to the guild once the pack has been turned over)
+    local function tell() outbox[#outbox + 1] = { "D|" .. name, "GUILD" }; flush() end
+    if RG.ArcadeAfterReveal then RG.ArcadeAfterReveal(tell) else tell() end
     if not quiet and RG.Toast and RG.Opt and RG.Opt("arcadeToasts") ~= false then
       RG.Toast("Discovered", name .. ": you found it first. Its card shows in the Album now, for your guild too.", "Interface\\Icons\\INV_Misc_Spyglass_03", nil, nil, 6)
     end

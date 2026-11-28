@@ -20,7 +20,7 @@ local function store() local u = UI(); return u and u.store and u.store() end
 local function keyOf(c) return c and (c.key or c.name) end
 local function today() return date and date("%d %b %Y") or "" end
 local function dungeonOf(c) return c and RG.ARCADE_SET_MYTHIC_OF and RG.ARCADE_SET_MYTHIC_OF[keyOf(c) or ""] end
-local function sixOf(c) return c and c.tier == 7 and c.mythic and not c.mythic.one and c.name or nil end
+local function sixOf(c) return c and c.tier == 7 and c.mythic and not c.mythic.one and not c.mythic.mount and c.name or nil end
 local function isRing(c) return c and c.mythic and c.mythic.one end
 local function clamp(v) return v < 0 and 0 or (v > 1 and 1 or v) end
 local function back(v) local c1 = 1.70158; return 1 + (c1 + 1) * (v - 1) ^ 3 + c1 * (v - 1) ^ 2 end
@@ -101,7 +101,12 @@ RG.ArcadeCollectorPack = function(got, meta)
         local k = keyOf(c)
         if not a.mythPull[k] then
           a.mythPull[k] = { by = (UnitName and UnitName("player")) or "?", date = today() }
-          if a.announce ~= false and RG.ArcadeShareCard then pcall(RG.ArcadeShareCard, c, g.finish or 4) end
+          if a.announce ~= false and RG.ArcadeShareCard then
+            -- (not until the pack's cards are turned over: it would tell your group and guild what is still face down)
+            local card, fin = c, g.finish or 4
+            local share = function() pcall(RG.ArcadeShareCard, card, fin) end
+            if RG.ArcadeAfterReveal then RG.ArcadeAfterReveal(share) else share() end
+          end
         end
       end
     end
@@ -377,6 +382,10 @@ table.insert(RG.ArcadeMythicHooks, function(event, m, g, a1, a2, a3)
       if type(W) ~= "number" or W <= 0 then W, H = 760, 640 end
       p.bd:SetSize(W * 1.12, H * 1.12)
       if screenOf(dn, p.bd, W * 1.12, H * 1.12) then p.bd:SetAlpha(0); p.bd:Show(); p.dim:SetAlpha(0); p.dim:Show() end
+    elseif c.mythic and c.mythic.mount then
+      -- a Mythic mount: its name, and what it is
+      spec.word = (c.name or ""):upper()
+      spec.sub = "M Y T H I C   ·   M O U N T"
     elseif six then
       spec.word = six:upper()
       spec.sub = "M Y T H I C   ·   O N E   O F   S I X"
@@ -530,6 +539,10 @@ local function buildHall(frame)
   hall.title = u.fs(hall, "title", 18); hall.title:SetPoint("TOP", 0, -12); hall.title:SetTextColor(1, 0.92, 0.7)
   hall.sub = u.fs(hall, "body", 12); hall.sub:SetPoint("TOP", hall.title, "BOTTOM", 0, -4); hall.sub:SetTextColor(0.82, 0.78, 0.68)
   hall.close = u.gbtn(hall, "Back", 70, 22, function() hall:Hide() end); hall.close:SetPoint("TOPRIGHT", -8, -8)
+  -- the Stable: the Mythic mounts, a page of their own (the hall's Stable button, and Back from it)
+  hall.stable = u.gbtn(hall, "Stable", 70, 22, function() RG.ArcadeTrophy("@mounts") end); hall.stable:SetPoint("RIGHT", hall.close, "LEFT", -6, 0)
+  hall.hallBtn = u.gbtn(hall, "Hall", 70, 22, function() RG.ArcadeTrophy(nil) end); hall.hallBtn:SetPoint("RIGHT", hall.close, "LEFT", -6, 0)
+  hall.mt = {}
   -- six plinths (the hall), or one (a dungeon's heart)
   hall.pl = {}
   for i = 1, 6 do
@@ -563,6 +576,43 @@ local function hideHall()
   hall.big:Hide(); hall.bigPl:Hide(); hall.bigQ:Hide(); hall.bigSlot:Hide(); hall.plate:Hide(); hall.bd:Hide()
   for _, b in ipairs(hall.hearts) do b:Hide() end
   hall.heartsHead:Hide()
+  for _, e in ipairs(hall.mt) do e.card:Hide(); e.empty:Hide(); e.q:Hide() end
+  hall.stable:Hide(); hall.hallBtn:Hide()
+end
+-- the Stable: every Mythic mount in rows, the ones you hold painted, the rest waiting as a "?"
+local function showStable(a)
+  local u = UI()
+  local order = RG.ARCADE_MOUNT_ORDER or {}
+  local held = 0
+  for _, nm in ipairs(order) do if owned(a, u.byKey[nm]) then held = held + 1 end end
+  hall.title:SetText("THE STABLE")
+  hall.sub:SetText("Mythic mounts  " .. held .. " / " .. #order .. "      ·      hover a card for its rules")
+  hall.spot:ClearAllPoints(); hall.spot:SetPoint("CENTER", hall, "TOP", 0, -150); hall.spot:SetSize(760, 300); hall.spot:SetVertexColor(1, 0.86, 0.55, 0.2); hall.spot:Show()
+  local W = hall:GetWidth() or 730
+  if type(W) ~= "number" or W <= 0 then W = 730 end
+  local cols, cw = 9, 70
+  local gap = math.floor((W - 24 - cols * cw) / (cols - 1))
+  local ch = math.floor(cw * 1.4)
+  for i, nm in ipairs(order) do
+    local e = hall.mt[i]
+    if not e then
+      e = {}
+      e.card = u.makeCard(hall, 70); e.card.noTip = false
+      e.empty = hall:CreateTexture(nil, "ARTWORK", nil, 1); e.empty:SetColorTexture(0.2, 0.18, 0.26, 0.6)
+      e.q = u.fs(hall, "title", 20); e.q:SetText("?"); e.q:SetTextColor(0.5, 0.47, 0.6)
+      hall.mt[i] = e
+    end
+    local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+    local x, y = 12 + col * (cw + gap), -70 - row * (ch + 14)
+    local c = u.byKey[nm]
+    if c and owned(a, c) then
+      e.card:ClearAllPoints(); e.card:SetPoint("TOPLEFT", hall, "TOPLEFT", x, y); u.paint(e.card, c, u.bestFinish(a, c.id), 1); e.card:Show()
+    else
+      e.empty:ClearAllPoints(); e.empty:SetPoint("TOPLEFT", hall, "TOPLEFT", x, y); e.empty:SetSize(cw, ch); e.empty:Show()
+      e.q:ClearAllPoints(); e.q:SetPoint("CENTER", e.empty, "CENTER"); e.q:Show()
+    end
+  end
+  hall.hallBtn:Show()
 end
 local function frameOf() return _G.WaypathArcade end
 function RG.ArcadeTrophy(dn)
@@ -570,6 +620,7 @@ function RG.ArcadeTrophy(dn)
   if not hall then buildHall(frame) end
   hideHall()
   local u, a = UI(), store()
+  if dn == "@mounts" then showStable(a); hall:Show(); return end
   if dn then
     -- one dungeon's heart on its plinth, its loading screen faint behind
     local key = RG.ARCADE_SET_MYTHIC and RG.ARCADE_SET_MYTHIC[dn]
@@ -597,7 +648,8 @@ function RG.ArcadeTrophy(dn)
     local n, all = heartCount(a)
     local six = 0
     for _, nm in ipairs(SIX_ORDER) do if owned(a, u.byKey[nm]) then six = six + 1 end end
-    hall.sub:SetText("The Six  " .. six .. " / 6      ·      Hearts  " .. n .. " / " .. all)
+    hall.sub:SetText("The Six  " .. six .. " / 6      ·      Hearts  " .. n .. " / " .. all .. "      ·      Mounts  " .. (function() local k = 0; for _, nm in ipairs(RG.ARCADE_MOUNT_ORDER or {}) do if owned(a, u.byKey[nm]) then k = k + 1 end end return k end)() .. " / " .. #(RG.ARCADE_MOUNT_ORDER or {}))
+    hall.stable:Show()
     hall.spot:ClearAllPoints(); hall.spot:SetPoint("CENTER", hall, "TOP", 0, -130); hall.spot:SetSize(760, 260); hall.spot:SetVertexColor(1, 0.86, 0.55, 0.25); hall.spot:Show()
     for i, e in ipairs(hall.pl) do
       local nm = SIX_ORDER[i]
@@ -681,6 +733,17 @@ do
       have = function(a) return owned(a, UI().byKey[nm]) and 1 or 0 end, reward = { coins = nm == "The 1 Ring" and 250 or 75 } }
   end
   if RG.ArcadeFeatsAdd then RG.ArcadeFeatsAdd("six", "The Six", six) end
+  -- the Stable: the Mythic mounts (ArcadeMythicMounts.lua)
+  local mounts = {}
+  local mn = RG.ARCADE_MOUNT_ORDER or {}
+  local function mountsHeld(a) local n = 0; for _, nm in ipairs(mn) do if owned(a, UI().byKey[nm]) then n = n + 1 end end; return n end
+  if #mn > 0 then
+    mounts[#mounts + 1] = { id = "mount1", name = "Saddle Up", text = "Pull a Mythic mount.", pts = 40, need = 1, have = mountsHeld, reward = { coins = 100 } }
+    mounts[#mounts + 1] = { id = "mount7", name = "Riding Lessons", text = "Hold 7 Mythic mounts.", pts = 60, need = 7, have = mountsHeld, reward = { edge = true } }
+    mounts[#mounts + 1] = { id = "mount13", name = "The Stable Door", text = "Hold 13 Mythic mounts.", pts = 100, need = 13, have = mountsHeld, reward = { coins = 300 } }
+    mounts[#mounts + 1] = { id = "mount26", name = "Master of the Stable", text = "Hold every Mythic mount.", pts = 200, need = #mn, have = mountsHeld, reward = { title = "Master of the Stable", back = "Radiant" } }
+    if RG.ArcadeFeatsAdd then RG.ArcadeFeatsAdd("mounts", "Mythic Mounts", mounts) end
+  end
 end
 
 -- the Feats tab: tell my guild about my Mythics (on by default)

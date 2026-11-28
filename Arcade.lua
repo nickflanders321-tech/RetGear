@@ -335,7 +335,7 @@ end)
 local byTier, tierWeight
 local function buildPools()   -- (the Raiders pool only counts once there is one)
   byTier, tierWeight = {}, 0
-  for _, c in ipairs(CARDS) do if not c.dun and not c.rival then byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end end
+  for _, c in ipairs(CARDS) do if not c.dun and not c.rival and not (c.mythic and c.mythic.mount) then byTier[c.tier] = byTier[c.tier] or {}; table.insert(byTier[c.tier], c) end end
   for t = 1, #TIER do if byTier[t] then tierWeight = tierWeight + TIER[t][2] end end
   -- dungeon packs: { [dungeon] = { list, byTier, weight } } from ArcadeDungeons.lua (cards found by name)
   RG.ArcadeDunPools = {}
@@ -447,6 +447,8 @@ local function setProgress(a, s, stage)
 end
 -- the three stages of a set: every card (bronze), every card rare or better (silver), every card holo or better
 -- (gold). Rewards: coins, plus a jumbo for silver and a super jumbo for gold; a dungeon's bronze adds two of its packs.
+-- { percent of a set's cards, share of the set's reward in coins, a pack token or nil }
+RG.ARCADE_SET_MILESTONES = { { 25, 0.20 }, { 50, 0.35 }, { 75, 0.50, "normal" } }
 RG.ARCADE_STAGES = {
   { "Bronze", "every card", { 0.8, 0.55, 0.32 } },
   { "Silver", "every card rare or better", { 0.78, 0.82, 0.9 } },
@@ -459,12 +461,12 @@ function RG.ArcadeStageReward(s, stage)
   if s.field and stage == 1 then packs = { jumbo = 1 } end   -- (a Field Guide page: its Explorer badge and a jumbo pack)
   return coins, packs, dpk
 end
-function RG.ArcadeStageText(s, stage)
+function RG.ArcadeStageText(s, stage, short)
   local coins, packs, dpk = RG.ArcadeStageReward(s, stage)
   local t = "+" .. coins .. " coins"
   if packs and packs.jumbo then t = t .. ", a jumbo pack" end
   if packs and packs.super then t = t .. ", a super jumbo pack" end
-  if dpk then t = t .. ", " .. dpk .. " " .. s.name:gsub("^The ", "") .. " packs" end
+  if dpk then t = t .. ", " .. dpk .. " " .. (short and "" or (s.name:gsub("^The ", "") .. " ")) .. "packs" end   -- (short: the set's name is already beside it)
   if s.field and stage == 1 then t = t .. " and an Explorer badge" end
   return t
 end
@@ -474,6 +476,27 @@ local function claimSets(a)
   a.setStage = a.setStage or {}    -- [set] = highest stage paid
   local done, won = {}, {}   -- (won: for the celebration when the pack is open)
   for _, s in ipairs(getSets()) do
+    -- milestones on the way: a quarter, half and three quarters of a set's cards (any print) each pay a little, so a long
+    -- set pays along the way and not only at the end (sets of 8 cards or more)
+    if #s.cards >= 8 and not s.soon then
+      a.setMile = a.setMile or {}
+      local have, got = setProgress(a, s, 1), a.setMile[s.name] or 0
+      local finished = (a.setStage[s.name] or (a.setsDone[s.name] and 1 or 0)) >= 1   -- (a set done before milestones existed: marked, not paid again)
+      if finished and got < #RG.ARCADE_SET_MILESTONES then got = #RG.ARCADE_SET_MILESTONES; a.setMile[s.name] = got end
+      for m, step in ipairs(RG.ARCADE_SET_MILESTONES) do
+        if got < m and have * 100 >= step[1] * #s.cards then
+          local coins = RG.ArcadeBoost(math.floor((s.reward or 0) * step[2] + 0.5))
+          a.setMile[s.name] = m
+          if coins > 0 then
+            a.coins = (a.coins or 0) + coins
+            a.stats = a.stats or {}; a.stats.sets = (a.stats.sets or 0) + coins
+          end
+          if step[3] then local t = tok(a); t[step[3]] = (t[step[3]] or 0) + 1 end
+          local txt = "+" .. coins .. " coins" .. (step[3] and (", a " .. (step[3] == "normal" and "pack" or step[3] .. " pack")) or "")
+          done[#done + 1] = s.name .. " " .. step[1] .. "% (" .. txt .. ")"
+        end
+      end
+    end
     local paid = a.setStage[s.name] or (a.setsDone[s.name] and 1 or 0)
     for stage = paid + 1, (#s.cards > 0 and 3 or 0) do
       if setProgress(a, s, stage) < #s.cards then break end
@@ -551,6 +574,7 @@ RG.ArcadeDaily = dailyCheck
 -- Packs, selling, duels
 -- ---------------------------------------------------------------------------
 local PITY = 7   -- a pack after this many without a holo or full art always has one
+RG.ARCADE_PITY4 = 25   -- and a pack after this many without a full art (or Gilded) has a full art as its last card
 -- a dungeon's own Mythic, until you have it: 1 in 10 of that dungeon's packs, and for certain in the 10th of its
 -- packs opened without it (after that, a copy is as rare as any Mythic)
 RG.ARCADE_MYTH_PITY = 10
@@ -628,7 +652,7 @@ local function openOne(a, kind, dn)
   elseif (tok(a)[kind] or 0) > 0 then free = true; tok(a)[kind] = tok(a)[kind] - 1
   elseif (a.coins or 0) < packPrice(kind) then return nil, "A " .. def.name:lower() .. " costs " .. packPrice(kind) .. " coins."
   else a.coins = a.coins - packPrice(kind) end
-  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0, kind = kind, size = def.size, dungeon = dn }
+  local meta = { bonus = bonus, free = free, pityBefore = a.pity or 0, pity4Before = a.pity4 or 0, kind = kind, size = def.size, dungeon = dn }
   -- first seal of the day: the day's streak
   if a.packDay ~= today() then
     local n = (a.packDay == yesterdayStr()) and ((a.packStreak or 0) + 1) or 1
@@ -638,6 +662,7 @@ local function openOne(a, kind, dn)
   end
   meta.streak = meta.streak or a.packStreak or 1
   a.packs = (a.packs or 0) + 1
+  if RG.ArcadeCountWeek then pcall(RG.ArcadeCountWeek, a, 1) end
   local got, shiny, newCount = {}, false, 0
   local size = def.size
   -- a Mythic takes the last card's place: The 1 Ring (once per account, engraved with who opened it), or one of the others
@@ -665,17 +690,24 @@ local function openOne(a, kind, dn)
     local pool = {}
     for _, c in ipairs(byTier[7]) do if not (c.mythic and c.mythic.one) then pool[#pool + 1] = c end end
     if #pool > 0 then mythic = pool[math.random(#pool)] end
+  elseif mroll < (TIER[7].rate + (RG.ARCADE_MOUNT_RATE or 0)) * mw and RG.ARCADE_MOUNT_ORDER and not myCard then
+    -- a Mythic mount (ArcadeMythicMounts.lua): its own roll, so the six keep their odds; not in a dungeon's own pack
+    local pool = {}
+    for _, nm in ipairs(RG.ARCADE_MOUNT_ORDER) do if byKey[nm] then pool[#pool + 1] = byKey[nm] end end
+    if #pool > 0 then mythic = pool[math.random(#pool)] end
   end
   if meta.mythPityBefore then
     if mythic == myCard then a.mpity[dn] = nil; meta.mythGuaranteed = myDue or nil
     else a.mpity[dn] = meta.mythPityBefore + 1 end
   end
+  local gotFull = false
   for i = 1, size do
     local c = rollCard(a, dn)
     if i == size and mythic then c = mythic end
     local least = c.tier == 6 and 3 or (c.tier == 7 and 4 or 1)
     if i > size - def.rares then least = math.max(least, 2) end   -- the last cards: rare or better (one in a pack, two in a jumbo, three in a super jumbo)
     if i == size then least = math.max(least, ((a.pity or 0) >= PITY or bonus) and 3 or 2) end   -- the last card: holo after a long dry spell or from a reward pack
+    if i == size and (a.pity4 or 0) >= RG.ARCADE_PITY4 then least = math.max(least, 4) end   -- the last card: a full art after a very long dry spell
     local f = rollFinish(least)
     -- now and then a print climbs one finish as it turns over (ArcadePackFx.lua shows it): about 1 card in 40 tries,
     -- Common to Rare and Rare to Holo; a Holo's try succeeds 1 time in 25 (Full art about 1 card in 1,000)
@@ -683,6 +715,7 @@ local function openOne(a, kind, dn)
     if c.tier ~= 7 and f < 4 and math.random() < 0.025 and (f < 3 or math.random() < 0.04) then up = f; f = f + 1 end
     -- the Gilded print: its own roll, for any card a pack can hold but a Mythic (it replaces the print rolled above)
     if c.tier ~= 7 and not c.mythic and not c.field and not c.bound and math.random() < RG.ARCADE_GILDED_RATE then f = 5; up = nil end
+    if f >= 4 then gotFull = true end
     local isNew = owned(a, c.id) == 0
     if isNew then a.fresh = a.fresh or {}; a.fresh[c.key or c.name] = true end
     local slot = a.cards[c.key or c.name] or {}
@@ -690,7 +723,7 @@ local function openOne(a, kind, dn)
     slot[f] = (slot[f] or 0) + 1
     a.cards[c.key or c.name] = slot
     got[#got + 1] = { card = c, finish = f, new = isNew, newPrint = newPrint, value = FINISH[f][4], odds = cardOdds(c, f), copies = owned(a, c.id), upgraded = up }
-    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or ((c == myCard and meta.mythPityBefore) and RG.ARCADE_MYTH_RATE) or (c.dun and TIER[7].rate or (TIER[7].rate / 5))) + 0.5); meta.mythic = c.name end
+    if c.tier == 7 then got[#got].odds = math.floor(size / ((c.mythic and c.mythic.one) and TIER[7].ring or ((c == myCard and meta.mythPityBefore) and RG.ARCADE_MYTH_RATE) or (c.dun and TIER[7].rate or (c.mythic and c.mythic.mount and (RG.ARCADE_MOUNT_RATE / #RG.ARCADE_MOUNT_ORDER)) or (TIER[7].rate / 5))) + 0.5); meta.mythic = c.name end
     if f >= 3 then shiny = true end
     if isNew then newCount = newCount + 1 end
     local r = a.rarest
@@ -700,6 +733,7 @@ local function openOne(a, kind, dn)
     end
   end
   a.pity = shiny and 0 or ((a.pity or 0) + def.weight)   -- a bigger pack counts for more dry packs
+  a.pity4 = gotFull and 0 or ((a.pity4 or 0) + def.weight)
   if RG.ArcadeCollectorPack then pcall(RG.ArcadeCollectorPack, got, meta) end
   local notes = {}
   local function note(x) if x then notes[#notes + 1] = x end end
@@ -1714,7 +1748,7 @@ local function makeCard(parent, w)
       GameTooltip:AddLine(KIND[c.kind] .. "  ·  " .. TIER[c.tier][1] .. "  ·  " .. FINISH[self.finish][1], 1, 1, 1)
       GameTooltip:AddLine(c.text, 0.75, 0.75, 0.75, true)
       if c.mythic and RG.Battle and RG.Battle.MYTHIC and RG.Battle.MYTHIC[c.name] then GameTooltip:AddLine(RG.Battle.MYTHIC[c.name][2], 1, 0.91, 0.66, true) end
-      if c.mythic then GameTooltip:AddLine(c.mythic.one and "The rarest card: about 1 pack in 5,000, one per account. It can't be crafted, traded or sold." or "A Mythic: about 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5) .. ". It can't be crafted or traded.", 0.8, 0.8, 0.8, true) end
+      if c.mythic then GameTooltip:AddLine(c.mythic.one and "The rarest card: about 1 pack in 5,000, one per account. It can't be crafted, traded or sold." or (c.mythic.mount and ("A Mythic mount: about 1 pack in " .. groupDigits(math.floor(#RG.ARCADE_MOUNT_ORDER / RG.ARCADE_MOUNT_RATE + 0.5)) .. ". It can't be crafted or traded.")) or "A Mythic: about 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5) .. ". It can't be crafted or traded.", 0.8, 0.8, 0.8, true) end
       GameTooltip:AddLine("Duel power " .. power(c, self.finish) .. "  (quick card duels; the Arena uses the card's own mana, attack and health)", 0.7, 0.9, 0.7, true)
       if self.copies and self.copies > 1 then GameTooltip:AddLine("You own " .. self.copies, 0.7, 0.7, 0.7) end
     end
@@ -1724,6 +1758,10 @@ local function makeCard(parent, w)
   return f
 end
 
+-- creatures whose model this client draws as nothing (an invisible one whose look is a spell: Dream Fog; a model that
+-- needs the game's own effects: Ragnaros, Hakkar; or a model file the install lacks: Spirit of the Damned). The card shows
+-- its own painted scenery for them, as for any model the art check finds bad. Display id -> true.
+RG.ARCADE_BAD_MODEL = { [11686] = true, [2168] = true, [15295] = true, [2078] = true, [11121] = true, [11012] = true, [16170] = true, [263886] = true }
 -- an NPC card shows that creature's own model; a place card a piece of its zone's own world map
 local function hasArt(c)
   if c.kind == 2 then
@@ -1757,6 +1795,30 @@ RG.ARCADE_CAMFIX = {
   ["Tepolar"] = 2.35, ["Cursed Centaur"] = 2.35, ["Staggon"] = 2.35, ["Yor"] = 2.35, ["Wep"] = 2.35, ["Rocklance"] = 2.34,
   ["Achellios the Banished"] = 2.35, ["Ro'Bark"] = 2.01, ["Princess Theradras"] = 1.89, ["Rage Talon Fire Tongue"] = 2.34,
   ["Metzen the Reindeer"] = 2.16,
+  -- found by tools/render/tune.py on the real art (tiny or zoomed in the card sweep)
+  ["Anachronos"] = 1.28, ["Anachronos the Ancient"] = 1.44, ["Aspect of Banality"] = 1.01, ["Aspect of Corruption"] = 1.01,
+  ["Aspect of Malice"] = 0.96, ["Aspect of Shadow"] = 1.01, ["Ayamiss the Hunter"] = 0.9, ["Azzere the Skyblade"] = 1.44,
+  ["Bannok Grimaxe"] = 1.93, ["Baron Charr"] = 1.08, ["Baron Geddon"] = 1.08, ["Baron Kazum"] = 1.14,
+  ["Blackhand Iron Guard"] = 1.93, ["Blind Hunter"] = 0.9, ["Blood Seeker"] = 0.9, ["Boulderheart"] = 1.14,
+  ["Broodlord Lashlayer"] = 1.28, ["Chromaggus"] = 1.53, ["Crystal Fang"] = 0.64, ["Darkmist Widow"] = 0.64,
+  ["Dart"] = 0.81, ["Deviate Faerie Dragon"] = 0.85, ["Deviate Guardian"] = 0.81, ["Dishu"] = 1.01,
+  ["Dreadscorn"] = 1.93, ["Dreamwatcher Forktongue"] = 1.08, ["Duskstalker"] = 1.01, ["Eldreth Apparition"] = 1.01,
+  ["Eldreth Phantasm"] = 0.96, ["Eldreth Spectre"] = 1.01, ["Fellicent's Shade"] = 1.01, ["Freezing Spirit"] = 1.01,
+  ["Frozen Soul"] = 1.01, ["General Colbatann"] = 1.21, ["Golemagg the Incinerator"] = 1.14, ["Greater Kraul Bat"] = 0.9,
+  ["Gruklash"] = 1.93, ["Heartrazor"] = 0.45, ["Hedrum the Creeper"] = 0.64, ["High Marshal Whirlaxis"] = 1.44,
+  ["Jed Runewatcher"] = 1.93, ["Kelemis the Lifeless"] = 1.01, ["Kraul Bat"] = 0.9, ["Krethis Shadowspinner"] = 0.64,
+  ["Landslide"] = 1.14, ["Leech Widow"] = 0.64, ["Lord Captain Wyrmak"] = 1.21, ["Maexxna"] = 1.01,
+  ["Maws"] = 0.81, ["Mazzranache"] = 1.14, ["Mother Smolderweb"] = 0.64, ["Nal'taszar"] = 0.85,
+  ["Naraxis"] = 0.64, ["Nefarian"] = 0.57, ["Nessy"] = 1.36, ["Ohgan"] = 0.85,
+  ["Onyxian Warder"] = 1.21, ["Overlord Wyrmthalak"] = 1.21, ["Petrified Guardian"] = 1.28, ["Pridewing Patriarch"] = 0.45,
+  ["Prince Thunderaan"] = 1.08, ["Princess Yauj"] = 1.14, ["Pyroguard Emberseer"] = 1.08, ["Rage Talon Captain"] = 1.21,
+  ["Rage Talon Dragon Guard"] = 1.21, ["Ravasaur Matriarch"] = 0.81, ["Razormaw Matriarch"] = 0.81, ["Ressan the Needler"] = 0.9,
+  ["Revanchion"] = 1.01, ["Rippa"] = 1.01, ["Shade of Taerar"] = 1.21, ["Shadowclaw"] = 1.01,
+  ["Snarlflare"] = 1.14, ["Solakar Flamewreath"] = 1.21, ["Spectral Teacher"] = 1.01, ["Sri'skulk"] = 0.64,
+  ["Strider Clutchmother"] = 1.14, ["Taerar"] = 1.21, ["Takk the Leaper"] = 0.81, ["The Unforgiven"] = 0.96,
+  ["Twilight Corrupter"] = 1.14, ["Twilight Lord Kelris"] = 1.82, ["Varo'then's Ghost"] = 0.96, ["Vem"] = 1.14,
+  ["Vengeful Ancient"] = 1.28, ["Vile Bat"] = 0.9, ["Witness: Baron Kazum"] = 1.14, ["Witness: High Marshal Whirlaxis"] = 1.44,
+  ["Witness: Taerar"] = 1.21, ["Witness: Twilight Corrupter"] = 1.14,
 }
 function RG.ArcadeCamScale(c)
   local k = CAM[c and c.ref or 7] or 1
@@ -1795,7 +1857,7 @@ local function dressCreature(w, c)
   if cid and not (npcDisp and npcDisp[cid] == -1) then cid = nil end
   if not id and not cid then return false end
   local mem = WaypathDB and WaypathDB.arcade and WaypathDB.arcade.badModel
-  if mem and mem[id] then return false end     -- the art check found that this client cannot draw it: scenery instead
+  if (mem and mem[id]) or (id and RG.ARCADE_BAD_MODEL[id]) then return false end     -- the art check found that this client cannot draw it: scenery instead
   local m = ensureModel(w)
   if not m then return false end
   m.creature = true
@@ -2015,6 +2077,14 @@ local function layoutText(w, big, name, text)
     for _ = 1, 12 do
       if sz <= 6 or not w.nameB:IsTruncated() then break end
       sz = math.max(6, sz - 0.5); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
+    end
+    -- (a very long name, "Ashkandi, Greatsword of the Brotherhood": the ribbon's margins give a little, down to 6 again)
+    if w.nameB:IsTruncated() then
+      w.nameB:SetWidth((pb[3] - pb[1] - 34) * u)
+      for _ = 1, 4 do
+        if sz <= 6 or not w.nameB:IsTruncated() then break end
+        sz = math.max(6, sz - 0.5); setfont(w.nameB, "head", sz); w.nameB:SetText(name or "")
+      end
     end
   end
   w.nameB:Show()
@@ -2315,6 +2385,14 @@ local frame, cells, reveal, detail
 local COLS, ROWS, CELLW = 6, 3, 104
 local GRIDX, GRIDY = 118, 150
 local WINW, WINH = 790, 730
+-- the scale that fits the window on this screen (height and width): 1 when it already fits, down to 0.5 on a very small client
+function RG.ArcadeScreenFit()
+  local pw, ph = UIParent and UIParent:GetWidth(), UIParent and UIParent:GetHeight()
+  local k = 1
+  if type(ph) == "number" and ph > 0 then k = math.min(k, (ph - 30) / WINH) end
+  if type(pw) == "number" and pw > 0 then k = math.min(k, (pw - 30) / WINW) end
+  return math.max(0.5, k)
+end
 local view = { kind = 0, show = 1, sort = 1, page = 1, search = "", mode = "cards", set = nil, showcase = false }
 local SHOWS = { "All", "Owned", "Missing", "Extras", "New" }
 local SORTS = { "Owned", "Collection", "Rarity", "Name", "Power", "Graded", "Full art", "Gilded" }
@@ -2814,6 +2892,18 @@ function RG.ArcadeRevealPending()
   local m = rawget(reveal, "myth")
   return (m and m:IsShown()) and true or false
 end
+-- Runs fn once nothing in a pack is face down any more. Anything the add-on tells your group or guild about a pull (a Mythic,
+-- a First Edition find) goes through this, so nobody is told what is in your pack before you've turned it over yourself.
+function RG.ArcadeAfterReveal(fn)
+  if not (C_Timer and C_Timer.After) then return fn() end
+  local tries = 0
+  local function try()
+    tries = tries + 1
+    if tries < 1200 and RG.ArcadeRevealPending and RG.ArcadeRevealPending() then C_Timer.After(0.5, try); return end   -- (gives up after 10 minutes)
+    pcall(fn)
+  end
+  C_Timer.After(0.3, try)   -- (the pack is rolled a moment before its screen is up)
+end
 -- A Mythic turns over. A white flash and two shockwaves, the table shakes, sparks fly out, and the card springs up to
 -- the middle at full size while the title drops in letter by letter, rays in every colour turn behind it and embers
 -- rise. The 1 Ring then engraves its opener's name round its band, a letter at a time, each with a glint and a chime.
@@ -2878,6 +2968,7 @@ function RG.ArcadeMythicMoment(g)
   local dunM = RG.ARCADE_SET_MYTHIC_OF and RG.ARCADE_SET_MYTHIC_OF[g.card.key or ""]
   m.hint:SetText((one and "The rarest card there is: one per account"
     or (dunM and ("About 1 in " .. math.floor(1 / RG.ARCADE_MYTH_RATE + 0.5) .. " of " .. dunM .. "'s packs, certain by the " .. RG.ARCADE_MYTH_PITY .. "th"))
+    or ((g.card.mythic and g.card.mythic.mount) and ("About 1 pack in " .. groupDigits(math.floor(#RG.ARCADE_MOUNT_ORDER / RG.ARCADE_MOUNT_RATE + 0.5)) .. " for this mount"))
     or ("About 1 pack in " .. math.floor(1 / TIER[7].rate + 0.5))) .. "   ·   click anywhere to go on")
   -- the title, a letter at a time (ArcadeMythicPlus.lua names a dungeon's heart, or one of the six, and adds its own entrance)
   local spec = { word = one and "THE 1 RING" or "MYTHIC", sub = nil, pre = nil, extra = 0 }
@@ -3382,6 +3473,9 @@ local function showReveal(got, notes, meta)
     local pb = meta.pityBefore or 0
     if meta.bonus or pb >= PITY then info[#info + 1] = { "Guarantee", "|cffd9a8ffThis pack holds a holo or full art|r" }
     else info[#info + 1] = { "Guarantee", "A holo or full art within " .. (PITY - pb) .. " pack" .. (PITY - pb == 1 and "" or "s") .. " worth of opening" } end
+    local p4 = meta.pity4Before or 0
+    if p4 >= RG.ARCADE_PITY4 then info[#info + 1] = { "Full art", "|cffffb060This pack ends in a full art|r" }
+    elseif p4 >= RG.ARCADE_PITY4 - 8 then info[#info + 1] = { "Full art", "Guaranteed within " .. (RG.ARCADE_PITY4 - p4) .. " pack" .. (RG.ARCADE_PITY4 - p4 == 1 and "" or "s") .. " worth of opening" } end
     -- the odds of this pack, from the same numbers it rolls with
     local o = RG.ArcadePackOdds(kind)
     -- (a dungeon pack opened without its own Mythic: 1 in 10)
@@ -3713,10 +3807,7 @@ local function build()
   frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
   frame:SetScript("OnDragStart", frame.StartMoving); frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
   frame.night = darkPanel(frame, WINW, WINH)
-  frame.grip = scaleGrip(frame, "uiScale", function()
-    local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
-    return (type(ph) == "number" and ph > 0 and ph < WINH + 30) and math.max(0.6, (ph - 30) / WINH) or 1
-  end)
+  frame.grip = scaleGrip(frame, "uiScale", RG.ArcadeScreenFit)
   frame:SetClampedToScreen(true)
   tinsert(UISpecialFrames, "WaypathArcade")
   -- a slowly turning circle behind the cards, and drifting motes
@@ -3811,6 +3902,12 @@ local function build()
     RG.ArcadeRefresh(true)
   end)
   frame.tradeSwitch:SetPoint("TOPRIGHT", -34, -160)
+  -- the Ledger: your numbers, or your guild's board
+  frame.statsSwitch = gbtn(frame, "Guild board", 130, 24, function()
+    view.statsSub = view.statsSub == "guild" and nil or "guild"
+    RG.ArcadeRefresh(true)
+  end)
+  frame.statsSwitch:SetPoint("TOPRIGHT", -34, -160)
   frame.albOpen:HookScript("OnEnter", function(self)
     local dn = view.album
     if RG.ArcadeFieldClick and RG.ArcadeFieldClick(dn) then return end   -- (a Field Guide page: show the next one on the map)
@@ -3857,6 +3954,7 @@ local function build()
       for _, fn in ipairs(RG.ArcadeTipHooks or {}) do if not hooked then local ok, r = pcall(fn, cd, view.album); hooked = ok and r end end
       if hooked then -- (a Field Guide or raid card: where it comes from)
       elseif cd.dun then GameTooltip:AddLine("From " .. cd.dun .. " packs: clear it to earn them", 0.55, 0.8, 1, true)
+      elseif cd.mythic and cd.mythic.mount then GameTooltip:AddLine("A Mythic mount: any pack but a dungeon's can hold one (about 1 pack in " .. groupDigits(math.floor(#RG.ARCADE_MOUNT_ORDER / RG.ARCADE_MOUNT_RATE + 0.5)) .. " for this one)", 1, 0.9, 0.55, true)
       elseif cd.tier == 7 then GameTooltip:AddLine("A Mythic: any pack but a dungeon's can hold one (dungeon packs hold their own)", 1, 0.9, 0.55, true)
       else GameTooltip:AddLine("From any pack" .. ((RG.ARCADE_DUNGEON_OF and RG.ARCADE_DUNGEON_OF[cd.name]) and (" or a " .. RG.ARCADE_DUNGEON_OF[cd.name] .. " pack") or ""), 0.55, 0.8, 1, true) end
       GameTooltip:AddLine("Click to see it (and craft it from extras)", 0.6, 0.6, 0.6)
@@ -3943,7 +4041,7 @@ local function build()
       GameTooltip:AddDoubleLine("Full art", string.format("%d%% of packs", math.floor(o.full * 100 + 0.5)), 1, 0.6, 0.1, 1, 1, 1)
       GameTooltip:AddDoubleLine("Gilded", "1 in " .. o.gilded .. " packs", 1, 0.83, 0.42, 1, 1, 1)
       GameTooltip:AddLine(o.size .. " cards; the last " .. (o.rares > 1 and (o.rares .. " are") or "one is") .. " rare or better.", 0.8, 0.8, 0.8, true)
-      GameTooltip:AddLine("After " .. o.pity .. " packs without a holo, the next one has one.", 0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine("After " .. o.pity .. " packs without a holo, the next one has one; after " .. RG.ARCADE_PITY4 .. " without a full art, the next one ends in one.", 0.8, 0.8, 0.8, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -3987,8 +4085,15 @@ local function build()
   frame.arena = gbtn(frame, "Arena", 70, 28, function() if RG.ShowBattle then frame:Hide(); RG.ShowBattle() end end)
   frame.arena:SetPoint("BOTTOM", -308, 22)
   -- fit small screens
-  local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
-  if type(ph) == "number" and ph > 0 and ph < WINH + 30 then frame:SetScale(math.max(0.6, (ph - 30) / WINH)) end
+  frame:SetScale(RG.ArcadeScreenFit())
+  -- the game window or the UI scale changed: fit again (keeping your own size setting)
+  do
+    local ef = CreateFrame("Frame")
+    ef:RegisterEvent("DISPLAY_SIZE_CHANGED"); ef:RegisterEvent("UI_SCALE_CHANGED")
+    ef:SetScript("OnEvent", function()
+      if frame:IsShown() then local a = store(); frame:SetScale(RG.ArcadeScreenFit() * (a and tonumber(a.uiScale) or 1)) end
+    end)
+  end
 end
 
 local function categoryLine(a)
@@ -4106,6 +4211,7 @@ function RG.ArcadeRefresh(keepMsg)
   end
   for _, w in ipairs({ frame.albPrev, frame.albNext, frame.albTitle, frame.albOpen }) do w:SetShown(album) end
   frame.tradeSwitch:SetShown(view.mode == "trade")
+  frame.statsSwitch:SetShown(view.mode == "stats"); frame.statsSwitch:SetText(view.statsSub == "guild" and "My ledger" or "Guild board")
   if view.mode == "trade" then frame.tradeSwitch:SetText(view.tradeSub == "friends" and "Trade with your party" or "Friends' albums") end
   frame.panel:SetText("")
   pgReset()
@@ -4174,7 +4280,7 @@ function RG.ArcadeRefresh(keepMsg)
           local kind = c.kind == 1 and "Item" or (c.kind == 3 and "Place" or (c.kind == 2 and ((c.text or ""):find("[Bb]oss") and "Boss" or ((c.text or ""):find("^Dungeon elite") and "Elite" or "Creature")) or ""))
           cell.albKind:SetText("MISSING\n" .. kind:upper()); cell.albKind:SetTextColor(1, 0.93, 0.74)
           if st.field and RG.ArcadeFieldLabel then local t, col = RG.ArcadeFieldLabel(c); cell.albKind:SetText(t); cell.albKind:SetTextColor(col[1], col[2], col[3]) end
-          if hidden then cell.albKind:SetText("? ? ?\nUNDISCOVERED"); cell.albKind:SetTextColor(0.75, 0.7, 0.95) end
+          if hidden then cell.albKind:SetText("UNDISCOVERED"); cell.albKind:SetTextColor(0.75, 0.7, 0.95) end
           -- (in the middle of the card's picture, above its name)
           cell.albKind:ClearAllPoints(); cell.albKind:SetPoint("CENTER", cell.albTag, "TOP", 0, -111 * cell:GetWidth() / 256)
           cell.albTag:Show(); cell.albKind:Show()
@@ -4198,12 +4304,12 @@ function RG.ArcadeRefresh(keepMsg)
       end
       local nextStage = RG.ARCADE_STAGES[paid + 1]
       if st.field and RG.ArcadeFieldAlbum then
-        RG.ArcadeFieldAlbum(st, frame, parts, nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or nil)
+        RG.ArcadeFieldAlbum(st, frame, parts, nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1, true)) or nil)
       elseif st.soon then
         frame.albTitle:SetText(st.name .. "  |cffa89bc9·  coming soon|r")
         frame.sub:SetText("|cffa89bc9This dungeon's cards arrive once WoW Forever's game data has its bosses and loot.\nWaypath+ adds them by itself in an update: nothing to do but wait.|r")
       else
-      frame.sub:SetText(n .. " cards     " .. table.concat(parts, "     ") .. "\n|cffa89bc9" .. (nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1)) or "Every stage finished: a gold set") .. "|r")
+      frame.sub:SetText(n .. " cards     " .. table.concat(parts, "     ") .. "\n|cffa89bc9" .. (nextStage and (nextStage[1] .. ": " .. nextStage[2] .. " pays " .. RG.ArcadeStageText(st, paid + 1, true)) or "Every stage finished: a gold set") .. "|r")
       end
       -- a dungeon's pack
       if st.dungeon and RG.ArcadeDunPools and RG.ArcadeDunPools[st.name] then
@@ -4257,8 +4363,17 @@ function RG.ArcadeRefresh(keepMsg)
         local function hex(c) return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255)) end
         local tag = ((not view.setSection or view.setSection == "all") and RG.ArcadeSetTag) and RG.ArcadeSetTag(s) or ""   -- (one section shown: no need to tag each row)
         b.left:SetText(tag .. (paid >= 3 and "|cff7be08a" or "|cfff4ecd8") .. s.name:gsub("^Field Guide: ", "") .. "|r" .. (RG.ArcadeSetHeart and RG.ArcadeSetHeart(s) or "") .. (medal and ("   " .. hex(medal[3]) .. medal[1] .. "|r") or ""))
-        b.right:SetText(s.soon and "|cffa89bc9coming soon|r" or paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage) .. "|r"))
+        b.right:SetText(s.soon and "|cffa89bc9coming soon|r" or paid >= 3 and "|cff7be08aall three stages|r" or (hex(sg[3]) .. sg[1] .. "|r " .. have .. "/" .. #s.cards .. "   |cffa89bc9" .. RG.ArcadeStageText(s, stage, true) .. "|r"))
         b.fill:Show(); b.fillBg:Show()
+        -- the quarter, half and three-quarter milestones along the bar (sets of 8 cards or more, until the first stage is done)
+        b.ticks = b.ticks or {}
+        for m, step in ipairs(RG.ARCADE_SET_MILESTONES) do
+          local tk = b.ticks[m]
+          if not tk then tk = b:CreateTexture(nil, "OVERLAY"); tk:SetColorTexture(1, 1, 1, 0.55); tk:SetWidth(1); b.ticks[m] = tk end
+          tk:ClearAllPoints()
+          tk:SetPoint("TOPLEFT", b.fillBg, "TOPLEFT", (PGW - 2) * step[1] / 100, 0); tk:SetPoint("BOTTOMLEFT", b.fillBg, "BOTTOMLEFT", (PGW - 2) * step[1] / 100, 0)
+          tk:SetShown(#s.cards >= 8 and paid < 1 and not s.soon)
+        end
         local fc = paid >= 3 and { 0.48, 0.88, 0.54 } or sg[3]
         b.fill:SetColorTexture(fc[1], fc[2], fc[3], 0.95); b.fill:SetWidth(math.max(1, (PGW - 2) * (paid >= 3 and 1 or have / math.max(1, #s.cards))))
         b.act = function() view.album = s.name; view.albumPage = 1; view.mode = "album"; RG.ArcadeRefresh(true) end
@@ -4295,6 +4410,7 @@ function RG.ArcadeRefresh(keepMsg)
     pgHead(1, y0, "Limits and guarantees")
     pgBar(1, y0 + 26, "Holo or full art guaranteed after " .. PITY .. " dry packs   (a jumbo counts 2, a super jumbo 3)", (a.pity or 0) .. " / " .. PITY, (a.pity or 0) / PITY, { 0.85, 0.6, 1 })
     local dc = (a.day == today()) and (a.dayCoins or 0) or 0
+    pgBar(4, y0 + 134, "Full art guaranteed after " .. RG.ARCADE_PITY4 .. " packs without one", (a.pity4 or 0) .. " / " .. RG.ARCADE_PITY4, math.min(1, (a.pity4 or 0) / RG.ARCADE_PITY4), { 1, 0.7, 0.3 })
     pgBar(2, y0 + 62, "Coins from quests, kills and skill-ups today   (no daily limit)", tostring(dc), math.min(1, dc / 100), GOLDC)
     pgBar(3, y0 + 98, "Quick duel win streak   (the Duel button: each win in a row pays +1, up to +4)", tostring(a.streak or 0), (a.streak or 0) / 4, { 0.5, 0.78, 1 })
   elseif view.mode == "trade" and view.tradeSub == "friends" and RG.ArcadeSocialView then
@@ -4336,7 +4452,7 @@ function RG.ArcadeRefresh(keepMsg)
       b:ClearAllPoints(); b:SetPoint("TOPLEFT", 40, -(y + 30) - (i - 1) * 29)
       b.fill:Hide(); b.fillBg:Hide()
       b.left:SetText(e.c.name .. "  |cff9a96b0(" .. FNAME[e.f] .. ")|r")
-      b.right:SetText(e.n >= 2 and ("x" .. (e.n - 1) .. " extra") or "|cffe0a060your only copy|r")
+      b.right:SetText(e.n >= 2 and ("x" .. (e.n - 1) .. " extra") or "")   -- (an only copy says nothing: the heading above explains it once)
       b.act = function()
         local ok, msg
         if trade.incoming then ok, msg = RG.ArcadeAcceptOffer(e.c, e.f) else ok, msg = RG.ArcadeOffer(e.c, e.f) end
@@ -4353,6 +4469,9 @@ function RG.ArcadeRefresh(keepMsg)
       frame.panel:SetText("|cff9a96b0No cards yet. Open a pack and your cards show up here, ready to trade.|r")
     end
   elseif view.mode == "stats" then
+    if view.statsSub == "guild" and RG.ArcadeGuildView then
+      RG.ArcadeGuildView({ pgHead = pgHead, pgBox = pgBox, showRows = showRows, frame = frame, say = say, view = view, a = a, PGW = PGW, PGX = PGX, GOLDC = GOLDC })
+    else
     local st = a.stats or {}
     local r = a.rarest
     local n = 0
@@ -4375,6 +4494,7 @@ function RG.ArcadeRefresh(keepMsg)
     local mp = mt > 0 and mh / mt or 0
     pgHead(2, 546, "Master set", "every card, in any finish   ·   " .. math.floor(MASTER_GOAL * 100) .. "% is the goal for level 60")
     pgBar(1, 574, GOLDHEX .. mh .. "|r of " .. mt .. " cards", string.format("%d%%", math.floor(mp * 100)), mp, mp >= MASTER_GOAL and { 0.48, 0.88, 0.54 } or GOLDC)
+    end
   end
   local free = a.free or 0
   local bonus = a.bonus or 0
@@ -4387,6 +4507,20 @@ function RG.ArcadeRefresh(keepMsg)
     else tag = packPrice(kind) == 0 and "free" or (packPrice(kind) .. " coins") end
     b:SetText(kind == "normal" and "Pack" or (kind == "jumbo" and "Jumbo" or "Super Jumbo")); b.sub:SetText(d.size .. " cards  ·  " .. tag)
     b:SetEnabled(afford(kind) and true or false)
+    -- (the Shop's own cases are these same packs: no second row of them under it)
+    local inShop = view.mode == "shop" and view.shopSection ~= "grading" and view.shopSection ~= "reserve"
+    if inShop then b:Hide() else b:Show() end
+  end
+  -- the foot's buttons: spread along the bottom with the pack buttons, or, on the Shop (where those are hidden), gathered
+  -- in the middle in one row instead of split to the two sides with a gap between
+  do
+    local shopRow = view.mode == "shop" and view.shopSection ~= "grading" and view.shopSection ~= "reserve"
+    frame.arena:ClearAllPoints(); frame.duel:ClearAllPoints(); frame.sell:ClearAllPoints()
+    if shopRow then
+      frame.arena:SetPoint("BOTTOM", -91, 22); frame.duel:SetPoint("BOTTOM", -16, 22); frame.sell:SetPoint("BOTTOM", 75, 22)
+    else
+      frame.arena:SetPoint("BOTTOM", -308, 22); frame.duel:SetPoint("BOTTOM", -231, 22); frame.sell:SetPoint("BOTTOM", 240, 22)
+    end
   end
   local ready = RG.ArcadeSealsReady and RG.ArcadeSealsReady() or 0
   if ready >= 2 then frame.buyAll:SetText("All x" .. ready); frame.buyAll:Show() else frame.buyAll:Hide() end
@@ -4394,7 +4528,7 @@ end
 
 -- the picture a card shows, so the board can show the same one: "model", displayId | "tex", path, l, r, t, b | "scene" | "icon", path
 function RG.ArcadePortrait(c)
-  if c.kind == 2 and RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] then return "model", RG.ARCADE_NPC[c.name] end
+  if c.kind == 2 and RG.ARCADE_NPC and RG.ARCADE_NPC[c.name] and not RG.ARCADE_BAD_MODEL[RG.ARCADE_NPC[c.name]] then return "model", RG.ARCADE_NPC[c.name] end
   local e = c.kind == 3 and RG.ARCADE_PLACE and RG.ARCADE_PLACE[c.name]
   if e then
     local col, row = e[2] % 8, math.floor(e[2] / 8)
@@ -4432,8 +4566,7 @@ function RG.ShowArcade()
   local a = store(); if a then a.seen = true end
   -- window size: the screen-fit scale, times your own setting (/wp cardscale 1.2)
   do
-    local ph = UIParent and UIParent.GetHeight and UIParent:GetHeight()
-    local fit = (type(ph) == "number" and ph > 0 and ph < WINH + 30) and math.max(0.6, (ph - 30) / WINH) or 1
+    local fit = RG.ArcadeScreenFit()
     local mine = a and tonumber(a.uiScale) or 1
     frame:SetScale(fit * mine)
   end

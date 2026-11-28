@@ -646,6 +646,10 @@ local MYTHIC = {
   ["The 1 Ring"] = { { "s", 1, { buff(1, 1, "fmin"), heal(1, "fface"), draw(1) } },
     "Give your minions +1/+1. Restore 1 Health to your hero. Draw 1 card." },
 }
+-- the Mythic mounts (ArcadeMythicMounts.lua): the rules live with their cards, written with this file's helpers
+if RG.ARCADE_MOUNT_RULES then
+  for name, rule in pairs(RG.ARCADE_MOUNT_RULES(dmg, heal, buff, draw, armor, summon, T, freeze)) do MYTHIC[name] = rule end
+end
 B.MYTHIC = MYTHIC
 -- build the playable form of a collection card: { kind, name, tier, text, key }
 function B.derive(c)

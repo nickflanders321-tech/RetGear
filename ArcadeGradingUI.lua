@@ -636,6 +636,10 @@ local function paintDesk(view, a)
       local went = {}
       for i, h in ipairs(r.hist or {}) do if i > 1 and h[1] == "traded" then went[#went + 1] = h[2] .. " (" .. (h[3] or "") .. ")" end end
       while #went > 3 do table.remove(went, 1) end   -- (the last three: room for the guild's count below)
+      local bf = RG.ArcadeGradeBefore and RG.ArcadeGradeBefore(r)
+      if bf then
+        lines[#lines + 1] = "Cracked " .. bf.times .. (bf.times == 1 and " time" or " times") .. " before: it was a " .. tostring(bf.was) .. (bf.best and bf.best > bf.was and (", your best a " .. bf.best) or "") .. "."
+      end
       if #went > 0 then lines[#lines + 1] = "Traded to " .. table.concat(went, ", ") .. "." end
       lines[#lines + 1] = "Sells for " .. GOLD .. v .. "|r coins (ungraded " .. base .. ")  ·  you have " .. #mine .. " graded"
       local okSig = RG.ArcadeGradeValid and RG.ArcadeGradeValid(r)
@@ -755,11 +759,11 @@ local function paintDesk(view, a)
     b.price:SetText(isFree and "|cff7be08aFREE|r" or (GOLD .. sv.price .. " coins|r"))
     b:SetActive(sel.svc == key)
   end
-  desk.freeLine:SetText(first > 0 and ("Your first " .. GR().FIRST_FREE .. " Standard gradings are free  ·  " .. first .. " left") or
+  desk.freeLine:SetText(first > 0 and ("First " .. GR().FIRST_FREE .. " Standard gradings free  ·  " .. first .. " left") or
     (weekly and "This week's free Standard grading is waiting." or "One free Standard grading every week (next on Tuesday)."))
   local busy = #st.queue >= GR().SLOTS
   desk.send:SetEnabled(c ~= nil and not busy)
-  desk.send:SetText(busy and "All slots are busy" or "Send to the graders")
+  desk.send:SetText(busy and "All slots are busy" or (c == nil and "Pick a card first" or "Send to the graders"))
   paintSlots(a, st)
 end
 
@@ -1029,6 +1033,10 @@ function RG.ArcadeGradePlay(rec, s, opts)
     local first = (not self.opts.demo) and g >= 10 and #RG.ArcadeGradeCases(self.rec.key) <= 1
     self.line:SetText(g >= 10 and ("Flawless." .. (first and ("\nYour first Gem Mint " .. (cardOf(self.rec.key) or {}).name .. ".") or ""))
       or (g >= 8 and (miss and ("\"" .. miss .. "\"") or "A fine copy.") or ("\"This one's seen some roads.\"" .. (miss and ("\n" .. miss) or ""))))
+    local bf = (not self.opts.demo) and RG.ArcadeGradeBefore and RG.ArcadeGradeBefore(self.rec)
+    if bf then
+      self.line:SetText((self.line:GetText() or "") .. "\nCracked before: it was a " .. tostring(bf.was) .. (g > bf.was and ", now a " .. g .. "." or (g < bf.was and (". Worse this time.") or ". The same again.")))
+    end
     if self.opts.note and self.opts.note ~= "" then self.line:SetText((self.line:GetText() or "") .. "\n" .. self.opts.note) end   -- (a Reserve pack: its print, and whether it is new)
     self.rays:SetShown(g >= 10); self.rays:SetVertexColor(1, 0.85, 0.45, g >= 10 and 0.55 or 0)
     if RG.ArcadeSound then RG.ArcadeSound(g >= 10 and "best" or (g >= 8 and "reward" or "pick")) end
@@ -1048,7 +1056,10 @@ function RG.ArcadeGradePlay(rec, s, opts)
       end, "Keep it", function() self:Hide() end)
     elseif g <= 7 then
       setButtons("Crack the case", function()
-        local ok, msg = RG.ArcadeGradeCrack(cert); say(msg); nextOne()
+        local rk, rf = self.rec.key, self.rec.f
+        local ok, msg = RG.ArcadeGradeCrack(cert); say(msg)
+        if ok then sel.key, sel.f, sel.copy = rk, rf, 1 end   -- (the cracked card is ready on the desk to send again)
+        nextOne()
       end, more > 0 and ("Keep it  ·  next (" .. more .. ")") or "Keep it", nextOne)
     else
       setButtons("Pin to showcase", function() RG.ArcadeGradePin(cert); say("On your showcase."); self.b1:SetEnabled(false) end,

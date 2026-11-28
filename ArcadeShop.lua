@@ -247,7 +247,7 @@ local function paintAisle(b, key, title, list, ctx)
   elseif key == "holiday" then b.line1:SetText(onNow and "|cff7be08aON NOW|r" or "|cffa89bc9NONE ON NOW|r")
   else b.line1:SetText(open > 0 and ("|cffe8c46a" .. open .. " UNLOCKED|r") or "|cffa89bc9ALL LOCKED|r") end
   if key == "holiday" then b.line2:SetText(onNow and onNow or (#list .. " holidays\nearned while on"))
-  else b.line2:SetText(#list .. " " .. (key == "raid" and "raids" or "dungeons") .. (locked > 0 and ("\n" .. locked .. " still locked") or "\nall unlocked")) end
+  else b.line2:SetText(#list .. " " .. (key == "raid" and "raids" or "dungeons") .. (locked > 0 and (open > 0 and ("\n" .. locked .. " still locked") or "") or "\nall unlocked")) end
   b:Show()
 end
 
@@ -359,7 +359,7 @@ table.insert(RG.ArcadeViewHooks, function(view, ctx)
   if not on then return end
 
   local n = waitingCount(ctx)
-  shop.right:SetText((n > 0 and ("|cff7be08a" .. n .. " pack" .. (n == 1 and "" or "s") .. " to open|r     ") or "") .. "|cffffe08a" .. (ctx.a.coins or 0) .. "|r coins")
+  shop.right:SetText(n > 0 and ("|cff7be08a" .. n .. " pack" .. (n == 1 and "" or "s") .. " to open|r") or "")   -- (the coins are at the top of the window)
   -- (the dungeons' pools are built the first time anything needs them: the odds do that)
   if not (RG.ArcadeDunPools and next(RG.ArcadeDunPools)) and RG.ArcadePackOdds then pcall(RG.ArcadePackOdds, "normal") end
   local all = entries(ctx, view)
