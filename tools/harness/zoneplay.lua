@@ -76,6 +76,16 @@ function Z.run(W, Wd, RG, opts, Inv, I)
       local d = Wd.yards(S.map, S.x, S.y, wp[1], tx, ty)
       leg(d, wp[1], true, tx, ty)
       R.travels = R.travels + 1
+      if os.getenv("BOT_DEBUG") then
+        for k, st in ipairs((RG.GuidePlan() or {}).stops or {}) do
+          if k > 8 then break end
+          local its = {}
+          for _, x in ipairs(st.items) do its[#its + 1] = x.act .. " " .. tostring(x.title) end
+          note(string.format("    plan %d%s%s: %s", k, st.off and " (trip)" or "", st.pd and string.format(" %dyd", st.pd) or "", table.concat(its, ", ")))
+        end
+      end
+      R.travelYards = (R.travelYards or 0) + (d or 0)
+      if not d then R.travelOcean = (R.travelOcean or 0) + 1 end
       note("travels to " .. Wd.mapName(wp[1]) .. " (the card's spot is outside " .. tostring(Wd.mapName(S.map)) .. ")")
       Wd.setPos(wp[1], tx, ty)
       wait(d and math.min(d / WALK, 600) or 600)

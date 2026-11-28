@@ -1233,6 +1233,30 @@ local function buildObjective()
     plan.elsewhere = elsewhere or 0
     plan.eta = plan.total / RUN
     for _, st in ipairs(trips and tripStops(off, c, px, py) or offStops(off)) do plan.stops[#plan.stops + 1] = st end
+    -- zone quests, away on a trip: what the trips have in the zone you're in comes first, before going back (Praise, picked
+    -- up in Thousand Needles, then Lifted by Legacy at the same carving, not a flight to Mount Hyjal and back)
+    local here = trips and RG.ZoneName and RG.ZoneName()
+    if here and RG.FollowZone and here ~= RG.FollowZone() and RG.MapZone then
+      -- (and when all the zone has waiting is hand-ins, the other trips too, so you go back once: Thousand Needles, then
+      -- Undercity and Redridge, then Mount Hyjal for Praise and Grain of Memory together. Something to do there, such as
+      -- Crate Expectations' shipment that expires, takes you back first.)
+      local zoneWork = false
+      for _, st in ipairs(plan.stops) do
+        -- (what a hand-in there opens, waiting on it, isn't: Ends Meet, after Praise)
+        if not st.off then for _, it in ipairs(st.items) do if it.act ~= "turnin" and not it.deps then zoneWork = true end end end
+      end
+      local first, rest, other = {}, {}, {}
+      for _, st in ipairs(plan.stops) do
+        if st.off and not st._sk and st.wp and RG.MapZone(st.wp[1]) == here then first[#first + 1] = st
+        elseif st.off and not st._sk and not zoneWork then other[#other + 1] = st
+        else rest[#rest + 1] = st end
+      end
+      for _, st in ipairs(other) do first[#first + 1] = st end
+      if #first > 0 then
+        for _, st in ipairs(rest) do first[#first + 1] = st end
+        plan.stops = first
+      end
+    end
   end
   cache.plan = plan
   -- in a dungeon the arrow rests; the quest log carries the objectives
