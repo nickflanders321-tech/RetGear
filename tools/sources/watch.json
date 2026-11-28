@@ -19,5 +19,6 @@
     "herbalism": "f80f1cb17163f260fd76cd63d77dd499c89a25df",
     "skinning": "6965bf25a9f54f765140905ed0169c42a3812d31"
   },
-  "profguides_format": 2
+  "profguides_format": 2,
+  "questiedb_failed_tree": "7c8272257f58fc461b37094e6ef1cea631ec1b85"
 }
