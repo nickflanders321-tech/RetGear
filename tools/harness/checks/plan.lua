@@ -52,9 +52,11 @@ return {
       local RG = T.RG
       felwood(T)
       local first = RG.Objective(true)
-      -- pick the stop the plan has last
+      -- pick the stop the plan has last (not a chain's quest still to come: Collection of the Corrupt Water, picked up
+      -- where Forces of Jaedenar is handed in, shares that stop's place, so a click there is the hand-in)
       local plan = RG.GuidePlan()
-      local last = plan.stops[#plan.stops]
+      local last
+      for i = #plan.stops, 1, -1 do if not plan.stops[i].items[1].chain then last = plan.stops[i] break end end
       T.ok(last and first and last.key ~= first.stop.key, "the plan has another stop to pick")
       if not last then return end
       RG.ArrowTo(last.wp); T.step(1)

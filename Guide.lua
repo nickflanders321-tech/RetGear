@@ -4,6 +4,10 @@
 local _, RG = ...
 local GOLD, GREEN, GREY = RG.COLORS.GOLD, RG.COLORS.GREEN, RG.COLORS.GREY
 local R_NEAR = 70        -- yards: tasks this close to each other share one stop
+local CHAIN_GO = 400     -- yards: a stop of a quest chain you're in this close comes before quests on their own
+local CHAIN_RECENT = 1200   -- seconds: a quest whose earlier part you handed in this recently is a chain you're in
+local CHAIN_MAX = 24     -- tasks a quest chain's next quests may add to a plan (see buildTasks)
+local chainNear, chainWps, inChain   -- (defined further down, used by buildTasks and the planner)
 local RUN = 7            -- yards per second on foot
 local ARROWTAG = "|TInterface\\Minimap\\MinimapArrow:12:12|t "
 local VERB_ICON = {
@@ -477,6 +481,60 @@ local function buildTasks()
     end
   end
   end
+  -- What a quest you're finishing opens on the spot (A Fitting End: Amalgamated Marrow from the Bone Pile where you
+  -- hand it in, then A Revenge Now Bitter from Felflick): its next quests are in the plan too, each waiting on the one
+  -- before (picked up after the hand-in, done after the pickup, handed in after that). The plan can then see that
+  -- finishing a chain here keeps you busy here, instead of leaving for another camp and coming back for the rest. Two
+  -- quests deep, from hand-ins in the plan; quests in your log, done, not for you or blocked by something else stay out.
+  if mode ~= "prep" and RG.QDATA then
+    local have = {}
+    for _, t in ipairs(tasks) do if t.id then have[t.id] = true end end
+    local isDone = RG.QuestDone or function() return false end
+    local added = 0
+    local function chainFrom(t, depth, opened)
+      local _, _, list = chainNear(t.id)
+      for _, f in ipairs(list) do
+        local d = RG.QDATA[f]
+        if added < CHAIN_MAX and d and not have[f] and not byTitle[d.n] and not isDone(f) and not d.rep and wanted(nil, f, d.n)
+          and not (RG.HideProfQuest and RG.HideProfQuest(f)) and not (RG.QuestIsGrey and RG.QuestIsGrey(d.l)) then
+          -- (it may wait only on quests of this chain: the one handed in here, and the ones before it in the plan)
+          opened[t.id] = true
+          local why = RG.QuestBlocked and RG.QuestBlocked(f, d, function(q) return opened[q] or isDone(q) end, nil, true)
+          local cw = chainWps(f)
+          local p0 = cw and cw.s and inZone(cw.s) and pt(cw.s)
+          if p0 and t.pts[1] and dist(p0.x, p0.y, t.pts[1].x, t.pts[1].y) > CHAIN_GO then p0 = nil end
+          if not why and p0 then
+            have[f] = true
+            local level = d.l
+            local up = { act = "pickup", title = d.n, id = f, label = cw.s[4], pts = { p0 }, level = level, deps = { t }, chain = true }
+            tasks[#tasks + 1] = up; added = added + 1
+            -- (only what's done around where the quest before it ends: the storyline going on here, not its parts across
+            -- the zone, which would only change how the rest of the trip is planned)
+            local base = t.pts[1]
+            local function close(p) return p and base and dist(p.x, p.y, base.x, base.y) <= CHAIN_GO end
+            local doing = {}
+            for _, o in ipairs(cw.o) do
+              local pts = {}
+              for _, w in ipairs(o.wps) do if inZone(w) then local p = pt(w); if close(p) then pts[#pts + 1] = p end end end
+              if #pts > 0 then
+                local dt = { act = "doing", title = d.n, id = f, label = o.label, okind = o.kind, pts = pts, level = level, deps = { up }, chain = true }
+                tasks[#tasks + 1] = dt; doing[#doing + 1] = dt; added = added + 1
+              end
+            end
+            local pe = cw.e and inZone(cw.e) and pt(cw.e)
+            if close(pe) and #doing == #cw.o then
+              local tin = { act = "turnin", title = d.n, id = f, label = cw.e[4], pts = { pe }, level = level, deps = (#doing > 0) and doing or { up }, chain = true }
+              tasks[#tasks + 1] = tin; added = added + 1
+              if depth < 2 then chainFrom(tin, depth + 1, opened) end
+            end
+          end
+        end
+      end
+    end
+    local hand = {}
+    for _, t in ipairs(tasks) do if t.act == "turnin" and t.id and not t.chain then hand[#hand + 1] = t end end
+    for _, t in ipairs(hand) do chainFrom(t, 1, {}) end
+  end
   return tasks, elsewhere, c, px, py, prep and off or nil
 end
 
@@ -509,6 +567,101 @@ end
 
 -- how much a task is worth to you: XP-giving quests of your level first, grey ones last
 local WORTH_W = { [0] = 0.2, [1] = 0.45, [2] = 0.7, [3] = 0.95, [4] = 1.15 }
+-- Quests that start where this one is finished (A Fitting End at the Bone Pile opens Amalgamated Marrow there; The
+-- Experimental Method, handed in to the Curious Crow, opens The Western Post from the Crow): finishing it there means
+-- more to do on the spot, so the guide follows a chain through instead of leaving for another quest's camp. How many
+-- (by name: one per faction counts once), worked out once per quest.
+local CHAIN_NEAR = 100   -- yards between where a quest ends and where the next one starts
+local chainHere, chainList, chainPrev = {}, nil, nil
+-- (who follows each quest, and what comes before each, from the quest data: made once)
+local function chainIndex()
+  if chainList then return end
+  chainList, chainPrev = {}, {}
+  local function link(p, q)
+    chainList[p] = chainList[p] or {}; table.insert(chainList[p], q)
+    chainPrev[q] = chainPrev[q] or {}; table.insert(chainPrev[q], p)
+  end
+  for qid, d in pairs(RG.QDATA) do
+    for _, key in ipairs({ "ps", "pg" }) do for _, p in ipairs(d[key] or {}) do link(p, qid) end end
+  end
+  for qid, d in pairs(RG.QDATA) do if d.nx then link(qid, d.nx) end end
+end
+-- Is the quest before this one in its chain one you handed in a little while ago (A Revenge Now Bitter, right after
+-- Amalgamated Marrow)? Then it's the storyline you're in. (Most quests have an earlier part somewhere: only a recent
+-- one says you're following it now.)
+local function chainJustBefore(id)
+  if not RG.TurnedInAt then return false end
+  chainIndex()
+  local now = GetTime and GetTime() or 0
+  for _, p in ipairs(chainPrev[id] or {}) do
+    local t = RG.TurnedInAt(p)
+    if t and now - t <= CHAIN_RECENT then return true end
+  end
+  return false
+end
+-- Is this task part of a storyline that goes on: a quest of the chain still to come (t.chain), a hand-in (or an
+-- objective where it's handed in) whose next quest starts right there, or a quest whose earlier part you've just done?
+inChain = function(t)
+  if t.chain then return true end
+  if not (t.id and RG.QDATA) then return false end
+  if chainJustBefore(t.id) then return true end
+  if t.act ~= "turnin" and t.act ~= "doing" then return false end
+  local n, e = chainNear(t.id)
+  if n == 0 then return false end
+  if t.act == "turnin" then return true end
+  -- (an objective: only its spots where the quest is handed in, as a set; a camp elsewhere isn't the storyline's)
+  local here
+  for _, p in ipairs(t.pts or {}) do
+    if e and dist(p.x, p.y, e.x, e.y) <= CHAIN_NEAR then here = here or {}; here[p] = true end
+  end
+  return here or false
+end
+chainNear = function(id)
+  if not (id and RG.QDATA) then return 0, nil, {} end
+  local c = chainHere[id]
+  if c then return c[1], c[2], c[3] end
+  chainIndex()
+  local d, n, ec, ex, ey = RG.QDATA[id], 0, nil, nil, nil
+  local list = {}
+  if d and d.e and d.e[1] and RG.ToWorld then
+    ec, ex, ey = RG.ToWorld(d.e[1], d.e[2], d.e[3])
+    local names = {}
+    for _, f in ipairs(chainList[id] or {}) do
+      local fd = RG.QDATA[f]
+      local s = fd and (fd.s or (fd.si and fd.si[4] and fd.si[4][1]))
+      if s and ec and not names[fd.n] and (not RG.QuestForMe or RG.QuestForMe(fd)) then
+        local c2, x, y = RG.ToWorld(s[1], s[2], s[3])
+        if c2 == ec and dist(ex, ey, x, y) <= CHAIN_NEAR then names[fd.n] = true; n = n + 1; list[#list + 1] = f end
+      end
+    end
+  end
+  local endPt = ec and { x = ex, y = ey } or nil
+  chainHere[id] = { n, endPt, list }
+  return n, endPt, list
+end
+
+-- A quest's places as waypoints (where it starts, its objectives' spots, where it ends), made once per quest so the
+-- plan's world points for them are kept too (see buildTasks: the next quests of a chain).
+local chainWpCache = {}
+chainWps = function(id)
+  local c = chainWpCache[id]
+  if c ~= nil then return c or nil end
+  local d = RG.QDATA and RG.QDATA[id]
+  if not d then chainWpCache[id] = false return nil end
+  local s = d.s or (d.si and d.si[4] and d.si[4][1])
+  local label = d.s and (d.s[4] ~= "" and d.s[4] or d.n) or (d.si and d.si[2]) or d.n
+  c = { o = {} }
+  if s then c.s = { s[1], s[2], s[3], label } end
+  if d.e and d.e[1] then c.e = { d.e[1], d.e[2], d.e[3], (d.e[4] and d.e[4] ~= "") and d.e[4] or d.n } end
+  for _, o in ipairs(d.o or {}) do
+    local wps = {}
+    for i, sp in ipairs(o[4] or {}) do if i > 12 then break end; wps[#wps + 1] = { sp[1], sp[2], sp[3], o[2] } end
+    if #wps > 0 then c.o[#c.o + 1] = { label = o[2], kind = o[1], wps = wps } end
+  end
+  chainWpCache[id] = c
+  return c
+end
+
 local function taskWeight(t)
   local w = 1
   if t.level and RG.QuestWorth then
@@ -529,6 +682,7 @@ local function planFromTasks(tasks, px, py)
     t.done = false; pending[#pending + 1] = t
     t._w = taskWeight(t)
     t._sk = (skipUntil[taskKey(t)] or 0) > now or (skipQuest[t.title] or 0) > now
+    t._chainy = inChain(t)
   end
   local R2 = R_NEAR * R_NEAR
   -- is (ax,ay) within R_NEAR of (bx,by)? Squared, and only the borderline cases take the square root, so the answers are the same
@@ -642,12 +796,37 @@ local function planFromTasks(tasks, px, py)
   -- best few next spots is tried, the rest of the trip finished from it by the rule of thumb, and the spot with the
   -- least walking in all is taken. So a camp of four objectives a long way off doesn't come before a quick one close
   -- by, and a hand-in on the way is done on the way. (Further stops: the rule of thumb alone, as the list moves on.)
+  -- Storylines first: while a stop of a quest chain you're in (a quest with an earlier or a later part: A Fitting End,
+  -- then Amalgamated Marrow at the same altar, then A Revenge Now Bitter at Felflick, handed in to the Curious Crow)
+  -- is within CHAIN_GO yards, the next stop is the best of those by the rule of thumb; quests on their own (a camp of
+  -- shrubs to kill for three of them) wait until it's done. Walking alone can't see this: the plan does everything in
+  -- the end either way, and leaving a chain half done for a camp a little further on came out a few yards shorter.
+  local function chainFirst(cx0, cy0)
+    local best, bestCost
+    for _, t in ipairs(pending) do
+      if t._chainy and not t._sk and ready(t) then
+        for _, p in ipairs(t.pts) do
+          local d = dist(cx0, cy0, p.x, p.y)
+          if d <= CHAIN_GO and (t._chainy == true or t._chainy[p]) then
+            local cover = 0
+            for _, u in ipairs(nearTasks[p]) do if ready(u) then cover = cover + 1 end end
+            local cost = (d + 40) / math.max(1, cover) / t._w
+            if not bestCost or cost < bestCost then best, bestCost = p, cost end
+          end
+        end
+      end
+    end
+    return best
+  end
   local LOOK, K = 3, (#tasks > 40 and 3 or 4)
   local cand, candC = {}, {}
   local cx, cy = px, py
   for round = 1, 60 do
     local bestPt, n
-    if round <= LOOK then
+    -- a quest chain you're in, close by, is finished first (see chainFirst)
+    bestPt = chainFirst(cx, cy)
+    if bestPt then
+    elseif round <= LOOK then
       bestPt, n = cheapest(cx, cy, K, cand, candC)
       if n > 1 then
         local bestTotal
@@ -725,6 +904,7 @@ local lastObjKey, objSince
 -- plan says; then only while you're on your way (closer than a minute ago) or there (working on it). Done, or
 -- turned off: back to the plan.
 local MANUAL_HOLD, MANUAL_IDLE, MANUAL_THERE = 180, 60, 100
+local GRAB_YD = 60   -- yards: a pickup or hand-in this close is done before going on (see below)
 local manual
 function RG.PickManually(wp)
   manual = wp and { wp = wp, t = GetTime and GetTime() or 0 } or nil
@@ -902,6 +1082,19 @@ local function buildObjective()
   local stops = plan.stops
   -- a stop you picked yourself
   local mi, md = manualStop(stops, c, px, py)
+  -- a pickup or hand-in right beside you comes first, whatever you were heading to (your pick or the plan's): it takes
+  -- a moment, and walking past Velician with The Dying God on offer to come back later is the trip the guide is for.
+  -- Your pick isn't dropped: once it's done, the guide goes back to it.
+  local grab
+  for i, s in ipairs(stops) do
+    if s.pd and s.pd <= GRAB_YD then
+      for _, it in ipairs(s.items) do
+        if (it.act == "pickup" or it.act == "turnin") and not it.deps and not it._sk then grab = i break end
+      end
+    end
+    if grab then break end
+  end
+  if grab then mi = grab end
   if mi == false then
     local m = manual
     obj.kind, obj.key, obj.manual = "pick", "pick:" .. m.wp[1] .. ":" .. m.wp[2] .. ":" .. m.wp[3], true
@@ -929,6 +1122,7 @@ local function buildObjective()
       end
     end
     if mi then pick = mi end
+    local grabbed = grab ~= nil
     local s = stops[pick]
     local it = s.items[1]
     obj.kind, obj.act = (it.act == "doing" and "doing" or it.act), it.act
@@ -936,7 +1130,8 @@ local function buildObjective()
     obj.stopKey = taskKey(it)
     obj.text, obj.wp, obj.dist, obj.stop = stopText(s), s.wp, s.pd, s
     obj.why = stopWhy(s)
-    if mi then obj.manual = true; obj.why = "You picked it  ·  " .. obj.why end
+    if grabbed then obj.why = "Right here: on your way  ·  " .. obj.why
+    elseif mi then obj.manual = true; obj.why = "You picked it  ·  " .. obj.why end
     -- the tracker's top line: the quest, and the one thing to do for it ("Kill 15 Hillsbrad Farmers  9/15")
     obj.qtitle = it.title
     if it.act == "turnin" then obj.qline = "Hand in" .. ((it.label and it.label ~= "") and (" to " .. it.label) or "")
