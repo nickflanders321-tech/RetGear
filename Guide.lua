@@ -356,7 +356,12 @@ local function buildTasks()
     else
       elsewhere = elsewhere + 1
       -- (zone quests, away on a trip to another continent: the zone's objectives are still to do, back there)
-      if g.wp0 and (prep or (tripIds and inZone(g.wp0))) then
+      -- (and the zone's own quest whose rest is all out of it, objectives and hand-in: Wake Memories, from Mount Hyjal,
+      -- at Lake Everstill. One handed in back here, its mobs elsewhere, waits under the steps for when you're there:
+      -- Wild Guardians, from Felwood, its owlbeasts in Winterspring)
+      local qd = q and q.id and RG.QDATA[q.id]
+      local awayAll = q and q.id and tripIds and tripIds[q.id] and not (qd and qd.e and qd.e[1] and inZone(qd.e))
+      if g.wp0 and (prep or (tripIds and (inZone(g.wp0) or awayAll))) then
         offOf[g.quest] = true
         off[#off + 1] = { act = "doing", title = g.quest, id = q and q.id, label = g.label, wp = g.wp0, level = q and q.level, group = q and q.group, have = g.have, need = g.need, okind = g.okind }
       end

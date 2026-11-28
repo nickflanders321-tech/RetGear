@@ -62,11 +62,20 @@ function Z.run(W, Wd, RG, opts, Inv, I)
       if not v.left and (S.map ~= v.map or (Wd.yards(v.map, v.x, v.y, S.map, S.x, S.y) or 0) > LEAVE) then v.left = true end
     end
   end
+  -- every leg walked: { level, yards (nil: another continent), from/to map, what it went for }, for how good the order is
+  R.legs, R.walked, R.travels = {}, 0, 0
+  local function leg(yards, toMap, travel, tx, ty)
+    R.legs[#R.legs + 1] = { level = me.level, yards = yards, from = S.map, to = toMap, fx = S.x, fy = S.y, tx = tx, ty = ty, why = R.cur, travel = travel }
+    note(string.format("  LEG %s %s %d %.1f %.1f -> %d %.1f %.1f | %s", travel and "travel" or "walk", yards and string.format("%d", yards) or "?",
+      S.map, S.x * 100, S.y * 100, toMap, tx * 100, ty * 100, tostring(R.cur)))
+  end
   local function walk(wp)
     if not wp or not wp[1] then return end
     local tx, ty = wp[2] / 100, wp[3] / 100
     if wp[1] ~= S.map then
       local d = Wd.yards(S.map, S.x, S.y, wp[1], tx, ty)
+      leg(d, wp[1], true, tx, ty)
+      R.travels = R.travels + 1
       note("travels to " .. Wd.mapName(wp[1]) .. " (the card's spot is outside " .. tostring(Wd.mapName(S.map)) .. ")")
       Wd.setPos(wp[1], tx, ty)
       wait(d and math.min(d / WALK, 600) or 600)
@@ -74,6 +83,7 @@ function Z.run(W, Wd, RG, opts, Inv, I)
       return
     end
     local d = Wd.yards(S.map, S.x, S.y, wp[1], tx, ty) or 0
+    if d > 5 then leg(d, wp[1], false, tx, ty); R.walked = R.walked + d end
     local secs = d / WALK
     local n = math.max(1, math.min(30, math.floor(secs / 2)))
     local x0, y0 = S.x, S.y
@@ -134,16 +144,55 @@ function Z.run(W, Wd, RG, opts, Inv, I)
   note("starts in " .. zone .. " at " .. tostring(start and start[4] or Wd.mapName(S.map)) .. ", level " .. me.level)
   R.path[1] = { zone = zone, from = me.level, to = me.level, why = "zone quests" }
 
+  -- Quests that start from a dropped item (or a giver who turns up after a kill: Anywhere But Here's Veteran of the
+  -- Third War, after Forgotten Soldiers): the guide shows them only once they're in your log. The bot gets the item
+  -- after killing enough of the mobs that drop it (one, for a sure drop; else by the drop rate, 10% when unknown), or by
+  -- walking past where one lies, and uses it: the quest is taken there and then, or as soon as it can be.
+  R.looted = 0
+  local starters, inBag = {}, {}
+  for id in pairs(zoneIds) do
+    local d = RG.QDATA[id]
+    if d and not d.s and d.si and (not RG.QuestForMe or RG.QuestForMe(d)) then starters[#starters + 1] = id end
+  end
+  table.sort(starters)
+  local function loot()
+    for _, id in ipairs(starters) do
+      if not S.done[id] and not Wd.entry(id) then
+        local si = RG.QDATA[id].si
+        if not inBag[id] then
+          if si[3] and #si[3] > 0 then
+            local killed = 0
+            for _, m in ipairs(si[3]) do killed = killed + (S.killed[m] or 0) end
+            local pct = 0
+            for _, v in ipairs(type(si[8]) == "table" and si[8] or {}) do if tonumber(v) and tonumber(v) > pct then pct = tonumber(v) end end
+            if pct <= 0 then pct = 10 end
+            local need = si[5] == 1 and 1 or math.max(1, math.min(40, math.ceil(100 / pct)))
+            if killed >= need then inBag[id] = string.format("after %d %s", killed, table.concat(si[3], "/")) end
+          else
+            for _, sp in ipairs(si[4] or {}) do if Wd.near(sp, 0.02) then inBag[id] = "lying at " .. tostring(si[2]) break end end
+          end
+          if inBag[id] then R.looted = R.looted + 1; note("loots " .. tostring(si[2]) .. " (" .. inBag[id] .. "): starts " .. qname(id)) end
+        end
+        if inBag[id] and Wd.canAccept(id) then
+          local ok = Wd.accept(id, true)
+          if ok then note("uses " .. tostring(si[2]) .. ": picks up " .. qname(id)) end
+        end
+      end
+    end
+  end
+
   local lastSig, same, lastRouteKey, routeSame = nil, 0, nil, 0
   local ended
   while R.actions < maxActions and me.level < untilLevel do
     R.actions = R.actions + 1
     W.phase = "zone quests (level " .. me.level .. ")"
+    loot()
     local obj = card()
     if not obj then ended = "the card is empty: the plan has nothing left in " .. zone break end
     local it = obj.stop and obj.stop.items and obj.stop.items[1]
     local what = it and (it.act .. " " .. qname(it.id)) or (tostring(obj.kind) .. ": " .. tostring(obj.text))
     local where = string.format("card: %s%s", what, obj.dist and string.format(" (%d yd)", obj.dist) or "")
+    R.cur = what
     R.steps[what] = true
     -- the same card with nothing changed, three times: stuck (skip it, as a player pressing Skip would)
     local progress = 0

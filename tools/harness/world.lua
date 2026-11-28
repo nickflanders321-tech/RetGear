@@ -20,7 +20,7 @@ local XPMAX = { 400, 900, 1400, 2100, 2800, 3600, 4500, 5400, 6500, 7600, 8800, 
 Wd.XPMAX = XPMAX
 
 local W, G, me, Q, RG
-local S = { log = {}, done = {}, xp = 0, map = nil, x = 0.5, y = 0.5, money = 0, dialog = nil, waypoint = nil,
+local S = { log = {}, done = {}, killed = {}, xp = 0, map = nil, x = 0.5, y = 0.5, money = 0, dialog = nil, waypoint = nil,
   stats = { accepted = 0, handedIn = 0, autoAccepted = 0, autoHandedIn = 0, kills = 0, questXP = 0, killXP = 0, seconds = 0 } }
 Wd.state = S
 local zoneName = {}     -- uiMapID -> zone name
@@ -192,11 +192,12 @@ function Wd.starterSpot(id)
   local st = Wd.starters[id]
   return st and st.s and st.s[1] or nil
 end
-function Wd.accept(id)
+-- (fromBag: a quest started from an item in your bags, looted earlier: it can be taken anywhere)
+function Wd.accept(id, fromBag)
   local d = Q[id]
   if not d then return false, "the game has no quest " .. tostring(id) end
   if d.s and not near(d.s, NEAR_NPC) then return false, "not at the quest giver" end
-  if not d.s then
+  if not d.s and not fromBag then
     local st = Wd.starters[id]
     if st and st.s and #st.s > 0 then
       local here = false
@@ -231,6 +232,8 @@ function Wd.work(id)
         for _ = 1, tries do
           if mobs then
             S.stats.kills = S.stats.kills + 1
+            -- (kills by mob name, for what they drop: an objective with several mobs counts each kill for each of them)
+            for _, m in ipairs(o.mobs) do S.killed[m] = (S.killed[m] or 0) + 1 end
             Wd.giveXP(killXP(e.level, me.level), "kill")
             secs = secs + 25
           else

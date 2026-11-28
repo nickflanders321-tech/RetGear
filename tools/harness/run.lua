@@ -331,6 +331,8 @@ if played then
   end
   if played.zone then
     out:write(string.format("\nZone quests in %s: %s.\n", played.zone, tostring(played.ended)))
+    out:write(string.format("  Walked %d yards in %d legs (%.0f minutes at a run), %d trips to another zone; %d quest-starting drops looted.\n",
+      played.walked or 0, #(played.legs or {}), (played.walked or 0) / 7 / 60, played.travels or 0, played.looted or 0))
     local L = played.left or { inLog = {}, notTaken = {} }
     if #L.inLog > 0 then
       out:write(string.format("  Still in the log (%d):\n", #L.inLog))
