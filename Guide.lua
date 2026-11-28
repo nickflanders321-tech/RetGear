@@ -167,6 +167,9 @@ function RG.ObjectiveLine(okind, label, have, need)
   if okind == "e" then return tostring(label or "?"), (have and need and need > 0) and (have .. "/" .. need) or nil end
   local verb = ({ k = "Kill", i = "Collect", o = "Use" })[okind or ""] or "Get"
   label = tostring(label or "?")
+  -- (the game counts meeting or freeing someone as a creature: "Elder Pinespeaker met" in Meet the Elders. A name ends
+  -- in a capitalised word; one that ends in a lower-case word is the game's own description, shown as it is)
+  if okind == "k" and label:match("%s%l[%l%-']*$") then return label, (have and need and need > 0) and (have .. "/" .. need) or nil end
   local many = need and need > 1
   if many and verb == "Kill" and not label:find("s$") then label = label .. "s" end
   return verb .. " " .. (many and (need .. " ") or "") .. label, (have and need and need > 0) and (have .. "/" .. need) or nil
