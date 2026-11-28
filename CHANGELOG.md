@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.63.2
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.63.1
 - **No more "buy it at the auction house" for items you can't buy there.** WoW Forever's new items (Mote of Unstable Magic, Darkspear Islands Mark of Honor, Moonsilver Blade, A Luddite's Guide) were read as tradable, so the guide sent you shopping for them. Whether an item binds now comes from the game's own item data, and only items that can be sold get an auction house step.
 - **Cards: creatures shown whole.** Sixteen card creatures were framed too close (Tepolar showed his torso with his head cut off, and the centaurs the same): they now fit their card.
