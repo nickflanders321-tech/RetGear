@@ -155,6 +155,7 @@ end
 -- step you're on (RG.ProfFocus).
 local MODEL_W, MODEL_H = 80, 92   -- the picture's panel (the model fills it)
 local STRIP = 27   -- the strip across the card's top: what to do, the quest, how far
+local ITEM_SIZE = 46   -- the quest item's button, in the picture's panel
 local f, model
 local cardH = 0
 function RG.StepCardHeight() return (f and f:IsShown()) and cardH or 0 end
@@ -550,8 +551,17 @@ function RG.RefreshStepView()
   -- the picture first: the lines go beside it when there is one (folded: no picture, the objective under the strip)
   -- (it isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made it flash
   -- once a second)
+  -- the quest's usable item (a flask to fill, pinecones to throw): it takes the picture's place, a big button where you'd
+  -- look for what to do, with "Use: ..." under it (a small one beside Skip didn't read as part of the step)
+  if details and info.it and info.it.id and info.it.act == "doing" and RG.QuestItemFor and RG.Opt("trackerItems") ~= false then
+    for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
+      if q.id == info.it.id then itm, itmQ = RG.QuestItemFor(q), q break end
+    end
+  end
   local look, shown
-  if details then
+  if details and itm then
+    showModel(nil); shown = true
+  elseif details then
     look = info.obj and RG.StepLookFor and RG.StepLookFor(info.obj, info.it)
     shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil, look.file)
   end
@@ -606,7 +616,10 @@ function RG.RefreshStepView()
     local qn = info.it and info.it.id and RG.QuestNote and RG.QuestNote(info.it.id)
     if qn and qn.n then body[#body + 1] = "|cffff9f43" .. qn.n .. "|r" end
     -- (the picture's place never changes: set when the card is built)
-    if picShown then picName = look.name or "" end
+    if itm then
+      local nm = itm.name or (itm.link and itm.link:match("%[(.-)%]")) or "the quest item"
+      picName = "|cffffd100Use:|r " .. nm
+    elseif picShown then picName = look.name or "" end
     setText(f.picName, picName)
     local by = h + (#lines > 0 and 3 or 0)
     if moved(f.body, x, by, W) then f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8) end
@@ -615,20 +628,12 @@ function RG.RefreshStepView()
     local bh = showBody and (f.body:GetStringHeight() or 0) or 0
     local ph = picShown and (STRIP + 8 + MODEL_H + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
     h = math.max(by + bh, ph) + 8
-    -- the quest's usable item (a flask to fill, a horn to blow): a button beside Skip
-    if info.it and info.it.id and info.it.act == "doing" and RG.QuestItemFor and RG.Opt("trackerItems") ~= false then
-      for _, q in ipairs(RG.MyQuests and RG.MyQuests() or {}) do
-        if q.id == info.it.id then itm, itmQ = RG.QuestItemFor(q), q break end
-      end
-    end
     -- what comes after, and Skip
-    if info.next or info.skip or itm then
+    if info.next or info.skip then
       if moved(f.line, h) then f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h) end
       showLine = true
       footText = info.next and ("|cffffd100Next|r  " .. info.next) or ""
       showSkip = info.skip and true or false
-      local fx = itm and -34 or -6
-      if moved(f.foot, fx) then f.foot:SetPoint("RIGHT", f.skip, "LEFT", fx, 0) end
       h = h + 28
     end
   else
@@ -650,9 +655,12 @@ function RG.RefreshStepView()
   end
   if not f:IsShown() then f:Show() end
   cardH = h
-  -- (the item button: to the left of Skip, at the card's foot; it hangs off the tracker, so it's placed from there)
+  -- (the item button: in the middle of the picture's panel; it hangs off the tracker, so it's placed from the tracker's
+  -- top-left corner: the card's left edge is 8 in, the panel 8 more, STRIP + 8 down from the card's top)
   if not frozen and RG.TrackerCardItem then
-    if itm then RG.TrackerCardItem(itm, itmQ, -(8 + 7 + 44 + 6), -(headH + h - 26)) else RG.TrackerCardItem(nil) end
+    if itm then
+      RG.TrackerCardItem(itm, itmQ, 16 + (MODEL_W - ITEM_SIZE) / 2, -(headH + STRIP + 8 + (MODEL_H - ITEM_SIZE) / 2), "TOPLEFT", ITEM_SIZE)
+    else RG.TrackerCardItem(nil) end
   end
   if h ~= lastH then
     lastH = h

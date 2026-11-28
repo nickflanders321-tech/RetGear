@@ -216,11 +216,11 @@ local function makeButton(parent)
   return b
 end
 
--- The current step's quest item: one button on the card, beside Skip (StepView.lua). It hangs off the tracker itself,
+-- The current step's quest item: one big button on the card, in the picture's panel (StepView.lua). It hangs off the tracker itself,
 -- at x, y from its top-right corner, not off the card: the game won't let anything a secure button is anchored to move
 -- in a fight, and the card is laid out again as you play. Placed and hidden only out of combat, like the list's.
 local cardBtn
-function RG.TrackerCardItem(itm, q, x, y)
+function RG.TrackerCardItem(itm, q, x, y, point, size)
   if fighting() then
     if itm or (cardBtn and cardBtn:IsShown()) then RG.trackerDeferred = true end
     return false
@@ -236,7 +236,12 @@ function RG.TrackerCardItem(itm, q, x, y)
   b.id, b.link, b.charges, b.questName = itm.id, itm.link, itm.charges, q and q.title
   local what = itm.name or itm.link
   if b._what ~= what then b:SetAttribute("item", what); b._what = what end
-  b:ClearAllPoints(); b:SetPoint("TOPRIGHT", t, "TOPRIGHT", x, y)
+  point, size = point or "TOPRIGHT", size or 22
+  if b._size ~= size then
+    b._size = size; b:SetSize(size, size)
+    b.count:SetFont("Fonts\\ARIALN.TTF", size >= 36 and 13 or 10, "OUTLINE")
+  end
+  b:ClearAllPoints(); b:SetPoint(point, t, point, x, y)
   b:SetFrameLevel(t:GetFrameLevel() + 12)
   if itm.tex then b.icon:SetTexture(itm.tex) end
   b:Show()
