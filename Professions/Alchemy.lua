@@ -22,17 +22,17 @@ A.trainA = {
 }
 A.supplies = "Empty, Leaded and Crystal Vials: Alchemy and Trade Supply vendors (not in the shopping counts)."
 A.plan = {
-  { from = 1,   to = 10,  craft = "Elixir of Minor Force", n = 9, mats = "1 Silverleaf, 1 Empty Vial each (or Minor Arcane Elixir: 1 Peacebloom, 1 Empty Vial)" },
-  { from = 10,  to = 55,  craft = "Elixir of Minor Defense", n = 45, mats = "1 Silverleaf, 1 Peacebloom, 1 Empty Vial each" },
+  { from = 1,   to = 11,  craft = "Elixir of Minor Force", n = 10, mats = "1 Silverleaf, 1 Empty Vial each (or Minor Arcane Elixir: 1 Peacebloom, 1 Empty Vial)" },
+  { from = 11,  to = 56,  craft = "Elixir of Minor Defense", n = 45, mats = "1 Silverleaf, 1 Peacebloom, 1 Empty Vial each" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
-  { from = 55,  to = 65,  craft = "Minor Mana Potion", n = 10, mats = "1 Mageroyal, 1 Peacebloom, 1 Empty Vial each" },
-  { from = 65,  to = 90,  craft = "Elixir of Minor Fortitude", n = 28, mats = "2 Earthroot, 1 Peacebloom, 1 Empty Vial each" },
+  { from = 56,  to = 66,  craft = "Minor Mana Potion", n = 10, mats = "1 Mageroyal, 1 Peacebloom, 1 Empty Vial each" },
+  { from = 66,  to = 90,  craft = "Elixir of Minor Fortitude", n = 27, mats = "2 Earthroot, 1 Peacebloom, 1 Empty Vial each (or 24 Rage Potions: 1 Sharp Claw, 1 Briarthorn, 1 Empty Vial each)" },
   { from = 90,  to = 120, craft = "Elixir of Wisdom", n = 30, mats = "1 Mageroyal, 2 Briarthorn, 1 Empty Vial each (tailors use them later)" },
   { from = 120, to = 130, craft = "Lesser Mana Potion", n = 10, mats = "1 Mageroyal, 1 Stranglekelp, 1 Empty Vial each" },
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
   { from = 130, to = 150, craft = "Fire Oil", n = 20, mats = "2 Firefin Snapper, 1 Empty Vial each (keep 30 oils)" },
-  { from = 150, to = 165, craft = "Elixir of Fire Power", n = 15, mats = "2 Fire Oil, 1 Kingsblood, 1 Leaded Vial each" },
-  { from = 165, to = 195, craft = "Mana Potion", n = 36, mats = "1 Stranglekelp, 1 Kingsblood, 1 Leaded Vial each" },
+  { from = 150, to = 166, craft = "Elixir of Fire Power", n = 16, mats = "2 Fire Oil, 1 Kingsblood, 1 Leaded Vial each" },
+  { from = 166, to = 195, craft = "Mana Potion", n = 35, mats = "1 Stranglekelp, 1 Kingsblood, 1 Leaded Vial each" },
   { from = 195, to = 225, craft = "Nature Protection Potion", n = 36, mats = "1 Liferoot, 1 Stranglekelp, 1 Leaded Vial each (recipe: Bronk in Feralas)" },
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 225, to = 234, craft = "Nature Protection Potion", n = 26, mats = "1 Liferoot, 1 Stranglekelp, 1 Leaded Vial each (or Transmute Iron to Gold or Transmute Mithril to Truesilver, recipes from Alchemist Pestlezugg, Gadgetzan: not great, but they work)" },

@@ -23,9 +23,8 @@ L.supplies = "Salt, threads and dyes: the Leatherworking Supply vendor by each t
 L.plan = {
   { from = 1,   to = 30,  craft = "Light Leather", n = 35, mats = "3 Ruined Leather Scraps each (or Light Armor Kit from bought Light Leather)" },
   { from = 30,  to = 40,  craft = "Cured Light Hide", n = 10, mats = "1 Light Hide, 1 Salt each. Keep them for the pants at 70. (Or 14 Light Armor Kits, 1 Light Leather each)" },
-  { from = 40,  to = 60,  craft = "Embossed Leather Gloves", n = 20, mats = "3 Light Leather, 2 Coarse Thread each" },
+  { from = 40,  to = 70,  craft = "Embossed Leather Gloves", n = 30, mats = "3 Light Leather, 2 Coarse Thread each" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
-  { from = 60,  to = 70,  craft = "Embossed Leather Gloves", n = 10, mats = "3 Light Leather, 2 Coarse Thread each" },
   { from = 70,  to = 80,  craft = "Embossed Leather Pants", n = 10, mats = "1 Cured Light Hide, 6 Light Leather, 2 Coarse Thread each (or 14 Embossed Leather Gloves, 3 Light Leather, 2 Coarse Thread each)" },
   { from = 80,  to = 95,  craft = "Cured Medium Hide", n = 20, mats = "1 Medium Hide, 1 Salt each. Keep them for the belts at 105. (Or 19 Fine Leather Belts, 6 Light Leather, 2 Coarse Thread each)" },
   { from = 95,  to = 105, craft = "Fine Leather Belt", n = 22, mats = "6 Light Leather, 2 Coarse Thread each. Keep 20." },
@@ -41,7 +40,7 @@ L.plan = {
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 205, to = 235, craft = "Nightscape Pants", n = 36, mats = "14 Thick Leather, 4 Silken Thread each (only the Artisan trainers teach it: they sell for more than the boots)" },
   { from = 235, to = 265, craft = "Wicked Leather Gauntlets", n = 36, mats = "8 Rugged Leather, 1 Black Dye, 1 Rune Thread each (pattern: Werg Thickblade, Tirisfal Glades; Leonard Porter, Western Plaguelands. Or Blue Suede Shoes if the pattern costs more than about 13 gold)" },
-  { from = 265, to = 300, craft = "Runic Leather Headband", n = 49, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel. Or, with the Blue Suede patterns: 10 Runic Leather Headbands to 275, then 27 Blue Suede Bracers; or 15 Runic Leather Headbands to 280, then 20 Blue Suede Hats: 16 Rugged Leather, 4 Blue Dye, 1 Rune Thread each)" },
+  { from = 265, to = 300, craft = "Runic Leather Headband", n = 49, mats = "14 Rugged Leather, 10 Runecloth, 1 Rune Thread each (pattern: Jase Farlane, Light's Hope Chapel. Or, with the Blue Suede patterns: 10 Runic Leather Headbands to 275, then 27 Blue Suede Bracers; or 31 Blue Suede Shoulders to 290, then 27 Runic Leather Headbands; or 15 Runic Leather Headbands to 280, then 20 Blue Suede Hats: 16 Rugged Leather, 4 Blue Dye, 1 Rune Thread each)" },
 }
 L.mats = { 2318, 2319, 4234, 4304, 8170, 783, 4232, 4235, 8169, 8171 }
 RG.RegisterProfession("Leatherworking", L)

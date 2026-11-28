@@ -34,9 +34,9 @@ B.plan = {
   { from = 84,  to = 95,  craft = "Rough Bronze Leggings", n = 11, mats = "6 Bronze Bar each" },
   { from = 95,  to = 100, craft = "Patterned Bronze Bracers", n = 5, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each" },
   { from = 100, to = 115, craft = "Heavy Grinding Stone", n = 30, mats = "3 Heavy Stone each. Keep all 30 for the Golden Scale Bracers at 185." },
-  { from = 115, to = 125, craft = "Patterned Bronze Bracers", n = 10, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each" },
+  { from = 115, to = 126, craft = "Patterned Bronze Bracers", n = 11, mats = "5 Bronze Bar, 2 Coarse Grinding Stone each" },
   { from = 125, to = 125, train = "Expert (skill 125, level 20, 50 silver)" },
-  { from = 125, to = 140, craft = "Silvered Bronze Gauntlets", n = 15, mats = "8 Bronze Bar, 1 Silver Bar, 2 Coarse Grinding Stone each (the last 30 stones from 75; or 15 Bronze Warhammer: 8 Bronze Bar, 1 Strong Flux, 1 Medium Leather each)" },
+  { from = 126, to = 140, craft = "Silvered Bronze Gauntlets", n = 14, mats = "8 Bronze Bar, 1 Silver Bar, 2 Coarse Grinding Stone each (the last 28 stones from 75; or 14 Bronze Warhammer: 8 Bronze Bar, 1 Strong Flux, 1 Medium Leather each)" },
   { from = 140, to = 175, craft = "Green Iron Bracers", n = 40, mats = "6 Iron Bar, 1 Green Dye each" },
   { from = 175, to = 180, craft = "Solid Grinding Stone", n = 8, mats = "4 Solid Stone each. Keep 6 for the Heavy Mithril Axes at 210." },
   { from = 180, to = 185, craft = "Solid Sharpening Stone", n = 28, mats = "1 Solid Stone each" },
@@ -48,8 +48,8 @@ B.plan = {
   { from = 225, to = 235, craft = "Dense Sharpening Stone", n = 16, mats = "1 Dense Stone each" },
   { from = 235, to = 240, craft = "Heavy Mithril Boots", n = 11, mats = "14 Mithril Bar, 4 Thick Leather each (or with the Mithril Spurs plans: 28 Mithril Spurs from 235 to 245 instead of the boots and the belt)" },
   { from = 240, to = 245, craft = "Imperial Plate Belt", n = 5, mats = "22 Thorium Bar, 6 Rugged Leather, 1 Aquamarine each (plans: Derotain Mudsipper, Tanaris, level 50 quest; he gives the next three plans too, so bring about 250 Thorium Bar. With the world-drop plans for Dazzling Mithril Rapier, Runed Mithril Hammer or Thorium Bracers, make those from 240 to 255 instead: 27 Rapiers, 20 Hammers or 17 Bracers)" },
-  { from = 245, to = 270, craft = "Imperial Plate Bracers", n = 27, mats = "20 Thorium Bar, 1 Star Ruby each (Derotain Mudsipper)" },
-  { from = 270, to = 290, craft = "Imperial Plate Boots or Radiant Boots", n = 20, mats = "34 Thorium Bar, 1 Star Ruby, 1 Aquamarine each (Derotain Mudsipper; or about 22 Radiant Boots: 14 Thorium Bar, 4 Heart of Fire each, or from 275 15 Thorium Leggings: 26 Thorium Bar, 4 Red Power Crystal each)" },
+  { from = 245, to = 270, craft = "Imperial Plate Bracers", n = 27, mats = "20 Thorium Bar, 1 Star Ruby each (Derotain Mudsipper; with the bind-on-pickup Plans: Officer's Gloves from a dungeon, Officer's Gloves are usually cheaper from 250 to 255)" },
+  { from = 270, to = 290, craft = "Imperial Plate Boots or Radiant Boots", n = 20, mats = "34 Thorium Bar, 1 Star Ruby, 1 Aquamarine each (Derotain Mudsipper; or about 22 Radiant Boots: 14 Thorium Bar, 4 Heart of Fire each, or 8 to 11 more Imperial Plate Bracers to 275, then from 275 15 Thorium Leggings: 26 Thorium Bar, 4 Red Power Crystal each)" },
   { from = 290, to = 300, craft = "Imperial Plate Leggings or Radiant Leggings or Thorium Leggings", n = 10, mats = "44 Thorium Bar, 2 Star Ruby each (Derotain Mudsipper; or 10 Radiant Leggings: 20 Thorium Bar, 4 Heart of Fire each, or 12 Thorium Leggings: 26 Thorium Bar, 4 Red Power Crystal each)" },
 }
 B.train = {

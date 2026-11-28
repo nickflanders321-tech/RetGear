@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.65.2
+- **Profession plans follow the newest WoW Forever guides.** Alchemy's early steps break at 11, 56 and 66 (with Rage Potions as an alternative from 66 to 90) and at 166; Blacksmithing makes 11 Patterned Bronze Bracers to 126, then 14 Silvered Bronze Gauntlets; Enchanting's first bracers go to 21; Engineering makes Coarse Blasting Powder to 95; Leatherworking makes its Embossed Leather Gloves from 40 to 70 in one go and lists Blue Suede Shoulders as a 265-290 alternative; Tailoring's Crimson Silk Vests go to 171. Craft counts in First Aid, Enchanting and Tailoring updated.
+- Field Guide: the Emerald Dragons' witnesses are placed where WoW Forever's data now has them.
+
 ## v1.65.1
 - **Zone quests: trips out of the zone are planned.** A zone's quests that send you elsewhere (Premiere Parts to Nami in Everlook, Aid from Moonglade's chain, Sawyer's Legacy in Undercity, Wake Memories at Lake Everstill) come after the zone's own stops, and the zone stays planned while you're away. On a trip, the trips in the zone you're in come first, and once the zone only has hand-ins waiting the other trips join them, so you only go back once.
 - **Stops right beside you.** A pickup or hand-in grabbed on your way is step 1 of the plan's list too, and it leads with what you can do now, not a hand-in still waiting on its objectives.

@@ -35,7 +35,8 @@ for i, kind, name, tier, ref, text, disp, cid, owner, dup in cards:
         if not ents:
             if not d and not cid and not text.startswith('Mythic'): issues['painted scene instead of a model (no creature of that name)'].append((name, '', text))
             continue
-        if not d and not cid and any(T[e]['models'] for e in ents): issues['no model, though the creature has one'].append((name, text, ents[:3]))
+        # a Mythic is its painted art (ArcadePaintMythic; the mounts' paintings already hold the mount's model), never a live model
+        if not d and not cid and not text.startswith('Mythic') and any(T[e]['models'] for e in ents): issues['no model, though the creature has one'].append((name, text, ents[:3]))
         allm = set().union(*(T[e]['models'] for e in ents))
         if d and d not in allm:
             issues['model belongs to another creature'].append((name, d, text, sorted(allm)[:6]))

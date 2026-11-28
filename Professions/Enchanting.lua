@@ -23,8 +23,8 @@ E.trainA = {
 E.supplies = "Copper Rod and Mote of Magic: the Enchanting Supply vendor near each capital trainer."
 E.plan = {
   { from = 1,   to = 2,   craft = "Runed Copper Rod", n = 1, mats = "1 Copper Rod, 1 Mote of Magic" },
-  { from = 2,   to = 20,  craft = "Enchant Bracer - Inferior Stamina", n = 18, mats = "1 Mote of Magic each" },
-  { from = 20,  to = 70,  craft = "Enchant Chest - Inferior Stamina", n = 50, mats = "1 Strange Dust each (or Bracer - Minor Deflect: 1 Lesser Magic Essence)" },
+  { from = 2,   to = 21,  craft = "Enchant Bracer - Inferior Stamina", n = 19, mats = "1 Mote of Magic each" },
+  { from = 21,  to = 70,  craft = "Enchant Chest - Inferior Stamina", n = 49, mats = "1 Strange Dust each (or Bracer - Minor Deflect: 1 Lesser Magic Essence)" },
   { from = 50,  to = 50,  train = "Journeyman (skill 50, level 10)" },
   { from = 70,  to = 85,  craft = "Enchant Chest - Inferior Stamina", n = 21, mats = "1 Strange Dust each" },
   { from = 85,  to = 100, craft = "Enchant Bracer - Minor Stamina", n = 15, mats = "2 Strange Dust each" },
@@ -40,7 +40,7 @@ E.plan = {
   { from = 200, to = 200, train = "Artisan (skill 200, level 35)" },
   { from = 201, to = 220, craft = "Lesser Wizard Oil", n = 25, mats = "1 Vision Dust, 2 Stranglethorn Seed, 1 Leaded Vial each" },
   { from = 220, to = 225, craft = "Enchant Cloak - Greater Defense", n = 5, mats = "1 Vision Dust each" },
-  { from = 225, to = 250, craft = "Enchant Gloves - Agility", n = 34, mats = "1 Vision Dust each" },
+  { from = 225, to = 250, craft = "Enchant Gloves - Agility", n = 37, mats = "1 Vision Dust each" },
   { from = 250, to = 270, craft = "Lesser Mana Oil", n = 26, mats = "1 Dream Dust, 1 Purple Lotus, 1 Crystal Vial each (formula: Kania, Silithus. Or 23 Enchant Bracer - Greater Strength, 1 Dream Dust, 2 Lesser Nether Essence each)" },
   { from = 270, to = 275, craft = "Enchant Shield - Greater Stamina", n = 5, mats = "6 Dream Dust each (formula: an Enchanting supplier in a capital city; Daniel Bartlett in Undercity for the Horde)" },
   { from = 275, to = 295, craft = "Wizard Oil", n = 26, mats = "3 Illusion Dust, 2 Firebloom, 1 Crystal Vial each (formula: Kania, Silithus)" },
