@@ -54,6 +54,7 @@ local function hookClick(fname, ownerTable)
   if not (hooksecurefunc and owner and type(owner[fname]) == "function") then return false end
   local ok = pcall(hooksecurefunc, owner, fname, function(self, button, ...)
     if not on() or (RG.db and RG.db.questClick == false) then return end
+    if not RG.Opt("arrow") then return end   -- (you mostly click there to read a quest: an arrow you switched off stays off)
     if button and button ~= "LeftButton" then return end
     if modifier() then return end
     local id = questIdOf(self) or (type(self) == "table" and self.block and questIdOf(self.block))
@@ -70,7 +71,7 @@ local function hookQuestFrames()
   hookClick("QuestObjectiveTracker_OnOpenDropDown")
   if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.OnBlockHeaderClick then
     pcall(hooksecurefunc, QUEST_TRACKER_MODULE, "OnBlockHeaderClick", function(_, block, button)
-      if not on() or (RG.db and RG.db.questClick == false) or (button and button ~= "LeftButton") or modifier() then return end
+      if not on() or (RG.db and RG.db.questClick == false) or not RG.Opt("arrow") or (button and button ~= "LeftButton") or modifier() then return end
       local id = block and (block.id or block.questID)
       if type(id) == "number" then pcall(RG.QuestArrow, id) end
     end)

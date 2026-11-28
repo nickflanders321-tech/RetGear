@@ -545,7 +545,9 @@ end
 -- Events
 -- ---------------------------------------------------------------------------
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP", "MERCHANT_SHOW", "UNIT_AURA", "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_ENABLED", "MINIMAP_UPDATE_TRACKING", "ZONE_CHANGED_NEW_AREA" }) do pcall(f.RegisterEvent, f, e) end
+for _, e in ipairs({ "PLAYER_LOGIN", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP", "MERCHANT_SHOW", "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_ENABLED", "MINIMAP_UPDATE_TRACKING", "ZONE_CHANGED_NEW_AREA" }) do pcall(f.RegisterEvent, f, e) end
+-- (your own auras only: every nameplate in sight fires UNIT_AURA too)
+if f.RegisterUnitEvent then pcall(f.RegisterUnitEvent, f, "UNIT_AURA", "player") else pcall(f.RegisterEvent, f, "UNIT_AURA") end
 local bagTimer
 f:SetScript("OnEvent", function(_, event, a1)
   if RG.IsAlt and RG.IsAlt() and event ~= "MERCHANT_SHOW" then
@@ -568,7 +570,8 @@ f:SetScript("OnEvent", function(_, event, a1)
     C_Timer.After(1, function() levelBanner(a1) end)
   elseif event == "MERCHANT_SHOW" then
     atMerchant()
-  elseif event == "UNIT_AURA" and a1 ~= "player" then
+  elseif event == "UNIT_AURA" and (a1 ~= "player" or (InCombatLockdown and InCombatLockdown())) then
+    -- (auras can't be read in a fight: nothing on the tracker can change from one, and the fight's end refreshes it)
     return
   end
   if RG.QueueTracker then RG.QueueTracker() end

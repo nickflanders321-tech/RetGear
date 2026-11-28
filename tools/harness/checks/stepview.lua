@@ -153,4 +153,24 @@ return {
       T.ok(not after or after.key ~= before.key, "after Skip it's on something else (" .. tostring(after and after.text) .. ")")
     end,
   },
+  {
+    name = "step-view-object-picture",
+    about = "a quest picked up from or handed in at an object (A half-eaten body) shows that object's model; one whose look isn't known, an icon for its kind",
+    race = "Human", class = "MAGE", level = 10,
+    run = function(T)
+      local RG = T.RG
+      local look = RG.StepLookFor({}, { id = 37, act = "turnin" })   -- Find the Lost Guards: handed in at A half-eaten body
+      T.ok(look and look.file and look.file > 0 and not look.npc, "handed in at an object: its model file (" .. tostring(look and look.file) .. ")")
+      T.eq(look and look.name, "A half-eaten body", "named after the object")
+      look = RG.StepLookFor({}, { id = 45, act = "pickup" })        -- Discover Rolf's Fate: starts from A half-eaten body
+      T.ok(look and look.file and look.file > 0, "picked up from an object: its model file")
+      -- an object no open data knows the look of: the icon for its kind
+      RG.OBJ_LOOK[55] = { 0, 3 }
+      look = RG.StepLookFor({}, { id = 37, act = "turnin" })
+      T.ok(look and not look.file and look.icon == "Interface\\Icons\\INV_Box_01", "no model known: a chest's icon (" .. tostring(look and look.icon) .. ")")
+      RG.OBJ_LOOK[55] = { 0, -1 }
+      look = RG.StepLookFor({}, { id = 37, act = "turnin" })
+      T.ok(look and look.icon and look.icon ~= "", "not even its kind known: the generic icon")
+    end,
+  },
 }

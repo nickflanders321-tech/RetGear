@@ -9,7 +9,8 @@ Hand-checked fixes from Polestar's forever-db (its corrections layer, CC BY 4.0,
 live client data or an in-game check) go on top of QuestieDB's data when --fixes <forever-db folder> is given: who can
 take a quest (races, classes), what comes first, levels, givers, turn-ins, objectives, and quests not in the game.
 Usage: python3 gen.py <QuestieDB checkout> <forever.json from dump.lua> [Waypath+ folder] [--sql classic.sql] [--fixes forever-db]
-       [--guides <Polestar>/guides]: where Polestar's guides (GPL-3.0) do objectives none of the data shows"""
+       [--guides <Polestar>/guides]: where Polestar's guides (GPL-3.0) do objectives none of the data shows
+       [--foreverdb <foreverfraddons/forever-db checkout>]: drop rates the other two sources don't have"""
 import json, re, sys, os
 SQL = None
 FIXES = None
@@ -23,6 +24,9 @@ if '--sql' in sys.argv:
 WAGO = None   # --wago <dir>: WoW Forever's own client tables (the data/wago branch): how its items are bound
 if '--wago' in sys.argv:
     i = sys.argv.index('--wago'); WAGO = sys.argv[i + 1]; del sys.argv[i:i + 2]
+FDB = None    # --foreverdb <dir>: a foreverfraddons/forever-db checkout (GPL-3.0): drop rates neither source above has
+if '--foreverdb' in sys.argv:
+    i = sys.argv.index('--foreverdb'); FDB = sys.argv[i + 1]; del sys.argv[i:i + 2]
 QDB = sys.argv[1].rstrip('/') + '/'
 def _sorted_pairs(kv):
     """Dicts from the Lua dumps come in random order; sort keys (numbers first) so every run picks the same spawn."""
@@ -108,10 +112,37 @@ CHANCE = {}
 REQ = {}   # quest -> {item: how many} (cMaNGOS quest_template, with --sql)
 BOND = {}  # item -> 1 bound when picked up, 4 a quest item... (cMaNGOS item_template with --sql; the client's, with --wago): only 0, 2, 3 can be bought
 SURE_DROP = 90
+OBJ_USED = set()   # every object a quest starts from, asks you to use or is handed in at
+GO_DISPLAY = {}    # object -> its display (cMaNGOS gameobject_template, with --sql)
+GO_TYPE = {}       # object -> its type (Polestar forever-db's objects, which know WoW Forever's new ones; else cMaNGOS)
+GO_FILE = {}       # display -> the model file the game draws (the client's GameObjectDisplayInfo, with --wago)
+if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'object.jsonl')):
+    for _line in open(os.path.join(FIXES, 'data', 'object.jsonl'), encoding='utf-8'):
+        _r = json.loads(_line)
+        if _r.get('type') is not None: GO_TYPE[int(_r['id'])] = int(_r['type'])
 if FIXES and os.path.exists(os.path.join(FIXES, 'data', 'item_source.jsonl')):
     for _line in open(os.path.join(FIXES, 'data', 'item_source.jsonl'), encoding='utf-8'):
         _r = json.loads(_line)
         if _r.get('chance') is not None: CHANCE[(_r['item'], _r['kind'], _r['id'])] = _r['chance']
+# How often an item drops, from ForeverDB (foreverfraddons/forever-db: the median of VMaNGOS, cMaNGOS, pfQuest and
+# AllTheThings, replaced by WoW Forever players' own counts where they have them): item -> {('npc' or 'object', id): percent}.
+# Read last, only for what forever-db's item sources and the cMaNGOS tables don't have. The add-on's files are Lua
+# tables written by its tools/slice.py; they're read here as text, never run.
+FDB_CHANCE = {}
+if FDB:
+    import glob
+    _tab = None
+    for _f in sorted(glob.glob(os.path.join(FDB, 'ForeverDB_Full', 'ForeverDB_Full*.lua'))):
+        for _line in open(_f, encoding='utf-8'):
+            _m = re.search(r'local t = D\.(\w+)', _line)
+            if _m: _tab = {'drop': 'npc', 'odrop': 'object'}.get(_m.group(1)); continue
+            if not _tab: continue
+            _m = re.match(r't\[(\d+)\]=\{([-\d,]*)\}', _line)
+            if not _m: continue
+            _v = [int(x) for x in _m.group(2).split(',') if x]
+            for _j in range(0, len(_v) - 1, 2):
+                if _v[_j + 1] > 0: FDB_CHANCE.setdefault(int(_m.group(1)), {})[(_tab, _v[_j])] = _v[_j + 1] / 100.0   # (per 10000)
+    print('ForeverDB drop rates for %d items' % len(FDB_CHANCE), file=sys.stderr)
 if SQL:
     print('reading drop chances...', file=sys.stderr)
     sqltxt = open(SQL, encoding='utf-8', errors='replace').read()
@@ -162,6 +193,11 @@ if SQL:
     for r in _rows('item_template'):
         try: BOND[int(r[ii])] = int(r[ib])
         except Exception: pass
+    # what each object looks like (its display), and what kind it is (chest, quest giver, book...): ObjectModels.lua
+    gc = _cols('gameobject_template'); ge, gd, gt = gc.index('entry'), gc.index('displayId'), gc.index('type')
+    for r in _rows('gameobject_template'):
+        try: GO_DISPLAY[int(r[ge])] = int(r[gd]); GO_TYPE.setdefault(int(r[ge]), int(r[gt]))
+        except Exception: pass
     del sqltxt
     print('drop tables for %d creatures' % len(DROP), file=sys.stderr)
 # How each item is bound, from the client's own item table: it knows WoW Forever's new items, which cMaNGOS doesn't
@@ -175,6 +211,15 @@ if WAGO:
             try: BOND[int(_r['ID'])] = int(_r['Bonding'] or 0)
             except (KeyError, ValueError): pass
     print('bonding for %d items from the client' % len(BOND), file=sys.stderr)
+    _p = os.path.join(WAGO, 'GameObjectDisplayInfo.csv.gz')
+    if not os.path.exists(_p): _p = os.path.join(WAGO, 'GameObjectDisplayInfo.csv')
+    if os.path.exists(_p):
+        with (gzip.open(_p, 'rt', encoding='utf-8') if _p.endswith('.gz') else open(_p, encoding='utf-8')) as _f:
+            for _r in csv.DictReader(_f):
+                try:
+                    if int(_r['FileDataID'] or 0) > 0: GO_FILE[int(_r['ID'])] = int(_r['FileDataID'])
+                except (KeyError, ValueError): pass
+        print('models for %d object displays from the client' % len(GO_FILE), file=sys.stderr)
 def L(o):  # objective entry as a 1-based list
     if isinstance(o, dict): return [o.get(str(i)) for i in range(1, 5)]
     return list(o) + [None] * 4
@@ -351,7 +396,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
         for i in ids or []:
             n, sp = spawns_of(kind, i)
             pts = rep_points(sp, zone, 1)
-            if pts: end = (pts[0], n, i if kind == 'npc' else None); break
+            if pts: end = (pts[0], n, i if kind == 'npc' else None, int(i) if kind == 'obj' else None); break
         if end: break
     objs = []
     def add(kind, label, sources, thing=None, item=None):
@@ -366,6 +411,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
                 mobs.append(sname); ids.append(int(sid))
                 ch = item and CHANCE.get((int(item), 'npc', int(sid)))
                 if item and ch is None: ch = DROP.get(sid, {}).get(int(item))
+                if item and ch is None: ch = FDB_CHANCE.get(int(item), {}).get(('npc', int(sid)))
                 chances.append(ch or 0)
             for p in cluster_points(sp, zone, 2, 4 if si == 0 else 2): pts.append(p + (len(mobs) if skind == 'npc' else 0,))
         if pts or mobs:
@@ -453,6 +499,7 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
             for kind, sid in [('npc', n) for n in (at(it, 2) or [])] + [('object', o) for o in (at(it, 3) or [])]:
                 ch = CHANCE.get((int(iid), kind, int(sid)))
                 if ch is None and kind == 'npc': ch = DROP.get(sid, {}).get(int(iid))
+                if ch is None: ch = FDB_CHANCE.get(int(iid), {}).get((kind, int(sid)))
                 srcs.append((-(ch or 0), kind, sid))
             srcs.sort(key=lambda x: x[0])
             mobs, pts, ids, chances = [], [], [], []
@@ -468,6 +515,10 @@ for qid, q in sorted(D['quests'].items(), key=lambda kv: int(kv[0])):
     nq += 1; nobj += len(objs)
     parts = []
     if end: parts.append('e={%d,%.1f,%.1f,%s%s}' % (end[0][0], end[0][1], end[0][2], lstr(end[1] or ''), (',%d' % end[2]) if end[2] else ''))
+    if end and end[3]: parts.append('eo=%d' % end[3]); OBJ_USED.add(end[3])
+    if si and si[0] == 'o' and si[6]: OBJ_USED.add(int(si[6]))
+    for o in objs:
+        if o[0] == 'object' and o[5]: OBJ_USED.add(int(o[5]))
     # s = where to pick it up (only for quests offered as "new": not repeatables)
     if start and not ((sflags or 0) & 1):
         parts.append('s={%d,%.1f,%.1f,%s,%d}' % (start[0][0], start[0][1], start[0][2], lstr(start[1] or ''), start[2]))
@@ -567,7 +618,7 @@ head = ['-- Waypath+ quest objectives: where to finish each quest and where its 
         '--     nothing drops: bought on the auction house (a) or from a vendor (v; factions A/H/AH),',
         '--   ra = only these races (Horde: O Orc, U Undead, T Tauren, R Troll, S Skyborne; Alliance: H Human, D Dwarf, N Night Elf, G Gnome, A Skyborne), cl = only these classes',
         '--   (W Warrior, P Paladin, H Hunter, R Rogue, I Priest, S Shaman, M Mage, L Warlock, D Druid), cq = a class quest,',
-        '--   (e and s: a 5th value is the NPC\'s ID)',
+        '--   (e and s: a 5th value is the NPC\'s ID), eo = the object you hand it in at (its ID),',
         '--   o = { {kind k/o/i, label, {mob names}, {{uiMapID, x, y, mob#}, ...}, {mob NPC IDs}, item or object ID, {drop % per mob}}, ... },',
         '--     (kind e: an event or a place to reach, its label says what to do there; done in the order listed)',
         '--   si = {o/i, object or item that starts it, {mob names}, {{uiMapID, x, y, mob#}, ...}, 1 = always drops there / 0 = only sometimes,',
@@ -587,3 +638,21 @@ tail += ['  {%d,%.1f,%.1f,%s,"%s"},' % (p[0], p[1], p[2], lstr(n), fac) for (p, 
 tail.append('}')
 open(RET + 'Objectives.lua', 'w', encoding='utf-8').write('\n'.join(head) + '\n' + ',\n'.join(out) + '\n}\n' + '\n'.join(tail) + '\n')
 print(f'{nq} quests, {nobj} objectives, {npts} points', file=sys.stderr)
+
+# ObjectModels.lua: what the objects quests use look like, for the current step's picture (StepView.lua). Only written
+# when both the display table (--sql) and the client's model files (--wago) were read: otherwise the last one stays.
+if GO_DISPLAY and GO_FILE:
+    rows, nmodel = [], 0
+    for oid in sorted(OBJ_USED):
+        fid = GO_FILE.get(GO_DISPLAY.get(oid, 0), 0)
+        typ = GO_TYPE.get(oid)   # (neither known: still listed, for the add-on's generic icon)
+        nmodel += 1 if fid else 0
+        rows.append('[%d]={%d,%d}' % (oid, fid, typ if typ is not None else -1))
+    open(RET + 'ObjectModels.lua', 'w', encoding='utf-8').write('\n'.join([
+        '-- Waypath+ what the objects quests use look like (generated by tools/objectives/gen.py: do not edit).',
+        '-- From the cMaNGOS world database (each object\'s display; GPL-3.0) and the WoW Forever client\'s own',
+        '-- GameObjectDisplayInfo table (wago.tools); its type from Polestar\'s forever-db (GPL-3.0), which knows Forever\'s new objects.',
+        '-- [object ID] = { model file ID (0: not known: WoW Forever\'s new objects), object type (-1: not known) }',
+        'local _, RG = ...',
+        'RG.OBJ_LOOK = {']) + '\n' + ',\n'.join(rows) + '\n}\n')
+    print(f'object looks: {len(rows)} objects, {nmodel} with a model, of {len(OBJ_USED)} used', file=sys.stderr)

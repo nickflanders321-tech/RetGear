@@ -66,6 +66,7 @@ Professions\Generated.lua
 Profile.lua
 Waypoints.lua
 Objectives.lua
+ObjectModels.lua
 QuestNotes.lua
 CommunityQuests.lua
 Core.lua
@@ -78,6 +79,7 @@ Smart.lua
 Tracker.lua
 TrackerExtras.lua
 StepView.lua
+DropRecord.lua
 DungeonPrep.lua
 Attunement.lua
 Extras.lua

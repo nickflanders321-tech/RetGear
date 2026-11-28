@@ -17,6 +17,7 @@ local NEEDS = {
   { "Professions", { "GetProfessions|GetNumSkillLines", "GetProfessionInfo|GetSkillLineInfo" } },
   { "Fishing", { "UnitChannelInfo", "IsFishingLoot", "GetLootSlotInfo" } },
   { "Step view (models and icons)", { "GetItemIcon|C_Item.GetItemIconByID", "C_Map.GetMapInfo", "IsInInstance" } },
+  { "Drop rates you count yourself", { "GetLootSourceInfo", "GetLootSlotLink", "UnitIsDead", "UnitIsTapDenied" } },
   { "Step view (how to do a quest)", { "GetQuestLogQuestText", "SelectQuestLogEntry|C_QuestLog.SetSelectedQuest", "GetQuestLogSelection|C_QuestLog.GetSelectedQuest" } },
 }
 

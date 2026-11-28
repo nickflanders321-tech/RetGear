@@ -705,7 +705,7 @@ RG.CLASS_GEAR_A.ROGUE = {
   { id = 9639, slot = "Main Hand", lvl = 43, how = "Dungeon", src = "Antu'sul", zone = "Zul'Farrak", score = 354, bl = 48, name = "The Hand of Antu'sul", gen = true },
   { id = 9647, slot = "Shoulder", lvl = 43, how = "Quest", src = "Rescue OOX-22/FE! (Homing Robot OOX-22/FE)", zone = "Feralas", score = 28, q = 2767, name = "Failed Flying Experiment", gen = true },
   { id = 9473, slot = "Chest", lvl = 44, how = "Dungeon", src = "Shadowpriest Sezz'ziz", zone = "Zul'Farrak", score = 17, bl = 47, alt = true, name = "Jinxed Hoodoo Skin", gen = true },
-  { id = 276903, slot = "Main Hand", lvl = 44, how = "Quest", src = "A Taste of Home (Arille Azuregaze)", zone = "", score = 343, q = 96609, name = "Shimmerwine Shanker", gen = true },
+  { id = 276903, slot = "Main Hand", lvl = 44, how = "Quest", src = "A Taste of Home (Arille Azuregaze)", zone = "Alterac Mountains", score = 343, q = 96609, name = "Shimmerwine Shanker", gen = true },
   { id = 7961, slot = "Main Hand", lvl = 44, how = "Crafted", src = "Blacksmithing", zone = "Bind on Equip · Trainer", score = 344, prof = "Blacksmithing", sk = 245, boe = true, ah = true, alt = true, name = "Phantom Blade", gen = true },
   { id = 10625, slot = "Main Hand", lvl = 44, how = "BoE", src = "World drop", zone = "Auction House", score = 347, ah = true, alt = true, name = "Stealthblade", gen = true },
   { id = 13035, slot = "Main Hand", lvl = 44, how = "Rare mob", src = "Mai'Zoth", zone = "Stranglethorn Vale", score = 347, bl = 47, ah = true, also = { { how = "BoE", src = "Drops from Mai'Zoth", zone = "Auction House · Stranglethorn Vale" } }, alt = true, name = "Serpent Slicer", gen = true },

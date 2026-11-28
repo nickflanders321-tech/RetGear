@@ -1043,16 +1043,11 @@ function RG.SyncObjective(obj)
     lastObjKey = obj.key; objSince = GetTime and GetTime() or 0
     announce(obj)
   end
-  -- the arrow switched off for one step (RG.ArrowOff) comes back by itself for the next
-  local paused = RG.db and RG.db.arrowPaused
-  if paused == true then RG.db.arrowPaused = obj.key
-  elseif paused and paused ~= obj.key and not (RG.CorpseRun and RG.CorpseRun()) then RG.db.arrowPaused = nil end
   -- nowhere known to go (a quest in your log with no spot): the guide's own pin from the step before is taken down, so
   -- the arrow doesn't keep pointing at a town you've been to (a pin you placed yourself stays)
   if obj.clearArrow and not obj.wp and RG.PinIsOurs and RG.PinIsOurs() and RG.ClearWaypoint then RG.ClearWaypoint() end
   if not obj.wp or (IsInInstance and IsInInstance()) then return end
   if not (opt("arrow") and (opt("autoArrow") or obj.kind == "goal")) then return end
-  if RG.ArrowPaused and RG.ArrowPaused() then return end
   if obj.kind == "goal" then
     if obj.pinned ~= obj.key and cache.pinnedGoal ~= obj.key then
       cache.pinnedGoal = obj.key
@@ -1068,10 +1063,22 @@ function RG.SyncObjective(obj)
 end
 
 -- The current objective (recomputed at most every couple of seconds, or at once after a change).
+-- Standing still (at a vendor, in a fight, away from the keys) it is kept for up to 10 seconds: what it depends on
+-- besides where you are comes with an event that marks it dirty, and each rebuild made over 100 KB of garbage.
+local STILL_YD, STILL_MAX = 3, 10
 function RG.Objective(force)
   if not (RG.db and UnitLevel) then return nil end
   local now = GetTime and GetTime() or 0
-  if force or cache.dirty or now - cache.t > 2 then
+  local age = now - cache.t
+  local rebuild = force or cache.dirty or age > STILL_MAX
+  local pc, px, py
+  if not rebuild and age > 2 then
+    if RG.PlayerWorld then pc, px, py = RG.PlayerWorld() end
+    rebuild = not (pc and px and pc == cache.pc and math.abs(px - cache.px) < STILL_YD and math.abs(py - cache.py) < STILL_YD)
+  end
+  if rebuild then
+    if not pc and RG.PlayerWorld then pc, px, py = RG.PlayerWorld() end
+    cache.pc, cache.px, cache.py = pc, px, py
     local ok, obj = pcall(buildObjective)
     cache.t, cache.dirty = now, false
     if ok then

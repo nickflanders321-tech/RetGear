@@ -23,22 +23,25 @@ local function me()
   return world(map, pos.x * 100, pos.y * 100)
 end
 
+-- a flight master's place in world coordinates (they never move: worked out once, not every few seconds)
+local worldOf = {}
+local function distTo(f, pc, px, py)
+  if not pc then return nil end
+  local w = worldOf[f]
+  if not w then local c, x, y = world(f[3], f[4], f[5]); w = c and x and { c, x, y } or nil; worldOf[f] = w end
+  if w and w[1] == pc then return math.sqrt((w[2] - px) ^ 2 + (w[3] - py) ^ 2) end
+end
+local function entryOf(f, dist)
+  return { node = f[1], zone = f[2], map = f[3], x = f[4], y = f[5], faction = f[6], npc = f[8],
+           wp = { f[3], f[4], f[5], f[1] .. " flight master" }, known = RG.KnowsFP(f[1]), dist = dist }
+end
 -- { node, zone, map, x, y, faction, npc, npcName, known = true/false/nil, dist = yards or nil, wp = waypoint }
 function RG.FlightList(all)
   local out = {}
   local fac = myFaction()
   local pc, px, py = me()
   for _, f in ipairs(RG.FLIGHTS or {}) do
-    if all or not fac or f[6] == "N" or f[6] == fac then
-      local e = { node = f[1], zone = f[2], map = f[3], x = f[4], y = f[5], faction = f[6], npc = f[8],
-                  wp = { f[3], f[4], f[5], f[1] .. " flight master" } }
-      e.known = RG.KnowsFP(f[1])
-      if pc then
-        local c, x, y = world(f[3], f[4], f[5])
-        if c == pc and x then e.dist = math.sqrt((x - px) ^ 2 + (y - py) ^ 2) end
-      end
-      out[#out + 1] = e
-    end
+    if all or not fac or f[6] == "N" or f[6] == fac then out[#out + 1] = entryOf(f, distTo(f, pc, px, py)) end
   end
   table.sort(out, function(a, b)
     if (a.dist ~= nil) ~= (b.dist ~= nil) then return a.dist ~= nil end
@@ -105,10 +108,18 @@ function RG.NearbyFlight()
   nearAt, near = now, nil
   if UnitOnTaxi and UnitOnTaxi("player") then return nil end
   if IsInInstance then local inst = IsInInstance(); if inst then return nil end end
-  for _, e in ipairs(RG.FlightList()) do
-    if not e.dist or e.dist > NEAR_YARDS then break end      -- sorted nearest first
-    if e.known ~= true then near = e break end
+  -- (asked every few seconds: only the nearest one is made into an entry, not the whole sorted list)
+  local fac = myFaction()
+  local pc, px, py = me()
+  if not pc then return nil end
+  local best, bestD
+  for _, f in ipairs(RG.FLIGHTS or {}) do
+    if not fac or f[6] == "N" or f[6] == fac then
+      local d = distTo(f, pc, px, py)
+      if d and d <= NEAR_YARDS and (not bestD or d < bestD) and RG.KnowsFP(f[1]) ~= true then best, bestD = f, d end
+    end
   end
+  near = best and entryOf(best, bestD) or nil
   return near
 end
 

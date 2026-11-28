@@ -56,6 +56,12 @@ if opts.check_one then
   for _, a in ipairs(check.addons or {}) do W.otherAddons[a] = true end
 end
 
+-- --screen 2560x1440 --ui-scale 0.64: a real player's screen (UIParent's size in UI units follows from them)
+if opts.screen then
+  local pw, ph = opts.screen:match("^(%d+)x(%d+)$")
+  if not pw then io.stderr:write("--screen takes WIDTHxHEIGHT in pixels, like 2560x1440\n") os.exit(2) end
+  W.setScreen(tonumber(pw), tonumber(ph), opts.ui_scale)
+end
 Look.install(W, HERE)
 local ok, err = pcall(W.setup, { class = opts.class, race = opts.race, faction = opts.faction, level = opts.level,
   map = opts.map, money = opts.money, version = version })

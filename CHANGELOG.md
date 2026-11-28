@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.64.1
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+- Card packs updated from WoW Forever's latest game data (new bosses, loot, rares, models or pictures).
+
+## v1.64.0
+- **The arrow stays off when you turn it off.** It used to come back after a hearthstone, a boat or a new continent (the game picks a quest to track after every loading screen, and Waypath+ followed it), when another add-on set a waypoint, or when you clicked a quest in the game's quest log. Now only you turn it back on: the Arrow button, or Waypath+'s own "arrow to it" clicks. Dying still shows the way back to your body, without changing your setting.
+- **One way to turn the arrow off.** Right-clicking or double-clicking the arrow, or clicking the place it already points at, now turns it off just like the Arrow button. The "off for this step" that came back by itself at the next step is gone.
+- **Lighter on your game.** The guide no longer rebuilds the tracker and the current step on a timer while you stand still (at a vendor, in a fight, away from the keys), no longer rebuilds the tracker every time a buff changes in combat, and works out the way to another zone once every few seconds instead of 20 times a second while the arrow points there. Much less memory is churned, so fewer stutters.
+- **Quests at objects show the object.** The current step shows a 3D model of the chest, crate or altar for quests you pick up from, use or hand in at an object (an icon for its kind where WoW Forever's new objects have no model yet).
+- **Drop rates for more quests.** Rates now also come from ForeverDB where the other sources have none, and in WoW Forever's new zones, where no source knows them, Waypath+ counts your own kills and loot and shows the rate after 10 kills, marked as yours.
+- **The mob's model on the tracker shows its whole body** again after it loads or the panel changes size.
+
+## v1.63.2
+- Quest, gear, map and profession data updated from WoW Forever's latest game data.
+
 ## v1.63.1
 - **No more "buy it at the auction house" for items you can't buy there.** WoW Forever's new items (Mote of Unstable Magic, Darkspear Islands Mark of Honor, Moonsilver Blade, A Luddite's Guide) were read as tradable, so the guide sent you shopping for them. Whether an item binds now comes from the game's own item data, and only items that can be sold get an auction house step.
 - **Cards: creatures shown whole.** Sixteen card creatures were framed too close (Tepolar showed his torso with his head cut off, and the centaurs the same): they now fit their card.

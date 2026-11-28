@@ -152,11 +152,22 @@ local function hearthReady()
 end
 
 -- Returns the legs { text } from your zone to `target`, or nil when you're already there.
+-- (the arrow asks 20 times a second while its pin is in another zone: the answer is kept for a few seconds per zone
+-- and target; callers only read it)
+local planMemo, planAt, planHere = {}, nil, nil
+local plan
 function RG.TravelPlan(target)
   ensure()
   target = RG.TravelZone(target)
   local here = RG.ZoneName()
   if not target or target == "" or here == "" or target == here then return nil end
+  local now = GetTime and GetTime() or 0
+  if here ~= planHere or not planAt or now - planAt > 3 then planMemo, planAt, planHere = {}, now, here end
+  local m = planMemo[target]
+  if not m then m = { plan(target, here) }; planMemo[target] = m end
+  return m[1], m[2], m[3]
+end
+plan = function(target, here)
   if not edges then buildEdges() end
   -- Dijkstra over zones; flying is an extra edge between any two known flight paths on a continent
   local dist, prev, done = { [here] = 0 }, {}, {}

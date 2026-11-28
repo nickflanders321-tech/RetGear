@@ -997,7 +997,6 @@ end
 function RG.Follow(wp)
   if not wp then return end
   if not RG.Opt("arrow") then RG.db.arrow = true; if RG.RefreshArrow then RG.RefreshArrow() end end
-  RG.db.arrowPaused = nil
   RG.PinWaypoint(wp)
   -- you picked it: it's the current step for a while (Guide.lua)
   if RG.PickManually then RG.PickManually(wp) end

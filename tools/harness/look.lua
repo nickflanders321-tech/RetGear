@@ -327,10 +327,31 @@ function L.install(W, here)
 
   -- Text split into pieces: { raw, w, kind } with kind "g" (a character), "s" (a space), "n" (a line break) or
   -- "c" (an escape code: a color, a link, no width). Inline textures |T...|t are "g" with their own width.
+  -- Text in whole pixels, as the game draws it: the font at a whole pixel size, each letter's advance rounded up to a
+  -- whole pixel (checked against screenshots: within 1% where unrounded widths were 7-9% short on small text). The
+  -- pixels per unit are the screen's (run.lua --screen) times the font string's own scale: L.px, set by each caller.
+  L.px = 1
+  L.pxScale = W.pxScale or 1
+  local pixelAdv = {}
   local function tokens(text, font, size)
     local out = {}
     local m = fontMetrics(font[1])
-    local adv, def = m and m.adv, (m and m.def) or 0.5
+    local adv0, def = m and m.adv, (m and m.def) or 0.5
+    local ps = L.px or 1
+    local P = math.max(1, math.floor(size * ps + 0.5))
+    local key = tostring(font[1]) .. "|" .. P .. "|" .. ps .. "|" .. size
+    local adv = pixelAdv[key]
+    if not adv and adv0 then
+      adv = setmetatable({}, { __index = function(t, cp)
+        local a = adv0[cp]
+        if a == nil then return nil end
+        local v = math.ceil(a * P - 1e-6) / ps / size
+        t[cp] = v
+        return v
+      end })
+      pixelAdv[key] = adv
+    end
+    def = math.ceil(def * P - 1e-6) / ps / size
     local i, n = 1, #text
     while i <= n do
       local c = text:sub(i, i)
@@ -413,6 +434,26 @@ function L.install(W, here)
       truncated = true
     end
     return lines, truncated
+  end
+  -- what the game draws of those lines in a box 'width' wide: a line that doesn't fit (a font string that doesn't wrap)
+  -- is cut and ends in "...", and so does the last line kept when there were more (SetMaxLines)
+  function L.ellipsize(lines, font, size, width, cut)
+    if not width or width <= 0 then return lines end
+    local dots = 0
+    for _, t in ipairs(tokens("...", font, size)) do dots = dots + t[2] end
+    for i, ln in ipairs(lines) do
+      if ln[2] > width + 0.5 or (cut and i == #lines) then
+        local out, w = {}, 0
+        for _, t in ipairs(tokens(ln[1], font, size)) do
+          if t[3] == "c" then out[#out + 1] = t[1]
+          elseif w + t[2] > width - dots then break
+          else out[#out + 1] = t[1]; w = w + t[2] end
+        end
+        local s = table.concat(out):gsub("%s+$", "")
+        lines[i] = { s .. "...", w + dots }
+      end
+    end
+    return lines
   end
   function L.textWidth(text, font, size)
     local best = 0
@@ -528,6 +569,7 @@ function L.install(W, here)
 
   -- the lines a font string shows at its width
   textLines = function(w, width)
+    L.px = L.pxScale * effScale(w)
     local st = S[w]
     local f = L.fontOf(w)
     local explicitW = (st.w or 0) > 0 or (width and width > 0)
@@ -570,7 +612,7 @@ function L.install(W, here)
   end
   function M:GetSize() return self:GetWidth(), self:GetHeight() end
   function M:IsRectValid() return rect(self) ~= nil end
-  function M:GetStringWidth() local st = S[self]; local f = L.fontOf(self); return L.textWidth(st.fs and S[st.fs].text or st.text or "", f, f[2]) end
+  function M:GetStringWidth() L.px = L.pxScale * effScale(self); local st = S[self]; local f = L.fontOf(self); return L.textWidth(st.fs and S[st.fs].text or st.text or "", f, f[2]) end
   M.GetUnboundedStringWidth = M.GetStringWidth
   function M:GetStringHeight()
     local st = S[self]
@@ -594,6 +636,7 @@ function L.install(W, here)
     local l, b, r, t = rect(self)
     if not l then return false end
     local es = effScale(self)
+    L.px = L.pxScale * es
     local lines, cut = L.layoutText(st.text or "", f, f[2], (r - l) / es, st.wordWrap, st.maxLines, st.nonSpaceWrap)
     if cut then return true end
     for _, ln in ipairs(lines) do if ln[2] > (r - l) / es + 0.5 then return true end end
@@ -862,7 +905,9 @@ function L.install(W, here)
                 if txt ~= "" then
                   local font = L.fontOf(rg)
                   local es = effScale(rg)
+                  L.px = L.pxScale * es
                   local lines, cut = L.layoutText(txt, font, font[2], (rr - rl) / es, rs.wordWrap, rs.maxLines, rs.nonSpaceWrap)
+                  lines = L.ellipsize(lines, font, font[2], (rr - rl) / es, cut)
                   local ls = {}
                   for i, ln in ipairs(lines) do ls[i] = { ln[1], round(ln[2] * es) } end
                   item = { k = "text", r = R(rl, rb, rr, rt), font = font[1], size = font[2] * es, flags = font[3] or "",
@@ -917,6 +962,7 @@ function L.install(W, here)
         if st.type == "EditBox" and (st.text or "") ~= "" then
           local font = L.fontOf(f)
           local es = effScale(f)
+          L.px = L.pxScale * es
           local ins = st.insets or { 0, 0, 0, 0 }
           local txt = st.text
           if st.password then txt = string.rep("*", #txt) end

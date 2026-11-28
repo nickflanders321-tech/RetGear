@@ -1,7 +1,8 @@
 local _, RG = ...
 -- Waypath+ current step and drop rates.
 --   * Drop rates: how often a quest's items drop and from what (Objectives.lua carries them, from Polestar forever-db's
---     item sources and the cMaNGOS loot tables). Shown in the tracker's tooltips (RG.DropTip) and on the current step.
+--     item sources, the cMaNGOS loot tables and ForeverDB; else the rate you counted yourself, DropRecord.lua).
+--     Shown in the tracker's tooltips (RG.DropTip) and on the current step.
 --   * The current step: a card under the tracker's header that says what to do right now (it follows RG.Objective):
 --     where, how often its items drop, a 3D model of the mob (or the item's icon, or the quest giver) to look for,
 --     why it's next and what comes after.
@@ -56,8 +57,12 @@ function RG.DropInfo(id, label)
       local name = tostring(o[2] or "?")
       local l = name:lower()
       if not want or l == want or want:find(l, 1, true) or l:find(want, 1, true) then
-        local text = dropPhrase(o[3], o[7])
-        if text then out[#out + 1] = { item = name, text = text, rate = o[7] and true or nil } end
+        -- (no rate in the data: the one you counted yourself, DropRecord.lua, marked as yours)
+        local chances, mine = o[7], nil
+        if not chances and RG.MyDropChances then chances, mine = RG.MyDropChances(o[6], o[5]) end
+        local text = dropPhrase(o[3], chances)
+        if text and mine then text = text .. " (your " .. mine .. " kills)" end
+        if text then out[#out + 1] = { item = name, text = text, rate = chances and true or nil, mine = mine and true or nil } end
       end
     end
   end
@@ -97,16 +102,33 @@ local function objectiveOf(d, okind, label)
   end
   return first
 end
--- { npc = id, name = label, icon = file id or path } for the thing to do now
+-- An object in the world (a chest, a wanted poster, a shrine): its model (ObjectModels.lua: the game's model file), else
+-- an icon for its kind (WoW Forever's new objects, whose looks no open data has yet). Object types are the game's own.
+local OBJ_ICON = {
+  [2] = "Interface\\Icons\\INV_Misc_Note_01",       -- quest giver (a wanted poster, a note)
+  [3] = "Interface\\Icons\\INV_Box_01",             -- chest (crates, sacks, a herb or vein)
+  [9] = "Interface\\Icons\\INV_Misc_Book_09",       -- text (a book, a plaque)
+  [8] = "Interface\\Icons\\Spell_Holy_MindVision",  -- spell focus (a moonwell, a campfire)
+  [10] = "Interface\\Icons\\INV_Misc_Gear_01",      -- something to use
+}
+local OBJ_ICON_ELSE = "Interface\\Icons\\INV_Misc_Gear_01"
+local function objectLook(oid, name)
+  local l = oid and RG.OBJ_LOOK and RG.OBJ_LOOK[oid]
+  if not l then return nil end
+  return { file = (l[1] and l[1] > 0) and l[1] or nil, icon = OBJ_ICON[l[2]] or OBJ_ICON_ELSE, name = name }
+end
+-- { npc = id, file = model file id, name = label, icon = file id or path } for the thing to do now
 local function lookFor(obj, it)
   local d = it and it.id and RG.QDATA and RG.QDATA[it.id]
   if not d then return nil end
   if it.act == "turnin" then
     local e = d.e
+    if e and not e[5] and d.eo then return objectLook(d.eo, e[4]) end
     return e and { npc = e[5], name = e[4] } or nil
   elseif it.act == "pickup" then
     if d.s then return { npc = d.s[5], name = d.s[4] } end
     local si = d.si
+    if si and si[1] == "o" then return objectLook(si[7], si[2]) end
     if si then
       local npc = si[6] and si[6][1]
       return { npc = npc, name = npc and si[3] and si[3][1] or si[2], icon = (si[1] == "i" and si[7]) and (GetItemIcon and GetItemIcon(si[7])) or nil, item = si[1] == "i" and si[2] or nil }
@@ -115,6 +137,10 @@ local function lookFor(obj, it)
   end
   local o = objectiveOf(d, it.okind, it.label)
   if not o then return nil end
+  if o[1] == "o" then
+    local l = objectLook(o[6], o[2])
+    if l then l.obj = o; return l end
+  end
   local npc = o[5] and o[5][1]
   local icon = (o[1] == "i" and o[6] and GetItemIcon) and GetItemIcon(o[6]) or nil
   return { npc = (o[1] ~= "o") and npc or nil, name = (npc and o[3] and o[3][1]) or o[2], icon = icon, item = o[1] == "i" and o[2] or nil, obj = o }
@@ -279,39 +305,74 @@ local function build()
   return f
 end
 
--- the model: asked for once per NPC, checked a moment later (the game may still be fetching it); the icon otherwise
+-- the model: asked for once per NPC (or object model file), checked a moment later (the game may still be fetching it);
+-- the icon otherwise
 local modelTry = 0
-local function showModel(npc, icon)
-  if npc and not inInstance() then
+local function showModel(npc, icon, file)
+  -- (a creature by its NPC ID; an object by its model file)
+  local key = npc or (file and ("file:" .. file)) or nil
+  local function load(m)
+    if npc then return pcall(m.SetCreature, m, npc) end
+    return pcall(m.SetModel, m, file)
+  end
+  if key and not inInstance() then
     if not model then
       local ok, m = pcall(CreateFrame, "DressUpModel", nil, f.pic)
       -- (the whole panel, inside its edge)
-      if ok and m then model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1) end
+      if ok and m then
+        model = m; m:SetPoint("TOPLEFT", 1, -1); m:SetPoint("BOTTOMRIGHT", -1, 1)
+        -- The game sets a model's camera again when it has loaded (a creature can take a moment: the server is asked),
+        -- and the camera stays fixed at the size the frame had then. A panel that grew or shrank after that showed the
+        -- middle of the creature magnified (Thylaen's legs). So: the whole body again once loaded, and again whenever
+        -- the panel's size on screen has changed and settled.
+        local function fit(self)
+          pcall(function()
+            if self.SetPortraitZoom then self:SetPortraitZoom(0) end
+            if self.SetPosition then self:SetPosition(0, 0, 0) end
+            if self.SetFacing then self:SetFacing(0.45) end
+          end)
+        end
+        m:SetScript("OnModelLoaded", fit)
+        local lastFit, settle, acc = nil, 0, 0
+        m:HookScript("OnShow", function() lastFit, settle = nil, 0.3 end)
+        local function watch(self, dt)
+          acc = acc + dt
+          if acc < 0.1 then return end
+          acc = 0
+          local es, wd, ht = self:GetEffectiveScale(), self:GetWidth(), self:GetHeight()
+          if type(es) ~= "number" or type(wd) ~= "number" or type(ht) ~= "number" then return end
+          local key = es * (wd + ht * 1000)
+          if lastFit == nil then lastFit = key return end
+          if math.abs(key - lastFit) > 0.5 then lastFit, settle = key, 0.25 return end   -- still changing: wait
+          if settle > 0 then settle = settle - 0.1; if settle <= 0 then fit(self) end end
+        end
+        m:HookScript("OnUpdate", (RG.PerfWrap and RG.PerfWrap("step model fit", watch)) or watch)
+      end
     end
-    if model and model.SetCreature then
-      if model.cur ~= npc then
-        model.cur, modelTry = npc, 0
+    if model and model.SetCreature and (npc or model.SetModel) then
+      if model.cur ~= key then
+        model.cur, modelTry = key, 0
         if model.ClearModel then pcall(model.ClearModel, model) end
-        local ok = pcall(model.SetCreature, model, npc)
+        local ok = load(model)
         if ok then
           if model.SetPortraitZoom then pcall(model.SetPortraitZoom, model, 0) end
           if model.SetFacing then pcall(model.SetFacing, model, 0.45) end
           -- not there yet? look again shortly, twice at most; then the icon
           local function check()
-            if not (model and model.cur == npc) then return end
+            if not (model and model.cur == key) then return end
             local okF, fid = false, nil
             if model.GetModelFileID then okF, fid = pcall(model.GetModelFileID, model) end
             if okF and (not fid or fid == 0) and modelTry < 2 then
-              modelTry = modelTry + 1; pcall(model.SetCreature, model, npc); C_Timer.After(1, check)
+              modelTry = modelTry + 1; load(model); C_Timer.After(1, check)
             elseif okF and (not fid or fid == 0) then
-              model.bad = model.bad or {}; model.bad[npc] = true; model:Hide()
+              model.bad = model.bad or {}; model.bad[key] = true; model:Hide()
               if icon then f.icon:SetTexture(icon); f.icon:Show() end
             end
           end
           if C_Timer and C_Timer.After then C_Timer.After(0.6, check) end
         else model.cur = nil end
       end
-      if model.cur == npc and not (model.bad and model.bad[npc]) then model:Show(); f.icon:Hide(); return true end
+      if model.cur == key and not (model.bad and model.bad[key]) then model:Show(); f.icon:Hide(); return true end
     end
   end
   if model then model:Hide() end
@@ -439,6 +500,23 @@ local function cardInfo()
 end
 
 local lastH
+-- The card is redrawn every second, mostly with what it already shows: text and anchors are only handed to the game
+-- when they change (each new anchor makes the game lay the card out again). After a /reload the game can draw our
+-- font blank until the text is set again, so the tracker's repaint passes set everything afresh (gen).
+local gen = 0
+local function setText(fs, s)
+  s = s or ""
+  if fs._svT ~= s or fs._svG ~= gen then fs._svT, fs._svG = s, gen; fs:SetText(s) end
+end
+local function moved(r, a, b, c)
+  if r._svA == a and r._svB == b and r._svC == c and r._svPG == gen then return false end
+  r._svA, r._svB, r._svC, r._svPG = a, b, c, gen
+  return true
+end
+do
+  local base = RG.TrackerRepaint
+  if base then RG.TrackerRepaint = function(...) gen = gen + 1; return base(...) end end
+end
 function RG.RefreshStepView()
   local t = _G.WaypathTracker
   if not (t and t:IsShown()) or (RG.CardsOnly and RG.CardsOnly()) or not (RG.Opt and RG.Opt("tracker")) then
@@ -461,18 +539,21 @@ function RG.RefreshStepView()
   local details = not folded
   local P = RG.TPAL
   -- the strip: what to do (a brass-edged tag), the quest, how far
-  f.verb:SetText(info.verb:upper())
-  f.verb:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
-  f.chipF:SetWidth(math.max(22, (f.verb:GetStringWidth() or 20) + 12))
-  f.title:SetText(info.title or "")
-  f.dist:SetText(info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
+  local verb = info.verb:upper()
+  if f.verb._svT ~= verb or f.verb._svG ~= gen then
+    setText(f.verb, verb)
+    f.verb:SetTextColor(P.gold[1], P.gold[2], P.gold[3])
+    f.chipF:SetWidth(math.max(22, (f.verb:GetStringWidth() or 20) + 12))
+  end
+  setText(f.title, info.title)
+  setText(f.dist, info.dist and RG.FormatYards and RG.FormatYards(math.floor(info.dist)) or "")
   -- the picture first: the lines go beside it when there is one (folded: no picture, the objective under the strip)
   -- (it isn't hidden and shown again on every refresh: a 3D model loads afresh each time it's shown, which made it flash
   -- once a second)
   local look, shown
   if details then
     look = info.obj and RG.StepLookFor and RG.StepLookFor(info.obj, info.it)
-    shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil)
+    shown = look and showModel(look.npc, look.icon or (look.item and 134400) or nil, look.file)
   end
   local picShown = shown and true or false
   local x = picShown and (8 + MODEL_W + 10) or 8
@@ -491,14 +572,20 @@ function RG.RefreshStepView()
     end
     if pair then
       local y = -(top + (k - 1) * LH)
-      pair[2]:ClearAllPoints(); pair[2]:SetPoint("TOPRIGHT", -8, y)
-      pair[1]:ClearAllPoints(); pair[1]:SetPoint("TOPLEFT", x, y); pair[1]:SetPoint("RIGHT", pair[2], "LEFT", -6, 0)
-      pair[1]:SetText(l and l.text or ""); pair[2]:SetText(l and l.prog or "")
-      if l and l.done then pair[2]:SetTextColor(P.green[1], P.green[2], P.green[3]) else pair[2]:SetTextColor(1, 1, 1) end
+      if moved(pair[2], y) then pair[2]:ClearAllPoints(); pair[2]:SetPoint("TOPRIGHT", -8, y) end
+      if moved(pair[1], x, y) then pair[1]:ClearAllPoints(); pair[1]:SetPoint("TOPLEFT", x, y); pair[1]:SetPoint("RIGHT", pair[2], "LEFT", -6, 0) end
+      setText(pair[1], l and l.text); setText(pair[2], l and l.prog)
+      local done = (l and l.done) and true or false
+      if pair[2]._svDone ~= done then
+        pair[2]._svDone = done
+        if done then pair[2]:SetTextColor(P.green[1], P.green[2], P.green[3]) else pair[2]:SetTextColor(1, 1, 1) end
+      end
     end
   end
   local h = top + #lines * LH
-  f.picName:SetText(""); f.body:Hide(); f.line:Hide(); f.skip:Hide(); f.foot:SetText("")
+  -- (cleared here and filled in below: only what ends up different from last time reaches the game)
+  local picName, bodyText, footText = "", nil, ""
+  local showBody, showLine, showSkip = false, false, false
   if details then
     -- beside the picture: where (parchment), who drops it (green, like the game's quest items), what else is here,
     -- how to do it (muted), the one thing people get wrong (orange)
@@ -518,14 +605,14 @@ function RG.RefreshStepView()
     if info.why and info.why ~= "" then body[#body + 1] = "|cff9a8a6a" .. info.why .. "|r" end
     local qn = info.it and info.it.id and RG.QuestNote and RG.QuestNote(info.it.id)
     if qn and qn.n then body[#body + 1] = "|cffff9f43" .. qn.n .. "|r" end
-    if picShown then
-      f.pic:ClearAllPoints(); f.pic:SetPoint("TOPLEFT", 8, -(STRIP + 8))
-      f.picName:SetText(look.name or "")
-    end
+    -- (the picture's place never changes: set when the card is built)
+    if picShown then picName = look.name or "" end
+    setText(f.picName, picName)
     local by = h + (#lines > 0 and 3 or 0)
-    f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8)
-    f.body:SetText(table.concat(body, "\n")); f.body:SetShown(#body > 0)
-    local bh = #body > 0 and (f.body:GetStringHeight() or 0) or 0
+    if moved(f.body, x, by, W) then f.body:ClearAllPoints(); f.body:SetPoint("TOPLEFT", x, -by); f.body:SetWidth(W - x - 8) end
+    bodyText = table.concat(body, "\n"); showBody = #body > 0
+    setText(f.body, bodyText)
+    local bh = showBody and (f.body:GetStringHeight() or 0) or 0
     local ph = picShown and (STRIP + 8 + MODEL_H + 3 + math.max(10, (f.picName:GetStringHeight() or 10))) or 0
     h = math.max(by + bh, ph) + 8
     -- the quest's usable item (a flask to fill, a horn to blow): a button beside Skip
@@ -536,22 +623,32 @@ function RG.RefreshStepView()
     end
     -- what comes after, and Skip
     if info.next or info.skip or itm then
-      f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h); f.line:Show()
-      f.foot:SetText(info.next and ("|cffffd100Next|r  " .. info.next) or "")
-      f.skip:SetShown(info.skip and true or false)
-      f.foot:SetPoint("RIGHT", f.skip, "LEFT", itm and -34 or -6, 0)
+      if moved(f.line, h) then f.line:ClearAllPoints(); f.line:SetPoint("TOPLEFT", 1, -h); f.line:SetPoint("TOPRIGHT", -1, -h) end
+      showLine = true
+      footText = info.next and ("|cffffd100Next|r  " .. info.next) or ""
+      showSkip = info.skip and true or false
+      local fx = itm and -34 or -6
+      if moved(f.foot, fx) then f.foot:SetPoint("RIGHT", f.skip, "LEFT", fx, 0) end
       h = h + 28
     end
   else
+    setText(f.picName, "")
     h = h + 4
   end
+  if f.body:IsShown() ~= showBody then f.body:SetShown(showBody) end
+  if f.line:IsShown() ~= showLine then f.line:SetShown(showLine) end
+  if f.skip:IsShown() ~= showSkip then f.skip:SetShown(showSkip) end
+  setText(f.foot, footText)
   if f.pic:IsShown() ~= picShown then f.pic:SetShown(picShown) end
   f.wp, f.prof = info.wp, info.prof
   f.tipTitle, f.tipText = info.title, info.whyFull
   if frozen and lastH and lastH > 0 then h = lastH end
   local headH = (RG.TrackerHeadH and RG.TrackerHeadH() or 50) + 4
-  f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -headH); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -headH)
-  f:SetHeight(h); f:Show()
+  if moved(f, headH, h) then
+    f:ClearAllPoints(); f:SetPoint("TOPLEFT", t, "TOPLEFT", 8, -headH); f:SetPoint("TOPRIGHT", t, "TOPRIGHT", -8, -headH)
+    f:SetHeight(h)
+  end
+  if not f:IsShown() then f:Show() end
   cardH = h
   -- (the item button: to the left of Skip, at the card's foot; it hangs off the tracker, so it's placed from there)
   if not frozen and RG.TrackerCardItem then
