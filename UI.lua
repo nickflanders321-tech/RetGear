@@ -63,7 +63,7 @@ local function saveTab() if RG.db then RG.db.lastTab = state.tab end end
 
 -- Sections in the sidebar, each with its pages as tabs along the top. (The Group page is gone.)
 local SECTIONS = {
-  { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "dungeons", "plan", "flights" } },
+  { key = "journey", label = "Journey", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Journey", tabs = { "route", "dungeons", "plan", "flights", "attune" } },
   { key = "equip",   label = "Gear",    icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Gear", tabs = { "guide", "gear", "raid", "spec", "heal" } },
   { key = "economy", label = "Professions", icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Economy", tabs = { "prof", "fish", "ah", "gold", "mail" } },
   { key = "cards",   label = "Cards",   icon = "Interface\\AddOns\\Waypath\\Media\\Icons\\Cards", tabs = { "cards" } },
@@ -72,7 +72,7 @@ local GROUPS, PARENT = {}, {}
 for _, sec in ipairs(SECTIONS) do GROUPS[sec.key] = sec.tabs; for _, t in ipairs(sec.tabs) do PARENT[t] = sec.key end end
 -- old section names still work (/wp money, minimap menu entries...)
 local ALIAS = { money = "economy", spec2 = "equip", group = "journey" }
-local SUBLABEL = { route = "Route", dungeons = "Dungeon quests", plan = "Quest plan", flights = "Flight paths", guide = "Gear guide", gear = "What I wear", raid = "Raid & tier", spec = "2nd spec",
+local SUBLABEL = { route = "Route", dungeons = "Dungeon quests", plan = "Quest plan", flights = "Flight paths", attune = "Onyxia", guide = "Gear guide", gear = "What I wear", raid = "Raid & tier", spec = "2nd spec",
   heal = "2nd spec gear", prof = "Professions", fish = "Fishing & cooking", camp = "Camping", ah = "Sell & prices", gold = "Gold tips", mail = "Bank alt",
   cards = "Cards", settings = "Settings" }
 local function parentOf(tab) return PARENT[tab] or tab end
@@ -2409,6 +2409,63 @@ local function renderDungeons()
   return n
 end
 
+local function renderAttune()
+  local n = 0
+  if not RG.AttunementPlan then return n end
+  local pl = RG.AttunementPlan()
+  n = n + 1
+  setHeader(getRow(n), pl.name .. "  ·  " .. pl.doneN .. " of " .. pl.total .. " quests done" .. (pl.complete and "  ·  attuned" or ""))
+  if RG.AttunementItemInBags and RG.AttunementItemInBags() then
+    n = n + 1
+    setStep(getRow(n), "", GREEN .. "You have the Drakefire Amulet: Onyxia's Lair is open to you.|r", true, nil)
+  end
+  local nx = pl.next
+  if nx and nx.wp then
+    n = n + 1
+    local r = getRow(n)
+    setItem(r, nil, nil, GOLD .. "Next: " .. nx.name .. "|r", nx.text, "", "", "gold")
+    r.icon:SetTexture(136058)
+    r.onClick = function() RG.PinWaypoint(nx.wp) end
+    r.tip = "Point the arrow at " .. tostring(nx.wp[4]) .. "."
+  end
+  for _, st in ipairs(pl.stages) do
+    local left = 0
+    for _, s in ipairs(st.steps) do if s.state ~= "done" then left = left + 1 end end
+    n = n + 1
+    setHeader(getRow(n), st.n .. ". " .. st.title .. (left == 0 and "  ·  done" or ""))
+    local w = getRow(n + 1)
+    n = n + 1
+    setStep(w, "", GREY .. st.where .. (st.from and ("  ·  from level " .. st.from) or "") .. "|r", false, nil)
+    w.iconBorder:Hide(); w.icon:Hide(); w.tip = nil
+    for _, s in ipairs(st.steps) do
+      n = n + 1
+      local r = getRow(n)
+      local tag = s.state == "have" and (GREEN .. "in your log|r") or (s.state == "done" and (GREY .. "done|r")) or ""
+      setItem(r, nil, nil, (s.level and RG.LevelTag and RG.LevelTag(s.level) or "") .. (s.state == "done" and GREY or "|cffffffff") .. s.name .. "|r", s.text, tag, "", s.isNext and "gold" or nil, nil, true)
+      r.icon:SetTexture(s.state == "done" and "Interface\\Buttons\\UI-CheckBox-Check" or (s.state == "have" and "Interface\\GossipFrame\\ActiveQuestIcon" or "Interface\\GossipFrame\\AvailableQuestIcon"))
+      r.icon:SetTexCoord(0, 1, 0, 1)
+      local p = s.wp
+      if p then
+        r.onClick = function() RG.PinWaypoint(p) end
+        r.tip = "|cffffffff" .. s.name .. "|r\n" .. s.text .. "\n\n" .. GOLD .. "Click:|r point the arrow at " .. tostring(p[4])
+      else
+        r.tip = "|cffffffff" .. s.name .. "|r\n" .. s.text
+      end
+    end
+    for _, t in ipairs(st.tips or {}) do
+      n = n + 1
+      local r = getRow(n)
+      setStep(r, "", GREY .. t .. "|r", false, nil)
+      r.iconBorder:Hide(); r.icon:Hide(); r.tip = nil
+    end
+  end
+  n = n + 1
+  local r = getRow(n)
+  setStep(r, "", GREY .. "Sources: " .. pl.sources .. ".|r", false, nil)
+  r.iconBorder:Hide(); r.icon:Hide(); r.tip = nil
+  return n
+end
+
 local function renderPlan()
   local n = 0
   local obj
@@ -3618,6 +3675,7 @@ local TITLES = {
   camp  = { "Camping", "Campfire buffs, what to place, and the camp steps along your route" },
   plan = { "Quest plan", "The best order for the quests in your log, with what each one needs" },
   dungeons = { "Dungeon quests", "Collect a dungeon's quests, and the quests that lead to them, before you run it" },
+  attune = { "Onyxia attunement", "The Drakefire Amulet chain for your faction, grouped into the fewest trips" },
   flights = { "Flight paths", "Every flight master for your faction: click one and Waypath+ guides you there" },
   fish  = { "Fishing & cooking", "Where to fish for your skill, ranks, gear, and fish that level your Cooking" },
   mail  = { "Bank alt", "Quest items to buy and mail instead of farming" },
@@ -3637,6 +3695,7 @@ local FOOTERS = {
   gold  = "Updated weekly from the newest Forever gold guides  ·  /wp profit lists what to keep for the AH",
   plan = "Click a stop for the arrow  ·  right-click skips it for 10 minutes  ·  /wp next  ·  /wp goto adds a goal",
   dungeons = "Click a quest to skip it and its chain, or bring it back  ·  click a dungeon to prepare for it instead",
+  attune = "Click a quest for the arrow to where it starts, or ends once you have it  ·  ticked quests are done",
   flights = "Click a flight path for the arrow  ·  fly there once to learn it  ·  /wp fp points at the nearest one you haven't learned",
   fish  = "Open your Cooking window once so Waypath+ knows your recipes  ·  /wp fishmode: immersive fishing on/off  ·  /wp fishkeep: keep another add-on's meter visible",
   camp  = "One camp object per hour  ·  camp buffs don't stack with the matching class buff  ·  /wp camp",
@@ -4069,6 +4128,7 @@ function RG.RefreshUINow()
   elseif state.tab == "camp" then n = renderCamp()
   elseif state.tab == "fish" then n = renderFish()
   elseif state.tab == "flights" then n = renderFlights()
+  elseif state.tab == "attune" then n = renderAttune()
   elseif state.tab == "dungeons" then n = renderDungeons()
   elseif state.tab == "plan" then n = renderPlan()
   else n = renderAH() end
@@ -4136,6 +4196,17 @@ function RG.RefreshUINow()
   elseif subs then state.lastSub[parentOf(state.tab)] = state.tab end
   -- page tools sit on the tabs' line, right side
   local anchor
+  -- (the tabs come first: the tools beside them take the room that is left. The search box shrinks to fit; a button or a
+  -- tick box that no longer fits is left out until the window is wider)
+  local room = (frame:GetWidth() or W) - PAD - (x - 6) - 12
+  for _, f in ipairs({ frame.scan, frame.near, frame.onlyUp }) do
+    if f and f:IsShown() then
+      if f:GetWidth() + 8 <= room then room = room - f:GetWidth() - 8 else f:Hide() end
+    end
+  end
+  if frame.search and frame.search:IsShown() then
+    if room >= 110 then frame.search:SetWidth(math.min(200, room)) else frame.search:Hide() end
+  end
   for _, f in ipairs({ frame.scan, frame.search, frame.near, frame.onlyUp }) do
     if f and f:IsShown() then
       f:ClearAllPoints()
@@ -4335,7 +4406,26 @@ local function build()
   frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); RG.db.windowPos = { p, rp, x, y } end)
   frame:SetClampedToScreen(true); frame:SetFrameStrata("HIGH")
   tinsert(UISpecialFrames, "WaypathFrame")
+  -- fit the screen: a client smaller than the window (a small game window, a big UI scale) shrinks it to fit, and it
+  -- fits again whenever the game window or the UI scale changes
+  local function fitScreen()
+    local base = (RG.db and RG.db.windowScale) or 1
+    local pw, ph = UIParent:GetWidth(), UIParent:GetHeight()
+    local fw, fh = frame:GetWidth() * base, frame:GetHeight() * base
+    local k = 1
+    if type(pw) == "number" and pw > 0 and fw > 0 then k = math.min(k, (pw - 20) / fw) end
+    if type(ph) == "number" and ph > 0 and fh > 0 then k = math.min(k, (ph - 20) / fh) end
+    frame:SetScale(base * math.max(0.5, k))
+  end
+  RG.FitMainWindow = fitScreen
   frame:SetScale((RG.db and RG.db.windowScale) or 1)
+  fitScreen()
+  frame:HookScript("OnShow", fitScreen)
+  do
+    local ef = CreateFrame("Frame")
+    ef:RegisterEvent("DISPLAY_SIZE_CHANGED"); ef:RegisterEvent("UI_SCALE_CHANGED")
+    ef:SetScript("OnEvent", function() if frame:IsShown() then fitScreen(); relayout(); RG.RefreshUI() end end)
+  end
   -- drag the bottom-right corner to resize the window (it remembers its size)
   frame:SetResizable(true)
   if frame.SetResizeBounds then frame:SetResizeBounds(640, 480, 1600, 1200) elseif frame.SetMinResize then frame:SetMinResize(640, 480); if frame.SetMaxResize then frame:SetMaxResize(1600, 1200) end end
@@ -4346,11 +4436,11 @@ local function build()
   grip:SetScript("OnMouseUp", function()
     frame:StopMovingOrSizing()
     if RG.db then RG.db.windowSize = { math.floor(frame:GetWidth() + 0.5), math.floor(frame:GetHeight() + 0.5) }; local p, _, rp, x, y = frame:GetPoint(); RG.db.windowPos = { p, rp, x, y } end
-    relayout(); RG.RefreshUINow()
+    fitScreen(); relayout(); RG.RefreshUINow()
   end)
   grip:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT"); GameTooltip:SetText("Drag to resize"); GameTooltip:AddLine("Double-click for the standard size", 1, 1, 1); GameTooltip:Show() end)
   grip:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  grip:SetScript("OnDoubleClick", function() frame:SetSize(W, H); frame:SetScale(1); if RG.db then RG.db.windowSize = nil; RG.db.windowScale = nil end; relayout(); RG.RefreshUINow() end)
+  grip:SetScript("OnDoubleClick", function() frame:SetSize(W, H); if RG.db then RG.db.windowSize = nil; RG.db.windowScale = nil end; fitScreen(); relayout(); RG.RefreshUINow() end)
   local lastW, lastH
   frame:SetScript("OnSizeChanged", function(self, w, h)
     if lastW and math.abs((w or 0) - lastW) < 2 and math.abs((h or 0) - lastH) < 2 then return end

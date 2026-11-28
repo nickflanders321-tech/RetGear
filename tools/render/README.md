@@ -15,11 +15,14 @@ CI. Requirements (WSL Ubuntu): `lua5.1`, and `sudo apt install python3-pil pytho
 | `tools/harness/look.lua` | Inside the harness: real layout (anchors, scale, text measured with the real fonts), every visual setting, and a log of every model-frame call. Writes a scene: what is on screen, in the order the game draws it. |
 | `tools/harness/shoot.lua` | `run.lua --shoot SCRIPT --out DIR`: runs a scene script, which calls `T.shoot("name")` to write `DIR/name.json`. |
 | `scenes/*.lua` | Scene scripts. `basic.lua`: the tracker, main window and card window. `cards.lua`: every card through the pack reveal, the collection and the big card view. |
+| `scenes/resize.lua`, `scenes/narrow.lua` | Every page of the main window and the card window on a client of any size (`WP_SCREEN=1280x720 lua5.1 tools/harness/run.lua --shoot tools/render/scenes/resize.lua --out DIR`; it also prints a line for every window that sticks out past the screen), and the main window dragged to its smallest sizes (`WP_SIZES=640x480,820x600`). |
+| `scenes/anim.lua`, `strip.py` | Animations: `anim.lua` plays a pack through the seal, tear, deal and turns, shooting every 0.1 s and tracing every tick (`trace.txt`: faces showing early, cards leaving the window, width jumps). After `render.py`, `strip.py DIR` joins the frames into contact sheets and `film.gif`. |
 | `render.py` | Draws a scene (or a folder of them) to PNG: textures, texture coordinates, rotation, colors, gradients, blend modes, masks, backdrops, text with the game's fonts, shadows and outlines, and models. |
 | `model.py` | Draws a creature (M2 model, its skin, textures and geosets) as a model frame shows it. `python3 tools/render/model.py DISPLAYID` draws one on its own. |
 | `particles.py` | A model's particle emitters as one still frame (for `model.py`). |
 | `camera.json` | The model frame's camera rules (field of view, framing, which calls set the camera again, lighting). Calibration changes these numbers. |
 | `camfix.py` | Cards whose creature model has no body camera of its own, and the camera distance (`RG.ARCADE_CAMFIX`) at which each fits. Run after new cards are added: `run.lua --shoot tools/render/scenes/npcs.lua --out DIR`, then `camfix.py DIR/npc.json`. |
+| `tune.py` | Cards the real-art sweep (`cards.sh`) flagged "tiny" or "zoomed": the camera distance (`RG.ARCADE_CAMFIX`) at which each fills its frame. `tune.py DIR/npc.json cards_report/report.md`. |
 | `ui.sh`, `scenes/ui.lua`, `uidiff.py` | The screens check: the tracker in every view, its menu and every page of the main window, for a few characters, compared with the last accepted set (see "Checking the screens"). |
 | `check_cards.py` | Reads a drawn card sweep and flags blank, over-zoomed, tiny and inconsistent models; writes `report.md` and contact sheets. |
 | `casc.py` | Reads files from the local install by FileDataID or path. |

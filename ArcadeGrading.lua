@@ -295,6 +295,9 @@ local function issue(a, g, key, f, s, svc, own)
   r.id = r.owner .. "#" .. cert
   r.sig = sign(r)
   r.hist = { { "graded", r.by, r.when } }
+  -- a print you cracked before: this case remembers the grade it had and how many times it has been cracked
+  local lg = own and a.crackLog and a.crackLog[key .. "#" .. tostring(f)]
+  if lg and lg.pend then r.hist[#r.hist + 1] = { "regraded", lg.last, lg.n, lg.best }; lg.pend = nil end
   g.cases[#g.cases + 1] = r
   if own then
     a.stats = a.stats or {}; a.stats.graded = (a.stats.graded or 0) + 1
@@ -310,6 +313,10 @@ local function issue(a, g, key, f, s, svc, own)
   end
   if RG.ArcadeGradeShare then pcall(RG.ArcadeGradeShare) end   -- (your guild sees it: ArcadeGradingGuild.lua)
   return r, s
+end
+-- what a case remembers of being cracked before: { was = its last grade, times = how many times, best = the best it had }
+function RG.ArcadeGradeBefore(r)
+  for _, h in ipairs(r and r.hist or {}) do if h[1] == "regraded" then return { was = h[2], times = h[3], best = h[4] } end end
 end
 function RG.ArcadeGradeOpen(i)
   local a = store(); if not a then return nil end
@@ -386,6 +393,12 @@ function RG.ArcadeGradeCrack(cert)
   table.remove(G(a).cases, i)
   local l = conditions(a, r.key, r.f)   -- (the copy is free again: a fresh condition joins the list)
   a.stats = a.stats or {}; a.stats.cracked = (a.stats.cracked or 0) + 1
+  -- remember what it was, so the next case of this print says "cracked before, was a 6"
+  a.crackLog = a.crackLog or {}
+  local lk = r.key .. "#" .. tostring(r.f)
+  local lg = a.crackLog[lk] or { n = 0 }
+  lg.n = (lg.n or 0) + 1; lg.last = r.grade; lg.best = math.max(lg.best or 0, r.grade); lg.pend = true
+  a.crackLog[lk] = lg
   if RG.ArcadeGradeShare then pcall(RG.ArcadeGradeShare) end
   if RG.ArcadeRefresh then RG.ArcadeRefresh(true) end
   return true, "You cracked the case. " .. (c and c.name or "The card") .. " is ungraded again: send it back for another chance."

@@ -1620,14 +1620,14 @@ function RG.RefreshTracker()
                 if q.complete then status = "|cff1eff00turn in|r"
                 elseif q.failed then status = "|cffff3333failed|r"
                 else status = q.prog and ("|cffffffff" .. q.prog .. "|r") or "" end
-                -- (as the quest log reads: no distance on the line, it's in the tooltip; the quest's usable item is on the
-                -- current step's card, not on the list)
+                -- (as the quest log reads: no distance on the line, it's in the tooltip)
                 local where = ""
                 -- objectives under the quest (a setting)
                 local objOn = RG.Opt("trackerObjectives") and not q.failed
                 if objOn and RG.Opt("trackerFocus") and RG.TrackerQuestActive and not q.complete then objOn = RG.TrackerQuestActive(q) end   -- only the quest being worked on opens
-                local itm = nil
-                local rpad = nil
+                -- a quest with a usable item (a horn, a vial) gets its button at the right of its line (the current step's card has one too)
+                local itm = RG.Opt("trackerItems") and RG.QuestItemFor and RG.QuestItemFor(q) or nil
+                local rpad = itm and 32 or nil
                 n = n + 1
                 local titleN = n
                 local qn = RG.QuestNote(q.id, q.group)

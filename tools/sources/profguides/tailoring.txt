@@ -34,19 +34,19 @@ You will need 82 Fine Thread and 10 Blue Dye for the 55-140 part.
 95-100
 5x Double-stitched Woolen Shoulders - 15 Bolt of Woolen Cloth, 10 Fine Thread
 100-120
-54x Bolt of Silk Cloth - 216 Silk Cloth
+55x Bolt of Silk Cloth - 220 Silk Cloth
 120-125
 5x Azure Silk Hood - 10 Bolt of Silk Cloth, 10 Blue Dye, 5 Fine Thread
 125-140
 15x Small Silk Pack - 45 Bolt of Silk Cloth, 30 Heavy Leather, 45 Fine Thread
 Expert Tailoring (140-200)
-You will need 40 Fine Thread , 74 Red Dye and 100 Silken Thread for the 140-200 part.
+You will need 42 Fine Thread , 74 Red Dye and 98 Silken Thread for the 140-200 part.
 140-150
 23x Bolt of Mageweave - 115 Mageweave Cloth
-150-170
-20x Crimson Silk Vest - 80 Bolt of Silk Cloth, 40 Red Dye, 40 Fine Thread
-170-185
-17x Crimson Silk Pantaloons - 68 Bolt of Silk Cloth, 34 Red Dye, 34 Silken Thread
+150-171
+21x Crimson Silk Vest - 84 Bolt of Silk Cloth, 42 Red Dye, 42 Fine Thread
+171-185
+16x Crimson Silk Pantaloons - 64 Bolt of Silk Cloth, 32 Red Dye, 32 Silken Thread
 185-200
 22x Black Mageweave Leggings - 44 Bolt of Mageweave, 66 Silken Thread
 Artisan Tailoring (200-300)

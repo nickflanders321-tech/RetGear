@@ -25,7 +25,7 @@ local function cardOf(key) local u = U(); return u and u.byKey and u.byKey[key] 
 -- grades: the chance of each grade (adds up to 1); prints: { finish, chance } (Rare 2, Holo 3, Full art 4, Gilded 5);
 -- mythic: the chance that the card is a Mythic instead (always its Full art print, the grade from the same table)
 local TIERS = {
-  { key = "summit", name = "Summit", price = 100, floor = 8, mythic = 1 / 60, col = { 0.9, 0.78, 0.45 },
+  { key = "summit", name = "Summit", price = 120, floor = 8, mythic = 1 / 60, col = { 0.9, 0.78, 0.45 },
     grades = { [10] = 0.14, [9] = 0.36, [8] = 0.50 },
     prints = { { 4, 0.94 }, { 5, 0.06 } } },
   { key = "pinnacle", name = "Pinnacle", price = 200, floor = 9, mythic = 1 / 18, col = { 1, 0.9, 0.55 },

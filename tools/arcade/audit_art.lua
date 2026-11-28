@@ -4,7 +4,7 @@
 -- (What only the game can tell, whether a model id really loads, is /wp cardcheck, which also remembers the answer.)
 local RG = {}
 local function load(f) local c = assert(loadfile(f)); c("Waypath", RG) end
-for _, f in ipairs({ "ArcadeCards.lua", "ArcadeMythic.lua", "ArcadeArt.lua", "ArcadeDungeons.lua", "ArcadeField.lua", "ArcadeRaids.lua", "ArcadeHolidays.lua", "ArcadeArtFix.lua", "ArcadePlaces.lua" }) do
+for _, f in ipairs({ "ArcadeCards.lua", "ArcadeMythic.lua", "ArcadeMythicMounts.lua", "ArcadeArt.lua", "ArcadeDungeons.lua", "ArcadeField.lua", "ArcadeRaids.lua", "ArcadeHolidays.lua", "ArcadeArtFix.lua", "ArcadePlaces.lua" }) do
   if io.open(f) then load(f) end
 end
 RG.ARCADE_DUNGEON_CREATURE = RG.ARCADE_DUNGEON_CREATURE or {}

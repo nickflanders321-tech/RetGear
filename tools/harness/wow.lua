@@ -622,8 +622,11 @@ end
 G.GetMouseFocus = function() return nil end
 G.GetMouseFoci = function() return {} end
 G.GetCursorPosition = function() return 0, 0 end
-G.GetScreenWidth = function() return 1920 end
-G.GetScreenHeight = function() return 1080 end
+-- WP_SCREEN=1280x720 runs the whole harness on a smaller (or larger) client: UIParent's size in UI units
+local SCRW, SCRH = 1920, 1080
+do local w, h = (os.getenv("WP_SCREEN") or ""):match("^(%d+)x(%d+)$"); if w then SCRW, SCRH = tonumber(w), tonumber(h) end end
+G.GetScreenWidth = function() return SCRW end
+G.GetScreenHeight = function() return SCRH end
 
 -- Per-frame updates: `seconds` of game time at `fps`, running timers and every visible frame's OnUpdate.
 function W.step(seconds, fps)
@@ -687,7 +690,7 @@ local function gameFrame(name, otype, parent)
   return f
 end
 G.UIParent = gameFrame("UIParent")
-S[G.UIParent].w, S[G.UIParent].h = 1920, 1080
+S[G.UIParent].w, S[G.UIParent].h = SCRW, SCRH
 -- a real player's screen (run.lua --screen 2560x1440 --ui-scale 0.64): the game's UI is 768 units high at scale 1,
 -- so UIParent is 768 / scale units high and as wide as the screen's shape makes it (2560 x 1440 at 0.64: 2133 x 1200
 -- units, 1.2 pixels each; render.py --scale 1.2 draws it at the screen's size). Before look.lua installs.
